@@ -1,0 +1,97 @@
+# Songpress++
+
+Songpress++ è un programma gratuito e facile da usare per la composizione tipografica di canzoni su Windows (e Linux), che genera canzonieri di alta qualità.
+
+Songpress++ è incentrato sulla formattazione delle canzoni. Una volta che la canzone è pronta, puoi copiarla/incollarla nella tua applicazione preferita per dare al tuo canzoniere l'aspetto che desideri. In alternativa puoi stamparla o creare un "Libro di canzoni"
+
+## Installazione su Windows
+
+## Prerequisiti
+
+### Python 3
+
+Songpress++ richiede **Python 3** installato sul sistema.
+
+1. Scarica Python 3 da [https://www.python.org](https://www.python.org)
+1. Durante l'installazione, assicurati di spuntare **"Add Python to PATH"**
+1. Completa l'installazione normalmente
+
+### Utenti finali
+
+Scarica ed esegui il file `songpress-local-setup.exe`. L'installer (dipende da internet) e guida l'utente attraverso l'installazione passo passo. Versione portabile o installabile.
+
+Tutti i file vengono installati in un'unica cartella all'interno della directory _User_ del utente corrente, consentendo una disinstallazione pulita tramite il proprio programma di disinstallazione.
+
+### Sviluppo
+
+Si può anche scaricare l'intero pacchetto e avviare src/Avvio SONGPRESS.vbs o Avvio SONGPRESS2.vbs
+
+Le differenze sono due, entrambe significative:
+
+1. Ricerca di Python
+
+`Avvio SONGPRESS2.vbs`: usa un array statico di versioni hardcoded (3.4 → 3.14) e le prova una per una con RegRead. Semplice ma fragile — se esce Python 3.15 non lo trova.
+`Avvio SONGPRESS.vbs`: usa reg query per interrogare dinamicamente il registro, trovando qualsiasi versione 3.x installata senza lista hardcoded. Più robusto. Usa **"Add Python to PATH"** per la ricerca della versione in uso.
+
+1. Messaggi di errore
+
+`Avvio SONGPRESS2.vbs`: messaggi brevi e tecnici (mostra il path grezzo), senza titolo nella finestra.
+`Avvio SONGPRESS.vbs`: messaggi più user-friendly, con titolo "Songpress - Errore avvio" e, in caso di Python mancante, suggerisce dove scaricarlo (python.org) e cosa fare durante l'installazione.
+
+In sintesi: `Avvio SONGPRESS2.vbs` è la versione di sviluppo/debug, `Avvio SONGPRESS.vbs` è la versione rifinita per l'utente finale.
+
+## Installazione su Linux
+
+(Mai testata)
+
+## Funzionalità principali
+
+- Produzione di **spartiti per chitarra di alta qualità** (testo e accordi)
+- **Facile** da imparare, veloce da usare
+- Possibilità di **incollare le canzoni formattate** in qualsiasi applicazione Linux e Windows per impaginare il canzoniere con la massima flessibilità (Affinity, Microsoft Word, LibreOffice, Microsoft Publisher, Inkscape, ecc.)
+- **Esportazione** delle canzoni formattate in PNG e HTML (pagine web e frammenti)
+- **Trasposizione degli accordi** con rilevamento automatico della tonalità
+- **Semplificazione degli accordi** per chitarristi principianti: individua la tonalità più facile da suonare e trasponi la canzone automaticamente
+- Supporto per diverse **notazioni degli accordi**: americana (C, D, E), italiana (Do, Re, Mi), francese, tedesca e portoghese; con conversione della notazione
+- Supporto per i formati di accordi **ChordPro e Tab** (su due righe)
+- **Pulizia** di canzoni disordinate con righe vuote spurie (come quelle copiate e incollate da pagine web) e notazioni degli accordi non omogenee
+- **Anteprima di stampa** visualizza l'anteprima di stampa.
+- **Stampa** permette di stampare o di esportare in pdf.
+- **Crea canzoniere** permette di creare una raccolta in pdf, con tutti i brani in una determinata cartella.
+- **Altri comandi** tanti nuovi ed interessanti comandi tutti da scoprire.
+- **Supporto per multicursore** possibilità di creare e lavorare con più cursori simultaneamente.
+- **Posizionamento accordi** visualizza gli accordi o sopra o sotto il testo.
+- **Posizione e dimensioni finestra** Salva e ricorda l'ultima posizione della finestra della finestra.
+
+## Modifica nome e versione programma
+
+![Songpress++ cambio nome e versione](src/songpress/img/GUIDE/Versione_it.png)
+
+## Stampa impostazioni e spiegazioni
+
+![Songpress++ Impostazioni di pagina](src/songpress/img/GUIDE/ImpostaPagina_it.png)
+![Songpress++ Opzioni di stampa](src/songpress/img/GUIDE/OpzioniDiStampa_it.png)
+
+Cos'è "Margine minimo per riduzione automatica (mm)"
+È un parametro di controllo della funzione Shrink to fit, che si attiva quando è spuntata l'opzione **"Riduci per adattare alla pagina corrente (evita il taglio in fondo pagina)"**.
+Come funziona la logica:
+Quando il contenuto del brano rischia di essere tagliato in fondo alla pagina, Songpress++ tenta di recuperare spazio in due passi:
+
+Primo passo — riduce i margini (superiore/inferiore simmetricamente), ma solo fino al valore minimo configurato da questo SpinCtrl. Se il margine impostato dall'utente è, ad esempio, 20 mm, può essere compresso automaticamente fino a 5 mm (default). Questo evita che la riduzione automatica azzeri completamente i margini.
+Secondo passo — scala il contenuto (rimpicciolisce testo/accordi), solo se la sola riduzione dei margini non è bastata.
+
+In pratica: il valore (default 5 mm) rappresenta il pavimento sotto cui i margini non scendono mai durante la riduzione automatica. Più alto è il valore, meno aggressiva è la compressione dei margini (e prima si passa alla scalatura del testo).
+Il controllo è disabilitato quando la checkbox Shrink to fit è spenta, e si riabilita automaticamente quando la si attiva (on_shrink_changed).
+
+## Problemi noti
+
+### Linux: esportazione SVG e scaling del display
+
+Quando il fattore di scala del display di sistema non è impostato su 1, l'output SVG prodotto dalla funzione Copia come immagine potrebbe essere formattato in modo errato. Si tratta di un problema noto nella versione attuale di wxPython. Il problema sottostante [è già stato risolto a monte in wxWidgets](https://github.com/wxWidgets/wxWidgets/issues/25707) e verrà corretto automaticamente non appena sarà disponibile la prossima versione di wxPython.
+
+## Crediti
+
+Songpress++ è un fork di Songpress di Luca Allulli - Skeed, mantenuto ed esteso da Denisov21.
+
+- Sito web versione originale: <http://www.skeed.it/songpress>
+- Repository fork: <https://github.com/Denisov21/Songpressplusplus>

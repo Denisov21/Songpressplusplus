@@ -1,0 +1,36 @@
+[project]
+name = "songpressplusplus"
+version = "1.0.0"
+description = "Songpress++ is a free, easy to use song typeset program for Windows and Linux, that generates high-quality songbooks."
+authors = [
+    { name = "Denisov21", email = "" },
+    { name = "Luca Allulli", email = "luca@skeed.it" }
+]
+license = { text = "GNU GPL v2" }
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "wxPython>=4.2.4,<5.0.0",
+    "requests>=2.32.4,<3.0.0",
+    "python-pptx>=1.0.2,<2.0.0",
+    "pyshortcuts>=1.9.5,<2.0.0",
+    "reportlab>=4.0.0,<5.0.0",
+]
+
+[project.gui-scripts]
+songpress = "songpress.main:main"
+
+[project.urls]
+Homepage = "https://github.com/Denisov21/Songpressplusplus"
+Source = "https://github.com/Denisov21/Songpressplusplus"
+Issues = "https://github.com/Denisov21/Songpressplusplus/issues"
+"Homepage original" = "https://www.skeed.it/songpress"
+"Source original" = "https://github.com/lallulli/songpress"
+"Issues original" = "https://github.com/lallulli/songpress/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/songpress"]
