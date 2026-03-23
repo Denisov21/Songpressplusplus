@@ -1,0 +1,154 @@
+###############################################################
+# Name:                SoongBoxes.py
+# Purpose:      Elements that make up a song
+# Author:           Luca Allulli (webmaster@roma21.it)
+# Modified by:  Denisov21
+# Created:     2009-02-21
+# Copyright: Luca Allulli (https://www.skeed.it/songpress)
+#               Modifications copyright Denisov21
+# License:     GNU GPL v2
+###############################################################
+
+import wx
+
+from .SongFormat import *
+
+
+class SongBox(object):
+     def __init__(self, x, y, w, h):
+          object.__init__(self)
+          self.x = x
+          self.y = y
+          self.w = w
+          self.h = h
+          self.marginLeft = 0
+          self.marginRight = 0
+          self.marginTop = 0
+          self.marginBottom = 0
+          self.boxes = []
+
+     def RelocateBox(self, box):
+          self.w = max(self.w, box.x + box.GetTotalWidth())
+          self.h = max(self.h, box.y + box.GetTotalHeight())
+          
+     def AddBox(self, box):
+          self.boxes.append(box)
+          box.parent = self
+          self.RelocateBox(box)
+          
+     def SetMargin(self, top, right, bottom, left):
+          self.marginTop = top
+          self.marginRight = right
+          self.marginBottom = bottom
+          self.marginLeft = left
+          
+     def GetTotalHeight(self):
+          return self.h + self.marginTop + self.marginBottom
+
+     def GetTotalWidth(self):
+          return self.w + self.marginLeft + self.marginRight
+
+     
+class SongSong(SongBox):
+     def __init__(self, format):
+          SongBox.__init__(self, 0, 0, 0, 0)
+          self.format = format
+          self.verseCount = 0
+          self.chorusCount = 0
+          self.labelCount = 0
+          self.drawWholeSong = False
+          self.chordsBelow = False
+
+
+class SongBlock(SongBox):
+     # types
+     verse = 1
+     chorus = 2
+     title = 3
+     subtitle = 4
+
+     def __init__(self, type, format):
+          SongBox.__init__(self, 0, 0, 0, 0)
+          self.type = type
+          self.verseNumber = 0
+          self.format = format
+          self.drawBlock = False
+          self.label = None
+          self.chords = []
+          self.pageBreakBefore = False  # True = interruzione di pagina prima di questo blocco
+          
+     def RemoveChordBoxes(self):
+          for l in self.boxes:
+               l.RemoveChordBoxes()
+
+     def GetLastLineTextHeight(self):
+          if len(self.boxes) > 0:
+               return self.boxes[-1].GetTextHeight()
+          return 0
+
+               
+class SongLine(SongBox):
+     def __init__(self):
+          SongBox.__init__(self, 0, 0, 0, 0)
+          self.hasChords = False
+          self.chordBaseline = 0
+          self.textBaseline = 0
+
+     def AddBox(self, text):
+          if text.type == text.chord:
+               self.hasChords = True
+          SongBox.AddBox(self, text)
+          
+     def RemoveChordBoxes(self):
+          self.boxes = [b for b in self.boxes if b.type != b.chord]
+
+     def GetTextHeight(self):
+          tbs = [b for b in self.boxes if b.type != b.chord]
+          if len(tbs) == 0:
+               return self.h
+          return max(tb.h for tb in tbs)
+
+     
+class SongText(SongBox):
+     text = 1
+     chord = 2
+     comment = 3
+     title = 4
+     subtitle = 5
+     
+     def __init__(self, text, font, type, color):
+          SongBox.__init__(self, 0, 0, 0, 0)
+          self.text = text
+          self.font = font
+          self.type = type
+          self.color = color
+
+
+class SongImageBox(SongBox):
+     """Box autonomo che rappresenta una direttiva {image: ...} di ChordPro.
+
+     Attributi:
+         path   -- percorso assoluto o relativo al file immagine
+         width  -- larghezza richiesta in punti logici (0 = auto)
+         height -- altezza richiesta in punti logici (0 = auto)
+         scale  -- fattore di scala (1.0 = nessuna scala; 0.5 = 50%)
+         align  -- 'left' | 'center' | 'right'
+         border -- spessore bordo in px logici (0 = nessun bordo)
+     """
+
+     def __init__(self, path, width=0, height=0, scale=1.0, align='center', border=0):
+          SongBox.__init__(self, 0, 0, 0, 0)
+          self.path = path
+          self.img_width = width    # larghezza richiesta (0 = auto)
+          self.img_height = height  # altezza richiesta (0 = auto)
+          self.scale = scale
+          self.align = align        # 'left' | 'center' | 'right'
+          self.border = border
+          # Compatibilità con SongDecorator.LayoutComposeSong:
+          self.drawBlock = True
+          self.pageBreakBefore = False
+          self.columnBreakBefore = False
+
+     # Necessario per RelocateBox / GetLastLineTextHeight chiamati su song.boxes
+     def GetLastLineTextHeight(self):
+          return 0

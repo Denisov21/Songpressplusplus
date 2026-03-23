@@ -1,0 +1,49 @@
+# Songpress - Editor.py translations
+# Copyright (C) Denisov21
+# This file is distributed under the same license as the Songpress package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Songpress\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-13 00:00+0000\n"
+"PO-Revision-Date: 2026-03-13 00:00+0000\n"
+"Last-Translator: Denisov21\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "&Undo"
+msgstr "&Annulla"
+
+msgid "&Redo"
+msgstr "&Ripristina"
+
+msgid "Cu&t"
+msgstr "T&aglia"
+
+msgid "&Copy"
+msgstr "&Copia"
+
+msgid "&Paste"
+msgstr "&Incolla"
+
+msgid "&Delete"
+msgstr "&Elimina"
+
+msgid "Paste &chords"
+msgstr "Incolla &accordi"
+
+msgid "Copy &text only"
+msgstr "Copia solo &testo"
+
+msgid "Select &all"
+msgstr "Seleziona &tutto"
+
+msgid "Propagate &verse chords"
+msgstr "Propaga accordi &strofa"
+
+msgid "Propagate c&horus chords"
+msgstr "Propaga accordi r&itornello"
