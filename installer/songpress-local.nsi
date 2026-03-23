@@ -1,0 +1,372 @@
+; ============================================================
+;  Songpress++ - Installer LOCALE (da sorgente)
+;  Installa Songpress++ con "uv tool install ."
+;  partendo dalla sorgente nella cartella del progetto.
+;
+;  Differenze rispetto all'installer di release:
+;   - nessuna pagina di scelta tipo (solo installazione normale)
+;   - uv tool install . (sorgente locale, non PyPI)
+;   - PRODUCT_VERSION leggibile da VERSION_FILE o definibile qui
+;   - non include uv.exe nell'installer: usa uv dal PATH
+;   - la cartella sorgente e' quella che contiene questo .nsi
+; ============================================================
+
+!define PRODUCT_NAME      "Songpress++"
+!define PRODUCT_VERSION   "dev"
+!define PRODUCT_PUBLISHER "Denisov21 (fork di Luca Allulli - Skeed)"
+!define PRODUCT_WEB_SITE  "http://www.skeed.it"
+!define PRODUCT_DIR_REGKEY   "Software\Microsoft\Windows\CurrentVersion\App Paths\songpress.exe"
+!define PRODUCT_UNINST_KEY   "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}-local"
+!define PRODUCT_UNINST_ROOT_KEY "HKCU"
+!define PRODUCT_STARTMENU_REGVAL "NSIS:StartMenuDir"
+
+; Cartella sorgente = cartella del progetto (dove si trova questo .nsi)
+; NSIS espone $EXEDIR = cartella dell'installer al momento dell'esecuzione;
+; durante la compilazione usiamo __FILE__ per ricavare il percorso sorgente.
+!define SRCDIR ".."   ; ajusta se il .nsi non e' nella radice del progetto
+
+RequestExecutionLevel user   ; installazione locale, no admin richiesto
+SetCompressor lzma
+
+!include "MUI2.nsh"
+!include "nsDialogs.nsh"
+!include "LogicLib.nsh"
+
+; ---------------------------------------------------------------
+;  File Association (inline, senza FileAssociation.nsh esterno)
+; ---------------------------------------------------------------
+!macro APP_ASSOCIATE EXT PROGID DESC ICON VERB CMDLINE
+  WriteRegStr HKCU "Software\Classes\.${EXT}"        ""          "${PROGID}"
+  WriteRegStr HKCU "Software\Classes\${PROGID}"      ""          "${DESC}"
+  WriteRegStr HKCU "Software\Classes\${PROGID}\DefaultIcon" ""   "${ICON}"
+  ; Menu contestuale: nome visibile e icona
+  WriteRegStr HKCU "Software\Classes\${PROGID}\shell\${VERB}"            "MUIVerb" "Songpress++"
+  WriteRegStr HKCU "Software\Classes\${PROGID}\shell\${VERB}"            "Icon"    "${ICON}"
+  WriteRegStr HKCU "Software\Classes\${PROGID}\shell\${VERB}\command"    ""        '${CMDLINE}'
+!macroend
+
+!macro APP_UNASSOCIATE EXT PROGID
+  DeleteRegKey HKCU "Software\Classes\.${EXT}"
+  DeleteRegKey HKCU "Software\Classes\${PROGID}"
+!macroend
+
+!macro UPDATEFILEASSOC
+  System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, i 0, i 0)'
+!macroend
+
+
+; ---------------------------------------------------------------
+;  MUI Settings
+; ---------------------------------------------------------------
+!define MUI_ABORTWARNING
+!define MUI_ICON   "songpressplusplus.ico"
+!define MUI_UNICON "songpressplusplus.ico"
+
+!define MUI_LANGDLL_REGISTRY_ROOT      "${PRODUCT_UNINST_ROOT_KEY}"
+!define MUI_LANGDLL_REGISTRY_KEY       "${PRODUCT_UNINST_KEY}"
+!define MUI_LANGDLL_REGISTRY_VALUENAME "NSIS:Language"
+
+; ---------------------------------------------------------------
+;  Variabili (devono stare prima delle pagine in NSIS)
+; ---------------------------------------------------------------
+Var SongpressExe
+Var UvPath
+Var ProjDir
+Var IsPortable
+Var AssocExt
+Var hwndNormal
+Var hwndPortable
+Var hwndAssoc
+Var ICONS_GROUP
+
+; ---------------------------------------------------------------
+;  Pagine
+; ---------------------------------------------------------------
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_LICENSE "${SRCDIR}\license.txt"
+Page custom InstallTypePage InstallTypePageLeave
+!insertmacro MUI_PAGE_DIRECTORY
+!define MUI_STARTMENUPAGE_DEFAULTFOLDER   "Songpress++"
+!define MUI_STARTMENUPAGE_REGISTRY_ROOT   "${PRODUCT_UNINST_ROOT_KEY}"
+!define MUI_STARTMENUPAGE_REGISTRY_KEY    "${PRODUCT_UNINST_KEY}"
+!define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "${PRODUCT_STARTMENU_REGVAL}"
+!insertmacro MUI_PAGE_STARTMENU Application $ICONS_GROUP
+!insertmacro MUI_PAGE_INSTFILES
+
+!define MUI_FINISHPAGE_RUN_FUNCTION  FinishRun
+!define MUI_FINISHPAGE_RUN_TEXT      "$(STR_LAUNCH_SONGPRESS)"
+!define MUI_FINISHPAGE_RUN           ""
+!insertmacro MUI_PAGE_FINISH
+
+!insertmacro MUI_UNPAGE_INSTFILES
+
+; ---------------------------------------------------------------
+;  Lingue
+; ---------------------------------------------------------------
+!insertmacro MUI_LANGUAGE "Italian"
+!insertmacro MUI_LANGUAGE "English"
+
+; --- Stringhe Italian ---
+LangString STR_LAUNCH_SONGPRESS    ${LANG_ITALIAN} "Avvia Songpress++"
+LangString STR_INSTALLING          ${LANG_ITALIAN} "Installazione Songpress++ dalla sorgente locale..."
+LangString STR_INSTALL_SUCCESS     ${LANG_ITALIAN} "Installazione completata con successo."
+LangString STR_FALLBACK_PS         ${LANG_ITALIAN} "Tentativo di fallback tramite PowerShell..."
+LangString STR_CRITICAL_ERROR      ${LANG_ITALIAN} "Errore critico: Songpress++ non installato."
+LangString STR_CRITICAL_DETAIL     ${LANG_ITALIAN} "Dettagli:"
+LangString STR_UV_CHECK            ${LANG_ITALIAN} "Estrazione uv.exe..."
+LangString STR_UV_NOTFOUND         ${LANG_ITALIAN} "uv.exe non trovato nell'installer. Reinstalla."
+LangString STR_UV_OK               ${LANG_ITALIAN} "uv pronto:"
+LangString STR_SRCDIR_CHECK        ${LANG_ITALIAN} "Verifica cartella sorgente..."
+LangString STR_SRCDIR_NOTFOUND     ${LANG_ITALIAN} "pyproject.toml non trovato. Verifica che SRCDIR punti alla radice del progetto."
+LangString STR_ASSOC_EXT           ${LANG_ITALIAN} "Associa estensioni (.crd .pro .chopro .chordpro .cho)"
+LangString STR_PORTABLE           ${LANG_ITALIAN} "Installazione portabile (nessuna voce nel registro)"
+LangString STR_INSTALL_NORMAL     ${LANG_ITALIAN} "Installazione normale"
+LangString STR_INSTALL_TYPE       ${LANG_ITALIAN} "Tipo di installazione"
+LangString STR_NET_REQUIRED        ${LANG_ITALIAN} "Richiesta connessione internet per installare i pacchetti."
+LangString UninstallComplete       ${LANG_ITALIAN} "$(^Name) e' stato rimosso con successo."
+LangString UninstallConfirm        ${LANG_ITALIAN} "Sei sicuro di voler rimuovere $(^Name)?"
+
+; --- Stringhe English ---
+LangString STR_LAUNCH_SONGPRESS    ${LANG_ENGLISH} "Launch Songpress++"
+LangString STR_INSTALLING          ${LANG_ENGLISH} "Installing Songpress++ from local source..."
+LangString STR_INSTALL_SUCCESS     ${LANG_ENGLISH} "Installation completed successfully."
+LangString STR_FALLBACK_PS         ${LANG_ENGLISH} "Attempting fallback via PowerShell..."
+LangString STR_CRITICAL_ERROR      ${LANG_ENGLISH} "Critical error: Songpress++ not installed."
+LangString STR_CRITICAL_DETAIL     ${LANG_ENGLISH} "Details:"
+LangString STR_UV_CHECK            ${LANG_ENGLISH} "Extracting uv.exe..."
+LangString STR_UV_NOTFOUND         ${LANG_ENGLISH} "uv.exe not found in installer. Please reinstall."
+LangString STR_UV_OK               ${LANG_ENGLISH} "uv ready:"
+LangString STR_SRCDIR_CHECK        ${LANG_ENGLISH} "Checking source folder..."
+LangString STR_SRCDIR_NOTFOUND     ${LANG_ENGLISH} "pyproject.toml not found. Check that SRCDIR points to the project root."
+LangString STR_ASSOC_EXT           ${LANG_ENGLISH} "Associate file extensions (.crd .pro .chopro .chordpro .cho)"
+LangString STR_PORTABLE           ${LANG_ENGLISH} "Portable installation (no registry entries)"
+LangString STR_INSTALL_NORMAL     ${LANG_ENGLISH} "Normal installation"
+LangString STR_INSTALL_TYPE       ${LANG_ENGLISH} "Installation type"
+LangString STR_NET_REQUIRED        ${LANG_ENGLISH} "Internet connection required to install packages."
+LangString UninstallComplete       ${LANG_ENGLISH} "$(^Name) has been successfully removed."
+LangString UninstallConfirm        ${LANG_ENGLISH} "Are you sure you want to remove $(^Name)?"
+
+; ---------------------------------------------------------------
+;  Impostazioni output
+; ---------------------------------------------------------------
+Name    "${PRODUCT_NAME}"
+OutFile "songpress-local-setup.exe"
+InstallDir "$LOCALAPPDATA\Songpress-local"
+InstallDirRegKey ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DIR_REGKEY}" ""
+ShowInstDetails show
+ShowUnInstDetails show
+AutoCloseWindow false
+
+; ---------------------------------------------------------------
+;  Funzione avvio finale
+; --------------------------------------------------------------
+
+; ---------------------------------------------------------------
+;  Pagina personalizzata: tipo installazione
+; ---------------------------------------------------------------
+Function InstallTypePage
+  !insertmacro MUI_HEADER_TEXT "$(STR_INSTALL_TYPE)" ""
+  nsDialogs::Create 1018
+  Pop $0
+  ${If} $0 == error
+    Abort
+  ${EndIf}
+
+  ${NSD_CreateRadioButton} 10u 10u 280u 14u "$(STR_INSTALL_NORMAL)"
+  Pop $hwndNormal
+  ${NSD_Check} $hwndNormal
+
+  ${NSD_CreateRadioButton} 10u 30u 280u 14u "$(STR_PORTABLE)"
+  Pop $hwndPortable
+
+  ${NSD_CreateCheckbox} 10u 58u 280u 14u "$(STR_ASSOC_EXT)"
+  Pop $hwndAssoc
+
+  nsDialogs::Show
+FunctionEnd
+
+Function InstallTypePageLeave
+  ${NSD_GetState} $hwndPortable $IsPortable
+  ${NSD_GetState} $hwndAssoc   $AssocExt
+  ${If} $IsPortable == ${BST_CHECKED}
+    StrCpy $INSTDIR "$DESKTOP\Songpress++"
+  ${Else}
+    StrCpy $INSTDIR "$LOCALAPPDATA\Songpress-local"
+  ${EndIf}
+FunctionEnd
+
+Function FinishRun
+  Exec "$SongpressExe"
+FunctionEnd
+
+; ---------------------------------------------------------------
+;  onInit
+; ---------------------------------------------------------------
+Function .onInit
+  !insertmacro MUI_LANGDLL_DISPLAY
+FunctionEnd
+
+; ---------------------------------------------------------------
+;  Installazione core: uv editable install dalla sorgente
+; ---------------------------------------------------------------
+Function DoInstallLocal
+  ; 0. Calcola ProjDir (padre di $EXEDIR)
+  StrCpy $ProjDir $EXEDIR
+  ${DoUntil} $ProjDir == ""
+    StrCpy $0 $ProjDir "" -1
+    ${If} $0 == "\"
+      StrLen $0 $ProjDir
+      IntOp $0 $0 - 1
+      StrCpy $ProjDir $ProjDir $0
+      ${Break}
+    ${EndIf}
+    StrLen $0 $ProjDir
+    IntOp $0 $0 - 1
+    StrCpy $ProjDir $ProjDir $0
+  ${Loop}
+
+  ; 1. Estrai uv.exe
+  DetailPrint "$(STR_UV_CHECK)"
+  File "/oname=$PLUGINSDIR\uv.exe" "uv.exe"
+  ${If} ${FileExists} "$PLUGINSDIR\uv.exe"
+    StrCpy $UvPath "$PLUGINSDIR\uv.exe"
+    DetailPrint "$(STR_UV_OK) $UvPath"
+  ${Else}
+    MessageBox MB_ICONSTOP "$(STR_UV_NOTFOUND)"
+    Abort
+  ${EndIf}
+
+  ; 2. Verifica pyproject.toml
+  DetailPrint "$(STR_SRCDIR_CHECK)"
+  ${Unless} ${FileExists} "$ProjDir\pyproject.toml"
+    MessageBox MB_ICONSTOP "$(STR_SRCDIR_NOTFOUND)$\n$ProjDir"
+    Abort
+  ${EndUnless}
+
+  ; 3. Variabili d'ambiente uv
+  System::Call 'kernel32::SetEnvironmentVariable(t "UV_TOOL_BIN_DIR",       t "$INSTDIR\bin")'
+  System::Call 'kernel32::SetEnvironmentVariable(t "UV_TOOL_DIR",           t "$INSTDIR\tools")'
+  System::Call 'kernel32::SetEnvironmentVariable(t "UV_PYTHON_INSTALL_DIR", t "$INSTDIR\python")'
+  System::Call 'kernel32::SetEnvironmentVariable(t "UV_CACHE_DIR",          t "$INSTDIR\cache")'
+
+  ; 4. Avviso connessione internet
+  MessageBox MB_ICONINFORMATION|MB_OK "$(STR_NET_REQUIRED)"
+
+  ; 5. Installa
+  DetailPrint "$(STR_INSTALLING)"
+  nsExec::ExecToStack '"$UvPath" tool install --force "$ProjDir"'
+  Pop $0  ; exit code
+  Pop $1  ; output
+
+  ; 6. Verifica
+  ${Unless} ${FileExists} "$INSTDIR\bin\songpress.exe"
+    DetailPrint "$(STR_CRITICAL_ERROR)"
+    MessageBox MB_ICONSTOP "$(STR_CRITICAL_ERROR)$\n$\n$(STR_CRITICAL_DETAIL)$\n$1"
+    Abort
+  ${EndUnless}
+  DetailPrint "$(STR_INSTALL_SUCCESS)"
+  StrCpy $SongpressExe "$INSTDIR\bin\songpress.exe"
+
+  ; 7. Pulizia cache
+  RMDir /r "$INSTDIR\cache"
+FunctionEnd
+
+; ---------------------------------------------------------------
+;  Sezione principale
+; ---------------------------------------------------------------
+Section "Songpress++" SongpressSection
+  SectionIn RO
+
+  SetOutPath "$INSTDIR"
+
+  ; Copia l'icona (compile-time)
+  !if /FileExists "${SRCDIR}\src\songpress\songpressplusplus.ico"
+    File "/oname=songpressplusplus.ico" "${SRCDIR}\src\songpress\songpressplusplus.ico"
+  !else if /FileExists "${SRCDIR}\songpressplusplus.ico"
+    File "/oname=songpressplusplus.ico" "${SRCDIR}\songpressplusplus.ico"
+  !else if /FileExists ".\songpressplusplus.ico"
+    File "/oname=songpressplusplus.ico" ".\songpressplusplus.ico"
+  !else
+    !warning "songpressplusplus.ico non trovato."
+  !endif
+
+  Call DoInstallLocal
+
+  ; Associazione estensioni (solo modalita' normale)
+  ${If} $IsPortable != ${BST_CHECKED}
+    ${If} $AssocExt == ${BST_CHECKED}
+      !insertmacro APP_ASSOCIATE "crd"      "Songpress.ChordPro" "ChordPro" "$INSTDIR\songpressplusplus.ico,0" "Open" '"$SongpressExe" "%1"'
+      !insertmacro APP_ASSOCIATE "pro"      "Songpress.ChordPro" "ChordPro" "$INSTDIR\songpressplusplus.ico,0" "Open" '"$SongpressExe" "%1"'
+      !insertmacro APP_ASSOCIATE "chopro"   "Songpress.ChordPro" "ChordPro" "$INSTDIR\songpressplusplus.ico,0" "Open" '"$SongpressExe" "%1"'
+      !insertmacro APP_ASSOCIATE "chordpro" "Songpress.ChordPro" "ChordPro" "$INSTDIR\songpressplusplus.ico,0" "Open" '"$SongpressExe" "%1"'
+      !insertmacro APP_ASSOCIATE "cho"      "Songpress.ChordPro" "ChordPro" "$INSTDIR\songpressplusplus.ico,0" "Open" '"$SongpressExe" "%1"'
+      !insertmacro UPDATEFILEASSOC
+    ${EndIf}
+
+    ; Collegamento menu Start
+    !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
+      CreateDirectory "$SMPROGRAMS\$ICONS_GROUP"
+      ${If} ${FileExists} "$INSTDIR\songpressplusplus.ico"
+        CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\Songpress++.lnk" \
+          "$SongpressExe" "" "$INSTDIR\songpressplusplus.ico" 0
+      ${Else}
+        CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\Songpress++.lnk" "$SongpressExe"
+      ${EndIf}
+    !insertmacro MUI_STARTMENU_WRITE_END
+  ${EndIf}
+
+SectionEnd
+
+; ---------------------------------------------------------------
+;  Sezione -Post: registro
+; ---------------------------------------------------------------
+Section -Post
+  ${If} $IsPortable != ${BST_CHECKED}
+    WriteUninstaller "$INSTDIR\uninst.exe"
+    WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName"     "$(^Name)"
+    WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" "$INSTDIR\uninst.exe"
+    WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayIcon"     "$INSTDIR\songpressplusplus.ico"
+    WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion"  "${PRODUCT_VERSION}"
+    WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "URLInfoAbout"    "${PRODUCT_WEB_SITE}"
+    WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher"       "${PRODUCT_PUBLISHER}"
+    WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "SourceDir"       "$EXEDIR"
+  ${EndIf}
+SectionEnd
+
+; ---------------------------------------------------------------
+;  Disinstallatore
+; ---------------------------------------------------------------
+Function un.onUninstSuccess
+  HideWindow
+  MessageBox MB_ICONINFORMATION|MB_OK "$(UninstallComplete)"
+FunctionEnd
+
+Function un.onInit
+  !insertmacro MUI_UNGETLANGUAGE
+  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "$(UninstallConfirm)" IDYES +2
+  Abort
+FunctionEnd
+
+Section Uninstall
+  !insertmacro APP_UNASSOCIATE "crd"      "Songpress.ChordPro"
+  !insertmacro APP_UNASSOCIATE "pro"      "Songpress.ChordPro"
+  !insertmacro APP_UNASSOCIATE "chopro"   "Songpress.ChordPro"
+  !insertmacro APP_UNASSOCIATE "chordpro" "Songpress.ChordPro"
+  !insertmacro APP_UNASSOCIATE "cho"      "Songpress.ChordPro"
+  !insertmacro UPDATEFILEASSOC
+
+  !insertmacro MUI_STARTMENU_GETFOLDER "Application" $ICONS_GROUP
+  Delete "$SMPROGRAMS\$ICONS_GROUP\Songpress++.lnk"
+  RMDir  "$SMPROGRAMS\$ICONS_GROUP"
+
+  RMDir /r "$INSTDIR\bin"
+  RMDir /r "$INSTDIR\tools"
+  RMDir /r "$INSTDIR\python"
+  RMDir /r "$INSTDIR\cache"
+  Delete "$INSTDIR\songpressplusplus.ico"
+  Delete "$INSTDIR\uninst.exe"
+  RMDir  "$INSTDIR"
+
+  DeleteRegKey ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}"
+  SetAutoClose true
+SectionEnd
