@@ -1,0 +1,114 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Translators:
+# Denisov21, 2026
+msgid ""
+msgstr ""
+"Project-Id-Version: songpress\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-10-05 16:22+0200\n"
+"PO-Revision-Date: 2026-03-12 00:00+0000\n"
+"Last-Translator: Denisov21\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# --- SongbookDialog ---
+
+msgid "Create Songbook"
+msgstr "Crea Songbook"
+
+msgid "Songs folder:"
+msgstr "Cartella brani:"
+
+msgid "Browse..."
+msgstr "Sfoglia..."
+
+msgid "Save PDF as:"
+msgstr "Salva PDF come:"
+
+msgid "Songbook title:"
+msgstr "Titolo Songbook:"
+
+msgid "Author / Group:"
+msgstr "Autore / Gruppo:"
+
+msgid "Year:"
+msgstr "Anno:"
+
+msgid "Extensions:"
+msgstr "Estensioni:"
+
+msgid "Page settings:"
+msgstr "Impostazioni pagina:"
+
+msgid "Page setup..."
+msgstr "Imposta pagina..."
+
+msgid "Print options..."
+msgstr "Opzioni di stampa..."
+
+msgid "Choose the songs folder"
+msgstr "Scegli la cartella con i brani"
+
+msgid "Save Songbook PDF"
+msgstr "Salva Songbook PDF"
+
+msgid "PDF files (*.pdf)|*.pdf|All files (*.*)|*.*"
+msgstr "File PDF (*.pdf)|*.pdf|Tutti i file (*.*)|*.*"
+
+msgid "Print options"
+msgstr "Opzioni di stampa"
+
+msgid "Print 2 pages per sheet"
+msgstr "Stampa 2 pagine per foglio"
+
+# --- _build_pdf ---
+
+msgid "The 'reportlab' library is not installed.\nRun: pip install reportlab"
+msgstr "La libreria 'reportlab' non è installata.\nEseguire: pip install reportlab"
+
+msgid "Missing library"
+msgstr "Libreria mancante"
+
+msgid "Processing: %s"
+msgstr "Elaborazione: %s"
+
+msgid "Index"
+msgstr "Indice"
+
+msgid "%d songs"
+msgstr "%d brani"
+
+# --- create_songbook ---
+
+msgid "Please select a valid folder."
+msgstr "Seleziona una cartella valida."
+
+msgid "Error"
+msgstr "Errore"
+
+msgid "Please select the output PDF file."
+msgstr "Seleziona il file PDF di output."
+
+msgid "No songs found in the folder.\nCheck the selected extensions."
+msgstr "Nessun brano trovato nella cartella.\nControlla le estensioni selezionate."
+
+msgid "Empty folder"
+msgstr "Cartella vuota"
+
+msgid "Creating Songbook"
+msgstr "Creazione Songbook"
+
+msgid "Initializing..."
+msgstr "Inizializzazione..."
+
+msgid "Songbook exported successfully!\n\n%d songs included.\n\n%s"
+msgstr "Songbook esportato con successo!\n\n%d brani inclusi.\n\n%s"
+
+msgid "Songbook created"
+msgstr "Songbook creato"
