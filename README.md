@@ -24,7 +24,7 @@ All files are installed in a single folder within the current user's _User_ dire
 
 ### Development
 
-You can also download the entire package and launch src/Avvio SONGPRESS.vbs or Avvio SONGPRESS2.vbs
+You can also download the entire package and launch src/Avvio SONGPRESS.vbs or src/Avvio SONGPRESS2.vbs
 
 There are two differences, both significant:
 
