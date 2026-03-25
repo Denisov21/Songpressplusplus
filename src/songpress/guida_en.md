@@ -167,6 +167,20 @@ Sets the **vertical space above the chords**, i.e. the distance between the top 
 - Useful when chords appear visually "squeezed" against the text of the previous line.
 - Like `linespacing`, it can be used multiple times in the same song at different points to vary the spacing section by section.
 
+## Difference Between the Two Directives chordtopspacing vs linespacing
+
+```text
+[previous text line]
+                         ↕  chordtopspacing  (space above chords)
+[chord line:  G   D   A]
+[text line:   When the sun...]
+                         ↕  linespacing      (spacing between complete line pairs)
+[chord line:  E   B...]
+[text line:   ...rises and...]
+```
+
+In summary: `chordtopspacing` controls the margin **above** the chord+text pair, while `linespacing` controls the space **between** successive pairs.
+
 ## `{row}` / `{r}` 🖊
 
 **Menu item:** *none — must be typed manually*
@@ -194,20 +208,6 @@ or in its abbreviated form:
 - Not accessible from the **Insert** menu: must be typed directly in the editor.
 
 ---
-
-## Difference Between the Two Directives
-
-```text
-[previous text line]
-                         ↕  chordtopspacing  (space above chords)
-[chord line:  G   D   A]
-[text line:   When the sun...]
-                         ↕  linespacing      (spacing between complete line pairs)
-[chord line:  E   B...]
-[text line:   ...rises and...]
-```
-
-In summary: `chordtopspacing` controls the margin **above** the chord+text pair, while `linespacing` controls the space **between** successive pairs.
 
 ## Comments and Editorial Notes
 

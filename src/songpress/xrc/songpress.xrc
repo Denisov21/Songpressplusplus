@@ -23,6 +23,11 @@
           <help>Open an existing song</help>
           <bitmap>../img/open.png</bitmap>
         </object>
+        <object class="wxMenuItem" name="importFromPdf">
+          <label>Import text from _PDF...</label>
+          <accel></accel>
+          <help>Import text from a PDF file with selectable text into the editor</help>
+        </object>
         <object class="wxMenuItem" name="save">
           <label>_Save</label>
           <accel>SHIFT+F12</accel>

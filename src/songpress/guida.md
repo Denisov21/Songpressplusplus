@@ -166,6 +166,20 @@ Imposta lo **spazio verticale sopra gli accordi**, cioè la distanza tra il bord
 - Utile quando gli accordi risultano visivamente "schiacciati" contro il testo della riga precedente.
 - Come `linespacing`, può essere usato più volte nello stesso brano in punti diversi per variare la spaziatura sezione per sezione.
 
+## Differenza tra le due direttive chordtopspacing e linespacing
+
+```text
+[riga di testo precedente]
+                         ↕  chordtopspacing  (spazio sopra gli accordi)
+[riga accordi:  Sol   Re   La]
+[riga testo:    Quan-do il sol...]
+                         ↕  linespacing      (interlinea tra righe complete)
+[riga accordi:  Mi    Si...]
+[riga testo:    ...sorge e...]
+```
+
+In sintesi: `chordtopspacing` controlla il margine **sopra** la coppia accordo+testo, mentre `linespacing` controlla lo spazio **tra** coppie successive.
+
 ## `{row}` / `{r}` 🖊
 
 **Voce di menu:** *nessuna — va digitata manualmente*
@@ -193,20 +207,6 @@ oppure nella forma abbreviata:
 - Non è accessibile dal menu **Inserisci**: va digitato direttamente nell'editor.
 
 ---
-
-## Differenza tra le due direttive
-
-```text
-[riga di testo precedente]
-                         ↕  chordtopspacing  (spazio sopra gli accordi)
-[riga accordi:  Sol   Re   La]
-[riga testo:    Quan-do il sol...]
-                         ↕  linespacing      (interlinea tra righe complete)
-[riga accordi:  Mi    Si...]
-[riga testo:    ...sorge e...]
-```
-
-In sintesi: `chordtopspacing` controlla il margine **sopra** la coppia accordo+testo, mentre `linespacing` controlla lo spazio **tra** coppie successive.
 
 ## Commenti e note redazionali
 

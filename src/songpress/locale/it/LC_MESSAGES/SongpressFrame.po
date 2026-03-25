@@ -881,3 +881,35 @@ msgstr "%d corrispondenze trovate"
 #: SongpressFrame.py find/replace dialog title
 msgid "Find / Replace"
 msgstr "Trova / Sostituisci"
+
+#: SongpressFrame.py OnImportFromPdf
+msgid "La libreria pypdf non è installata.\nInstalla con:  pip install pypdf"
+msgstr "La libreria pypdf non è installata.\nInstalla con:  pip install pypdf"
+
+#: SongpressFrame.py OnImportFromPdf
+msgid "pypdf non trovato"
+msgstr "pypdf non trovato"
+
+#: SongpressFrame.py OnImportFromPdf
+msgid "Import text from PDF"
+msgstr "Importa testo da PDF"
+
+#: SongpressFrame.py OnImportFromPdf
+msgid "PDF files (*.pdf)|*.pdf"
+msgstr "File PDF (*.pdf)|*.pdf"
+
+#: SongpressFrame.py OnImportFromPdf
+msgid "Error reading the PDF:\n%s"
+msgstr "Errore durante la lettura del PDF:\n%s"
+
+#: SongpressFrame.py OnImportFromPdf
+msgid "Import error"
+msgstr "Errore importazione"
+
+#: SongpressFrame.py OnImportFromPdf
+msgid "The PDF contains no extractable text.\nIt may be a scanned (image-only) PDF."
+msgstr "Il PDF non contiene testo estraibile.\nPotrebbe essere un PDF scansionato (solo immagine)."
+
+#: SongpressFrame.py OnImportFromPdf
+msgid "No text found"
+msgstr "Nessun testo trovato"

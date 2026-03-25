@@ -1379,6 +1379,8 @@ class SongpressFrame(SDIMainFrame):
         Bind(self.OnInsertKlavierChord, 'insertTaste')
         Bind(self.OnInsertDefine, 'insertDefine')
         Bind(self.OnInsertImage, 'insertImage')
+        # --- File => Importa da PDF ---
+        Bind(self.OnImportFromPdf, 'importFromPdf')
         # --- Verifica sintattica ---
         Bind(self.OnSyntaxCheck, 'syntaxCheck')
         self.frame.Bind(EVT_SYNTAX_GOTO, self.OnSyntaxGoto)
@@ -1887,6 +1889,61 @@ class SongpressFrame(SDIMainFrame):
             else:
                 self.InsertWithCaret("{define: |}")
         d.Destroy()
+
+    def OnImportFromPdf(self, evt):
+        """Import text from a PDF file (selectable text only, no OCR)."""
+        try:
+            from pypdf import PdfReader
+        except ImportError:
+            wx.MessageBox(
+                _("La libreria pypdf non è installata.\nInstalla con:  pip install pypdf"),
+                _("pypdf non trovato"),
+                wx.OK | wx.ICON_ERROR,
+                self.frame,
+            )
+            return
+
+        with wx.FileDialog(
+            self.frame,
+            _("Import text from PDF"),
+            wildcard=_("PDF files (*.pdf)|*.pdf"),
+            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
+        ) as dlg:
+            if dlg.ShowModal() != wx.ID_OK:
+                return
+            path = dlg.GetPath()
+
+        try:
+            reader = PdfReader(path)
+            pages = [page.extract_text() or "" for page in reader.pages]
+            text = "\n".join(pages).strip()
+        except Exception as e:
+            wx.MessageBox(
+                _("Error reading the PDF:\n%s") % str(e),
+                _("Import error"),
+                wx.OK | wx.ICON_ERROR,
+                self.frame,
+            )
+            return
+
+        if not text:
+            wx.MessageBox(
+                _("The PDF contains no extractable text.\nIt may be a scanned (image-only) PDF."),
+                _("No text found"),
+                wx.OK | wx.ICON_WARNING,
+                self.frame,
+            )
+            return
+
+        if not self.AskSaveModified():
+            return
+
+        self.document = ''
+        self.text.AutoChangeMode(True)
+        self.text.New()
+        self.text.SetText(text)
+        self.text.AutoChangeMode(False)
+        self.SetModified()
 
     def OnInsertImage(self, evt):
         """Dialog per inserire {image: ...} con selezione file e parametri."""
