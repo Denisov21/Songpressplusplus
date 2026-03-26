@@ -531,16 +531,6 @@
           <bitmap>../img/help.png</bitmap>
           <help>Open ChordPro and Songpress command reference</help>
         </object>
-        <object class="wxMenuItem" name="newsAndUpdates">
-          <label>_Check for updates</label>
-          <accel></accel>
-          <help>Open Songpress web site for news and updates</help>
-        </object>
-        <object class="wxMenuItem" name="donate">
-          <label>_Donate to our scout Group (web)</label>
-          <accel></accel>
-          <help>Open Songpress web site for donations</help>
-        </object>
         <object class="wxMenuItem" name="about">
           <label>_About...</label>
           <accel></accel>
@@ -1182,18 +1172,6 @@
         <border>5</border>
         <option>1</option>
         <object name="updatesSizer"/>
-      </object>
-      <object class="sizeritem">
-        <flag>wxALL|wxEXPAND</flag>
-        <border>5</border>
-        <option>0</option>
-        <object class="wxButton" name="donate">
-          <label>&gt;&gt; Donate now! &lt;&lt;</label>
-          <default>0</default>
-          <auth_needed>0</auth_needed>
-          <markup>0</markup>
-          <bitmap/>
-        </object>
       </object>
     </object>
   </object>
