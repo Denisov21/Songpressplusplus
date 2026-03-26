@@ -323,3 +323,15 @@ msgid ""
 msgstr ""
 "Se abilitato, il doppio clic su una parola o un accordo nell'anteprima "
 "sposta il cursore alla riga corrispondente nell'editor."
+
+#: PreferencesDialog.py
+msgid "Set minimum size for the preview panel at startup (370×520)"
+msgstr "Imposta la dimensione minima del pannello anteprima all'avvio (370×520)"
+
+#: PreferencesDialog.py
+msgid ""
+"When enabled, the preview panel cannot be resized below 370×520 pixels. "
+"This prevents the panel from appearing too small when the application starts."
+msgstr ""
+"Se abilitato, il pannello anteprima non può essere ridimensionato al di sotto "
+"di 370×520 pixel. In questo modo il pannello non appare troppo piccolo all'avvio."

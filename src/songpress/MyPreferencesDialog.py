@@ -146,6 +146,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.greyBackgroundCB.SetValue(getattr(self.pref, 'greyBackground', True))
         self.debounceRefreshCB.SetValue(getattr(self.pref, 'debounceRefresh', True))
         self.dblClickFocusCB.SetValue(getattr(self.pref, 'dblClickFocus', True))
+        self.previewMinSizeCB.SetValue(getattr(self.pref, 'previewMinSize', True))
 
         # Dimensione icone tempo
         sz = getattr(self.pref, 'tempoIconSize', 24)
@@ -805,12 +806,16 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.greyBackground    = self.greyBackgroundCB.GetValue()
         self.pref.debounceRefresh   = self.debounceRefreshCB.GetValue()
         self.pref.dblClickFocus     = self.dblClickFocusCB.GetValue()
+        self.pref.previewMinSize    = self.previewMinSizeCB.GetValue()
         # Applica subito sul previewCanvas se disponibile
         if self._previewCanvas is not None:
             self._previewCanvas.SetShowPageIndicator(self.pref.showPageIndicator)
             self._previewCanvas.SetGreyBackground(self.pref.greyBackground)
             self._previewCanvas.SetDebounce(self.pref.debounceRefresh)
             self._previewCanvas.SetDblClickFocus(self.pref.dblClickFocus)
+            # Nota: previewMinSize è applicato dal callback _apply_prefs in SongpressFrame
+            # tramite _ApplyPreviewMinSize() + _mgr.Update(), che aggiorna sia il pane AUI
+            # che il main_panel. Non va gestito qui per evitare incoerenze.
         # Dimensione icone tempo
         if self.tempoIconSize16.GetValue():
             self.pref.tempoIconSize = 16

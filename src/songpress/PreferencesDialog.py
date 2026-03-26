@@ -255,6 +255,16 @@ class PreferencesDialog(wx.Dialog):
         )
         grpPreview.Add(self.dblClickFocusCB, 0, wx.ALL, 5)
 
+        self.previewMinSizeCB = wx.CheckBox(
+            self.songpressPanel, wx.ID_ANY,
+            _(u"Set minimum size for the preview panel at startup (370×520)")
+        )
+        self.previewMinSizeCB.SetToolTip(
+            _(u"When enabled, the preview panel cannot be resized below 370×520 pixels. "
+              u"This prevents the panel from appearing too small when the application starts.")
+        )
+        grpPreview.Add(self.previewMinSizeCB, 0, wx.ALL, 5)
+
         bSizerSongpress.Add(grpPreview, 0, wx.EXPAND | wx.ALL, 8)
 
         self.songpressPanel.SetSizer(bSizerSongpress)

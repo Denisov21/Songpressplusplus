@@ -288,6 +288,8 @@ class Preferences(object):
         self.debounceRefresh = bool(int(v)) if v != '' else True
         v = self.config.Read('dblClickFocus')
         self.dblClickFocus = bool(int(v)) if v != '' else True
+        v = self.config.Read('previewMinSize')
+        self.previewMinSize = bool(int(v)) if v != '' else True
         self.config.SetPath('/')
 
     def Bool2String(self, param):
@@ -397,6 +399,7 @@ class Preferences(object):
         self.config.Write('greyBackground',    '1' if getattr(self, 'greyBackground',    True) else '0')
         self.config.Write('debounceRefresh',   '1' if getattr(self, 'debounceRefresh',   True) else '0')
         self.config.Write('dblClickFocus',     '1' if getattr(self, 'dblClickFocus',     True) else '0')
+        self.config.Write('previewMinSize',    '1' if getattr(self, 'previewMinSize',    True) else '0')
         self.config.SetPath('/')
 
     def SetChorusLabel(self, c):

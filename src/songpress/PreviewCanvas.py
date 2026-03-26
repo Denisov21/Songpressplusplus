@@ -90,9 +90,11 @@ _PAGE_GAP_PX   = 16      # spazio verticale tra una pagina e l'altra (px)
 
 
 class PreviewCanvas(object):
-    def __init__(self, parent, sf, notations, sd=SongDecorator(), embedded=False):
+    def __init__(self, parent, sf, notations, sd=SongDecorator(), embedded=False, minSizeEnabled=True):
         object.__init__(self)
         self.main_panel = wx.Window(parent)
+        if minSizeEnabled:
+            self.main_panel.SetMinSize(wx.Size(370, 520))
         self._zoom_factor = _ZOOM_DEFAULT
         self._debounce_timer = None     # wx.CallLater attivo (o None)
         self._pending_text   = ""       # testo in attesa di refresh
@@ -835,6 +837,23 @@ class PreviewCanvas(object):
         ridisegno immediato.
         """
         self._debounceEnabled = bool(enabled)
+
+    def SetMinSizeEnabled(self, enabled):
+        """Imposta (True) o rimuove (False) la dimensione minima del pannello anteprima.
+
+        Quando abilitato il pannello non puo' essere ridimensionato al di sotto
+        di 370x520 px, ne' all'avvio ne' trascinando il separatore AUI.
+        Quando disabilitato il pannello non ha vincoli di dimensione minima.
+        La modifica e' immediata; per avere effetto al prossimo avvio sull'AUI
+        manager occorre che SongpressFrame chiami .MinSize() sul pane.
+        """
+        if bool(enabled):
+            self.main_panel.SetMinSize(wx.Size(370, 520))
+        else:
+            self.main_panel.SetMinSize(wx.Size(-1, -1))
+        parent = self.main_panel.GetParent()
+        if parent is not None:
+            parent.Layout()
 
 
 # ---------------------------------------------------------------------------

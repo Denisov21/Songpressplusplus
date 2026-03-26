@@ -900,7 +900,10 @@ class SongpressFrame(SDIMainFrame):
         # Registra la callback doppio-click: naviga alla riga sorgente nell'editor
         self.previewCanvas.SetClickCallback(self._OnPreviewClick)
         self.AddMainPane(self.text)
-        self.AddPane(self.previewCanvas.main_panel, aui.AuiPaneInfo().Right().BestSize(320, 500), _('Songpress++ Preview'), 'preview')
+        _preview_min = wx.Size(370, 520) if getattr(self.pref, 'previewMinSize', True) else wx.Size(-1, -1)
+        self.AddPane(self.previewCanvas.main_panel,
+                     aui.AuiPaneInfo().Right().BestSize(370, 520).MinSize(_preview_min),
+                     _('Songpress++ Preview'), 'preview')
         self.previewCanvas.main_panel.Bind(wx.adv.EVT_HYPERLINK, self.OnCopyAsImage, self.previewCanvas.link)
         self.mainToolBar = aui.AuiToolBar(self.frame, wx.ID_ANY, wx.DefaultPosition, agwStyle=aui.AUI_TB_PLAIN_BACKGROUND)
         self.mainToolBar.SetToolBitmapSize(wx.Size(16, 16))
@@ -1048,6 +1051,9 @@ class SongpressFrame(SDIMainFrame):
         self._mgr.GetPane('preview').caption = _('Songpress++ Preview')
         self._mgr.GetPane('standard').caption = _('Standard')
         self._mgr.GetPane('format').caption = _('Format')
+        # LoadPerspective sovrascrive MinSize: lo reimponiamo sempre dopo
+        self._ApplyPreviewMinSize()
+        self._mgr.Update()
         self._UpdateBreakLinesMenuState()
         self.RestoreWindowGeometry()
         if 'firstTimeEasyKey' in self.pref.notices:
@@ -3755,6 +3761,9 @@ class SongpressFrame(SDIMainFrame):
             self.previewCanvas.SetGreyBackground(getattr(self.pref, 'greyBackground', True))
             self.previewCanvas.SetPageMarginsMm(self._margin_top, self._margin_bottom)
             self.previewCanvas.Refresh(self._get_display_text())
+            # Aggiorna il MinSize del pane AUI in base alla preferenza corrente
+            self._ApplyPreviewMinSize()
+            self._mgr.Update()
 
         f = MyPreferencesDialog(self.frame, self.pref, easyChords, on_apply=_apply_prefs,
                                 previewCanvas=self.previewCanvas)
@@ -3947,8 +3956,32 @@ class SongpressFrame(SDIMainFrame):
         self.menuBar.Enable(self._showPageBreakLinesMenuId, preview_visible)
         self.menuBar.Enable(self._showColumnBreakLinesMenuId, preview_visible)
 
+    def _ApplyPreviewMinSize(self):
+        """Reimposta BestSize e MinSize sul pane 'preview' e sul main_panel.
+        Deve essere chiamata dopo LoadPerspective, dopo ogni toggle di visibilità,
+        e dopo che l'utente cambia la preferenza nelle opzioni.
+        LoadPerspective sovrascrive queste proprietà con i valori salvati,
+        che possono essere arbitrariamente piccoli.
+        """
+        enabled = getattr(self.pref, 'previewMinSize', True)
+        if enabled:
+            min_sz = wx.Size(370, 520)
+        else:
+            min_sz = wx.Size(-1, -1)
+        # Aggiorna il pane AUI
+        pane = self._mgr.GetPane('preview')
+        pane.BestSize(370, 520).MinSize(min_sz)
+        # Aggiorna anche il wx.Window sottostante (doppio vincolo)
+        self.previewCanvas.main_panel.SetMinSize(min_sz)
+
     def OnTogglePaneView(self, evt):
         super().OnTogglePaneView(evt)
+        # Dopo il toggle, se il pannello preview è ora visibile,
+        # reimpostiamo MinSize perché LoadPerspective potrebbe averlo azzerato
+        pane = self._mgr.GetPane('preview')
+        if pane.IsShown():
+            self._ApplyPreviewMinSize()
+            self._mgr.Update()
         self._UpdateBreakLinesMenuState()
 
     def OnPaneClose(self, evt):
