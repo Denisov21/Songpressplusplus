@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: songpress\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-05 16:22+0200\n"
-"PO-Revision-Date: 2026-03-18 21:13+0100\n"
+"PO-Revision-Date: 2026-03-26 23:00+0100
 "Last-Translator: Denisov21\n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -268,3 +268,58 @@ msgstr "Propaga accordi ritornello"
 #: PreferencesDialog.py
 msgid "Save window size and position on exit"
 msgstr "Salva dimensioni e posizione della finestra all'uscita"
+
+#: PreferencesDialog.py
+msgid "Songpress++ Preview"
+msgstr "Anteprima Songpress++"
+
+
+#: PreferencesDialog.py
+msgid "Show page indicator (e.g. 'Page 1 of 3')"
+msgstr "Mostra indicatore di pagina (es. 'Pagina 1 di 3')"
+
+#: PreferencesDialog.py
+msgid "Show or hide the page counter label at the top right of the preview panel"
+msgstr "Mostra o nasconde il contatore di pagine in alto a destra del pannello anteprima"
+
+#: PreferencesDialog.py
+msgid "Grey background in preview (page style)"
+msgstr "Sfondo grigio nell'anteprima (stile pagina)"
+
+#: PreferencesDialog.py
+msgid ""
+"Show the preview on a grey background to simulate a printed page. When "
+"disabled, the background is white."
+msgstr ""
+"Mostra l'anteprima su sfondo grigio per simulare una pagina stampata. "
+"Se disabilitato, lo sfondo è bianco."
+
+#: PreviewCanvas.py
+msgid "Page %d of %d"
+msgstr "Pagina %d di %d"
+
+#: PreferencesDialog.py
+msgid "Delay preview refresh while typing (debounce)"
+msgstr "Ritarda aggiornamento anteprima durante la digitazione (debounce)"
+
+#: PreferencesDialog.py
+msgid ""
+"When enabled, the preview redraws only after a short pause in typing "
+"(300 ms), reducing CPU usage. When disabled, every keystroke "
+"immediately updates the preview."
+msgstr ""
+"Se abilitato, l'anteprima viene ridisegnata solo dopo una breve pausa "
+"nella digitazione (300 ms), riducendo l'uso della CPU. Se disabilitato, "
+"ogni tasto aggiorna immediatamente l'anteprima."
+
+#: PreferencesDialog.py
+msgid "Double-click on preview jumps to source line in editor"
+msgstr "Doppio clic sull'anteprima porta alla riga sorgente nell'editor"
+
+#: PreferencesDialog.py
+msgid ""
+"When enabled, double-clicking on any word or chord in the preview moves the "
+"cursor to the corresponding line in the editor."
+msgstr ""
+"Se abilitato, il doppio clic su una parola o un accordo nell'anteprima "
+"sposta il cursore alla riga corrispondente nell'editor."
