@@ -22,13 +22,14 @@ _ = wx.GetTranslation
 
 
 class MyPreferencesDialog(PreferencesDialog):
-    def __init__(self, parent, preferences, easyChords, on_apply=None):
+    def __init__(self, parent, preferences, easyChords, on_apply=None, previewCanvas=None):
         self.pref = preferences
         self.frame = self
         PreferencesDialog.__init__(self, parent)
 
         self._pinned = False
         self._on_apply = on_apply  # callback chiamato ad ogni OK con pin attivo
+        self._previewCanvas = previewCanvas  # riferimento opzionale per applicare subito le opzioni anteprima
         self.easyChords = easyChords
         self.clearRecentFiles = False
 
@@ -139,6 +140,12 @@ class MyPreferencesDialog(PreferencesDialog):
 
         # Salvataggio geometria finestra
         self.saveWindowGeometryCB.SetValue(getattr(self.pref, 'saveWindowGeometry', True))
+
+        # Opzioni anteprima (tab Songpress)
+        self.showPageIndicatorCB.SetValue(getattr(self.pref, 'showPageIndicator', True))
+        self.greyBackgroundCB.SetValue(getattr(self.pref, 'greyBackground', True))
+        self.debounceRefreshCB.SetValue(getattr(self.pref, 'debounceRefresh', True))
+        self.dblClickFocusCB.SetValue(getattr(self.pref, 'dblClickFocus', True))
 
         # Dimensione icone tempo
         sz = getattr(self.pref, 'tempoIconSize', 24)
@@ -793,6 +800,17 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.multiCursor = self.multiCursorCB.GetValue()
         # Salvataggio geometria finestra
         self.pref.saveWindowGeometry = self.saveWindowGeometryCB.GetValue()
+        # Opzioni anteprima (tab Songpress)
+        self.pref.showPageIndicator = self.showPageIndicatorCB.GetValue()
+        self.pref.greyBackground    = self.greyBackgroundCB.GetValue()
+        self.pref.debounceRefresh   = self.debounceRefreshCB.GetValue()
+        self.pref.dblClickFocus     = self.dblClickFocusCB.GetValue()
+        # Applica subito sul previewCanvas se disponibile
+        if self._previewCanvas is not None:
+            self._previewCanvas.SetShowPageIndicator(self.pref.showPageIndicator)
+            self._previewCanvas.SetGreyBackground(self.pref.greyBackground)
+            self._previewCanvas.SetDebounce(self.pref.debounceRefresh)
+            self._previewCanvas.SetDblClickFocus(self.pref.dblClickFocus)
         # Dimensione icone tempo
         if self.tempoIconSize16.GetValue():
             self.pref.tempoIconSize = 16

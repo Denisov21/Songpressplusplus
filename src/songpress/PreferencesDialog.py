@@ -15,7 +15,7 @@ class PreferencesDialog(wx.Dialog):
 
     def __init__(self, parent):
         wx.Dialog.__init__(self, parent, id=wx.ID_ANY, title=_(u"Songpress++ options"), pos=wx.DefaultPosition,
-                                             size=wx.Size(535, 530), style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+                                             size=wx.Size(660, 580), style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 
         self.SetSizeHints(wx.DefaultSize, wx.DefaultSize)
 
@@ -204,6 +204,64 @@ class PreferencesDialog(wx.Dialog):
         bSizerFormat.Fit(self.formatPanel)
         self.notebook.AddPage(self.formatPanel, _(u"Format"), False)
         # --- Fine Tab "Format" ---
+
+        # --- Tab "Songpress" ---
+        self.songpressPanel = wx.Panel(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL)
+        bSizerSongpress = wx.BoxSizer(wx.VERTICAL)
+
+        # Gruppo: Anteprima
+        grpPreview = wx.StaticBoxSizer(
+            wx.StaticBox(self.songpressPanel, wx.ID_ANY, _(u"Songpress++ Preview")),
+            wx.VERTICAL
+        )
+
+        self.showPageIndicatorCB = wx.CheckBox(
+            self.songpressPanel, wx.ID_ANY,
+            _(u"Show page indicator (e.g. 'Page 1 of 3')")
+        )
+        self.showPageIndicatorCB.SetToolTip(
+            _(u"Show or hide the page counter label at the top right of the preview panel")
+        )
+        grpPreview.Add(self.showPageIndicatorCB, 0, wx.ALL, 5)
+
+        self.greyBackgroundCB = wx.CheckBox(
+            self.songpressPanel, wx.ID_ANY,
+            _(u"Grey background in preview (page style)")
+        )
+        self.greyBackgroundCB.SetToolTip(
+            _(u"Show the preview on a grey background to simulate a printed page. "
+              u"When disabled, the background is white.")
+        )
+        grpPreview.Add(self.greyBackgroundCB, 0, wx.ALL, 5)
+
+        self.debounceRefreshCB = wx.CheckBox(
+            self.songpressPanel, wx.ID_ANY,
+            _(u"Delay preview refresh while typing (debounce)")
+        )
+        self.debounceRefreshCB.SetToolTip(
+            _(u"When enabled, the preview redraws only after a short pause in typing "
+              u"(300 ms), reducing CPU usage. When disabled, every keystroke "
+              u"immediately updates the preview.")
+        )
+        grpPreview.Add(self.debounceRefreshCB, 0, wx.ALL, 5)
+
+        self.dblClickFocusCB = wx.CheckBox(
+            self.songpressPanel, wx.ID_ANY,
+            _(u"Double-click on preview jumps to source line in editor")
+        )
+        self.dblClickFocusCB.SetToolTip(
+            _(u"When enabled, double-clicking on any word or chord in the preview "
+              u"moves the cursor to the corresponding line in the editor.")
+        )
+        grpPreview.Add(self.dblClickFocusCB, 0, wx.ALL, 5)
+
+        bSizerSongpress.Add(grpPreview, 0, wx.EXPAND | wx.ALL, 8)
+
+        self.songpressPanel.SetSizer(bSizerSongpress)
+        self.songpressPanel.Layout()
+        bSizerSongpress.Fit(self.songpressPanel)
+        self.notebook.AddPage(self.songpressPanel, _(u"Songpress++ Preview"), False)
+        # --- Fine Tab "Songpress" ---
 
         # --- Tab "Context menu" ---
         self.contextMenuPanel = wx.Panel(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL)

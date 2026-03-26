@@ -897,8 +897,10 @@ class SongpressFrame(SDIMainFrame):
         self.text.Bind(wx.EVT_KEY_DOWN, self.OnTextKeyDown, self.text)
         # Other objects
         self.previewCanvas = PreviewCanvas(self.frame, self.pref.format, self.pref.notations, self.pref.decorator)
+        # Registra la callback doppio-click: naviga alla riga sorgente nell'editor
+        self.previewCanvas.SetClickCallback(self._OnPreviewClick)
         self.AddMainPane(self.text)
-        self.AddPane(self.previewCanvas.main_panel, aui.AuiPaneInfo().Right().BestSize(240, 400), _('Preview'), 'preview')
+        self.AddPane(self.previewCanvas.main_panel, aui.AuiPaneInfo().Right().BestSize(320, 500), _('Songpress++ Preview'), 'preview')
         self.previewCanvas.main_panel.Bind(wx.adv.EVT_HYPERLINK, self.OnCopyAsImage, self.previewCanvas.link)
         self.mainToolBar = aui.AuiToolBar(self.frame, wx.ID_ANY, wx.DefaultPosition, agwStyle=aui.AUI_TB_PLAIN_BACKGROUND)
         self.mainToolBar.SetToolBitmapSize(wx.Size(16, 16))
@@ -1043,7 +1045,7 @@ class SongpressFrame(SDIMainFrame):
         self.text.ApplyMultiCursor(getattr(self.pref, 'multiCursor', False))
         self.FinalizePaneInitialization()
         # Reassign caption value to override caption saved in preferences (it could be another language)
-        self._mgr.GetPane('preview').caption = _('Preview')
+        self._mgr.GetPane('preview').caption = _('Songpress++ Preview')
         self._mgr.GetPane('standard').caption = _('Standard')
         self._mgr.GetPane('format').caption = _('Format')
         self._UpdateBreakLinesMenuState()
@@ -1058,7 +1060,8 @@ class SongpressFrame(SDIMainFrame):
                     "Please take a minute to set up your skill as a guitarist. For each group of chords, tell Songpress++ how much you like them.")
                 d = wx.MessageDialog(self.frame, msg, _("Songpress++"), wx.OK)
                 d.ShowModal()
-                f = MyPreferencesDialog(self.frame, self.pref, easyChords)
+                f = MyPreferencesDialog(self.frame, self.pref, easyChords,
+                                            previewCanvas=self.previewCanvas)
                 f.notebook.SetSelection(1)
                 if f.ShowModal() == wx.ID_OK:
                     self.text.SetFont(self.pref.editorFace, int(self.pref.editorSize))
@@ -3220,6 +3223,32 @@ class SongpressFrame(SDIMainFrame):
             s += "{chordfont}{chordsize}{chordcolour}"
             self.InsertWithCaret(s)
 
+    # ------------------------------------------------------------------
+    # Mappa PaperId wxPython -> (larghezza_mm, altezza_mm) in portrait.
+    # I valori coprono i formati piu' comuni; per quelli non elencati
+    # si usa A4 come fallback.
+    # ------------------------------------------------------------------
+    _PAPER_SIZE_MM = {
+        wx.PAPER_A3:        (297.0, 420.0),
+        wx.PAPER_A4:        (210.0, 297.0),
+        wx.PAPER_A5:        (148.0, 210.0),
+        wx.PAPER_B4:        (250.0, 354.0),
+        wx.PAPER_B5:        (176.0, 250.0),
+        wx.PAPER_LETTER:    (215.9, 279.4),
+        wx.PAPER_LEGAL:     (215.9, 355.6),
+        wx.PAPER_TABLOID:   (279.4, 431.8),
+        wx.PAPER_EXECUTIVE: (184.1, 266.7),
+    }
+
+    def _GetPaperSizeMm(self):
+        """Restituisce (w_mm, h_mm) del foglio corrente tenendo conto
+        dell'orientamento (portrait / landscape)."""
+        pid = self._print_data.GetPaperId()
+        w, h = self._PAPER_SIZE_MM.get(pid, (210.0, 297.0))
+        if self._print_data.GetOrientation() == wx.LANDSCAPE:
+            w, h = h, w
+        return w, h
+
     def OnPageSetup(self, evt):
         """Open the page setup dialog (paper size, orientation, margins)."""
         data = wx.PageSetupDialogData(self._print_data)
@@ -3235,6 +3264,10 @@ class SongpressFrame(SDIMainFrame):
             self._margin_top    = tl.y
             self._margin_right  = br.x
             self._margin_bottom = br.y
+            # Aggiorna indicatore di pagina nell'anteprima
+            w_mm, h_mm = self._GetPaperSizeMm()
+            self.previewCanvas.SetPageSizeMm(w_mm, h_mm)
+            self.previewCanvas.SetPageMarginsMm(self._margin_top, self._margin_bottom)
         dlg.Destroy()
 
 
@@ -3718,9 +3751,13 @@ class SongpressFrame(SDIMainFrame):
             self._SaveCustomColours()
             self.previewCanvas.SetTempoDisplay(getattr(self.pref, 'tempoDisplay', 0))
             self.previewCanvas.SetTempoIconSize(getattr(self.pref, 'tempoIconSize', 24))
+            self.previewCanvas.SetShowPageIndicator(getattr(self.pref, 'showPageIndicator', True))
+            self.previewCanvas.SetGreyBackground(getattr(self.pref, 'greyBackground', True))
+            self.previewCanvas.SetPageMarginsMm(self._margin_top, self._margin_bottom)
             self.previewCanvas.Refresh(self._get_display_text())
 
-        f = MyPreferencesDialog(self.frame, self.pref, easyChords, on_apply=_apply_prefs)
+        f = MyPreferencesDialog(self.frame, self.pref, easyChords, on_apply=_apply_prefs,
+                                previewCanvas=self.previewCanvas)
         if f.ShowModal() == wx.ID_OK:
             _apply_prefs()
         if f.clearRecentFiles:
@@ -3872,7 +3909,28 @@ class SongpressFrame(SDIMainFrame):
         self.pref.labelVerses = not self.pref.labelVerses
         self.CheckLabelVerses()
 
+    def _OnPreviewClick(self, line_number):
+        """Callback dal doppio-click sull'anteprima.
+
+        Porta il cursore alla riga sorgente trovata tramite hit-test,
+        seleziona l'intera riga per renderla visibile e sposta il focus
+        sull'editor.
+
+        line_number e' 0-based, corrisponde alla riga ChordPro piu' vicina
+        al punto cliccato (risolto con hit-test preciso sui SongBox).
+        """
+        try:
+            pos_start = self.text.PositionFromLine(line_number)
+            pos_end   = self.text.GetLineEndPosition(line_number)
+            # Seleziona la riga trovata cosi' e' immediatamente visibile
+            self.text.SetSelection(pos_start, pos_end)
+            self.text.EnsureCaretVisible()
+            self.text.SetFocus()
+        except Exception:
+            pass
+
     def OnTogglePageBreakLines(self, evt):
+
         self._showPageBreakLines = evt.IsChecked()
         self.previewCanvas.SetShowPageBreakLines(self._showPageBreakLines)
         self.previewCanvas.Refresh(self._get_display_text())
@@ -3998,6 +4056,11 @@ class SongpressFrame(SDIMainFrame):
             self.previewCanvas.SetTempoIconSize(getattr(self.pref, 'tempoIconSize', 24))
             self.previewCanvas.SetShowPageBreakLines(getattr(self, '_showPageBreakLines', True))
             self.previewCanvas.SetShowColumnBreakLines(getattr(self, '_showColumnBreakLines', True))
+            self.previewCanvas.SetShowPageIndicator(getattr(self.pref, 'showPageIndicator', True))
+            self.previewCanvas.SetGreyBackground(getattr(self.pref, 'greyBackground', True))
+            _pw, _ph = self._GetPaperSizeMm()
+            self.previewCanvas.SetPageSizeMm(_pw, _ph)
+            self.previewCanvas.SetPageMarginsMm(self._margin_top, self._margin_bottom)
             self.previewCanvas.Refresh(self._get_display_text())
         except wx._core.PyDeadObjectError:
             # When frame is closed, this method may still be executed, generating an exception

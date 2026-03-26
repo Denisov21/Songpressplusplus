@@ -216,6 +216,7 @@ class Preferences(object):
         self._LoadMultiCursor()
         self._LoadTempoIconSize()
         self._LoadWindowGeometryPref()
+        self._LoadPreviewOptions()
 
     def _LoadKlavierColour(self):
         self.config.SetPath('/KlavierColour')
@@ -277,6 +278,18 @@ class Preferences(object):
         self.saveWindowGeometry = bool(int(v)) if v != '' else True
         self.config.SetPath('/')
 
+    def _LoadPreviewOptions(self):
+        self.config.SetPath('/Preview')
+        v = self.config.Read('showPageIndicator')
+        self.showPageIndicator = bool(int(v)) if v != '' else True
+        v = self.config.Read('greyBackground')
+        self.greyBackground = bool(int(v)) if v != '' else True
+        v = self.config.Read('debounceRefresh')
+        self.debounceRefresh = bool(int(v)) if v != '' else True
+        v = self.config.Read('dblClickFocus')
+        self.dblClickFocus = bool(int(v)) if v != '' else True
+        self.config.SetPath('/')
+
     def Bool2String(self, param):
         return "1" if param else "0"
 
@@ -325,6 +338,7 @@ class Preferences(object):
         self._SaveMultiCursor()
         self._SaveTempoIconSize()
         self._SaveWindowGeometryPref()
+        self._SavePreviewOptions()
         self.config.Flush()
 
     def _SaveKlavierColour(self):
@@ -375,6 +389,14 @@ class Preferences(object):
     def _SaveWindowGeometryPref(self):
         self.config.SetPath('/App')
         self.config.Write('saveWindowGeometry', '1' if getattr(self, 'saveWindowGeometry', True) else '0')
+        self.config.SetPath('/')
+
+    def _SavePreviewOptions(self):
+        self.config.SetPath('/Preview')
+        self.config.Write('showPageIndicator', '1' if getattr(self, 'showPageIndicator', True) else '0')
+        self.config.Write('greyBackground',    '1' if getattr(self, 'greyBackground',    True) else '0')
+        self.config.Write('debounceRefresh',   '1' if getattr(self, 'debounceRefresh',   True) else '0')
+        self.config.Write('dblClickFocus',     '1' if getattr(self, 'dblClickFocus',     True) else '0')
         self.config.SetPath('/')
 
     def SetChorusLabel(self, c):
