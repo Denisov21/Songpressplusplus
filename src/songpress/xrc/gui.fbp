@@ -1330,7 +1330,7 @@
             <property name="help">Open ChordPro and Songpress command reference</property>
             <property name="id">ID_GUIDE_MARKDOWN</property>
             <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">ChordPro &amp;Command Guide...</property>
+            <property name="label">_Songpress++ Guide...</property>
             <property name="name">guideMarkdown</property>
             <property name="permission">none</property>
             <property name="shortcut"></property>

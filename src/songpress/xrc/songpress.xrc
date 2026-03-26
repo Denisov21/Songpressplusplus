@@ -526,7 +526,7 @@
           <help>Show user&apos;s manual</help>
         </object>
         <object class="wxMenuItem" name="guideMarkdown">
-          <label>ChordPro _Command Guide...</label>
+          <label>_Songpress++ Guide...</label>
           <accel></accel>
           <bitmap>../img/help.png</bitmap>
           <help>Open ChordPro and Songpress command reference</help>

@@ -40,7 +40,6 @@ from .MyTransposeDialog import *
 from .MyNotationDialog import *
 from .MyNormalizeDialog import *
 from .MyListDialog import MyListDialog
-from . import MyUpdateDialog
 from .Globals import glb
 from .Preferences import Preferences
 from . import i18n
@@ -1008,10 +1007,8 @@ class SongpressFrame(SDIMainFrame):
         self.wholeSongMenuId = xrc.XRCID('wholeSong')
         self.chordsAboveMenuId = xrc.XRCID('chordsAbove')
         self.chordsBelowMenuId = xrc.XRCID('chordsBelow')
-        self.donateMenuId = xrc.XRCID('donate')
         if platform.system() != 'Windows':
             self.menuBar.GetMenu(0).FindItemById(self.exportMenuId).GetSubMenu().Delete(self.exportAsEmfMenuId)
-        self.menuBar.GetMenu(6).Delete(self.donateMenuId)
         # Persistent print settings (paper size, orientation, margins)
         self._print_data = wx.PrintData()
         self._print_data.SetPaperId(wx.PAPER_A4)
@@ -1072,7 +1069,6 @@ class SongpressFrame(SDIMainFrame):
                 if f.ShowModal() == wx.ID_OK:
                     self.text.SetFont(self.pref.editorFace, int(self.pref.editorSize))
                     self.SetDefaultExtension(self.pref.defaultExtension)
-        MyUpdateDialog.check_and_update(self.frame, self.pref)
 
     def OnClose(self, evt):
         self.SaveWindowGeometry()
@@ -1360,8 +1356,6 @@ class SongpressFrame(SDIMainFrame):
         Bind(self.OnOptions, 'options')
         Bind(self.OnGuide, 'guide')
         Bind(self.OnGuideMarkdown, 'guideMarkdown')
-        Bind(self.OnNewsAndUpdates, 'newsAndUpdates')
-        Bind(self.OnDonate, 'donate')
         # --- NUOVO: Normalizza spazi multipli ---
         Bind(self.OnNormalizeSpaces, 'normalizeSpaces')
         # --- NUOVO: Formato => Altro ---
@@ -3175,12 +3169,6 @@ class SongpressFrame(SDIMainFrame):
             # because UI elements have been destroyed. Simply ignore it.
             pass
         evt.Skip()
-
-    def OnNewsAndUpdates(self, evt):
-        MyUpdateDialog.check_and_update(self.frame, self.pref, True)
-
-    def OnDonate(self, evt):
-        wx.LaunchDefaultBrowser(_("http://www.skeed.it/songpress#donate"))
 
     def OnFormatFont(self, evt):
         f = FontFaceDialog(
