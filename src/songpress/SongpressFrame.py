@@ -5,7 +5,7 @@
 # Modified by:  Denisov21
 # Created:     2009-01-16
 # Copyright: Luca Allulli (https://www.skeed.it/songpress)
-#               Modifications copyright Denisov21
+# Copyright: Modifications © 2026 Denisov21
 # License:     GNU GPL v2
 ##############################################################
 
@@ -81,8 +81,8 @@ class SongpressFindReplaceDialog(object):
         row_f = wx.BoxSizer(wx.HORIZONTAL)
         row_f.Add(wx.StaticText(pg_find, label=_(u"Find:")),
                   0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
-        self.txtFind = wx.TextCtrl(pg_find, value=init_find,
-                                   size=(240, -1), style=wx.TE_PROCESS_ENTER)
+        self.txtFind = wx.ComboBox(pg_find, value=init_find,
+                                   size=(240, -1), style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
         row_f.Add(self.txtFind, 1, wx.EXPAND)
         sz_find.Add(row_f, 0, wx.EXPAND | wx.ALL, 8)
 
@@ -90,8 +90,10 @@ class SongpressFindReplaceDialog(object):
         opts_f = wx.BoxSizer(wx.VERTICAL)
         self.cbWholeWord = wx.CheckBox(pg_find, label=_(u"Whole words only"))
         self.cbMatchCase = wx.CheckBox(pg_find, label=_(u"Match case"))
+        self.cbRegex     = wx.CheckBox(pg_find, label=_(u"Regular expressions"))
         opts_f.Add(self.cbWholeWord, 0, wx.BOTTOM, 4)
-        opts_f.Add(self.cbMatchCase, 0)
+        opts_f.Add(self.cbMatchCase, 0, wx.BOTTOM, 4)
+        opts_f.Add(self.cbRegex,    0)
         mid_f.Add(opts_f, 0, wx.RIGHT, 20)
         dir_box = wx.StaticBoxSizer(
             wx.StaticBox(pg_find, label=_(u"Direction")), wx.HORIZONTAL)
@@ -113,25 +115,39 @@ class SongpressFindReplaceDialog(object):
         row_rf = wx.BoxSizer(wx.HORIZONTAL)
         row_rf.Add(wx.StaticText(pg_repl, label=_(u"Find:"),
                    size=(lbl_w, -1)), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
-        self.txtFindR = wx.TextCtrl(pg_repl, value=init_find,
-                                    size=(240, -1), style=wx.TE_PROCESS_ENTER)
+        self.txtFindR = wx.ComboBox(pg_repl, value=init_find,
+                                    size=(240, -1), style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
         row_rf.Add(self.txtFindR, 1, wx.EXPAND)
         sz_repl.Add(row_rf, 0, wx.EXPAND | wx.ALL, 8)
 
         row_rr = wx.BoxSizer(wx.HORIZONTAL)
         row_rr.Add(wx.StaticText(pg_repl, label=_(u"Replace with:"),
                    size=(lbl_w, -1)), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
-        self.txtReplace = wx.TextCtrl(pg_repl, size=(240, -1),
-                                      style=wx.TE_PROCESS_ENTER)
+        self.txtReplace = wx.ComboBox(pg_repl, size=(240, -1),
+                                      style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
         row_rr.Add(self.txtReplace, 1, wx.EXPAND)
         sz_repl.Add(row_rr, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
+        mid_r = wx.BoxSizer(wx.HORIZONTAL)
         opts_r = wx.BoxSizer(wx.VERTICAL)
-        self.cbWholeWordR = wx.CheckBox(pg_repl, label=_(u"Whole words only"))
-        self.cbMatchCaseR = wx.CheckBox(pg_repl, label=_(u"Match case"))
-        opts_r.Add(self.cbWholeWordR, 0, wx.BOTTOM, 4)
-        opts_r.Add(self.cbMatchCaseR, 0)
-        sz_repl.Add(opts_r, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        self.cbWholeWordR  = wx.CheckBox(pg_repl, label=_(u"Whole words only"))
+        self.cbMatchCaseR  = wx.CheckBox(pg_repl, label=_(u"Match case"))
+        self.cbRegexR      = wx.CheckBox(pg_repl, label=_(u"Regular expressions"))
+        self.cbWrapAround  = wx.CheckBox(pg_repl, label=_(u"Silent wrap-around"))
+        opts_r.Add(self.cbWholeWordR,  0, wx.BOTTOM, 4)
+        opts_r.Add(self.cbMatchCaseR,  0, wx.BOTTOM, 4)
+        opts_r.Add(self.cbRegexR,      0, wx.BOTTOM, 4)
+        opts_r.Add(self.cbWrapAround,  0)
+        mid_r.Add(opts_r, 0, wx.RIGHT, 20)
+        dir_box_r = wx.StaticBoxSizer(
+            wx.StaticBox(pg_repl, label=_(u"Direction")), wx.HORIZONTAL)
+        self.rbUpR   = wx.RadioButton(pg_repl, label=_(u"Up"),   style=wx.RB_GROUP)
+        self.rbDownR = wx.RadioButton(pg_repl, label=_(u"Down"))
+        self.rbDownR.SetValue(True)
+        dir_box_r.Add(self.rbUpR,   0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4)
+        dir_box_r.Add(self.rbDownR, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4)
+        mid_r.Add(dir_box_r, 0, wx.ALIGN_TOP)
+        sz_repl.Add(mid_r, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
         pg_repl.SetSizer(sz_repl)
         self.notebook.AddPage(pg_repl, _(u"Replace"))
 
@@ -188,8 +204,10 @@ class SongpressFindReplaceDialog(object):
         self.txtReplace.Bind(wx.EVT_TEXT_ENTER, self._OnReplace)
         self.cbWholeWord.Bind(wx.EVT_CHECKBOX,  self._SyncCheckboxes)
         self.cbMatchCase.Bind(wx.EVT_CHECKBOX,  self._SyncCheckboxes)
+        self.cbRegex.Bind(wx.EVT_CHECKBOX,      self._SyncCheckboxes)
         self.cbWholeWordR.Bind(wx.EVT_CHECKBOX, self._SyncCheckboxes)
         self.cbMatchCaseR.Bind(wx.EVT_CHECKBOX, self._SyncCheckboxes)
+        self.cbRegexR.Bind(wx.EVT_CHECKBOX,     self._SyncCheckboxes)
         self.notebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self._OnTabChanged)
         self.dialog.Bind(wx.EVT_CLOSE,      self._OnClose)
         self.dialog.Bind(wx.EVT_CHAR_HOOK,  self._OnCharHook)
@@ -220,12 +238,24 @@ class SongpressFindReplaceDialog(object):
         self.dialog.Fit()
 
     def _SyncCheckboxes(self, evt):
-        ww = self.cbWholeWord.GetValue() or self.cbWholeWordR.GetValue()
-        mc = self.cbMatchCase.GetValue() or self.cbMatchCaseR.GetValue()
-        self.cbWholeWord.SetValue(ww)
-        self.cbWholeWordR.SetValue(ww)
-        self.cbMatchCase.SetValue(mc)
-        self.cbMatchCaseR.SetValue(mc)
+        if getattr(self, '_syncing', False):
+            evt.Skip()
+            return
+        self._syncing = True
+        try:
+            src = evt.GetEventObject()
+            v = src.GetValue()
+            if src in (self.cbWholeWord, self.cbWholeWordR):
+                self.cbWholeWord.SetValue(v)
+                self.cbWholeWordR.SetValue(v)
+            elif src in (self.cbMatchCase, self.cbMatchCaseR):
+                self.cbMatchCase.SetValue(v)
+                self.cbMatchCaseR.SetValue(v)
+            elif src in (self.cbRegex, self.cbRegexR):
+                self.cbRegex.SetValue(v)
+                self.cbRegexR.SetValue(v)
+        finally:
+            self._syncing = False
         evt.Skip()
 
     def _SyncFindText(self, evt):
@@ -261,18 +291,34 @@ class SongpressFindReplaceDialog(object):
             flags |= wx.stc.STC_FIND_WHOLEWORD
         if self.cbMatchCase.GetValue():
             flags |= wx.stc.STC_FIND_MATCHCASE
+        if self.cbRegex.GetValue():
+            flags |= wx.stc.STC_FIND_REGEXP
         return flags
 
     def _get_down(self):
         if self._IsReplaceTab():
-            return True
+            return self.rbDownR.GetValue()
         return self.rbDown.GetValue()
+
+    _MAX_HISTORY = 10
+
+    def _AddToHistory(self, combo, value):
+        """Aggiunge value allo storico del ComboBox (max 10, senza duplicati)."""
+        if not value:
+            return
+        items = list(combo.GetItems())
+        if value in items:
+            items.remove(value)
+        items.insert(0, value)
+        items = items[:self._MAX_HISTORY]
+        combo.SetItems(items)
+        combo.SetValue(value)
 
     # ------------------------------------------------------------------
     # Azioni
     # ------------------------------------------------------------------
 
-    def _OnFindNext(self, evt):
+    def _OnFindNext(self, evt, silent_wrap=False):
         st = self._ActiveFindCtrl().GetValue()
         if not st:
             return
@@ -280,6 +326,9 @@ class SongpressFindReplaceDialog(object):
         down  = self._get_down()
         self.owner._lastFindSt    = st
         self.owner._lastFindFlags = flags
+        self.owner._lastFindDown  = down
+        self._AddToHistory(self.txtFind,  st)
+        self._AddToHistory(self.txtFindR, st)
         text = self.owner.text
         if down:
             s, e = text.GetSelection()
@@ -295,25 +344,35 @@ class SongpressFindReplaceDialog(object):
             p = text.SearchPrev(flags, st)
         if p != -1:
             text.SetSelection(p, p + len(st))
+            self.lblCount.SetLabel(u"")
+            self.lblCount.SetForegroundColour(wx.Colour(0, 100, 180))
         else:
             if not from_start:
                 if down:
                     wherefrom, where, newStart = _(u"Reached the end"), _(u"beginning"), 0
                 else:
                     wherefrom, where, newStart = _(u"Reached the beginning"), _(u"end"), text.GetLength()
-                d = wx.MessageDialog(
-                    self.dialog,
-                    _(u"%s of the song, restarting search from the %s") % (wherefrom, where),
-                    self.owner.appName, wx.OK | wx.CANCEL | wx.ICON_INFORMATION
-                )
-                if d.ShowModal() == wx.ID_OK:
+                wrap_msg = _(u"%s of the song, restarting search from the %s") % (wherefrom, where)
+                do_wrap = silent_wrap or self.cbWrapAround.GetValue()
+                if do_wrap:
                     text.SetSelection(newStart, newStart)
-                    self._OnFindNext(evt)
+                    self._OnFindNext(evt, silent_wrap=True)
+                else:
+                    d = wx.MessageDialog(
+                        self.dialog,
+                        wrap_msg,
+                        self.owner.appName, wx.OK | wx.CANCEL | wx.ICON_INFORMATION
+                    )
+                    if d.ShowModal() == wx.ID_OK:
+                        text.SetSelection(newStart, newStart)
+                        self._OnFindNext(evt, silent_wrap=True)
             else:
-                wx.MessageDialog(
-                    self.dialog, _(u"The specified text was not found"),
-                    self.owner.appName, wx.OK | wx.ICON_INFORMATION
-                ).ShowModal()
+                # Messaggio inline invece di MessageDialog modale
+                self.lblCount.SetLabel(_(u"The specified text was not found"))
+                self.lblCount.SetForegroundColour(wx.Colour(180, 0, 0))
+                self.dialog.Layout()
+                self.dialog.Fit()
+
 
     def _OnCount(self, evt):
         st = self._ActiveFindCtrl().GetValue()
@@ -342,19 +401,25 @@ class SongpressFindReplaceDialog(object):
         r  = self.txtReplace.GetValue()
         if not st:
             return
+        self._AddToHistory(self.txtFindR,  st)
+        self._AddToHistory(self.txtFind,   st)
+        self._AddToHistory(self.txtReplace, r)
         flags = self._get_flags()
         text  = self.owner.text
         if text.GetSelectedText() == st or (
                 not (flags & wx.stc.STC_FIND_MATCHCASE) and
                 text.GetSelectedText().lower() == st.lower()):
             text.ReplaceSelection(r)
-        self._OnFindNext(evt)
+        self._OnFindNext(evt, silent_wrap=True)
 
     def _OnReplaceAll(self, evt):
         st = self.txtFindR.GetValue()
         r  = self.txtReplace.GetValue()
         if not st:
             return
+        self._AddToHistory(self.txtFindR,   st)
+        self._AddToHistory(self.txtFind,    st)
+        self._AddToHistory(self.txtReplace, r)
         flags = self._get_flags()
         text  = self.owner.text
         with undo_action(text):
@@ -990,6 +1055,7 @@ class SongpressFrame(SDIMainFrame):
         self.BindMyMenu()
         self._BuildNewFromTemplateMenu()
         self.frame.Bind(EVT_TEXT_CHANGED, self.OnTextChanged)
+        self.frame.Bind(wx.EVT_CHAR_HOOK, self._OnGlobalCharHook)
         self.exportMenuId = xrc.XRCID('export')
         self.exportToClipboardAsAVectorImage = xrc.XRCID('exportToClipboardAsAVectorImage')
         self.exportAsEmfMenuId = xrc.XRCID('exportAsEmf')
@@ -1036,6 +1102,9 @@ class SongpressFrame(SDIMainFrame):
         self._showPageBreakLinesMenuId = xrc.XRCID('showPageBreakLines')
         self._showColumnBreakLinesMenuId = xrc.XRCID('showColumnBreakLines')
         self.findReplaceDialog = None
+        self._lastFindSt    = ''
+        self._lastFindFlags = 0
+        self._lastFindDown  = True
         self.CheckLabelVerses()
         self.CheckChordsPosition()
         self.SetFont()
@@ -1825,6 +1894,7 @@ class SongpressFrame(SDIMainFrame):
             vbox.Add(lnk, 0, wx.ALIGN_CENTER | wx.LEFT | wx.RIGHT, 15)
 
         add_text(u"Copyright \u00a9 2009-{} Luca Allulli - Skeed".format(glb.YEAR))
+        add_text(u"Copyright \u00a9 2026-{} Denisov21".format(glb.YEAR))
         add_text(u"Localization:\n{}".format(translations))
         vbox.AddSpacer(8)
         add_text(_(u"Songpress++ is a fork of Songpress by Luca Allulli - Skeed,"))
@@ -2861,6 +2931,17 @@ class SongpressFrame(SDIMainFrame):
             self.text.SetSelection(0, self.text.GetLength())
             self.text.ReplaceSelection(result)
 
+    def _OnGlobalCharHook(self, evt):
+        """F3 = trova successivo, Shift+F3 = trova precedente, anche a dialogo chiuso."""
+        kc = evt.GetKeyCode()
+        if kc == wx.WXK_F3:
+            if evt.ShiftDown():
+                self.OnFindPrevious(evt)
+            else:
+                self.OnFindNext(evt)
+        else:
+            evt.Skip()
+
     def OnFind(self, evt):
         if self.findReplaceDialog is not None and self.findReplaceDialog.dialog is not None:
             self.findReplaceDialog.notebook.SetSelection(0)
@@ -2873,8 +2954,10 @@ class SongpressFrame(SDIMainFrame):
     def OnFindNext(self, evt):
         dlg = self.findReplaceDialog
         if dlg is not None and dlg.dialog is not None:
-            # Dialogo aperto: forza direzione giù sulla tab Find
-            if not dlg._IsReplaceTab():
+            # Forza direzione giù sul radio della tab attiva
+            if dlg._IsReplaceTab():
+                dlg.rbDownR.SetValue(True)
+            else:
                 dlg.rbDown.SetValue(True)
             dlg._OnFindNext(evt)
         else:
@@ -2883,8 +2966,10 @@ class SongpressFrame(SDIMainFrame):
     def OnFindPrevious(self, evt):
         dlg = self.findReplaceDialog
         if dlg is not None and dlg.dialog is not None:
-            # Dialogo aperto: forza direzione su sulla tab Find
-            if not dlg._IsReplaceTab():
+            # Forza direzione su sul radio della tab attiva
+            if dlg._IsReplaceTab():
+                dlg.rbUpR.SetValue(True)
+            else:
                 dlg.rbUp.SetValue(True)
             dlg._OnFindNext(evt)
         else:

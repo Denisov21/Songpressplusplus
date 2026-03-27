@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: songpress\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-05 16:22+0200\n"
-"PO-Revision-Date: 2026-03-20 19:12+0100\n"
+"PO-Revision-Date: 2026-03-27 17:54+0100\n"
 "Last-Translator: Denisov21\n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -352,9 +352,6 @@ msgstr "Presentazione PPTX"
 msgid "http://www.skeed.it/songpress-manual"
 msgstr "http://www.skeed.it/songpress-manuale"
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:836
-msgid "http://www.skeed.it/songpress#donate"
-msgstr "http://www.skeed.it/songpress-it#donate"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:887
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1049
@@ -606,7 +603,7 @@ msgstr "Carattere accordo - Songpress++"
 
 #: SongpressFrame.py app title
 msgid "Songpress++ - The Song Editor"
-msgstr "Songpress++ - Il Canzonatore"
+msgstr "Songpress++ - The Song Editor"
 
 #: SongpressFrame.py AUI pane preview
 msgid "Preview"
@@ -791,7 +788,7 @@ msgstr ""
 
 #: SongpressFrame.py about dialog title
 msgid "About Songpress++ - The Song Editor"
-msgstr "Informazioni su Songpress++ - Il Canzonatore"
+msgstr "Informazioni su Songpress++ - The Song Editor"
 
 #: SongpressFrame.py guide file not found error
 msgid "Guide file not found in the program folder."
@@ -861,7 +858,6 @@ msgstr "Giù"
 msgid "Find next"
 msgstr "Trova successivo"
 
-
 #: SongpressFrame.py find/replace dialog
 msgid "Replace all"
 msgstr "Sostituisci tutto"
@@ -882,9 +878,21 @@ msgstr "%d corrispondenze trovate"
 msgid "Find / Replace"
 msgstr "Trova / Sostituisci"
 
+#: SongpressFrame.py find/replace dialog — regex
+msgid "Regular expressions"
+msgstr "Espressioni regolari"
+
+#: SongpressFrame.py find/replace dialog — silent wrap-around
+msgid "Silent wrap-around"
+msgstr "Ricomincia senza chiedere conferma"
+
 #: SongpressFrame.py OnImportFromPdf
-msgid "La libreria pypdf non è installata.\nInstalla con:  pip install pypdf"
-msgstr "La libreria pypdf non è installata.\nInstalla con:  pip install pypdf"
+msgid ""
+"La libreria pypdf non è installata.\n"
+"Installa con:  pip install pypdf"
+msgstr ""
+"La libreria pypdf non è installata.\n"
+"Installa con:  pip install pypdf"
 
 #: SongpressFrame.py OnImportFromPdf
 msgid "pypdf non trovato"
@@ -899,16 +907,24 @@ msgid "PDF files (*.pdf)|*.pdf"
 msgstr "File PDF (*.pdf)|*.pdf"
 
 #: SongpressFrame.py OnImportFromPdf
-msgid "Error reading the PDF:\n%s"
-msgstr "Errore durante la lettura del PDF:\n%s"
+msgid ""
+"Error reading the PDF:\n"
+"%s"
+msgstr ""
+"Errore durante la lettura del PDF:\n"
+"%s"
 
 #: SongpressFrame.py OnImportFromPdf
 msgid "Import error"
 msgstr "Errore importazione"
 
 #: SongpressFrame.py OnImportFromPdf
-msgid "The PDF contains no extractable text.\nIt may be a scanned (image-only) PDF."
-msgstr "Il PDF non contiene testo estraibile.\nPotrebbe essere un PDF scansionato (solo immagine)."
+msgid ""
+"The PDF contains no extractable text.\n"
+"It may be a scanned (image-only) PDF."
+msgstr ""
+"Il PDF non contiene testo estraibile.\n"
+"Potrebbe essere un PDF scansionato (solo immagine)."
 
 #: SongpressFrame.py OnImportFromPdf
 msgid "No text found"

@@ -3,7 +3,6 @@
 import sys
 import os
 import os.path
-import platform
 from cx_Freeze import setup, Executable
 
 
@@ -73,7 +72,7 @@ def build(version):
         executables=[Executable(
             "main.py",
             base=base,
-            target_name='Songpress++' if platform.system() == 'Linux' else "Songpress++.exe",
+            target_name="Songpress++.exe" if sys.platform == "win32" else "Songpress++",
             icon='songpressplusplus.ico',
         )]
     )

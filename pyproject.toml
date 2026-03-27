@@ -35,3 +35,32 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/songpress"]
+
+# ── cx_Freeze — build eseguibile ────────────────────────────────────────────
+# Uso: python -m cx_Freeze build
+[tool.cxfreeze]
+executables = [
+    { script = "main.py", target_name = "Songpress++.exe", base = "Win32GUI", icon = "songpressplusplus.ico" }
+]
+
+[tool.cxfreeze.build_exe]
+packages = [
+    "multiprocessing",
+    "idna.idnadata",
+    "ssl",
+    "wx",
+    "requests",
+    "reportlab",
+    "pptx",
+    "pyshortcuts",
+]
+excludes = ["numpy", "tkinter"]
+include_msvcr = true
+# File di dati copiati nella cartella build
+include_files = [
+    ["help",      "help"],
+    ["img",       "img"],
+    ["locale",    "locale"],
+    ["templates", "templates"],
+    ["xrc",       "xrc"],
+]
