@@ -86,7 +86,7 @@ Quando il fattore di scala del display di sistema non è impostato su 1, l'outpu
 
 ## Crediti
 
-Songpress++ è un fork di Songpress di Luca Allulli - Skeed, mantenuto ed esteso da Denisov21.
+**Songpress++** è un fork di *Songpress* di Luca Allulli - Skeed, mantenuto ed esteso da Denisov21.
 
 - Sito web versione originale: <http://www.skeed.it/songpress>
 - Repository fork: <https://github.com/Denisov21/Songpressplusplus>

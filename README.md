@@ -86,7 +86,7 @@ When the system display scale factor is not set to 1, the SVG output produced by
 
 ## Credits
 
-Songpress++ is a fork of Songpress by Luca Allulli - Skeed, maintained and extended by Denisov21.
+**Songpress++** is a fork of *Songpress by Luca Allulli - Skeed*, maintained and extended by Denisov21.
 
 - Original project website: <http://www.skeed.it/songpress>
 - Fork repository: <https://github.com/Denisov21/Songpressplusplus>
