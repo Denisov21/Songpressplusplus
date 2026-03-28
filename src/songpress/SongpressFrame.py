@@ -1,0 +1,4452 @@
+###############################################################
+# Name:             SongpressFrame.py
+# Purpose:     Main frame for Songpress++
+# Author:         Luca Allulli (webmaster@roma21.it)
+# Modified by:  Denisov21
+# Created:     2009-01-16
+# Copyright: Luca Allulli (https://www.skeed.it/songpress)
+# Copyright: Modifications © 2026 Denisov21
+# License:     GNU GPL v2
+##############################################################
+
+##############################################################
+#Note: wx.FontDialog è un wrapper del dialog nativo di Windows, e SetTitle()
+#potrebbe non funzionare su tutte le versioni di wxPython/Windows
+#perché il titolo viene gestito dal sistema. 
+#Però funziona bene Windows 11 e wxFormBuilder 4.2.1!
+###############################################################
+
+
+import subprocess
+import sys
+import os
+import os.path
+import platform
+
+# import wx.aui as aui
+import wx.adv
+from wx import xrc
+
+from .Editor import *
+from .PreviewCanvas import *
+from .Renderer import *
+from .FontComboBox import FontComboBox
+from .FontFaceDialog import FontFaceDialog
+from .MyPreferencesDialog import MyPreferencesDialog
+from .HTML import HtmlExporter, TabExporter
+from . import PdfExporter
+from . import SongbookExporter
+from .MyTransposeDialog import *
+from .MyNotationDialog import *
+from .MyNormalizeDialog import *
+from .MyListDialog import MyListDialog
+from .Globals import glb
+from .Preferences import Preferences
+from . import i18n
+from .utils import temp_dir, undo_action
+from .SyntaxChecker import check as syntax_check
+from .SyntaxCheckerDialog import SyntaxCheckerDialog, EVT_SYNTAX_GOTO
+
+_ = wx.GetTranslation
+
+
+if platform.system() == 'Windows':
+    import wx.msw
+
+
+class SongpressFindReplaceDialog(object):
+    """Dialogo Trova/Sostituisci unificato con due tab (Trova e Sostituisci)."""
+
+    def __init__(self, owner, replace=False):
+        object.__init__(self)
+        self.owner = owner
+        self.replace = replace
+
+        self.dialog = wx.Dialog(
+            owner.frame, title=_(u"Find / Replace"),
+            style=wx.DEFAULT_DIALOG_STYLE | wx.STAY_ON_TOP
+        )
+
+        init_find = self.owner.text.GetSelectedText() or ''
+
+        outer = wx.BoxSizer(wx.VERTICAL)
+
+        # ── Notebook ──────────────────────────────────────────────────
+        self.notebook = wx.Notebook(self.dialog)
+
+        # ── Tab 1: Trova ──────────────────────────────────────────────
+        pg_find = wx.Panel(self.notebook)
+        sz_find = wx.BoxSizer(wx.VERTICAL)
+
+        row_f = wx.BoxSizer(wx.HORIZONTAL)
+        row_f.Add(wx.StaticText(pg_find, label=_(u"Find:")),
+                  0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        self.txtFind = wx.ComboBox(pg_find, value=init_find,
+                                   size=(240, -1), style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
+        row_f.Add(self.txtFind, 1, wx.EXPAND)
+        sz_find.Add(row_f, 0, wx.EXPAND | wx.ALL, 8)
+
+        mid_f = wx.BoxSizer(wx.HORIZONTAL)
+        opts_f = wx.BoxSizer(wx.VERTICAL)
+        self.cbWholeWord = wx.CheckBox(pg_find, label=_(u"Whole words only"))
+        self.cbMatchCase = wx.CheckBox(pg_find, label=_(u"Match case"))
+        self.cbRegex     = wx.CheckBox(pg_find, label=_(u"Regular expressions"))
+        opts_f.Add(self.cbWholeWord, 0, wx.BOTTOM, 4)
+        opts_f.Add(self.cbMatchCase, 0, wx.BOTTOM, 4)
+        opts_f.Add(self.cbRegex,    0)
+        mid_f.Add(opts_f, 0, wx.RIGHT, 20)
+        dir_box = wx.StaticBoxSizer(
+            wx.StaticBox(pg_find, label=_(u"Direction")), wx.HORIZONTAL)
+        self.rbUp   = wx.RadioButton(pg_find, label=_(u"Up"), style=wx.RB_GROUP)
+        self.rbDown = wx.RadioButton(pg_find, label=_(u"Down"))
+        self.rbDown.SetValue(True)
+        dir_box.Add(self.rbUp,   0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4)
+        dir_box.Add(self.rbDown, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4)
+        mid_f.Add(dir_box, 0)
+        sz_find.Add(mid_f, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        pg_find.SetSizer(sz_find)
+        self.notebook.AddPage(pg_find, _(u"Find"))
+
+        # ── Tab 2: Sostituisci ────────────────────────────────────────
+        pg_repl = wx.Panel(self.notebook)
+        sz_repl = wx.BoxSizer(wx.VERTICAL)
+        lbl_w = 110
+
+        row_rf = wx.BoxSizer(wx.HORIZONTAL)
+        row_rf.Add(wx.StaticText(pg_repl, label=_(u"Find:"),
+                   size=(lbl_w, -1)), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        self.txtFindR = wx.ComboBox(pg_repl, value=init_find,
+                                    size=(240, -1), style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
+        row_rf.Add(self.txtFindR, 1, wx.EXPAND)
+        sz_repl.Add(row_rf, 0, wx.EXPAND | wx.ALL, 8)
+
+        row_rr = wx.BoxSizer(wx.HORIZONTAL)
+        row_rr.Add(wx.StaticText(pg_repl, label=_(u"Replace with:"),
+                   size=(lbl_w, -1)), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        self.txtReplace = wx.ComboBox(pg_repl, size=(240, -1),
+                                      style=wx.CB_DROPDOWN | wx.TE_PROCESS_ENTER)
+        row_rr.Add(self.txtReplace, 1, wx.EXPAND)
+        sz_repl.Add(row_rr, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
+        mid_r = wx.BoxSizer(wx.HORIZONTAL)
+        opts_r = wx.BoxSizer(wx.VERTICAL)
+        self.cbWholeWordR  = wx.CheckBox(pg_repl, label=_(u"Whole words only"))
+        self.cbMatchCaseR  = wx.CheckBox(pg_repl, label=_(u"Match case"))
+        self.cbRegexR      = wx.CheckBox(pg_repl, label=_(u"Regular expressions"))
+        self.cbWrapAround  = wx.CheckBox(pg_repl, label=_(u"Silent wrap-around"))
+        opts_r.Add(self.cbWholeWordR,  0, wx.BOTTOM, 4)
+        opts_r.Add(self.cbMatchCaseR,  0, wx.BOTTOM, 4)
+        opts_r.Add(self.cbRegexR,      0, wx.BOTTOM, 4)
+        opts_r.Add(self.cbWrapAround,  0)
+        mid_r.Add(opts_r, 0, wx.RIGHT, 20)
+        dir_box_r = wx.StaticBoxSizer(
+            wx.StaticBox(pg_repl, label=_(u"Direction")), wx.HORIZONTAL)
+        self.rbUpR   = wx.RadioButton(pg_repl, label=_(u"Up"),   style=wx.RB_GROUP)
+        self.rbDownR = wx.RadioButton(pg_repl, label=_(u"Down"))
+        self.rbDownR.SetValue(True)
+        dir_box_r.Add(self.rbUpR,   0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4)
+        dir_box_r.Add(self.rbDownR, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4)
+        mid_r.Add(dir_box_r, 0, wx.ALIGN_TOP)
+        sz_repl.Add(mid_r, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        pg_repl.SetSizer(sz_repl)
+        self.notebook.AddPage(pg_repl, _(u"Replace"))
+
+        # ── Bottoni colonna verticale a destra ───────────────────────
+        self.btnFindNext   = wx.Button(self.dialog, label=_(u"Find next"))
+        self.btnReplace    = wx.Button(self.dialog, label=_(u"Replace"))
+        self.btnReplaceAll = wx.Button(self.dialog, label=_(u"Replace all"))
+        self.btnCount      = wx.Button(self.dialog, label=_(u"Count matches"))
+        self.btnCancel     = wx.Button(self.dialog, wx.ID_ANY, _(u"Close"))
+        self.btnFindNext.SetDefault()
+
+        btn_col = wx.BoxSizer(wx.VERTICAL)
+        btn_col.Add(self.btnFindNext,   0, wx.EXPAND | wx.BOTTOM, 4)
+        btn_col.Add(self.btnReplace,    0, wx.EXPAND | wx.BOTTOM, 4)
+        btn_col.Add(self.btnReplaceAll, 0, wx.EXPAND | wx.BOTTOM, 4)
+        btn_col.Add(self.btnCount,      0, wx.EXPAND | wx.BOTTOM, 4)
+        btn_col.AddStretchSpacer()
+        btn_col.Add(self.btnCancel,     0, wx.EXPAND)
+
+        # ── Notebook + bottoni affiancati ────────────────────────────
+        nb_and_btns = wx.BoxSizer(wx.HORIZONTAL)
+
+        # Notebook con etichetta count sotto
+        left_col = wx.BoxSizer(wx.VERTICAL)
+        left_col.Add(self.notebook, 1, wx.EXPAND)
+        self.lblCount = wx.StaticText(self.dialog, label=u"")
+        self.lblCount.SetForegroundColour(wx.Colour(0, 100, 180))
+        left_col.Add(self.lblCount, 0, wx.LEFT | wx.TOP, 4)
+
+        nb_and_btns.Add(left_col,  1, wx.EXPAND | wx.ALL, 6)
+        nb_and_btns.Add(btn_col,   0, wx.EXPAND | wx.TOP | wx.RIGHT | wx.BOTTOM, 8)
+
+        outer.Add(nb_and_btns, 1, wx.EXPAND)
+
+        self.dialog.SetSizerAndFit(outer)
+        self.dialog.CentreOnParent()
+
+        # Seleziona la tab giusta
+        self.notebook.SetSelection(1 if replace else 0)
+        self._UpdateButtons()
+
+        # ── Bind ─────────────────────────────────────────────────────
+        self.btnFindNext.Bind(wx.EVT_BUTTON,    self._OnFindNext)
+        self.btnReplace.Bind(wx.EVT_BUTTON,     self._OnReplace)
+        self.btnReplaceAll.Bind(wx.EVT_BUTTON,  self._OnReplaceAll)
+        self.btnCount.Bind(wx.EVT_BUTTON,       self._OnCount)
+        self.btnCancel.Bind(wx.EVT_BUTTON,      self._OnCancel)
+        self.txtFind.Bind(wx.EVT_TEXT_ENTER,    self._OnFindNext)
+        self.txtFind.Bind(wx.EVT_TEXT,          self._OnFindTextChanged)
+        self.txtFind.Bind(wx.EVT_TEXT,          self._SyncFindText)
+        self.txtFindR.Bind(wx.EVT_TEXT_ENTER,   self._OnFindNext)
+        self.txtFindR.Bind(wx.EVT_TEXT,         self._OnFindTextChanged)
+        self.txtFindR.Bind(wx.EVT_TEXT,         self._SyncFindTextR)
+        self.txtReplace.Bind(wx.EVT_TEXT_ENTER, self._OnReplace)
+        self.cbWholeWord.Bind(wx.EVT_CHECKBOX,  self._SyncCheckboxes)
+        self.cbMatchCase.Bind(wx.EVT_CHECKBOX,  self._SyncCheckboxes)
+        self.cbRegex.Bind(wx.EVT_CHECKBOX,      self._SyncCheckboxes)
+        self.cbWholeWordR.Bind(wx.EVT_CHECKBOX, self._SyncCheckboxes)
+        self.cbMatchCaseR.Bind(wx.EVT_CHECKBOX, self._SyncCheckboxes)
+        self.cbRegexR.Bind(wx.EVT_CHECKBOX,     self._SyncCheckboxes)
+        self.notebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self._OnTabChanged)
+        self.dialog.Bind(wx.EVT_CLOSE,      self._OnClose)
+        self.dialog.Bind(wx.EVT_CHAR_HOOK,  self._OnCharHook)
+
+        self.dialog.Show()
+        self._FocusFindField()
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _IsReplaceTab(self):
+        return self.notebook.GetSelection() == 1
+
+    def _ActiveFindCtrl(self):
+        return self.txtFindR if self._IsReplaceTab() else self.txtFind
+
+    def _FocusFindField(self):
+        ctrl = self._ActiveFindCtrl()
+        ctrl.SetFocus()
+        ctrl.SetInsertionPointEnd()
+
+    def _UpdateButtons(self):
+        on_replace = self._IsReplaceTab()
+        self.btnReplace.Show(on_replace)
+        self.btnReplaceAll.Show(on_replace)
+        self.dialog.Layout()
+        self.dialog.Fit()
+
+    def _SyncCheckboxes(self, evt):
+        if getattr(self, '_syncing', False):
+            evt.Skip()
+            return
+        self._syncing = True
+        try:
+            src = evt.GetEventObject()
+            v = src.GetValue()
+            if src in (self.cbWholeWord, self.cbWholeWordR):
+                self.cbWholeWord.SetValue(v)
+                self.cbWholeWordR.SetValue(v)
+            elif src in (self.cbMatchCase, self.cbMatchCaseR):
+                self.cbMatchCase.SetValue(v)
+                self.cbMatchCaseR.SetValue(v)
+            elif src in (self.cbRegex, self.cbRegexR):
+                self.cbRegex.SetValue(v)
+                self.cbRegexR.SetValue(v)
+        finally:
+            self._syncing = False
+        evt.Skip()
+
+    def _SyncFindText(self, evt):
+        v = self.txtFind.GetValue()
+        if self.txtFindR.GetValue() != v:
+            self.txtFindR.ChangeValue(v)
+        evt.Skip()
+
+    def _SyncFindTextR(self, evt):
+        v = self.txtFindR.GetValue()
+        if self.txtFind.GetValue() != v:
+            self.txtFind.ChangeValue(v)
+        evt.Skip()
+
+    def _OnTabChanged(self, evt):
+        self._UpdateButtons()
+        wx.CallAfter(self._FocusFindField)
+        evt.Skip()
+
+    def _OnFindTextChanged(self, evt):
+        self.lblCount.SetLabel(u"")
+        evt.Skip()
+
+    def _OnCharHook(self, evt):
+        if evt.GetKeyCode() == wx.WXK_ESCAPE:
+            self._OnCancel(evt)
+        else:
+            evt.Skip()
+
+    def _get_flags(self):
+        flags = 0
+        if self.cbWholeWord.GetValue():
+            flags |= wx.stc.STC_FIND_WHOLEWORD
+        if self.cbMatchCase.GetValue():
+            flags |= wx.stc.STC_FIND_MATCHCASE
+        if self.cbRegex.GetValue():
+            flags |= wx.stc.STC_FIND_REGEXP
+        return flags
+
+    def _get_down(self):
+        if self._IsReplaceTab():
+            return self.rbDownR.GetValue()
+        return self.rbDown.GetValue()
+
+    _MAX_HISTORY = 10
+
+    def _AddToHistory(self, combo, value):
+        """Aggiunge value allo storico del ComboBox (max 10, senza duplicati)."""
+        if not value:
+            return
+        items = list(combo.GetItems())
+        if value in items:
+            items.remove(value)
+        items.insert(0, value)
+        items = items[:self._MAX_HISTORY]
+        combo.SetItems(items)
+        combo.SetValue(value)
+
+    # ------------------------------------------------------------------
+    # Azioni
+    # ------------------------------------------------------------------
+
+    def _OnFindNext(self, evt, silent_wrap=False):
+        st = self._ActiveFindCtrl().GetValue()
+        if not st:
+            return
+        flags = self._get_flags()
+        down  = self._get_down()
+        self.owner._lastFindSt    = st
+        self.owner._lastFindFlags = flags
+        self.owner._lastFindDown  = down
+        self._AddToHistory(self.txtFind,  st)
+        self._AddToHistory(self.txtFindR, st)
+        text = self.owner.text
+        if down:
+            s, e = text.GetSelection()
+            text.SetSelection(e, e)
+            from_start = s == 0
+            text.SearchAnchor()
+            p = text.SearchNext(flags, st)
+        else:
+            s, e = text.GetSelection()
+            text.SetSelection(s, s)
+            from_start = s == text.GetLength()
+            text.SearchAnchor()
+            p = text.SearchPrev(flags, st)
+        if p != -1:
+            text.SetSelection(p, p + len(st))
+            self.lblCount.SetLabel(u"")
+            self.lblCount.SetForegroundColour(wx.Colour(0, 100, 180))
+        else:
+            if not from_start:
+                if down:
+                    wherefrom, where, newStart = _(u"Reached the end"), _(u"beginning"), 0
+                else:
+                    wherefrom, where, newStart = _(u"Reached the beginning"), _(u"end"), text.GetLength()
+                wrap_msg = _(u"%s of the song, restarting search from the %s") % (wherefrom, where)
+                do_wrap = silent_wrap or self.cbWrapAround.GetValue()
+                if do_wrap:
+                    text.SetSelection(newStart, newStart)
+                    self._OnFindNext(evt, silent_wrap=True)
+                else:
+                    d = wx.MessageDialog(
+                        self.dialog,
+                        wrap_msg,
+                        self.owner.appName, wx.OK | wx.CANCEL | wx.ICON_INFORMATION
+                    )
+                    if d.ShowModal() == wx.ID_OK:
+                        text.SetSelection(newStart, newStart)
+                        self._OnFindNext(evt, silent_wrap=True)
+            else:
+                # Messaggio inline invece di MessageDialog modale
+                self.lblCount.SetLabel(_(u"The specified text was not found"))
+                self.lblCount.SetForegroundColour(wx.Colour(180, 0, 0))
+                self.dialog.Layout()
+                self.dialog.Fit()
+
+
+    def _OnCount(self, evt):
+        st = self._ActiveFindCtrl().GetValue()
+        if not st:
+            self.lblCount.SetLabel(u"")
+            return
+        flags = self._get_flags()
+        text  = self.owner.text
+        total = text.GetLength()
+        count = 0
+        p = 0
+        while True:
+            result = text.FindText(p, total, st, flags)
+            pos = result[0] if isinstance(result, tuple) else result
+            if pos == -1:
+                break
+            count += 1
+            p = pos + max(1, len(st))
+        msg = _(u"%d match found") % count if count == 1 else _(u"%d matches found") % count
+        self.lblCount.SetLabel(msg)
+        self.dialog.Layout()
+        self.dialog.Fit()
+
+    def _OnReplace(self, evt):
+        st = self.txtFindR.GetValue()
+        r  = self.txtReplace.GetValue()
+        if not st:
+            return
+        self._AddToHistory(self.txtFindR,  st)
+        self._AddToHistory(self.txtFind,   st)
+        self._AddToHistory(self.txtReplace, r)
+        flags = self._get_flags()
+        text  = self.owner.text
+        if text.GetSelectedText() == st or (
+                not (flags & wx.stc.STC_FIND_MATCHCASE) and
+                text.GetSelectedText().lower() == st.lower()):
+            text.ReplaceSelection(r)
+        self._OnFindNext(evt, silent_wrap=True)
+
+    def _OnReplaceAll(self, evt):
+        st = self.txtFindR.GetValue()
+        r  = self.txtReplace.GetValue()
+        if not st:
+            return
+        self._AddToHistory(self.txtFindR,   st)
+        self._AddToHistory(self.txtFind,    st)
+        self._AddToHistory(self.txtReplace, r)
+        flags = self._get_flags()
+        text  = self.owner.text
+        with undo_action(text):
+            text.SetSelection(0, 0)
+            c = 0
+            p = 0
+            while True:
+                result = text.FindText(p, text.GetLength(), st, flags)
+                pos = result[0] if isinstance(result, tuple) else result
+                if pos == -1:
+                    break
+                text.SetTargetStart(pos)
+                text.SetTargetEnd(pos + len(st))
+                p = pos + text.ReplaceTarget(r)
+                c += 1
+        wx.MessageDialog(
+            self.dialog,
+            _(u"%d text occurrences have been replaced") % (c,),
+            self.owner.appName, wx.OK | wx.ICON_INFORMATION
+        ).ShowModal()
+
+    def _OnCancel(self, evt):
+        if self.dialog is not None:
+            self.dialog.Destroy()
+            self.dialog = None
+        self.owner.findReplaceDialog = None
+
+    def _OnClose(self, evt):
+        self.dialog = None
+        self.owner.findReplaceDialog = None
+        evt.Skip()
+
+    def OnClose(self, evt):
+        if self.dialog:
+            self.dialog.Destroy()
+            self.dialog = None
+
+
+
+if platform.system() == 'Linux':
+    # Apparently there is a problem with linux FileOpen dialog box in wxPython:
+    # it does not support multiple extensions in a filter.
+    _import_formats = [
+        (_("All supported files"), ["crd", "cho", "chordpro", "chopro", "tab", "cpm"]),
+        #(_("Chordpro files (*.crd)"), ["crd"]),
+        #(_("Tab files (*.tab)"), ["tab"]),
+        #(_("Chordpro files (*.cho)"), ["cho"]),
+        #(_("Chordpro files (*.chordpro)"), ["chordpro"]),
+        #(_("Chordpro files (*.chopro)"), ["chopro"]),
+        #(_("Chordpro files (*.pro)"), ["pro"]),
+    ]
+else:
+    _import_formats = [
+        (_("All supported files"), ["crd", "cho", "chordpro", "chopro", "pro", "tab"]),
+        (_("Chordpro files (*.crd, *.cho, *.chordpro, *.chopro, *.pro)"), ["crd", "cho", "chordpro", "chopro", "pro"]),
+        (_("Tab files (*.tab)"), ["tab"]),
+    ]
+
+
+class SongpressPrintout(wx.Printout):
+    """
+    Printout class for Songpress++.
+
+    Supports explicit page breaks via the {new_page} command:
+    the text is split into segments, each printed on one or more pages.
+    Within each segment, the content scrolls automatically if
+    it exceeds the page height.
+    """
+
+    _SCREEN_PPI = 96
+
+    def __init__(self, frame_obj, title="Song", two_pages_per_sheet=False):
+        wx.Printout.__init__(self, title)
+        self.frame_obj = frame_obj
+        self.two_pages_per_sheet = two_pages_per_sheet
+        self._page_offsets  = None   # list of (segment_idx, y_offset_px)
+        self._segments      = None   # list of text strings (split on {new_page})
+        self._scale_x       = None
+        self._scale_y       = None
+        self._margin_du     = None
+        self._usable_w_du   = None
+        self._song_info     = None   # (full_song, line_start, line_end)
+        self._col_h_px      = 0     # altezza colonna di testo in px schermo (0 = illimitata)
+        # Contatori strofe iniziali per ogni segmento {new_page}: seg_idx -> (verseCount, labelCount, chorusCount)
+        self._seg_verse_start = {}
+        # Used only in two_pages_per_sheet mode
+        self._col_w_du      = None
+        self._gap_du        = None
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _mm_to_du(self, mm, ppi):
+        return int(mm * ppi / 25.4)
+
+    @staticmethod
+    def _split_on_new_page(text):
+        """
+        Splits the text on {new_page} or {np} commands (case-insensitive).
+        Returns a list of text segments (at least one).
+        Le righe commentate con '#' (es. # {new_page}) vengono ignorate:
+        i comandi in esse contenuti non producono divisioni di pagina.
+        """
+        import re
+        cmd_pat     = re.compile(r'\{\s*(?:new_page|np)\s*\}', re.IGNORECASE)
+        comment_pat = re.compile(r'^\s*#')
+
+        # Raccoglie le posizioni (start, end) dei {new_page} non commentati
+        split_positions = []
+        offset = 0
+        for line in text.splitlines(keepends=True):
+            if not comment_pat.match(line):
+                for m in cmd_pat.finditer(line):
+                    split_positions.append((offset + m.start(), offset + m.end()))
+            offset += len(line)
+
+        if not split_positions:
+            return [text]
+
+        # Costruisce i segmenti spezzando nelle posizioni trovate
+        parts = []
+        prev = 0
+        for start, end in split_positions:
+            parts.append(text[prev:start])
+            prev = end
+        parts.append(text[prev:])
+
+        result = [p for p in parts if p.strip()] or [text]
+        return result
+
+    def _make_renderer(self):
+        decorator = (
+            self.frame_obj.pref.decorator
+            if self.frame_obj.pref.labelVerses
+            else SongDecorator()
+        )
+        r = Renderer(
+            self.frame_obj.pref.format,
+            decorator,
+            self.frame_obj.pref.notations,
+        )
+        r.tempoDisplay = getattr(self.frame_obj.pref, 'tempoDisplay', 0)
+        r.timeDisplay = getattr(self.frame_obj.pref, 'timeDisplay', True)
+        r.keyDisplay = getattr(self.frame_obj.pref, 'keyDisplay', True)
+        r.tempoIconSize = getattr(self.frame_obj.pref, 'tempoIconSize', 24)
+        r.columns = getattr(self.frame_obj, '_columns_per_page', 1)
+        r.columnHeight = getattr(self, '_col_h_px', 0)
+        return r
+
+    def _ensure_layout(self, dc):
+        if self._page_offsets is not None:
+            return
+
+        pw, ph = self.GetPageSizePixels()
+        ppi_x, ppi_y = dc.GetPPI()
+
+        ml = self._mm_to_du(self.frame_obj._margin_left,   ppi_x)
+        mr = self._mm_to_du(self.frame_obj._margin_right,  ppi_x)
+        mt = self._mm_to_du(self.frame_obj._margin_top,    ppi_y)
+        mb = self._mm_to_du(self.frame_obj._margin_bottom, ppi_y)
+        self._margin_du = (ml, mt, mr, mb)
+
+        columns_per_page = getattr(self.frame_obj, '_columns_per_page', 1)
+
+        if self.two_pages_per_sheet:
+            # Split the physical sheet into two equal columns with a small central gap
+            gap = self._mm_to_du(5, ppi_x)   # 5 mm gap
+            col_w = (pw - ml - mr - gap) // 2
+            usable_w = col_w
+            usable_h = ph - mt - mb
+            self._col_w_du = col_w
+            self._gap_du   = gap
+        else:
+            usable_w = pw - ml - mr
+            usable_h = ph - mt - mb
+
+        # Colonne di testo nella singola pagina logica
+        if columns_per_page >= 2:
+            col_gap_du = self._mm_to_du(8, ppi_x)   # 8 mm tra colonne di testo
+            text_col_w = (usable_w - col_gap_du) // 2
+            # Altezza colonna = altezza pagina intera (il renderer distribuirà i blocchi)
+            self._col_h_px = usable_h / (ppi_y / self._SCREEN_PPI)
+            # Per il renderer la larghezza "utile" è quella della singola colonna di testo
+            # moltiplicata per il numero di colonne (il renderer le affianca orizzontalmente)
+            # La scala orizzontale deve adattarsi alla singola colonna di testo
+            usable_w_for_scale = text_col_w
+        else:
+            self._col_h_px = 0
+            usable_w_for_scale = usable_w
+
+        self._usable_w_du = usable_w
+
+        self._scale_x = ppi_x / self._SCREEN_PPI
+        self._scale_y = ppi_y / self._SCREEN_PPI
+
+        # Recupera selezione / testo intero
+        start, end   = self.frame_obj.text.GetSelection()
+        full_song    = (start == end)
+        line_start   = self.frame_obj.text.LineFromPosition(start)
+        line_end     = self.frame_obj.text.LineFromPosition(end)
+        full_text    = SongpressFrame._strip_hash_commands(self.frame_obj.text.GetText())
+        
+        self._song_info = (full_song, line_start, line_end)
+
+        # Se stiamo stampando una selezione non dividiamo sui {new_page}
+        if full_song:
+            self._segments = self._split_on_new_page(full_text)
+        else:
+            self._segments = [full_text]   # la selezione viene gestita in OnPrintPage
+
+        # Misura ciascun segmento con un MemoryDC e calcola gli offsets di pagina
+        mdc = wx.MemoryDC(wx.Bitmap(1, 1))
+        self._page_offsets = []   # list of (seg_idx, y_px_float)
+
+        verse_count, label_count, chorus_count = 0, 0, 0
+        for seg_idx, seg_text in enumerate(self._segments):
+            r = self._make_renderer()
+            r.initialVerseCount = verse_count
+            r.initialLabelCount = label_count
+            r.initialChorusCount = chorus_count
+            self._seg_verse_start[seg_idx] = (verse_count, label_count, chorus_count)
+            if full_song:
+                sw, sh = r.Render(seg_text, mdc)
+            else:
+                sw, sh = r.Render(full_text, mdc, line_start, line_end)
+            sw, sh = max(1, sw), max(1, sh)
+            verse_count  = r.song.verseCount
+            label_count  = r.song.labelCount
+            chorus_count = r.song.chorusCount
+
+            # Adjust horizontal scale if necessary (use the most restrictive)
+            natural_w = sw * self._scale_x
+            if natural_w > usable_w_for_scale:
+                fit = usable_w_for_scale / natural_w
+                self._scale_x = min(self._scale_x, self._scale_x * fit)
+                self._scale_y = min(self._scale_y, self._scale_y * fit)
+
+        # Ricalcola con la scala definitiva
+        px_per_page = usable_h / self._scale_y
+
+        # Riduci e adatta alla pagina: se attivo, scala ulteriormente in modo che
+        # l'intero contenuto di ciascun segmento entri in una sola pagina (verticalmente).
+        if getattr(self.frame_obj, '_fit_to_page', False):
+            for seg_idx, seg_text in enumerate(self._segments):
+                r = self._make_renderer()
+                vc, lc, cc = self._seg_verse_start.get(seg_idx, (0, 0, 0))
+                r.initialVerseCount = vc
+                r.initialLabelCount = lc
+                r.initialChorusCount = cc
+                if full_song:
+                    sw, sh = r.Render(seg_text, mdc)
+                else:
+                    sw, sh = r.Render(full_text, mdc, line_start, line_end)
+                sh = max(1, sh)
+                if sh > px_per_page:
+                    fit_v = px_per_page / sh
+                    self._scale_x *= fit_v
+                    self._scale_y *= fit_v
+                    px_per_page = usable_h / self._scale_y  # aggiorna dopo riduzione
+
+        # Shrink to fit current page: evita il taglio del contenuto in fondo pagina.
+        #
+        # Il problema fondamentale: il renderer disegna il canzone in modo continuo
+        # e il clipping di pagina taglia le righe a metà. Non esiste una soglia sicura
+        # da controllare sull'ultima pagina — ogni confine di pagina può tagliare.
+        #
+        # Approccio: ricerca binaria sul fattore di scala (e/o sui margini) per trovare
+        # il valore che fa sì che NESSUNA pagina sia "spezzata a metà di riga".
+        # Misura l'altezza di una riga singola e verifica che px_per_page sia un multiplo
+        # intero dell'altezza di riga — oppure, più robusto, che il contenuto di ogni
+        # "fetta" di pagina si fermi a un confine di riga.
+        #
+        # Poiché il renderer non espone i breakpoint, usiamo l'approccio indiretto:
+        # misuriamo l'altezza di una riga rappresentativa e troviamo la scala che
+        # fa sì che px_per_page sia il più vicino possibile a N * row_h senza superarlo.
+        #
+        # Passo 1: usa margini per recuperare spazio (fino al minimo configurabile).
+        # Passo 2: riduce la scala se i margini non bastano.
+        if getattr(self.frame_obj, '_shrink_to_fit', False):
+            import math
+
+            # Misura altezza di una riga rappresentativa (testo + accordo sopra)
+            r_probe = self._make_renderer()
+            _, row_h = r_probe.Render("[C]x", mdc)
+            row_h = max(1, row_h)
+
+            def _best_ppp(ppp):
+                """Trovato il numero intero di righe che sta in ppp, restituisce
+                il px_per_page ideale = N*row_h <= ppp, con N >= 1."""
+                n_rows = max(1, int(math.floor(ppp / row_h)))
+                return n_rows * row_h
+
+            def _apply_margins(reduction_du):
+                """Applica una riduzione simmetrica ai margini (device units).
+                Restituisce il nuovo usable_h e px_per_page."""
+                mt_du, mb_du = self._margin_du[1], self._margin_du[3]
+                min_margin_mm = float(getattr(self.frame_obj, '_min_margin_shrink', 5))
+                min_du = self._mm_to_du(min_margin_mm, ppi_y)
+                new_mt = max(min_du, mt_du - math.ceil(reduction_du / 2.0))
+                new_mb = max(min_du, mb_du - math.floor(reduction_du / 2.0))
+                ml_du, mr_du = self._margin_du[0], self._margin_du[2]
+                self._margin_du = (ml_du, new_mt, mr_du, new_mb)
+                uh = ph - new_mt - new_mb
+                return uh, uh / self._scale_y
+
+            # px_per_page ideale con scala corrente (multiplo di row_h)
+            ideal_ppp = _best_ppp(px_per_page)
+            gap = px_per_page - ideal_ppp  # spazio "sprecato" tra px_per_page e il multiplo inferiore
+
+            if gap > 0:
+                # Quanto gap (in device units) dobbiamo recuperare riducendo usable_h
+                # di esattamente gap * scale_y — così px_per_page scende al multiplo.
+                gap_du = gap * self._scale_y
+
+                # -- Passo 1: prova a recuperare riducendo i margini top+bottom --
+                mt_du, mb_du = self._margin_du[1], self._margin_du[3]
+                min_margin_mm = float(getattr(self.frame_obj, '_min_margin_shrink', 5))
+                min_du = self._mm_to_du(min_margin_mm, ppi_y)
+                reducible_du = float(max(0, (mt_du - min_du) + (mb_du - min_du)))
+
+                if reducible_du >= gap_du:
+                    # I margini bastano: riduciamo solo quanto serve per eliminare il gap
+                    usable_h, px_per_page = _apply_margins(gap_du)
+                    px_per_page = _best_ppp(px_per_page)  # riallinea per sicurezza
+                else:
+                    # Usiamo tutto il riducibile dai margini
+                    if reducible_du > 0:
+                        usable_h, px_per_page = _apply_margins(reducible_du)
+                        # Dopo la riduzione dei margini, ricalcola il gap residuo
+                        ideal_ppp = _best_ppp(px_per_page)
+                        gap = px_per_page - ideal_ppp
+                        gap_du = gap * self._scale_y
+
+                    # -- Passo 2: riduci la scala per eliminare il gap residuo --
+                    # Vogliamo che usable_h / scale_y_new sia un multiplo di row_h.
+                    # usable_h / (scale_y * f) = n_rows * row_h
+                    # → f = usable_h / (scale_y * n_rows * row_h)
+                    # dove n_rows = floor(px_per_page / row_h) — il numero di righe
+                    # che già stanno in px_per_page (non aggiungiamo righe, solo allineamo).
+                    if gap > 0:
+                        n_rows_now = max(1, int(math.floor(px_per_page / row_h)))
+                        target_ppp = n_rows_now * row_h  # allinea al multiplo inferiore
+                        # f = usable_h / (scale_y * target_ppp)  → scala la riga a target_ppp
+                        f = usable_h / (self._scale_y * target_ppp)
+                        if f < 1.0:
+                            self._scale_x *= f
+                            self._scale_y *= f
+                            px_per_page = usable_h / self._scale_y
+                            px_per_page = _best_ppp(px_per_page)  # verifica finale
+
+        for seg_idx, seg_text in enumerate(self._segments):
+            r = self._make_renderer()
+            vc, lc, cc = self._seg_verse_start.get(seg_idx, (0, 0, 0))
+            r.initialVerseCount = vc
+            r.initialLabelCount = lc
+            r.initialChorusCount = cc
+            if full_song:
+                sw, sh = r.Render(seg_text, mdc)
+            else:
+                sw, sh = r.Render(full_text, mdc, line_start, line_end)
+            sw, sh = max(1, sw), max(1, sh)
+
+            # Skip blank/empty segments when _remove_blank_pages is active
+            if getattr(self.frame_obj, '_remove_blank_pages', False) and sh <= 2:
+                continue
+
+            # Scan the segment height page by page
+            y = 0.0
+            while y < sh:
+                self._page_offsets.append((seg_idx, y))
+                y += px_per_page
+
+        if not self._page_offsets:
+            self._page_offsets = [(0, 0.0)]
+
+    # ------------------------------------------------------------------
+    # wx.Printout interface
+    # ------------------------------------------------------------------
+
+    def _n_sheets(self):
+        """
+        Restituisce il numero di fogli fisici da stampare.
+        Forza il calcolo del layout se non ancora eseguito, ottenendo il DC
+        dal framework wx (necessario per conoscere PPI e dimensioni foglio).
+        Se il DC non è ancora disponibile, usa 1 come valore provvisorio sicuro:
+        wx chiamerà nuovamente GetPageInfo dopo OnPreparePrinting, quindi il
+        valore definitivo verrà restituito in quella seconda chiamata.
+        """
+        import math
+        if self._page_offsets is None:
+            dc = self.GetDC()
+            if dc and dc.IsOk():
+                self._ensure_layout(dc)
+        n_logical = len(self._page_offsets) if self._page_offsets else 1
+        if self.two_pages_per_sheet:
+            return max(1, math.ceil(n_logical / 2))
+        return max(1, n_logical)
+
+    def GetPageInfo(self):
+        """
+        In 2-pages-per-sheet mode, we return the number of physical sheets
+        (each sheet contains 2 logical pages).
+        """
+        n = self._n_sheets()
+        return 1, n, 1, n
+
+    def HasPage(self, page):
+        return 1 <= page <= self._n_sheets()
+
+    def OnPreparePrinting(self):
+        dc = self.GetDC()
+        if dc:
+            self._ensure_layout(dc)
+
+    def _render_logical_page(self, dc, logical_page_idx, origin_x, origin_y):
+        """
+        Renderizza la pagina logica `logical_page_idx` (0-based) posizionandola
+        a (origin_x, origin_y) nel DC fisico.
+        """
+        if logical_page_idx >= len(self._page_offsets):
+            return
+
+        seg_idx, y_offset_px = self._page_offsets[logical_page_idx]
+        ml, mt, mr, mb = self._margin_du
+        usable_h_du = self.GetPageSizePixels()[1] - mt - mb
+        full_song, line_start, line_end = self._song_info
+
+        if full_song:
+            seg_text = self._segments[seg_idx]
+        else:
+            seg_text = SongpressFrame._strip_hash_commands(self.frame_obj.text.GetText())
+
+        dc.SetClippingRegion(origin_x, origin_y, self._usable_w_du, usable_h_du)
+        dc.SetDeviceOrigin(origin_x, origin_y - int(y_offset_px * self._scale_y))
+        dc.SetUserScale(self._scale_x, self._scale_y)
+
+        r = self._make_renderer()
+        vc, lc, cc = self._seg_verse_start.get(seg_idx, (0, 0, 0))
+        r.initialVerseCount = vc
+        r.initialLabelCount = lc
+        r.initialChorusCount = cc
+        if full_song:
+            r.Render(seg_text, dc)
+        else:
+            r.Render(seg_text, dc, line_start, line_end)
+
+        dc.SetUserScale(1.0, 1.0)
+        dc.SetDeviceOrigin(0, 0)
+        dc.DestroyClippingRegion()
+
+    def OnPrintPage(self, page):
+        dc = self.GetDC()
+        self._ensure_layout(dc)
+
+        ml, mt, mr, mb = self._margin_du
+        pw, ph = self.GetPageSizePixels()
+
+        if self.two_pages_per_sheet:
+            # page is 1-based; each physical sheet contains 2 logical pages
+            left_idx  = (page - 1) * 2      # pagina logica sinistra (0-based)
+            right_idx = left_idx + 1         # pagina logica destra  (0-based)
+
+            # Se la pagina logica destra non esiste (es. contenuto su 1 sola pagina),
+            # la seconda metà del foglio mostra la stessa pagina sinistra (copia),
+            # a meno che _no_mirror_right sia attivo: in quel caso lascia bianco.
+            n_logical = len(self._page_offsets)
+            no_mirror = getattr(self.frame_obj, '_no_mirror_right', False)
+            if right_idx >= n_logical:
+                if no_mirror:
+                    right_idx = None   # lascia bianca la metà destra
+                else:
+                    right_idx = left_idx   # replica la stessa pagina logica
+
+            left_x  = ml
+            right_x = ml + self._col_w_du + self._gap_du
+
+            # Linea divisoria verticale centrale (tratteggiata, grigia)
+            center_x = ml + self._col_w_du + self._gap_du // 2
+            dc.SetPen(wx.Pen(wx.Colour(180, 180, 180), 1, wx.PENSTYLE_DOT))
+            dc.DrawLine(center_x, mt, center_x, ph - mb)
+            dc.SetPen(wx.NullPen)
+
+            self._render_logical_page(dc, left_idx,  left_x,  mt)
+            if right_idx is not None:
+                self._render_logical_page(dc, right_idx, right_x, mt)
+
+        else:
+            page_idx = page - 1
+            if page_idx >= len(self._page_offsets):
+                return False
+            self._render_logical_page(dc, page_idx, ml, mt)
+
+        return True
+
+
+class SongpressFrame(SDIMainFrame):
+    def __init__(self, res):
+        SDIMainFrame.__init__(
+            self,
+            res,
+            'MainFrame',
+            'Songpress++',
+            'Skeed',
+            _('song'),
+            'crd',
+            _('Songpress++ - The Song Editor'),
+            glb.AddPath('img/songpress++.ico'),
+            glb.VERSION,
+            _("Original version website: http://www.skeed.it/songpress"),
+            (_(u"Copyright (c) 2009-{year} Luca Allulli - Skeed\nLocalization:\n{translations}\n\nSongpress++ is a fork of Songpress by Luca Allulli - Skeed\n(http://www.skeed.it/songpress), maintained and extended by Denisov21.\n(https://github.com/Denisov21/Songpressplusplus)")).format(
+                year=glb.YEAR,
+                translations="\n".join([u"- {}: {}".format(glb.languages[x], glb.translators[x]) for x in glb.languages])
+            ),
+            _("Licensed under the terms and conditions of the GNU General Public License, version 2"),
+            _(
+                "Special thanks to:\n  * The Pyhton programming language (http://www.python.org)\n  * wxWidgets (http://www.wxwidgets.org)\n  * wxPython (http://www.wxpython.org)\n  * Editra (http://editra.org/) (for the error reporting dialog and... the editor itself!)\n  * python-pptx (for PowerPoint export)"),
+            _import_formats,
+        )
+        self.pref = Preferences()
+        if not hasattr(self.pref, 'tempoDisplay'):
+            self.pref.tempoDisplay = 0
+        if not hasattr(self.pref, 'timeDisplay'):
+            self.pref.timeDisplay = True
+        if not hasattr(self.pref, 'keyDisplay'):
+            self.pref.keyDisplay = True
+        if not hasattr(self.pref, 'tempoIconSize'):
+            self.pref.tempoIconSize = 24
+        if not hasattr(self.pref, 'klavierHighlightHex'):
+            self.pref.klavierHighlightHex = '#D23C3C'
+        self.SetDefaultExtension(self.pref.defaultExtension)
+        self.statusBar = self.frame.GetStatusBar()
+        self._statusTimer = wx.Timer(self.frame)
+        self.frame.Bind(wx.EVT_TIMER, self._OnStatusTimerExpired, self._statusTimer)
+        self.text = Editor(self)
+        dt = SDIDropTarget(self)
+        self.text.SetDropTarget(dt)
+        self.frame.Bind(wx.stc.EVT_STC_UPDATEUI, self.OnUpdateUI, self.text)
+        self.text.Bind(wx.EVT_KEY_DOWN, self.OnTextKeyDown, self.text)
+        # Other objects
+        self.previewCanvas = PreviewCanvas(self.frame, self.pref.format, self.pref.notations, self.pref.decorator)
+        # Registra la callback doppio-click: naviga alla riga sorgente nell'editor
+        self.previewCanvas.SetClickCallback(self._OnPreviewClick)
+        self.AddMainPane(self.text)
+        _preview_min = wx.Size(370, 520) if getattr(self.pref, 'previewMinSize', True) else wx.Size(-1, -1)
+        self.AddPane(self.previewCanvas.main_panel,
+                     aui.AuiPaneInfo().Right().BestSize(370, 520).MinSize(_preview_min),
+                     _('Songpress++ Preview'), 'preview')
+        self.previewCanvas.main_panel.Bind(wx.adv.EVT_HYPERLINK, self.OnCopyAsImage, self.previewCanvas.link)
+        self.mainToolBar = aui.AuiToolBar(self.frame, wx.ID_ANY, wx.DefaultPosition, agwStyle=aui.AUI_TB_PLAIN_BACKGROUND)
+        self.mainToolBar.SetToolBitmapSize(wx.Size(16, 16))
+        self.AddTool(self.mainToolBar, 'new', 'img/new.png', _("New"), _("Create a new song"))
+        self.AddTool(self.mainToolBar, 'open', 'img/open.png', _("Open"), _("Open an existing song"))
+        self.AddTool(self.mainToolBar, 'save', 'img/save.png', _("Save"), _("Save the song with the current file name"))
+        self.mainToolBar.AddSeparator()
+        self.undoTool = self.AddTool(self.mainToolBar, 'undo', 'img/undo.png', _("Undo"), _("Undo the last change"))
+        self.redoTool = self.AddTool(self.mainToolBar, 'redo',
+            'img/redo.png', _("Redo"), _("Redo the last undone change"))
+        self.redoTool = wx.xrc.XRCID('redo')
+        self.mainToolBar.AddSeparator()
+        self.cutTool = self.AddTool(self.mainToolBar, 'cut', 'img/cut.png', _("Cut"),
+                                                                _("Move selected text to the clipboard"))
+        self.copyTool = self.AddTool(self.mainToolBar, 'copy', 'img/copy.png', _("Copy"),
+                                                                 _("Copy selected text to the clipboard"))
+        self.copyOnlyTextTool = wx.xrc.XRCID('copyOnlyText')
+        self.AddTool(self.mainToolBar, 'copyAsImage', 'img/copyAsImage2.png', _("Copy as image"),
+                                     _("Copy the entire FORMATTED song (or selected verses) to the clipboard"))
+        self.pasteTool = self.AddTool(self.mainToolBar, 'paste', 'img/paste.png', _("Paste"),
+                                                                    _("Read text from the clipboard and insert it at the cursor position"))
+        self.pasteChordsTool = self.AddTool(self.mainToolBar, 'pasteChords', 'img/pasteChords.png', _("Paste chords"),
+                                                                                _("Merge chords from the copied text into the current selection"))
+        self.mainToolBar.AddSeparator()
+        self.syntaxCheckTool = self.AddTool(
+            self.mainToolBar,
+            'syntaxCheck',
+            'img/syntaxCheck.png',
+            _("Check syntax"),
+            _("Check ChordPro syntax of the document")
+        )
+        self.mainToolBar.Realize()
+        self.mainToolBarPane = self.AddPane(self.mainToolBar, aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(1),
+                                                                                _('Standard'), 'standard')
+        self.formatToolBar = aui.AuiToolBar(self.frame, wx.ID_ANY, agwStyle=aui.AUI_TB_PLAIN_BACKGROUND)
+        self.formatToolBar.SetExtraStyle(aui.AUI_TB_PLAIN_BACKGROUND)
+        self.fontChooser = FontComboBox(self.formatToolBar, -1, self.pref.format.face)
+        self.formatToolBar.AddControl(self.fontChooser)
+        self.frame.Bind(wx.EVT_COMBOBOX, self.OnFontSelected, self.fontChooser)
+        wx.UpdateUIEvent.SetUpdateInterval(500)
+        self.frame.Bind(wx.EVT_UPDATE_UI, self.OnIdle, self.frame)
+        self.frame.Bind(wx.EVT_TEXT_CUT, self.OnTextCutCopy, self.text)
+        self.frame.Bind(wx.EVT_TEXT_COPY, self.OnTextCutCopy, self.text)
+        self.fontChooser.Bind(wx.EVT_TEXT_ENTER, self.OnFontSelected, self.fontChooser)
+        self.fontChooser.Bind(wx.EVT_KILL_FOCUS, self.OnFontSelected, self.fontChooser)
+        self.AddTool(self.formatToolBar, 'title', 'img/title.png', _("Insert title"),
+                                 _("Insert a command to display the song title"))
+        self.AddTool(self.formatToolBar, 'chord', 'img/chord.png', _("Insert chord"),
+                                 _("Insert square brackets that will contain a chord"))
+        self.AddTool(self.formatToolBar, 'chorus', 'img/chorus.png', _("Insert chorus"),
+                                 _("Insert a pair of commands that will contain the chorus"))
+        self.AddTool(
+            self.formatToolBar,
+            'verseWithCustomLabelOrWithoutLabel',
+            'img/verse.png',
+            _("Insert verse with custom label or without label"),
+            _("Insert a verse with a custom label or without label"),
+        )
+        labelVersesTool = self.formatToolBar.AddToggleTool(  # AddToggleTool (agw) or AddTool
+            wx.xrc.XRCID('labelVerses'),
+            wx.Bitmap(wx.Image(glb.AddPath("img/labelVerses.png"))),
+            wx.NullBitmap,
+            True,
+            None,
+            _("Show verse labels"),
+            _("Show or hide verse and chorus labels"),
+        )
+        self.labelVersesToolId = labelVersesTool.GetId()
+        showChordsIcon = wx.StaticBitmap(self.formatToolBar, -1, wx.Bitmap(wx.Image(glb.AddPath('img/showChords.png'))))
+        self.formatToolBar.AddControl(showChordsIcon)
+        self.showChordsChooser = wx.Slider(self.formatToolBar, -1, 0, 0, 2, wx.DefaultPosition, (100, -1),
+                                                                             wx.SL_AUTOTICKS | wx.SL_HORIZONTAL)
+        tt1 = wx.ToolTip(_("Hide or show chords in the formatted song"))
+        tt2 = wx.ToolTip(_("Hide or show chords in the formatted song"))
+        self.showChordsChooser.SetToolTip(tt1)
+        showChordsIcon.SetToolTip(tt2)
+        self.frame.Bind(wx.EVT_SCROLL, self.OnFontSelected, self.showChordsChooser)
+        self.formatToolBar.AddControl(
+            self.showChordsChooser,
+            "pippo"
+        )
+        self.formatToolBar.Realize()
+        self.formatToolBarPane = self.AddPane(self.formatToolBar, aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(2),
+                                                                                    _('Format'), 'format')
+        self.BindMyMenu()
+        self._BuildNewFromTemplateMenu()
+        self.frame.Bind(EVT_TEXT_CHANGED, self.OnTextChanged)
+        self.frame.Bind(wx.EVT_CHAR_HOOK, self._OnGlobalCharHook)
+        self.exportMenuId = xrc.XRCID('export')
+        self.exportToClipboardAsAVectorImage = xrc.XRCID('exportToClipboardAsAVectorImage')
+        self.exportAsEmfMenuId = xrc.XRCID('exportAsEmf')
+        self.cutMenuId = xrc.XRCID('cut')
+        self.copyMenuId = xrc.XRCID('copy')
+        self.copyAsImageMenuId = xrc.XRCID('copyAsImage')
+        self.pasteMenuId = xrc.XRCID('paste')
+        self.pasteChordsMenuId = xrc.XRCID('pasteChords')
+        self.propagateVerseChordsMenuId = xrc.XRCID('propagateVerseChords')
+        self.propagateChorusChordsMenuId = xrc.XRCID('propagateChorusChords')
+        self.removeChordsMenuId = xrc.XRCID('removeChords')
+        self.labelVersesMenuId = xrc.XRCID('labelVerses')
+        self.noChordsMenuId = xrc.XRCID('noChords')
+        self.oneVerseForEachChordPatternMenuId = xrc.XRCID('oneVerseForEachChordPattern')
+        self.wholeSongMenuId = xrc.XRCID('wholeSong')
+        self.chordsAboveMenuId = xrc.XRCID('chordsAbove')
+        self.chordsBelowMenuId = xrc.XRCID('chordsBelow')
+        if platform.system() != 'Windows':
+            self.menuBar.GetMenu(0).FindItemById(self.exportMenuId).GetSubMenu().Delete(self.exportAsEmfMenuId)
+        # Persistent print settings (paper size, orientation, margins)
+        self._print_data = wx.PrintData()
+        self._print_data.SetPaperId(wx.PAPER_A4)
+        self._print_data.SetOrientation(wx.PORTRAIT)
+        # Margins in mm (top, bottom, left, right)
+        self._margin_top    = 15
+        self._margin_bottom = 15
+        self._margin_left   = 15
+        self._margin_right  = 15
+        self._LoadPageMargins()
+        self._LoadTempoDisplay()
+        self._LoadKlavierColour()
+        self._applyKlavierHighlightColor()
+        self._LoadCustomColours()
+        self._two_pages_per_sheet = False
+        self._columns_per_page = 1  # 1 = colonna singola, 2 = due colonne per pagina
+        self._fit_to_page = False   # True = riduci e adatta alla pagina
+        self._no_mirror_right = False  # True = non replicare il brano sulla metà destra
+        self._remove_blank_pages = False  # True = skip blank/empty logical pages
+        self._shrink_to_fit = False  # True = auto-shrink to avoid bottom clipping
+        self._min_margin_shrink = 5   # margine minimo (mm) usato dallo shrink automatico
+        self._print_options_pinned = False  # True = keep print options dialog open after OK
+        self._showPageBreakLines = True
+        self._showColumnBreakLines = True
+        self._showPageBreakLinesMenuId = xrc.XRCID('showPageBreakLines')
+        self._showColumnBreakLinesMenuId = xrc.XRCID('showColumnBreakLines')
+        self.findReplaceDialog = None
+        self._lastFindSt    = ''
+        self._lastFindFlags = 0
+        self._lastFindDown  = True
+        self.CheckLabelVerses()
+        self.CheckChordsPosition()
+        self.SetFont()
+        self.text.SetFont(self.pref.editorFace, self.pref.editorSize)
+        self.text.SetBgColour(getattr(self.pref, 'editorBgHex', '#FFFFFF'))
+        self.text.SetSelColour(getattr(self.pref, 'selColourHex', '#3399FF'))
+        self.text.ApplyMultiCursor(getattr(self.pref, 'multiCursor', False))
+        self.FinalizePaneInitialization()
+        # Reassign caption value to override caption saved in preferences (it could be another language)
+        self._mgr.GetPane('preview').caption = _('Songpress++ Preview')
+        self._mgr.GetPane('standard').caption = _('Standard')
+        self._mgr.GetPane('format').caption = _('Format')
+        # LoadPerspective sovrascrive MinSize: lo reimponiamo sempre dopo
+        self._ApplyPreviewMinSize()
+        self._mgr.Update()
+        self._UpdateBreakLinesMenuState()
+        self.RestoreWindowGeometry()
+        if 'firstTimeEasyKey' in self.pref.notices:
+            msg = _(
+                "You are not a skilled guitarist? Songpress++ can help you: when you open a song, it can detect if chords are difficult. If this is the case, Songpress++ will alert you, and offer to transpose your song to the easiest key, automatically.\n\nDo you want to turn this option on?")
+            d = wx.MessageDialog(self.frame, msg, _("Songpress++"), wx.YES_NO | wx.ICON_QUESTION)
+            if d.ShowModal() == wx.ID_YES:
+                self.pref.autoAdjustEasyKey = True
+                msg = _(
+                    "Please take a minute to set up your skill as a guitarist. For each group of chords, tell Songpress++ how much you like them.")
+                d = wx.MessageDialog(self.frame, msg, _("Songpress++"), wx.OK)
+                d.ShowModal()
+                f = MyPreferencesDialog(self.frame, self.pref, easyChords,
+                                            previewCanvas=self.previewCanvas)
+                f.notebook.SetSelection(1)
+                if f.ShowModal() == wx.ID_OK:
+                    self.text.SetFont(self.pref.editorFace, int(self.pref.editorSize))
+                    self.SetDefaultExtension(self.pref.defaultExtension)
+
+    def OnClose(self, evt):
+        self.SaveWindowGeometry()
+        self._SavePageMargins()
+        self._SaveTempoDisplay()
+        self._SaveKlavierColour()
+        self._SaveCustomColours()
+        self.pref.Save()
+        self.config.Flush()
+        super().OnClose(evt)
+
+    def OnRestart(self, evt):
+        """Chiede conferma e riavvia l'applicazione."""
+        d = wx.MessageDialog(
+            self.frame,
+            _("Are you sure you want to restart Songpress++?"),
+            _("Restart"),
+            wx.YES_NO | wx.ICON_QUESTION | wx.NO_DEFAULT,
+        )
+        if d.ShowModal() == wx.ID_YES:
+            self.SaveWindowGeometry()
+            self._SavePageMargins()
+            self._SaveTempoDisplay()
+            self._SaveKlavierColour()
+            self._SaveCustomColours()
+            self.pref.Save()
+            self.config.Flush()
+            if getattr(sys, 'frozen', False):
+                # Eseguibile cx_Freeze
+                subprocess.Popen([sys.executable] + sys.argv[1:])
+            else:
+                # Installazione pip: entry-point 'songpress = songpress.main:main'
+                subprocess.Popen(
+                    [sys.executable, '-m', 'songpress.main'] + sys.argv[1:]
+                )
+            wx.GetApp().ExitMainLoop()
+        d.Destroy()
+
+    def _SavePageMargins(self):
+        """Salva i margini, il formato carta, l'orientamento e le opzioni
+        di riduzione automatica nel config."""
+        try:
+            self.config.SetPath('/PageSetup')
+            self.config.Write('margin_top',    str(self._margin_top))
+            self.config.Write('margin_bottom', str(self._margin_bottom))
+            self.config.Write('margin_left',   str(self._margin_left))
+            self.config.Write('margin_right',  str(self._margin_right))
+            self.config.Write('paper_id',      str(self._print_data.GetPaperId()))
+            self.config.Write('orientation',   str(self._print_data.GetOrientation()))
+            self.config.Write('shrink_to_fit',     '1' if self._shrink_to_fit else '0')
+            self.config.Write('min_margin_shrink', str(self._min_margin_shrink))
+        except Exception:
+            pass
+
+    def _LoadPageMargins(self):
+        """Ripristina i margini, il formato carta, l'orientamento e le opzioni
+        di riduzione automatica dal config."""
+        try:
+            self.config.SetPath('/PageSetup')
+            top    = self.config.Read('margin_top')
+            bottom = self.config.Read('margin_bottom')
+            left   = self.config.Read('margin_left')
+            right  = self.config.Read('margin_right')
+            if top:    self._margin_top    = int(top)
+            if bottom: self._margin_bottom = int(bottom)
+            if left:   self._margin_left   = int(left)
+            if right:  self._margin_right  = int(right)
+            paper_id = self.config.Read('paper_id')
+            if paper_id:
+                self._print_data.SetPaperId(int(paper_id))
+            orientation = self.config.Read('orientation')
+            if orientation:
+                self._print_data.SetOrientation(int(orientation))
+            shrink = self.config.Read('shrink_to_fit')
+            if shrink:
+                self._shrink_to_fit = (shrink == '1')
+            min_m = self.config.Read('min_margin_shrink')
+            if min_m:
+                self._min_margin_shrink = int(min_m)
+        except Exception:
+            pass
+
+    def _SaveTempoDisplay(self):
+        """Salva le modalità di visualizzazione di tempo, misura e tonalità nel config."""
+        try:
+            self.config.SetPath('/TempoDisplay')
+            self.config.Write('tempoDisplay', str(getattr(self.pref, 'tempoDisplay', 0)))
+            self.config.SetPath('/TimeDisplay')
+            self.config.Write('timeDisplay', '1' if getattr(self.pref, 'timeDisplay', True) else '0')
+            self.config.SetPath('/KeyDisplay')
+            self.config.Write('keyDisplay', '1' if getattr(self.pref, 'keyDisplay', True) else '0')
+        except Exception:
+            pass
+
+    def _LoadTempoDisplay(self):
+        """Ripristina le modalità di visualizzazione di tempo, misura e tonalità dal config."""
+        try:
+            self.config.SetPath('/TempoDisplay')
+            val = self.config.Read('tempoDisplay')
+            if val:
+                self.pref.tempoDisplay = int(val)
+            self.config.SetPath('/TimeDisplay')
+            val = self.config.Read('timeDisplay')
+            if val:
+                self.pref.timeDisplay = (val == '1')
+            self.config.SetPath('/KeyDisplay')
+            val = self.config.Read('keyDisplay')
+            if val:
+                self.pref.keyDisplay = (val == '1')
+        except Exception:
+            pass
+
+    def _SaveKlavierColour(self):
+        """Salva il colore dei tasti klavier nel config."""
+        try:
+            self.config.SetPath('/KlavierColour')
+            self.config.Write('highlightHex', getattr(self.pref, 'klavierHighlightHex', '#D23C3C'))
+        except Exception:
+            pass
+
+    def _LoadKlavierColour(self):
+        """Ripristina il colore dei tasti klavier dal config."""
+        try:
+            self.config.SetPath('/KlavierColour')
+            val = self.config.Read('highlightHex')
+            if val:
+                self.pref.klavierHighlightHex = val
+        except Exception:
+            pass
+
+    def _SaveCustomColours(self):
+        """Salva i colori personalizzati dei due ColourDialog nel config."""
+        try:
+            self.config.SetPath('/CustomColoursKlavier')
+            for i, hex_str in enumerate(getattr(self.pref, 'customColoursKlavier', [])[:16]):
+                self.config.Write('colour%d' % i, hex_str)
+            self.config.SetPath('/CustomColoursEditorBg')
+            for i, hex_str in enumerate(getattr(self.pref, 'customColoursEditorBg', [])[:16]):
+                self.config.Write('colour%d' % i, hex_str)
+            self.config.SetPath('/CustomColoursSelColour')
+            for i, hex_str in enumerate(getattr(self.pref, 'customColoursSelColour', [])[:16]):
+                self.config.Write('colour%d' % i, hex_str)
+        except Exception:
+            pass
+
+    def _LoadCustomColours(self):
+        """Ripristina i colori personalizzati dei due ColourDialog dal config."""
+        try:
+            self.config.SetPath('/CustomColoursKlavier')
+            self.pref.customColoursKlavier = [
+                self.config.Read('colour%d' % i) or '#FFFFFF' for i in range(16)
+            ]
+        except Exception:
+            self.pref.customColoursKlavier = ['#FFFFFF'] * 16
+        try:
+            self.config.SetPath('/CustomColoursEditorBg')
+            self.pref.customColoursEditorBg = [
+                self.config.Read('colour%d' % i) or '#FFFFFF' for i in range(16)
+            ]
+        except Exception:
+            self.pref.customColoursEditorBg = ['#FFFFFF'] * 16
+        try:
+            self.config.SetPath('/CustomColoursSelColour')
+            self.pref.customColoursSelColour = [
+                self.config.Read('colour%d' % i) or '#FFFFFF' for i in range(16)
+            ]
+        except Exception:
+            self.pref.customColoursSelColour = ['#FFFFFF'] * 16
+
+    def SaveWindowGeometry(self):
+        """Save window size, position and maximized state to config."""
+        if not getattr(self.pref, 'saveWindowGeometry', True):
+            return
+        try:
+            maximized = self.frame.IsMaximized()
+            self.config.SetPath('/Window')
+            self.config.Write('maximized', '1' if maximized else '0')
+            if not maximized:
+                x, y = self.frame.GetPosition()
+                w, h = self.frame.GetSize()
+                self.config.Write('x', str(x))
+                self.config.Write('y', str(y))
+                self.config.Write('w', str(w))
+                self.config.Write('h', str(h))
+        except Exception:
+            pass
+
+    def RestoreWindowGeometry(self):
+        """Restore window size and position from config, with multimonitor safety."""
+        if not getattr(self.pref, 'saveWindowGeometry', True):
+            return
+        try:
+            self.config.SetPath('/Window')
+            maximized = self.config.Read('maximized')
+            x = self.config.Read('x')
+            y = self.config.Read('y')
+            w = self.config.Read('w')
+            h = self.config.Read('h')
+            if w and h:
+                w, h = int(w), int(h)
+                # Enforce minimum size
+                w = max(w, 400)
+                h = max(h, 300)
+                if x and y:
+                    x, y = int(x), int(y)
+                    # Verify that the saved position is visible on at least one connected display
+                    visible = False
+                    for i in range(wx.Display.GetCount()):
+                        display = wx.Display(i)
+                        client_rect = display.GetClientArea()
+                        # The window is considered visible if at least its top-left
+                        # 100x50 px area falls inside the display's client area
+                        if (client_rect.Contains(wx.Point(x + 100, y + 50)) or
+                                client_rect.Contains(wx.Point(x, y))):
+                            visible = True
+                            break
+                    if visible:
+                        self.frame.SetPosition(wx.Point(x, y))
+                    else:
+                        # Off-screen: centre on primary display
+                        self.frame.Centre()
+                self.frame.SetSize(wx.Size(w, h))
+            if maximized == '1':
+                self.frame.Maximize(True)
+        except Exception:
+            pass
+
+    def BindMyMenu(self):
+        """Bind a menu item, by xrc name, to a handler"""
+
+        def Bind(handler, xrcname):
+            self.Bind(wx.EVT_MENU, handler, xrcname)
+
+        Bind(self.OnCopyAsImage, 'exportToClipboardAsAVectorImage')
+        Bind(self.OnExportAsSvg, 'exportAsSvg')
+        Bind(self.OnExportAsEmf, 'exportAsEmf')
+        Bind(self.OnExportAsPng, 'exportAsPng')
+        Bind(self.OnExportAsHtml, 'exportAsHtml')
+        Bind(self.OnExportAsTab, 'exportAsTab')
+        Bind(self.OnExportAsPptx, 'exportAsPptx')
+        Bind(self.OnExportAsPdf, 'exportAsPdf')
+        Bind(self.OnSongbook, 'songbook')
+        Bind(self.OnPrint, 'print')
+        Bind(self.OnPrintPreview, 'printPreview')
+        Bind(self.OnPageSetup, 'pageSetup')
+        Bind(self.OnUndo, 'undo')
+        Bind(self.OnRedo, 'redo')
+        Bind(self.OnCut, 'cut')
+        Bind(self.OnCopy, 'copy')
+        Bind(self.OnCopyAsImage, 'copyAsImage')
+        Bind(self.OnCopyOnlyText, 'copyOnlyText')
+        Bind(self.OnPaste, 'paste')
+        Bind(self.OnPasteChords, 'pasteChords')
+        Bind(self.OnPropagateVerseChords, 'propagateVerseChords')
+        Bind(self.OnPropagateChorusChords, 'propagateChorusChords')
+        Bind(self.OnFind, 'find')
+        Bind(self.OnFindNext, 'findNext')
+        Bind(self.OnFindPrevious, 'findPrevious')
+        Bind(self.OnReplace, 'replace')
+        Bind(self.OnSelectAll, 'selectAll')
+        Bind(self.OnSelectNextChord, 'selectNextChord')
+        Bind(self.OnSelectPreviousChord, 'selectPreviousChord')
+        Bind(self.OnMoveChordRight, 'moveChordRight')
+        Bind(self.OnMoveChordLeft, 'moveChordLeft')
+        Bind(self.OnRemoveChords, 'removeChords')
+        Bind(self.OnIntegrateChords, 'integrateChords')
+        Bind(self.OnTitle, 'title')
+        Bind(self.OnSubtitle, 'subtitle')
+        Bind(self.OnChord, 'chord')
+        Bind(self.OnChorus, 'chorus')
+        Bind(self.OnVerse, 'verseWithCustomLabelOrWithoutLabel')
+        Bind(self.OnComment, 'comment')
+        Bind(self.OnFormatFont, 'songFont')
+        Bind(self.OnTextFont, 'textFont')
+        Bind(self.OnChordFont, 'chordFont')
+        Bind(self.OnLabelVerses, 'labelVerses')
+        Bind(self.OnChorusLabel, 'chorusLabel')
+        Bind(self.OnNoChords, 'noChords')
+        Bind(self.OnOneVerseForEachChordPattern, 'oneVerseForEachChordPattern')
+        Bind(self.OnWholeSong, 'wholeSong')
+        Bind(self.OnChordsAbove, 'chordsAbove')
+        Bind(self.OnChordsBelow, 'chordsBelow')
+        Bind(self.OnTogglePageBreakLines, 'showPageBreakLines')
+        Bind(self.OnToggleColumnBreakLines, 'showColumnBreakLines')
+        Bind(self.OnTranspose, 'transpose')
+        Bind(self.OnSimplifyChords, 'simplifyChords')
+        Bind(self.OnChangeChordNotation, 'changeChordNotation')
+        Bind(self.OnNormalizeChords, 'cleanupChords')
+        Bind(self.OnConvertTabToChordpro, 'convertTabToChordpro')
+        Bind(self.OnRemoveSpuriousBlankLines, 'removeSpuriousBlankLines')
+        Bind(self.OnRestart, 'restart')
+        Bind(self.OnOptions, 'options')
+        Bind(self.OnGuide, 'guide')
+        Bind(self.OnGuideMarkdown, 'guideMarkdown')
+        # --- NUOVO: Normalizza spazi multipli ---
+        Bind(self.OnNormalizeSpaces, 'normalizeSpaces')
+        # --- NUOVO: Formato => Altro ---
+        Bind(self.OnInsertLinespacing, 'insertLinespacing')
+        Bind(self.OnInsertChordtopspacing, 'insertChordtopspacing')
+        Bind(self.OnInsertPageBreak, 'insertPageBreak')
+        Bind(self.OnInsertColumnBreak, 'insertColumnBreak')
+        # --- NEW: Insert => Other (structured blocks) ---
+        Bind(self.OnInsertVerse, 'insertVerse')
+        Bind(self.OnInsertVerseNum, 'insertVerseNum')
+        Bind(self.OnInsertChorusBlock, 'insertChorusBlock')
+        Bind(self.OnInsertChordBlock, 'insertChordBlock')
+        Bind(self.OnInsertBridge, 'insertBridge')
+        Bind(self.OnInsertTempo, 'insertTempo')
+        Bind(self.OnInsertTime, 'insertTime')
+        Bind(self.OnInsertKey, 'insertKey')
+        Bind(self.OnInsertCapo, 'insertCapo')
+        Bind(self.OnInsertArtist, 'insertArtist')
+        Bind(self.OnInsertComposer, 'insertComposer')
+        Bind(self.OnInsertAlbum, 'insertAlbum')
+        Bind(self.OnInsertYear, 'insertYear')
+        Bind(self.OnInsertCopyright, 'insertCopyright')
+        # --- Insert => Chord keyboard (klavier) ---
+        Bind(self.OnInsertKlavierChord, 'insertTaste')
+        Bind(self.OnInsertDefine, 'insertDefine')
+        Bind(self.OnInsertImage, 'insertImage')
+        # --- File => Importa da PDF ---
+        Bind(self.OnImportFromPdf, 'importFromPdf')
+        # --- Verifica sintattica ---
+        Bind(self.OnSyntaxCheck, 'syntaxCheck')
+        self.frame.Bind(EVT_SYNTAX_GOTO, self.OnSyntaxGoto)
+
+    # ------------------------------------------------------------------
+    # Template "Nuovo da template"
+    # ------------------------------------------------------------------
+
+    def _BuildNewFromTemplateMenu(self):
+        """Popola dinamicamente il sottomenu 'Nuovo da template'
+        con i file .crd trovati in templates/songs.
+
+        Scansiona in modo difensivo due cartelle distinte:
+          - glb.path/templates/songs/      (package, globale)
+          - glb.data_path/templates/songs/ (dati utente, locale)
+        Se una delle due non esiste viene ignorata silenziosamente.
+        I file utente sovrascrivono omonimi globali (stessa logica
+        di ListLocalGlobalDir, ma senza crash su cartella mancante).
+        Viene chiamato una sola volta durante l'inizializzazione.
+        """
+        template_rel = os.path.join('templates', 'songs')
+        search_roots = [glb.path]
+        if getattr(glb, 'data_path', None):
+            search_roots.append(glb.data_path)
+
+        found = {}  # nome_base_lower -> percorso assoluto
+        for root in search_roots:
+            folder = os.path.join(root, template_rel)
+            if not os.path.isdir(folder):
+                continue
+            try:
+                for fname in sorted(os.listdir(folder)):
+                    if fname.lower().endswith('.crd'):
+                        key = os.path.splitext(fname)[0].lower()
+                        found[key] = os.path.join(folder, fname)
+            except OSError:
+                pass
+
+        # Ordina alfabeticamente per nome visualizzato
+        template_paths = [found[k] for k in sorted(found)]
+
+        # Recupera il sottomenu dall'XRC tramite XRCID — robusto rispetto alla lingua,
+        # usa lo stesso meccanismo degli altri ID di menu nel codice.
+        file_menu = self.menuBar.GetMenu(0)
+        submenu = None
+        nft_id = xrc.XRCID('newFromTemplate')
+        menu_item = file_menu.FindItemById(nft_id)
+        if menu_item is not None:
+            submenu = menu_item.GetSubMenu()
+
+        if submenu is None:
+            # Sottomenu non trovato nell'XRC: niente da fare
+            return
+
+        # Svuota eventuali voci residue
+        for old_item in submenu.GetMenuItems():
+            submenu.Delete(old_item)
+
+        self._template_paths = {}  # id voce di menu -> percorso assoluto
+
+        if not template_paths:
+            placeholder = submenu.Append(wx.ID_ANY, _("(no template available)"))
+            submenu.Enable(placeholder.GetId(), False)
+            return
+
+        for path in template_paths:
+            name = os.path.splitext(os.path.basename(path))[0]
+            item = submenu.Append(wx.ID_ANY, name)
+            self._template_paths[item.GetId()] = path
+            self.frame.Bind(wx.EVT_MENU, self._OnNewFromTemplate, id=item.GetId())
+
+    def _OnNewFromTemplate(self, evt):
+        """Carica il template come nuovo documento non salvato.
+
+        Il file template non viene mai modificato: il suo contenuto
+        viene copiato in un nuovo documento 'senza nome' che l'utente
+        dovrà salvare con 'Salva con nome'.
+        """
+        path = getattr(self, '_template_paths', {}).get(evt.GetId())
+        if path is None or not os.path.isfile(path):
+            wx.MessageBox(
+                _("Template not found:\n%s") % (path or ''),
+                _("Songpress++"),
+                wx.OK | wx.ICON_ERROR,
+                self.frame,
+            )
+            return
+
+        # Se il documento corrente ha modifiche non salvate, chiede conferma
+        # (usa AskSaveModified() di SDIMainFrame, identico a OnNew)
+        if not self.AskSaveModified():
+            return
+
+        # Legge il contenuto del template
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except Exception as exc:
+            wx.MessageBox(
+                str(exc),
+                _("Error opening template"),
+                wx.OK | wx.ICON_ERROR,
+                self.frame,
+            )
+            return
+
+        # Replica esattamente OnNew di SDIMainFrame, poi inserisce il template.
+        # document='', modified=True → 'Salva' aprirà 'Salva con nome',
+        # il file template originale non viene mai toccato.
+        self.document = ''
+        self.text.AutoChangeMode(True)
+        self.text.New()
+        self.text.SetText(content)
+        self.text.AutoChangeMode(False)
+        self.modified = True
+        self.UpdateTitle()
+        self.UpdateEverything()
+        self.previewCanvas.Refresh(self._get_display_text())
+
+    def OnNormalizeSpaces(self, evt):
+        """
+        Replace multiple consecutive spaces with a single space
+        in the selected text or the whole text if nothing is selected.
+        """
+        import re
+        s, e = self.text.GetSelection()
+        if s == e:  # niente selezione: usa tutto il testo
+            text = self.text.GetText()
+            new_text = re.sub(r' {2,}', ' ', text)
+            self.text.SetText(new_text)
+        else:  # usa solo la selezione
+            text = self.text.GetTextRange(s, e)
+            new_text = re.sub(r' {2,}', ' ', text)
+            self.text.ReplaceSelection(new_text)
+
+    def OnSyntaxCheck(self, evt):
+        """Esegue la verifica sintattica ChordPro e mostra il dialogo con i risultati."""
+        text = self.text.GetText()
+        result = syntax_check(text)
+        dlg = SyntaxCheckerDialog(self.frame, result)
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def OnSyntaxGoto(self, evt):
+        """Sposta il cursore alla riga/colonna dell'errore selezionato nel dialogo."""
+        text = self.text.GetText()
+        lines = text.splitlines(keepends=True)
+        target_line = evt.line - 1    # 0-based
+        target_col  = evt.column - 1  # 0-based
+        pos = sum(len(l) for l in lines[:target_line]) + target_col
+        pos = max(0, min(pos, len(text)))
+        self.text.SetInsertionPoint(pos)
+        self.text.SetFocus()
+
+    def OnInsertLinespacing(self, evt):
+        """Inserisce la direttiva {linespacing: <valore>}."""
+        msg = _("Enter the line spacing value (e.g. 0 to remove extra space):")
+        d = wx.TextEntryDialog(self.frame, msg, _("Line spacing"), "0")
+        if d.ShowModal() == wx.ID_OK:
+            val = d.GetValue().strip()
+            self.InsertWithCaret("{linespacing: %s}" % val) #modifica qui con x_linespacing
+
+    def OnInsertChordtopspacing(self, evt):
+        """Inserisce la direttiva {chordtopspacing: <valore>}."""
+        msg = _("Enter the space above chords value (e.g. 0 to remove extra space):")
+        d = wx.TextEntryDialog(self.frame, msg, _("Space above chords"), "0")
+        if d.ShowModal() == wx.ID_OK:
+            val = d.GetValue().strip()
+            self.InsertWithCaret("{chordtopspacing: %s}" % val)
+
+    def OnInsertVerse(self, evt):
+        """Inserisce una strofa non numerata: {start_verse} ... {end_verse}"""
+        self.InsertWithCaret("{start_verse}\n|\n{end_verse}\n")
+
+    def OnInsertVerseNum(self, evt):
+        """Inserisce una strofa numerata: {start_verse_num} ... {end_verse_num}"""
+        self.InsertWithCaret("{start_verse_num}\n|\n{end_verse_num}\n")
+
+    def OnInsertChorusBlock(self, evt):
+        """Insert a chorus block: {start_chorus} ... {end_chorus}"""
+        default = self.pref.decoratorFormat.GetChorusLabel()
+        label = wx.GetTextFromUser(
+            _("Enter a label for the chorus, or press Cancel to omit the label."),
+            _("Chorus label"),
+            default,
+            self.frame,
+        )
+        if label == default or not label.strip():
+            self.InsertWithCaret("{start_chorus}\n|\n{end_chorus}\n")
+        else:
+            self.InsertWithCaret("{start_chorus:%s}\n|\n{end_chorus}\n" % label)
+
+    def OnInsertChordBlock(self, evt):
+        """Insert an intro chord block: {start_chord} ... {end_chord}"""
+        default = _("Intro")
+        label = wx.GetTextFromUser(
+            _("Enter a label for the intro chords, or press Cancel to use '%s'.") % default,
+            _("Intro chords label"),
+            default,
+            self.frame,
+        )
+        if label.strip():
+            self.InsertWithCaret("{start_chord:%s}\n|\n{end_chord}\n" % label)
+        else:
+            self.InsertWithCaret("{start_chord}\n|\n{end_chord}\n")
+
+    def OnInsertBridge(self, evt):
+        """Insert a bridge block: {start_bridge} ... {end_bridge}"""
+        default = _("Bridge")
+        label = wx.GetTextFromUser(
+            _("Enter a label for the bridge, or press Cancel to use '%s'.") % default,
+            _("Bridge label"),
+            default,
+            self.frame,
+        )
+        if label.strip():
+            self.InsertWithCaret("{start_bridge:%s}\n|\n{end_bridge}\n" % label)
+        else:
+            self.InsertWithCaret("{start_bridge}\n|\n{end_bridge}\n")
+
+    def OnInsertTime(self, evt):
+        """Inserisce la direttiva {time: <numeratore>/<denominatore>}."""
+        d = wx.Dialog(self.frame, title=_("Time signature"))
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        vbox.Add(wx.StaticText(d, -1, _("Enter the time signature (e.g. 4/4, 3/4, 6/8):")), 0, wx.ALL, 8)
+        txt = wx.TextCtrl(d, -1, "4/4")
+        vbox.Add(txt, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 8)
+
+        cb_meta = wx.CheckBox(d, -1, _("Metadata"))
+        vbox.Add(cb_meta, 0, wx.LEFT | wx.TOP | wx.BOTTOM, 8)
+
+        is_meta = not getattr(self.pref, 'timeDisplay', True)
+        cb_meta.SetValue(is_meta)
+        txt.Enable(not is_meta)
+
+        def on_meta(e):
+            txt.Enable(not cb_meta.GetValue())
+        cb_meta.Bind(wx.EVT_CHECKBOX, on_meta)
+
+        btn_sizer = d.CreateButtonSizer(wx.OK | wx.CANCEL)
+        vbox.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 8)
+        d.SetSizer(vbox)
+        vbox.Fit(d)
+
+        if d.ShowModal() == wx.ID_OK:
+            self.pref.timeDisplay = not cb_meta.GetValue()
+            self.previewCanvas.SetTimeDisplay(self.pref.timeDisplay)
+            val = txt.GetValue().strip()
+            if val:
+                self.InsertWithCaret("{time:%s}" % val)
+            else:
+                self.InsertWithCaret("{time:|}")
+            self.previewCanvas.Refresh(self._get_display_text())
+        d.Destroy()
+
+    def OnInsertTempo(self, evt):
+        """Inserisce la direttiva {tempo: <valore>}."""
+        d = wx.Dialog(self.frame, title=_("Tempo"))
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        vbox.Add(wx.StaticText(d, -1, _("Enter the song tempo (e.g. 120):")), 0, wx.ALL, 8)
+        txt = wx.TextCtrl(d, -1, "")
+        vbox.Add(txt, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 8)
+
+        vbox.Add(wx.StaticText(d, -1, _("Display as:")), 0, wx.LEFT | wx.TOP, 8)
+        hbox_rb = wx.BoxSizer(wx.HORIZONTAL)
+        rb_none = wx.RadioButton(d, -1, _("Tempo:  "), style=wx.RB_GROUP)
+        rb_note = wx.RadioButton(d, -1, "")
+        _icon_sz = getattr(self.pref, 'tempoIconSize', 24)
+        _note_img = wx.Image(glb.AddPath("img/tempo_note.png"))
+        _note_img = _note_img.Scale(_icon_sz, _icon_sz, wx.IMAGE_QUALITY_HIGH)
+        note_bmp = wx.Bitmap(_note_img)
+        note_icon = wx.StaticBitmap(d, -1, note_bmp)
+        note_icon.Bind(wx.EVT_LEFT_DOWN, lambda e: rb_note.SetValue(True))
+        rb_bpm  = wx.RadioButton(d, -1, "BPM")
+        _metro_img = wx.Image(glb.AddPath("img/metronome.png"))
+        _metro_img = _metro_img.Scale(_icon_sz, _icon_sz, wx.IMAGE_QUALITY_HIGH)
+        metro_bmp = wx.Bitmap(_metro_img)
+        metro_icon = wx.StaticBitmap(d, -1, metro_bmp)
+        rb_metro = wx.RadioButton(d, -1, "")
+        metro_icon.Bind(wx.EVT_LEFT_DOWN, lambda e: rb_metro.SetValue(True))
+        hbox_rb.Add(rb_none, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 8)
+        hbox_rb.Add(rb_note, 0, wx.ALIGN_CENTER_VERTICAL)
+        hbox_rb.Add(note_icon, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 8)
+        hbox_rb.Add(rb_bpm,  0, wx.ALIGN_CENTER_VERTICAL)
+        hbox_rb.Add(rb_metro, 0, wx.ALIGN_CENTER_VERTICAL)
+        hbox_rb.Add(metro_icon, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 8)
+        vbox.Add(hbox_rb, 0, wx.LEFT | wx.TOP | wx.BOTTOM, 8)
+
+        cb_meta = wx.CheckBox(d, -1, _("Metadata"))
+        vbox.Add(cb_meta, 0, wx.LEFT | wx.BOTTOM, 8)
+
+        td = getattr(self.pref, 'tempoDisplay', 0)
+        is_meta = (td == -1)
+        cb_meta.SetValue(is_meta)
+        rb_none.SetValue(td == 0)
+        rb_note.SetValue(td == 1)
+        rb_bpm.SetValue(td == 2)
+        rb_metro.SetValue(td == 3)
+        for ctrl in (rb_none, rb_note, rb_bpm, note_icon, rb_metro, metro_icon):
+            ctrl.Enable(not is_meta)
+
+        def on_meta(e):
+            enabled = not cb_meta.GetValue()
+            for ctrl in (rb_none, rb_note, rb_bpm, note_icon, rb_metro, metro_icon):
+                ctrl.Enable(enabled)
+        cb_meta.Bind(wx.EVT_CHECKBOX, on_meta)
+
+        btn_sizer = d.CreateButtonSizer(wx.OK | wx.CANCEL)
+        vbox.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 8)
+        d.SetSizer(vbox)
+        vbox.Fit(d)
+
+        if d.ShowModal() == wx.ID_OK:
+            val = txt.GetValue().strip()
+            if cb_meta.GetValue():
+                self.pref.tempoDisplay = -1
+            elif rb_note.GetValue():
+                self.pref.tempoDisplay = 1
+            elif rb_bpm.GetValue():
+                self.pref.tempoDisplay = 2
+            elif rb_metro.GetValue():
+                self.pref.tempoDisplay = 3
+            else:
+                self.pref.tempoDisplay = 0
+            self.previewCanvas.SetTempoDisplay(self.pref.tempoDisplay)
+            self.previewCanvas.SetTempoIconSize(getattr(self.pref, 'tempoIconSize', 24))
+            self._SaveTempoDisplay()
+            if val:
+                self.InsertWithCaret("{tempo:%s}" % val)
+            else:
+                self.InsertWithCaret("{tempo:|}")
+            self.previewCanvas.Refresh(self._get_display_text())
+        d.Destroy()
+
+    def OnInsertKey(self, evt):
+        """Inserisce la direttiva {key: <tonalità>}."""
+        d = wx.Dialog(self.frame, title=_(u"Key"))
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        vbox.Add(wx.StaticText(d, -1, _(u"Enter the song key (e.g. Am, C, G, F#m):")), 0, wx.ALL, 8)
+        txt = wx.TextCtrl(d, -1, u"")
+        vbox.Add(txt, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 8)
+
+        cb_meta = wx.CheckBox(d, -1, _("Metadata"))
+        vbox.Add(cb_meta, 0, wx.LEFT | wx.TOP | wx.BOTTOM, 8)
+
+        is_meta = not getattr(self.pref, 'keyDisplay', True)
+        cb_meta.SetValue(is_meta)
+        txt.Enable(not is_meta)
+
+        def on_meta(e):
+            txt.Enable(not cb_meta.GetValue())
+        cb_meta.Bind(wx.EVT_CHECKBOX, on_meta)
+
+        btn_sizer = d.CreateButtonSizer(wx.OK | wx.CANCEL)
+        vbox.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 8)
+        d.SetSizer(vbox)
+        vbox.Fit(d)
+
+        if d.ShowModal() == wx.ID_OK:
+            self.pref.keyDisplay = not cb_meta.GetValue()
+            self.previewCanvas.SetKeyDisplay(self.pref.keyDisplay)
+            val = txt.GetValue().strip()
+            if val:
+                self.InsertWithCaret(u"{key:%s}" % val)
+            else:
+                self.InsertWithCaret(u"{key:|}")
+            self.previewCanvas.Refresh(self._get_display_text())
+        d.Destroy()
+
+    def _InsertSimpleDirective(self, directive, label, example):
+        """Helper generico: chiede un testo e inserisce {directive:testo}."""
+        d = wx.TextEntryDialog(self.frame, label, directive, example)
+        if d.ShowModal() == wx.ID_OK:
+            val = d.GetValue().strip()
+            if val:
+                self.InsertWithCaret(u"{%s:%s}" % (directive, val))
+            else:
+                self.InsertWithCaret(u"{%s:|}" % directive)
+        d.Destroy()
+
+    def OnInsertCapo(self, evt):
+        """Inserisce la direttiva {capo: <n>}."""
+        self._InsertSimpleDirective('capo', _(u"Enter the capo fret number (e.g. 2, 3):"), u"2")
+
+    def OnInsertArtist(self, evt):
+        """Inserisce la direttiva {artist: <nome>}."""
+        self._InsertSimpleDirective('artist', _(u"Enter the artist / performer name:"), u"")
+
+    def OnInsertComposer(self, evt):
+        """Inserisce la direttiva {composer: <nome>}."""
+        self._InsertSimpleDirective('composer', _(u"Enter the composer name:"), u"")
+
+    def OnInsertAlbum(self, evt):
+        """Inserisce la direttiva {album: <titolo>}."""
+        self._InsertSimpleDirective('album', _(u"Enter the album title:"), u"")
+
+    def OnInsertYear(self, evt):
+        """Inserisce la direttiva {year: <anno>}."""
+        self._InsertSimpleDirective('year', _(u"Enter the year (e.g. 1975):"), u"")
+
+    def OnAbout(self, evt):
+        """Mostra la finestra About con link cliccabili."""
+        translations = "\n".join([
+            u"- {}: {}".format(glb.languages[x], glb.translators[x])
+            for x in glb.languages
+        ])
+        dlg = wx.Dialog(self.frame, title=_("About Songpress++ - The Song Editor"))
+        dlg.SetBackgroundColour(wx.WHITE)
+        panel = wx.Panel(dlg)
+        panel.SetBackgroundColour(wx.WHITE)
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        # Icona + titolo
+        try:
+            icon_path = glb.AddPath('img/songpress++.ico')
+            icon_bmp = wx.StaticBitmap(panel, bitmap=wx.Bitmap(icon_path, wx.BITMAP_TYPE_ICO))
+            hbox_title = wx.BoxSizer(wx.HORIZONTAL)
+            hbox_title.Add(icon_bmp, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
+            title_lbl = wx.StaticText(panel, label=u"Songpress++ - The Song Editor {}".format(glb.VERSION))
+            font_title = title_lbl.GetFont()
+            font_title.SetWeight(wx.FONTWEIGHT_BOLD)
+            font_title.SetPointSize(font_title.GetPointSize() + 2)
+            title_lbl.SetFont(font_title)
+            hbox_title.Add(title_lbl, 0, wx.ALIGN_CENTER_VERTICAL)
+            vbox.Add(hbox_title, 0, wx.ALIGN_CENTER | wx.ALL, 10)
+        except Exception:
+            title_lbl = wx.StaticText(panel, label=u"Songpress++ - The Song Editor {}".format(glb.VERSION))
+            vbox.Add(title_lbl, 0, wx.ALIGN_CENTER | wx.ALL, 10)
+
+        def add_text(text):
+            lbl = wx.StaticText(panel, label=text)
+            vbox.Add(lbl, 0, wx.ALIGN_CENTER | wx.LEFT | wx.RIGHT, 15)
+
+        def add_link(label, url):
+            lnk = wx.adv.HyperlinkCtrl(panel, label=label, url=url)
+            vbox.Add(lnk, 0, wx.ALIGN_CENTER | wx.LEFT | wx.RIGHT, 15)
+
+        add_text(u"Copyright \u00a9 2009-{} Luca Allulli - Skeed".format(glb.YEAR))
+        add_text(u"Copyright \u00a9 2026-{} Denisov21".format(glb.YEAR))
+        add_text(u"Localization:\n{}".format(translations))
+        vbox.AddSpacer(8)
+        add_text(_(u"Songpress++ is a fork of Songpress by Luca Allulli - Skeed,"))
+        add_text(_(u"maintained and extended by Denisov21."))
+        vbox.AddSpacer(4)
+        add_link(_(u"Original version website: http://www.skeed.it/songpress"), "http://www.skeed.it/songpress")
+        add_link(_(u"Fork repository: https://github.com/Denisov21/Songpressplusplus"), "https://github.com/Denisov21/Songpressplusplus")
+        vbox.AddSpacer(8)
+        add_text(_(u"Licensed under the terms and conditions of the GNU General Public License, version 2"))
+        vbox.AddSpacer(8)
+        add_text(_(
+            u"Special thanks to:\n"
+            u"  * The Python programming language (http://www.python.org)\n"
+            u"  * wxWidgets (http://www.wxwidgets.org)\n"
+            u"  * wxPython (http://www.wxpython.org)\n"
+            u"  * Editra (http://editra.org/) (for the error reporting dialog and... the editor itself!)\n"
+            u"  * python-pptx (for PowerPoint export)"
+        ))
+        vbox.AddSpacer(10)
+
+        btn_ok = wx.Button(panel, wx.ID_OK, "OK")
+        vbox.Add(btn_ok, 0, wx.ALIGN_CENTER | wx.BOTTOM, 10)
+
+        panel.SetSizer(vbox)
+        vbox.Fit(panel)
+        dlg_sizer = wx.BoxSizer(wx.VERTICAL)
+        dlg_sizer.Add(panel, 1, wx.EXPAND)
+        dlg.SetSizer(dlg_sizer)
+        dlg_sizer.Fit(dlg)
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def OnInsertCopyright(self, evt):
+        """Inserisce la direttiva {copyright: <testo>}."""
+        self._InsertSimpleDirective('copyright', _(u"Enter the copyright text:"), u"")
+
+    def OnInsertKlavierChord(self, evt):
+        """Inserts the {taste:<chord>} directive for a chord keyboard display (klavier)."""
+        d = wx.TextEntryDialog(
+            self.frame,
+            _("Enter the chord name (e.g. C, G, Am, D7):"), 
+            _("Chord keys"),
+            "",
+        )
+        if d.ShowModal() == wx.ID_OK:
+            chord = d.GetValue().strip()
+            if chord:
+                self.InsertWithCaret("{taste:%s}" % chord)
+            else:
+                self.InsertWithCaret("{taste:|}")
+        d.Destroy()
+
+    def OnInsertDefine(self, evt):
+        """Inserts the {define:} directive for a guitar chord diagram."""
+        d = wx.TextEntryDialog(
+            self.frame,
+            _("Enter chord definition (e.g. C base-fret 1 frets X 3 2 0 1 0):"),
+            _("Guitar chord diagram"),
+            "",
+        )
+        if d.ShowModal() == wx.ID_OK:
+            value = d.GetValue().strip()
+            if value:
+                self.InsertWithCaret("{define: %s}" % value)
+            else:
+                self.InsertWithCaret("{define: |}")
+        d.Destroy()
+
+    def OnImportFromPdf(self, evt):
+        """Import text from a PDF file (selectable text only, no OCR)."""
+        try:
+            from pypdf import PdfReader
+        except ImportError:
+            wx.MessageBox(
+                _("La libreria pypdf non è installata.\nInstalla con:  pip install pypdf"),
+                _("pypdf non trovato"),
+                wx.OK | wx.ICON_ERROR,
+                self.frame,
+            )
+            return
+
+        with wx.FileDialog(
+            self.frame,
+            _("Import text from PDF"),
+            wildcard=_("PDF files (*.pdf)|*.pdf"),
+            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
+        ) as dlg:
+            if dlg.ShowModal() != wx.ID_OK:
+                return
+            path = dlg.GetPath()
+
+        try:
+            reader = PdfReader(path)
+            pages = [page.extract_text() or "" for page in reader.pages]
+            text = "\n".join(pages).strip()
+        except Exception as e:
+            wx.MessageBox(
+                _("Error reading the PDF:\n%s") % str(e),
+                _("Import error"),
+                wx.OK | wx.ICON_ERROR,
+                self.frame,
+            )
+            return
+
+        if not text:
+            wx.MessageBox(
+                _("The PDF contains no extractable text.\nIt may be a scanned (image-only) PDF."),
+                _("No text found"),
+                wx.OK | wx.ICON_WARNING,
+                self.frame,
+            )
+            return
+
+        if not self.AskSaveModified():
+            return
+
+        self.document = ''
+        self.text.AutoChangeMode(True)
+        self.text.New()
+        self.text.SetText(text)
+        self.text.AutoChangeMode(False)
+        self.SetModified()
+
+    def OnInsertImage(self, evt):
+        """Dialog per inserire {image: ...} con selezione file e parametri."""
+        doc = getattr(self, 'document', '') or ''
+        default_dir = os.path.dirname(os.path.abspath(doc)) if doc else ''
+
+        d = wx.Dialog(self.frame, title=_("Insert image"), style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        # --- File ---
+        vbox.Add(wx.StaticText(d, -1, _("Image file:")), 0, wx.LEFT | wx.TOP, 8)
+        hbox_file = wx.BoxSizer(wx.HORIZONTAL)
+        txt_path = wx.TextCtrl(d, -1, "", size=(300, -1))
+        btn_browse = wx.Button(d, -1, _("Browse..."))
+        hbox_file.Add(txt_path, 1, wx.EXPAND | wx.RIGHT, 4)
+        hbox_file.Add(btn_browse, 0)
+        vbox.Add(hbox_file, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
+        # --- Dimensioni ---
+        gb = wx.GridBagSizer(4, 8)
+
+        # Width — SpinCtrlDouble: solo interi (step=1), vuoto = non specificato
+        gb.Add(wx.StaticText(d, -1, _("Width:")), pos=(0, 0), flag=wx.ALIGN_CENTER_VERTICAL)
+        txt_w = wx.SpinCtrlDouble(d, -1, "", min=0, max=9999, inc=1, size=(70, -1))
+        txt_w.SetDigits(0)
+        txt_w.SetValue(0)
+        gb.Add(txt_w, pos=(0, 1), flag=wx.EXPAND)
+        ch_w_unit = wx.Choice(d, -1, choices=["pt", "%"])
+        gb.Add(ch_w_unit, pos=(0, 2), flag=wx.ALIGN_CENTER_VERTICAL)
+
+        # Height — SpinCtrlDouble: solo interi
+        gb.Add(wx.StaticText(d, -1, _("Height:")), pos=(1, 0), flag=wx.ALIGN_CENTER_VERTICAL)
+        txt_h = wx.SpinCtrlDouble(d, -1, "", min=0, max=9999, inc=1, size=(70, -1))
+        txt_h.SetDigits(0)
+        txt_h.SetValue(0)
+        gb.Add(txt_h, pos=(1, 1), flag=wx.EXPAND)
+        ch_h_unit = wx.Choice(d, -1, choices=["pt", "%"])
+        gb.Add(ch_h_unit, pos=(1, 2), flag=wx.ALIGN_CENTER_VERTICAL)
+
+        # Scale — SpinCtrlDouble: valori decimali 1–500, step 1
+        gb.Add(wx.StaticText(d, -1, _("Scale:")), pos=(2, 0), flag=wx.ALIGN_CENTER_VERTICAL)
+        txt_scale = wx.SpinCtrlDouble(d, -1, "", min=1, max=500, inc=1, size=(70, -1))
+        txt_scale.SetDigits(1)
+        txt_scale.SetValue(100)
+        gb.Add(txt_scale, pos=(2, 1), flag=wx.EXPAND)
+        gb.Add(wx.StaticText(d, -1, "%"), pos=(2, 2), flag=wx.ALIGN_CENTER_VERTICAL)
+
+        vbox.Add(gb, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
+        # --- Allineamento ---
+        hbox_align = wx.BoxSizer(wx.HORIZONTAL)
+        hbox_align.Add(wx.StaticText(d, -1, _("Align:")), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        rb_left   = wx.RadioButton(d, -1, _("Left"),   style=wx.RB_GROUP)
+        rb_center = wx.RadioButton(d, -1, _("Center"))
+        rb_right  = wx.RadioButton(d, -1, _("Right"))
+        rb_center.SetValue(True)
+        hbox_align.Add(rb_left,   0, wx.RIGHT, 8)
+        hbox_align.Add(rb_center, 0, wx.RIGHT, 8)
+        hbox_align.Add(rb_right,  0)
+        vbox.Add(hbox_align, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
+        # --- Bordo ---
+        hbox_border = wx.BoxSizer(wx.HORIZONTAL)
+        cb_border = wx.CheckBox(d, -1, _("Border (pt):"))
+        txt_border = wx.SpinCtrlDouble(d, -1, "", min=0, max=50, inc=0.5, size=(60, -1))
+        txt_border.SetDigits(1)
+        txt_border.SetValue(1)
+        txt_border.Enable(False)
+        hbox_border.Add(cb_border, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        hbox_border.Add(txt_border, 0)
+        vbox.Add(hbox_border, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
+        # --- Anteprima direttiva ---
+        vbox.Add(wx.StaticLine(d), 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 8)
+        vbox.Add(wx.StaticText(d, -1, _("Directive preview:")), 0, wx.LEFT | wx.TOP, 8)
+        txt_preview = wx.TextCtrl(d, -1, "{image: }", style=wx.TE_READONLY)
+        txt_preview.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE))
+        vbox.Add(txt_preview, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
+        btn_sizer = d.CreateButtonSizer(wx.OK | wx.CANCEL)
+        vbox.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 8)
+        d.SetSizer(vbox)
+        vbox.Fit(d)
+
+        # --- Funzione aggiornamento anteprima ---
+        def _build_directive():
+            path = txt_path.GetValue().strip()
+            if not path:
+                return "{image: }"
+            # Virgolette se il path contiene spazi o backslash (Windows)
+            if ' ' in path or '\\' in path:
+                path_str = '"%s"' % path.replace('"', '\\"')
+            else:
+                path_str = path
+            parts = [path_str]
+            # Width: 0 = non specificato
+            w = int(txt_w.GetValue())
+            if w > 0:
+                unit = ch_w_unit.GetStringSelection()
+                parts.append("width=%d%s" % (w, "%" if unit == "%" else ""))
+            # Height: 0 = non specificato
+            h = int(txt_h.GetValue())
+            if h > 0:
+                unit = ch_h_unit.GetStringSelection()
+                parts.append("height=%d%s" % (h, "%" if unit == "%" else ""))
+            # Scale: 100 = nessuna scala (default)
+            sc = txt_scale.GetValue()
+            if sc != 100.0:
+                parts.append("scale=%g%%" % sc)
+            if rb_left.GetValue():
+                parts.append("align=left")
+            elif rb_right.GetValue():
+                parts.append("align=right")
+            # center è il default, non serve scriverlo
+            if cb_border.GetValue():
+                bv = txt_border.GetValue()
+                parts.append("border=%g" % bv if bv != 1.0 else "border")
+            return "{image: %s}" % " ".join(parts)
+
+        def _update_preview(e=None):
+            txt_preview.SetValue(_build_directive())
+
+        # Bind aggiornamento anteprima a tutti i controlli
+        txt_path.Bind(wx.EVT_TEXT, _update_preview)
+        for ctrl in (txt_w, txt_h, txt_scale, txt_border):
+            ctrl.Bind(wx.EVT_SPINCTRLDOUBLE, _update_preview)
+        for ctrl in (ch_w_unit, ch_h_unit):
+            ctrl.Bind(wx.EVT_CHOICE, _update_preview)
+        for ctrl in (rb_left, rb_center, rb_right):
+            ctrl.Bind(wx.EVT_RADIOBUTTON, _update_preview)
+        cb_border.Bind(wx.EVT_CHECKBOX, lambda e: (txt_border.Enable(cb_border.GetValue()), _update_preview()))
+
+        def _on_browse(e):
+            fd = wx.FileDialog(
+                d,
+                _("Select image"),
+                default_dir,
+                "",
+                _("Image files (*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif)|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif|All files (*.*)|*.*"),
+                wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
+            )
+            if fd.ShowModal() == wx.ID_OK:
+                path = fd.GetPath()
+                # Usa solo il nome se è nella stessa cartella del documento
+                if default_dir and os.path.dirname(os.path.abspath(path)) == default_dir:
+                    path = os.path.basename(path)
+                txt_path.SetValue(path)
+            fd.Destroy()
+
+        btn_browse.Bind(wx.EVT_BUTTON, _on_browse)
+
+        if d.ShowModal() == wx.ID_OK:
+            directive = _build_directive()
+            if directive != "{image: }":
+                self.InsertWithCaret(directive)
+        d.Destroy()
+
+    def AddTool(self, toolbar, resource_string, icon_path, label, help):
+        tool = wx.xrc.XRCID(resource_string)
+        toolbar.AddTool(
+            tool,
+            label,
+            wx.Bitmap(wx.Image(glb.AddPath(icon_path))),
+            wx.NullBitmap,
+            wx.ITEM_NORMAL,
+            label,
+            help,
+            None
+        )
+        return tool
+
+    def New(self):
+        self.text.AutoChangeMode(True)
+        self.text.New()
+        self.text.AutoChangeMode(False)
+        self.UpdateEverything()
+
+    def Open(self):
+        self.text.AutoChangeMode(True)
+        self.text.Open()
+        self.text.AutoChangeMode(False)
+        self.UpdateEverything()
+        self.AutoAdjust(0, self.text.GetLength())
+
+    def Save(self):
+        self.text.Save()
+        self.UpdateEverything()
+
+    def SavePreferences(self):
+        self.pref.Save()
+
+    def UpdateUndoRedo(self):
+        self.mainToolBar.EnableTool(self.undoTool, self.text.CanUndo())
+        self.mainToolBar.EnableTool(self.redoTool, self.text.CanRedo())
+
+    def UpdateCutCopyPaste(self):
+        s, e = self.text.GetSelection()
+        self.mainToolBar.EnableTool(self.cutTool, s != e)
+        self.menuBar.Enable(self.cutMenuId, s != e)
+        self.mainToolBar.EnableTool(self.copyTool, s != e)
+        self.menuBar.Enable(self.copyOnlyTextTool, s != e)
+        self.menuBar.Enable(self.copyMenuId, s != e)
+        if platform.system() == 'Windows':
+            cp = self.text.CanPaste()
+        else:
+            # Workaround for weird error in wxGTK
+            cp = True
+        self.mainToolBar.EnableTool(self.pasteTool, cp)
+        self.menuBar.Enable(self.pasteMenuId, cp)
+        self.mainToolBar.EnableTool(self.pasteChordsTool, cp)
+        self.menuBar.Enable(self.pasteChordsMenuId, cp)
+        self.menuBar.Enable(self.removeChordsMenuId, s != e)
+
+    @staticmethod
+    def _strip_hash_commands(text):
+        """
+        Rimuove le righe della forma  # {comando}  (con spazi opzionali),
+        es.  # {new_page}  # {linespacing: 13}  #{np}
+        Tali righe non devono comparire ne nell'anteprima ne in stampa.
+        Le normali righe di commento libero  # testo  vengono lasciate invariate.
+        """
+        import re
+        pattern = re.compile(r'^\s*#\s*\{[^}]*\}\s*$')
+        lines = text.split('\n')
+        filtered = [l for l in lines if not pattern.match(l)]
+        return '\n'.join(filtered)
+
+    def _get_display_text(self):
+        """Restituisce il testo del documento con i comandi # {...} rimossi."""
+        return self._strip_hash_commands(self.text.GetText())
+
+    def UpdateEverything(self):
+        self.UpdateUndoRedo()
+        self.UpdateCutCopyPaste()
+
+    def TextUpdated(self):
+        self.previewCanvas.Refresh(self._get_display_text())
+
+    # self.UpdateEverything()
+
+    def DrawOnDC(self, dc):
+        """
+        Draw song on DC and return the tuple (width, height) of rendered song
+        """
+        if self.pref.labelVerses:
+            import copy
+            decorator = copy.copy(self.pref.decorator)
+        else:
+            decorator = SongDecorator()
+        decorator.showKlavier = True
+        decorator.showGuitarDiagrams = True
+        decorator.exportMode = False
+        decorator.showPageBreakLines = getattr(self, '_showPageBreakLines', True)
+        decorator.showColumnBreakLines = getattr(self, '_showColumnBreakLines', True)
+        decorator.klavierHighlightColor = self._getKlavierHighlightColour()
+        r = Renderer(self.pref.format, decorator, self.pref.notations)
+        r.tempoDisplay = getattr(self.pref, 'tempoDisplay', 0)
+        r.timeDisplay = getattr(self.pref, 'timeDisplay', True)
+        r.keyDisplay = getattr(self.pref, 'keyDisplay', True)
+        r.tempoIconSize = getattr(self.pref, 'tempoIconSize', 24)
+        # Propaga il layout a colonne: usa _columns_per_page se >= 2,
+        # oppure rileva automaticamente {column_break} nel testo (come fa PreviewCanvas).
+        import re
+        song_text = self._strip_hash_commands(self.text.GetText())
+        columns = getattr(self, '_columns_per_page', 1)
+        if columns < 2:
+            has_col_break = bool(re.search(r'\{\s*(?:column_break|colb)\s*\}', song_text, re.IGNORECASE))
+            if has_col_break:
+                columns = 2
+        r.columns = columns
+        r.columnHeight = 0  # nessun limite di altezza per colonna nell'export
+        start, end = self.text.GetSelection()
+        if start == end:
+            w, h = r.Render(song_text, dc)
+        else:
+            w, h = r.Render(song_text, dc, self.text.LineFromPosition(start), self.text.LineFromPosition(end))
+        return w, h
+
+    def AskExportFileName(self, type, ext):
+        """Ask the filename (without saving); return None if user cancels, the file name ow"""
+        leave = False;
+        consensus = False;
+        while not leave:
+            dlg = wx.FileDialog(
+                self.frame,
+                "Choose a name for the output file",
+                "",
+                os.path.splitext(self.document)[0],
+                "%s files (*.%s)|*.%s|All files (*.*)|*.*" % (type, ext, ext),
+                wx.FD_SAVE
+            )
+
+            if dlg.ShowModal() == wx.ID_OK:
+
+                fn = dlg.GetPath()
+                if os.path.isfile(fn):
+                    msg = "File \"%s\" already exists. Do you want to overwrite it?" % (fn,)
+                    d = wx.MessageDialog(
+                        self.frame,
+                        msg,
+                        self.appLongName,
+                        wx.YES_NO | wx.CANCEL | wx.ICON_QUESTION
+                    )
+                    res = d.ShowModal()
+                    if res == wx.ID_CANCEL:
+                        leave = True
+                        consensus = False
+                    elif res == wx.ID_NO:
+                        leave = False
+                        consensus = False
+                    else:  # wxID_YES
+                        leave = True
+                        consensus = True
+                else:
+                    leave = True
+                    consensus = True
+
+            else:
+                leave = True
+                consensus = False
+
+        if consensus:
+            return fn
+        else:
+            return None
+
+    def ComputeRenderedSize(self):
+        """
+        Compute and return rendered size as tuple (with, height)
+        """
+        dc = wx.MemoryDC(wx.Bitmap(1, 1))
+        w, h = self.DrawOnDC(dc)
+        return max(1, w), max(1, h)
+
+    def RenderAsPng(self, scale=1, size=None):
+        if size is None:
+            size = self.ComputeRenderedSize()
+        w, h = size
+        b = wx.Bitmap(int(w * scale), int(h * scale))
+        dc = wx.MemoryDC(b)
+        dc.SetUserScale(scale, scale)
+        dc.SetBackground(wx.WHITE_BRUSH)
+        dc.Clear()
+        self.DrawOnDC(dc)
+        return b
+
+    def OnExportAsPng(self, evt):
+        n = self.AskExportFileName(_("PNG image"), "png")
+        if n is not None:
+            b = self.RenderAsPng()
+            i = b.ConvertToImage()
+            i.SaveFile(n, wx.BITMAP_TYPE_PNG)
+
+    def OnExportAsHtml(self, evt):
+        n = self.AskExportFileName(_("HTML file"), "html")
+        if n is not None:
+            h = HtmlExporter(self.pref.format)
+            r = Renderer(self.pref.format, h, self.pref.notations)
+            start, end = self.text.GetSelection()
+            display_text = self._strip_hash_commands(self.text.GetText())
+            if start == end:
+                r.Render(display_text, None)
+            else:
+                r.Render(display_text, None, self.text.LineFromPosition(start), self.text.LineFromPosition(end))
+            with open(n, "w", encoding='utf-8') as f:
+                f.write(h.getHtml())
+
+    def OnExportAsTab(self, evt):
+        n = self.AskExportFileName(_("TAB file"), "tab")
+        if n is not None:
+            t = TabExporter(self.pref.format)
+            r = Renderer(self.pref.format, t, self.pref.notations)
+            start, end = self.text.GetSelection()
+            display_text = self._strip_hash_commands(self.text.GetText())
+            if start == end:
+                r.Render(display_text, None)
+            else:
+                r.Render(display_text, None, self.text.LineFromPosition(start), self.text.LineFromPosition(end))
+            with open(n, "w", encoding='utf-8') as f:
+                f.write(t.getTab())
+
+    def SaveSvg(self, filename, size=None):
+        if size is None:
+            size = self.ComputeRenderedSize()
+        w, h = size
+        dc = wx.SVGFileDC(filename, int(w), int(h))
+        self.DrawOnDC(dc)
+
+    def OnExportAsSvg(self, evt):
+        n = self.AskExportFileName(_("SVG image"), "svg")
+        if n is not None:
+            self.SaveSvg(n)
+
+    def OnExportAsEmf(self, evt):
+        n = self.AskExportFileName(_("Enhanced Metafile"), "emf")
+        if n is not None:
+            dc = wx.msw.MetafileDC(n)
+            self.DrawOnDC(dc)
+            dc.Close()
+
+    def OnExportAsEps(self, evt):
+        n = self.AskExportFileName(_("EPS image"), "eps")
+        if n is not None:
+            pd = wx.PrintData()
+            pd.SetPaperId(wx.PAPER_NONE)
+            pd.SetPrintMode(wx.PRINT_MODE_FILE)
+            pd.SetFilename(n)
+            dc = wx.PostScriptDC(pd)
+            dc.StartDoc(_("Exporting image as EPS..."))
+            self.DrawOnDC(dc)
+            dc.EndDoc()
+
+    def OnExportAsPdf(self, evt):
+        """Esporta la canzone come PDF. Delega a PdfExporter."""
+        # Prima chiedi le impostazioni di pagina
+        data = wx.PageSetupDialogData(self._print_data)
+        data.SetMarginTopLeft(wx.Point(self._margin_left, self._margin_top))
+        data.SetMarginBottomRight(wx.Point(self._margin_right, self._margin_bottom))
+        dlg = wx.PageSetupDialog(self.frame, data)
+        if dlg.ShowModal() != wx.ID_OK:
+            dlg.Destroy()
+            return
+        result = dlg.GetPageSetupData()
+        self._print_data = wx.PrintData(result.GetPrintData())
+        tl = result.GetMarginTopLeft()
+        br = result.GetMarginBottomRight()
+        self._margin_left   = tl.x
+        self._margin_top    = tl.y
+        self._margin_right  = br.x
+        self._margin_bottom = br.y
+        dlg.Destroy()
+
+        n = self.AskExportFileName(_("PDF"), "pdf")
+        if n is None:
+            return
+        if not n.lower().endswith('.pdf'):
+            n += '.pdf'
+        title = os.path.splitext(os.path.basename(self.document))[0] if self.document else _("Song")
+        PdfExporter.export_as_pdf(self, n, title)
+
+    def OnSongbook(self, evt):
+        """Crea un Songbook PDF da una cartella di brani."""
+        SongbookExporter.create_songbook(self, self.frame)
+
+    def OnExportAsPptx(self, evt):
+        try:
+            from . import songimpress
+        except ImportError:
+            msg = _("Please install the python-pptx module to use this feature")
+            d = wx.MessageDialog(self.frame, msg, "Songpress++", wx.OK | wx.ICON_ERROR)
+            d.ShowModal()
+            return
+        text = replaceTitles(self.text.GetTextOrSelection(), '---')
+        text = removeChordPro(text).strip()
+        if text != '':
+            template_rel = os.path.join('templates', 'slides')
+            template_paths = [f for f in glb.ListLocalGlobalDir(template_rel) if f[-5:].upper() == '.PPTX']
+            template_names = [os.path.split(f)[1][:-5] for f in template_paths]
+            mld = MyListDialog(
+                self.frame,
+                _("Please select a template for your PowerPoint presentation:"),
+                _("Export as PowerPoint"),
+                template_names,
+            )
+            if mld.ShowModal() == wx.ID_OK:
+                output_file = self.AskExportFileName(_("PPTX presentation"), "pptx")
+                if output_file is not None:
+                    i = mld.GetSelectedIndex()
+                    songimpress.to_presentation(text.splitlines(), output_file, template_paths[i])
+
+    def OnUpdateUI(self, evt):
+        self.UpdateEverything()
+        evt.Skip()
+
+    def OnUndo(self, evt):
+        if self.text.CanUndo():
+            self.text.Undo()
+            self.UpdateUndoRedo()
+
+    def OnRedo(self, evt):
+        if self.text.CanRedo():
+            self.text.Redo()
+            self.UpdateUndoRedo()
+
+    def OnCut(self, evt):
+        self.text.Cut()
+
+    def OnTextCutCopy(self, evt):
+        self.UpdateCutCopyPaste()
+        evt.Skip()
+
+    def OnTextKeyDown(self, evt):
+        # 314: left
+        # 316: right
+        map = {
+            (314, True, True, False): self.MoveChordLeft,
+            (316, True, True, False): self.MoveChordRight,
+            (ord('D'), False, False, True): self.CopyAsImage,
+        }
+        tp = (
+            evt.GetKeyCode(),
+            evt.ShiftDown(),
+            evt.AltDown(),
+            evt.ControlDown(),
+        )
+        if (method := map.get(tp)) is not None:
+            method()
+            evt.Skip(False)
+        else:
+            evt.Skip()
+
+    def Copy(self):
+        self.text.Copy()
+
+    def OnCopy(self, evt):
+        self.Copy()
+
+    def OnCopyOnlyText(self, evt):
+        self.text.CopyOnlyText()
+
+    def CopyAsImage(self):
+        if platform.system() == 'Windows':
+            # Windows Metafile
+            dc = wx.MetafileDC()
+            self.DrawOnDC(dc)
+            m = dc.Close()
+            m.SetClipboard(dc.MaxX(), dc.MaxY())
+
+        else:
+            composite = wx.DataObjectComposite()
+            size = self.ComputeRenderedSize()
+
+            # 1. SVG
+            with temp_dir() as path:
+                svg_obj = wx.CustomDataObject("image/svg+xml")
+                fp = os.path.join(path, 'temp.svg')
+                self.SaveSvg(fp, size=size)
+                with open(fp, 'rb') as f:
+                    svg_obj.SetData(f.read())
+                composite.Add(svg_obj, preferred=True)
+
+            # 2. PNG
+            bmp = self.RenderAsPng(scale=2, size=size)
+            png_obj = wx.BitmapDataObject(bmp)
+            composite.Add(png_obj)
+
+            # Place on Clipboard
+            if wx.TheClipboard.Open():
+                wx.TheClipboard.SetData(composite)
+                wx.TheClipboard.Close()
+
+    def OnCopyAsImage(self, evt):
+        self.CopyAsImage()
+
+    def OnPaste(self, evt):
+        self.text.Paste()
+
+    def OnPasteChords(self, evt):
+        self.text.PasteChords()
+
+    # ------------------------------------------------------------------
+    # Propagate chords from first verse / first chorus to all matching
+    # blocks (same type, same number of content lines).
+    #
+    # Verse formats supported:
+    #   1. Plain blocks separated by blank lines (no directive)
+    #   2. {start_of_verse} ... {end_of_verse}  (also sov/eov)
+    #   3. {verse}  (single-line tag: treats the following plain block
+    #                as the verse body)
+    # Chorus formats supported:
+    #   {start_of_chorus} ... {end_of_chorus}  (also soc/eoc)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _parse_chordpro_blocks(text):
+        """
+        Parse ChordPro text into a list of blocks.
+
+        Each block is a dict with keys:
+          'type'  : 'verse' | 'chorus' | 'header' | 'blank'
+          'lines' : list of raw lines (newline stripped)
+          'start' : index of first line in the full line list
+
+        For tagged blocks ({sov}…{eov}, {soc}…{eoc}) the delimiter
+        lines are included in 'lines' and excluded from the content
+        count when building the chord map (see _propagate_chords).
+
+        For plain verse blocks (no delimiter) all lines are content.
+
+        For {verse}-tagged blocks the {verse} directive line is stored
+        as a separate 'header' block immediately before the 'verse'
+        block that follows it, so the verse content lines are plain.
+        """
+        import re
+        lines = text.split('\n')
+        blocks = []
+        i = 0
+
+        SOV = re.compile(r'^\s*\{s(?:ov|tart_of_verse)[^}]*\}',   re.IGNORECASE)
+        EOV = re.compile(r'^\s*\{e(?:ov|nd_of_verse)[^}]*\}',     re.IGNORECASE)
+        SOC = re.compile(r'^\s*\{s(?:oc|tart_of_chorus)[^}]*\}',  re.IGNORECASE)
+        EOC = re.compile(r'^\s*\{e(?:oc|nd_of_chorus)[^}]*\}',    re.IGNORECASE)
+        # {verse} or {verse:label}
+        VERSE_TAG  = re.compile(r'^\s*\{verse(?:[:\s][^}]*)?\}',   re.IGNORECASE)
+        # {chorus} single-tag (without soc/eoc)
+        CHORUS_TAG = re.compile(r'^\s*\{chorus(?:[:\s][^}]*)?\}',  re.IGNORECASE)
+        DIRECTIVE  = re.compile(r'^\s*\{[^}]+\}',                  re.IGNORECASE)
+        COMMENT    = re.compile(r'^\s*#')
+        # paired block delimiters whose content must NOT be treated as verse
+        # (start_chord/end_chord, grid/end_grid, tab/end_tab, bridge, etc.)
+        SOB = re.compile(
+            r'^\s*\{(?:start_chord|start_of_bridge|sob|start_of_tab|sot'
+            r'|start_of_grid|sog|grid)[^}]*\}',
+            re.IGNORECASE,
+        )
+        EOB = re.compile(
+            r'^\s*\{(?:end_chord|end_of_bridge|eob|end_of_tab|eot'
+            r'|end_of_grid|eog)\s*\}',
+            re.IGNORECASE,
+        )
+
+        while i < len(lines):
+            line = lines[i]
+
+            # --- paired non-verse blocks (start_chord/end_chord, grid, tab, bridge…) ---
+            # treat their entire content as header so it is never mistaken for a verse
+            if SOB.match(line):
+                block_lines = [line]
+                i += 1
+                while i < len(lines):
+                    block_lines.append(lines[i])
+                    if EOB.match(lines[i]):
+                        i += 1
+                        break
+                    i += 1
+                blocks.append({'type': 'header', 'lines': block_lines,
+                                'start': i - len(block_lines), 'tagged': False})
+                continue
+
+            # --- {start_of_verse} … {end_of_verse} ---
+            if SOV.match(line):
+                block_lines = [line]
+                i += 1
+                while i < len(lines):
+                    block_lines.append(lines[i])
+                    if EOV.match(lines[i]):
+                        i += 1
+                        break
+                    i += 1
+                blocks.append({'type': 'verse', 'lines': block_lines,
+                                'start': i - len(block_lines),
+                                'tagged': True})
+                continue
+
+            # --- {start_of_chorus} … {end_of_chorus} ---
+            if SOC.match(line):
+                block_lines = [line]
+                i += 1
+                while i < len(lines):
+                    block_lines.append(lines[i])
+                    if EOC.match(lines[i]):
+                        i += 1
+                        break
+                    i += 1
+                blocks.append({'type': 'chorus', 'lines': block_lines,
+                                'start': i - len(block_lines),
+                                'tagged': True})
+                continue
+
+            # --- {verse} single tag: emit header, then collect following plain lines ---
+            if VERSE_TAG.match(line):
+                blocks.append({'type': 'header', 'lines': [line], 'start': i, 'tagged': False})
+                i += 1
+                # collect the plain-text verse body that follows
+                body = []
+                while i < len(lines):
+                    l = lines[i]
+                    if (l.strip() == '' or SOV.match(l) or SOC.match(l)
+                            or VERSE_TAG.match(l) or CHORUS_TAG.match(l)
+                            or EOV.match(l) or EOC.match(l)
+                            or DIRECTIVE.match(l) or COMMENT.match(l)):
+                        break
+                    body.append(l)
+                    i += 1
+                if body:
+                    blocks.append({'type': 'verse', 'lines': body,
+                                   'start': i - len(body),
+                                   'tagged': False})
+                continue
+
+            # --- {chorus} single tag (treat similarly to {verse}) ---
+            if CHORUS_TAG.match(line):
+                blocks.append({'type': 'header', 'lines': [line], 'start': i, 'tagged': False})
+                i += 1
+                body = []
+                while i < len(lines):
+                    l = lines[i]
+                    if (l.strip() == '' or SOV.match(l) or SOC.match(l)
+                            or VERSE_TAG.match(l) or CHORUS_TAG.match(l)
+                            or EOV.match(l) or EOC.match(l)
+                            or DIRECTIVE.match(l) or COMMENT.match(l)):
+                        break
+                    body.append(l)
+                    i += 1
+                if body:
+                    blocks.append({'type': 'chorus', 'lines': body,
+                                   'start': i - len(body),
+                                   'tagged': False})
+                continue
+
+            # --- blank line(s) ---
+            if line.strip() == '':
+                block_lines = [line]
+                i += 1
+                while i < len(lines) and lines[i].strip() == '':
+                    block_lines.append(lines[i])
+                    i += 1
+                blocks.append({'type': 'blank', 'lines': block_lines,
+                                'start': i - len(block_lines), 'tagged': False})
+                continue
+
+            # --- generic directive / comment → header ---
+            if DIRECTIVE.match(line) or COMMENT.match(line):
+                blocks.append({'type': 'header', 'lines': [line], 'start': i, 'tagged': False})
+                i += 1
+                continue
+
+            # --- plain verse block (no delimiter) ---
+            block_lines = [line]
+            i += 1
+            while i < len(lines):
+                l = lines[i]
+                if (l.strip() == '' or SOV.match(l) or SOC.match(l)
+                        or VERSE_TAG.match(l) or CHORUS_TAG.match(l)
+                        or DIRECTIVE.match(l) or COMMENT.match(l)):
+                    break
+                block_lines.append(l)
+                i += 1
+            blocks.append({'type': 'verse', 'lines': block_lines,
+                            'start': i - len(block_lines),
+                            'tagged': False})
+
+        return blocks, lines
+
+    @staticmethod
+    def _strip_chords_from_line(line):
+        import re
+        return re.sub(r'\[[^\]]*\]', '', line)
+
+    @staticmethod
+    def _visible_len(s):
+        """Length of s excluding ChordPro soft-hyphen '_' characters."""
+        return sum(1 for c in s if c != '_')
+
+    @staticmethod
+    def _visible_pos(s, raw_pos):
+        """Convert a raw string index to a visible-character index (ignoring '_')."""
+        return sum(1 for c in s[:raw_pos] if c != '_')
+
+    @staticmethod
+    def _raw_pos_from_visible(s, vis_pos):
+        """
+        Convert a visible-character index back to a raw string index.
+        Returns the raw index where the vis_pos-th non-'_' character starts.
+        If vis_pos >= number of visible chars, returns len(s).
+        """
+        count = 0
+        for idx, c in enumerate(s):
+            if c != '_':
+                if count == vis_pos:
+                    return idx
+                count += 1
+        return len(s)
+
+    @staticmethod
+    def _extract_chord_map(lines):
+        """
+        Return a list parallel to `lines`; each element is a list of
+        (visible_position, chord_name) tuples.
+        Visible position counts characters excluding ChordPro '_' (soft hyphen).
+        """
+        import re
+        CHORD_RE = re.compile(r'\[([^\]]*)\]')
+        result = []
+        for line in lines:
+            positions = []
+            clean_pos = 0   # visible chars so far (excluding '_')
+            raw_pos   = 0
+            for m in CHORD_RE.finditer(line):
+                segment = line[raw_pos:m.start()]
+                clean_pos += sum(1 for c in segment if c != '_')
+                positions.append((clean_pos, m.group(1)))
+                raw_pos = m.end()
+            result.append(positions)
+        return result
+
+    @staticmethod
+    def _apply_chord_map(lines, chord_map):
+        """
+        Re-insert chords from chord_map into lines (already stripped of chords).
+        Positions are visible-character indices (ignoring '_').
+        """
+        result = []
+        for i, line in enumerate(lines):
+            if i >= len(chord_map) or not chord_map[i]:
+                result.append(line)
+                continue
+            out      = []
+            raw_src  = 0
+            for vis_pos, chord in chord_map[i]:
+                # find the raw index corresponding to vis_pos visible chars
+                count = 0
+                insert_at = len(line)
+                for idx, c in enumerate(line):
+                    if c != '_':
+                        if count == vis_pos:
+                            insert_at = idx
+                            break
+                        count += 1
+                out.append(line[raw_src:insert_at])
+                out.append('[' + chord + ']')
+                raw_src = insert_at
+            out.append(line[raw_src:])
+            result.append(''.join(out))
+        return result
+
+    def _propagate_chords(self, block_type):
+        """
+        Propagate chords from the first block of `block_type` ('verse' or
+        'chorus') to all subsequent blocks of the same type that have the
+        same number of content lines.
+
+        For tagged blocks ({sov}…{eov}, {soc}…{eoc}) the delimiter lines
+        are excluded from the content used for the chord map.
+        Returns the modified full text, or None if nothing was done.
+        """
+        text = self.text.GetText()
+        blocks, all_lines = self._parse_chordpro_blocks(text)
+
+        typed = [b for b in blocks if b['type'] == block_type]
+        if len(typed) < 2:
+            return None
+
+        source = typed[0]
+        tagged = source.get('tagged', False)
+
+        if tagged:
+            # delimiter lines are first and last; content is in between
+            src_content = source['lines'][1:-1]
+            src_offset  = source['start'] + 1
+        else:
+            src_content = source['lines']
+            src_offset  = source['start']
+
+        chord_map      = self._extract_chord_map(src_content)
+        src_line_count = len(src_content)
+
+        result_lines = list(all_lines)
+        modified     = False
+
+        for target in typed[1:]:
+            t_tagged = target.get('tagged', False)
+            if t_tagged:
+                tgt_content = target['lines'][1:-1]
+                tgt_offset  = target['start'] + 1
+            else:
+                tgt_content = target['lines']
+                tgt_offset  = target['start']
+
+            if len(tgt_content) != src_line_count:
+                continue   # metrica diversa, salta
+
+            stripped    = [self._strip_chords_from_line(l) for l in tgt_content]
+            new_content = self._apply_chord_map(stripped, chord_map)
+
+            for j, new_line in enumerate(new_content):
+                result_lines[tgt_offset + j] = new_line
+
+            modified = True
+
+        return '\n'.join(result_lines) if modified else None
+
+    def OnPropagateVerseChords(self, evt):
+        """Copy chords from the first verse to all verses with the same number of lines."""
+        result = self._propagate_chords('verse')
+        if result is None:
+            wx.MessageBox(
+                _("No compatible verse found.\n"
+                  "Make sure the song has at least two verses with the same number of lines."),
+                _("Propagate verse chords"),
+                wx.OK | wx.ICON_INFORMATION,
+                self.frame,
+            )
+            return
+        with undo_action(self.text):
+            self.text.SetSelection(0, self.text.GetLength())
+            self.text.ReplaceSelection(result)
+
+    def OnPropagateChorusChords(self, evt):
+        """Copy chords from the first chorus to all choruses with the same number of lines."""
+        result = self._propagate_chords('chorus')
+        if result is None:
+            wx.MessageBox(
+                _("No compatible chorus found.\n"
+                  "Make sure the song has at least two choruses with the same number of lines."),
+                _("Propagate chorus chords"),
+                wx.OK | wx.ICON_INFORMATION,
+                self.frame,
+            )
+            return
+        with undo_action(self.text):
+            self.text.SetSelection(0, self.text.GetLength())
+            self.text.ReplaceSelection(result)
+
+    def _OnGlobalCharHook(self, evt):
+        """F3 = trova successivo, Shift+F3 = trova precedente, anche a dialogo chiuso."""
+        kc = evt.GetKeyCode()
+        if kc == wx.WXK_F3:
+            if evt.ShiftDown():
+                self.OnFindPrevious(evt)
+            else:
+                self.OnFindNext(evt)
+        else:
+            evt.Skip()
+
+    def OnFind(self, evt):
+        if self.findReplaceDialog is not None and self.findReplaceDialog.dialog is not None:
+            self.findReplaceDialog.notebook.SetSelection(0)
+            self.findReplaceDialog._UpdateButtons()
+            self.findReplaceDialog._FocusFindField()
+            self.findReplaceDialog.dialog.Raise()
+        else:
+            self.findReplaceDialog = SongpressFindReplaceDialog(self, replace=False)
+
+    def OnFindNext(self, evt):
+        dlg = self.findReplaceDialog
+        if dlg is not None and dlg.dialog is not None:
+            # Forza direzione giù sul radio della tab attiva
+            if dlg._IsReplaceTab():
+                dlg.rbDownR.SetValue(True)
+            else:
+                dlg.rbDown.SetValue(True)
+            dlg._OnFindNext(evt)
+        else:
+            self._FindInEditor(down=True)
+
+    def OnFindPrevious(self, evt):
+        dlg = self.findReplaceDialog
+        if dlg is not None and dlg.dialog is not None:
+            # Forza direzione su sul radio della tab attiva
+            if dlg._IsReplaceTab():
+                dlg.rbUpR.SetValue(True)
+            else:
+                dlg.rbUp.SetValue(True)
+            dlg._OnFindNext(evt)
+        else:
+            self._FindInEditor(down=False)
+
+    def _FindInEditor(self, down=True):
+        """Cerca nel testo usando l'ultimo termine e flags memorizzati."""
+        st    = getattr(self, '_lastFindSt', '')
+        flags = getattr(self, '_lastFindFlags', 0)
+        if not st:
+            return
+        text = self.text
+        if down:
+            s, e = text.GetSelection()
+            text.SetSelection(e, e)
+            text.SearchAnchor()
+            p = text.SearchNext(flags, st)
+        else:
+            s, e = text.GetSelection()
+            text.SetSelection(s, s)
+            text.SearchAnchor()
+            p = text.SearchPrev(flags, st)
+        if p != -1:
+            text.SetSelection(p, p + len(st))
+        else:
+            # Ricomincia dall'inizio/fine
+            if down:
+                newStart, wherefrom, where = 0, _("Reached the end"), _("beginning")
+            else:
+                newStart, wherefrom, where = text.GetLength(), _("Reached the beginning"), _("end")
+            d = wx.MessageDialog(
+                self.frame,
+                _("%s of the song, restarting search from the %s") % (wherefrom, where),
+                self.appName,
+                wx.OK | wx.CANCEL | wx.ICON_INFORMATION
+            )
+            if d.ShowModal() == wx.ID_OK:
+                text.SetSelection(newStart, newStart)
+                self._FindInEditor(down=down)
+
+    def OnReplace(self, evt):
+        if self.findReplaceDialog is not None and self.findReplaceDialog.dialog is not None:
+            self.findReplaceDialog.notebook.SetSelection(1)
+            self.findReplaceDialog._UpdateButtons()
+            self.findReplaceDialog._FocusFindField()
+            self.findReplaceDialog.dialog.Raise()
+        else:
+            self.findReplaceDialog = SongpressFindReplaceDialog(self, replace=True)
+
+    def OnSelectAll(self, evt):
+        self.text.SelectAll()
+
+    def OnSelectNextChord(self, evt):
+        self.text.SelectNextChord()
+
+    def OnSelectPreviousChord(self, evt):
+        self.text.SelectPreviousChord()
+
+    def MoveChordRight(self, position=None):
+        """
+        Move the chord 1 position to the right, hooking its neighbords
+
+        Apply to the chord at `position`, or under the cursor if `position`
+        is not specified.
+
+        :return: `False` if the chord is at the end of the song and cannot be moved,
+            `True` otherwise
+        """
+
+        r = self.text.GetChordUnderCursor(position)
+        if r is None:
+            return True
+        n = self.text.GetLength()
+        s, e, c = r
+
+        if e >= n:
+            return False
+        with undo_action(self.text):
+            # Recursively push to the right the next adjacent chord (if any)
+            if not self.MoveChordRight(e + 1):
+                return False
+
+            e1 = self.text.PositionAfter(e)
+            self.text.SetSelection(e, e1)
+            l = self.text.GetTextRange(e, e1)
+            self.text.ReplaceSelection('')
+            self.text.SetSelection(s, s)
+            self.text.ReplaceSelection(l)
+            s2 = self.text.PositionAfter(self.text.PositionAfter(s))
+            self.text.SetSelection(s2, s2)
+            return True
+
+    def OnMoveChordRight(self, evt):
+        self.MoveChordRight()
+
+    def MoveChordLeft(self, position=None):
+        """
+        Move the chord 1 position to the left, hooking its neighbords
+
+        Apply to the chord at `position`, or under the cursor if `position`
+        is not specified.
+
+        :return: `False` if the chord is at the beginnig of the song and cannot be moved,
+            `True` otherwise
+        """
+        r = self.text.GetChordUnderCursor(position)
+        if r is None:
+            return True
+        s, e, c = r
+        if s == 0:
+            return False
+        with undo_action(self.text):
+            # Recursively push to the left the previous adjacent chord (if any)
+            if not self.MoveChordLeft(s - 1):
+                return False
+
+            s1 = self.text.PositionBefore(s)
+            l = self.text.GetTextRange(s1, s)
+            self.text.SetSelection(e, e)
+            self.text.ReplaceSelection(l)
+            self.text.SetSelection(s1, s)
+            self.text.ReplaceSelection('')
+            s = self.text.PositionAfter(s1)
+            self.text.SetSelection(s, s)
+            return True
+
+    def OnMoveChordLeft(self, evt):
+        self.MoveChordLeft()
+
+    def OnRemoveChords(self, evt):
+        self.text.RemoveChordsInSelection()
+
+    def _OnStatusTimerExpired(self, evt):
+        if self.statusBar:
+            self.statusBar.SetStatusText("")
+
+    def OnIntegrateChords(self, evt):
+        ln = self.text.GetCurrentLine()
+        if ln < self.text.GetLineCount() - 1:
+            chords = self.text.GetLine(ln).strip("\r\n")
+            text = self.text.GetLine(ln + 1).strip("\r\n")
+            chordpro = integrateChords(chords, text)
+            self.text.SetSelectionStart(self.text.PositionFromLine(ln))
+            self.text.SetSelectionEnd(self.text.GetLineEndPosition(ln + 1))
+            self.text.ReplaceSelection(chordpro)
+        else:
+            if self.statusBar:
+                self.statusBar.SetStatusText(_("Command 'Paste chords': Select 1st chord line, 2nd text line"))
+                self._statusTimer.StartOnce(10000)
+
+    def OnFontSelected(self, evt):
+        font = self.fontChooser.GetValue()
+        showChords = self.showChordsChooser.GetValue()
+        self.pref.SetFont(font, showChords)
+        self.SetFont(True)
+        evt.Skip()
+
+    def OnGuide(self, evt):
+        wx.LaunchDefaultBrowser(_("http://www.skeed.it/songpress-manual"))
+
+    def OnGuideMarkdown(self, evt):
+        import os
+        import wx.html
+
+        # Determina il codice lingua dalla locale wx attiva
+        locale = wx.GetLocale()
+        lang_code = ''
+        if locale:
+            canonical = locale.GetCanonicalName()   # es. "it_IT"
+            if canonical:
+                lang_code = canonical.split('_')[0].lower()  # → "it", "en", "fr"
+
+        base_dir = os.path.dirname(__file__)
+
+        # Priorità: guida_<lang>.md  →  guida.md  →  errore
+        candidates = []
+        if lang_code:
+            candidates.append(os.path.join(base_dir, 'guida_%s.md' % lang_code))
+        candidates.append(os.path.join(base_dir, 'guida.md'))
+
+        guide_path = None
+        for path in candidates:
+            if os.path.exists(path):
+                guide_path = path
+                break
+
+        if guide_path is None:
+            wx.MessageBox(
+                _("Guide file not found in the program folder."),
+                _("Help"),
+                wx.ICON_ERROR,
+            )
+            return
+
+        try:
+            with open(guide_path, 'r', encoding='utf-8') as f:
+                md_text = f.read()
+        except Exception as e:
+            wx.MessageBox(str(e), _("Error"), wx.ICON_ERROR)
+            return
+
+        # Riscrittura percorsi immagini (normalizza tutte le varianti)
+        import re
+        # Pattern che cattura qualsiasi variante del percorso verso img/GUIDE/
+        _guide_pat = re.compile(
+            r'(!\[[^\]]*\]\()(?:\.\.\/src\/songpress\/|\.\/)?img\/GUIDE\/'
+        )
+        if getattr(self.pref, 'guideMarkdownImgPath', False):
+            # Typora: percorso assoluto relativo alla root del progetto
+            md_text = _guide_pat.sub(r'\1../src/songpress/img/GUIDE/', md_text)
+        else:
+            # App: percorso relativo al file .md in src/songpress/
+            md_text = _guide_pat.sub(r'\1img/GUIDE/', md_text)
+
+        html = self._md_to_html(md_text)
+
+        dlg = wx.Dialog(
+            self.frame,
+            title=_("Quick guide - Songpress++"),
+            size=(760, 620),
+            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.MAXIMIZE_BOX,
+        )
+        dlg.SetMinSize(wx.Size(500, 400))
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        hw = wx.html.HtmlWindow(dlg, style=wx.html.HW_SCROLLBAR_AUTO)
+        hw.SetPage(html)
+        hw.Bind(wx.html.EVT_HTML_LINK_CLICKED,
+                lambda e: wx.LaunchDefaultBrowser(e.GetLinkInfo().GetHref()))
+        sizer.Add(hw, 1, wx.EXPAND | wx.ALL, 4)
+
+        # Barra inferiore: pulsante Schermo intero a sinistra, Chiudi a destra
+        btn_row = wx.BoxSizer(wx.HORIZONTAL)
+
+        btn_max = wx.Button(dlg, wx.ID_ANY, _("Full screen"))
+        btn_max.SetToolTip(_("Toggle full screen"))
+
+        def _on_toggle_max(e):
+            if dlg.IsMaximized():
+                dlg.Restore()
+                btn_max.SetLabel(_("Full screen"))
+            else:
+                dlg.Maximize()
+                btn_max.SetLabel(_("Restore"))
+
+        btn_max.Bind(wx.EVT_BUTTON, _on_toggle_max)
+
+        # Imposta larghezza minima in base al testo più largo tra le due etichette,
+        # così il pulsante non si restringe quando il label cambia.
+        def _fix_btn_max_size():
+            dc = wx.ClientDC(btn_max)
+            dc.SetFont(btn_max.GetFont())
+            w1 = dc.GetTextExtent(_("Full screen"))[0]
+            w2 = dc.GetTextExtent(_("Restore"))[0]
+            best = btn_max.GetBestSize()
+            cur_tw = dc.GetTextExtent(btn_max.GetLabel())[0]
+            padding = best.width - cur_tw
+            min_w = max(w1, w2) + max(padding, 20)
+            btn_max.SetMinSize(wx.Size(min_w, best.height))
+            btn_max.GetContainingSizer().Layout()
+        wx.CallAfter(_fix_btn_max_size)
+
+        btn_close = wx.Button(dlg, wx.ID_OK, _("Close"))
+
+        btn_row.Add(btn_max,   0, wx.RIGHT, 8)
+        btn_row.AddStretchSpacer()
+        btn_row.Add(btn_close, 0)
+
+        sizer.Add(btn_row, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
+        dlg.SetSizer(sizer)
+        dlg.Layout()
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _md_to_html(self, md_text):
+        """Converte Markdown in HTML per wx.html.HtmlWindow.
+        Il viewer usato dipende dalla preferenza pref.guideViewer:
+          'markdown' → python-markdown (fallback: mistune → builtin)
+          'mistune'  → mistune (fallback: builtin)
+          'builtin'  → parser interno sempre
+        """
+        viewer = getattr(self.pref, 'guideViewer', 'markdown')
+
+        if viewer in ('markdown', 'auto'):
+            try:
+                import markdown as _markdown_lib
+                body = _markdown_lib.markdown(
+                    md_text,
+                    extensions=['tables', 'fenced_code'],
+                )
+                return self._md_wrap_html(body)
+            except ImportError:
+                pass
+            # fallthrough a mistune
+            viewer = 'mistune'
+
+        if viewer == 'mistune':
+            try:
+                import mistune as _mistune_lib
+                body = _mistune_lib.html(md_text)
+                return self._md_wrap_html(body)
+            except ImportError:
+                pass
+            # fallthrough a builtin
+
+        # Parser interno (sempre disponibile)
+        return self._md_to_html_builtin(md_text)
+
+    @staticmethod
+    def _md_wrap_html(body):
+        """Avvolge il corpo HTML con head e stili comuni."""
+        return (
+            '<html><head><style>'
+            'body{font-family:Arial,sans-serif;margin:16px;font-size:13px;}'
+            'a{color:#0066cc;}'
+            'pre{background:#f4f4f4;padding:8px;border-radius:4px;}'
+            'code{background:#f0f0f0;padding:1px 4px;}'
+            'table{border-collapse:collapse;}'
+            'th,td{border:1px solid #ccc;padding:4px 8px;}'
+            'th{background:#e8e8e8;font-weight:bold;}'
+            'blockquote{border-left:3px solid #ccc;margin:0 0 0 12px;padding-left:8px;color:#555;}'
+            '</style></head>'
+            f'<body>{body}</body></html>'
+        )
+
+    def _md_to_html_builtin(self, md_text):
+        """Parser Markdown interno, usato quando nessuna libreria esterna è disponibile."""
+        import re
+
+        # ── Helper ────────────────────────────────────────────────────
+        def esc(s):
+            """Escape caratteri HTML speciali."""
+            return s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+        def inline(s):
+            """Applica le sostituzioni inline (grassetto, corsivo, code, link, img)."""
+            # Grassetto+corsivo combinati: ***testo***
+            s = re.sub(r'\*\*\*(.+?)\*\*\*', r'<b><i>\1</i></b>', s)
+            # Grassetto: **testo** o __testo__
+            s = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', s)
+            s = re.sub(r'__(.+?)__',     r'<b>\1</b>', s)
+            # Corsivo: *testo* o _testo_
+            s = re.sub(r'\*(.+?)\*', r'<i>\1</i>', s)
+            s = re.sub(r'_(.+?)_',   r'<i>\1</i>', s)
+            # Codice inline
+            s = re.sub(r'`(.+?)`', r'<code>\1</code>', s)
+            # Immagini cliccabili: [![alt](src)](href) — deve precedere link e img
+            s = re.sub(r'\[(<img [^>]+>)\]\(([^)]+)\)', r'<a href="\2">\1</a>', s)
+            # Immagini: ![alt](src)
+            s = re.sub(r'!\[([^\]]*)\]\(([^)]+)\)',
+                       r'<img src="\2" alt="\1" style="max-width:100%;">', s)
+            # Link: [testo](url)
+            s = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'<a href="\2">\1</a>', s)
+            return s
+
+        def close_lists(html_lines, list_stack):
+            """Chiude tutti i livelli di lista aperti."""
+            while list_stack:
+                html_lines.append('</' + list_stack.pop() + '>')
+
+        lines = md_text.split('\n')
+        html_lines = []
+        in_code    = False
+        in_table   = False
+        table_header_done = False
+        in_blockquote = False
+        list_stack = []   # stack di 'ul' / 'ol' per liste annidate
+        blank_count = 0   # righe vuote consecutive
+
+        for line in lines:
+            # ── Blocco codice ─────────────────────────────────────────
+            if line.startswith('```'):
+                close_lists(html_lines, list_stack)
+                if in_table:
+                    html_lines.append('</table>')
+                    in_table = False
+                if in_blockquote:
+                    html_lines.append('</blockquote>')
+                    in_blockquote = False
+                if in_code:
+                    html_lines.append('</pre>')
+                    in_code = False
+                else:
+                    html_lines.append('<pre>')
+                    in_code = True
+                blank_count = 0
+                continue
+
+            if in_code:
+                html_lines.append(esc(line))
+                continue
+
+            # ── Tabella ───────────────────────────────────────────────
+            if line.startswith('|'):
+                close_lists(html_lines, list_stack)
+                if in_blockquote:
+                    html_lines.append('</blockquote>')
+                    in_blockquote = False
+                if not in_table:
+                    html_lines.append(
+                        '<table border="1" cellpadding="4" cellspacing="0"'
+                        ' style="border-collapse:collapse;">'
+                    )
+                    in_table = True
+                    table_header_done = False
+                # Riga separatrice (|---|---|) → segna fine intestazione
+                if re.match(r'^\|[-| :]+\|$', line):
+                    table_header_done = True
+                    continue
+                cells = [inline(esc(c.strip())) for c in line.strip('|').split('|')]
+                if not table_header_done:
+                    html_lines.append(
+                        '<tr>' + ''.join(f'<th>{c}</th>' for c in cells) + '</tr>'
+                    )
+                else:
+                    html_lines.append(
+                        '<tr>' + ''.join(f'<td>{c}</td>' for c in cells) + '</tr>'
+                    )
+                blank_count = 0
+                continue
+            else:
+                if in_table:
+                    html_lines.append('</table>')
+                    in_table = False
+
+            # ── Riga vuota ────────────────────────────────────────────
+            if line.strip() == '':
+                blank_count += 1
+                # Chiude blockquote alla prima riga vuota
+                if in_blockquote:
+                    html_lines.append('</blockquote>')
+                    in_blockquote = False
+                # Una sola riga vuota tra paragrafi è sufficiente
+                if blank_count == 1:
+                    html_lines.append('<p style="margin:4px 0"> </p>')
+                continue
+            blank_count = 0
+
+            # ── Blockquote: > testo ───────────────────────────────────
+            bq_match = re.match(r'^> ?(.*)', line)
+            if bq_match:
+                close_lists(html_lines, list_stack)
+                if not in_blockquote:
+                    html_lines.append('<blockquote>')
+                    in_blockquote = False  # rimane False; il tag è già aperto
+                    in_blockquote = True
+                html_lines.append(f'<p style="margin:2px 0">{inline(esc(bq_match.group(1)))}</p>')
+                continue
+            else:
+                if in_blockquote:
+                    html_lines.append('</blockquote>')
+                    in_blockquote = False
+
+            # ── Intestazioni (fino a ######) ──────────────────────────
+            h_match = re.match(r'^(#{1,6}) (.*)', line)
+            if h_match:
+                close_lists(html_lines, list_stack)
+                level = len(h_match.group(1))
+                html_lines.append(f'<h{level}>{inline(esc(h_match.group(2)))}</h{level}>')
+                continue
+
+            # ── Separatore orizzontale ────────────────────────────────
+            if re.match(r'^(-{3,}|\*{3,}|_{3,})$', line.strip()):
+                close_lists(html_lines, list_stack)
+                html_lines.append('<hr/>')
+                continue
+
+            # ── Liste puntate (-, *, +) con indentazione ──────────────
+            ul_match = re.match(r'^( *)[-*+] (.*)', line)
+            if ul_match:
+                indent = len(ul_match.group(1)) // 2  # livello 0-based
+                content = inline(esc(ul_match.group(2)))
+                # Aggiusta lo stack al livello corrente
+                while len(list_stack) > indent + 1:
+                    html_lines.append('</' + list_stack.pop() + '>')
+                if len(list_stack) < indent + 1:
+                    html_lines.append('<ul>')
+                    list_stack.append('ul')
+                elif list_stack and list_stack[-1] == 'ol':
+                    html_lines.append('</ol>')
+                    list_stack.pop()
+                    html_lines.append('<ul>')
+                    list_stack.append('ul')
+                html_lines.append(f'<li>{content}</li>')
+                continue
+
+            # ── Liste numerate (1. 2. …) ──────────────────────────────
+            ol_match = re.match(r'^( *)\d+\. (.*)', line)
+            if ol_match:
+                indent = len(ol_match.group(1)) // 2
+                content = inline(esc(ol_match.group(2)))
+                while len(list_stack) > indent + 1:
+                    html_lines.append('</' + list_stack.pop() + '>')
+                if len(list_stack) < indent + 1:
+                    html_lines.append('<ol>')
+                    list_stack.append('ol')
+                elif list_stack and list_stack[-1] == 'ul':
+                    html_lines.append('</ul>')
+                    list_stack.pop()
+                    html_lines.append('<ol>')
+                    list_stack.append('ol')
+                html_lines.append(f'<li>{content}</li>')
+                continue
+
+            # ── Paragrafo generico ────────────────────────────────────
+            close_lists(html_lines, list_stack)
+            html_lines.append(f'<p style="margin:2px 0">{inline(esc(line))}</p>')
+
+        # ── Chiusura tag rimasti aperti ───────────────────────────────
+        close_lists(html_lines, list_stack)
+        if in_table:
+            html_lines.append('</table>')
+        if in_code:
+            html_lines.append('</pre>')
+        if in_blockquote:
+            html_lines.append('</blockquote>')
+
+        body = '\n'.join(html_lines)
+        return self._md_wrap_html(body)
+
+    def OnIdle(self, evt):
+        try:
+            cp = self.text.CanPaste()
+            self.mainToolBar.EnableTool(self.pasteTool, cp)
+            self.menuBar.Enable(self.pasteMenuId, cp)
+            self.mainToolBar.EnableTool(self.pasteChordsTool, cp)
+            self.menuBar.Enable(self.pasteChordsMenuId, cp)
+        except Exception:
+            # When frame is closed, this method may still be executed, generating an exception
+            # because UI elements have been destroyed. Simply ignore it.
+            pass
+        evt.Skip()
+
+    def OnFormatFont(self, evt):
+        f = FontFaceDialog(
+            self.frame,
+            wx.ID_ANY,
+            _("Song font - Songpress++"),
+            self.pref.format,
+            self.pref.decorator,
+            self.pref.decoratorFormat
+        )
+        if f.ShowModal() == wx.ID_OK:
+            self.pref.SetFont(f.GetValue())
+            self.SetFont()
+
+    def OnTextFont(self, evt):
+        data = wx.FontData()
+        data.SetInitialFont(self.pref.format.wxFont)
+        data.SetColour(self.pref.format.color)
+
+        dialog = wx.FontDialog(self.frame, data)
+        dialog.SetTitle(_("Text font - Songpress++"))
+        if dialog.ShowModal() == wx.ID_OK:
+            retData = dialog.GetFontData()
+            font = retData.GetChosenFont()
+            face = font.GetFaceName()
+            size = font.GetPointSize()
+            color = retData.GetColour().GetAsString(wx.C2S_HTML_SYNTAX)
+            s = f"{{textfont:{face}}}{{textsize:{size}}}{{textcolour:{color}}}|"
+            s += "{textfont}{textsize}{textcolour}"
+            self.InsertWithCaret(s)
+
+    def OnChordFont(self, evt):
+        data = wx.FontData()
+        data.SetInitialFont(self.pref.format.wxFont)
+        data.SetColour(self.pref.format.color)
+
+        dialog = wx.FontDialog(self.frame, data)
+        dialog.SetTitle(_("Chord font - Songpress++"))
+        if dialog.ShowModal() == wx.ID_OK:
+            retData = dialog.GetFontData()
+            font = retData.GetChosenFont()
+            face = font.GetFaceName()
+            size = font.GetPointSize()
+            color = retData.GetColour().GetAsString(wx.C2S_HTML_SYNTAX)
+            s = f"{{chordfont:{face}}}{{chordsize:{size}}}{{chordcolour:{color}}}|"
+            s += "{chordfont}{chordsize}{chordcolour}"
+            self.InsertWithCaret(s)
+
+    # ------------------------------------------------------------------
+    # Mappa PaperId wxPython -> (larghezza_mm, altezza_mm) in portrait.
+    # I valori coprono i formati piu' comuni; per quelli non elencati
+    # si usa A4 come fallback.
+    # ------------------------------------------------------------------
+    _PAPER_SIZE_MM = {
+        wx.PAPER_A3:        (297.0, 420.0),
+        wx.PAPER_A4:        (210.0, 297.0),
+        wx.PAPER_A5:        (148.0, 210.0),
+        wx.PAPER_B4:        (250.0, 354.0),
+        wx.PAPER_B5:        (176.0, 250.0),
+        wx.PAPER_LETTER:    (215.9, 279.4),
+        wx.PAPER_LEGAL:     (215.9, 355.6),
+        wx.PAPER_TABLOID:   (279.4, 431.8),
+        wx.PAPER_EXECUTIVE: (184.1, 266.7),
+    }
+
+    def _GetPaperSizeMm(self):
+        """Restituisce (w_mm, h_mm) del foglio corrente tenendo conto
+        dell'orientamento (portrait / landscape)."""
+        pid = self._print_data.GetPaperId()
+        w, h = self._PAPER_SIZE_MM.get(pid, (210.0, 297.0))
+        if self._print_data.GetOrientation() == wx.LANDSCAPE:
+            w, h = h, w
+        return w, h
+
+    def OnPageSetup(self, evt):
+        """Open the page setup dialog (paper size, orientation, margins)."""
+        data = wx.PageSetupDialogData(self._print_data)
+        data.SetMarginTopLeft(wx.Point(self._margin_left, self._margin_top))
+        data.SetMarginBottomRight(wx.Point(self._margin_right, self._margin_bottom))
+        dlg = wx.PageSetupDialog(self.frame, data)
+        if dlg.ShowModal() == wx.ID_OK:
+            result = dlg.GetPageSetupData()
+            self._print_data = wx.PrintData(result.GetPrintData())
+            tl = result.GetMarginTopLeft()
+            br = result.GetMarginBottomRight()
+            self._margin_left   = tl.x
+            self._margin_top    = tl.y
+            self._margin_right  = br.x
+            self._margin_bottom = br.y
+            # Aggiorna indicatore di pagina nell'anteprima
+            w_mm, h_mm = self._GetPaperSizeMm()
+            self.previewCanvas.SetPageSizeMm(w_mm, h_mm)
+            self.previewCanvas.SetPageMarginsMm(self._margin_top, self._margin_bottom)
+        dlg.Destroy()
+
+
+    def _reopen_print_options_if_pinned(self):
+        """Riapre il dialog delle opzioni di stampa sul preview frame corrente,
+        se il pin era attivo. Chiamato da wx.CallLater dopo che OnPrintPreview
+        ha creato il nuovo pf."""
+        if not getattr(self, '_print_options_pinned', False):
+            return
+        pf = getattr(self, '_preview_frame', None)
+        if pf is None or not pf.IsShown():
+            return
+        # Ripeti on_print_options sul nuovo pf — stessa logica del caller originale
+        _dlg_ref = [None]
+
+        def _do_apply():
+            self.previewCanvas.SetColumns(self._columns_per_page)
+            self.previewCanvas.Refresh(self._get_display_text())
+            if self._print_options_pinned and _dlg_ref[0] is not None:
+                dlg = _dlg_ref[0]
+                dlg.EndModal(wx.ID_OK)
+                def _deferred_reopen():
+                    pf.Close()
+                    self.OnPrintPreview(None)
+                    wx.CallAfter(
+                        wx.CallLater, 50,
+                        lambda: self._reopen_print_options_if_pinned()
+                    )
+                wx.CallAfter(_deferred_reopen)
+            else:
+                pf.Close()
+                wx.CallAfter(self.OnPrintPreview, None)
+
+        self._ask_two_pages_per_sheet(parent=pf, on_apply=_do_apply, _dlg_ref=_dlg_ref)
+
+    def _ask_two_pages_per_sheet(self, parent=None, on_apply=None, _dlg_ref=None):
+        """
+        Shows a small dialog asking the user whether they want to print
+        2 pages per sheet and/or use multiple columns per page.
+        Updates self._two_pages_per_sheet and self._columns_per_page.
+        Returns True if the user confirmed (OK), False if cancelled.
+
+        A pin button (📌/📍) keeps the dialog open after OK so the user can
+        tweak settings repeatedly without reopening.  When pinned, each OK
+        immediately calls ``on_apply()`` (if provided) so the preview updates.
+
+        Args:
+            parent:   parent window (falls back to self.frame if None)
+            on_apply: optional callable invoked after options are saved,
+                      both in normal mode (before closing) and while pinned.
+            _dlg_ref: optional list [None] — populated with the wx.Dialog
+                      instance so the caller can reparent it if needed.
+        """
+        dialog_parent = parent if parent is not None else self.frame
+
+        dlg = wx.Dialog(dialog_parent, title=_("Print options"),
+                        style=wx.DEFAULT_DIALOG_STYLE | wx.STAY_ON_TOP)
+
+        # Expose the dialog instance to the caller if requested
+        if _dlg_ref is not None:
+            _dlg_ref[0] = dlg
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Checkbox for 2 pages per sheet
+        cb = wx.CheckBox(dlg, label=_("Print 2 pages per sheet"))
+        cb.SetValue(self._two_pages_per_sheet)
+        sizer.Add(cb, 0, wx.ALL, 12)
+
+        # Radio buttons: colonne per pagina
+        sizer.Add(wx.StaticText(dlg, label=_("Columns per page:")), 0, wx.LEFT | wx.RIGHT, 12)
+        rb_col1 = wx.RadioButton(dlg, -1, _("1 column"), style=wx.RB_GROUP)
+        rb_col2 = wx.RadioButton(dlg, -1, _("2 columns"))
+        rb_col1.SetValue(self._columns_per_page == 1)
+        rb_col2.SetValue(self._columns_per_page == 2)
+        col_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        col_sizer.Add(rb_col1, 0, wx.RIGHT, 16)
+        col_sizer.Add(rb_col2, 0)
+        sizer.Add(col_sizer, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+
+        # Checkbox: riduci e adatta alla pagina
+        cb_fit = wx.CheckBox(dlg, label=_("Fit to page"))
+        cb_fit.SetValue(self._fit_to_page)
+        sizer.Add(cb_fit, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+
+        # Checkbox: riduzione automatica per evitare il taglio del testo in fondo pagina
+        cb_shrink = wx.CheckBox(dlg, label=_("Shrink to fit current page (prevent bottom clipping)"))
+        cb_shrink.SetValue(self._shrink_to_fit)
+        sizer.Add(cb_shrink, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+
+        # SpinCtrl: margine minimo per la riduzione automatica (abilitato solo se cb_shrink attivo)
+        shrink_margin_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        lbl_min_margin = wx.StaticText(dlg, label=_("Min margin for auto-shrink (mm):"))
+        spin_min_margin = wx.SpinCtrl(dlg, min=0, max=50,
+                                      value=str(getattr(self, '_min_margin_shrink', 5)),
+                                      size=(60, -1))
+        shrink_margin_sizer.Add(lbl_min_margin, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        shrink_margin_sizer.Add(spin_min_margin, 0, wx.ALIGN_CENTER_VERTICAL)
+        sizer.Add(shrink_margin_sizer, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+        # Abilita/disabilita lo spin in base allo stato di cb_shrink
+        lbl_min_margin.Enable(self._shrink_to_fit)
+        spin_min_margin.Enable(self._shrink_to_fit)
+        def on_shrink_changed(evt):
+            enabled = cb_shrink.GetValue()
+            lbl_min_margin.Enable(enabled)
+            spin_min_margin.Enable(enabled)
+            evt.Skip()
+        cb_shrink.Bind(wx.EVT_CHECKBOX, on_shrink_changed)
+
+        # Checkbox: non replicare il brano sulla metà destra (visibile solo con 2 pag/foglio)
+        cb_no_mirror = wx.CheckBox(dlg, label=_("Do not replicate (leave right half blank)"))
+        cb_no_mirror.SetValue(self._no_mirror_right)
+        cb_no_mirror.Enable(self._two_pages_per_sheet)
+        sizer.Add(cb_no_mirror, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+
+        # Checkbox: rimuovi pagine bianche
+        cb_remove_blank = wx.CheckBox(dlg, label=_("Remove blank pages"))
+        cb_remove_blank.SetValue(self._remove_blank_pages)
+        sizer.Add(cb_remove_blank, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+
+        # Abilita/disabilita cb_no_mirror al variare di cb (2 pagine per foglio)
+        def on_cb_changed(evt):
+            cb_no_mirror.Enable(cb.GetValue())
+            evt.Skip()
+        cb.Bind(wx.EVT_CHECKBOX, on_cb_changed)
+
+        # --- Bottoni: [📌] [OK] [Annulla] ---
+        PIN_OFF = u"📌"
+        PIN_ON  = u"📍"
+        _pinned = [getattr(self, '_print_options_pinned', False)]
+
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        btn_pin    = wx.Button(dlg, wx.ID_ANY, PIN_ON if _pinned[0] else PIN_OFF, size=(32, -1))
+        btn_pin.SetToolTip(_("Keep this dialog open after applying"))
+        btn_ok     = wx.Button(dlg, wx.ID_OK,     _("OK"))
+        btn_cancel = wx.Button(dlg, wx.ID_CANCEL, _("Cancel"))
+        btn_ok.SetDefault()
+
+        btn_sizer.Add(btn_pin,    0, wx.RIGHT, 4)
+        btn_sizer.AddStretchSpacer()
+        btn_sizer.Add(btn_ok,     0, wx.RIGHT, 4)
+        btn_sizer.Add(btn_cancel, 0)
+        sizer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 8)
+
+        dlg.SetSizerAndFit(sizer)
+        dlg.CentreOnParent()
+
+        # Salva le opzioni su self, poi invoca on_apply se fornito
+        def _apply_options():
+            self._two_pages_per_sheet = cb.GetValue()
+            self._columns_per_page    = 2 if rb_col2.GetValue() else 1
+            self._fit_to_page         = cb_fit.GetValue()
+            self._shrink_to_fit       = cb_shrink.GetValue()
+            self._min_margin_shrink   = spin_min_margin.GetValue()
+            self._no_mirror_right     = cb_no_mirror.GetValue()
+            self._remove_blank_pages  = cb_remove_blank.GetValue()
+            if on_apply is not None:
+                on_apply()
+
+        def on_pin(evt):
+            _pinned[0] = not _pinned[0]
+            self._print_options_pinned = _pinned[0]
+            btn_pin.SetLabel(PIN_ON if _pinned[0] else PIN_OFF)
+
+        def on_ok(evt):
+            _apply_options()
+            if not _pinned[0]:
+                dlg.EndModal(wx.ID_OK)
+
+        btn_pin.Bind(wx.EVT_BUTTON, on_pin)
+        btn_ok.Bind(wx.EVT_BUTTON, on_ok)
+
+        result = dlg.ShowModal()
+        dlg.Destroy()
+        return result == wx.ID_OK
+
+    def OnPrint(self, evt):
+        """Print the song exactly as shown in the preview."""
+        # Se la preferenza showPrintPreview è attiva, mostra prima l'anteprima di stampa.
+        if getattr(self.pref, 'showPrintPreview', True):
+            self.OnPrintPreview(evt)
+            return
+
+        # Su Windows 11 il dialog nativo (usato da wx.Printer.Print con showDialog=True)
+        # mostra "Questa app non supporta l'anteprima di stampa".
+        # Si usa wx.PrintDialog separato per raccogliere le impostazioni, poi si stampa
+        # con showDialog=False per evitare il dialog nativo problematico.
+        pdd = wx.PrintDialogData(self._print_data)
+        dlg = wx.PrintDialog(self.frame, pdd)
+        if dlg.ShowModal() != wx.ID_OK:
+            dlg.Destroy()
+            return
+        self._print_data = wx.PrintData(dlg.GetPrintDialogData().GetPrintData())
+        dlg.Destroy()
+
+        pdd2 = wx.PrintDialogData(self._print_data)
+        printer = wx.Printer(pdd2)
+        printout = SongpressPrintout(self, _("Print"), two_pages_per_sheet=self._two_pages_per_sheet)
+        success = printer.Print(self.frame, printout, False)
+        if not success:
+            if printer.GetLastError() == wx.PRINTER_ERROR:
+                wx.MessageBox(
+                    _("An error occurred while printing.\nPlease check your printer settings."),
+                    _("Print error"),
+                    wx.OK | wx.ICON_ERROR,
+                    self.frame,
+                )
+        printout.Destroy()
+
+    def OnPrintPreview(self, evt):
+        """Show a print preview of the song."""
+        title = os.path.splitext(os.path.basename(self.document))[0] if self.document else _("Print")
+        printout1 = SongpressPrintout(self, title, two_pages_per_sheet=self._two_pages_per_sheet)
+        printout2 = SongpressPrintout(self, title, two_pages_per_sheet=self._two_pages_per_sheet)
+        preview = wx.PrintPreview(printout1, printout2, self._print_data)
+        if not preview.IsOk():
+            wx.MessageBox(
+                _("Unable to create print preview.\nPlease check your printer settings."),
+                _("Print preview error"),
+                wx.OK | wx.ICON_ERROR,
+                self.frame,
+            )
+            return
+        pf = wx.PreviewFrame(preview, self.frame, _("Print preview"))
+        pf.Initialize()
+        self._preview_frame = pf   # saved for _reopen_print_options_if_pinned
+
+        # Rename the default "Print with icon" button to "Print..."
+        # and add a "Page setup..." button to the preview toolbar.
+        # wx.PreviewFrame exposes the control bar via GetControlBar() only
+        # after Initialize(); on some wxPython builds the method is missing,
+        # so we fall back to iterating child windows.
+        ctrl_bar = None
+        get_cb = getattr(pf, 'GetControlBar', None)
+        if get_cb is not None:
+            ctrl_bar = get_cb()
+        if ctrl_bar is None:
+            for child in pf.GetChildren():
+                if isinstance(child, wx.PreviewControlBar):
+                    ctrl_bar = child
+                    break
+
+        if ctrl_bar is not None:
+            # Rename the built-in wxWidgets buttons using our translation catalog.
+            # wx.PreviewControlBar sets these labels in English; we override them
+            # so they follow the active wx.Locale set by i18n.setLang().
+            #
+            # NOTE: wx.ID_PREVIEW_* constants are NOT exposed in wxPython, so we
+            # identify buttons by their current English label text instead.
+            # wx.ID_PRINT and wx.ID_CLOSE are standard wx constants and are safe.
+            _label_map = {
+                "Print":     _("Print..."),
+                "Print...":  _("Print..."),
+                "Next":      _("Next page"),
+                "Prev":      _("Previous page"),
+                "Previous":  _("Previous page"),
+                "First":     _("First page"),
+                "Last":      _("Last page"),
+                "Close":     _("Close"),
+            }
+            for child in ctrl_bar.GetChildren():
+                if isinstance(child, wx.Button):
+                    lbl = child.GetLabel().strip()
+                    if lbl in _label_map:
+                        child.SetLabel(_label_map[lbl])
+            # wx.ID_PRINT is a safe standard constant — rename directly too
+            # in case the button uses that ID but a non-standard label
+            btn_print = ctrl_bar.FindWindowById(wx.ID_PRINT)
+            if btn_print is not None:
+                btn_print.SetLabel(_("Print..."))
+            
+            # NEW: Add "Print options..." button with icon
+            btn_options = wx.Button(ctrl_bar, wx.ID_ANY, _("Print options..."))
+            _icon_path = glb.AddPath('img/productivity-expert-icon.png')
+            if os.path.isfile(_icon_path):
+                _icon_img = wx.Image(_icon_path, wx.BITMAP_TYPE_PNG)
+                btn_options.SetBitmap(wx.Bitmap(_icon_img))
+                btn_options.SetBitmapPosition(wx.LEFT)
+            
+            def on_print_options(e):
+                """Callback to open the print options dialog"""
+
+                # _dlg_ref viene popolato da _ask_two_pages_per_sheet tramite il
+                # meccanismo on_apply; lo usiamo per reparentare il dialog prima
+                # di chiudere pf, evitando che venga distrutto insieme al parent.
+                _dlg_ref = [None]
+
+                def _do_apply():
+                    self.previewCanvas.SetColumns(self._columns_per_page)
+                    self.previewCanvas.Refresh(self._get_display_text())
+                    if self._print_options_pinned and _dlg_ref[0] is not None:
+                        # Con il pin attivo dobbiamo chiudere pf e riaprire la preview.
+                        # Per farlo in sicurezza: chiudiamo prima il ShowModal del dialog
+                        # (EndModal), poi con CallAfter riapriamo preview+dialog.
+                        dlg = _dlg_ref[0]
+                        dlg.EndModal(wx.ID_OK)   # esce da ShowModal senza distruggere dlg
+                        def _deferred_reopen():
+                            pf.Close()
+                            self.OnPrintPreview(None)
+                            # Riapre il dialog delle opzioni sul nuovo pf tramite
+                            # un secondo CallAfter (dopo che OnPrintPreview ha creato pf)
+                            wx.CallAfter(
+                                wx.CallLater, 50,
+                                lambda: self._reopen_print_options_if_pinned()
+                            )
+                        wx.CallAfter(_deferred_reopen)
+                    else:
+                        pf.Close()
+                        wx.CallAfter(self.OnPrintPreview, None)
+
+                dlg_instance = self._ask_two_pages_per_sheet(
+                    parent=pf, on_apply=_do_apply, _dlg_ref=_dlg_ref
+                )
+            
+            btn_options.Bind(wx.EVT_BUTTON, on_print_options)
+            
+            # NEW: Add "Page setup..." button
+            btn_page_setup = wx.Button(ctrl_bar, wx.ID_ANY, _("Page setup..."))
+            _page_icon_path = glb.AddPath('img/file-black-icon.png')
+            if os.path.isfile(_page_icon_path):
+                _page_img = wx.Image(_page_icon_path, wx.BITMAP_TYPE_PNG)
+                btn_page_setup.SetBitmap(wx.Bitmap(_page_img))
+                btn_page_setup.SetBitmapPosition(wx.LEFT)
+
+            def on_page_setup_preview(e):
+                """Callback to open the page setup dialog from the preview"""
+                data = wx.PageSetupDialogData(self._print_data)
+                data.SetMarginTopLeft(wx.Point(self._margin_left, self._margin_top))
+                data.SetMarginBottomRight(wx.Point(self._margin_right, self._margin_bottom))
+                dlg = wx.PageSetupDialog(pf, data)
+                if dlg.ShowModal() == wx.ID_OK:
+                    result = dlg.GetPageSetupData()
+                    self._print_data = wx.PrintData(result.GetPrintData())
+                    tl = result.GetMarginTopLeft()
+                    br = result.GetMarginBottomRight()
+                    self._margin_left   = tl.x
+                    self._margin_top    = tl.y
+                    self._margin_right  = br.x
+                    self._margin_bottom = br.y
+                    dlg.Destroy()
+                    pf.Close()
+                    wx.CallAfter(self.OnPrintPreview, None)
+                else:
+                    dlg.Destroy()
+
+            btn_page_setup.Bind(wx.EVT_BUTTON, on_page_setup_preview)
+
+            # Explicit "Close" button (the native one from wx.PreviewControlBar
+            # disappears when we manipulate the sizer, so we add our own).
+            btn_close = wx.Button(ctrl_bar, wx.ID_ANY, _("Close"))
+            btn_close.Bind(wx.EVT_BUTTON, lambda e: pf.Close())
+
+            # Hide the native Close button: wx.PreviewControlBar uses an internal
+            # ID not exposed in wxPython, so we search by label as fallback.
+            native_close = ctrl_bar.FindWindowById(wx.ID_CLOSE)
+            if native_close is not None:
+                native_close.Hide()
+            else:
+                for child in ctrl_bar.GetChildren():
+                    if isinstance(child, wx.AnyButton) and child.GetLabel().strip() in ('Close', _('Close')):
+                        child.Hide()
+                        break
+
+            # Append all three custom buttons at the right end of the sizer,
+            # AFTER the stretch spacer that wx.PreviewControlBar inserts to push
+            # its own buttons to the right. We find the spacer by scanning items
+            # from the end and insert our buttons after it.
+            sizer = ctrl_bar.GetSizer()
+            if sizer:
+                # Find the last stretch spacer index
+                spacer_idx = None
+                for i in range(sizer.GetItemCount() - 1, -1, -1):
+                    item = sizer.GetItem(i)
+                    if item.IsSpacer() and item.GetProportion() > 0:
+                        spacer_idx = i
+                        break
+                if spacer_idx is not None:
+                    # Insert our buttons right after the spacer
+                    ins = spacer_idx + 1
+                    sizer.Insert(ins,     btn_page_setup, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
+                    sizer.Insert(ins + 1, btn_options,    0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
+                    sizer.Insert(ins + 2, btn_close,      0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
+                else:
+                    # Fallback: just append at the end
+                    sizer.Add(btn_page_setup, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
+                    sizer.Add(btn_options,    0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
+                    sizer.Add(btn_close,      0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
+
+            # Uniform button height: use btn_options (tallest, has icon) as reference
+            ref_h = btn_options.GetBestSize().height
+            for btn in (btn_page_setup, btn_close):
+                btn.SetMinSize(wx.Size(btn.GetBestSize().width, ref_h))
+            ctrl_bar.Layout()
+
+            # Second pass after Show() so GetSize() returns real pixel values.
+            def _equalize_heights():
+                try:
+                    h = btn_options.GetSize().height
+                    if h < 4:
+                        return
+                    for btn in (btn_page_setup, btn_close):
+                        bw = btn.GetSize().width
+                        btn.SetMinSize(wx.Size(bw, h))
+                        btn.SetSize(wx.Size(bw, h))
+                    ctrl_bar.Layout()
+                except Exception:
+                    pass
+            wx.CallAfter(_equalize_heights)
+
+        pf.Show()
+
+        # Resize the preview window safely:
+        # if the main frame is maximized GetSize() returns
+        # the full screen size, causing the window to be positioned
+        # off-screen. Use the display work area instead.
+        display_idx = wx.Display.GetFromWindow(self.frame)
+        if display_idx == wx.NOT_FOUND:
+            display_idx = 0
+        display = wx.Display(display_idx)
+        client_area = display.GetClientArea()   # area without taskbar
+        # Window at 90% of the work area, never larger than it
+        preview_w = min(int(client_area.width  * 0.90), client_area.width)
+        preview_h = min(int(client_area.height * 0.90), client_area.height)
+        pf.SetSize(wx.Size(preview_w, preview_h))
+        pf.CentreOnScreen()
+
+    def OnTranspose(self, evt):
+        t = MyTransposeDialog(self.frame, self.pref.notations, self.text.GetTextOrSelection())
+        if t.ShowModal() == wx.ID_OK:
+            self.text.ReplaceTextOrSelection(t.GetTransposed())
+
+    def OnSimplifyChords(self, evt):
+        self.text.AutoChangeMode(True)
+        t = self.text.GetTextOrSelection()
+        notation = autodetectNotation(t, self.pref.notations)
+        count, c, dc, e, de = findEasiestKey(t, self.pref.GetEasyChords(), notation)
+        title = _("Simplify chords")
+        if count > 0 and dc != de:
+            msg = _("The key of your song, %s, is not the easiest to play (difficulty: %.1f/5.0).\n") % (c, 5 * dc)
+            msg += _("Do you want to transpose the key %s, which is the easiest one (difficulty: %.1f/5.0)?") % (e, 5 * de)
+            d = wx.MessageDialog(self.frame, msg, title, wx.YES_NO | wx.ICON_QUESTION)
+            if d.ShowModal() == wx.ID_YES:
+                t = transposeChordPro(translateChord(c, notation), translateChord(e, notation), t, notation)
+                self.text.ReplaceTextOrSelection(t)
+        else:
+            if count > 0:
+                msg = _("The key of your song, %s, is already the easiest to play (difficulty: %.1f/5.0).\n") % (c, 5 * dc)
+            else:
+                msg = _("Your song or current selection does not contain any chords.")
+            d = wx.MessageDialog(self.frame, msg, title, wx.OK | wx.ICON_INFORMATION)
+            d.ShowModal()
+        self.text.AutoChangeMode(False)
+
+    def OnChangeChordNotation(self, evt):
+        t = MyNotationDialog(self.frame, self.pref.notations, self.text.GetTextOrSelection())
+        if t.ShowModal() == wx.ID_OK:
+            self.text.ReplaceTextOrSelection(t.ChangeChordNotation())
+
+    def OnNormalizeChords(self, evt):
+        t = MyNormalizeDialog(self.frame, self.pref.notations, self.text.GetTextOrSelection())
+        if t.ShowModal() == wx.ID_OK:
+            self.text.ReplaceTextOrSelection(t.NormalizeChords())
+
+    def OnConvertTabToChordpro(self, evt):
+        t = self.text.GetTextOrSelection()
+        n = testTabFormat(t, self.pref.notations)
+        if n is not None:
+            self.text.ReplaceTextOrSelection(tab2ChordPro(t, n))
+
+    def OnRemoveSpuriousBlankLines(self, evt):
+        self.text.ReplaceTextOrSelection(removeSpuriousLines(self.text.GetTextOrSelection()))
+
+    def OnOptions(self, evt):
+        def _apply_prefs():
+            self.text.SetFont(self.pref.editorFace, int(self.pref.editorSize))
+            self.SetDefaultExtension(self.pref.defaultExtension)
+            self.previewCanvas.SetLineWidths(self.pref.titleLineWidth, self.pref.verseBoxWidth)
+            self._applyKlavierHighlightColor()
+            self.text.SetBgColour(getattr(self.pref, 'editorBgHex', '#FFFFFF'))
+            self.text.SetSelColour(getattr(self.pref, 'selColourHex', '#3399FF'))
+            self.text.ApplyMultiCursor(getattr(self.pref, 'multiCursor', False))
+            self._SaveCustomColours()
+            self.previewCanvas.SetTempoDisplay(getattr(self.pref, 'tempoDisplay', 0))
+            self.previewCanvas.SetTempoIconSize(getattr(self.pref, 'tempoIconSize', 24))
+            self.previewCanvas.SetShowPageIndicator(getattr(self.pref, 'showPageIndicator', True))
+            self.previewCanvas.SetGreyBackground(getattr(self.pref, 'greyBackground', True))
+            self.previewCanvas.SetPageMarginsMm(self._margin_top, self._margin_bottom)
+            self.previewCanvas.Refresh(self._get_display_text())
+            # Aggiorna il MinSize del pane AUI in base alla preferenza corrente
+            self._ApplyPreviewMinSize()
+            self._mgr.Update()
+
+        f = MyPreferencesDialog(self.frame, self.pref, easyChords, on_apply=_apply_prefs,
+                                previewCanvas=self.previewCanvas)
+        if f.ShowModal() == wx.ID_OK:
+            _apply_prefs()
+        if f.clearRecentFiles:
+            self._ClearRecentFiles()
+
+    def _ClearRecentFiles(self):
+        """Remove all entries from the recent files history."""
+        self.ClearRecentFiles()
+
+    def _applyKlavierHighlightColor(self):
+        """Converte klavierHighlightHex in wx.Colour e lo applica al decorator."""
+        self.pref.decorator.klavierHighlightColor = self._getKlavierHighlightColour()
+
+    def _getKlavierHighlightColour(self):
+        """Restituisce wx.Colour dal valore hex salvato nelle preferenze."""
+        hex_str = getattr(self.pref, 'klavierHighlightHex', '#D23C3C')
+        try:
+            h = hex_str.strip().lstrip('#')
+            r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+            return wx.Colour(r, g, b)
+        except Exception:
+            return wx.Colour(210, 60, 60)
+
+    def StripSelection(self):
+        """
+        Update selection, moving blank characters out of it
+        """
+        s, e = self.text.GetSelection()
+        mod = False
+        while e > s and self.text.GetTextRange((ep := self.text.PositionBefore(e)), e).strip() == '':
+            e = ep
+            mod = True
+        while s < e and self.text.GetTextRange(s, (sa := self.text.PositionAfter(s))).strip() == '':
+            s = sa
+            mod = True
+        if mod:
+            self.text.SetSelection(s, e)
+
+    def InsertWithCaret(self, st):
+        n = self.text.GetSelections()
+        if n > 1:
+            # --- Multicursore: inserisci su ogni selezione in ordine inverso ---
+            # Raccoglie (start, end) di tutte le selezioni ordinate dalla più lontana
+            # alla più vicina, così ogni modifica non sposta le posizioni successive.
+            sels = sorted(
+                [(self.text.GetSelectionNStart(i), self.text.GetSelectionNEnd(i))
+                 for i in range(n)],
+                reverse=True
+            )
+            c = st.find('|')
+            for s, e in sels:
+                self.text.SetSelection(s, e)
+                self.StripSelection()
+                s2, e2 = self.text.GetSelection()
+                if c != -1:
+                    sel_text = self.text.GetSelectedText()
+                    self.text.ReplaceSelection(st[:c] + sel_text + st[c + 1:])
+                    self.text.SetSelection(s2 + c, e2 + c)
+                else:
+                    self.text.ReplaceSelection(st)
+                    self.text.SetSelection(s2 + len(st), s2 + len(st))
+        else:
+            # --- Cursore singolo: comportamento originale ---
+            self.StripSelection()
+            s, e = self.text.GetSelection()
+            c = st.find('|')
+            if c != -1:
+                sel_text = self.text.GetSelectedText()
+                self.text.ReplaceSelection(st[:c] + sel_text + st[c + 1:])
+                self.text.SetSelection(s + c, e + c)
+            else:
+                self.text.ReplaceSelection(st)
+                self.text.SetSelection(s + len(st), s + len(st))
+
+    def OnTitle(self, evt):
+        self.InsertWithCaret("{title:|}")
+
+    def OnSubtitle(self, evt):
+        self.InsertWithCaret("{subtitle:|}")
+
+    def OnChord(self, evt):
+        self.InsertWithCaret("[|]")
+
+    def OnVerse(self, evt):
+        label = wx.GetTextFromUser(
+            _("Insert a label for verse, or press Cancel if you want to omit label."),
+            _("Verse label"),
+            "",
+            self.frame,
+        )
+        self.InsertWithCaret("{Verse:%s}|" % label)
+
+    def OnChorus(self, evt):
+        default = self.pref.decoratorFormat.GetChorusLabel()
+        label = wx.GetTextFromUser(
+            _("Insert a label for chorus, or press Cancel if you want to omit label."),
+            _("Chorus label"),
+            default,
+            self.frame,
+        )
+        if label == default:
+            self.InsertWithCaret("{soc}\n|\n{eoc}\n")
+        else:
+            self.InsertWithCaret("{soc:%s}\n|\n{eoc}\n" % label)
+
+    def OnComment(self, evt):
+        """Chiede il tipo di commento e il testo, poi inserisce la direttiva scelta."""
+        d = wx.Dialog(self.frame, title=_(u"Comment"))
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        vbox.Add(wx.StaticText(d, -1, _(u"Comment type:")), 0, wx.ALL, 8)
+        rb_comment = wx.RadioButton(d, -1, u"{comment:}", style=wx.RB_GROUP)
+        rb_box     = wx.RadioButton(d, -1, u"{comment_box:}")
+        rb_hash    = wx.RadioButton(d, -1, u"# commento")
+        rb_comment.SetValue(True)
+        for rb in (rb_comment, rb_box, rb_hash):
+            vbox.Add(rb, 0, wx.LEFT | wx.BOTTOM, 8)
+
+        vbox.Add(wx.StaticText(d, -1, _(u"Comment text:")), 0, wx.LEFT, 8)
+        txt = wx.TextCtrl(d, -1, u"")
+        vbox.Add(txt, 0, wx.EXPAND | wx.ALL, 8)
+
+        btn_sizer = d.CreateButtonSizer(wx.OK | wx.CANCEL)
+        vbox.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 8)
+        d.SetSizer(vbox)
+        vbox.Fit(d)
+
+        if d.ShowModal() == wx.ID_OK:
+            val = txt.GetValue()
+            if rb_box.GetValue():
+                directive = u"comment_box"
+                self.InsertWithCaret(u"{%s:%s|}" % (directive, val) if not val else u"{%s:%s}" % (directive, val))
+            elif rb_hash.GetValue():
+                self.InsertWithCaret(u"# %s" % val)
+            else:
+                directive = u"comment"
+                self.InsertWithCaret(u"{%s:%s|}" % (directive, val) if not val else u"{%s:%s}" % (directive, val))
+        d.Destroy()
+
+    def OnInsertPageBreak(self, evt):
+        """Inserisce un'interruzione di pagina esplicita per la stampa."""
+        self.InsertWithCaret("{new_page}\n")
+
+    def OnInsertColumnBreak(self, evt):
+        """Inserisce un'interruzione di colonna esplicita per il layout a due colonne."""
+        self.InsertWithCaret("{column_break}\n")
+
+    def OnLabelVerses(self, evt):
+        self.pref.labelVerses = not self.pref.labelVerses
+        self.CheckLabelVerses()
+
+    def _OnPreviewClick(self, line_number):
+        """Callback dal doppio-click sull'anteprima.
+
+        Porta il cursore alla riga sorgente trovata tramite hit-test,
+        seleziona l'intera riga per renderla visibile e sposta il focus
+        sull'editor.
+
+        line_number e' 0-based, corrisponde alla riga ChordPro piu' vicina
+        al punto cliccato (risolto con hit-test preciso sui SongBox).
+        """
+        try:
+            pos_start = self.text.PositionFromLine(line_number)
+            pos_end   = self.text.GetLineEndPosition(line_number)
+            # Seleziona la riga trovata cosi' e' immediatamente visibile
+            self.text.SetSelection(pos_start, pos_end)
+            self.text.EnsureCaretVisible()
+            self.text.SetFocus()
+        except Exception:
+            pass
+
+    def OnTogglePageBreakLines(self, evt):
+
+        self._showPageBreakLines = evt.IsChecked()
+        self.previewCanvas.SetShowPageBreakLines(self._showPageBreakLines)
+        self.previewCanvas.Refresh(self._get_display_text())
+
+    def OnToggleColumnBreakLines(self, evt):
+        self._showColumnBreakLines = evt.IsChecked()
+        self.previewCanvas.SetShowColumnBreakLines(self._showColumnBreakLines)
+        self.previewCanvas.Refresh(self._get_display_text())
+
+    def _UpdateBreakLinesMenuState(self):
+        """Abilita o disabilita le voci di menu delle linee di interruzione
+        in base alla visibilità del pannello anteprima."""
+        preview_visible = self._mgr.GetPane('preview').IsShown()
+        self.menuBar.Enable(self._showPageBreakLinesMenuId, preview_visible)
+        self.menuBar.Enable(self._showColumnBreakLinesMenuId, preview_visible)
+
+    def _ApplyPreviewMinSize(self):
+        """Reimposta BestSize e MinSize sul pane 'preview' e sul main_panel.
+        Deve essere chiamata dopo LoadPerspective, dopo ogni toggle di visibilità,
+        e dopo che l'utente cambia la preferenza nelle opzioni.
+        LoadPerspective sovrascrive queste proprietà con i valori salvati,
+        che possono essere arbitrariamente piccoli.
+        """
+        enabled = getattr(self.pref, 'previewMinSize', True)
+        if enabled:
+            min_sz = wx.Size(370, 520)
+        else:
+            min_sz = wx.Size(-1, -1)
+        # Aggiorna il pane AUI
+        pane = self._mgr.GetPane('preview')
+        pane.BestSize(370, 520).MinSize(min_sz)
+        # Aggiorna anche il wx.Window sottostante (doppio vincolo)
+        self.previewCanvas.main_panel.SetMinSize(min_sz)
+
+    def OnTogglePaneView(self, evt):
+        super().OnTogglePaneView(evt)
+        # Dopo il toggle, se il pannello preview è ora visibile,
+        # reimpostiamo MinSize perché LoadPerspective potrebbe averlo azzerato
+        pane = self._mgr.GetPane('preview')
+        if pane.IsShown():
+            self._ApplyPreviewMinSize()
+            self._mgr.Update()
+        self._UpdateBreakLinesMenuState()
+
+    def OnPaneClose(self, evt):
+        super().OnPaneClose(evt)
+        # EVT_AUI_PANE_CLOSE scatta prima che IsShown() venga aggiornato:
+        # se il pane che si chiude è 'preview', disabilita subito le voci.
+        if evt.GetPane().name == 'preview':
+            self.menuBar.Enable(self._showPageBreakLinesMenuId, False)
+            self.menuBar.Enable(self._showColumnBreakLinesMenuId, False)
+        else:
+            self._UpdateBreakLinesMenuState()
+
+    def OnChorusLabel(self, evt):
+        c = self.pref.decoratorFormat.GetChorusLabel()
+        msg = _("Please enter a label for chorus")
+        d = wx.TextEntryDialog(self.frame, msg, _("Songpress++"), c)
+        if d.ShowModal() == wx.ID_OK:
+            c = d.GetValue()
+            self.pref.SetChorusLabel(c)
+            self.previewCanvas.Refresh(self._get_display_text())
+
+    def OnNoChords(self, evt):
+        self.pref.format.showChords = 0
+        self.SetFont(True)
+
+    def OnOneVerseForEachChordPattern(self, evt):
+        self.pref.format.showChords = 1
+        self.SetFont(True)
+
+    def OnWholeSong(self, evt):
+        self.pref.format.showChords = 2
+        self.SetFont(True)
+
+    def OnChordsAbove(self, evt):
+        self.pref.SetChordsPosition('above')
+        self.CheckChordsPosition()
+        self.previewCanvas.Refresh(self._get_display_text())
+
+    def OnChordsBelow(self, evt):
+        self.pref.SetChordsPosition('below')
+        self.CheckChordsPosition()
+        self.previewCanvas.Refresh(self._get_display_text())
+
+    def CheckChordsPosition(self):
+        above = (self.pref.chordsPosition == 'above')
+        self.menuBar.Check(self.chordsAboveMenuId, above)
+        self.menuBar.Check(self.chordsBelowMenuId, not above)
+        self.previewCanvas.SetChordsBelow(not above)
+
+    def OnTextChanged(self, evt):
+        self.AutoAdjust(evt.lastPos, evt.currentPos)
+
+    def AutoAdjust(self, lastPos, currentPos):
+        if self.text.GetSelections() > 1:
+            return  # non interferire con il multicursore attivo
+        self.text.AutoChangeMode(True)
+        t = self.text.GetTextRange(lastPos, currentPos)
+        if self.pref.autoAdjustSpuriousLines:
+            if testSpuriousLines(t):
+                msg = _("It looks like there are spurious blank lines in the song.\n")
+                msg += _("Do you want to try to remove them automatically?")
+                title = _("Remove spurious blank lines")
+                d = wx.MessageDialog(self.frame, msg, title, wx.YES_NO | wx.ICON_QUESTION)
+                if d.ShowModal() == wx.ID_YES:
+                    self.text.SetSelection(lastPos, currentPos)
+                    t = removeSpuriousLines(t)
+                    self.text.ReplaceSelection(t)
+                    currentPos = self.text.GetCurrentPos()
+        if self.pref.autoAdjustTab2Chordpro:
+            n = testTabFormat(t, self.pref.notations)
+            if n is not None:
+                msg = _("It looks like your song is in tab format (i.e., chords are above the text).\n")
+                msg += _("Do you want to convert it to ChordPro automatically?")
+                title = _("Convert to ChordPro")
+                d = wx.MessageDialog(self.frame, msg, title, wx.YES_NO | wx.ICON_QUESTION)
+                if d.ShowModal() == wx.ID_YES:
+                    self.text.SetSelection(lastPos, currentPos)
+                    t = tab2ChordPro(t, n)
+                    self.text.ReplaceSelection(t)
+        if self.pref.autoAdjustEasyKey:
+            notation = autodetectNotation(t, self.pref.notations)
+            count, c, dc, e, de = findEasiestKey(t, self.pref.GetEasyChords(), notation)
+            if count > 10 and dc != de:
+                msg = _("The key of your song, %s, is not the easiest to play (difficulty: %.1f/5.0).\n") % (c, 5 * dc)
+                msg += _("Do you want to transpose the key %s, which is the easiest one (difficulty: %.1f/5.0)?") % (e, 5 * de)
+                title = _("Simplify chords")
+                d = wx.MessageDialog(self.frame, msg, title, wx.YES_NO | wx.ICON_QUESTION)
+                if d.ShowModal() == wx.ID_YES:
+                    self.text.SetSelection(lastPos, currentPos)
+                    t = transposeChordPro(translateChord(c, notation), translateChord(e, notation), t, notation)
+                    self.text.ReplaceSelection(t)
+        self.text.AutoChangeMode(False)
+
+    def SetFont(self, updateFontChooser=True):
+        try:
+            if updateFontChooser:
+                self.fontChooser.SetValue(self.pref.format.face)
+                self.showChordsChooser.SetValue(self.pref.format.showChords)
+                ids = [self.noChordsMenuId, self.oneVerseForEachChordPatternMenuId, self.wholeSongMenuId]
+                self.menuBar.Check(ids[self.pref.format.showChords], True)
+
+            self.previewCanvas.SetTempoDisplay(getattr(self.pref, 'tempoDisplay', 0))
+            self.previewCanvas.SetTimeDisplay(getattr(self.pref, 'timeDisplay', True))
+            self.previewCanvas.SetKeyDisplay(getattr(self.pref, 'keyDisplay', True))
+            self.previewCanvas.SetTempoIconSize(getattr(self.pref, 'tempoIconSize', 24))
+            self.previewCanvas.SetShowPageBreakLines(getattr(self, '_showPageBreakLines', True))
+            self.previewCanvas.SetShowColumnBreakLines(getattr(self, '_showColumnBreakLines', True))
+            self.previewCanvas.SetShowPageIndicator(getattr(self.pref, 'showPageIndicator', True))
+            self.previewCanvas.SetGreyBackground(getattr(self.pref, 'greyBackground', True))
+            _pw, _ph = self._GetPaperSizeMm()
+            self.previewCanvas.SetPageSizeMm(_pw, _ph)
+            self.previewCanvas.SetPageMarginsMm(self._margin_top, self._margin_bottom)
+            self.previewCanvas.Refresh(self._get_display_text())
+        except wx._core.PyDeadObjectError:
+            # When frame is closed, this method may still be executed, generating an exception
+            # because UI elements have been destroyed. Simply ignore it.
+            pass
+
+    def CheckLabelVerses(self):
+        self.formatToolBar.ToggleTool(self.labelVersesToolId, self.pref.labelVerses)
+        self.formatToolBar.Refresh()
+        self.menuBar.Check(self.labelVersesMenuId, self.pref.labelVerses)
+        if self.pref.labelVerses:
+            self.pref.decorator.drawLabels = True
+            self.pref.decorator.showKlavier = True
+            self.pref.decorator.showGuitarDiagrams = True
+            self.previewCanvas.SetDecorator(self.pref.decorator)
+        else:
+            sd = SongDecorator()
+            sd.drawLabels = False
+            sd.showKlavier = True
+            sd.showGuitarDiagrams = True
+            sd.klavierHighlightColor = self._getKlavierHighlightColour()
+            self.previewCanvas.SetDecorator(sd)
+        self.previewCanvas.SetLineWidths(self.pref.titleLineWidth, self.pref.verseBoxWidth)
+        self.previewCanvas.SetShowPageBreakLines(getattr(self, '_showPageBreakLines', True))
+        self.previewCanvas.SetShowColumnBreakLines(getattr(self, '_showColumnBreakLines', True))
+        self.previewCanvas.Refresh(self._get_display_text())

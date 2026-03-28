@@ -1,0 +1,863 @@
+# Guida rapida — Songpress++
+
+Questa guida descrive tutti i comandi ChordPro supportati da Songpress++ e le principali funzionalità dell'editor.
+
+> **Legenda** — La colonna **Std** indica se la direttiva fa parte dello standard ChordPro ufficiale (✅) o è specifica di Songpress++ (🔧). La colonna **Menu** indica se la direttiva può essere inserita tramite un menu dell'applicazione (⌨️) o deve essere digitata manualmente nell'editor (🖊).
+
+---
+
+## Formato ChordPro — Concetti base
+
+Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti direttamente nel testo della canzone, racchiusi tra parentesi quadre `[accordo]`. Le **direttive** di metadati e struttura sono racchiuse tra parentesi graffe `{direttiva:valore}`.
+
+```chordpro
+{title: Amazing Grace}
+{artist: Traditional}
+{key: G}
+
+[G]Amazing [G7]grace, how [C]sweet the [G]sound
+```
+
+---
+
+## Metadati della canzone
+
+| Direttiva           | Alias        | Std | Menu | Descrizione                                                                               |
+| ------------------- | ------------ | --- | ---- | ----------------------------------------------------------------------------------------- |
+| `{title:Titolo}`    | `{t:Titolo}` | ✅  | ⌨️   | Titolo della canzone                                                                      |
+| `{subtitle:Testo}`  | `{st:...}`   | ✅  | ⌨️   | Sottotitolo o artista secondario                                                          |
+| `{artist:Nome}`     |              | ✅  | 🖊    | Artista / interprete (visualizzato come sottotitolo)                                      |
+| `{composer:Nome}`   |              | ✅  | 🖊    | Compositore (visualizzato come sottotitolo)                                               |
+| `{album:Titolo}`    |              | ✅  | 🖊    | Titolo dell'album (visualizzato come «Album: …»)                                          |
+| `{year:Anno}`       |              | ✅  | 🖊    | Anno di pubblicazione (visualizzato come sottotitolo)                                     |
+| `{copyright:Testo}` |              | ✅  | 🖊    | Nota di copyright (visualizzata come «© …»)                                               |
+| `{key:Tonalità}`    |              | ✅  | ⌨️   | Tonalità (es. `Am`, `C`, `G`, `F#m`); visualizzata come «Key: …» se abilitata             |
+| `{capo:N}`          |              | ✅  | 🖊    | Capotasto al tasto N (es. `{capo:2}`); visualizzato come «Capo: N»                        |
+| `{tempo:BPM}`       |              | ✅  | ⌨️   | Tempo in BPM con icona **semiminima** (es. `{tempo:120}`)                                 |
+| `{tempo_m:BPM}`     |              | 🔧  | 🖊    | Tempo con icona **minima**                                                                |
+| `{tempo_s:BPM}`     |              | 🔧  | 🖊    | Tempo con icona **semiminima**                                                            |
+| `{tempo_sp:BPM}`    |              | 🔧  | 🖊    | Tempo con icona **semiminima puntata**                                                    |
+| `{tempo_c:BPM}`     |              | 🔧  | 🖊    | Tempo con icona **croma**                                                                 |
+| `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo con icona **croma puntata**                                                         |
+| `{time:N/M}`        |              | ✅  | ⌨️   | Indicazione di tempo (es. `{time:4/4}`, `{time:3/4}`); visualizzata con simbolo grafico   |
+
+> **Nota sul tempo** — Le direttive `{tempo*}` hanno tre modalità di visualizzazione, configurabili nelle preferenze: icona nota + valore (es. `♩ = 120`), testo `BPM: 120`, o testo semplice `Tempo: 120`.
+> Impostando la modalità su *nascosto* (`-1`), il valore viene trattato come puro metadato — non appare nell'anteprima né in stampa.
+
+---
+
+## Struttura della canzone
+
+### Blocchi di testo
+
+| Direttiva                                 | Std | Menu | Descrizione                                                                                                                          |
+| ----------------------------------------- | --- | ---- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `{start_of_verse}`/`{end_of_verse}`       | ✅  | ⌨️   | Strofa non numerata, senza etichetta                                                                                                 |
+| `{start_verse:Etichetta}`/`{end_verse}`   | 🔧  | ⌨️   | Strofa non numerata con etichetta opzionale                                                                                          |
+| `{start_verse_num}`/`{end_verse_num}`     | 🔧  | ⌨️   | Strofa numerata automaticamente                                                                                                      |
+| `{verse:Etichetta}`                       | ✅  | ⌨️   | Apre una strofa con etichetta personalizzata (es. `{verse:1}`)                                                                       |
+| `{start_of_chorus}`/`{end_of_chorus}`     | ✅  | ⌨️   | Ritornello                                                                                                                           |
+| `{soc}`/`{eoc}`                           | ✅  | ⌨️   | Abbreviazione di `start_of_chorus`/`end_of_chorus`                                                                                   |
+| `{soc:Etichetta}`                         | ✅  | ⌨️   | Ritornello con etichetta personalizzata                                                                                              |
+| `{start_chorus:Etichetta}`/`{end_chorus}` | 🔧  | ⌨️   | Forma alternativa per il ritornello (con etichetta opzionale)                                                                        |
+| `{start_bridge:Etichetta}`/`{end_bridge}` | 🔧  | ⌨️   | Bridge con etichetta opzionale; se omessa, il valore predefinito è «Bridge»                                                          |
+| `{start_chord:Etichetta}`/`{end_chord}`   | 🔧  | ⌨️   | Blocco intro/accordi; se l'etichetta è omessa, il valore predefinito è «Intro»                                                       |
+| `{new_song}`                              | 🔧  | 🖊    | Avvia una nuova canzone nello stesso documento: azzera i contatori di strofe e ritornelli in modo che la numerazione ricominci da 1  |
+
+> **Nota su `{start_of_bridge}`** — Questa forma (con `of_`) non è gestita dal renderer; usare `{start_bridge}`/`{end_bridge}`.
+
+### Interruzioni di pagina e colonna
+
+| Direttiva        | Alias    | Std | Menu | Descrizione                                      |
+| ---------------- | -------- | --- | ---- | ------------------------------------------------ |
+| `{new_page}`     | `{np}`   | ✅  | ⌨️   | Interruzione di pagina esplicita per la stampa   |
+| `{column_break}` | `{colb}` | ✅  | ⌨️   | Interruzione di colonna (layout a 2 colonne)     |
+
+---
+
+## Accordi e formattazione inline
+
+### Accordi
+
+Gli accordi si inseriscono nel testo con le parentesi quadre, immediatamente prima della sillaba a cui appartengono:
+
+```chordpro
+[Am]Nel [F]blu [C]dipinto di [G]blu
+```
+
+### Font e colori locali
+
+Queste direttive cambiano il font per la sezione seguente; usate senza argomento ripristinano il valore predefinito.
+
+| Direttiva di apertura | Direttiva di chiusura | Std | Menu | Descrizione                                                                      |
+| --------------------- | --------------------- | --- | ---- | -------------------------------------------------------------------------------- |
+| `{textfont:Nome}`     | `{textfont}`          | ✅  | ⌨️   | Famiglia di font del testo                                                       |
+| `{textsize:Pt}`       | `{textsize}`          | ✅  | ⌨️   | Dimensione del testo in pt (accetta anche percentuale, es. `{textsize:80%}`)     |
+| `{textcolour:#HEX}`   | `{textcolour}`        | ✅  | ⌨️   | Colore del testo in formato `#RRGGBB`                                            |
+| `{chordfont:Nome}`    | `{chordfont}`         | ✅  | ⌨️   | Famiglia di font degli accordi                                                   |
+| `{chordsize:Pt}`      | `{chordsize}`         | ✅  | ⌨️   | Dimensione degli accordi in pt (accetta anche percentuale)                       |
+| `{chordcolour:#HEX}`  | `{chordcolour}`       | ✅  | ⌨️   | Colore degli accordi in formato `#RRGGBB`                                        |
+
+### Spaziatura
+
+| Direttiva             | Std | Menu | Descrizione                                                                                                                        |
+| --------------------- | --- | ---- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `{linespacing:N}`     | 🔧  | ⌨️   | Interlinea in punti (es. `{linespacing:1}`); senza argomento ripristina il valore predefinito                                      |
+| `{chordtopspacing:N}` | 🔧  | ⌨️   | Spazio sopra gli accordi in punti (es. `{chordtopspacing:0}` per eliminarlo); senza argomento ripristina il valore predefinito     |
+| `{row}` o `{r}`       | 🔧  | 🖊    | Inserisce mezza riga verticale vuota (spaziatore) — non disponibile nel menu, deve essere digitato manualmente                     |
+
+---
+
+## Direttive di spaziatura in Songpress++
+
+---
+
+## `{linespacing: <valore>}` — **Voce di menu:** *Interlinea*
+
+### Descrizione — linespacing
+
+Imposta l'**interlinea** tra le righe di testo della canzone dal punto in cui viene inserita la direttiva. Agisce sulla spaziatura verticale complessiva tra una riga di testo (con i relativi accordi) e la successiva.
+
+### Sintassi — linespacing
+
+```chordpro
+{linespacing: 13}
+```
+
+### Parametro — linespacing
+
+| Valore           | Effetto                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------ |
+| `0`              | Elimina lo spazio extra tra le righe (valore predefinito nella finestra di dialogo)  |
+| numero positivo  | Aggiunge spazio verticale tra le righe (in punti tipografici)                        |
+
+### Note d'uso — linespacing
+
+- La direttiva può essere inserita in qualsiasi punto della canzone; agisce sulle righe successive.
+- I valori tipici sono compresi tra `10` e `20` a seconda del font e della dimensione utilizzati.
+- Utile per regolare la densità del testo in stampa, specialmente con layout a due colonne o formato due pagine per foglio.
+
+---
+
+## `{chordtopspacing: <valore>}` — **Voce di menu:** *Spazio sopra gli accordi*
+
+### Descrizione — chordtopspacing
+
+Imposta lo **spazio verticale sopra gli accordi**, ovvero la distanza tra il bordo superiore della riga degli accordi e il contenuto che la precede (es. la riga di testo della strofa precedente). Consente di allentare o comprimere il margine che separa visivamente gli accordi dalla strofa soprastante.
+
+### Sintassi — chordtopspacing
+
+```chordpro
+{chordtopspacing: 4}
+```
+
+### Parametro — chordtopspacing
+
+| Valore           | Effetto                                                                                      |
+| ---------------- | -------------------------------------------------------------------------------------------- |
+| `0`              | Elimina lo spazio extra sopra gli accordi (valore predefinito nella finestra di dialogo)     |
+| numero positivo  | Aumenta il respiro visivo sopra la riga degli accordi                                        |
+
+### Note d'uso — chordtopspacing
+
+- Agisce in modo indipendente da `linespacing`: i due parametri si sommano nella spaziatura complessiva.
+- Utile quando gli accordi appaiono visivamente «schiacciati» contro il testo della riga precedente.
+- Come `linespacing`, può essere usato più volte nella stessa canzone in punti diversi per variare la spaziatura sezione per sezione.
+
+## Differenza tra chordtopspacing e linespacing
+
+```text
+[riga di testo precedente]
+                         ↕  chordtopspacing  (spazio sopra gli accordi)
+[riga accordi:  G    D    A]
+[riga testo:    Quando il sole...]
+                         ↕  linespacing      (spaziatura tra righe complete)
+[riga accordi:  Em   B...]
+[riga testo:    ...sorge e...]
+```
+
+In sintesi: `chordtopspacing` controlla il margine **sopra** la coppia accordo+testo, mentre `linespacing` controlla lo spazio **tra** coppie successive.
+
+## `{row}` / `{r}` 🖊
+
+**Voce di menu:** *nessuna — deve essere digitato manualmente*
+
+### Descrizione — row
+
+Inserisce uno **spazio verticale dimezzato** (spaziatore) tra le righe della canzone. Utile per aggiungere un piccolo respiro visivo tra le strofe senza usare `{linespacing}`.
+
+### Sintassi — row
+
+```chordpro
+{row}
+```
+
+oppure in forma abbreviata:
+
+```chordpro
+{r}
+```
+
+### Note d'uso — row
+
+- Inserisce uno spazio pari a circa **metà riga** rispetto all'interlinea corrente.
+- Non ha parametri: `{row}` e `{r}` sono equivalenti e non accettano valori.
+- Non è accessibile dal menu **Inserisci**: deve essere digitato direttamente nell'editor.
+
+---
+
+## Commenti e note redazionali
+
+![Songpress++ Finestra Commento](./img/GUIDE/commento_it.png)
+
+| Forma                    | Alias        | Std | Menu | Descrizione                                                                                              |
+| ------------------------ | ------------ | --- | ---- | -------------------------------------------------------------------------------------------------------- |
+| `{comment:Testo}`        | `{c:Testo}`  | ✅  | ⌨️   | Commento visibile nell'anteprima, racchiuso automaticamente tra parentesi                                |
+| `{comment_italic:Testo}` | `{ci:Testo}` | ✅  | 🖊    | Come `{comment}`, ma con testo in corsivo                                                                |
+| `{comment_box:Testo}`    | `{cb:Testo}` | ✅  | 🖊    | Commento in riquadro                                                                                     |
+| `# Testo`                |              | ✅  | 🖊    | Riga di commento (preceduta da `#`): trattata come riga vuota, non appare nell'anteprima né in stampa    |
+
+---
+
+## Diagrammi accordi, tastiera e immagini
+
+![Songpress++ Diagramma accordi chitarra](./img/GUIDE/accordi_1_it.png)
+![Songpress++ Diagramma accordi tastiera](./img/GUIDE/accordi_2_it.png)
+
+| Direttiva                                    | Std | Menu | Descrizione                                                              |
+| -------------------------------------------- | --- | ---- | ------------------------------------------------------------------------ |
+| `{define: C base-fret 1 frets X 3 2 0 1 0}`  | ✅  | ⌨️   | Definisce un diagramma accordo per chitarra                              |
+| `{taste:Accordo}`                            | 🔧  | ⌨️   | Mostra i tasti evidenziati sulla tastiera (klavier) — es. `{taste:Am}`   |
+| `{image: nomefile}`                          | ✅  | ⌨️   | Inserisce un'immagine (PNG, JPG, GIF, BMP, TIFF) nella canzone           |
+
+La tastiera (klavier) visualizza i tasti corrispondenti all'accordo specificato, evidenziati con il colore impostato nelle preferenze.
+
+![Songpress++ Opzione colore tasti accordi](./img/GUIDE/accordi_3_it.png)
+
+### Direttiva immagine
+
+![Songpress++ Inserisci immagine](./img/GUIDE/inserisciImmagine_it.png)
+
+La direttiva `{image:}` incorpora un'immagine raster nel punto in cui appare nella canzone. Il percorso del file può essere relativo alla posizione del file della canzone o assoluto.
+
+| Opzione        | Std | Descrizione                                                                             |
+| -------------- | --- | --------------------------------------------------------------------------------------- |
+| `width=N`      | ✅  | Larghezza in punti tipografici (1/72 di pollice), o percentuale es. `width=50%`         |
+| `height=N`     | ✅  | Altezza in punti tipografici, o percentuale                                             |
+| `scale=N%`     | ✅  | Fattore di scala, es. `scale=50%` (non combinabile con width/height)                    |
+| `align=left`   | ✅  | Allineamento a sinistra                                                                 |
+| `align=center` | ✅  | Allineamento al centro (predefinito)                                                    |
+| `align=right`  | ✅  | Allineamento a destra                                                                   |
+| `border`       | ✅  | Disegna un bordo da 1pt attorno all'immagine                                            |
+| `border=N`     | ✅  | Disegna un bordo di N punti tipografici                                                 |
+
+**Formati supportati:**
+
+| Formato | Estensioni      |
+| ------- | --------------- |
+| PNG     | `.png`          |
+| JPEG    | `.jpg`, `.jpeg` |
+| GIF     | `.gif`          |
+| BMP     | `.bmp`          |
+| TIFF    | `.tiff`, `.tif` |
+
+**Esempi:**
+
+```chordpro
+{image: logo.png}
+{image: logo.png width=200 align=left}
+{image: logo.png scale=50% border}
+{image: "C:\Users\Utente\Immagini\foto.jpg" align=center}
+```
+
+Se il file immagine si trova nella stessa cartella del file della canzone, è sufficiente il solo nome del file. I percorsi contenenti spazi o backslash devono essere racchiusi tra virgolette doppie.
+
+L'immagine può essere inserita tramite **Inserisci → Altro → Immagine {image:}**, che apre una finestra di dialogo per selezionare il file e impostare tutte le opzioni, con un'anteprima in tempo reale della direttiva generata.
+
+I campi numerici nella finestra di dialogo usano controlli spin:
+
+| Campo      | Valore iniziale | Intervallo | Passo | Note                                     |
+| ---------- | --------------- | ---------- | ----- | ---------------------------------------- |
+| Larghezza  | 0               | 0–9999     | 1     | 0 = non incluso nella direttiva          |
+| Altezza    | 0               | 0–9999     | 1     | 0 = non incluso nella direttiva          |
+| Scala      | 100             | 1–500      | 1     | 100 = non incluso (è il valore default)  |
+| Bordo      | 1               | 0–50       | 0.5   | attivo solo se la checkbox è spuntata    |
+
+---
+
+## Struttura del file — Esempio completo
+
+```chordpro
+{title: O Sole Mio}
+{artist: Eduardo di Capua}
+{key: C}
+{time: 4/4}
+{tempo: 80}
+{capo: 0}
+
+{start_verse_num}
+[C]Che bella [G7]cosa na jurnata 'e [C]sole
+[C]N'aria serena [G7]doppo na tempesta!
+{end_verse_num}
+
+{soc:Ritornello}
+[C]O sole [C7]mio sta [F]'nfronte a [C]te
+[G7]O sole, o sole [C]mio
+{eoc}
+
+{new_page}
+
+{start_verse_num}
+[C]Ma n'atu sole [G7]cchiu bello, oje [C]ne'
+{end_verse_num}
+```
+
+---
+
+## Funzionalità dell'editor
+
+### Inserimento guidato (menu Inserisci)
+
+Tutte le principali direttive sono accessibili tramite il menu **Inserisci**, che apre finestre di dialogo di supporto per compilare i valori. Il cursore `|` in InsertWithCaret indica la posizione in cui il cursore verrà posizionato dopo l'inserimento.
+
+### Gestione degli accordi
+
+- **Inserisci accordo** — inserisce `[|]` con il cursore all'interno delle parentesi
+- **Sposta accordo a destra / sinistra** — sposta l'accordo sotto il cursore di un carattere
+- **Rimuovi accordi** — elimina tutti gli accordi dalla selezione
+- **Incolla accordi** — incolla solo gli accordi (senza testo) dalla selezione copiata
+- **Propaga accordi alle strofe** — copia gli accordi dalla prima strofa a tutte le strofe con lo stesso numero di righe
+- **Propaga accordi ai ritornelli** — come sopra, per i ritornelli
+- **Integra accordi** — converte due righe separate (accordi sopra / testo sotto) nel formato ChordPro inline
+
+### Trasposizione e notazione
+
+- **Trasponi** — apre la finestra di dialogo per trasporre tutti gli accordi
+- **Semplifica accordi** — trova la tonalità più facile da suonare
+- **Cambia notazione** — converte tra notazione anglosassone (C D E…) e solfeggio (Do Re Mi…)
+- **Normalizza accordi** — standardizza la scrittura degli accordi (es. `Hm` → `Bm`)
+- **Converti Tab → ChordPro** — converte automaticamente il formato tab (accordi sopra il testo) in ChordPro inline
+
+### Formato e struttura
+
+- **Font canzone** — apre la finestra di dialogo per impostare il font globale
+- **Font testo** — inserisce le direttive `{textfont}`/`{textsize}`/`{textcolour}` per il tratto corrente
+- **Font accordi** — inserisce le direttive `{chordfont}`/`{chordsize}`/`{chordcolour}`
+- **Etichette strofe** — mostra/nasconde le etichette delle strofe nell'anteprima
+- **Accordi sopra / sotto** — posiziona gli accordi sopra o sotto il testo
+- **Mostra accordi** — tre modalità: nessuno / solo prima strofa / intera canzone
+- **Linee interruzione pagina/colonna** — mostra/nasconde le linee guida nell'anteprima
+
+### Pulizia del testo
+
+- **Rimuovi righe vuote superflue** — elimina le righe vuote doppie
+- **Normalizza spazi multipli** — riduce gli spazi multipli a uno solo
+
+### Controllo sintassi
+
+- **Controlla sintassi** — analizza il testo e segnala le direttive non riconosciute o malformate, con la possibilità di navigare direttamente all'errore
+
+---
+
+## Preferenze di visualizzazione
+
+I seguenti controlli si trovano nella scheda **Formattazione** delle preferenze e influenzano l'anteprima e la stampa.
+
+| Campo                                  | Predefinito | Intervallo | Passo |
+| -------------------------------------- | ----------- | ---------- | ----- |
+| Spessore sottolineatura titolo         | 2           | 1–5        | 1     |
+| Spessore bordo numero strofa           | 1           | 1–5        | 1     |
+
+---
+
+## Stampa e anteprima
+
+- **Anteprima di stampa** — mostra l'anteprima con i pulsanti «Opzioni di stampa» e «Impostazione pagina»
+- **Stampa** — stampa direttamente (senza anteprima se l'opzione è disabilitata nelle preferenze)
+- **Impostazione pagina** — carta, orientamento e margini (in mm)
+
+### Opzioni di stampa
+
+| Opzione                                              | Descrizione                                                              |
+| ---------------------------------------------------- | ------------------------------------------------------------------------ |
+| Stampa 2 pagine per foglio                           | Stampa due pagine logiche affiancate su un foglio fisico                 |
+| Colonne per pagina (1 / 2)                           | Distribuisce il testo su una o due colonne                               |
+| Comprimi e adatta alla pagina                        | Riduce il contenuto per farlo rientrare in una sola pagina               |
+| Comprimi per adattare alla pagina corrente           | Riduce ulteriormente per evitare che il contenuto venga tagliato in basso|
+| Non replicare (lascia metà destra vuota)             | Con 2 pagine/foglio: lascia la seconda metà vuota invece di copiare      |
+| Rimuovi pagine vuote                                 | Rimuove le pagine vuote dall'output di stampa                            |
+
+La direttiva `{new_page}` nel testo forza una nuova pagina logica durante la stampa. Con il layout a 2 colonne, `{column_break}` forza il salto alla colonna successiva.
+
+### Impostazioni di stampa e spiegazioni
+
+![Songpress++ Impostazioni di pagina](./img/GUIDE/ImpostaPagina_it.png)
+![Songpress++ Opzioni di stampa](./img/GUIDE/OpzioniDiStampa_it.png)
+
+**Cosa significa «Margine minimo per compressione automatica (mm)»?**
+
+È un parametro di controllo per la funzione Comprimi per adattare, che si attiva quando l'opzione **«Comprimi per adattare alla pagina corrente (evita taglio in basso)»** è spuntata.
+
+Come funziona la logica: quando il contenuto della canzone rischia di essere tagliato in fondo alla pagina, Songpress++ tenta di recuperare spazio in due passi:
+
+**Primo passo** — riduce i margini (superiore/inferiore in modo simmetrico), ma solo fino al valore minimo configurato da questo SpinCtrl. Se il margine impostato dall'utente è, ad esempio, 20 mm, può essere compresso automaticamente fino a 5 mm (predefinito). Questo impedisce alla riduzione automatica di azzerare completamente i margini.
+
+**Secondo passo** — scala il contenuto (rimpicciolisce testo/accordi), solo se la riduzione dei margini da sola non è sufficiente.
+
+In pratica: il valore (predefinito 5 mm) rappresenta il limite inferiore al di sotto del quale i margini non scendono mai durante la riduzione automatica. Maggiore è il valore, meno aggressiva è la compressione dei margini (e prima inizia la scalatura del testo). Il controllo è disabilitato quando la checkbox Comprimi per adattare è disattivata, e si riabilita automaticamente quando viene attivata (`on_shrink_changed`).
+
+---
+
+## Esporta
+
+| Formato              | Note                                         |
+| -------------------- | -------------------------------------------- |
+| SVG                  | Vettoriale, scalabile                        |
+| EMF                  | Formato vettoriale Windows                   |
+| PNG                  | Immagine raster                              |
+| HTML                 | Pagina web con accordi colorati              |
+| Tab                  | Formato testo con accordi sopra              |
+| PDF                  | Documento PDF                                |
+| PowerPoint (.pptx)   | Presentazione                                |
+| Canzoniere           | Raccolta di canzoni                          |
+| Copia come immagine  | Copia negli appunti come immagine vettoriale |
+| Copia solo testo     | Copia il testo senza accordi                 |
+
+---
+
+## Formati di importazione supportati
+
+| Estensione  | Descrizione                           |
+| ----------- | ------------------------------------- |
+| `.crd`      | ChordPro (estensione principale)      |
+| `.cho`      | ChordPro                              |
+| `.chordpro` | ChordPro                              |
+| `.chopro`   | ChordPro                              |
+| `.pro`      | ChordPro                              |
+| `.tab`      | Formato tab (accordi sopra il testo)  |
+
+---
+
+## Guida: Pannello anteprima — Songpress++
+
+Il pannello **Anteprima** (PreviewCanvas) mostra in tempo reale il rendering grafico della canzone ChordPro mentre si digita nell'editor. È ancorato come pannello AUI sul lato destro della finestra principale e può essere ridimensionato, nascosto o sganciato come qualsiasi altro pannello AUI.
+
+---
+
+## Struttura visiva
+
+![Songpress++ Pannello anteprima](./img/GUIDE/AnteprimaSonpress++_it.png)
+
+La barra degli strumenti compatta in alto raggruppa tutti i controlli; al di sotto si trova l'area scorrevole con il contenuto della canzone renderizzato.
+
+---
+
+## Barra degli strumenti dell'anteprima
+
+### 📋 Copia negli appunti
+
+Copia il rendering grafico della canzone negli **appunti di sistema** come immagine (metafile / bitmap), pronta per essere incollata in un documento Word, una presentazione o un'altra applicazione.
+
+---
+
+### Controlli zoom
+
+| Elemento              | Funzione                                                       |
+| --------------------- | -------------------------------------------------------------- |
+| Pulsante **−**        | Riduce lo zoom del 10%                                         |
+| **Slider** orizzontale| Trascina per impostare liberamente lo zoom tra 30% e 300%      |
+| Pulsante **+**        | Aumenta lo zoom del 10%                                        |
+| Etichetta **`xx%`**   | Mostra la percentuale corrente (sola lettura)                  |
+| Pulsante **1:1**      | Reimposta lo zoom esattamente al 100%                          |
+
+Tutti i controlli sono **sincronizzati bidirezionalmente**: usare la rotella del mouse, la tastiera o trascinare lo slider aggiorna sempre tutti gli altri elementi.
+
+**Intervallo:** 30% – 300%, passo 10%.
+
+---
+
+### ⛶ Schermo intero
+
+Apre l'anteprima in una **finestra a schermo intero dedicata** (`F11`).
+
+La finestra a schermo intero condivide lo stesso renderer del pannello principale: il contenuto è sempre aggiornato. Ha una propria barra degli strumenti con slider zoom e pulsante *Adatta*. Si chiude con `Esc`, `F11` o il pulsante *Esci da schermo intero*.
+
+> Il doppio clic per navigare alla riga corrispondente nell'editor è attivo anche nella finestra a schermo intero.
+
+---
+
+### Adatta (Adatta alla larghezza)
+
+Calcola automaticamente lo zoom che fa corrispondere esattamente la larghezza della canzone alla larghezza disponibile del pannello, tenendo conto dei margini dinamici (3% per lato) e dell'eventuale barra di scorrimento verticale. Premere il pulsante più volte dà lo stesso risultato (operazione idempotente).
+
+**Scorciatoia:** `Ctrl+Shift+G`
+
+---
+
+### Indicatore di pagina
+
+L'etichetta in fondo alla barra degli strumenti (es. `Pagina 2 di 5`) mostra la pagina corrente in base alla posizione di scorrimento verticale. Si aggiorna ad ogni scorrimento. Può essere nascosta nelle preferenze.
+
+Il conteggio delle pagine è calcolato in base al **formato carta corrente** (larghezza, altezza e margini) impostato in *File → Impostazione pagina*.
+
+---
+
+## Interazione con mouse e tastiera
+
+### Zoom
+
+| Gesto / tasto             | Effetto                                  |
+| --------------------- --- | ---------------------------------------- |
+| `Ctrl` + scorrimento su   | Zoom avanti (+10%)                       |
+| `Ctrl` + scorrimento giù  | Zoom indietro (−10%)                     |
+| `Ctrl++`                  | Zoom avanti (+10%)                       |
+| `Ctrl+-`                  | Zoom indietro (−10%)                     |
+| `Ctrl+0`                  | Reimposta zoom 100%                      |
+| `Ctrl+Shift+G`            | Adatta alla larghezza                    |
+| `F11`                     | Apre / chiude la finestra schermo intero |
+
+### Scorrimento
+
+| Tasto                          | Effetto                            |
+| ------------------------------ | ---------------------------------- |
+| Rotella del mouse (senza Ctrl) | Scorrimento verticale normale      |
+| `Ctrl+PgDn`                    | Scorri una pagina in giù           |
+| `Ctrl+PgUp`                    | Scorri una pagina in su            |
+
+> La granularità dello scorrimento è **proporzionale allo zoom**: a zoom molto elevato lo scorrimento è più fine, così la navigazione rimane precisa.
+
+### Doppio clic → Navigazione nell'editor
+
+**Facendo doppio clic** su un punto dell'anteprima, Songpress++ identifica il token più vicino al clic (parola o accordo) e **sposta il cursore dell'editor** alla riga sorgente corrispondente.
+
+Il meccanismo funziona in tre passi:
+
+1. Le coordinate del clic vengono corrette per lo scorrimento e lo zoom e riportate alle coordinate del renderer.
+2. Viene eseguito un **hit-test preciso** sull'albero dei box renderizzati (SongSong → SongBlock → SongLine → SongText), trovando il token più vicino per distanza euclidea.
+3. Il testo del token viene cercato nel sorgente ChordPro usando una **strategia a cerchi concentrici** (±5 righe → ±20 righe → intero file), per gestire correttamente gli accordi ripetuti molte volte.
+
+Questa funzione può essere disabilitata nelle preferenze.
+
+---
+
+## Layout e sfondo
+
+![Songpress++ Preferenze anteprima](./img/GUIDE/AnteprimaSonpress++Preferenze_it.png)
+
+### Sfondo della pagina
+
+L'area di anteprima simula un **foglio bianco su sfondo grigio**: il renderer disegna il contenuto come su carta, con le stesse dimensioni e margini del formato carta corrente. Lo sfondo grigio può essere cambiato in bianco puro nelle preferenze.
+
+### Margine orizzontale dinamico
+
+Il margine sinistro e destro del contenuto è calcolato come **3% della larghezza del pannello** (minimo 8 px). Questo fa sì che l'anteprima si adatti automaticamente quando il pannello viene ridimensionato.
+
+### Colonne
+
+Se il testo sorgente contiene la direttiva `{column_break}` (o `{colb}`), il renderer passa automaticamente a un **layout a due colonne**. Non è richiesta alcuna azione manuale.
+
+---
+
+## Debounce del refresh
+
+Per evitare ridisegni continui durante la digitazione rapida, il refresh dell'anteprima è governato da un **timer debounce di 300 ms**:
+
+- Ogni modifica del testo avvia (o riavvia) il timer.
+- Il ridisegno avviene solo **quando la digitazione si ferma** per almeno 300 ms.
+- Se si preferisce un feedback immediato ad ogni tasto premuto, il debounce può essere disabilitato nelle preferenze.
+
+---
+
+## Dimensione minima del pannello
+
+Per impostazione predefinita il pannello di anteprima ha una dimensione minima di **370 × 520 px**: trascinare il divisore AUI al di sotto di questa soglia non è possibile, né all'avvio né durante la sessione. La soglia può essere rimossa nelle preferenze per chi lavora su monitor piccoli o vuole massimizzare lo spazio dell'editor.
+
+---
+
+## Opzioni anteprima
+
+Le opzioni si trovano in **Strumenti → Opzioni... → scheda Anteprima Songpress++**.
+Tutte le modifiche vengono applicate **immediatamente** al pannello aperto, senza necessità di riavvio.
+
+| Opzione                                        | Predefinito | Descrizione                                                                                        |
+| ---------------------------------------------- | :---------: | -------------------------------------------------------------------------------------------------- |
+| **Mostra indicatore pagina**                   | ✓           | Mostra/nasconde l'etichetta «Pagina X di Y» nella barra degli strumenti                            |
+| **Sfondo grigio**                              | ✓           | Sfondo grigio con «foglio bianco» simulato; se deselezionato, sfondo bianco puro                   |
+| **Debounce refresh**                           | ✓           | Ritarda il ridisegno di 300 ms dopo l'ultimo tasto premuto; deselezionare per feedback immediato   |
+| **Doppio clic porta il focus all'editor**      | ✓           | Abilita la navigazione nell'editor con doppio clic nell'anteprima                                  |
+| **Dimensione minima pannello**                 | ✓           | Impone la dimensione minima di 370 × 520 px sul pannello AUI                                       |
+
+> **Nota su *Dimensione minima pannello*:** questa preferenza agisce sia sul `wx.Window` sottostante sia sul riquadro AUI tramite `_ApplyPreviewMinSize()`. La modifica è quindi efficace immediatamente, senza riavvio.
+
+---
+
+## Scorciatoie — Riepilogo
+
+| Scorciatoia             | Funzione                                      |
+| ----------------------- | --------------------------------------------- |
+| `Ctrl++`                | Zoom avanti                                   |
+| `Ctrl+-`                | Zoom indietro                                 |
+| `Ctrl+0`                | Zoom 100%                                     |
+| `Ctrl+Shift+G`          | Adatta larghezza al pannello                  |
+| `F11`                   | Apre / chiude la finestra schermo intero      |
+| `Ctrl+Rotella`          | Zoom con la rotella del mouse                 |
+| `Ctrl+PgDn`/`Ctrl+PgUp` | Scorri una pagina                             |
+| Doppio clic             | Naviga alla riga sorgente nell'editor         |
+| `Esc` (schermo intero)  | Chiudi la finestra schermo intero             |
+
+---
+
+## Guida: Trova / Sostituisci — Songpress++
+
+![Songpress++ Opzioni di stampa](./img/GUIDE/Trova-Sostituisci_it.png)
+
+La finestra **Trova / Sostituisci** (`Ctrl+H` o menu *Modifica*) è organizzata in due schede affiancate da una colonna verticale di pulsanti. Le opzioni sono **sincronizzate** tra le due schede: spuntare una checkbox nella scheda *Trova* aggiorna automaticamente la scheda *Sostituisci*, e viceversa.
+
+![Songpress++ Opzioni di stampa](./img/GUIDE/Trova-Sostituisci2_it.png)
+
+---
+
+## Struttura della finestra
+
+| Area                   | Contenuto                                                                           |
+| ---------------------- | ----------------------------------------------------------------------------------- |
+| Scheda **Trova**       | Campo di ricerca, opzioni, direzione                                                |
+| Scheda **Sostituisci** | Due campi (Trova / Sostituisci con), stesse opzioni + *Avvolgi silenziosamente*     |
+| Colonna destra         | Pulsanti di azione                                                                  |
+| Etichetta inferiore    | Contatore o messaggi di risultato (es. «3 corrispondenze trovate»)                  |
+
+---
+
+## Pulsanti
+
+| Pulsante                 | Funzione                                                                                                                                                        |
+| ---------------------    | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Trova successivo**     | Trova la corrispondenza successiva (o precedente, a seconda della direzione). Premere `Enter` nel campo di testo equivale a fare clic su questo pulsante.       |
+| **Sostituisci**          | Se il testo attualmente selezionato corrisponde al termine di ricerca, lo sostituisce e avanza alla corrispondenza successiva.                                  |
+| **Sostituisci tutto**    | Sostituisce tutte le occorrenze nel documento in un'unica operazione **annullabile** con `Ctrl+Z`. Mostra il numero di sostituzioni effettuate al termine.      |
+| **Conta corrispondenze** | Conta tutte le occorrenze e mostra il numero nell'etichetta sotto la scheda, senza spostare il cursore.                                                         |
+| **Chiudi**               | Chiude la finestra di dialogo (o `Esc`).                                                                                                                        |
+
+> **Nota:** i pulsanti *Sostituisci* e *Sostituisci tutto* sono visibili solo quando la scheda **Sostituisci** è attiva.
+
+---
+
+## Opzioni (Checkbox)
+
+### ☐ Solo parole intere
+
+Limita la ricerca alle occorrenze in cui il termine è delimitato da **caratteri non alfanumerici** (spazi, punteggiatura, inizio/fine riga).
+
+| Ricerca                              | Testo       | Trovato?                                 |
+| ------------------------------------ | ----------- | ---------------------------------------- |
+| `sol` — ✗ Solo parole intere         | `dissolve`  | **Sì** (`dis`**`sol`**`ve`)              |
+| `sol` — ✓ Solo parole intere         | `dissolve`  | **No**                                   |
+| `sol` — ✓ Solo parole intere         | `[Sol]`     | **Sì** (`[` `]` sono delimitatori)       |
+| `sol` — ✓ Solo parole intere         | `sol mi fa` | **Sì**                                   |
+
+**Uso tipico in Songpress++:** trovare l'accordo `[La]` senza colpire `[LaM]` o `[La7]` — ma per questo caso è più efficace usare le espressioni regolari (vedi sotto).
+
+> ⚠️ *Solo parole intere* è **incompatibile** con le Espressioni regolari: se entrambe sono attive, la ricerca usa solo il flag regex e ignora il confine di parola automatico. Per combinare i due comportamenti, incorporare `\b` nel pattern (es. `\bsol\b`).
+
+---
+
+### ☐ Maiuscole/minuscole
+
+Per impostazione predefinita la ricerca è **senza distinzione di maiuscole/minuscole**: `Alleluia`, `alleluia` e `ALLELUIA` sono equivalenti.
+
+Abilitando questa opzione la corrispondenza diventa **esatta**:
+
+| Ricerca                   | Testo      | Trovato?   |
+| ------------------------- | ---------- | ---------- |
+| `Alleluia` — ✗ Maiuscole  | `alleluia` | **Sì**     |
+| `Alleluia` — ✓ Maiuscole  | `alleluia` | **No**     |
+| `Alleluia` — ✓ Maiuscole  | `Alleluia` | **Sì**     |
+
+**Uso tipico:** correggere le maiuscole uniformi di un titolo o un accordo scritto in modo non coerente (`Re` vs `re`).
+
+---
+
+### ☐ Espressioni regolari
+
+Attiva il motore **regex** integrato in Scintilla (compatibile con POSIX esteso / ECMA). Il campo *Trova* diventa un **pattern** e il campo *Sostituisci con* può usare **riferimenti ai gruppi**.
+
+Quando questa opzione è attiva, il testo viene interpretato letteralmente solo per i caratteri normali; i metacaratteri hanno significato speciale.
+
+---
+
+## Espressioni regolari — Guida ed esempi
+
+### Metacaratteri fondamentali
+
+---
+
+### Esempi pratici in contesto ChordPro
+
+#### 1 — Trovare un accordo specifico (senza colpire le varianti)
+
+**Problema:** cercare `[Re]` senza trovare `[Rem]`, `[Re7]`, `[Re/Fa#]` ecc.
+
+```text
+Pattern:  \[Re\]
+```
+
+I `[` e `]` devono essere **escaped** perché sono metacaratteri (delimitatori di classe di caratteri).
+
+---
+
+#### 2 — Trovare qualsiasi accordo maggiore: Do, Re, Mi…
+
+```text
+Pattern:  \[(Do|Re|Mi|Fa|Sol|La|Si)\]
+```
+
+Trova `[Do]`, `[Re]`, `[Mi]` ecc. ma **non** `[Dom]`, `[Re7]`.
+
+---
+
+#### 3 — Trovare qualsiasi accordo (apertura + contenuto + chiusura)
+
+```text
+Pattern:  \[[^\]]+\]
+```
+
+Si legge: `\[` — parentesi quadra aperta letterale; `[^\]]+` — uno o più caratteri che **non** sono `]`; `\]` — parentesi quadra chiusa letterale.
+
+Trova tutti gli accordi nel documento; utile con *Conta corrispondenze* per contare quanti accordi ci sono.
+
+---
+
+#### 4 — Rinominare un accordo mantenendo le varianti (sostituzione con gruppo)
+
+**Problema:** la canzone usa `Sib` ma voglio `Bb`. Devo trasformare `[Sib]`, `[Sibm]`, `[Sib7]`, `[Sibm7]` ecc. tutti in una volta.
+
+```text
+Trova:      \[Sib([^\]]*)\]
+Sostituisci: [Bb\1]
+```
+
+- `([^\]]*)` cattura tutto ciò che segue `Sib` fino a `]` (es. `m`, `7`, `m7`, vuoto).
+- `\1` nel campo *Sostituisci* reinserisce il suffisso catturato.
+
+| Prima     | Dopo     |
+| --------- | -------- |
+| `[Sib]`   | `[Bb]`   |
+| `[Sibm]`  | `[Bbm]`  |
+| `[Sib7]`  | `[Bb7]`  |
+| `[Sibm7]` | `[Bbm7]` |
+
+---
+
+#### 5 — Rimuovere spazi doppi (o multipli) in una riga di testo
+
+```text
+Trova:      [ ]{2,}
+Sostituisci: (campo vuoto)
+```
+
+`[ ]{2,}` significa «almeno 2 spazi consecutivi». In alternativa: `<spazio><spazio>+` (uno spazio seguito da `+`).
+
+---
+
+### 6 — Aggiungere un'etichetta a tutte le righe di commento
+
+Le righe di commento ChordPro iniziano con `#`. Per racchiuderle in `{comment: …}`:
+
+```chordpro
+Trova:      ^#(.+)$
+Sostituisci: {comment: \1}
+```
+
+- `^` — inizio riga
+- `#` — il carattere cancelletto letterale
+- `(.+)` — cattura il resto della riga (gruppo 1)
+- `$` — fine riga
+- `\1` — reinserisce il contenuto catturato
+
+---
+
+#### 7 — Trovare strofe vuote (righe completamente vuote)
+
+```text
+Pattern:  ^$
+```
+
+Trova ogni riga che non contiene nulla. Utile per contare o rimuovere righe vuote extra. Con *Sostituisci tutto* e un campo di sostituzione vuoto, tutte le righe vuote vengono eliminate (attenzione: operazione invasiva).
+
+---
+
+#### 8 — Trovare titoli scritti in MAIUSCOLO
+
+```text
+Pattern:  ^[A-Z][A-Z ]+$
+```
+
+Trova righe composte solo da lettere maiuscole (e spazi), lunghezza ≥ 2. Utile per identificare titoli in caps-lock da normalizzare.
+
+---
+
+### Note sul comportamento di Scintilla
+
+- Il motore regex è quello di **Scintilla (simile a POSIX)**: supporta `()`, `[]`, `\b`, `\d`, `\w`, `\s`, `{n,m}`, ma **non** lookahead `(?=…)` o lookbehind `(?<=…)`.
+- Nei pattern i **backslash devono essere singoli** (`\[`, `\d`), non raddoppiati come in Python.
+- I riferimenti ai gruppi nel campo *Sostituisci* si scrivono `\1`, `\2` (non `$1`).
+- Il flag *Maiuscole/minuscole* si combina liberamente con regex.
+
+---
+
+## Opzione esclusiva della scheda Sostituisci
+
+### ☐ Avvolgi silenziosamente
+
+Quando la ricerca raggiunge la fine del documento (o l'inizio, se la direzione è *Su*), normalmente appare una finestra di dialogo che chiede conferma prima di tornare all'inizio.
+
+Abilitando questa opzione l'**avvolgimento avviene automaticamente e silenziosamente**, senza interrompere il flusso di lavoro.
+
+---
+
+## Direzione: Su / Giù
+
+Controlla se *Trova successivo* cerca **verso il basso** (dopo il cursore) o **verso l'alto** (prima del cursore). La direzione predefinita è **Giù**.
+
+Non ha effetto su *Sostituisci tutto* e *Conta corrispondenze*, che operano sempre sull'intero documento.
+
+---
+
+## Cronologia delle ricerche
+
+I campi *Trova* e *Sostituisci con* sono **ComboBox** che memorizzano fino a **10** ricerche recenti. Fare clic sulla freccia del campo (o premere `Alt+↓`) apre l'elenco della cronologia.
+
+---
+
+## Scorciatoie da tastiera
+
+| Tasto                              | Azione                          |
+| ---------------------------------- | ------------------------------- |
+| `Enter` nel campo Trova            | Trova successivo                |
+| `Enter` nel campo Sostituisci con  | Esegui Sostituisci              |
+| `Esc`                              | Chiudi finestra di dialogo      |
+| `Ctrl+Z` (nell'editor)             | Annulla un *Sostituisci tutto*  |
+
+---
+
+## Licenza e crediti
+
+**Songpress++** è un'opera derivata di **Songpress**, originariamente sviluppato da Luca Allulli / [Skeed](https://www.skeed.it/songpress) — copyright © 2009–2026 Luca Allulli (Skeed).
+
+Le modifiche presenti in Songpress++ sono copyright © Denisov21.
+
+Songpress++ è distribuito secondo i termini della **GNU General Public License versione 2** (GPL v2), la stessa licenza del progetto originale. Il programma è software libero: è possibile ridistribuirlo e/o modificarlo secondo i termini della GPL v2 come pubblicata dalla Free Software Foundation. Il programma è distribuito nella speranza che sia utile, ma **senza alcuna garanzia**, nemmeno la garanzia implicita di commerciabilità o idoneità a uno scopo particolare.
+
+Il testo completo della licenza è disponibile su: <https://www.gnu.org/licenses/old-licenses/gpl-2.0.html>
+
+## Componenti di terze parti
+
+Songpress (e di conseguenza Songpress++) utilizza i seguenti componenti software di terze parti:
+
+| Componente                              | Licenza                                                          | Riferimento                                    |
+| --------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------- |
+| Python e libreria standard Python       | Python Software Foundation License                               | <https://www.python.org>                       |
+| wxPython                                | wxWindows Library Licence                                        | <https://wxpython.org>                         |
+| Editra (finestra segnalazione errori)   | wxWindows Library Licence v3.1                                   | <https://github.com/cjprecord/editra>          |
+| uv (solo installatore Windows)          | MIT License — copyright © 2025 Astral Software Inc.              | <https://github.com/astral-sh/uv>              |
+| INetC (plugin NSIS, solo installatore)  | zlib/libpng License — copyright © 2004–2015 Takhir Bedertdinov   | <https://nsis.sourceforge.io/Inetc_plug-in>    |

@@ -8,6 +8,8 @@ Songpress++ è incentrato sulla formattazione delle canzoni. Una volta che la ca
 
 ## Prerequisiti
 
+Richiesta connessione Internet per scaricare i pacchetti Python necessari!
+
 ### Python 3
 
 Songpress++ richiede **Python 3** installato sul sistema.
@@ -44,6 +46,15 @@ In sintesi: `Avvio SONGPRESS2.vbs` è la versione di sviluppo/debug, `Avvio SONG
 
 (Mai testata)
 
+## Installazione su MAC
+
+(Mai testata)
+
+## Lingua interfaccia
+
+- Inglese
+- Italiano
+
 ## Funzionalità principali
 
 - Produzione di **spartiti per chitarra di alta qualità** (testo e accordi)
@@ -66,22 +77,6 @@ In sintesi: `Avvio SONGPRESS2.vbs` è la versione di sviluppo/debug, `Avvio SONG
 ## Modifica nome e versione programma
 
 ![Songpress++ cambio nome e versione](src/songpress/img/GUIDE/Versione_it.png)
-
-## Stampa impostazioni e spiegazioni
-
-![Songpress++ Impostazioni di pagina](src/songpress/img/GUIDE/ImpostaPagina_it.png)
-![Songpress++ Opzioni di stampa](src/songpress/img/GUIDE/OpzioniDiStampa_it.png)
-
-Cos'è "Margine minimo per riduzione automatica (mm)"
-È un parametro di controllo della funzione Shrink to fit, che si attiva quando è spuntata l'opzione **"Riduci per adattare alla pagina corrente (evita il taglio in fondo pagina)"**.
-Come funziona la logica:
-Quando il contenuto del brano rischia di essere tagliato in fondo alla pagina, Songpress++ tenta di recuperare spazio in due passi:
-
-Primo passo — riduce i margini (superiore/inferiore simmetricamente), ma solo fino al valore minimo configurato da questo SpinCtrl. Se il margine impostato dall'utente è, ad esempio, 20 mm, può essere compresso automaticamente fino a 5 mm (default). Questo evita che la riduzione automatica azzeri completamente i margini.
-Secondo passo — scala il contenuto (rimpicciolisce testo/accordi), solo se la sola riduzione dei margini non è bastata.
-
-In pratica: il valore (default 5 mm) rappresenta il pavimento sotto cui i margini non scendono mai durante la riduzione automatica. Più alto è il valore, meno aggressiva è la compressione dei margini (e prima si passa alla scalatura del testo).
-Il controllo è disabilitato quando la checkbox Shrink to fit è spenta, e si riabilita automaticamente quando la si attiva (on_shrink_changed).
 
 ## Problemi noti
 

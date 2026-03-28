@@ -8,6 +8,8 @@ Songpress++ is focused on song formatting. Once the song is ready, you can copy/
 
 ## Prerequisites
 
+Internet connection required to download the necessary Python packages!
+
 ### Python 3
 
 Songpress++ requires **Python 3** installed on your system.
@@ -24,7 +26,7 @@ All files are installed in a single folder within the current user's _User_ dire
 
 ### Development
 
-You can also download the entire package and launch src/Avvio SONGPRESS.vbs or src/Avvio SONGPRESS2.vbs
+You can also download the entire package and launch src/Avvio SONGPRESS.vbs or Avvio SONGPRESS2.vbs
 
 There are two differences, both significant:
 
@@ -43,6 +45,15 @@ In summary: `Avvio SONGPRESS2.vbs` is the development/debug version, `Avvio SONG
 ## Installation on Linux
 
 (Never tested)
+
+## Installation on MAC
+
+(Never tested)
+
+## Languages Interface
+
+- English
+- Italian
 
 ## Main Features
 
@@ -66,26 +77,6 @@ In summary: `Avvio SONGPRESS2.vbs` is the development/debug version, `Avvio SONG
 ## Change program name and version
 
 ![Songpress++ change name and version](src/songpress/img/GUIDE/Versione_en.png)
-
-## Print Settings and Explanations
-
-![Songpress++ Page Setup](src/songpress/img/GUIDE/ImpostaPagina_en.png)
-![Songpress++ Print Options](src/songpress/img/GUIDE/OpzioniDiStampa_en.png)
-
-### What is "Minimum margin for automatic reduction (mm)"?
-This is a control parameter for the **Shrink to fit** function, which activates when the option **"Shrink to fit current page (avoid bottom-of-page clipping)"** is checked.
-
-### How the logic works
-When the song content risks being clipped at the bottom of the page, Songpress++ attempts to recover space in two steps:
-
-**Step 1 — Margin reduction:** reduces the top/bottom margins symmetrically, but only down to the minimum value configured by this SpinCtrl. If the user-set margin is, for example, 20 mm, it can be automatically compressed down to 5 mm (default). This prevents the automatic reduction from zeroing out the margins entirely.
-
-**Step 2 — Content scaling:** shrinks the text/chords, but only if margin reduction alone was not sufficient.
-
-### In practice
-The value (default: 5 mm) represents the floor below which margins never drop during automatic reduction. The higher the value, the less aggressive the margin compression (and the sooner the fallback to text scaling kicks in).
-
-The control is disabled when the Shrink to fit checkbox is off, and re-enables automatically when it is turned on (`on_shrink_changed`).
 
 ## Known Issues
 

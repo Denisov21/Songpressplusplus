@@ -1,10 +1,10 @@
 [project]
 name = "songpressplusplus"
-version = "1.1.0"
+version = "1.0.0"
 description = "Songpress++ is a free, easy to use song typeset program for Windows and Linux, that generates high-quality songbooks."
 authors = [
-    { name = "Denisov21", email = "" },
-    { name = "Luca Allulli", email = "luca@skeed.it" }
+    { name = "Denisov21" },
+    { name = "Luca Allulli" }
 ]
 license = { text = "GNU GPL v2" }
 readme = "README.md"
@@ -16,6 +16,8 @@ dependencies = [
     "pyshortcuts>=1.9.5,<2.0.0",
     "reportlab>=4.0.0,<5.0.0",
     "pypdf>=6.0.0,<7.0.0",
+    "markdown>=3.4,<4.0.0",
+    "mistune>=3.0.0,<4.0.0",
 ]
 
 [project.gui-scripts]
@@ -37,11 +39,18 @@ build-backend = "hatchling.build"
 packages = ["src/songpress"]
 
 # ── cx_Freeze — build eseguibile ────────────────────────────────────────────
-# Uso: python -m cx_Freeze build
-[tool.cxfreeze]
-executables = [
-    { script = "main.py", target_name = "Songpress++.exe", base = "Win32GUI", icon = "songpressplusplus.ico" }
-]
+# Eseguire da venv dedicato per evitare inclusione di pacchetti di sistema:
+#
+#   python -m venv .venv
+#   .venv\Scripts\activate
+#   pip install cx_Freeze wxPython requests python-pptx pyshortcuts reportlab pypdf markdown mistune
+#   python -m cx_Freeze build_exe
+
+[[tool.cxfreeze.executables]]
+script = "src/main.py"
+target_name = "Songpress++.exe"
+base = "gui"
+icon = "installer/songpressplusplus.ico"
 
 [tool.cxfreeze.build_exe]
 packages = [
@@ -53,14 +62,16 @@ packages = [
     "reportlab",
     "pptx",
     "pyshortcuts",
+    "markdown",
+    "mistune",
+    "pypdf",
 ]
 excludes = ["numpy", "tkinter"]
 include_msvcr = true
-# File di dati copiati nella cartella build
 include_files = [
-    ["help",      "help"],
-    ["img",       "img"],
-    ["locale",    "locale"],
-    ["templates", "templates"],
-    ["xrc",       "xrc"],
+    ["src/songpress/img",       "img"],
+    ["src/songpress/locale",    "locale"],
+    ["src/songpress/templates", "templates"],
+    ["src/songpress/xrc",       "xrc"],
+    ["pyproject.toml",          "pyproject.toml"],
 ]

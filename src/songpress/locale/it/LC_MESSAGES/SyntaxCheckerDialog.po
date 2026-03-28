@@ -1,0 +1,62 @@
+# Italian translation for SyntaxCheckerDialog
+# Copyright (C) 2026 Denisov21
+# License: GNU GPL v2
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: SyntaxCheckerDialog 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-16 00:00+0000\n"
+"PO-Revision-Date: 2026-03-16 00:00+0000\n"
+"Last-Translator: Denisov21\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. Titolo della finestra di dialogo
+#: SyntaxCheckerDialog.py:26
+msgid "Syntax check"
+msgstr "Verifica sintattica"
+
+#. Messaggio mostrato quando non ci sono errori
+#: SyntaxCheckerDialog.py:72
+msgid "No syntax errors found."
+msgstr "Nessun errore sintattico trovato."
+
+#. Testo del pulsante per navigare all'errore selezionato
+#: SyntaxCheckerDialog.py:50
+msgid "Go to error"
+msgstr "Vai all'errore"
+
+#. Testo del pulsante di chiusura
+#: SyntaxCheckerDialog.py:55
+msgid "Close"
+msgstr "Chiudi"
+
+#. Intestazione lista errori — forma singolare
+#: SyntaxCheckerDialog.py:86
+msgid "Found 1 syntax error:"
+msgstr "Trovato 1 errore sintattico:"
+
+#. Intestazione lista errori — forma plurale
+#: SyntaxCheckerDialog.py:86
+msgid "Found {count} syntax errors:"
+msgstr "Trovati {count} errori sintattici:"
+
+#. Etichetta colonna "Riga" nella lista errori
+#: SyntaxCheckerDialog.py:93
+msgid "Line"
+msgstr "Riga"
+
+#. Etichetta colonna "Colonna" nella lista errori
+#: SyntaxCheckerDialog.py:94
+msgid "Column"
+msgstr "Colonna"
+
+#. Etichetta colonna "Descrizione" nella lista errori
+#: SyntaxCheckerDialog.py:95
+msgid "Description"
+msgstr "Descrizione"
