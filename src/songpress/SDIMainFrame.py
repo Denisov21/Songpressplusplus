@@ -87,6 +87,7 @@ class SDIMainFrame(wx.FileDropTarget):
         self.importFormats = importFormats
         wx.Config.Set(self.config)
         self.frame = self.res.LoadFrame(None, frameName)
+        self.frame.SetMinSize(wx.Size(400, 520)) #dimensione minima finestra
         if icon != None:
             self.icon = icon
             self.frame.SetIcon(wx.Icon(icon, wx.BITMAP_TYPE_ICO))

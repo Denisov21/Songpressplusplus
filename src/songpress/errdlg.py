@@ -176,9 +176,9 @@ class ErrorDialog(wx.Dialog):
 
         # Attributes
         self.err_msg = os.linesep.join((self.GetEnvironmentInfo(),
-                                        "#---- Traceback Info ----#",
+                                        "#---- Informazioni traceback ----#",
                                         ErrorReporter().GetErrorStack(),
-                                        "#---- End Traceback Info ----#"))
+                                        "#---- Fine informazioni traceback ----#"))
 
         # Layout
         self._panel = ErrorPanel(self, self.err_msg)
@@ -205,11 +205,8 @@ class ErrorDialog(wx.Dialog):
     #---- Override in Subclass ----#
 
     def Abort(self):
-        """Called to abort the application
-        @note: needs to be overidden in sublcasses
-
-        """
-        raise NotImplementedError("Abort must be implemented!")
+        """Forza la chiusura immediata dell'applicazione tramite os._exit(1)."""
+        os._exit(1)
 
     def GetEnvironmentInfo(self):
         """Get the enviromental info / Header of error report
@@ -217,25 +214,24 @@ class ErrorDialog(wx.Dialog):
 
         """
         info = list()
-        info.append("#---- Notes ----#")
-        info.append("Please provide additional information about the crash here")
+        info.append("#---- Note ----#")
+        info.append("Fornisci qui ulteriori informazioni sul crash")
         info.extend(["", ""])
-        info.append("#---- System Information ----#")
+        info.append("#---- Informazioni di sistema ----#")
         info.append(self.GetProgramName())
-        info.append("Operating System: %s" % wx.GetOsDescription())
+        info.append("Sistema operativo: %s" % wx.GetOsDescription())
         if sys.platform == 'darwin':
             info.append("Mac OSX: %s" % platform.mac_ver()[0])
-        info.append("Python Version: %s" % sys.version)
-        info.append("wxPython Version: %s" % wx.version())
-        info.append("wxPython Info: (%s)" % ", ".join(wx.PlatformInfo))
-        info.append("Python Encoding: Default=%s  File=%s" % \
+        info.append("Versione Python: %s" % sys.version)
+        info.append("Versione wxPython: %s" % wx.version())
+        info.append("Info wxPython: (%s)" % ", ".join(wx.PlatformInfo))
+        info.append("Codifica Python: Default=%s  File=%s" % \
                     (sys.getdefaultencoding(), sys.getfilesystemencoding()))
-        # info.append("wxPython Encoding: %s" % wx.GetDefaultPyEncoding())
-        info.append("System Architecture: %s %s" % (platform.architecture()[0], \
+        info.append("Architettura di sistema: %s %s" % (platform.architecture()[0], \
                                                     platform.machine()))
-        info.append("Byte order: %s" % sys.byteorder)
+        info.append("Ordine dei byte: %s" % sys.byteorder)
         info.append("Frozen: %s" % str(getattr(sys, 'frozen', 'False')))
-        info.append("#---- End System Information ----#")
+        info.append("#---- Fine informazioni di sistema ----#")
         info.append("")
         return os.linesep.join(info)
 
@@ -348,15 +344,17 @@ class ErrorPanel(wx.Panel):
         """Layout the control"""
         icon = wx.StaticBitmap(self,
                                bitmap=wx.ArtProvider.GetBitmap(wx.ART_ERROR))
-        t_lbl = wx.StaticText(self, label=_("Error Traceback:"))
+        t_lbl = wx.StaticText(self, label=_(u"Traceback dell'errore:"))
         tctrl = wx.TextCtrl(self, value=self.err_msg, style=wx.TE_MULTILINE |
                                                             wx.TE_READONLY)
 
-        abort_b = wx.Button(self, wx.ID_ABORT, _("Abort"))
-        abort_b.SetToolTip(_("Exit the application"))
-        send_b = wx.Button(self, ErrorDialog.ID_SEND, _("Report Error"))
+        abort_b = wx.Button(self, wx.ID_ABORT, _(u"Forza chiusura"))
+        abort_b.SetToolTip(_(u"Forza la chiusura immediata dell'applicazione"))
+        copy_b = wx.Button(self, wx.ID_COPY, _(u"Copia"))
+        copy_b.SetToolTip(_(u"Copia il messaggio di errore negli appunti"))
+        send_b = wx.Button(self, ErrorDialog.ID_SEND, _(u"Invia rapporto d'errore"))
         send_b.SetDefault()
-        close_b = wx.Button(self, wx.ID_CLOSE)
+        close_b = wx.Button(self, wx.ID_CLOSE, _(u"Chiudi"))
 
         # Layout
         vsizer = wx.BoxSizer(wx.VERTICAL)
@@ -370,6 +368,7 @@ class ErrorPanel(wx.Panel):
 
         bsizer = wx.BoxSizer(wx.HORIZONTAL)
         bsizer.AddMany([((5, 5), 0), (abort_b, 0), ((-1, -1), 1, wx.EXPAND),
+                        (copy_b, 0), ((5, 5), 0),
                         (send_b, 0), ((5, 5), 0), (close_b, 0), ((5, 5), 0)])
 
         vsizer.AddMany([((5, 5), 0),
@@ -384,6 +383,15 @@ class ErrorPanel(wx.Panel):
 
         self.SetSizer(vsizer)
         self.SetAutoLayout(True)
+
+        # Bind copy button
+        copy_b.Bind(wx.EVT_BUTTON, self._OnCopy)
+
+    def _OnCopy(self, evt):
+        """Copy the error message to the clipboard."""
+        if wx.TheClipboard.Open():
+            wx.TheClipboard.SetData(wx.TextDataObject(self.err_msg))
+            wx.TheClipboard.Close()
 
     def SetDescriptionText(self, text):
         """Set the description label text

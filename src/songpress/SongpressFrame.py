@@ -954,6 +954,14 @@ class SongpressFrame(SDIMainFrame):
         self.statusBar = self.frame.GetStatusBar()
         self._statusTimer = wx.Timer(self.frame)
         self.frame.Bind(wx.EVT_TIMER, self._OnStatusTimerExpired, self._statusTimer)
+        # Workaround: wx.lib.agw.aui framemanager crashes with a wxAssertionError
+        # in BufferedDC when the frame is resized to zero (e.g. minimised).
+        # Skip the event before AUI can attempt to repaint with invalid dimensions.
+        def _OnFrameSize(evt):
+            w, h = evt.GetSize()
+            if w > 0 and h > 0:
+                evt.Skip()
+        self.frame.Bind(wx.EVT_SIZE, _OnFrameSize)
         self.text = Editor(self)
         dt = SDIDropTarget(self)
         self.text.SetDropTarget(dt)
