@@ -60,11 +60,13 @@
             <label>Export as _PNG...</label>
             <accel></accel>
             <help>Export image as a raster picture</help>
+            <bitmap>../img/png_export.png</bitmap>
           </object>
           <object class="wxMenuItem" name="exportAsHtml">
             <label>Export as _HTML...</label>
             <accel></accel>
             <help>Export formatted song as web page</help>
+            <bitmap>../img/html_export.png</bitmap>
           </object>
           <object class="wxMenuItem" name="exportAsTab">
             <label>Export as _TAB/TXT...</label>
@@ -80,20 +82,21 @@
             <label>Export as _PDF...</label>
             <accel></accel>
             <help>Export formatted song as PDF file</help>
+            <bitmap>../img/pdf_export.png</bitmap>
           </object>
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="print">
-          <bitmap>../img/print.png</bitmap>
           <label>_Print...</label>
           <accel>CTRL+P</accel>
           <help>Print the song</help>
+          <bitmap>../img/print.png</bitmap>
         </object>
         <object class="wxMenuItem" name="printPreview">
-          <bitmap>../img/preview.png</bitmap>
           <label>Print pre_view...</label>
           <accel></accel>
           <help>Show print preview of the song</help>
+          <bitmap>../img/preview.png</bitmap>
         </object>
         <object class="wxMenuItem" name="pageSetup">
           <label>Pa_ge setup...</label>
@@ -115,14 +118,15 @@
         <object class="wxMenuItem" name="restart">
           <label>_Restart</label>
           <accel></accel>
-          <bitmap>../img/restart.png</bitmap>
           <help>Restart Songpress</help>
+          <bitmap>../img/restart.png</bitmap>
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="exit">
           <label>_Exit</label>
           <accel></accel>
           <help>Quit Songpress</help>
+          <bitmap>../img/close.png</bitmap>
         </object>
         <object class="separator"/>
       </object>
@@ -191,6 +195,7 @@
           <label>_Find...</label>
           <accel>CTRL+F</accel>
           <help>Search some text</help>
+          <bitmap>../img/search.png</bitmap>
         </object>
         <object class="wxMenuItem" name="findNext">
           <label>Find _Next</label>
@@ -324,63 +329,62 @@
           <bitmap>../img/verse.png</bitmap>
         </object>
         <object class="separator"/>
-        <object class="wxMenu" name="insertMore">
-          <label>_More</label>
-          <object class="wxMenuItem" name="insertVerse">
-            <label>Unnumbered _verse {start__verse}\\{end__verse}</label>
-            <accel></accel>
-            <help>Insert an unnumbered verse with start__verse / end__verse commands</help>
-          </object>
-          <object class="wxMenuItem" name="insertVerseNum">
-            <label>Numbered v_erse {start__verse__num}\\{end__verse__num}</label>
-            <accel></accel>
-            <help>Insert a numbered verse with start__verse__num / end__verse__num commands</help>
-          </object>
-          <object class="wxMenuItem" name="insertChorusBlock">
-            <label>_Chorus {start__chorus}\\{end__chorus}</label>
-            <accel></accel>
-            <help>Insert a chorus block with start__chorus / end__chorus commands</help>
-          </object>
-          <object class="wxMenuItem" name="insertChordBlock">
-            <label>Intro _chords {start__chord}\\{end__chord}</label>
-            <accel></accel>
-            <help>Insert an intro chord section with start__chord / end__chord commands</help>
-          </object>
-          <object class="wxMenuItem" name="insertBridge">
-            <label>_Bridge {start__bridge}\\{end__bridge}</label>
-            <accel></accel>
-            <help>Insert a bridge block with start__bridge / end__bridge commands</help>
-          </object>
-          <object class="wxMenuItem" name="insertTempo">
-            <label>_Tempo {tempo:}</label>
-            <accel></accel>
-            <help>Insert ChordPro directive to set song tempo (BPM)</help>
-          </object>
-          <object class="wxMenuItem" name="insertTime">
-            <label>Time _signature {time:}</label>
-            <accel></accel>
-            <help>Insert ChordPro directive to set time signature (e.g. 4/4, 3/4)</help>
-          </object>
-          <object class="wxMenuItem" name="insertKey">
-            <label>_Key {key:}</label>
-            <accel></accel>
-            <help>Insert ChordPro directive to set song key (e.g. Am, C, G)</help>
-          </object>
-          <object class="wxMenuItem" name="insertTaste">
-            <label>Chord _keyboard {taste:}</label>
-            <accel></accel>
-            <help>Insert directive to display a chord keyboard at the end of the song</help>
-          </object>
-          <object class="wxMenuItem" name="insertDefine">
-            <label>Guitar _chord diagram {define:}</label>
-            <accel></accel>
-            <help>Insert directive to display a guitar chord diagram at the end of the song</help>
-          </object>
-          <object class="wxMenuItem" name="insertImage">
-            <label>_Image {image:}</label>
-            <accel></accel>
-            <help>Insert an image (PNG, JPG, GIF) into the song</help>
-          </object>
+        <object class="wxMenuItem" name="insertVerse">
+          <label>Unnumbered _verse {start__verse}\\{end__verse}</label>
+          <accel></accel>
+          <help>Insert an unnumbered verse with start__verse / end__verse commands</help>
+        </object>
+        <object class="wxMenuItem" name="insertChorusBlock">
+          <label>_Chorus {start__chorus}\\{end__chorus}</label>
+          <accel></accel>
+          <help>Insert a chorus block with start__chorus / end__chorus commands</help>
+        </object>
+        <object class="wxMenuItem" name="insertChordBlock">
+          <label>Intro _chords {start__chord}\\{end__chord}</label>
+          <accel></accel>
+          <help>Insert an intro chord section with start__chord / end__chord commands</help>
+        </object>
+        <object class="wxMenuItem" name="insertBridge">
+          <label>_Bridge {start__bridge}\\{end__bridge}</label>
+          <accel></accel>
+          <help>Insert a bridge block with start__bridge / end__bridge commands</help>
+        </object>
+        <object class="wxMenuItem" name="insertTempo">
+          <label>_Tempo {tempo:}</label>
+          <accel></accel>
+          <help>Insert ChordPro directive to set song tempo (BPM)</help>
+          <bitmap>../img/metronome.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="insertTime">
+          <label>Time _signature {time:}</label>
+          <accel></accel>
+          <help>Insert ChordPro directive to set time signature (e.g. 4/4, 3/4)</help>
+        </object>
+        <object class="wxMenuItem" name="insertKey">
+          <label>_Key {key:}</label>
+          <accel></accel>
+          <help>Insert ChordPro directive to set song key (e.g. Am, C, G)</help>
+        </object>
+        <object class="wxMenuItem" name="insertTaste">
+          <label>Chord _keyboard {taste:}</label>
+          <accel></accel>
+          <help>Insert directive to display a chord keyboard at the end of the song</help>
+          <bitmap>../img/taste.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="insertDefine">
+          <label>Guitar _chord diagram {define:}</label>
+          <accel></accel>
+          <help>Insert directive to display a guitar chord diagram at the end of the song</help>
+        </object>
+        <object class="wxMenuItem" name="insertImage">
+          <label>_Image {image:}</label>
+          <accel></accel>
+          <help>Insert an image (PNG, JPG, GIF) into the song</help>
+        </object>
+        <object class="wxMenuItem" name="insertVerseNum">
+          <label>Numbered v_erse {start__verse__num}\\{end__verse__num}</label>
+          <accel></accel>
+          <help>Insert a numbered verse with start__verse__num / end__verse__num commands</help>
         </object>
       </object>
       <object class="wxMenu" name="formatMenu">
@@ -450,18 +454,16 @@
           </object>
         </object>
         <object class="separator"/>
-        <object class="wxMenu" name="formatOther">
-          <label>_Other</label>
-          <object class="wxMenuItem" name="insertLinespacing">
-            <label>_Linespacing {linespacing}</label>
-            <accel></accel>
-            <help>Insert ChordPro directive to set line spacing</help>
-          </object>
-          <object class="wxMenuItem" name="insertChordtopspacing">
-            <label>Chord _top spacing {chordtopspacing}</label>
-            <accel></accel>
-            <help>Insert ChordPro directive to set spacing above chords</help>
-          </object>
+        <object class="wxMenuItem" name="insertLinespacing">
+          <label>_Linespacing {linespacing}</label>
+          <accel></accel>
+          <help>Insert ChordPro directive to set line spacing</help>
+          <bitmap>../img/line_spacing.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="insertChordtopspacing">
+          <label>Chord _top spacing {chordtopspacing}</label>
+          <accel></accel>
+          <help>Insert ChordPro directive to set spacing above chords</help>
         </object>
       </object>
       <object class="wxMenu" name="tools">
@@ -505,17 +507,17 @@
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="syntaxCheck">
-          <bitmap>../img/syntaxCheck.png</bitmap>
           <label>_Syntax check</label>
           <accel>F7</accel>
           <help>Check ChordPro syntax of the document (brackets, commands)</help>
+          <bitmap>../img/syntaxCheck.png</bitmap>
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="options">
-          <bitmap>../img/setting.png</bitmap>
           <label>_Options...</label>
           <accel></accel>
           <help>Set program options</help>
+          <bitmap>../img/setting.png</bitmap>
         </object>
       </object>
       <object class="wxMenu" name="helpMenu">
@@ -526,10 +528,10 @@
           <help>Show user&apos;s manual</help>
         </object>
         <object class="wxMenuItem" name="guideMarkdown">
-          <label>_Songpress++ Guide...</label>
+          <label>__Songpress++ Guide...</label>
           <accel></accel>
-          <bitmap>../img/help.png</bitmap>
           <help>Open ChordPro and Songpress command reference</help>
+          <bitmap>../img/help.png</bitmap>
         </object>
         <object class="wxMenuItem" name="about">
           <label>_About...</label>

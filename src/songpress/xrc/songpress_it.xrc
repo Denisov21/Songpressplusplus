@@ -26,7 +26,7 @@
         <object class="wxMenuItem" name="importFromPdf">
           <label>Importa testo da _PDF...</label>
           <accel></accel>
-          <help>Importa il testo da un file PDF con testo selezionabile nell'editor</help>
+          <help>Importa testo da un file PDF con testo selezionabile nell'editor</help>
         </object>
         <object class="wxMenuItem" name="save">
           <label>_Salva</label>
@@ -49,22 +49,24 @@
           <object class="wxMenuItem" name="exportAsSvg">
             <label>Esporta come _SVG...</label>
             <accel></accel>
-            <help>Esporta l'immagine come immagine vettoriale</help>
+            <help>Esporta immagine come immagine vettoriale</help>
           </object>
           <object class="wxMenuItem" name="exportAsEmf">
             <label>Esporta come _Enhanced Metafile...</label>
             <accel></accel>
-            <help>Esporta l'immagine come immagine vettoriale Windows Metafile</help>
+            <help>Esporta immagine come Windows Metafile vettoriale</help>
           </object>
           <object class="wxMenuItem" name="exportAsPng">
             <label>Esporta come _PNG...</label>
             <accel></accel>
-            <help>Esporta l'immagine come immagine raster</help>
+            <help>Esporta immagine come immagine raster</help>
+            <bitmap>../img/png_export.png</bitmap>
           </object>
           <object class="wxMenuItem" name="exportAsHtml">
             <label>Esporta come _HTML...</label>
             <accel></accel>
             <help>Esporta la canzone formattata come pagina web</help>
+            <bitmap>../img/html_export.png</bitmap>
           </object>
           <object class="wxMenuItem" name="exportAsTab">
             <label>Esporta come _TAB/TXT...</label>
@@ -80,34 +82,35 @@
             <label>Esporta come _PDF...</label>
             <accel></accel>
             <help>Esporta la canzone formattata come file PDF</help>
+            <bitmap>../img/pdf_export.png</bitmap>
           </object>
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="print">
-          <bitmap>../img/print.png</bitmap>
           <label>_Stampa...</label>
           <accel>CTRL+P</accel>
           <help>Stampa la canzone</help>
+          <bitmap>../img/print.png</bitmap>
         </object>
         <object class="wxMenuItem" name="printPreview">
-          <bitmap>../img/preview.png</bitmap>
           <label>Ante_prima di stampa...</label>
           <accel></accel>
           <help>Mostra l'anteprima di stampa della canzone</help>
+          <bitmap>../img/preview.png</bitmap>
         </object>
         <object class="wxMenuItem" name="pageSetup">
           <label>Imposta_zione pagina...</label>
           <accel></accel>
-          <help>Imposta il formato e l'orientamento della carta</help>
+          <help>Imposta dimensione e orientamento del foglio</help>
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="insertPageBreak">
-          <label>Interruzione di _pagina</label>
+          <label>A capo _pagina</label>
           <accel>CTRL+SHIFT+RETURN</accel>
           <help>Inserisci un'interruzione di pagina esplicita per la stampa</help>
         </object>
         <object class="wxMenuItem" name="insertColumnBreak">
-          <label>Interruzione _colonna</label>
+          <label>A capo _colonna</label>
           <accel>CTRL+SHIFT+K</accel>
           <help>Inserisci un'interruzione di colonna esplicita per il layout a due colonne</help>
         </object>
@@ -115,14 +118,15 @@
         <object class="wxMenuItem" name="restart">
           <label>_Riavvia</label>
           <accel></accel>
-          <bitmap>../img/restart.png</bitmap>
           <help>Riavvia Songpress</help>
+          <bitmap>../img/restart.png</bitmap>
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="exit">
           <label>_Esci</label>
           <accel></accel>
-          <help>Esci da Songpress</help>
+          <help>Chiudi Songpress</help>
+          <bitmap>../img/close.png</bitmap>
         </object>
         <object class="separator"/>
       </object>
@@ -131,13 +135,13 @@
         <object class="wxMenuItem" name="undo">
           <label>_Annulla</label>
           <accel>CTRL+Z</accel>
-          <help>Annulla l'ultima modifica</help>
+          <help>Annulla ultima modifica</help>
           <bitmap>../img/undo.png</bitmap>
         </object>
         <object class="wxMenuItem" name="redo">
-          <label>_Ripristina</label>
+          <label>_Ripeti</label>
           <accel>CTRL+Y</accel>
-          <help>Ripristina la modifica precedentemente annullata</help>
+          <help>Ripeti la modifica annullata</help>
           <bitmap>../img/redo.png</bitmap>
         </object>
         <object class="separator"/>
@@ -154,9 +158,9 @@
           <bitmap>../img/copy.png</bitmap>
         </object>
         <object class="wxMenuItem" name="copyOnlyText">
-          <label>Copia solo te_sto</label>
+          <label>Copia solo il _testo</label>
           <accel></accel>
-          <help>Copia il testo selezionato negli appunti ignorando gli accordi e i tag ChordPro</help>
+          <help>Copia il testo selezionato negli appunti, ignorando accordi e tag ChordPro</help>
         </object>
         <object class="wxMenuItem" name="copyAsImage">
           <label>Copia come _immagine</label>
@@ -167,33 +171,34 @@
         <object class="wxMenuItem" name="paste">
           <label>_Incolla</label>
           <accel>CTRL+V</accel>
-          <help>Leggi il testo dagli appunti e posizionalo alla posizione del cursore</help>
+          <help>Leggi il testo dagli appunti e inseriscilo alla posizione del cursore</help>
           <bitmap>../img/paste.png</bitmap>
         </object>
         <object class="wxMenuItem" name="pasteChords">
-          <label>I_ncolla accordi</label>
+          <label>Incolla _accordi</label>
           <accel></accel>
           <help>Integra gli accordi del testo copiato nella selezione corrente</help>
           <bitmap>../img/pasteChords.png</bitmap>
         </object>
         <object class="wxMenuItem" name="propagateVerseChords">
-          <label>Propaga accordi s_trofa</label>
+          <label>Propaga accordi della _strofa</label>
           <accel></accel>
-          <help>Copia gli accordi della prima strofa in tutte le strofe con lo stesso numero di righe</help>
+          <help>Copia gli accordi dalla prima strofa a tutte le strofe con lo stesso numero di righe</help>
         </object>
         <object class="wxMenuItem" name="propagateChorusChords">
-          <label>Propaga accordi r_itornello</label>
+          <label>Propaga accordi del _ritornello</label>
           <accel></accel>
-          <help>Copia gli accordi del primo ritornello in tutti i ritornelli con lo stesso numero di righe</help>
+          <help>Copia gli accordi dal primo ritornello a tutti i ritornelli con lo stesso numero di righe</help>
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="find">
           <label>_Cerca...</label>
           <accel>CTRL+F</accel>
           <help>Cerca del testo</help>
+          <bitmap>../img/search.png</bitmap>
         </object>
         <object class="wxMenuItem" name="findNext">
-          <label>Cerca su_ccessivo</label>
+          <label>Cerca _successivo</label>
           <accel>F3</accel>
           <help>Cerca l'occorrenza successiva del testo</help>
         </object>
@@ -211,21 +216,21 @@
         <object class="wxMenuItem" name="selectAll">
           <label>Seleziona _tutto</label>
           <accel>CTRL+A</accel>
-          <help>Seleziona tutta la canzone</help>
+          <help>Seleziona l'intera canzone</help>
           <bitmap>../img/selectAll.png</bitmap>
         </object>
         <object class="wxMenuItem" name="selectNextChord">
-          <label>_Seleziona accordo successivo</label>
+          <label>Seleziona accordo s_uccessivo</label>
           <accel>ALT+RIGHT</accel>
-          <help>Trova l'accordo successivo e selezionalo</help>
+          <help>Trova il prossimo accordo e selezionalo</help>
         </object>
         <object class="wxMenuItem" name="selectPreviousChord">
-          <label>Seleziona accordo _precedente</label>
+          <label>Seleziona accordo p_recedente</label>
           <accel>ALT+LEFT</accel>
           <help>Trova l'accordo precedente e selezionalo</help>
         </object>
         <object class="wxMenuItem" name="moveChordRight">
-          <label>S_posta accordo a destra</label>
+          <label>Sposta accordo a _destra</label>
           <accel>SHIFT+ALT+RIGHT</accel>
           <help>Sposta l'accordo sotto il cursore di una posizione a destra</help>
         </object>
@@ -249,7 +254,7 @@
       <object class="wxMenu" name="view">
         <label>_Visualizza</label>
         <object class="wxMenu" name="toolbars">
-          <label>_Barre degli strumenti</label>
+          <label>Barre degli _strumenti</label>
           <object class="wxMenuItem" name="standard">
             <label>_Standard</label>
             <accel></accel>
@@ -260,7 +265,7 @@
           <object class="wxMenuItem" name="format">
             <label>_Formato</label>
             <accel></accel>
-            <help>Mostra/nascondi la barra degli strumenti con gli strumenti di formattazione</help>
+            <help>Mostra/nascondi la barra degli strumenti di formattazione</help>
             <checkable>1</checkable>
             <checked>1</checked>
           </object>
@@ -307,9 +312,9 @@
           <bitmap>../img/chord.png</bitmap>
         </object>
         <object class="wxMenuItem" name="chorus">
-          <label>_Ritornello</label>
+          <label>Rit_ornello</label>
           <accel>CTRL+U</accel>
-          <help>Inserisci una coppia di comandi che conterrà il ritornello</help>
+          <help>Inserisci una coppia di comandi che conterranno il ritornello</help>
           <bitmap>../img/chorus.png</bitmap>
         </object>
         <object class="wxMenuItem" name="comment">
@@ -318,87 +323,86 @@
           <help>Inserisci un comando per visualizzare un commento</help>
         </object>
         <object class="wxMenuItem" name="verseWithCustomLabelOrWithoutLabel">
-          <label>_Strofa con etichetta personalizzata o senza etichetta...</label>
+          <label>Strofa con etichetta _personalizzata o senza...</label>
           <accel></accel>
           <help>Inserisci una strofa con etichetta personalizzata o senza etichetta</help>
           <bitmap>../img/verse.png</bitmap>
         </object>
         <object class="separator"/>
-        <object class="wxMenu" name="insertMore">
-          <label>_Altro</label>
-          <object class="wxMenuItem" name="insertVerse">
-            <label>Strofa _non numerata {start__verse}\\{end__verse}</label>
-            <accel></accel>
-            <help>Inserisci una strofa non numerata con i comandi start__verse / end__verse</help>
-          </object>
-          <object class="wxMenuItem" name="insertVerseNum">
-            <label>Strofa _numerata {start__verse__num}\\{end__verse__num}</label>
-            <accel></accel>
-            <help>Inserisci una strofa numerata con i comandi start__verse__num / end__verse__num</help>
-          </object>
-          <object class="wxMenuItem" name="insertChorusBlock">
-            <label>_Ritornello {start__chorus}\\{end__chorus}</label>
-            <accel></accel>
-            <help>Inserisci un blocco ritornello con i comandi start__chorus / end__chorus</help>
-          </object>
-          <object class="wxMenuItem" name="insertChordBlock">
-            <label>Accordi _intro {start__chord}\\{end__chord}</label>
-            <accel></accel>
-            <help>Inserisci una sezione accordi intro con i comandi start__chord / end__chord</help>
-          </object>
-          <object class="wxMenuItem" name="insertBridge">
-            <label>_Bridge {start__bridge}\\{end__bridge}</label>
-            <accel></accel>
-            <help>Inserisci un blocco bridge con i comandi start__bridge / end__bridge</help>
-          </object>
-          <object class="wxMenuItem" name="insertTempo">
-            <label>_Tempo {tempo:}</label>
-            <accel></accel>
-            <help>Inserisci la direttiva ChordPro per impostare il tempo della canzone (BPM)</help>
-          </object>
-          <object class="wxMenuItem" name="insertTime">
-            <label>_Indicazione di tempo {time:}</label>
-            <accel></accel>
-            <help>Inserisci la direttiva ChordPro per impostare l'indicazione di tempo (es. 4/4, 3/4)</help>
-          </object>
-          <object class="wxMenuItem" name="insertKey">
-            <label>_Tonalità {key:}</label>
-            <accel></accel>
-            <help>Inserisci la direttiva ChordPro per impostare la tonalità della canzone (es. Am, C, G)</help>
-          </object>
-          <object class="wxMenuItem" name="insertTaste">
-            <label>Tastiera _accordi {taste:}</label>
-            <accel></accel>
-            <help>Inserisci la direttiva per visualizzare una tastiera accordi alla fine della canzone</help>
-          </object>
-          <object class="wxMenuItem" name="insertDefine">
-            <label>Diagramma _accordi chitarra {define:}</label>
-            <accel></accel>
-            <help>Inserisci la direttiva per visualizzare un diagramma accordi chitarra alla fine della canzone</help>
-          </object>
-          <object class="wxMenuItem" name="insertImage">
-            <label>_Immagine {image:}</label>
-            <accel></accel>
-            <help>Inserisci un'immagine (PNG, JPG, GIF) nella canzone</help>
-          </object>
+        <object class="wxMenuItem" name="insertVerse">
+          <label>Strofa _non numerata {start__verse}\\{end__verse}</label>
+          <accel></accel>
+          <help>Inserisci una strofa non numerata con i comandi start__verse / end__verse</help>
+        </object>
+        <object class="wxMenuItem" name="insertChorusBlock">
+          <label>_Ritornello {start__chorus}\\{end__chorus}</label>
+          <accel></accel>
+          <help>Inserisci un blocco ritornello con i comandi start__chorus / end__chorus</help>
+        </object>
+        <object class="wxMenuItem" name="insertChordBlock">
+          <label>Accordi di _intro {start__chord}\\{end__chord}</label>
+          <accel></accel>
+          <help>Inserisci una sezione di accordi intro con i comandi start__chord / end__chord</help>
+        </object>
+        <object class="wxMenuItem" name="insertBridge">
+          <label>_Bridge {start__bridge}\\{end__bridge}</label>
+          <accel></accel>
+          <help>Inserisci un blocco bridge con i comandi start__bridge / end__bridge</help>
+        </object>
+        <object class="wxMenuItem" name="insertTempo">
+          <label>_Tempo {tempo:}</label>
+          <accel></accel>
+          <help>Inserisci la direttiva ChordPro per impostare il tempo della canzone (BPM)</help>
+          <bitmap>../img/metronome.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="insertTime">
+          <label>_Indicazione del tempo {time:}</label>
+          <accel></accel>
+          <help>Inserisci la direttiva ChordPro per impostare il tempo musicale (es. 4/4, 3/4)</help>
+        </object>
+        <object class="wxMenuItem" name="insertKey">
+          <label>_Tonalità {key:}</label>
+          <accel></accel>
+          <help>Inserisci la direttiva ChordPro per impostare la tonalità (es. Am, Do, Sol)</help>
+        </object>
+        <object class="wxMenuItem" name="insertTaste">
+          <label>Tastiera _accordo {taste:}</label>
+          <accel></accel>
+          <help>Inserisci la direttiva per visualizzare una tastiera per accordi in fondo alla canzone</help>
+          <bitmap>../img/taste.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="insertDefine">
+          <label>Diagramma accordo _chitarra {define:}</label>
+          <accel></accel>
+          <help>Inserisci la direttiva per visualizzare un diagramma di accordo chitarra in fondo alla canzone</help>
+        </object>
+        <object class="wxMenuItem" name="insertImage">
+          <label>_Immagine {image:}</label>
+          <accel></accel>
+          <help>Inserisci un'immagine (PNG, JPG, GIF) nella canzone</help>
+        </object>
+        <object class="wxMenuItem" name="insertVerseNum">
+          <label>Strofa _numerata {start__verse__num}\\{end__verse__num}</label>
+          <accel></accel>
+          <help>Inserisci una strofa numerata con i comandi start__verse__num / end__verse__num</help>
         </object>
       </object>
       <object class="wxMenu" name="formatMenu">
         <label>F_ormato</label>
         <object class="wxMenuItem" name="songFont">
-          <label>_Carattere canzone...</label>
+          <label>Carattere canzone...</label>
           <accel></accel>
-          <help>Seleziona il font della canzone</help>
+          <help>Seleziona il carattere della canzone</help>
         </object>
         <object class="wxMenuItem" name="textFont">
           <label>Carattere _testo...</label>
           <accel></accel>
-          <help>Modifica il font e il colore del testo dalla posizione del cursore o nella selezione</help>
+          <help>Modifica il carattere e il colore del testo dalla posizione del cursore o nella selezione</help>
         </object>
         <object class="wxMenuItem" name="chordFont">
-          <label>Carattere a_ccordi...</label>
+          <label>Carattere a_ccordo...</label>
           <accel></accel>
-          <help>Modifica il font e il colore degli accordi dalla posizione del cursore o nella selezione</help>
+          <help>Modifica il carattere e il colore degli accordi dalla posizione del cursore o nella selezione</help>
         </object>
         <object class="wxMenuItem" name="labelVerses">
           <label>_Etichetta strofe</label>
@@ -418,17 +422,17 @@
           <object class="wxMenuItem" name="noChords">
             <label>_Nessun accordo</label>
             <accel></accel>
-            <help>Non visualizzare nessun accordo</help>
+            <help>Non visualizzare gli accordi</help>
             <radio>1</radio>
           </object>
           <object class="wxMenuItem" name="oneVerseForEachChordPattern">
             <label>_Una strofa per ogni schema di accordi</label>
             <accel></accel>
-            <help>Quando appare una strofa con un nuovo schema di accordi, visualizza gli accordi</help>
+            <help>Quando compare una strofa con un nuovo schema di accordi, visualizza gli accordi</help>
             <radio>1</radio>
           </object>
           <object class="wxMenuItem" name="wholeSong">
-            <label>Tutta la _canzone</label>
+            <label>_Tutta la canzone</label>
             <accel></accel>
             <help>Visualizza gli accordi per tutta la canzone</help>
             <radio>1</radio>
@@ -450,18 +454,16 @@
           </object>
         </object>
         <object class="separator"/>
-        <object class="wxMenu" name="formatOther">
-          <label>_Altro</label>
-          <object class="wxMenuItem" name="insertLinespacing">
-            <label>_Interlinea {linespacing}</label>
-            <accel></accel>
-            <help>Inserisci la direttiva ChordPro per impostare l'interlinea</help>
-          </object>
-          <object class="wxMenuItem" name="insertChordtopspacing">
-            <label>S_pazio sopra accordi {chordtopspacing}</label>
-            <accel></accel>
-            <help>Inserisci la direttiva ChordPro per impostare lo spazio sopra gli accordi</help>
-          </object>
+        <object class="wxMenuItem" name="insertLinespacing">
+          <label>_Interlinea {linespacing}</label>
+          <accel></accel>
+          <help>Inserisci la direttiva ChordPro per impostare l'interlinea</help>
+          <bitmap>../img/line_spacing.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="insertChordtopspacing">
+          <label>Spaziatura _superiore accordi {chordtopspacing}</label>
+          <accel></accel>
+          <help>Inserisci la direttiva ChordPro per impostare la spaziatura sopra gli accordi</help>
         </object>
       </object>
       <object class="wxMenu" name="tools">
@@ -474,7 +476,7 @@
         <object class="wxMenuItem" name="simplifyChords">
           <label>S_emplifica accordi...</label>
           <accel></accel>
-          <help>Trasponi gli accordi alla tonalità più semplice</help>
+          <help>Trasponi gli accordi nella tonalità più semplice</help>
         </object>
         <object class="wxMenuItem" name="changeChordNotation">
           <label>Cambia _notazione accordi...</label>
@@ -488,12 +490,12 @@
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="convertTabToChordpro">
-          <label>Converti _Tab in Chordpro</label>
+          <label>Converti _Tab in ChordPro</label>
           <accel></accel>
-          <help>Converti la canzone dalla notazione tab (accordi su righe separate) a ChordPro</help>
+          <help>Converti la canzone dalla notazione tab (accordi su righe separate) in ChordPro</help>
         </object>
         <object class="wxMenuItem" name="removeSpuriousBlankLines">
-          <label>Rimuovi righe vuote _superflue</label>
+          <label>Rimuovi righe vuote s_uperflue</label>
           <accel></accel>
           <help>Rimuovi le righe vuote all'interno di una strofa</help>
         </object>
@@ -501,21 +503,21 @@
         <object class="wxMenuItem" name="normalizeSpaces">
           <label>_Normalizza spazi multipli</label>
           <accel></accel>
-          <help>Sostituisci le sequenze di spazi multipli con uno spazio singolo</help>
+          <help>Sostituisci sequenze di spazi multipli con un singolo spazio</help>
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="syntaxCheck">
-          <bitmap>../img/syntaxCheck.png</bitmap>
-          <label>Verifica sintassi</label>
+          <label>Controllo _sintassi</label>
           <accel>F7</accel>
-          <help>Verifica la sintassi ChordPro del documento (parentesi, comandi)</help>
+          <help>Controlla la sintassi ChordPro del documento (parentesi, comandi)</help>
+          <bitmap>../img/syntaxCheck.png</bitmap>
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="options">
-          <bitmap>../img/setting.png</bitmap>
           <label>_Opzioni...</label>
           <accel></accel>
           <help>Imposta le opzioni del programma</help>
+          <bitmap>../img/setting.png</bitmap>
         </object>
       </object>
       <object class="wxMenu" name="helpMenu">
@@ -523,13 +525,13 @@
         <object class="wxMenuItem" name="guide">
           <label>_Guida</label>
           <accel>F1</accel>
-          <help>Show user&apos;s manual</help>
+          <help>Mostra il manuale utente</help>
         </object>
         <object class="wxMenuItem" name="guideMarkdown">
-          <label>Guida _Songpress++...</label>
+          <label>_Guida di Songpress++...</label>
           <accel></accel>
-          <bitmap>../img/help.png</bitmap>
           <help>Apri il riferimento ai comandi ChordPro e Songpress</help>
+          <bitmap>../img/help.png</bitmap>
         </object>
         <object class="wxMenuItem" name="about">
           <label>_Informazioni...</label>
@@ -818,7 +820,7 @@
   <object class="wxDialog" name="PreferencesDialog">
     <size>535,500</size>
     <style>wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER</style>
-    <title>Opzioni Songpress</title>
+    <title>Opzioni di Songpress</title>
     <centered>1</centered>
     <object class="wxBoxSizer" name="bSizer10">
       <orient>wxVERTICAL</orient>
@@ -845,7 +847,7 @@
                       <border>5</border>
                       <option>0</option>
                       <object class="wxStaticText" name="label1">
-                        <label>Carattere editor</label>
+                        <label>Font editor</label>
                         <wrap>-1</wrap>
                       </object>
                     </object>
@@ -936,7 +938,6 @@
                     </object>
                   </object>
                 </object>
-
                 <object class="sizeritem">
                   <flag>wxEXPAND</flag>
                   <border>5</border>
@@ -1004,7 +1005,7 @@
                   <border>5</border>
                   <option>0</option>
                   <object class="wxCheckBox" name="autoRemoveBlankLines">
-                    <label>Offri di rimuovere righe vuote</label>
+                    <label>Proponi rimozione righe vuote</label>
                     <checked>0</checked>
                   </object>
                 </object>
@@ -1013,7 +1014,7 @@
                   <border>5</border>
                   <option>0</option>
                   <object class="wxCheckBox" name="autoTab2Chordpro">
-                    <label>Offri di convertire le canzoni in tab</label>
+                    <label>Proponi conversione canzoni in tab</label>
                     <checked>0</checked>
                   </object>
                 </object>
@@ -1022,7 +1023,7 @@
                   <border>5</border>
                   <option>0</option>
                   <object class="wxCheckBox" name="autoAdjustEasyKey">
-                    <label>Offri di trasporre le canzoni per semplificare gli accordi</label>
+                    <label>Proponi trasposizione per semplificare gli accordi</label>
                     <checked>0</checked>
                   </object>
                 </object>
@@ -1076,7 +1077,7 @@
             <border>5</border>
             <option>0</option>
             <object class="wxStaticText" name="m_staticText12">
-              <label>Numero versione</label>
+              <label>Numero di versione</label>
               <wrap>-1</wrap>
             </object>
           </object>
@@ -1095,7 +1096,7 @@
             <border>5</border>
             <option>0</option>
             <object class="wxStaticText" name="m_staticText13">
-              <label>What&apos;s new</label>
+              <label>Novità</label>
               <wrap>-1</wrap>
             </object>
           </object>
@@ -1138,7 +1139,7 @@
             <border>5</border>
             <option>0</option>
             <object class="wxButton" name="remind">
-              <label>Ricorda più tardi</label>
+              <label>Ricordamelo più tardi</label>
               <default>0</default>
               <auth_needed>0</auth_needed>
               <markup>0</markup>
@@ -1164,7 +1165,7 @@
   <object class="wxDialog" name="UpdateDialog">
     <size>258,250</size>
     <style>wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER</style>
-    <title>Nuovi aggiornamenti disponibili</title>
+    <title>Sono disponibili aggiornamenti</title>
     <centered>1</centered>
     <object class="wxBoxSizer" name="bSizer20">
       <orient>wxVERTICAL</orient>
@@ -1188,7 +1189,7 @@
         <border>5</border>
         <option>0</option>
         <object class="wxStaticText" name="label">
-          <label>Testo etichetta</label>
+          <label>Label text</label>
           <wrap>-1</wrap>
         </object>
       </object>

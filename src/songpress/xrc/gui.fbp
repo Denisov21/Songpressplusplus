@@ -157,7 +157,7 @@
             <property name="shortcut"></property>
             <property name="unchecked_bitmap"></property>
           </object>
-          <object class="submenu" expanded="false">
+          <object class="submenu" expanded="true">
             <property name="bitmap">Load From File; ../img/redo.png</property>
             <property name="label">E&amp;xport</property>
             <property name="name">export</property>
@@ -202,7 +202,7 @@
               <property name="unchecked_bitmap"></property>
             </object>
             <object class="wxMenuItem" expanded="false">
-              <property name="bitmap"></property>
+              <property name="bitmap">Load From File; ../img/png_export.png</property>
               <property name="checked">0</property>
               <property name="enabled">1</property>
               <property name="help">Export image as a raster picture</property>
@@ -215,7 +215,7 @@
               <property name="unchecked_bitmap"></property>
             </object>
             <object class="wxMenuItem" expanded="false">
-              <property name="bitmap"></property>
+              <property name="bitmap">Load From File; ../img/html_export.png</property>
               <property name="checked">0</property>
               <property name="enabled">1</property>
               <property name="help">Export formatted song as web page</property>
@@ -254,7 +254,7 @@
               <property name="unchecked_bitmap"></property>
             </object>
             <object class="wxMenuItem" expanded="false">
-              <property name="bitmap"></property>
+              <property name="bitmap">Load From File; ../img/pdf_export.png</property>
               <property name="checked">0</property>
               <property name="enabled">1</property>
               <property name="help">Export formatted song as PDF file</property>
@@ -362,7 +362,7 @@
             <property name="permission">none</property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/close.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Quit Songpress</property>
@@ -522,7 +522,7 @@
             <property name="permission">none</property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/search.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Search some text</property>
@@ -835,157 +835,151 @@
             <property name="name">m_separator_insertmore</property>
             <property name="permission">none</property>
           </object>
-          <object class="submenu" expanded="false">
+          <object class="wxMenuItem" expanded="false">
             <property name="bitmap"></property>
-            <property name="label">&amp;More</property>
-            <property name="name">insertMore</property>
-            <property name="permission">protected</property>
-            <object class="wxMenuItem" expanded="false">
-              <property name="bitmap"></property>
-              <property name="checked">0</property>
-              <property name="enabled">1</property>
-              <property name="help">Insert an unnumbered verse with start_verse / end_verse commands</property>
-              <property name="id">ID_INSERT_VERSE</property>
-              <property name="kind">wxITEM_NORMAL</property>
-              <property name="label">Unnumbered &amp;verse {start_verse}\{end_verse}</property>
-              <property name="name">insertVerse</property>
-              <property name="permission">none</property>
-              <property name="shortcut"></property>
-              <property name="unchecked_bitmap"></property>
-            </object>
-            <object class="wxMenuItem" expanded="false">
-              <property name="bitmap"></property>
-              <property name="checked">0</property>
-              <property name="enabled">1</property>
-              <property name="help">Insert a numbered verse with start_verse_num / end_verse_num commands</property>
-              <property name="id">ID_INSERT_VERSE_NUM</property>
-              <property name="kind">wxITEM_NORMAL</property>
-              <property name="label">Numbered v&amp;erse {start_verse_num}\{end_verse_num}</property>
-              <property name="name">insertVerseNum</property>
-              <property name="permission">none</property>
-              <property name="shortcut"></property>
-              <property name="unchecked_bitmap"></property>
-            </object>
-            <object class="wxMenuItem" expanded="false">
-              <property name="bitmap"></property>
-              <property name="checked">0</property>
-              <property name="enabled">1</property>
-              <property name="help">Insert a chorus block with start_chorus / end_chorus commands</property>
-              <property name="id">ID_INSERT_CHORUS_BLOCK</property>
-              <property name="kind">wxITEM_NORMAL</property>
-              <property name="label">&amp;Chorus {start_chorus}\{end_chorus}</property>
-              <property name="name">insertChorusBlock</property>
-              <property name="permission">none</property>
-              <property name="shortcut"></property>
-              <property name="unchecked_bitmap"></property>
-            </object>
-            <object class="wxMenuItem" expanded="false">
-              <property name="bitmap"></property>
-              <property name="checked">0</property>
-              <property name="enabled">1</property>
-              <property name="help">Insert an intro chord section with start_chord / end_chord commands</property>
-              <property name="id">ID_INSERT_CHORD_BLOCK</property>
-              <property name="kind">wxITEM_NORMAL</property>
-              <property name="label">Intro &amp;chords {start_chord}\{end_chord}</property>
-              <property name="name">insertChordBlock</property>
-              <property name="permission">none</property>
-              <property name="shortcut"></property>
-              <property name="unchecked_bitmap"></property>
-            </object>
-            <object class="wxMenuItem" expanded="false">
-              <property name="bitmap"></property>
-              <property name="checked">0</property>
-              <property name="enabled">1</property>
-              <property name="help">Insert a bridge block with start_bridge / end_bridge commands</property>
-              <property name="id">ID_INSERT_BRIDGE</property>
-              <property name="kind">wxITEM_NORMAL</property>
-              <property name="label">&amp;Bridge {start_bridge}\{end_bridge}</property>
-              <property name="name">insertBridge</property>
-              <property name="permission">none</property>
-              <property name="shortcut"></property>
-              <property name="unchecked_bitmap"></property>
-            </object>
-            <object class="wxMenuItem" expanded="false">
-              <property name="bitmap"></property>
-              <property name="checked">0</property>
-              <property name="enabled">1</property>
-              <property name="help">Insert ChordPro directive to set song tempo (BPM)</property>
-              <property name="id">ID_INSERT_TEMPO</property>
-              <property name="kind">wxITEM_NORMAL</property>
-              <property name="label">&amp;Tempo {tempo:}</property>
-              <property name="name">insertTempo</property>
-              <property name="permission">none</property>
-              <property name="shortcut"></property>
-              <property name="unchecked_bitmap"></property>
-            </object>
-            <object class="wxMenuItem" expanded="false">
-              <property name="bitmap"></property>
-              <property name="checked">0</property>
-              <property name="enabled">1</property>
-              <property name="help">Insert ChordPro directive to set time signature (e.g. 4/4, 3/4)</property>
-              <property name="id">ID_INSERT_TIME</property>
-              <property name="kind">wxITEM_NORMAL</property>
-              <property name="label">Time &amp;signature {time:}</property>
-              <property name="name">insertTime</property>
-              <property name="permission">none</property>
-              <property name="shortcut"></property>
-              <property name="unchecked_bitmap"></property>
-            </object>
-            <object class="wxMenuItem" expanded="false">
-              <property name="bitmap"></property>
-              <property name="checked">0</property>
-              <property name="enabled">1</property>
-              <property name="help">Insert ChordPro directive to set song key (e.g. Am, C, G)</property>
-              <property name="id">ID_INSERT_KEY</property>
-              <property name="kind">wxITEM_NORMAL</property>
-              <property name="label">&amp;Key {key:}</property>
-              <property name="name">insertKey</property>
-              <property name="permission">none</property>
-              <property name="shortcut"></property>
-              <property name="unchecked_bitmap"></property>
-            </object>
-            <object class="wxMenuItem" expanded="false">
-              <property name="bitmap"></property>
-              <property name="checked">0</property>
-              <property name="enabled">1</property>
-              <property name="help">Insert directive to display a chord keyboard at the end of the song</property>
-              <property name="id">ID_INSERT_TASTE</property>
-              <property name="kind">wxITEM_NORMAL</property>
-              <property name="label">Chord &amp;keyboard {taste:}</property>
-              <property name="name">insertTaste</property>
-              <property name="permission">none</property>
-              <property name="shortcut"></property>
-              <property name="unchecked_bitmap"></property>
-            </object>
-            <object class="wxMenuItem" expanded="false">
-              <property name="bitmap"></property>
-              <property name="checked">0</property>
-              <property name="enabled">1</property>
-              <property name="help">Insert directive to display a guitar chord diagram at the end of the song</property>
-              <property name="id">ID_INSERT_DEFINE</property>
-              <property name="kind">wxITEM_NORMAL</property>
-              <property name="label">Guitar &amp;chord diagram {define:}</property>
-              <property name="name">insertDefine</property>
-              <property name="permission">none</property>
-              <property name="shortcut"></property>
-              <property name="unchecked_bitmap"></property>
-            </object>
-            <object class="wxMenuItem" expanded="false">
-              <property name="bitmap"></property>
-              <property name="checked">0</property>
-              <property name="enabled">1</property>
-              <property name="help">Insert an image (PNG, JPG, GIF) into the song</property>
-              <property name="id">ID_INSERT_IMAGE</property>
-              <property name="kind">wxITEM_NORMAL</property>
-              <property name="label">&amp;Image {image:}</property>
-              <property name="name">insertImage</property>
-              <property name="permission">none</property>
-              <property name="shortcut"></property>
-              <property name="unchecked_bitmap"></property>
-            </object>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert an unnumbered verse with start_verse / end_verse commands</property>
+            <property name="id">ID_INSERT_VERSE</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">Unnumbered &amp;verse {start_verse}\{end_verse}</property>
+            <property name="name">insertVerse</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap"></property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert a chorus block with start_chorus / end_chorus commands</property>
+            <property name="id">ID_INSERT_CHORUS_BLOCK</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">&amp;Chorus {start_chorus}\{end_chorus}</property>
+            <property name="name">insertChorusBlock</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap"></property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert an intro chord section with start_chord / end_chord commands</property>
+            <property name="id">ID_INSERT_CHORD_BLOCK</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">Intro &amp;chords {start_chord}\{end_chord}</property>
+            <property name="name">insertChordBlock</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap"></property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert a bridge block with start_bridge / end_bridge commands</property>
+            <property name="id">ID_INSERT_BRIDGE</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">&amp;Bridge {start_bridge}\{end_bridge}</property>
+            <property name="name">insertBridge</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap">Load From File; ../img/metronome.png</property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert ChordPro directive to set song tempo (BPM)</property>
+            <property name="id">ID_INSERT_TEMPO</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">&amp;Tempo {tempo:}</property>
+            <property name="name">insertTempo</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap"></property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert ChordPro directive to set time signature (e.g. 4/4, 3/4)</property>
+            <property name="id">ID_INSERT_TIME</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">Time &amp;signature {time:}</property>
+            <property name="name">insertTime</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap"></property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert ChordPro directive to set song key (e.g. Am, C, G)</property>
+            <property name="id">ID_INSERT_KEY</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">&amp;Key {key:}</property>
+            <property name="name">insertKey</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap">Load From File; ../img/taste.png</property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert directive to display a chord keyboard at the end of the song</property>
+            <property name="id">ID_INSERT_TASTE</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">Chord &amp;keyboard {taste:}</property>
+            <property name="name">insertTaste</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap"></property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert directive to display a guitar chord diagram at the end of the song</property>
+            <property name="id">ID_INSERT_DEFINE</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">Guitar &amp;chord diagram {define:}</property>
+            <property name="name">insertDefine</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap"></property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert an image (PNG, JPG, GIF) into the song</property>
+            <property name="id">ID_INSERT_IMAGE</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">&amp;Image {image:}</property>
+            <property name="name">insertImage</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap"></property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert a numbered verse with start_verse_num / end_verse_num commands</property>
+            <property name="id">ID_INSERT_VERSE_NUM</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">Numbered v&amp;erse {start_verse_num}\{end_verse_num}</property>
+            <property name="name">insertVerseNum</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
           </object>
         </object>
-        <object class="wxMenu" expanded="true">
+        <object class="wxMenu" expanded="false">
           <property name="label">F&amp;ormat</property>
           <property name="name">formatMenu</property>
           <property name="permission">protected</property>
@@ -1135,40 +1129,34 @@
             <property name="name">m_separator_formatother</property>
             <property name="permission">none</property>
           </object>
-          <object class="submenu" expanded="false">
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap">Load From File; ../img/line_spacing.png</property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert ChordPro directive to set line spacing</property>
+            <property name="id">ID_INSERT_LINESPACING</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">&amp;Linespacing {linespacing}</property>
+            <property name="name">insertLinespacing</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
             <property name="bitmap"></property>
-            <property name="label">&amp;Other</property>
-            <property name="name">formatOther</property>
-            <property name="permission">protected</property>
-            <object class="wxMenuItem" expanded="false">
-              <property name="bitmap"></property>
-              <property name="checked">0</property>
-              <property name="enabled">1</property>
-              <property name="help">Insert ChordPro directive to set line spacing</property>
-              <property name="id">ID_INSERT_LINESPACING</property>
-              <property name="kind">wxITEM_NORMAL</property>
-              <property name="label">&amp;Linespacing {linespacing}</property>
-              <property name="name">insertLinespacing</property>
-              <property name="permission">none</property>
-              <property name="shortcut"></property>
-              <property name="unchecked_bitmap"></property>
-            </object>
-            <object class="wxMenuItem" expanded="false">
-              <property name="bitmap"></property>
-              <property name="checked">0</property>
-              <property name="enabled">1</property>
-              <property name="help">Insert ChordPro directive to set spacing above chords</property>
-              <property name="id">ID_INSERT_CHORDTOPSPACING</property>
-              <property name="kind">wxITEM_NORMAL</property>
-              <property name="label">Chord &amp;top spacing {chordtopspacing}</property>
-              <property name="name">insertChordtopspacing</property>
-              <property name="permission">none</property>
-              <property name="shortcut"></property>
-              <property name="unchecked_bitmap"></property>
-            </object>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert ChordPro directive to set spacing above chords</property>
+            <property name="id">ID_INSERT_CHORDTOPSPACING</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">Chord &amp;top spacing {chordtopspacing}</property>
+            <property name="name">insertChordtopspacing</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
           </object>
         </object>
-        <object class="wxMenu" expanded="false">
+        <object class="wxMenu" expanded="true">
           <property name="label">&amp;Tools</property>
           <property name="name">tools</property>
           <property name="permission">protected</property>
@@ -1282,7 +1270,7 @@
             <property name="help">Check ChordPro syntax of the document (brackets, commands)</property>
             <property name="id">ID_SYNTAX_CHECK</property>
             <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">_Syntax check</property>
+            <property name="label">&amp;Syntax check</property>
             <property name="name">syntaxCheck</property>
             <property name="permission">none</property>
             <property name="shortcut">F7</property>
@@ -1306,7 +1294,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
         </object>
-        <object class="wxMenu" expanded="false">
+        <object class="wxMenu" expanded="true">
           <property name="label">&amp;?</property>
           <property name="name">helpMenu</property>
           <property name="permission">protected</property>
@@ -3356,7 +3344,6 @@
                       </object>
                     </object>
                   </object>
-
                   <object class="sizeritem" expanded="false">
                     <property name="border">5</property>
                     <property name="flag">wxEXPAND</property>
