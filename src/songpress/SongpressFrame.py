@@ -1864,7 +1864,7 @@ class SongpressFrame(SDIMainFrame):
         note_icon = wx.StaticBitmap(d, -1, note_bmp)
         note_icon.Bind(wx.EVT_LEFT_DOWN, lambda e: rb_note.SetValue(True))
         rb_bpm  = wx.RadioButton(d, -1, "BPM")
-        _metro_img = wx.Image(glb.AddPath("img/metronome.png"))
+        _metro_img = wx.Image(glb.AddPath("img/metronomeWindows.png"))
         _metro_img = _metro_img.Scale(_icon_sz, _icon_sz, wx.IMAGE_QUALITY_HIGH)
         metro_bmp = wx.Bitmap(_metro_img)
         metro_icon = wx.StaticBitmap(d, -1, metro_bmp)

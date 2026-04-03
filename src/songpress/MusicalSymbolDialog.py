@@ -27,7 +27,7 @@ def N_(s):
 # Caricamento dinamico di tutti i font SMP dalla cartella fonts/
 # ---------------------------------------------------------------------------
 # Songpress++ carica automaticamente ogni file .ttf presente in
-#   <installazione>/fonts/
+#   <installazione>/templates/fonts/
 # come font privato (wx.Font.AddPrivateFont).  I face-name registrati
 # vengono raccolti in _SMP_FACES (lista ordinata) e usati da SongDecorator
 # per il rendering GDI+ dei caratteri U+10000+.
@@ -55,7 +55,7 @@ _PREFERRED_ORDER = [
 
 
 def _load_fonts_dir() -> None:
-    """Carica tutti i .ttf presenti in <package>/fonts/ come font privati wx.
+    """Carica tutti i .ttf presenti in <package>/templates/fonts/ come font privati wx.
     Popola _SMP_FACES con i face-name riconosciuti da wx.Font.
     Viene eseguita una sola volta per processo (guard _fonts_dir_loaded).
     """
@@ -65,7 +65,7 @@ def _load_fonts_dir() -> None:
     _fonts_dir_loaded = True
 
     try:
-        fonts_dir = glb.AddPath("fonts")
+        fonts_dir = glb.AddPath("templates/fonts")
         if not os.path.isdir(fonts_dir):
             return
 

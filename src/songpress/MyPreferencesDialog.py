@@ -362,6 +362,30 @@ class MyPreferencesDialog(PreferencesDialog):
         self.clearRecentFilesBtn.Disable()
         evt.Skip()
 
+    def OnOpenTemplatesFolder(self, evt):
+        import os as _os
+        import sys as _sys
+        import subprocess
+
+        # Determina se l'installazione è portabile:
+        # l'installer portabile copia templates\ accanto all'exe,
+        # quindi la sua presenza indica modalità portabile.
+        exe_dir = _os.path.dirname(_os.path.abspath(_sys.executable))
+        portable_templates = _os.path.join(exe_dir, 'templates')
+        if _os.path.isdir(portable_templates):
+            path = portable_templates
+        else:
+            path = _os.path.join(_os.environ.get('APPDATA', _os.path.expanduser('~')),
+                                 'Songpress++', 'templates')
+
+        _os.makedirs(_os.path.join(path, 'songs'), exist_ok=True)
+        _os.makedirs(_os.path.join(path, 'slides'), exist_ok=True)
+        try:
+            subprocess.Popen(['explorer', path])
+        except Exception as e:
+            wx.MessageBox(str(e), _("Songpress++"), wx.OK | wx.ICON_ERROR, self)
+        evt.Skip()
+
     def OnFontSelected(self, evt):
         f, s = self.GetFont()
         self.editor.SetFont(f, s)

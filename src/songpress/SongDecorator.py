@@ -525,7 +525,7 @@ class SongDecorator(object):
                 return
         if getattr(text, 'is_tempo_metro', False):
             # metronome display
-            if _draw_tempo_icon('img/metronome.png'):
+            if _draw_tempo_icon('img/metronomeWindows.png'):
                 return
         if getattr(text, 'is_time_sig', False):
             try:

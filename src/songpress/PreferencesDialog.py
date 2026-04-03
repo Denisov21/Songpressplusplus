@@ -15,9 +15,9 @@ class PreferencesDialog(wx.Dialog):
 
     def __init__(self, parent):
         wx.Dialog.__init__(self, parent, id=wx.ID_ANY, title=_(u"Songpress++ options"), pos=wx.DefaultPosition,
-                                             size=wx.Size(730, 670), style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+                                             size=wx.Size(730, 780), style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 
-        self.SetSizeHints(wx.Size(730, 540), wx.DefaultSize)
+        self.SetSizeHints(wx.Size(730, 780), wx.DefaultSize)
 
         bSizer10 = wx.BoxSizer(wx.VERTICAL)
 
@@ -146,6 +146,8 @@ class PreferencesDialog(wx.Dialog):
         bSizerClearRecent = wx.BoxSizer(wx.HORIZONTAL)
         self.clearRecentFilesBtn = wx.Button(self.general, wx.ID_ANY, _(u"Clear recent files"), wx.DefaultPosition, wx.DefaultSize, 0)
         bSizerClearRecent.Add(self.clearRecentFilesBtn, 0)
+        self.openTemplatesFolderBtn = wx.Button(self.general, wx.ID_ANY, _(u"Open templates folder"), wx.DefaultPosition, wx.DefaultSize, 0)
+        bSizerClearRecent.Add(self.openTemplatesFolderBtn, 0, wx.LEFT, 8)
         grpGeneral.Add(bSizerClearRecent, 0, wx.ALL, 5)
 
         self.showPrintPreviewCB = wx.CheckBox(self.general, wx.ID_ANY, _(u"Show print preview before printing"), wx.DefaultPosition, wx.DefaultSize, 0)
@@ -672,6 +674,7 @@ class PreferencesDialog(wx.Dialog):
         self.m_sdbSizer3OK.Bind(wx.EVT_BUTTON, self.OnOk)
         self.btnPin.Bind(wx.EVT_BUTTON, self.OnPin)
         self.clearRecentFilesBtn.Bind(wx.EVT_BUTTON, self.OnClearRecentFiles)
+        self.openTemplatesFolderBtn.Bind(wx.EVT_BUTTON, self.OnOpenTemplatesFolder)
 
     def __del__(self):
         pass
@@ -716,6 +719,9 @@ class PreferencesDialog(wx.Dialog):
         event.Skip()
 
     def OnClearRecentFiles(self, event):
+        event.Skip()
+
+    def OnOpenTemplatesFolder(self, event):
         event.Skip()
 
     def OnApplyFileAssoc(self, event):
