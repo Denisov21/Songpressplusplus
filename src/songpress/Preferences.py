@@ -212,11 +212,14 @@ class Preferences(object):
         self._LoadContextMenu()
         self._LoadEditorBg()
         self._LoadSelColour()
+        self._LoadCaptionColours()
         self._LoadPrintOptions()
         self._LoadMultiCursor()
         self._LoadTempoIconSize()
         self._LoadWindowGeometryPref()
         self._LoadPreviewOptions()
+        self._LoadGridDisplayMode()
+        self._LoadMusicalSymbol()
 
     def _LoadKlavierColour(self):
         self.config.SetPath('/KlavierColour')
@@ -296,6 +299,25 @@ class Preferences(object):
         self.guideMarkdownImgPath = bool(int(v)) if v != '' else False
         self.config.SetPath('/')
 
+    def _LoadGridDisplayMode(self):
+        """Carica la modalità di visualizzazione del blocco {start_of_grid}.
+
+        Valori:
+            'pipe'  -- | C   | G   | Am  | F   |  (separatori pipe, default)
+            'plain' -- C   G   Am  F               (testo spaziato senza pipe)
+            'table' -- griglia con celle evidenziate (bordi disegnati)
+        """
+        self.config.SetPath('/Format')
+        v = self.config.Read('gridDisplayMode')
+        self.gridDisplayMode = v if v in ('pipe', 'plain', 'table') else 'pipe'
+        v2 = self.config.Read('gridDefaultLabel')
+        self.gridDefaultLabel = v2 if v2 else _("Grid")
+        v3 = self.config.Read('gridSpaceAsPipe')
+        self.gridSpaceAsPipe = bool(int(v3)) if v3 != '' else True
+        v4 = self.config.Read('gridSizeDir')
+        self.gridSizeDir = v4 if v4 in ('both', 'horizontal', 'vertical') else 'both'
+        self.config.SetPath('/')
+
     def Bool2String(self, param):
         return "1" if param else "0"
 
@@ -340,11 +362,14 @@ class Preferences(object):
         self._SaveContextMenu()
         self._SaveEditorBg()
         self._SaveSelColour()
+        self._SaveCaptionColours()
         self._SavePrintOptions()
         self._SaveMultiCursor()
         self._SaveTempoIconSize()
         self._SaveWindowGeometryPref()
         self._SavePreviewOptions()
+        self._SaveGridDisplayMode()
+        self._SaveMusicalSymbol()
         self.config.Flush()
 
     def _SaveKlavierColour(self):
@@ -377,6 +402,20 @@ class Preferences(object):
         self.config.Write('SelColourHex', getattr(self, 'selColourHex', '#C0C0C0'))
         self.config.SetPath('/')
 
+    def _LoadCaptionColours(self):
+        self.config.SetPath('/CaptionColours')
+        h = self.config.Read('EditorActiveHex')
+        self.captionEditorActiveHex = h if h else '#4682C8'
+        h = self.config.Read('PreviewActiveHex')
+        self.captionPreviewActiveHex = h if h else '#329B82'
+        self.config.SetPath('/')
+
+    def _SaveCaptionColours(self):
+        self.config.SetPath('/CaptionColours')
+        self.config.Write('EditorActiveHex',  getattr(self, 'captionEditorActiveHex',  '#4682C8'))
+        self.config.Write('PreviewActiveHex', getattr(self, 'captionPreviewActiveHex', '#329B82'))
+        self.config.SetPath('/')
+
     def _SavePrintOptions(self):
         self.config.SetPath('/Print')
         self.config.Write('showPrintPreview', '1' if getattr(self, 'showPrintPreview', True) else '0')
@@ -406,6 +445,34 @@ class Preferences(object):
         self.config.Write('previewMinSize',    '1' if getattr(self, 'previewMinSize',    True) else '0')
         self.config.Write('guideViewer',           getattr(self, 'guideViewer', 'markdown'))
         self.config.Write('guideMarkdownImgPath',    '1' if getattr(self, 'guideMarkdownImgPath', False) else '0')
+        self.config.SetPath('/')
+
+    def _SaveGridDisplayMode(self):
+        self.config.SetPath('/Format')
+        self.config.Write('gridDisplayMode', getattr(self, 'gridDisplayMode', 'pipe'))
+        self.config.Write('gridDefaultLabel', getattr(self, 'gridDefaultLabel', _("Grid")))
+        self.config.Write('gridSpaceAsPipe', '1' if getattr(self, 'gridSpaceAsPipe', True) else '0')
+        self.config.Write('gridSizeDir', getattr(self, 'gridSizeDir', 'both'))
+        self.config.SetPath('/')
+
+    def _LoadMusicalSymbol(self):
+        self.config.SetPath('/MusicalSymbol')
+        v = self.config.Read('scaleEnabled')
+        self.symbolScaleEnabled = bool(int(v)) if v != '' else False
+        v2 = self.config.Read('fontSize')
+        try:
+            self.symbolFontSize = max(6, min(int(v2), 144)) if v2 != '' else 24
+        except ValueError:
+            self.symbolFontSize = 24
+        v3 = self.config.Read('insertVerse')
+        self.symbolInsertVerse = bool(int(v3)) if v3 != '' else False
+        self.config.SetPath('/')
+
+    def _SaveMusicalSymbol(self):
+        self.config.SetPath('/MusicalSymbol')
+        self.config.Write('scaleEnabled', '1' if getattr(self, 'symbolScaleEnabled', False) else '0')
+        self.config.Write('fontSize', str(getattr(self, 'symbolFontSize', 24)))
+        self.config.Write('insertVerse', '1' if getattr(self, 'symbolInsertVerse', False) else '0')
         self.config.SetPath('/')
 
     def SetChorusLabel(self, c):

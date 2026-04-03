@@ -412,3 +412,73 @@ def TimeStamp():
     now = time.localtime(time.time())
     now = time.asctime(now)
     return now
+
+#-----------------------------------------------------------------------------#
+# Integrazione Songpress++ — ExceptionHook autonomo, senza dev_tool.py
+
+def _get_glb():
+    """Import lazy di glb per evitare dipendenze circolari."""
+    try:
+        from .Globals import glb
+        return glb
+    except Exception:
+        return None
+
+
+class SongpressErrorDialog(ErrorDialog):
+    """Specializzazione di ErrorDialog per Songpress++."""
+
+    def __init__(self, msg):
+        glb = _get_glb()
+        prog = glb.PROG_NAME if glb else _PROG_NAME
+        ErrorDialog.__init__(self, None, title=f"{prog} — Errore imprevisto", message=msg)
+        self.SetDescriptionLabel(
+            f"Si è verificato un errore imprevisto in {prog}.\n"
+            "Clicca su \"Invia rapporto d'errore\" per notificare lo sviluppatore,\n"
+            "oppure su \"Chiudi\" per continuare (il programma potrebbe essere instabile)."
+        )
+
+    def Abort(self):
+        os._exit(1)
+
+    def GetProgramName(self):
+        glb = _get_glb()
+        if glb:
+            return f"{glb.PROG_NAME} Versione: {glb.VERSION}"
+        return f"{_PROG_NAME} {_PROG_VERSION}".strip()
+
+    def Send(self):
+        from urllib.parse import quote
+        import webbrowser
+        glb = _get_glb()
+        prog = f"{glb.PROG_NAME} {glb.VERSION}" if glb else f"{_PROG_NAME} {_PROG_VERSION}".strip()
+        addr = glb.BUG_REPORT_ADDRESS if glb else ""
+        subject = quote(f"Segnalazione errore — {prog}")
+        body = quote(self.err_msg[:1800])
+        webbrowser.open(f"mailto:{addr}?subject={subject}&body={body}")
+
+
+def ExceptionHook(exctype, value, trace):
+    """Handler globale per le eccezioni non gestite.
+
+    Collegare in main.py:
+        from songpress.errdlg import ExceptionHook
+        sys.excepthook = ExceptionHook
+    """
+    # Lascia passare KeyboardInterrupt (Ctrl+C da terminale)
+    if issubclass(exctype, KeyboardInterrupt):
+        sys.__excepthook__(exctype, value, trace)
+        return
+
+    ftrace = ErrorDialog.FormatTrace(exctype, value, trace)
+    print(ftrace, file=sys.stderr)
+
+    # Chiusura forzata se l'utente aveva già scelto Abort
+    if SongpressErrorDialog.ABORT:
+        os._exit(1)
+
+    # Evita dialog sovrapposti
+    if not SongpressErrorDialog.REPORTER_ACTIVE:
+        dlg = SongpressErrorDialog(ftrace)
+        dlg.ShowModal()
+        dlg.Destroy()

@@ -16,7 +16,7 @@ import wx
 
 from .Globals import glb
 from . import i18n
-from . import dev_tool
+from . import errdlg
 
 
 class SongpressApp(wx.App):
@@ -43,7 +43,7 @@ class SongpressApp(wx.App):
 
 
 def main():
-    sys.excepthook = dev_tool.ExceptionHook
+    sys.excepthook = errdlg.ExceptionHook
     if platform.system() == 'Windows':
         import ctypes
         appid = f'songpress.{glb.VERSION}'

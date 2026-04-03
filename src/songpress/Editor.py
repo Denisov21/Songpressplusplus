@@ -68,6 +68,15 @@ class Editor(StyledTextCtrl):
         self.STC_STYLE_ATTR = 14
         self.STC_STYLE_CHORUS = 15
         self.STC_STYLE_COMMENT = 16
+        self.STC_STYLE_TAB_GRID = 17
+        # UTF-8: necessario per visualizzare correttamente i caratteri multibyte (simboli musicali SMP)
+        self.SetCodePage(STC_CP_UTF8)
+        # DirectWrite abilita il font-fallback automatico sui glifi SMP (U+1D100 ecc.) su Windows.
+        # Su altri OS viene ignorato silenziosamente.
+        try:
+            self.SetTechnology(STC_TECHNOLOGY_DIRECTWRITE)
+        except AttributeError:
+            pass  # costante non disponibile in versioni vecchie di wxPython
         self.SetFont("Lucida Console", 12)
         self.SetLexer(STC_LEX_CONTAINER)
         self.StyleSetForeground(self.STC_STYLE_NORMAL, wx.Colour(0, 0, 0))
@@ -76,10 +85,14 @@ class Editor(StyledTextCtrl):
         self.StyleSetForeground(self.STC_STYLE_COMMAND, wx.Colour(0, 0, 255))
         self.StyleSetForeground(self.STC_STYLE_ATTR, wx.Colour(0, 128, 0))
         self.StyleSetForeground(self.STC_STYLE_COMMENT, wx.Colour(128, 128, 128))
+        self.StyleSetForeground(self.STC_STYLE_TAB_GRID, wx.Colour(139, 90, 0))
+        self.StyleSetItalic(self.STC_STYLE_TAB_GRID, True)
         self.StyleSetBold(self.STC_STYLE_CHORUS, True)
         #Dummy "token": we artificially replace every normalToken into a chorusToken when we are
         #inside chorus.  Then, we can associate the chorus style in self.tokenStyle dictionary.
         self.chorusToken = 'chorusToken'
+        # Dummy token for content inside {start_of_tab}/{start_of_grid} blocks.
+        self.tabGridToken = 'tabGridToken'
         self.tokenStyle = {
             SongTokenizer.openCurlyToken: self.STC_STYLE_COMMAND,
             SongTokenizer.closeCurlyToken: self.STC_STYLE_COMMAND,
@@ -90,10 +103,13 @@ class Editor(StyledTextCtrl):
             SongTokenizer.closeChordToken: self.STC_STYLE_CHORD,
             SongTokenizer.colonToken: self.STC_STYLE_COMMAND,
             SongTokenizer.commentToken: self.STC_STYLE_COMMENT,
-            self.chorusToken: self.STC_STYLE_CHORUS
+            self.chorusToken: self.STC_STYLE_CHORUS,
+            self.tabGridToken: self.STC_STYLE_TAB_GRID,
         }
         #self.chorus[i] == True iff, at the end of line i, we are still in chorus (i.e. bold) mode
         self.chorus = []
+        # self.in_tab_grid[i] == True iff, at the end of line i, we are inside a tab/grid block
+        self.in_tab_grid = []
 
     def SetFont(self, face, size):
         font = wx.Font(
@@ -107,6 +123,7 @@ class Editor(StyledTextCtrl):
         #I don't know why, but the following line is necessary in order to make
         #the font bold
         self.StyleSetFont(self.STC_STYLE_CHORUS, font)
+        self.StyleSetFont(self.STC_STYLE_TAB_GRID, font)
         # Riapplica il colore di selezione dopo ogni cambio di stile
         sel_hex = getattr(getattr(self, 'spframe', None), 'pref', None)
         if sel_hex is not None:
@@ -137,6 +154,7 @@ class Editor(StyledTextCtrl):
             self.STC_STYLE_ATTR,
             self.STC_STYLE_CHORUS,
             self.STC_STYLE_COMMENT,
+            self.STC_STYLE_TAB_GRID,
             STC_STYLE_LINENUMBER,
             STC_STYLE_BRACELIGHT,
             STC_STYLE_BRACEBAD,
@@ -317,6 +335,7 @@ class Editor(StyledTextCtrl):
             if (c >= 65 and c <= 90) or (c >= 97 and c <= 122):
                 s, e = self.GetSelection()
                 self.SetSelection(self.PositionAfter(s), self.PositionBefore(e))
+
         evt.Skip()
 
     def AutoChangeMode(self, acm):
@@ -368,6 +387,15 @@ class Editor(StyledTextCtrl):
         evt.Skip()
 
     def OnEditorKeyDown(self, evt):
+        # Spazio dentro {start_of_grid} → inserisce pipe e sposta il cursore nella cella vuota.
+        # Intercettato in KEY_DOWN (prima che STC scriva il carattere).
+        if evt.GetKeyCode() == wx.WXK_SPACE and not evt.ControlDown() and not evt.AltDown():
+            pref = getattr(self.spframe, 'pref', None)
+            space_as_pipe = getattr(pref, 'gridSpaceAsPipe', True)
+            if space_as_pipe and self.spframe._GetGridContext() is not None:
+                self.spframe._MoveGridCellRight()
+                return   # non propagare: lo spazio non deve essere inserito nell'STC
+
         if (self._multi_cursor_enabled
                 and evt.ControlDown()
                 and not evt.AltDown()
@@ -495,10 +523,21 @@ class Editor(StyledTextCtrl):
             bold = self.chorus[ln-1]
         else:
             bold = False
+        if ln > 0 and len(self.in_tab_grid) > ln-1:
+            in_tg = self.in_tab_grid[ln-1]
+        else:
+            in_tg = False
         #changedBold is True iff self.chorus has changed for the current line, and thus we need
         #to process (at least) another line
         changedBold = False
         lc = self.GetLineCount()
+
+        # Comandi di apertura/chiusura blocchi tab e grid (tutte le varianti ChordPro)
+        _SOT = frozenset(['SOT', 'START_OF_TAB'])
+        _EOT = frozenset(['EOT', 'END_OF_TAB'])
+        _SOG = frozenset(['SOG', 'START_OF_GRID', 'GRID'])
+        _EOG = frozenset(['EOG', 'END_OF_GRID'])
+
         while (changedBold and ln < lc) or start < end:
             self.StartStyling(start)
             l = self.GetLine(ln)
@@ -506,20 +545,33 @@ class Editor(StyledTextCtrl):
             for tok in tkz:
                 n = len(tok.content.encode('utf-8'))
                 t = tok.token
-                if bold and t == SongTokenizer.normalToken:
+                if in_tg and t == SongTokenizer.normalToken:
+                    t = self.tabGridToken
+                elif bold and t == SongTokenizer.normalToken:
                     t = self.chorusToken
                 self.SetStyling(n, self.tokenStyle[t])
                 if t == SongTokenizer.commandToken:
-                    if tok.content.upper() == 'SOC':
+                    cmd = tok.content.upper()
+                    if cmd == 'SOC' or cmd == 'START_OF_CHORUS':
                         bold = True
-                    elif tok.content.upper() == 'EOC':
+                    elif cmd == 'EOC' or cmd == 'END_OF_CHORUS':
                         bold = False
+                    elif cmd in _SOT or cmd in _SOG:
+                        in_tg = True
+                    elif cmd in _EOT or cmd in _EOG:
+                        in_tg = False
             if len(self.chorus) > ln:
                 changedBold = self.chorus[ln] != bold
                 self.chorus[ln] = bold
             else:
                 self.chorus.append(bold)
                 changedBold = False
+            if len(self.in_tab_grid) > ln:
+                if self.in_tab_grid[ln] != in_tg:
+                    changedBold = True
+                self.in_tab_grid[ln] = in_tg
+            else:
+                self.in_tab_grid.append(in_tg)
             ln = ln + 1
             start = self.PositionFromLine(ln)
 

@@ -62,6 +62,11 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | `{start_chorus:Label}`/`{end_chorus}`     | 🔧  | ⌨️   | Alternative chorus form (with optional label)                                                                          |
 | `{start_bridge:Label}`/`{end_bridge}`     | 🔧  | ⌨️   | Bridge with optional label; defaults to «Bridge» if omitted                                                            |
 | `{start_chord:Label}`/`{end_chord}`       | 🔧  | ⌨️   | Intro/chord block; defaults to «Intro» if label is omitted                                                             |
+| `{start_of_tab}`/`{end_of_tab}`           | ✅  | 🖊    | ASCII tab block; content is rendered in monospace font (Courier New) with the label «Tab»                              |
+| `{sot}`/`{eot}`                           | ✅  | 🖊    | Abbreviation for `start_of_tab`/`end_of_tab`                                                                           |
+| `{start_of_grid}`/`{end_of_grid}`         | ✅  | ⌨️   | Chord grid block; rendered with the label «Grid»                                                                       |
+| `{sog}`/`{eog}`                           | ✅  | 🖊    | Abbreviation for `start_of_grid`/`end_of_grid`                                                                         |
+| `{grid}`                                  | ✅  | 🖊    | Alternative form of `start_of_grid` (no explicit closing tag required)                                                 |
 | `{new_song}`                              | 🔧  | 🖊    | Starts a new song in the same document: resets verse and chorus counters so numbering restarts from 1                  |
 
 > **Note on `{start_of_bridge}`** — This form (with `of_`) is not handled by the renderer; use `{start_bridge}`/`{end_bridge}` instead.
@@ -206,6 +211,204 @@ or in abbreviated form:
 
 ---
 
+## `{start_of_tab}` / `{end_of_tab}` 🖊
+
+**Short aliases:** `{sot}` / `{eot}`
+
+### Description — start_of_tab
+
+Delimits an **ASCII tablature block**. The content is rendered in the preview and in print using a monospace font (Courier New) with the label «Tab», so that the column alignment of the strings is preserved.
+
+### Syntax — start_of_tab
+
+```chordpro
+{start_of_tab}
+e|--0--2--3--2--0--|
+B|--1--3--3--3--1--|
+G|--0--2--0--2--0--|
+D|--2--0--0--0--2--|
+A|--3--x--2--x--3--|
+E|--x--x--3--x--x--|
+{end_of_tab}
+```
+
+or with short aliases:
+
+```chordpro
+{sot}
+e|--0--2--3--|
+B|--1--3--3--|
+{eot}
+```
+
+or with a custom label:
+
+```chordpro
+{start_of_tab: Solo}
+e|--12-14-15-14-12--|
+{end_of_tab}
+```
+
+### Usage Notes — start_of_tab
+
+- The monospace font ensures that tab lines are perfectly aligned in print.
+- Any inline chords `[Am]` present inside the block are **not rendered** above the text: the tablature is already a complete notation.
+- The block is treated as an unnumbered verse; it receives the label «Tab» (or the custom one).
+- In the editor, the block content appears in **brown italic** to visually distinguish it from normal text.
+
+---
+
+## `{start_of_grid}` / `{end_of_grid}` 🖊
+
+**Short aliases:** `{sog}` / `{eog}` · Alternative form: `{grid}`
+
+### Description — start_of_grid
+
+Delimits a **chord grid block**. Useful for indicating rhythmic chord sequences in symbolic form, e.g. for rhythm guitar or ukulele. The block is rendered with the label «Grid» (configurable in preferences).
+
+### Syntax — start_of_grid
+
+Basic form:
+
+```chordpro
+{start_of_grid}
+| Am . . . | F . . . | C . . . | G . . . |
+{end_of_grid}
+```
+
+Short aliases:
+
+```chordpro
+{sog}
+| G . . . | D . . . | Em . . . | C . . . |
+{eog}
+```
+
+Alternative form (closes automatically at the next blank line):
+
+```chordpro
+{grid}
+| C . . . | G . . . | Am . . . | F . . . |
+```
+
+### Options — start_of_grid
+
+All options are specified as `key=value` pairs inside the directive argument, after the optional label. They can be combined freely.
+
+| Option              | Type    | Default         | Description                                                                                                                                              |
+| ------------------- | ------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| *(label)*           | text    | «Grid»          | Custom section label (free text, before any `key=value` parameters)                                                                                      |
+| `size=N`            | number  | `1`             | Cell size multiplier: multiplies horizontal and/or vertical padding by N. Accepts integers or decimals up to 2 places, with `.` or `,` (e.g. `1.5`, `2,50`) |
+| `size=N affects`    | choice  | Width and height | Controls which dimension is scaled by `size=N`: **Width and height** (both paddings), **Width only** (only `_pad_x`), **Height only** (only `_pad_y`). Set in Preferences. |
+| `chordtopspacing=N` | integer | `0`             | Extra space in pixels **above** each row of cells                                                                                                        |
+| `linespacing=N`     | integer | `0`             | Extra space in pixels **below** each row of cells                                                                                                        |
+
+> **Note:** `chordtopspacing` and `linespacing` inside `{start_of_grid}` act locally on that grid block only, independently of the global `{chordtopspacing}` and `{linespacing}` directives which affect normal verse/chorus blocks.
+
+### Examples — start_of_grid
+
+Custom label only:
+
+```chordpro
+{start_of_grid: Verse}
+| Am . . | F . . | G . . |
+{end_of_grid}
+```
+
+Enlarged cells (`size=2` or decimal, e.g. `size=1.5`):
+
+```chordpro
+{start_of_grid: size=2}
+| Am | F | G | C |
+{end_of_grid}
+```
+
+```chordpro
+{start_of_grid: size=1.5}
+| Am | F | G | C |
+{end_of_grid}
+```
+
+Label + enlarged cells:
+
+```chordpro
+{start_of_grid: Chorus size=2}
+| G . . . | D . . . | Em . . . | C . . . |
+{end_of_grid}
+```
+
+Extra vertical spacing between rows:
+
+```chordpro
+{start_of_grid: chordtopspacing=8 linespacing=4}
+| Am | F |
+| C  | G |
+{end_of_grid}
+```
+
+All options combined:
+
+```chordpro
+{start_of_grid: Intro size=2 chordtopspacing=6 linespacing=3}
+| Am . . . | F . . . |
+| C . . .  | G . . . |
+{end_of_grid}
+```
+
+### Inserting from the Menu — start_of_grid
+
+**Insert menu → Grid `{start_of_grid}\{end_of_grid}`**
+
+Opens a dialog that proposes as default label the value set in **Preferences → Format → Chord grid → Default label** (default: «Grid»).
+
+- **Confirm the default or cancel** → inserts the block without a label:
+  ```chordpro
+  {start_of_grid}
+  | | | |
+  {end_of_grid}
+  ```
+- **Type a different label** → inserts the block with a custom label:
+  ```chordpro
+  {start_of_grid:Chorus}
+  | | | |
+  {end_of_grid}
+  ```
+
+The pre-filled `| | | |` line provides 4 empty cells as a starting point; edit it or add more rows as needed. With the space bar (if enabled in preferences) you can quickly navigate between cells.
+
+### Display Modes — start_of_grid
+
+The rendering mode for all grid blocks is set globally in **Format tab → Chord grid** in preferences:
+
+| Mode                     | Appearance                                                                 |
+| ------------------------ | ---------------------------------------------------------------------------|
+| **Pipe table** (default) | `\| Am  \| F   \| G   \| C   \|` — bars separated by `\|` characters       |
+| **Plain spacing**        | `Am   F   G   C` — chords spaced without separators                        |
+| **Table**                | cells with visible drawn borders                                           |
+
+### Keyboard Behaviour Inside a Grid Block
+
+When the cursor is inside a `{start_of_grid}` block:
+
+| Key               | Action                                                                                       |
+| ----------------- | -------------------------------------------------------------------------------------------- |
+| **Space bar**     | Inserts a `\|` pipe separator, shifting the current cell right (configurable in preferences) |
+| `{row}` / `{r}`   | Inserts an empty separator row (vertical spacer between rows)                                |
+
+> The space-bar-as-pipe behaviour can be disabled in **Format → Chord grid → Space bar inserts \| separator**.
+> The dimension scaled by `size=N` is configured in **Format → Chord grid → size=N affects**: choose between *Width and height* (default), *Width only*, or *Height only*.
+
+### Usage Notes — start_of_grid
+
+- The block is treated as an unnumbered verse with the label «Grid» (or the custom one specified in the directive or in preferences).
+- In the editor, the block content is rendered in **brown italic**, like tab blocks.
+- `size=N` multiplies `_pad_x` (horizontal padding, base 8 px) and/or `_pad_y` (vertical padding, base 4 px) by N. Which dimension is scaled depends on the **Preferences → Format → Chord grid → size=N affects** option: *Width and height* (default, both paddings), *Width only* (only `_pad_x`), *Height only* (only `_pad_y`). N can be an integer or a decimal with up to 2 digits after the separator (`.` or `,`): e.g. `size=1.5`, `size=2,50`, `size=1.7`.
+- `chordtopspacing=N` adds N pixels above each row; `linespacing=N` adds N pixels below each row. Both default to `0` (no extra spacing).
+- Multiple options and a label can coexist in any order after the colon: `{start_of_grid: My Label size=3 linespacing=5}`.
+- In pipe mode, the raw text inside the block must already contain `|` delimiters; in plain mode, chords separated by spaces are laid out automatically.
+
+---
+
 ## Comments and Editorial Notes
 
 ![Songpress++ Comment Window](./img/GUIDE/commento_en.png)
@@ -305,6 +508,12 @@ The numeric fields in the dialog use spin controls:
 [G7]O sole, o sole [C]mio
 {eoc}
 
+{start_of_tab: Intro}
+e|--0--3--2--0--|
+B|--1--0--3--1--|
+G|--0--0--2--0--|
+{end_of_tab}
+
 {new_page}
 
 {start_verse_num}
@@ -353,9 +562,136 @@ All main directives are accessible via the **Insert** menu, which opens support 
 - **Remove superfluous blank lines** — deletes double blank lines
 - **Normalize multiple spaces** — reduces multiple spaces to one
 
+### Musical Symbols Unicode ⌨️
+
+- **Musical symbol (Unicode)…** (`Insert › Musical symbol (Unicode)…`, shortcut `Ctrl+Shift+M`) — opens the **Musical Symbols dialog**, from which you can choose a Unicode character and insert it at the cursor position.
+
 ### Syntax Check
 
 - **Check syntax** — analyzes the text and reports unrecognized or malformed directives, with the ability to navigate directly to the error
+
+---
+
+## Musical Symbols Unicode — Dialog
+
+The **Musical Symbols** dialog (`Insert › Musical symbol (Unicode)…`, `Ctrl+Shift+M`) lets you insert any special Unicode musical character into the editor, including symbols from the **Musical Symbols** block (U+1D100–U+1D1FF) and common BMP characters.
+
+### Dialog Structure
+
+The dialog is organized into **six tabs** by category:
+
+| Tab | Contents |
+| ---------------------------- | ------------------------------------------------------------------ |
+| **Note e pause** | Whole note, half note, eighth note, rests of every value (U+1D13B–U+1D164) |
+| **Alterazioni** | Sharp, flat, natural, double accidentals, quarter-tone accidentals |
+| **Dinamiche** | *p*, *f*, *mp*, *mf*, *sf*, crescendo, decrescendo, etc. |
+| **Pentagramma e chiavi** | Clefs (treble, bass, C clef), barlines, segno, coda |
+| **Ornamenti e articolazioni** | Slurs, fermata, caesura, breath mark, etc. |
+| **Comuni (BMP)** | ♩ ♪ ♫ ♬ ★ † ½ ¼ × – — … and other common characters |
+
+### How to Insert a Symbol
+
+1. Open the dialog with `Insert › Musical symbol (Unicode)…` or `Ctrl+Shift+M`.
+2. Select the tab for the desired category.
+3. **Click** a cell to select the symbol — the enlarged preview and description with the Unicode codepoint (e.g. `U+1D157`) appear at the bottom.
+4. Press **Insert** or **double-click** the cell to insert the character at the cursor and close the dialog.
+5. Press **Close** (or `Esc`) to cancel without inserting anything.
+
+> **Tip** — Hovering over cells shows a tooltip with the symbol name and codepoint.
+
+### Insertion Options
+
+At the bottom of the dialog there are two options that control how the symbol is inserted into the editor. Their state is saved automatically and restored the next time the application is opened.
+
+**Custom size (pt)** — checkbox + numeric field (6–144)
+
+When enabled, the symbol is wrapped with `{textsize:N}` and `{textsize}` directives to apply the chosen point size and then restore the original. The second `{textsize}` without an argument is the correct reset form (unlike `{textsize:}` with a trailing colon, which is a syntax error detected by the syntax checker).
+
+| Checkbox | Inserted text |
+| -------- | ------------- |
+| off | `♩` |
+| on (pt = 24) | `{textsize:24}♩{textsize}` |
+
+> **Note** — Not all symbols can be resized: SMP-plane characters (U+1D100–U+1D1FF) require a font with adequate coverage (FreeSerif, Bravura, etc.) in the `fonts/` folder. If the font does not cover the glyph, the size is applied but the character may not be visible.
+
+**Wrap symbol in a verse block (not counted)** — checkbox
+
+When enabled, the symbol is enclosed in a `{start_verse}…{end_verse}` block. It then appears in the preview as a standalone verse block, but is **not counted** in the sequential verse numbering — adjacent verses keep their correct numbers.
+
+| Checkbox | Inserted text |
+| -------- | ------------- |
+| off | `♩` |
+| on | `{start_verse}♩{end_verse}` |
+
+Both options can be combined: if both are active, the result is:
+
+```chordpro
+{start_verse}{textsize:24}♩{textsize}{end_verse}
+```
+
+The same settings are also accessible from **Preferences → Format → Musical symbol insertion**, where they are saved permanently.
+
+Symbols in the Musical Symbols block (U+1D100–U+1D1FF) belong to the Unicode **Supplementary Multilingual Plane** (SMP, codepoints > U+FFFF). Common system fonts (Arial, Times New Roman, Calibri) do not cover this range; Songpress++ solves this in two distinct ways:
+
+**In the editor (text panel)** — the editor uses the **DirectWrite** rendering engine (`SetTechnology(STC_TECHNOLOGY_DIRECTWRITE)`), which enables automatic Windows font-fallback: if the chosen editor font does not contain the glyph, Windows automatically searches among installed fonts for a suitable one.
+
+**In the preview and print** — the renderer uses **GDI+** via `wx.GraphicsContext` exclusively for SMP characters. For every string containing at least one codepoint > U+FFFF, Songpress++ creates a separate graphics context and sets the font in the following priority order:
+
+1. **FreeSerif** (GNU FreeFont) — complete coverage of the Musical Symbols block; must be present at `<install>/fonts/FreeSerif.ttf`.
+2. **Segoe UI Symbol** — included by default on Windows 10/11; partial SMP coverage.
+3. Current document font — used as a last resort (will show boxes for missing glyphs).
+
+Normal text (chords, song text, titles) continues to use the classic GDI renderer with no additional overhead.
+
+### How to Change Symbol Size in the Preview
+
+Musical symbols are rendered at the same size as the surrounding text, automatically scaled according to:
+
+- **Global song font** — changeable via `Format › Song font…`. Increasing the point size of the main font proportionally increases SMP symbols as well.
+- **`{textsize:Pt}` directive** — inserted directly in the ChordPro text before the symbol, sets the point size for that span. Example:
+
+  ```chordpro
+  {textsize:24}𝄞{textsize}
+  ```
+
+  The second `{textsize}` (without argument) restores the default size.
+
+- **`{textsize:N%}` directive** — percentage version, relative to the document's base size. Example for a symbol at 150%:
+
+  ```chordpro
+  {textsize:150%}𝅘𝅥𝅮{textsize}
+  ```
+
+- **Preview zoom** — the zoom slider in the preview toolbar scales the whole page (text + symbols) without modifying the file. It does not affect printing.
+
+> **Technical note** — The renderer automatically multiplies the font's point size by the current zoom factor before creating the `wx.GraphicsFont`, so SMP symbols always maintain the same proportions as the surrounding GDI text.
+
+### Adding Custom Symbol Libraries
+
+Songpress++ automatically loads **all** `.ttf` files found in the `fonts/` folder inside the installation directory. To add support for new Unicode symbols, simply copy the font file into that folder — no additional configuration is required.
+
+```
+<installation>/
+  fonts/
+    FreeSerif.ttf           ← included — complete Musical Symbols coverage
+    Bravura.ttf             ← SMuFL font (professional music notation)
+    NotoMusic.ttf           ← Google Noto — broad SMP coverage
+    SegoeUISymbol.ttf       ← optional local copy of Segoe UI Symbol
+    any_other.ttf           ← loaded and used automatically
+```
+
+**Priority order** — Fonts are tried in the following order:
+
+1. `FreeSerif.ttf` — highest priority (guaranteed Musical Symbols coverage)
+2. `Bravura.ttf` — if present
+3. `NotoMusic.ttf` / `NotoMusicRegular.ttf` — if present
+4. All other `.ttf` files in the folder, in alphabetical order
+5. **Segoe UI Symbol** — Windows 10/11 system font (automatic fallback, no file to copy)
+6. Current document font — last resort (will show boxes for missing glyphs)
+
+For each SMP character, Songpress++ walks this list and uses the first font that wx can load successfully. If a font does not cover a particular glyph, GDI+ does not perform further automatic fallback — the correct font must therefore be present in the `fonts/` folder.
+
+> **Tip** — **SMuFL** fonts (Standard Music Font Layout, <https://www.smufl.org>) such as Bravura, Petaluma or Leland cover hundreds of specialized musical symbols not included in FreeSerif. For Gregorian or mensural notation, fonts such as **Caeciliae** or **Volpiano** are recommended.
 
 ---
 

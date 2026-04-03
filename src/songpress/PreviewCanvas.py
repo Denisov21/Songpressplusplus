@@ -765,6 +765,32 @@ class PreviewCanvas(object):
         """Imposta la dimensione in pixel delle icone {tempo_*} (16, 24 o 32)."""
         self.renderer.tempoIconSize = size
 
+    def SetGridDisplayMode(self, mode):
+        """Imposta la modalità di visualizzazione dei blocchi {start_of_grid}.
+
+        Valori: 'pipe' | 'plain' | 'table'
+        Forza immediatamente il ridisegno del pannello anteprima.
+        """
+        self.renderer.gridDisplayMode = mode if mode in ('pipe', 'plain', 'table') else 'pipe'
+        self.panel.Refresh()
+
+    def SetGridDefaultLabel(self, label):
+        """Imposta l'etichetta predefinita per i blocchi {start_of_grid} senza label.
+
+        Forza immediatamente il ridisegno del pannello anteprima.
+        """
+        self.renderer.gridDefaultLabel = label if label and label.strip() else None
+        self.panel.Refresh()
+
+    def SetGridSizeDir(self, sizedir):
+        """Imposta la direzione di applicazione di size=N per i blocchi {start_of_grid}.
+
+        Valori: 'both' | 'horizontal' | 'vertical'
+        Forza immediatamente il ridisegno del pannello anteprima.
+        """
+        self.renderer.gridSizeDir = sizedir if sizedir in ('both', 'horizontal', 'vertical') else 'both'
+        self.panel.Refresh()
+
     def SetTimeDisplay(self, show):
         self.renderer.timeDisplay = show
 

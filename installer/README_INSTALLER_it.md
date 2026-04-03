@@ -2,8 +2,9 @@
 
 Per compilare il programma di installazione Windows è necessario scaricare:
 
-- I binari Windows x64 di `uv`, ad esempio [uv-x86\_64-pc-windows-msvc.zip](https://github.com/astral-sh/uv/releases/download/0.9.21/uv-x86_64-pc-windows-msvc.zip)
+- I binari Windows x64 di `uv`, ad esempio [Releases · astral-sh/uv 64Bit for Windows](https://github.com/astral-sh/uv/releases))
 - Il [compilatore NSIS](https://nsis.sourceforge.io/Download)
+- [INECT plug-in - NSIS x86-unicode](https://nsis.sourceforge.io/Inetc_plug-in)
 
 Estrarre il contenuto dello zip di `uv` in questa cartella (è sufficiente `uv.exe`).
 Avviare poi il compilatore NSIS e compilare lo script `songpress++-setup.nsi`.
@@ -35,7 +36,7 @@ installer/
 ├── uv.exe
 ├── license.txt
 └── plugins/
-    └── INetC.dll      ← dallo zip di INetC, cartella Plugins\x86-unicode\
+    └── INetC.dll      ← dallo zip di INetC, cartella Plugins\amd64-unicode\
 ```
 
 Percorso di installazione: `%LOCALAPPDATA%\Songpress-local\bin\songpress.exe`

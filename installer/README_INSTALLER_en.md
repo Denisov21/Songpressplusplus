@@ -35,7 +35,7 @@ installer/
 ├── uv.exe
 ├── license.txt
 └── plugins/
-    └── INetC.dll      ← from the INetC zip, folder Plugins\x86-unicode\
+    └── INetC.dll      ← from the INetC zip, folder Plugins\amd64-unicode\
 ```
 
 Install path: `%LOCALAPPDATA%\Songpress-local\bin\songpress.exe`

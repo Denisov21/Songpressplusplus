@@ -69,6 +69,32 @@ class PreferencesDialog(wx.Dialog):
         bSizerSelColour.Add(self.selColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
         grpEditor.Add(bSizerSelColour, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
 
+        # Caption Editor colour row
+        bSizerCapEditor = wx.BoxSizer(wx.HORIZONTAL)
+        self.labelCapEditor = wx.StaticText(self.general, wx.ID_ANY, _(u"Editor caption colour"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelCapEditor.Wrap(-1)
+        bSizerCapEditor.Add(self.labelCapEditor, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.capEditorHexCtrl = wx.TextCtrl(self.general, wx.ID_ANY, u"#4682C8", wx.DefaultPosition, wx.Size(80, -1), 0)
+        bSizerCapEditor.Add(self.capEditorHexCtrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.capEditorBtn = wx.Button(self.general, wx.ID_ANY, _(u"Pick…"), wx.DefaultPosition, wx.Size(60, -1), 0)
+        bSizerCapEditor.Add(self.capEditorBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.capEditorSwatch = wx.Panel(self.general, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
+        bSizerCapEditor.Add(self.capEditorSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
+        grpEditor.Add(bSizerCapEditor, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
+        # Caption Preview colour row
+        bSizerCapPreview = wx.BoxSizer(wx.HORIZONTAL)
+        self.labelCapPreview = wx.StaticText(self.general, wx.ID_ANY, _(u"Preview caption colour"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelCapPreview.Wrap(-1)
+        bSizerCapPreview.Add(self.labelCapPreview, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.capPreviewHexCtrl = wx.TextCtrl(self.general, wx.ID_ANY, u"#329B82", wx.DefaultPosition, wx.Size(80, -1), 0)
+        bSizerCapPreview.Add(self.capPreviewHexCtrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.capPreviewBtn = wx.Button(self.general, wx.ID_ANY, _(u"Pick…"), wx.DefaultPosition, wx.Size(60, -1), 0)
+        bSizerCapPreview.Add(self.capPreviewBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.capPreviewSwatch = wx.Panel(self.general, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
+        bSizerCapPreview.Add(self.capPreviewSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
+        grpEditor.Add(bSizerCapPreview, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
         # Preview
         bSizer13 = wx.BoxSizer(wx.HORIZONTAL)
         self.m_staticText9 = wx.StaticText(self.general, wx.ID_ANY, _(u"Preview"), wx.DefaultPosition, wx.DefaultSize, 0)
@@ -224,6 +250,152 @@ class PreferencesDialog(wx.Dialog):
         grpChordsTime.Add(bSizerTempoIcon, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
 
         bSizerFormat.Add(grpChordsTime, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
+        # ── Gruppo: Griglia accordi ──────────────────────────────────
+        grpGrid = wx.StaticBoxSizer(
+            wx.StaticBox(self.formatPanel, wx.ID_ANY, _(u"Chord grid ({start_of_grid}.{end_of_grid})")),
+            wx.VERTICAL
+        )
+
+        lbl = wx.StaticText(self.formatPanel, wx.ID_ANY,
+            _(u"Display mode for {start_of_grid} blocks:"))
+        grpGrid.Add(lbl, 0, wx.LEFT | wx.TOP | wx.RIGHT, 5)
+
+        self.gridModePipe = wx.RadioButton(
+            self.formatPanel, wx.ID_ANY,
+            _(u"Pipe table  —  | C   | G   | Am  | F   |"),
+            style=wx.RB_GROUP
+        )
+        self.gridModePipe.SetToolTip(
+            _(u"Each bar is separated by | characters. The raw text in the source "
+              u"must already contain | delimiters.")
+        )
+        grpGrid.Add(self.gridModePipe, 0, wx.ALL, 4)
+
+        self.gridModePlain = wx.RadioButton(
+            self.formatPanel, wx.ID_ANY,
+            _(u"Plain spacing  —  C   G   Am  F")
+        )
+        self.gridModePlain.SetToolTip(
+            _(u"Chords are rendered spaced out without pipe separators.")
+        )
+        grpGrid.Add(self.gridModePlain, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 4)
+
+        self.gridModeTable = wx.RadioButton(
+            self.formatPanel, wx.ID_ANY,
+            _(u"Table  —  cells with borders")
+        )
+        self.gridModeTable.SetToolTip(
+            _(u"Each bar is rendered as a cell with a visible border, "
+              u"like a grid table.")
+        )
+        grpGrid.Add(self.gridModeTable, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 4)
+
+        # ── Etichetta predefinita ────────────────────────────────────
+        szLbl = wx.BoxSizer(wx.HORIZONTAL)
+        lblDefault = wx.StaticText(
+            self.formatPanel, wx.ID_ANY,
+            _(u"Default label (used when {start_of_grid} has no label):")
+        )
+        szLbl.Add(lblDefault, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        self.gridDefaultLabelCtrl = wx.TextCtrl(
+            self.formatPanel, wx.ID_ANY,
+            value=_(u"Grid"),
+            size=(160, -1)
+        )
+        self.gridDefaultLabelCtrl.SetToolTip(
+            _(u"This text is shown as the section label when {start_of_grid} "
+              u"is used without an explicit label argument.\n"
+              u"Example: {start_of_grid: label} overrides this value.")
+        )
+        szLbl.Add(self.gridDefaultLabelCtrl, 0, wx.ALIGN_CENTER_VERTICAL)
+        grpGrid.Add(szLbl, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.TOP, 5)
+
+        self.gridSpaceAsPipeCB = wx.CheckBox(
+            self.formatPanel, wx.ID_ANY,
+            _(u"Space bar inserts | separator (pipe mode)")
+        )
+        self.gridSpaceAsPipeCB.SetToolTip(
+            _(u"When enabled, pressing the space bar inside a {start_of_grid} block\n"
+              u"inserts a | pipe separator, shifting the current cell to the right.\n"
+              u"Disable this to type spaces normally inside grid blocks.")
+        )
+        grpGrid.Add(self.gridSpaceAsPipeCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
+        # ── Direzione di size=N ──────────────────────────────────────
+        szSizeDir = wx.BoxSizer(wx.HORIZONTAL)
+        lblSizeDir = wx.StaticText(self.formatPanel, wx.ID_ANY,
+            _(u"size=N affects:"))
+        szSizeDir.Add(lblSizeDir, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        self.gridSizeDirBoth = wx.RadioButton(
+            self.formatPanel, wx.ID_ANY,
+            _(u"Width and height"),
+            style=wx.RB_GROUP
+        )
+        self.gridSizeDirBoth.SetToolTip(
+            _(u"size=N multiplies both horizontal and vertical cell padding.")
+        )
+        self.gridSizeDirH = wx.RadioButton(
+            self.formatPanel, wx.ID_ANY,
+            _(u"Width only")
+        )
+        self.gridSizeDirH.SetToolTip(
+            _(u"size=N multiplies only horizontal cell padding; "
+              u"vertical padding stays at its base value.")
+        )
+        self.gridSizeDirV = wx.RadioButton(
+            self.formatPanel, wx.ID_ANY,
+            _(u"Height only")
+        )
+        self.gridSizeDirV.SetToolTip(
+            _(u"size=N multiplies only vertical cell padding; "
+              u"horizontal padding stays at its base value.")
+        )
+        szSizeDir.Add(self.gridSizeDirBoth, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        szSizeDir.Add(self.gridSizeDirH,    0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        szSizeDir.Add(self.gridSizeDirV,    0, wx.ALIGN_CENTER_VERTICAL)
+        grpGrid.Add(szSizeDir, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
+        bSizerFormat.Add(grpGrid, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
+        # --- Gruppo: inserimento simbolo musicale ---
+        grpSymbol = wx.StaticBoxSizer(
+            wx.StaticBox(self.formatPanel, wx.ID_ANY, _(u"Musical symbol insertion")),
+            wx.VERTICAL,
+        )
+        szSymbol = wx.BoxSizer(wx.HORIZONTAL)
+        self.symbolScaleCB = wx.CheckBox(
+            self.formatPanel, wx.ID_ANY,
+            _(u"Custom size when inserting musical symbols (pt):"),
+        )
+        self.symbolScaleCB.SetToolTip(
+            _(u"When enabled, inserted musical symbols are wrapped with\n"
+              u"{textsize:N}...{textsize:} to apply the chosen point size.")
+        )
+        self.symbolSizeSpin = wx.SpinCtrl(
+            self.formatPanel, wx.ID_ANY,
+            min=6, max=144, initial=24,
+            style=wx.SP_ARROW_KEYS,
+        )
+        self.symbolSizeSpin.SetMinSize(wx.Size(60, -1))
+        szSymbol.Add(self.symbolScaleCB, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        szSymbol.Add(self.symbolSizeSpin, 0, wx.ALIGN_CENTER_VERTICAL)
+        grpSymbol.Add(szSymbol, 0, wx.LEFT | wx.RIGHT | wx.TOP | wx.BOTTOM, 5)
+        self.symbolScaleCB.Bind(
+            wx.EVT_CHECKBOX,
+            lambda e: self.symbolSizeSpin.Enable(self.symbolScaleCB.GetValue()),
+        )
+        self.symbolInsertVerseCB = wx.CheckBox(
+            self.formatPanel, wx.ID_ANY,
+            _(u"Wrap symbol in a verse block (not counted)"),
+        )
+        self.symbolInsertVerseCB.SetToolTip(
+            _(u"When enabled, the inserted symbol is wrapped inside\n"
+              u"{start_verse}...{end_verse} so it is not counted\n"
+              u"in the verse numbering.")
+        )
+        grpSymbol.Add(self.symbolInsertVerseCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        bSizerFormat.Add(grpSymbol, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
         self.formatPanel.SetSizer(bSizerFormat)
         self.formatPanel.Layout()
@@ -467,6 +639,11 @@ class PreferencesDialog(wx.Dialog):
         self.selColourBtn.Bind(wx.EVT_BUTTON, self.OnSelColourPickColour)
         self.selColourHexCtrl.Bind(wx.EVT_TEXT, self.OnSelColourHexChanged)
 
+        self.capEditorBtn.Bind(wx.EVT_BUTTON, self.OnCapEditorPickColour)
+        self.capEditorHexCtrl.Bind(wx.EVT_TEXT, self.OnCapEditorHexChanged)
+        self.capPreviewBtn.Bind(wx.EVT_BUTTON, self.OnCapPreviewPickColour)
+        self.capPreviewHexCtrl.Bind(wx.EVT_TEXT, self.OnCapPreviewHexChanged)
+
         bSizer10.Add(self.notebook, 1, wx.EXPAND | wx.ALL, 5)
 
         # --- Barra bottoni con pin button ---
@@ -524,6 +701,18 @@ class PreferencesDialog(wx.Dialog):
         event.Skip()
 
     def OnSelColourPickColour(self, event):
+        event.Skip()
+
+    def OnCapEditorHexChanged(self, event):
+        event.Skip()
+
+    def OnCapEditorPickColour(self, event):
+        event.Skip()
+
+    def OnCapPreviewHexChanged(self, event):
+        event.Skip()
+
+    def OnCapPreviewPickColour(self, event):
         event.Skip()
 
     def OnClearRecentFiles(self, event):

@@ -46,6 +46,7 @@ from . import i18n
 from .utils import temp_dir, undo_action
 from .SyntaxChecker import check as syntax_check
 from .SyntaxCheckerDialog import SyntaxCheckerDialog, EVT_SYNTAX_GOTO
+from .MusicalSymbolDialog import MusicalSymbolDialog
 
 _ = wx.GetTranslation
 
@@ -566,6 +567,9 @@ class SongpressPrintout(wx.Printout):
         r.timeDisplay = getattr(self.frame_obj.pref, 'timeDisplay', True)
         r.keyDisplay = getattr(self.frame_obj.pref, 'keyDisplay', True)
         r.tempoIconSize = getattr(self.frame_obj.pref, 'tempoIconSize', 24)
+        r.gridDisplayMode = getattr(self.frame_obj.pref, 'gridDisplayMode', 'pipe')
+        r.gridDefaultLabel = getattr(self.frame_obj.pref, 'gridDefaultLabel', None)
+        r.gridSizeDir = getattr(self.frame_obj.pref, 'gridSizeDir', 'both')
         r.columns = getattr(self.frame_obj, '_columns_per_page', 1)
         r.columnHeight = getattr(self, '_col_h_px', 0)
         return r
@@ -971,12 +975,85 @@ class SongpressFrame(SDIMainFrame):
         self.previewCanvas = PreviewCanvas(self.frame, self.pref.format, self.pref.notations, self.pref.decorator)
         # Registra la callback doppio-click: naviga alla riga sorgente nell'editor
         self.previewCanvas.SetClickCallback(self._OnPreviewClick)
-        self.AddMainPane(self.text)
+        self._mgr.AddPane(
+            self.text,
+            aui.AuiPaneInfo()
+                .Center()
+                .Name('_main')
+                .Caption(_('Editor'))
+                .CaptionVisible(True)
+                .CloseButton(False)
+                .MaximizeButton(False)
+                .Floatable(False)
+                .Movable(False)
+                .PaneBorder(False)
+        )
         _preview_min = wx.Size(370, 520) if getattr(self.pref, 'previewMinSize', True) else wx.Size(-1, -1)
         self.AddPane(self.previewCanvas.main_panel,
                      aui.AuiPaneInfo().Right().BestSize(370, 520).MinSize(_preview_min),
                      _('Songpress++ Preview'), 'preview')
         self.previewCanvas.main_panel.Bind(wx.adv.EVT_HYPERLINK, self.OnCopyAsImage, self.previewCanvas.link)
+
+        # ── Caption bar personalizzata per Editor e Anteprima ──────────
+        class _SongpressDockArt(aui.AuiDefaultDockArt):
+            """Colora la caption bar in base al nome del pannello:
+               - '_main'   (Editor)    → colore pref.captionEditorActiveHex
+               - 'preview' (Anteprima) → colore pref.captionPreviewActiveHex
+            I colori attivo/inattivo sono calcolati automaticamente dal colore base.
+            """
+
+            def __init__(self, pref):
+                super().__init__()
+                self._pref = pref
+
+            @staticmethod
+            def _hex_to_colour(h, fallback):
+                try:
+                    h = h.strip().lstrip('#')
+                    if len(h) == 6:
+                        return wx.Colour(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+                except Exception:
+                    pass
+                return fallback
+
+            @staticmethod
+            def _darken(c, f=0.75):
+                return wx.Colour(int(c.Red()*f), int(c.Green()*f), int(c.Blue()*f))
+
+            @staticmethod
+            def _lighten(c, f=1.5):
+                return wx.Colour(min(255, int(c.Red()*f)), min(255, int(c.Green()*f)), min(255, int(c.Blue()*f)))
+
+            def DrawCaption(self, dc, window, text, rect, pane):
+                name = pane.name if pane else ''
+                active = bool(pane and pane.HasFlag(pane.optionActive))
+                if name == '_main':
+                    base = self._hex_to_colour(
+                        getattr(self._pref, 'captionEditorActiveHex', '#4682C8'),
+                        wx.Colour(70, 130, 200)
+                    )
+                elif name == 'preview':
+                    base = self._hex_to_colour(
+                        getattr(self._pref, 'captionPreviewActiveHex', '#329B82'),
+                        wx.Colour(50, 155, 130)
+                    )
+                else:
+                    super().DrawCaption(dc, window, text, rect, pane)
+                    return
+                if active:
+                    c1, c2 = base, self._darken(base)
+                else:
+                    c1, c2 = self._lighten(base), base
+                dc.GradientFillLinear(rect, c1, c2, wx.SOUTH)
+                dc.SetTextForeground(wx.WHITE if active else wx.Colour(40, 40, 40))
+                dc.SetFont(self._caption_font)
+                w, h = dc.GetTextExtent(text)
+                dc.DrawText(text, rect.x + 4, rect.y + (rect.height - h) // 2)
+
+        self._dockArt = _SongpressDockArt(self.pref)
+        self._mgr.SetArtProvider(self._dockArt)
+        # ───────────────────────────────────────────────────────────────
+
         self.mainToolBar = aui.AuiToolBar(self.frame, wx.ID_ANY, wx.DefaultPosition, agwStyle=aui.AUI_TB_PLAIN_BACKGROUND)
         self.mainToolBar.SetToolBitmapSize(wx.Size(16, 16))
         self.AddTool(self.mainToolBar, 'new', 'img/new.png', _("New"), _("Create a new song"))
@@ -1120,8 +1197,15 @@ class SongpressFrame(SDIMainFrame):
         self.text.SetBgColour(getattr(self.pref, 'editorBgHex', '#FFFFFF'))
         self.text.SetSelColour(getattr(self.pref, 'selColourHex', '#3399FF'))
         self.text.ApplyMultiCursor(getattr(self.pref, 'multiCursor', False))
+        # Se la perspective è stata salvata prima dell'introduzione della barra
+        # "Editor" sul pannello centrale, va resettata una volta sola.
+        self.config.SetPath('/SDIMainFrame')
+        if not self.config.ReadBool('EditorCaptionPane', False):
+            self.config.DeleteEntry('Perspective', False)
+            self.config.WriteBool('EditorCaptionPane', True)
         self.FinalizePaneInitialization()
         # Reassign caption value to override caption saved in preferences (it could be another language)
+        self._mgr.GetPane('_main').caption = _('Editor')
         self._mgr.GetPane('preview').caption = _('Songpress++ Preview')
         self._mgr.GetPane('standard').caption = _('Standard')
         self._mgr.GetPane('format').caption = _('Format')
@@ -1288,6 +1372,12 @@ class SongpressFrame(SDIMainFrame):
             self.config.SetPath('/CustomColoursSelColour')
             for i, hex_str in enumerate(getattr(self.pref, 'customColoursSelColour', [])[:16]):
                 self.config.Write('colour%d' % i, hex_str)
+            self.config.SetPath('/CustomColoursCapEditor')
+            for i, hex_str in enumerate(getattr(self.pref, 'customColoursCapEditor', [])[:16]):
+                self.config.Write('colour%d' % i, hex_str)
+            self.config.SetPath('/CustomColoursCapPreview')
+            for i, hex_str in enumerate(getattr(self.pref, 'customColoursCapPreview', [])[:16]):
+                self.config.Write('colour%d' % i, hex_str)
         except Exception:
             pass
 
@@ -1314,6 +1404,20 @@ class SongpressFrame(SDIMainFrame):
             ]
         except Exception:
             self.pref.customColoursSelColour = ['#FFFFFF'] * 16
+        try:
+            self.config.SetPath('/CustomColoursCapEditor')
+            self.pref.customColoursCapEditor = [
+                self.config.Read('colour%d' % i) or '#FFFFFF' for i in range(16)
+            ]
+        except Exception:
+            self.pref.customColoursCapEditor = ['#FFFFFF'] * 16
+        try:
+            self.config.SetPath('/CustomColoursCapPreview')
+            self.pref.customColoursCapPreview = [
+                self.config.Read('colour%d' % i) or '#FFFFFF' for i in range(16)
+            ]
+        except Exception:
+            self.pref.customColoursCapPreview = ['#FFFFFF'] * 16
 
     def SaveWindowGeometry(self):
         """Save window size, position and maximized state to config."""
@@ -1453,6 +1557,7 @@ class SongpressFrame(SDIMainFrame):
         Bind(self.OnInsertChorusBlock, 'insertChorusBlock')
         Bind(self.OnInsertChordBlock, 'insertChordBlock')
         Bind(self.OnInsertBridge, 'insertBridge')
+        Bind(self.OnInsertGrid, 'insertGrid')
         Bind(self.OnInsertTempo, 'insertTempo')
         Bind(self.OnInsertTime, 'insertTime')
         Bind(self.OnInsertKey, 'insertKey')
@@ -1466,6 +1571,7 @@ class SongpressFrame(SDIMainFrame):
         Bind(self.OnInsertKlavierChord, 'insertTaste')
         Bind(self.OnInsertDefine, 'insertDefine')
         Bind(self.OnInsertImage, 'insertImage')
+        Bind(self.OnInsertMusicalSymbol, 'insertMusicalSymbol')
         # --- File => Importa da PDF ---
         Bind(self.OnImportFromPdf, 'importFromPdf')
         # --- Verifica sintattica ---
@@ -1688,6 +1794,20 @@ class SongpressFrame(SDIMainFrame):
         else:
             self.InsertWithCaret("{start_bridge}\n|\n{end_bridge}\n")
 
+    def OnInsertGrid(self, evt):
+        """Insert a grid block: {start_of_grid} ... {end_of_grid}"""
+        default = getattr(self.pref, 'gridDefaultLabel', _("Grid"))
+        label = wx.GetTextFromUser(
+            _("Enter a label for the grid, or press Cancel to omit the label."),
+            _("Grid label"),
+            default,
+            self.frame,
+        )
+        if label == default or not label.strip():
+            self.InsertWithCaret("{start_of_grid}\n| | | |\n{end_of_grid}\n")
+        else:
+            self.InsertWithCaret("{start_of_grid:%s}\n| | | |\n{end_of_grid}\n" % label)
+
     def OnInsertTime(self, evt):
         """Inserisce la direttiva {time: <numeratore>/<denominatore>}."""
         d = wx.Dialog(self.frame, title=_("Time signature"))
@@ -1870,6 +1990,27 @@ class SongpressFrame(SDIMainFrame):
     def OnInsertYear(self, evt):
         """Inserisce la direttiva {year: <anno>}."""
         self._InsertSimpleDirective('year', _(u"Enter the year (e.g. 1975):"), u"")
+
+    def OnInsertMusicalSymbol(self, evt):
+        """Apre la Symbol Map musicale e inserisce il carattere scelto nel cursore."""
+        scale_enabled  = getattr(self.pref, 'symbolScaleEnabled', False)
+        font_size      = getattr(self.pref, 'symbolFontSize', 24)
+        insert_verse   = getattr(self.pref, 'symbolInsertVerse', False)
+
+        dlg = MusicalSymbolDialog(self.frame,
+                                  scale_enabled=scale_enabled,
+                                  font_size=font_size,
+                                  insert_verse=insert_verse)
+        if dlg.ShowModal() == wx.ID_OK:
+            sym = dlg.GetSymbol()
+            if sym:
+                self.InsertWithCaret(sym)
+
+        # Aggiorna pref in memoria (senza salvare su disco: ci pensa pref.Save() in OnOK)
+        self.pref.symbolScaleEnabled = dlg.GetScaleEnabled()
+        self.pref.symbolFontSize     = dlg.GetFontSize()
+        self.pref.symbolInsertVerse  = dlg.GetInsertVerse()
+        dlg.Destroy()
 
     def OnAbout(self, evt):
         """Mostra la finestra About con link cliccabili."""
@@ -2292,7 +2433,9 @@ class SongpressFrame(SDIMainFrame):
         r.timeDisplay = getattr(self.pref, 'timeDisplay', True)
         r.keyDisplay = getattr(self.pref, 'keyDisplay', True)
         r.tempoIconSize = getattr(self.pref, 'tempoIconSize', 24)
-        # Propaga il layout a colonne: usa _columns_per_page se >= 2,
+        r.gridDisplayMode = getattr(self.pref, 'gridDisplayMode', 'pipe')
+        r.gridDefaultLabel = getattr(self.pref, 'gridDefaultLabel', None)
+        r.gridSizeDir = getattr(self.pref, 'gridSizeDir', 'both')
         # oppure rileva automaticamente {column_break} nel testo (come fa PreviewCanvas).
         import re
         song_text = self._strip_hash_commands(self.text.GetText())
@@ -2537,6 +2680,19 @@ class SongpressFrame(SDIMainFrame):
             evt.AltDown(),
             evt.ControlDown(),
         )
+
+        # Dentro {start_of_grid}: Alt+Shift+← / → spostano la cella del grid
+        if tp == (314, True, True, False):
+            if self._GetGridContext() is not None:
+                self._MoveGridCellLeft()
+                evt.Skip(False)
+                return
+        if tp == (316, True, True, False):
+            if self._GetGridContext() is not None:
+                self._MoveGridCellRight()
+                evt.Skip(False)
+                return
+
         if (method := map.get(tp)) is not None:
             method()
             evt.Skip(False)
@@ -3042,6 +3198,89 @@ class SongpressFrame(SDIMainFrame):
 
     def OnSelectPreviousChord(self, evt):
         self.text.SelectPreviousChord()
+
+    def _GetGridContext(self):
+        """Se il cursore è dentro un blocco {start_of_grid}...{end_of_grid},
+        restituisce (line_num, line_text, col_in_line). Altrimenti None.
+        """
+        import re
+        pos = self.text.GetCurrentPos()
+        cur_line = self.text.LineFromPosition(pos)
+        SOG = re.compile(r'^\s*\{(?:start_of_grid|sog|grid)[^}]*\}', re.IGNORECASE)
+        EOG = re.compile(r'^\s*\{(?:end_of_grid|eog)[^}]*\}',        re.IGNORECASE)
+        for ln in range(cur_line - 1, -1, -1):
+            txt = self.text.GetLine(ln).rstrip('\r\n')
+            if EOG.match(txt):
+                return None   # siamo dopo una chiusura: non nel grid
+            if SOG.match(txt):
+                line_txt = self.text.GetLine(cur_line).rstrip('\r\n')
+                col = pos - self.text.PositionFromLine(cur_line)
+                return (cur_line, line_txt, col)
+        return None
+
+    def _MoveGridCellRight(self):
+        """Dentro {start_of_grid}: gestisce la barra spaziatrice in modalità pipe.
+
+        - Nessun pipe sulla riga: inserisce '| ' davanti al testo corrente
+          e posiziona il cursore dopo il pipe (pronto a digitare il primo accordo).
+        - Pipe già presente a sinistra del cursore: inserisce '  |' prima della
+          cella corrente (sposta l'accordo a destra) e posiziona il cursore
+          nella nuova cella vuota appena creata.
+        """
+        ctx = self._GetGridContext()
+        if ctx is None:
+            return False
+        cur_line, line_txt, col = ctx
+        line_start = self.text.PositionFromLine(cur_line)
+
+        pipe_pos = line_txt.rfind('|', 0, col)
+
+        if pipe_pos == -1:
+            # Nessun pipe sulla riga: inizia la struttura pipe all'inizio della riga.
+            # Inserisce '| ' prima del testo esistente, cursore subito dopo il pipe.
+            with undo_action(self.text):
+                self.text.SetSelection(line_start, line_start)
+                self.text.ReplaceSelection('| ')
+            new_pos = line_start + 2   # dopo '| ', pronto a digitare l'accordo
+            self.text.SetSelection(new_pos, new_pos)
+        else:
+            # Pipe già presente: inserisce '  |' dopo il pipe sinistro,
+            # spostando la cella corrente di 3 posizioni a destra.
+            insert_at = line_start + pipe_pos + 1
+            with undo_action(self.text):
+                self.text.SetSelection(insert_at, insert_at)
+                self.text.ReplaceSelection('  |')
+            # Cursore nella nuova cella vuota (un carattere dopo il pipe originale)
+            new_pos = insert_at + 1
+            self.text.SetSelection(new_pos, new_pos)
+
+        return True
+
+    def _MoveGridCellLeft(self):
+        """Dentro {start_of_grid}: rimuove la cella vuota precedente a quella corrente,
+        spostando l'accordo di una posizione verso sinistra.
+        Stesso effetto visivo di MoveChordLeft in {start_chord}.
+        """
+        ctx = self._GetGridContext()
+        if ctx is None:
+            return False
+        cur_line, line_txt, col = ctx
+        pipe_pos = line_txt.rfind('|', 0, col)
+        if pipe_pos == -1:
+            return False
+        prev_pipe = line_txt.rfind('|', 0, pipe_pos)
+        if prev_pipe == -1:
+            return False
+        between = line_txt[prev_pipe + 1: pipe_pos]
+        if between.strip() != '':
+            return False   # cella precedente non vuota: impossibile spostare
+        line_start = self.text.PositionFromLine(cur_line)
+        remove_start = line_start + prev_pipe + 1
+        remove_end   = line_start + pipe_pos + 1
+        with undo_action(self.text):
+            self.text.SetSelection(remove_start, remove_end)
+            self.text.ReplaceSelection('')
+        return True
 
     def MoveChordRight(self, position=None):
         """
@@ -4095,12 +4334,15 @@ class SongpressFrame(SDIMainFrame):
             self._SaveCustomColours()
             self.previewCanvas.SetTempoDisplay(getattr(self.pref, 'tempoDisplay', 0))
             self.previewCanvas.SetTempoIconSize(getattr(self.pref, 'tempoIconSize', 24))
-            self.previewCanvas.SetShowPageIndicator(getattr(self.pref, 'showPageIndicator', True))
-            self.previewCanvas.SetGreyBackground(getattr(self.pref, 'greyBackground', True))
+            self.previewCanvas.SetGridDisplayMode(getattr(self.pref, 'gridDisplayMode', 'pipe'))
+            self.previewCanvas.SetGridDefaultLabel(getattr(self.pref, 'gridDefaultLabel', None))
+            self.previewCanvas.SetGridSizeDir(getattr(self.pref, 'gridSizeDir', 'both'))
             self.previewCanvas.SetPageMarginsMm(self._margin_top, self._margin_bottom)
             self.previewCanvas.Refresh(self._get_display_text())
             # Aggiorna il MinSize del pane AUI in base alla preferenza corrente
             self._ApplyPreviewMinSize()
+            # Aggiorna i colori delle caption bar con i nuovi valori da pref
+            self._dockArt._pref = self.pref
             self._mgr.Update()
 
         f = MyPreferencesDialog(self.frame, self.pref, easyChords, on_apply=_apply_prefs,
@@ -4425,8 +4667,9 @@ class SongpressFrame(SDIMainFrame):
             self.previewCanvas.SetTimeDisplay(getattr(self.pref, 'timeDisplay', True))
             self.previewCanvas.SetKeyDisplay(getattr(self.pref, 'keyDisplay', True))
             self.previewCanvas.SetTempoIconSize(getattr(self.pref, 'tempoIconSize', 24))
-            self.previewCanvas.SetShowPageBreakLines(getattr(self, '_showPageBreakLines', True))
-            self.previewCanvas.SetShowColumnBreakLines(getattr(self, '_showColumnBreakLines', True))
+            self.previewCanvas.SetGridDisplayMode(getattr(self.pref, 'gridDisplayMode', 'pipe'))
+            self.previewCanvas.SetGridDefaultLabel(getattr(self.pref, 'gridDefaultLabel', None))
+            self.previewCanvas.SetGridSizeDir(getattr(self.pref, 'gridSizeDir', 'both'))
             self.previewCanvas.SetShowPageIndicator(getattr(self.pref, 'showPageIndicator', True))
             self.previewCanvas.SetGreyBackground(getattr(self.pref, 'greyBackground', True))
             _pw, _ph = self._GetPaperSizeMm()

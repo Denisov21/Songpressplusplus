@@ -941,3 +941,7 @@ msgstr "Ripristina"
 #: SongpressFrame.py guide dialog fullscreen button tooltip
 msgid "Toggle full screen"
 msgstr "Attiva/disattiva schermo intero"
+
+#: SongpressFrame.py editor pane caption
+msgid "Editor"
+msgstr "Editor"

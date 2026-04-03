@@ -14,6 +14,15 @@ from .SongBoxes import *
 from .KlavierRenderer import draw_klavier_section
 from .GuitarDiagramRenderer import draw_guitar_diagram_section
 from .Globals import glb as _glb
+from .MusicalSymbolDialog import get_smp_faces as _get_smp_faces
+
+
+def _has_smp(s: str) -> bool:
+    """True se la stringa contiene almeno un carattere SMP (codepoint > U+FFFF).
+    I simboli musicali Unicode (U+1D100-U+1D1FF) cadono in questo range e
+    non vengono resi da GDI classico: servono GDI+ / GraphicsContext.
+    """
+    return any(ord(c) > 0xFFFF for c in s)
 
 
 class SongDecorator(object):
@@ -80,6 +89,9 @@ class SongDecorator(object):
             self.dc.SetFont(t.font)
             text = t.text
             t.w, t.h = self.dc.GetTextExtent(text)
+            # GDI restituisce 0x0 per caratteri SMP: rimisura con GDI+ se necessario
+            if t.w == 0 and _has_smp(text):
+                t.w, t.h = self._GetTextExtentSMP(text)
             if getattr(t, 'is_time_sig', False):
                 # Per la frazione musicale: larghezza = max(num, den), altezza = 2 * cifra
                 parts = text.split('/')
@@ -169,6 +181,18 @@ class SongDecorator(object):
             y += l.GetTotalHeight()
             block.RelocateBox(l)
         self.SetMarginBlock(block)
+        # ── Blocco grid in modalità table: ridimensiona all'altezza reale ──
+        if getattr(block, 'is_grid', False):
+            grid_rows = getattr(block, 'grid_rows', [])
+            if grid_rows and self.dc is not None:
+                self.dc.SetFont(block.format.wxFont)
+                _, char_h = self.dc.GetTextExtent('Mg')
+                pad_y = 4
+                cell_h = char_h + pad_y * 2
+                n_rows = len(grid_rows)
+                table_h = n_rows * (cell_h + 1)
+                if table_h > block.h:
+                    block.h = table_h
 
     def LayoutComposeSong(self, song):
         columns = getattr(song, 'columns', 1)
@@ -266,16 +290,82 @@ class SongDecorator(object):
         imgbox._final_w = imgbox.w
         imgbox._final_h = imgbox.h
 
+    def LayoutComposeGrid(self, gridbox):
+        """Calcola w, h, cell_w, cell_h di un SongGridBox."""
+        if not gridbox.rows or gridbox.font is None:
+            gridbox.w = 0
+            gridbox.h = 0
+            return
+        # Misura il testo delle celle usando il DC corrente
+        old_font = self.dc.GetFont()
+        self.dc.SetFont(gridbox.font)
+        # Larghezza cella = max del testo più lungo + padding
+        _size    = max(1, getattr(gridbox, 'size', 1))
+        _sizeDir = getattr(gridbox, 'sizeDir', 'both')
+        _sx = _size if _sizeDir in ('both', 'horizontal') else 1.0
+        _sy = _size if _sizeDir in ('both', 'vertical')   else 1.0
+        pad_x = 8 * _sx   # px padding orizzontale per lato
+        pad_y = 4 * _sy   # px padding verticale per lato
+        max_text_w = 0
+        max_text_h = 0
+        for row in gridbox.rows:
+            for cell in row:
+                tw, th = self.dc.GetTextExtent(cell if cell else ' ')
+                max_text_w = max(max_text_w, tw)
+                max_text_h = max(max_text_h, th)
+        # Misura offset orizzontale e altezza etichetta — stessi parametri di StandardVerseNumbers
+        baseW, baseH = self.dc.GetTextExtent("0")
+        leftMargin    = 0.5
+        leftPadding   = 0.25
+        rightPadding  = 0.25
+        rightMargin   = 0.5
+        topPadding    = 0.1
+        bottomPadding = 0.1
+        # Offset x del testo della griglia = stessa posizione del testo nei blocchi normali
+        # (equivalente a block.marginLeft in SetMarginBlock per i verse)
+        text_x_offset = int(baseW * (leftMargin + leftPadding + rightMargin + rightPadding))
+        gridbox._text_x_offset = text_x_offset
+        label_h = 0
+        if gridbox.label:
+            _, lh = self.dc.GetTextExtent(gridbox.label)
+            label_h = int(lh + baseH * (topPadding + bottomPadding)) + 4  # gap sotto
+        gridbox._label_h = label_h
+        self.dc.SetFont(old_font)
+        cell_w   = int(max_text_w + pad_x * 2)
+        cell_h   = int(max_text_h + pad_y * 2)
+        spacer_h = cell_h // 2
+        col_count = max((len(row) for row in gridbox.rows), default=1)
+        row_top    = int(gridbox.chordTopSpacing) if gridbox.chordTopSpacing is not None else 0
+        row_bottom = int(gridbox.lineSpacing)     if gridbox.lineSpacing     is not None else 0
+        row_h      = cell_h + row_top + row_bottom
+        gridbox.cell_w   = cell_w
+        gridbox.cell_h   = cell_h
+        gridbox.row_h    = row_h
+        gridbox.row_top  = row_top
+        gridbox.spacer_h = spacer_h
+        gridbox.col_count = col_count
+        gridbox._pad_x   = int(pad_x)
+        gridbox._pad_y   = int(pad_y)
+        gridbox._label_h = label_h
+        gridbox.w = cell_w * col_count
+        # Altezza totale: etichetta + righe normali + spacer per righe vuote
+        total_h = label_h
+        for row in gridbox.rows:
+            total_h += spacer_h if not row else row_h
+        gridbox.h = total_h
     def LayoutCompose(self):
         # Postorder layout composing
         for block in self.s.boxes:
             if isinstance(block, SongImageBox):
                 self.LayoutComposeImage(block)
                 continue
+            if isinstance(block, SongGridBox):
+                self.LayoutComposeGrid(block)
+                continue
             for line in block.boxes:
                 self.LayoutComposeLine(line)
         for block in self.s.boxes:
-            if isinstance(block, SongImageBox):
+            if isinstance(block, (SongImageBox, SongGridBox)):
                 continue
             self.LayoutComposeBlock(block)
         self.LayoutComposeSong(self.s)
@@ -466,8 +556,85 @@ class SongDecorator(object):
             italic_font = wx.Font(f.GetPointSize(), f.GetFamily(), wx.FONTSTYLE_ITALIC,
                                   f.GetWeight(), f.GetUnderlined(), f.GetFaceName())
             self.dc.SetFont(italic_font)
-        self.dc.DrawText(text.text, int(tx + text.marginLeft), int(ty + text.marginTop))
+        # Caratteri SMP (U+10000+, es. blocco Musical Symbols U+1D100-U+1D1FF):
+        # GDI non fa font-fallback → switcha su GDI+ via GraphicsContext solo per loro.
+        if _has_smp(text.text):
+            self._DrawTextSMP(text.text, int(tx + text.marginLeft), int(ty + text.marginTop))
+        else:
+            self.dc.DrawText(text.text, int(tx + text.marginLeft), int(ty + text.marginTop))
         
+    # ------------------------------------------------------------------ #
+    # Supporto simboli Unicode SMP (U+10000+, es. Musical Symbols)       #
+    # GDI non ha font-fallback: per questi caratteri usiamo GDI+ con     #
+    # un font che ha copertura SMP (FreeSerif > Segoe UI Symbol).        #
+    # ------------------------------------------------------------------ #
+
+    def _smp_gc_font(self, gc, base_font, color):
+        """Crea un wx.GraphicsFont con copertura SMP a partire da base_font.
+        Itera su tutti i font caricati dalla cartella fonts/ (via get_smp_faces()),
+        più il font di sistema come ultimo fallback.
+        La dimensione viene scalata per pen_scale (zoom DC) perché GraphicsContext
+        non eredita SetUserScale del DC padre.
+        """
+        # pen_scale = fattore zoom del DC (es. 1.5 con zoom al 150%)
+        # Il GC ignora SetUserScale → moltiplichiamo la dimensione del font
+        scale = getattr(self, 'pen_scale', 1.0)
+        pt = max(1, round(base_font.GetPointSize() * scale))
+        # Lista dinamica: tutti i font caricati da fonts/ + font corrente come
+        # ultimo fallback (mostra rettangoli per glifi mancanti ma non crasha)
+        faces = list(_get_smp_faces()) + [base_font.GetFaceName()]
+        for face in faces:
+            if not face:
+                continue
+            candidate = wx.Font(
+                pt, wx.FONTFAMILY_DEFAULT,
+                wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL,
+                faceName=face,
+            )
+            if candidate.IsOk():
+                return gc.CreateFont(candidate, color)
+        return gc.CreateFont(base_font, color)
+
+    def _GetTextExtentSMP(self, s: str):
+        """Misura *s* con GDI+ usando un font con copertura SMP.
+        GDI restituisce 0x0 per caratteri SMP → rimisura con GraphicsContext.
+        Il risultato viene diviso per pen_scale per tornare in coordinate DC logiche.
+        """
+        scale = getattr(self, 'pen_scale', 1.0)
+        try:
+            gc = wx.GraphicsContext.Create(self.dc)
+            if gc is None:
+                return self.dc.GetTextExtent(s)
+            gc.SetFont(self._smp_gc_font(gc, self.dc.GetFont(), self.dc.GetTextForeground()))
+            w, h = gc.GetTextExtent(s)
+            if w < 1:
+                cw, ch = self.dc.GetTextExtent('M')
+                # dc.GetTextExtent tiene già conto di pen_scale; niente divisione
+                return cw * max(1, len(s)), ch
+            # gc misura in pixel fisici (senza scala DC) → dividiamo per scale
+            return int(w / scale), int(h / scale)
+        except Exception:
+            cw, ch = self.dc.GetTextExtent('M')
+            return cw * max(1, len(s)), ch
+
+    def _DrawTextSMP(self, s: str, x: int, y: int):
+        """Disegna *s* con GDI+ usando un font con copertura SMP (FreeSerif).
+        Chiamato solo quando *s* contiene caratteri U+10000+.
+        Le coordinate x, y sono in spazio DC (con scala); il GC non eredita
+        SetUserScale, quindi le moltiplichiamo per pen_scale prima di passarle al GC.
+        """
+        scale = getattr(self, 'pen_scale', 1.0)
+        try:
+            gc = wx.GraphicsContext.Create(self.dc)
+            if gc is None:
+                self.dc.DrawText(s, x, y)
+                return
+            gc.SetFont(self._smp_gc_font(gc, self.dc.GetFont(), self.dc.GetTextForeground()))
+            # Converti coordinate da spazio DC logico a pixel fisici
+            gc.DrawText(s, x * scale, y * scale)
+        except Exception:
+            self.dc.DrawText(s, x, y)
+
     def PostDrawText(self, text, tx, ty):
         # tx, ty: coordinates of top-left corner of drawable area
         if text.type == SongText.title:
@@ -492,7 +659,51 @@ class SongDecorator(object):
         
     def PostDrawBlock(self, block, bx, by):
         # bx, by: coordinates of top-left corner of drawable area
-        pass
+        # ── Tabella griglia accordi (modalità 'table') ────────────────
+        if not getattr(block, 'is_grid', False):
+            return
+        grid_rows = getattr(block, 'grid_rows', [])
+        if not grid_rows:
+            return
+        # Determina larghezza massima cella misurando il testo
+        self.dc.SetFont(block.format.wxFont)
+        pad_x = 8   # padding orizzontale interno cella (px)
+        pad_y = 4   # padding verticale interno cella (px)
+        _, char_h = self.dc.GetTextExtent('Mg')
+        # Calcola la larghezza massima tra tutte le celle di tutte le righe
+        max_cell_w = 0
+        for row in grid_rows:
+            for cell in row:
+                cw, _ = self.dc.GetTextExtent(cell)
+                max_cell_w = max(max_cell_w, cw)
+        cell_w = max_cell_w + pad_x * 2
+        cell_h = char_h + pad_y * 2
+
+        # Colore bordo tabella
+        border_pen = wx.Pen(wx.Colour(80, 80, 80), max(1, int(1 / self.pen_scale)))
+        fill_brush = wx.Brush(wx.Colour(240, 240, 255))  # sfondo cella: azzurro chiaro
+        self.dc.SetBrush(fill_brush)
+
+        # Posizione di partenza: inizio del contenuto del blocco
+        start_x = int(bx + block.marginLeft)
+        start_y = int(by + block.marginTop)
+
+        # Disegna riga per riga
+        for row_idx, row in enumerate(grid_rows):
+            row_y = start_y + row_idx * (cell_h + 1)
+            for col_idx, cell_text in enumerate(row):
+                cx = start_x + col_idx * (cell_w + 1)
+                cy = row_y
+                # Disegna la cella
+                self.dc.SetPen(border_pen)
+                self.dc.SetBrush(fill_brush)
+                self.dc.DrawRectangle(cx, cy, cell_w, cell_h)
+                # Testo centrato nella cella
+                tw, _ = self.dc.GetTextExtent(cell_text)
+                tx = cx + (cell_w - tw) // 2
+                ty = cy + pad_y
+                self.dc.SetTextForeground(block.format.color)
+                self.dc.DrawText(cell_text, tx, ty)
         
     def PostDrawSong(self, song):
         current_extra_h = 0
@@ -561,6 +772,13 @@ class SongDecorator(object):
                 if not self.s.drawWholeSong:
                     continue  # le immagini si disegnano solo in modalita' intera
                 self._DrawImageBox(block)
+                continue
+
+            # --- Gestione SongGridBox ---
+            if isinstance(block, SongGridBox):
+                if not self.s.drawWholeSong:
+                    continue
+                self._DrawGridBox(block)
                 continue
 
             block: SongBlock
@@ -643,6 +861,142 @@ class SongDecorator(object):
                 self.dc.DrawRectangle(bx, by, final_w, final_h)
         except Exception:
             pass
+
+    def _DrawGridBox(self, gridbox):
+        """Disegna un SongGridBox sul DC corrente.
+
+        Modalità:
+            'table' -- cella con bordi wx reali (DrawRectangle)
+            'pipe'  -- testo con separatori | allineati
+            'plain' -- testo spaziato senza separatori
+        """
+        if not gridbox.rows or gridbox.w == 0:
+            return
+
+        # bx del gridbox allineato al testo dei blocchi normali:
+        # i blocchi normali hanno marginLeft = (leftMargin+leftPadding+rightMargin+rightPadding)*baseW
+        # Il testo inizia a marginLeft + block.marginLeft.
+        # Per il gridbox usiamo lo stesso punto di partenza del testo (senza calcolare baseW qui
+        # perché non abbiamo ancora impostato il font) — usiamo gridbox._text_offset se disponibile,
+        # altrimenti marginLeft puro (verrà corretto da LayoutComposeGrid se necessario).
+        bx = int(self.s.marginLeft + getattr(gridbox, '_text_x_offset', 0) + gridbox.x)
+        label_h = getattr(gridbox, '_label_h', 0)
+        by = int(self.s.marginTop + gridbox.y) + label_h
+
+        mode = gridbox.display_mode
+        font = gridbox.font
+        if font is None:
+            return
+
+        old_font = self.dc.GetFont()
+
+        # ── Etichetta stile identico a StandardVerseNumbers (verse) ──
+        # Posizione, colori e dimensioni identici a PreDrawBlock per i verse
+        if self.drawLabels and gridbox.label:
+            self.dc.SetFont(font)
+            baseW, baseH = self.dc.GetTextExtent("0")
+            lw, lh = self.dc.GetTextExtent(gridbox.label)
+            # Stessi parametri di StandardVerseNumbers.Format
+            leftMargin    = 0.5
+            leftPadding   = 0.25
+            rightPadding  = 0.25
+            topPadding    = 0.1
+            bottomPadding = 0.1
+            # rx allineato come i blocchi normali:
+            # nei blocchi normali bx = marginLeft + block.x + block.marginLeft
+            # block.marginLeft include già leftMargin+leftPadding*baseW (da SetMarginBlock)
+            # Per il gridbox usiamo direttamente marginLeft come punto di riferimento
+            rx = int(self.s.marginLeft + leftMargin * baseW)
+            tx = rx + baseW * leftPadding
+            ty = int(self.s.marginTop + gridbox.y)
+            ry = int(ty - topPadding * baseH)
+            rw = int(lw + baseW * (leftPadding + rightPadding))
+            rh = int(lh + baseH * (topPadding + bottomPadding))
+            wxGrey  = wx.Colour(200, 200, 200)
+            wxBlack = wx.Colour(0, 0, 0)
+            # Step 1: fill sfondo grigio
+            self.dc.SetBrush(wx.Brush(wxGrey, wx.SOLID))
+            self.dc.SetPen(wx.TRANSPARENT_PEN)
+            self.dc.DrawRectangle(rx, ry, rw, rh)
+            # Step 2: bordo nero
+            pen_w = max(1, round(getattr(self, 'verseBoxWidth', 1) / self.pen_scale))
+            self.dc.SetPen(wx.Pen(wxBlack, pen_w))
+            self.dc.SetBrush(wx.TRANSPARENT_BRUSH)
+            self.dc.DrawRectangle(rx, ry, rw, rh)
+            # Step 3: testo nero
+            self.dc.SetTextForeground(wxBlack)
+            self.dc.SetBackgroundMode(wx.TRANSPARENT)
+            self.dc.DrawText(gridbox.label, int(tx), int(ty))
+            self.dc.SetTextForeground(wx.BLACK)
+
+        self.dc.SetFont(font)
+
+        cell_w  = gridbox.cell_w
+        cell_h  = gridbox.cell_h
+        row_h   = getattr(gridbox, 'row_h',  cell_h)   # cell_h + top + bottom spacing
+        row_top = getattr(gridbox, 'row_top', 0)        # offset y per chordTopSpacing
+        pad_x   = getattr(gridbox, '_pad_x', 6)
+        pad_y   = getattr(gridbox, '_pad_y', 3)
+
+        # Font e colore per il testo delle celle (accordi)
+        _chord_font  = getattr(gridbox, 'chord_font',  None) or font
+        _chord_color = getattr(gridbox, 'chord_color', None) or wx.Colour(255, 0, 0)
+
+        if mode == 'table':
+            pen = wx.Pen(wx.Colour(80, 80, 80), max(1, int(1 / self.pen_scale)))
+            self.dc.SetPen(pen)
+            self.dc.SetBrush(wx.TRANSPARENT_BRUSH)
+            spacer_h = getattr(gridbox, 'spacer_h', max(4, cell_h // 2))
+            cy = by
+            for row in gridbox.rows:
+                if not row:
+                    cy += spacer_h
+                    continue
+                for ci, cell in enumerate(row):
+                    cx = bx + ci * cell_w
+                    self.dc.SetFont(font)
+                    self.dc.SetTextForeground(wx.BLACK)
+                    self.dc.DrawRectangle(cx, cy + row_top, cell_w, cell_h)
+                    if cell:
+                        self.dc.SetFont(_chord_font)
+                        self.dc.SetTextForeground(_chord_color)
+                        tw, th = self.dc.GetTextExtent(cell)
+                        tx = cx + (cell_w - tw) // 2
+                        ty = cy + row_top + (cell_h - th) // 2
+                        self.dc.DrawText(cell, tx, ty)
+                cy += row_h
+
+        else:
+            spacer_h = getattr(gridbox, 'spacer_h', max(4, cell_h // 2))
+            cy = by
+            for row in gridbox.rows:
+                if not row:
+                    cy += spacer_h
+                    continue
+                for ci, cell in enumerate(row):
+                    cx = bx + ci * cell_w
+                    if mode == 'pipe':
+                        # Separatore | con font/colore normale
+                        self.dc.SetFont(font)
+                        self.dc.SetTextForeground(wx.BLACK)
+                        self.dc.DrawText('|', cx, cy + row_top + pad_y)
+                        if cell:
+                            self.dc.SetFont(_chord_font)
+                            self.dc.SetTextForeground(_chord_color)
+                            self.dc.DrawText(cell, cx + pad_x, cy + row_top + pad_y)
+                    else:  # plain
+                        if cell:
+                            self.dc.SetFont(_chord_font)
+                            self.dc.SetTextForeground(_chord_color)
+                            self.dc.DrawText(cell, cx + pad_x, cy + row_top + pad_y)
+                # Chiudi l'ultima | in modalità pipe
+                if mode == 'pipe' and row:
+                    self.dc.SetFont(font)
+                    self.dc.SetTextForeground(wx.BLACK)
+                    self.dc.DrawText('|', bx + len(row) * cell_w, cy + row_top + pad_y)
+                cy += row_h
+
+        self.dc.SetFont(old_font)
 
     def InitDraw(self):
         pass

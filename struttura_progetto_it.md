@@ -46,7 +46,8 @@ Descrizione di ogni file e cartella presente nel progetto.
 | File | Descrizione |
 | ---- | ----------- |
 | `sync_deps.py` | Sincronizza automaticamente versione app e dipendenze da `pyproject.toml` a `src/install_check.vbs`. Eseguire dopo ogni modifica al toml: `python sync_deps.py` |
-| `pygettext.py.old` | Vecchia utility per l'estrazione delle stringhe i18n (dismessa, mantenuta come riferimento). |
+| `menu_sorter.py` | Strumento standalone wxPython per l'ordinamento alfabetico delle voci di menu nei file **XRC** (wxWidgets) e **FBP** (wxFormBuilder). Carica il file, mostra i menu trovati in un pannello a sinistra e, per il menu selezionato, elenca i gruppi di voci (separati da separatori) con checkbox individuali per scegliere quali ordinare. Supporta "Ordina selezionati", "Ordina tutti" e salvataggio con backup automatico (`.bak`). I colori dell'interfaccia sono personalizzabili tramite `menu_sorter_colors.json` e un dialogo opzioni integrato. Eseguibile direttamente: `python menu_sorter.py` |
+| `menu_sorter_colors.json` | File di configurazione JSON dei colori dell'interfaccia di `menu_sorter.py`. Sovrascrive i valori predefiniti per le chiavi: `DARK_BG`, `PANEL_BG`, `ACCENT`, `ACCENT_LIGHT`, `TEXT_MAIN`, `TEXT_DIM`, `SUCCESS`, `WARNING`. Generato automaticamente dal dialogo Opzioni di `menu_sorter.py`; modificabile anche manualmente. |
 
 ---
 
@@ -73,7 +74,7 @@ Descrizione di ogni file e cartella presente nel progetto.
 | File | Descrizione |
 | ---- | ----------- |
 | `SongpressFrame.py` | Finestra principale dell'applicazione. Gestisce il layout generale, la barra dei menu, la toolbar e il coordinamento tra editor e anteprima. |
-| `SDIMainFrame.py` | Frame base SDI (Single Document Interface) da cui `SongpressFrame` eredita. Fornisce la struttura base della finestra con supporto per apertura/salvataggio file. |
+| `SDIMainFrame.py` | Frame base SDI (Single Document Interface) da cui `SongpressFrame` eredita. Fornisce la struttura base della finestra con supporto per apertura/salvataggio file. SetMinSize(wx.Size(370, 520)) |
 
 ### Editor e rendering
 
@@ -127,6 +128,8 @@ Descrizione di ogni file e cartella presente nel progetto.
 | `FontFaceDialog.py` | Dialogo per la scelta del font (faccia tipografica). |
 | `FontComboBox.py` | Widget ComboBox per la selezione del font, usato nei dialoghi di formattazione. |
 | `errdlg.py` | Dialogo per la visualizzazione degli errori dell'applicazione. |
+| `MusicalSymbolDialog.py` | Dialogo modale per scegliere e inserire simboli musicali Unicode (U+1D100–U+1D1FF e altri) nell'editor. Organizza i simboli in schede tematiche (note, pause, alterazioni, dinamiche, ecc.) con griglia di selezione, anteprima del glifo e descrizione. Carica automaticamente font SMP dalla cartella `fonts/` (FreeSerif, Bravura, Noto Music) tramite `wx.Font.AddPrivateFont`; espone `get_smp_faces()` usata da `SongDecorator` per il rendering GDI+. |
+| `SyntaxCheckerDialog.py` | Dialogo che mostra l'elenco degli errori rilevati da `SyntaxChecker`. Permette di navigare direttamente alla riga errata nell'editor con un doppio clic. |
 
 ### Trasposizione e normalizzazione
 
@@ -156,9 +159,9 @@ Descrizione di ogni file e cartella presente nel progetto.
 | File | Descrizione |
 | ---- | ----------- |
 | `Globals.py` | Variabili e costanti globali condivise tra i moduli dell'applicazione. |
-| `utils.py` | Funzioni di utilità generiche usate in più moduli. |
+| `SyntaxChecker.py` | Controllo sintattico del formato ChordPro. Verifica parentesi quadre (accordi) e graffe (comandi): rileva parentesi non chiuse, accordi vuoti `[]`, comandi sconosciuti e comandi privi di valore obbligatorio. Restituisce una lista di `SyntaxError` con riga, colonna e messaggio. |
+| `utils.py` | Utilità condivise tra i moduli. Fornisce `undo_action(stc)`: context manager che raggruppa le modifiche su una `StyledTextCtrl` in un'unica azione annullabile, con supporto al nesting (le chiamate innestate sono no-op). Fornisce `temp_dir(keep=False)`: context manager che crea una directory temporanea e la elimina all'uscita (se `keep=True` la mantiene e ne registra il percorso nel log). |
 | `Enumerate.py` | Fornisce una classe o funzione di enumerazione (compatibilità con versioni Python precedenti). |
-| `dev_tool.py` | Strumenti di sviluppo e debug, non usati in produzione. |
 | `songimpress.py` | Importazione o integrazione con il formato SongImpress (LibreOffice Impress). |
 
 ### Sottocartelle di `src/`
@@ -175,25 +178,28 @@ Descrizione di ogni file e cartella presente nel progetto.
 
 ---
 
-## File di localizzazione (`.pot`)
+## File di localizzazione (`.po` / `.mo`)
 
-I file `.pot` sono i **template** di traduzione generati dal codice sorgente.
-I file `.po` sono le **traduzioni** vere e proprie (uno per lingua, nella cartella `locale/`).
+I file `.po` sono le **traduzioni** sorgente (uno per lingua, nella cartella `locale/`).
+I file `.mo` sono le versioni **compilate** dei `.po`, lette a runtime da wxPython.
 
-| File `.pot` | Modulo di riferimento |
-| ----------- | --------------------- |
-| `CompositePropertyPanel.pot` | `CompositePropertyPanel.py` |
-| `errdlg.pot` | `errdlg.py` |
-| `FontFaceDialog.pot` | `FontFaceDialog.py` |
-| `MyPreferences.pot` | `Preferences.py` / `MyPreferencesDialog.py` |
-| `MyPreferencesDialog.pot` | `MyPreferencesDialog.py` |
-| `NormalizeDialog.pot` | `NormalizeDialog.py` / `MyNormalizeDialog.py` |
-| `NotationDialog.pot` | `NotationDialog.py` / `MyNotationDialog.py` |
-| `Preferences.pot` | `Preferences.py` |
-| `PreferencesDialog.pot` | `PreferencesDialog.py` |
-| `PreviewCanvas.pot` | `PreviewCanvas.py` |
-| `SimplePropertyPanel.pot` | `SimplePropertyPanel.py` |
-| `Transpose.pot` | `Transpose.py` |
-| `TransposeDialog.pot` | `TransposeDialog.py` |
-| `UpdateDialog.pot` | `UpdateDialog.py` |
-| `UpdatePanel.pot` | `UpdatePanel.py` |
+| File `.po` / `.mo` | Modulo di riferimento |
+| ------------------- | --------------------- |
+| `CompositePropertyPanel.po` / `.mo` | `CompositePropertyPanel.py` |
+| `Editor.po` / `.mo` | `Editor.py` |
+| `errdlg.po` / `.mo` | `errdlg.py` |
+| `FontFaceDialog.po` / `.mo` | `FontFaceDialog.py` |
+| `MusicalSymbolDialog.po` / `.mo` | `MusicalSymbolDialog.py` |
+| `MyPreferencesDialog.po` / `.mo` | `MyPreferencesDialog.py` |
+| `NormalizeDialog.po` / `.mo` | `NormalizeDialog.py` / `MyNormalizeDialog.py` |
+| `NotationDialog.po` / `.mo` | `NotationDialog.py` / `MyNotationDialog.py` |
+| `Preferences.po` / `.mo` | `Preferences.py` |
+| `PreferencesDialog.po` / `.mo` | `PreferencesDialog.py` |
+| `PreviewCanvas.po` / `.mo` | `PreviewCanvas.py` |
+| `SDIMainFrame.po` / `.mo` | `SDIMainFrame.py` |
+| `SimplePropertyPanel.po` / `.mo` | `SimplePropertyPanel.py` |
+| `SongbookExporter.po` / `.mo` | `SongbookExporter.py` |
+| `SongpressFrame.po` / `.mo` | `SongpressFrame.py` |
+| `SyntaxCheckerDialog.po` / `.mo` | `SyntaxCheckerDialog.py` |
+| `Transpose.po` / `.mo` | `Transpose.py` |
+| `TransposeDialog.po` / `.mo` | `TransposeDialog.py` / `MyTransposeDialog.py` |

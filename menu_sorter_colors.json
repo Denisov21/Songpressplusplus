@@ -1,0 +1,10 @@
+{
+  "DARK_BG": "#808080",
+  "PANEL_BG": "#252538",
+  "ACCENT": "#0080FF",
+  "ACCENT_LIGHT": "#A89EFF",
+  "TEXT_MAIN": "#FF80FF",
+  "TEXT_DIM": "#00FFFF",
+  "SUCCESS": "#A6E3A1",
+  "WARNING": "#F9E2AF"
+}

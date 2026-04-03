@@ -271,9 +271,9 @@
           </object>
         </object>
         <object class="wxMenuItem" name="preview">
-          <label>_Preview</label>
+          <label>Sonpress++ _Preview</label>
           <accel></accel>
-          <help>Show/hide preview pane</help>
+          <help>Show/hide Sonpress++ Preview pane</help>
           <checkable>1</checkable>
           <checked>1</checked>
         </object>
@@ -349,6 +349,11 @@
           <accel></accel>
           <help>Insert a bridge block with start__bridge / end__bridge commands</help>
         </object>
+        <object class="wxMenuItem" name="insertGrid">
+          <label>_Grid {start__of__grid}\\{end__of__grid}</label>
+          <accel></accel>
+          <help>Insert a chord grid block with start_of_grid / end_of_grid commands</help>
+        </object>
         <object class="wxMenuItem" name="insertTempo">
           <label>_Tempo {tempo:}</label>
           <accel></accel>
@@ -380,6 +385,11 @@
           <label>_Image {image:}</label>
           <accel></accel>
           <help>Insert an image (PNG, JPG, GIF) into the song</help>
+        </object>
+        <object class="wxMenuItem" name="insertMusicalSymbol">
+          <label>_Musical symbol (Unicode)...</label>
+          <accel>Ctrl+Shift+M</accel>
+          <help>Open the musical symbol map and insert a Unicode character at the cursor</help>
         </object>
         <object class="wxMenuItem" name="insertVerseNum">
           <label>Numbered v_erse {start__verse__num}\\{end__verse__num}</label>
@@ -528,7 +538,7 @@
           <help>Show user&apos;s manual</help>
         </object>
         <object class="wxMenuItem" name="guideMarkdown">
-          <label>__Songpress++ Guide...</label>
+          <label>_Songpress++ Guide...</label>
           <accel></accel>
           <help>Open ChordPro and Songpress command reference</help>
           <bitmap>../img/help.png</bitmap>

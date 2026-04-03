@@ -76,6 +76,8 @@ class SongBlock(SongBox):
           self.label = None
           self.chords = []
           self.pageBreakBefore = False  # True = interruzione di pagina prima di questo blocco
+          self.is_tab = False           # True = contenuto {start_of_tab}
+          self.is_grid = False          # True = contenuto {start_of_grid}
           
      def RemoveChordBoxes(self):
           for l in self.boxes:
@@ -150,5 +152,48 @@ class SongImageBox(SongBox):
           self.columnBreakBefore = False
 
      # Necessario per RelocateBox / GetLastLineTextHeight chiamati su song.boxes
+     def GetLastLineTextHeight(self):
+          return 0
+
+
+class SongGridBox(SongBox):
+     """Box autonomo che rappresenta un blocco {start_of_grid}.
+
+     Attributi:
+         rows         -- lista di liste di stringhe: ogni lista è una riga di battute
+                         es. [['C', 'G'], ['Am', 'F']]
+         display_mode -- 'pipe' | 'plain' | 'table'
+         font         -- wx.Font da usare per il testo delle celle
+         label        -- etichetta del blocco (es. 'Grid' o etichetta personalizzata)
+         cell_w       -- larghezza cella calcolata da LayoutComposeGrid (px)
+         cell_h       -- altezza cella calcolata da LayoutComposeGrid (px)
+         col_count    -- numero massimo di colonne
+     """
+
+     def __init__(self, rows, display_mode='pipe', font=None, label='Grid', size=1,
+                  chordTopSpacing=None, lineSpacing=None, sizeDir='both',
+                  chord_font=None, chord_color=None):
+          SongBox.__init__(self, 0, 0, 0, 0)
+          self.rows = rows            # list[list[str]]
+          self.display_mode = display_mode
+          self.font = font
+          self.chord_font = chord_font    # wx.Font per il testo degli accordi nelle celle
+          self.chord_color = chord_color  # wx.Colour per il testo degli accordi nelle celle
+          self.label = label
+          self.size = max(1.0, float(size))  # moltiplicatore celle (da size=N nella direttiva, float)
+          self.sizeDir = sizeDir if sizeDir in ('both', 'horizontal', 'vertical') else 'both'
+          self.cell_w = 0
+          self.cell_h = 0
+          self.col_count = 0
+          self._pad_x = int(8 * (self.size if self.sizeDir in ('both', 'horizontal') else 1.0))
+          self._pad_y = int(4 * (self.size if self.sizeDir in ('both', 'vertical')   else 1.0))
+          # Spaziatura opzionale (None = usa i valori globali del SongFormat)
+          self.chordTopSpacing = chordTopSpacing  # spazio extra sopra ogni riga (px)
+          self.lineSpacing = lineSpacing          # spazio extra sotto ogni riga (px)
+          # Compatibilità con SongDecorator.LayoutComposeSong:
+          self.drawBlock = True
+          self.pageBreakBefore = False
+          self.columnBreakBefore = False
+
      def GetLastLineTextHeight(self):
           return 0

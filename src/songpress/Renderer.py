@@ -52,6 +52,8 @@ class Renderer(object):
         # e altezza massima per colonna in pixel schermo (0 = auto/illimitata)
         self.columns = 1
         self.columnHeight = 0
+        # Modalità di visualizzazione {start_of_grid}: 'pipe' | 'plain' | 'table'
+        self.gridDisplayMode = 'pipe'
         # Contatori iniziali per la numerazione delle strofe:
         # permettono di continuare la numerazione tra segmenti {new_page}.
         self.initialVerseCount = 0
@@ -114,6 +116,140 @@ class Renderer(object):
         self.BeginLine()
         self.EndLine()
 
+    def BeginTab(self, label=None):
+        """Apre un blocco {start_of_tab}: verse con font monospace e accordi soppressi."""
+        lbl = label if (label and label.strip()) else _("Tab")
+        self.BeginBlock(SongBlock.verse, lbl)
+        self.currentBlock.is_tab = True
+        # Salva il formato corrente e sostituisce il font con Courier New (monospace)
+        self._tab_saved_face = self.sf.face
+        self.sf.face = 'Courier New'
+        self.format = ParagraphFormat(self.format)
+        self.format.face = 'Courier New'
+
+    def EndTab(self):
+        """Chiude un blocco {end_of_tab} e ripristina il font."""
+        state = self.GetState()
+        if state == SongBlock.verse and getattr(self.currentBlock, 'is_tab', False):
+            self.EndBlock()
+        saved = getattr(self, '_tab_saved_face', None)
+        if saved is not None:
+            self.sf.face = saved
+            self.format = ParagraphFormat(self.format)
+            self.format.face = saved
+            self._tab_saved_face = None
+
+    def BeginGrid(self, label=None):
+        """Apre un blocco {start_of_grid}: raccoglie le righe in self._grid_rows."""
+        import re as _re
+        # Chiude un eventuale blocco aperto
+        self.EndBlock()
+        # Etichetta predefinita: dalla preferenza, oppure "Grid" come fallback
+        default_label = getattr(self, 'gridDefaultLabel', None) or _("Grid")
+        # Estrai size=N, chordtopspacing=N, linespacing=N dalla stringa attributi
+        raw = label or ''
+        size_match = _re.search(r'\bsize\s*=\s*(\d+(?:[.,]\d{1,2})?)', raw)
+        self._grid_size = float(size_match.group(1).replace(',', '.')) if size_match else 1.0
+        cts_match = _re.search(r'\bchordtopspacing\s*=\s*(\d+)', raw, _re.IGNORECASE)
+        self._grid_chordTopSpacing = int(cts_match.group(1)) if cts_match else None
+        ls_match = _re.search(r'\blinespacing\s*=\s*(\d+)', raw, _re.IGNORECASE)
+        self._grid_lineSpacing = int(ls_match.group(1)) if ls_match else None
+        sd_match = _re.search(r'\bsizedir\s*=\s*(horizontal|vertical|both)\b', raw, _re.IGNORECASE)
+        if sd_match:
+            self._grid_sizeDir = sd_match.group(1).lower()
+        else:
+            # Fallback alla preferenza globale
+            self._grid_sizeDir = getattr(self, 'gridSizeDir', 'both')
+        # Rimuovi tutti i parametri key=value riconosciuti, il resto è l'etichetta
+        clean_label = _re.sub(
+            r'\b(?:size|chordtopspacing|linespacing)\s*=\s*\d+(?:[.,]\d{1,2})?'
+            r'|\bsizedir\s*=\s*\w+',
+            '', raw, flags=_re.IGNORECASE).strip()
+        self._grid_label = clean_label if clean_label else default_label
+        self._grid_rows = []   # list[list[str]] — celle per ogni riga
+
+    def EndGrid(self):
+        """Chiude il blocco grid e aggiunge un SongGridBox alla canzone."""
+        rows = getattr(self, '_grid_rows', None)
+        if rows is None:
+            return
+        mode = getattr(self, 'gridDisplayMode', 'pipe')
+        font = self.format.wxFont
+        chord_font  = self.format.chord.wxFont
+        chord_color = self.format.chord.color
+        label = getattr(self, '_grid_label', _("Grid"))
+        box = SongGridBox(rows, display_mode=mode, font=font, label=label,
+                          size=getattr(self, '_grid_size', 1),
+                          chordTopSpacing=getattr(self, '_grid_chordTopSpacing', None),
+                          lineSpacing=getattr(self, '_grid_lineSpacing', None),
+                          sizeDir=getattr(self, '_grid_sizeDir', 'both'),
+                          chord_font=chord_font,
+                          chord_color=chord_color)
+        box.pageBreakBefore = getattr(self, '_next_page_break', False)
+        if box.pageBreakBefore:
+            self._next_page_break = False
+        box.columnBreakBefore = getattr(self, '_next_column_break', False)
+        if box.columnBreakBefore:
+            self._next_column_break = False
+        self.song.AddBox(box)
+        self._grid_rows = None
+        self._grid_label = None
+
+    def _ParseGridLine(self, l):
+        """Estrae le celle da una riga del blocco grid.
+
+        Regole di parsing:
+            Formato pipe — | separa le battute:
+                | Am | F | G |      → ['Am', 'F', 'G']
+                | Am |   | G |      → ['Am', '', 'G']  (cella vuota = spazio)
+                (spazio vuoto tra || = cella vuota che sposta gli accordi a destra)
+
+            Solo spazi (nessun pipe):
+                [C] [G] [Am] [F]  → ogni accordo = cella separata
+        """
+        import re as _re
+
+        stripped = l.strip()
+        if not stripped:
+            return []
+
+        def _clean_cell(s):
+            """Normalizza spazi interni."""
+            return ' '.join(s.split())
+
+        # ── Formato pipe: | separa le battute ─────────────────────────
+        if '|' in stripped:
+            def replace_chord(m):
+                return m.group(1)
+            plain = _re.sub(r'\[([^\]]+)\]', replace_chord, stripped)
+            parts = plain.split('|')
+            # Rimuovi bordi vuoti (prima del primo | e dopo l'ultimo |)
+            inner = parts[1:-1] if len(parts) >= 2 else parts
+            if not inner:
+                return []
+            contents = [p.strip() for p in inner]
+            widths   = [len(p)    for p in inner]
+            # Larghezza minima di riferimento = parte non vuota più corta
+            ref_widths = [w for w, c in zip(widths, contents) if c]
+            min_w = min(ref_widths) if ref_widths else 1
+            # Ogni parte occupa round(width/min_w) celle:
+            # parte più larga = accordo preceduto da celle vuote
+            result = []
+            for w, c in zip(widths, contents):
+                n_cells = max(1, round(w / min_w))
+                result.extend([''  ] * (n_cells - 1))  # celle vuote extra
+                result.append(c)                         # cella con accordo (o '')
+            return result
+
+        # ── Solo chord token separati da spazio: ogni accordo = cella ──
+        chords = _re.findall(r'\[([^\]]+)\]', l)
+        if chords:
+            return chords
+
+        # ── Testo puro: ogni parola = cella ───────────────────────────
+        words = [_clean_cell(w) for w in stripped.split()]
+        return [w for w in words if w]
+
     def RowSpacer(self):
         """Inserisce mezza riga vuota come blocco autonomo (comando {row} / {r})."""
         self.EndBlock()
@@ -128,6 +264,10 @@ class Renderer(object):
         self.EndBlock()
 
     def AddText(self, text, type=SongText.text):
+        # Dentro un blocco {start_of_tab} gli accordi non vengono visualizzati:
+        # il tab ASCII è già notazione completa, i chord marker sono ridondanti.
+        if type == SongText.chord and self.currentBlock is not None and getattr(self.currentBlock, 'is_tab', False):
+            return
         if(
             text.strip() != ''
             and type != SongText.title
@@ -230,6 +370,22 @@ class Renderer(object):
         for l in self.text.splitlines():
             self.lineCount += 1
             state = self.GetState()
+
+            # ── Blocco grid: raccoglie le righe in _grid_rows ─────────
+            if getattr(self, '_grid_rows', None) is not None:
+                stripped_l = l.strip()
+                # {row} / {r} dentro il grid → riga vuota separatrice
+                if stripped_l in ('{row}', '{r}'):
+                    self._grid_rows.append([])   # lista vuota = riga vuota
+                    continue
+                # Le direttive {end_of_grid}, {eog} ecc. passano alla tokenizzazione normale
+                if not (stripped_l.startswith('{') and stripped_l.endswith('}')):
+                    cells = self._ParseGridLine(l)
+                    if cells:
+                        self._grid_rows.append(cells)
+                    continue
+            # ─────────────────────────────────────────────────────────
+
             self.tkz = SongTokenizer(l)
             empty = True
             for tok in self.tkz:
@@ -292,6 +448,16 @@ class Renderer(object):
                     elif cmd == 'end_bridge':
                         if state == SongBlock.verse:
                             self.EndBlock()
+                    elif cmd == 'start_of_tab' or cmd == 'sot':
+                        a = self.GetAttribute()
+                        self.BeginTab(a)
+                    elif cmd == 'end_of_tab' or cmd == 'eot':
+                        self.EndTab()
+                    elif cmd == 'start_of_grid' or cmd == 'sog' or cmd == 'grid':
+                        a = self.GetAttribute()
+                        self.BeginGrid(a)
+                    elif cmd == 'end_of_grid' or cmd == 'eog':
+                        self.EndGrid()
                     elif cmd == 'new_page' or cmd == 'np':
                         # Interruzione di pagina esplicita: chiudi il blocco corrente
                         # e segna il prossimo blocco con pageBreakBefore=True

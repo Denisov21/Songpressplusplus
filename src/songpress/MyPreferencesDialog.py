@@ -132,6 +132,18 @@ class MyPreferencesDialog(PreferencesDialog):
             self.selColourSwatch.SetBackgroundColour(self._hex_to_colour(sel_hex))
             self._applySelColour(sel_hex)
 
+        # Caption Editor colour
+        cap_ed_hex = getattr(self.pref, 'captionEditorActiveHex', '#4682C8')
+        self.capEditorHexCtrl.SetValue(cap_ed_hex)
+        self.capEditorSwatch.SetBackgroundColour(self._hex_to_colour(cap_ed_hex))
+        self.capEditorSwatch.Refresh()
+
+        # Caption Preview colour
+        cap_pv_hex = getattr(self.pref, 'captionPreviewActiveHex', '#329B82')
+        self.capPreviewHexCtrl.SetValue(cap_pv_hex)
+        self.capPreviewSwatch.SetBackgroundColour(self._hex_to_colour(cap_pv_hex))
+        self.capPreviewSwatch.Refresh()
+
         # Show print preview
         self.showPrintPreviewCB.SetValue(getattr(self.pref, 'showPrintPreview', True))
 
@@ -159,6 +171,24 @@ class MyPreferencesDialog(PreferencesDialog):
         self.tempoIconSize16.SetValue(sz == 16)
         self.tempoIconSize24.SetValue(sz == 24)
         self.tempoIconSize32.SetValue(sz == 32)
+
+        # Modalità visualizzazione griglia accordi
+        _gm = getattr(self.pref, 'gridDisplayMode', 'pipe')
+        self.gridModePipe.SetValue(_gm == 'pipe')
+        self.gridModePlain.SetValue(_gm == 'plain')
+        self.gridModeTable.SetValue(_gm == 'table')
+        self.gridDefaultLabelCtrl.SetValue(getattr(self.pref, 'gridDefaultLabel', _("Grid")))
+        self.gridSpaceAsPipeCB.SetValue(getattr(self.pref, 'gridSpaceAsPipe', True))
+
+        # Simbolo musicale
+        self.symbolScaleCB.SetValue(getattr(self.pref, 'symbolScaleEnabled', False))
+        self.symbolSizeSpin.SetValue(getattr(self.pref, 'symbolFontSize', 24))
+        self.symbolSizeSpin.Enable(getattr(self.pref, 'symbolScaleEnabled', False))
+        self.symbolInsertVerseCB.SetValue(getattr(self.pref, 'symbolInsertVerse', False))
+        _sd = getattr(self.pref, 'gridSizeDir', 'both')
+        self.gridSizeDirBoth.SetValue(_sd == 'both')
+        self.gridSizeDirH.SetValue(_sd == 'horizontal')
+        self.gridSizeDirV.SetValue(_sd == 'vertical')
 
         # File associations (solo Windows)
         if self._fileAssocAvailable:
@@ -259,6 +289,54 @@ class MyPreferencesDialog(PreferencesDialog):
             self.selColourSwatch.SetBackgroundColour(chosen)
             self.selColourSwatch.Refresh()
             self._applySelColour(hex_val)
+        dlg.Destroy()
+
+    def OnCapEditorHexChanged(self, evt):
+        hex_val = self.capEditorHexCtrl.GetValue()
+        c = self._hex_to_colour(hex_val)
+        self.capEditorSwatch.SetBackgroundColour(c)
+        self.capEditorSwatch.Refresh()
+        evt.Skip()
+
+    def OnCapEditorPickColour(self, evt):
+        current = self._hex_to_colour(self.capEditorHexCtrl.GetValue())
+        data = wx.ColourData()
+        data.SetColour(current)
+        data.SetChooseFull(True)
+        self._apply_custom_colours(data, 'customColoursCapEditor')
+        dlg = wx.ColourDialog(self, data)
+        if dlg.ShowModal() == wx.ID_OK:
+            result_data = dlg.GetColourData()
+            chosen = result_data.GetColour()
+            self._read_custom_colours(result_data, 'customColoursCapEditor')
+            hex_val = self._colour_to_hex(chosen)
+            self.capEditorHexCtrl.SetValue(hex_val)
+            self.capEditorSwatch.SetBackgroundColour(chosen)
+            self.capEditorSwatch.Refresh()
+        dlg.Destroy()
+
+    def OnCapPreviewHexChanged(self, evt):
+        hex_val = self.capPreviewHexCtrl.GetValue()
+        c = self._hex_to_colour(hex_val)
+        self.capPreviewSwatch.SetBackgroundColour(c)
+        self.capPreviewSwatch.Refresh()
+        evt.Skip()
+
+    def OnCapPreviewPickColour(self, evt):
+        current = self._hex_to_colour(self.capPreviewHexCtrl.GetValue())
+        data = wx.ColourData()
+        data.SetColour(current)
+        data.SetChooseFull(True)
+        self._apply_custom_colours(data, 'customColoursCapPreview')
+        dlg = wx.ColourDialog(self, data)
+        if dlg.ShowModal() == wx.ID_OK:
+            result_data = dlg.GetColourData()
+            chosen = result_data.GetColour()
+            self._read_custom_colours(result_data, 'customColoursCapPreview')
+            hex_val = self._colour_to_hex(chosen)
+            self.capPreviewHexCtrl.SetValue(hex_val)
+            self.capPreviewSwatch.SetBackgroundColour(chosen)
+            self.capPreviewSwatch.Refresh()
         dlg.Destroy()
 
     def OnEditorBgPickColour(self, evt):
@@ -801,6 +879,9 @@ class MyPreferencesDialog(PreferencesDialog):
             self.pref.editorBgHex = self.editorBgHexCtrl.GetValue().strip()
         if hasattr(self, 'selColourHexCtrl'):
             self.pref.selColourHex = self.selColourHexCtrl.GetValue().strip()
+        # Caption bar colours
+        self.pref.captionEditorActiveHex  = self.capEditorHexCtrl.GetValue().strip()
+        self.pref.captionPreviewActiveHex = self.capPreviewHexCtrl.GetValue().strip()
         # Show print preview
         self.pref.showPrintPreview = self.showPrintPreviewCB.GetValue()
         # Multi-cursor
@@ -834,6 +915,27 @@ class MyPreferencesDialog(PreferencesDialog):
             self.pref.tempoIconSize = 32
         else:
             self.pref.tempoIconSize = 24
+        # Modalità visualizzazione griglia accordi
+        if self.gridModePlain.GetValue():
+            self.pref.gridDisplayMode = 'plain'
+        elif self.gridModeTable.GetValue():
+            self.pref.gridDisplayMode = 'table'
+        else:
+            self.pref.gridDisplayMode = 'pipe'
+        lbl = self.gridDefaultLabelCtrl.GetValue().strip()
+        self.pref.gridDefaultLabel = lbl if lbl else _("Grid")
+        self.pref.gridSpaceAsPipe = self.gridSpaceAsPipeCB.GetValue()
+
+        # Simbolo musicale
+        self.pref.symbolScaleEnabled = self.symbolScaleCB.GetValue()
+        self.pref.symbolFontSize     = self.symbolSizeSpin.GetValue()
+        self.pref.symbolInsertVerse  = self.symbolInsertVerseCB.GetValue()
+        if self.gridSizeDirH.GetValue():
+            self.pref.gridSizeDir = 'horizontal'
+        elif self.gridSizeDirV.GetValue():
+            self.pref.gridSizeDir = 'vertical'
+        else:
+            self.pref.gridSizeDir = 'both'
         # Context menu visibility — scritti in pref, Save() chiama _SaveContextMenu()
         self.pref.cmUndo         = self.cmUndo.GetValue()
         self.pref.cmRedo         = self.cmRedo.GetValue()

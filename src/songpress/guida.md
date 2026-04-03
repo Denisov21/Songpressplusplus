@@ -62,6 +62,11 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 | `{start_chorus:Etichetta}`/`{end_chorus}` | 🔧  | ⌨️   | Forma alternativa per il ritornello (con etichetta opzionale)                                                                        |
 | `{start_bridge:Etichetta}`/`{end_bridge}` | 🔧  | ⌨️   | Bridge con etichetta opzionale; se omessa, il valore predefinito è «Bridge»                                                          |
 | `{start_chord:Etichetta}`/`{end_chord}`   | 🔧  | ⌨️   | Blocco intro/accordi; se l'etichetta è omessa, il valore predefinito è «Intro»                                                       |
+| `{start_of_tab}`/`{end_of_tab}`           | ✅  | 🖊    | Blocco tablatura ASCII; il contenuto viene visualizzato con font monospace (Courier New) e l'etichetta «Tab»                         |
+| `{sot}`/`{eot}`                           | ✅  | 🖊    | Abbreviazione di `start_of_tab`/`end_of_tab`                                                                                         |
+| `{start_of_grid}`/`{end_of_grid}`         | ✅  | ⌨️   | Blocco griglia accordi; visualizzato con l'etichetta «Grid»                                                                          |
+| `{sog}`/`{eog}`                           | ✅  | 🖊    | Abbreviazione di `start_of_grid`/`end_of_grid`                                                                                       |
+| `{grid}`                                  | ✅  | 🖊    | Forma alternativa di `start_of_grid` (senza chiusura esplicita)                                                                      |
 | `{new_song}`                              | 🔧  | 🖊    | Avvia una nuova canzone nello stesso documento: azzera i contatori di strofe e ritornelli in modo che la numerazione ricominci da 1  |
 
 > **Nota su `{start_of_bridge}`** — Questa forma (con `of_`) non è gestita dal renderer; usare `{start_bridge}`/`{end_bridge}`.
@@ -206,6 +211,204 @@ oppure in forma abbreviata:
 
 ---
 
+## `{start_of_tab}` / `{end_of_tab}` 🖊
+
+**Alias abbreviati:** `{sot}` / `{eot}`
+
+### Descrizione — start_of_tab
+
+Delimita un **blocco di tablatura ASCII**. Il contenuto viene visualizzato nell'anteprima e in stampa con font monospace (Courier New) e l'etichetta «Tab», in modo che l'allineamento colonnare delle corde sia preservato.
+
+### Sintassi — start_of_tab
+
+```chordpro
+{start_of_tab}
+e|--0--2--3--2--0--|
+B|--1--3--3--3--1--|
+G|--0--2--0--2--0--|
+D|--2--0--0--0--2--|
+A|--3--x--2--x--3--|
+E|--x--x--3--x--x--|
+{end_of_tab}
+```
+
+oppure con alias abbreviati:
+
+```chordpro
+{sot}
+e|--0--2--3--|
+B|--1--3--3--|
+{eot}
+```
+
+oppure con etichetta personalizzata:
+
+```chordpro
+{start_of_tab: Assolo}
+e|--12-14-15-14-12--|
+{end_of_tab}
+```
+
+### Note d'uso — start_of_tab
+
+- Il font monospace garantisce che le linee della tablatura siano perfettamente allineate nella stampa.
+- Gli accordi inline `[Am]` eventualmente presenti nel blocco **non vengono visualizzati** sopra il testo: la tablatura è già una notazione completa.
+- Il blocco viene trattato come una strofa non numerata; riceve un'etichetta «Tab» (o quella personalizzata).
+- Nell'editor il contenuto del blocco appare in **marrone corsivo** per distinguerlo visivamente dal testo normale.
+
+---
+
+## `{start_of_grid}` / `{end_of_grid}` 🖊
+
+**Alias abbreviati:** `{sog}` / `{eog}` · Forma alternativa: `{grid}`
+
+### Descrizione — start_of_grid
+
+Delimita un **blocco griglia accordi** (chord grid). Utile per indicare sequenze ritmiche di accordi in formato simbolico, es. per chitarra ritmica o ukulele. Il blocco viene visualizzato con l'etichetta «Grid» (configurabile nelle preferenze).
+
+### Sintassi — start_of_grid
+
+Forma base:
+
+```chordpro
+{start_of_grid}
+| Am . . . | F . . . | C . . . | G . . . |
+{end_of_grid}
+```
+
+Alias abbreviati:
+
+```chordpro
+{sog}
+| G . . . | D . . . | Em . . . | C . . . |
+{eog}
+```
+
+Forma alternativa (si chiude automaticamente alla riga vuota successiva):
+
+```chordpro
+{grid}
+| C . . . | G . . . | Am . . . | F . . . |
+```
+
+### Opzioni — start_of_grid
+
+Tutte le opzioni si specificano come coppie `chiave=valore` nell'argomento della direttiva, dopo l'eventuale etichetta. Possono essere combinate liberamente.
+
+| Opzione             | Tipo    | Default         | Descrizione                                                                                                                                                       |
+| ------------------- | ------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| *(etichetta)*       | testo   | «Grid»          | Etichetta di sezione personalizzata (testo libero, prima di qualsiasi `chiave=valore`)                                                                            |
+| `size=N`            | numero  | `1`             | Moltiplicatore dimensione celle: moltiplica il padding orizzontale e/o verticale per N. Accetta interi o decimali fino a 2 cifre, con `.` o `,` (es. `1.5`, `2,50`) |
+| `size=N agisce su`  | scelta  | Larghezza e altezza | Controlla quale dimensione viene moltiplicata da `size=N`: **Larghezza e altezza** (entrambi i padding), **Solo larghezza** (solo `_pad_x`), **Solo altezza** (solo `_pad_y`). Si imposta nelle preferenze.  |
+| `chordtopspacing=N` | intero  | `0`             | Spazio extra in pixel **sopra** ogni riga di celle                                                                                                                |
+| `linespacing=N`     | intero  | `0`             | Spazio extra in pixel **sotto** ogni riga di celle                                                                                                                |
+
+> **Nota:** `chordtopspacing` e `linespacing` dentro `{start_of_grid}` agiscono localmente solo su quel blocco griglia, indipendentemente dalle direttive globali `{chordtopspacing}` e `{linespacing}` che influenzano i blocchi strofa/ritornello normali.
+
+### Esempi — start_of_grid
+
+Solo etichetta personalizzata:
+
+```chordpro
+{start_of_grid: Strofa}
+| Am . . | F . . | G . . |
+{end_of_grid}
+```
+
+Celle ingrandite (`size=2` o decimale, es. `size=1.5`):
+
+```chordpro
+{start_of_grid: size=2}
+| Am | F | G | C |
+{end_of_grid}
+```
+
+```chordpro
+{start_of_grid: size=1.5}
+| Am | F | G | C |
+{end_of_grid}
+```
+
+Etichetta + celle ingrandite:
+
+```chordpro
+{start_of_grid: Ritornello size=2}
+| G . . . | D . . . | Em . . . | C . . . |
+{end_of_grid}
+```
+
+Spaziatura verticale extra tra le righe:
+
+```chordpro
+{start_of_grid: chordtopspacing=8 linespacing=4}
+| Am | F |
+| C  | G |
+{end_of_grid}
+```
+
+Tutte le opzioni combinate:
+
+```chordpro
+{start_of_grid: Intro size=2 chordtopspacing=6 linespacing=3}
+| Am . . . | F . . . |
+| C . . .  | G . . . |
+{end_of_grid}
+```
+
+### Inserimento dal menu — start_of_grid
+
+**Menu Inserisci → Griglia `{start_of_grid}\{end_of_grid}`**
+
+Apre un dialogo che propone come etichetta il valore impostato in **Preferenze → Formattazione → Griglia accordi → Etichetta predefinita** (default: «Grid»).
+
+- **Conferma il default o annulla** → inserisce il blocco senza etichetta:
+  ```chordpro
+  {start_of_grid}
+  | | | |
+  {end_of_grid}
+  ```
+- **Digita un'etichetta diversa** → inserisce il blocco con etichetta personalizzata:
+  ```chordpro
+  {start_of_grid:Ritornello}
+  | | | |
+  {end_of_grid}
+  ```
+
+La riga `| | | |` precompilata fornisce 4 celle vuote come punto di partenza; modificala o aggiungine altre secondo necessità. Con la barra spaziatrice (se abilitata nelle preferenze) puoi navigare rapidamente tra le celle.
+
+### Modalità di visualizzazione — start_of_grid
+
+La modalità di resa per tutti i blocchi griglia si imposta globalmente in **scheda Formattazione → Griglia accordi** nelle preferenze:
+
+| Modalità                   | Aspetto                                                                 |
+| ---------------------------| ------------------------------------------------------------------------|
+| **Tabella pipe** (default) | `\| Am  \| F   \| G   \| C   \|` — battute separate dal carattere `\|`  |
+| **Spaziatura semplice**    | `Am   F   G   C` — accordi distanziati senza separatori                 |
+| **Tabella**                | celle con bordi visibili disegnati                                      |
+
+### Comportamento della tastiera nel blocco griglia
+
+Quando il cursore si trova dentro un blocco `{start_of_grid}`:
+
+| Tasto                 | Azione                                                                                                       |
+| ----------------------| ------------------------------------------------------------------------------------------------------------ |
+| **Barra spaziatrice** | Inserisce un separatore `\|` pipe, spostando la cella corrente verso destra (configurabile nelle preferenze) |
+| `{row}` / `{r}`       | Inserisce una riga vuota separatrice (spazio verticale tra le righe)                                         |
+
+> Il comportamento della barra spaziatrice come pipe può essere disabilitato in **Formattazione → Griglia accordi → Barra spaziatrice inserisce il separatore \|**.
+> La dimensione scalata da `size=N` si configura in **Formattazione → Griglia accordi → size=N agisce su**: scegli tra *Larghezza e altezza* (default), *Solo larghezza* o *Solo altezza*.
+
+### Note d'uso — start_of_grid
+
+- Il blocco viene trattato come una strofa non numerata con etichetta «Grid» (o quella personalizzata specificata nella direttiva o nelle preferenze).
+- Nell'editor il contenuto del blocco appare in **marrone corsivo**, come i blocchi tablatura.
+- `size=N` moltiplica `_pad_x` (padding orizzontale, base 8 px) e/o `_pad_y` (padding verticale, base 4 px) per N, ingrandendo le celle. Quale dimensione viene scalata dipende dall'opzione **Preferenze → Formattazione → Griglia accordi → size=N agisce su**: *Larghezza e altezza* (default, entrambi i padding), *Solo larghezza* (solo `_pad_x`), *Solo altezza* (solo `_pad_y`). N può essere un intero o un decimale con al massimo 2 cifre dopo il separatore (`.` o `,`): es. `size=1.5`, `size=2,50`, `size=1.7`.
+- `chordtopspacing=N` aggiunge N pixel sopra ogni riga; `linespacing=N` aggiunge N pixel sotto ogni riga. Entrambi hanno default `0` (nessuna spaziatura extra).
+- Più opzioni e un'etichetta possono coesistere in qualsiasi ordine dopo i due punti: `{start_of_grid: Mia Etichetta size=3 linespacing=5}`.
+- In modalità pipe, il testo raw dentro il blocco deve già contenere i delimitatori `|`; in modalità plain, gli accordi separati da spazi vengono distribuiti automaticamente.
+
+---
+
 ## Commenti e note redazionali
 
 ![Songpress++ Finestra Commento](./img/GUIDE/commento_it.png)
@@ -305,6 +508,12 @@ I campi numerici nella finestra di dialogo usano controlli spin:
 [G7]O sole, o sole [C]mio
 {eoc}
 
+{start_of_tab: Intro}
+e|--0--3--2--0--|
+B|--1--0--3--1--|
+G|--0--0--2--0--|
+{end_of_tab}
+
 {new_page}
 
 {start_verse_num}
@@ -353,9 +562,136 @@ Tutte le principali direttive sono accessibili tramite il menu **Inserisci**, ch
 - **Rimuovi righe vuote superflue** — elimina le righe vuote doppie
 - **Normalizza spazi multipli** — riduce gli spazi multipli a uno solo
 
+### Simboli musicali Unicode ⌨️
+
+- **Simbolo musicale (Unicode)…** (`Inserisci › Simbolo musicale (Unicode)…`, scorciatoia `Ctrl+Shift+M`) — apre la **finestra Simboli musicali**, da cui è possibile scegliere un carattere Unicode e inserirlo nel punto del cursore.
+
 ### Controllo sintassi
 
 - **Controlla sintassi** — analizza il testo e segnala le direttive non riconosciute o malformate, con la possibilità di navigare direttamente all'errore
+
+---
+
+## Simboli musicali Unicode — finestra di dialogo
+
+La finestra **Musical Symbols** (`Inserisci › Simbolo musicale (Unicode)…`, `Ctrl+Shift+M`) permette di inserire nell'editor qualsiasi carattere Unicode musicale speciale, inclusi i simboli del blocco **Musical Symbols** (U+1D100–U+1D1FF) e i caratteri BMP più comuni.
+
+### Struttura della finestra
+
+La finestra è organizzata in **sei schede** per categoria:
+
+| Scheda | Contenuto |
+| ---------------------- | ---------------------------------------------------------------- |
+| **Note e pause** | Semibreve, minima, croma, pause di ogni valore (U+1D13B–U+1D164) |
+| **Alterazioni** | Diesis, bemolle, bequadro, doppi e quarti di tono |
+| **Dinamiche** | *p*, *f*, *mp*, *mf*, *sf*, crescendo, decrescendo, ecc. |
+| **Pentagramma e chiavi** | Chiavi (violino, basso, Do), stanghette, segno, coda |
+| **Ornamenti e articolazioni** | Legature, fermata, cesura, respiro, ecc. |
+| **Comuni (BMP)** | ♩ ♪ ♫ ♬ ★ † ½ ¼ × – — … e altri caratteri d'uso comune |
+
+### Come inserire un simbolo
+
+1. Aprire la finestra con `Inserisci › Simbolo musicale (Unicode)…` o `Ctrl+Shift+M`.
+2. Selezionare la scheda della categoria desiderata.
+3. **Fare clic** su una cella per selezionare il simbolo — in basso appariranno l'anteprima ingrandita e la descrizione con il codepoint Unicode (es. `U+1D157`).
+4. Premere **Insert** oppure fare **doppio clic** sulla cella per inserire il carattere nel cursore dell'editor e chiudere la finestra.
+5. Premere **Close** (o `Esc`) per annullare senza inserire nulla.
+
+> **Suggerimento** — Passando il mouse sulle celle appare un tooltip con il nome del simbolo e il codepoint.
+
+### Opzioni di inserimento
+
+Nella parte inferiore della finestra si trovano due opzioni che controllano il modo in cui il simbolo viene inserito nell'editor. Il loro stato viene salvato automaticamente e ripristinato alla riapertura del programma.
+
+**Dimensione personalizzata (pt)** — checkbox + campo numerico (6–144)
+
+Quando è attiva, il simbolo viene wrappato con le direttive `{textsize:N}` e `{textsize}` per applicare la dimensione scelta e ripristinare poi quella originale. La seconda `{textsize}` senza argomento è la forma corretta per il reset (diversamente da `{textsize:}` con due punti finali, che costituisce un errore sintattico rilevato dalla verifica sintattica).
+
+| Checkbox | Testo inserito |
+| -------- | -------------- |
+| disattivata | `♩` |
+| attivata (pt = 24) | `{textsize:24}♩{textsize}` |
+
+> **Nota** — Non tutti i simboli possono essere ridimensionati: i caratteri del piano SMP (U+1D100–U+1D1FF) richiedono un font con copertura adeguata (FreeSerif, Bravura, ecc.) nella cartella `fonts/`. Se il font non copre il glifo, la dimensione viene applicata ma il carattere potrebbe non essere visibile.
+
+**Incorpora il simbolo in una strofa (non conteggiata)** — checkbox
+
+Quando è attiva, il simbolo viene racchiuso in un blocco `{start_verse}…{end_verse}`. In questo modo appare nell'anteprima come un blocco strofa autonomo, ma **non viene conteggiato** nella numerazione progressiva delle strofe: le strofe adiacenti mantengono la loro numerazione corretta.
+
+| Checkbox | Testo inserito |
+| -------- | -------------- |
+| disattivata | `♩` |
+| attivata | `{start_verse}♩{end_verse}` |
+
+Le due opzioni sono combinabili: se entrambe sono attive, il risultato è:
+
+```chordpro
+{start_verse}{textsize:24}♩{textsize}{end_verse}
+```
+
+Le stesse impostazioni sono accessibili anche da **Preferenze → Formattazione → Inserimento simbolo musicale**, dove vengono salvate in modo permanente.
+
+I simboli del blocco Musical Symbols (U+1D100–U+1D1FF) appartengono al piano supplementare Unicode (**SMP**, codepoint > U+FFFF). I font di sistema comuni (Arial, Times New Roman, Calibri) non coprono questo range; Songpress++ risolve il problema in due modi distinti:
+
+**Nell'editor (pannello di testo)** — l'editor usa il motore di rendering **DirectWrite** (`SetTechnology(STC_TECHNOLOGY_DIRECTWRITE)`), che abilita il font-fallback automatico di Windows: se il font scelto per l'editor non contiene il glifo, Windows cerca automaticamente tra i font installati quello più adatto.
+
+**Nell'anteprima e in stampa** — il renderer usa **GDI+** tramite `wx.GraphicsContext` esclusivamente per i caratteri SMP. Per ogni stringa che contiene almeno un codepoint > U+FFFF, Songpress++ crea un contesto grafico separato e imposta il font nell'ordine di preferenza:
+
+1. **FreeSerif** (GNU FreeFont) — copertura completa del blocco Musical Symbols; deve essere presente in `<installazione>/fonts/FreeSerif.ttf`.
+2. **Segoe UI Symbol** — presente di default su Windows 10/11; copertura SMP parziale.
+3. Font corrente del documento — usato come ultimo tentativo (mostrerà rettangoli per i glifi mancanti).
+
+Il testo normale (accordi, testo canzone, titoli) continua a usare il renderer GDI classico senza overhead aggiuntivo.
+
+### Come modificare le dimensioni del simbolo nell'anteprima
+
+I simboli musicali vengono visualizzati nella stessa dimensione del testo circostante, scalata automaticamente in base a:
+
+- **Font globale della canzone** — modificabile da `Formato › Font canzone…`. Aumentare la dimensione in punti del font principale aumenta proporzionalmente anche i simboli SMP.
+- **Direttiva `{textsize:Pt}`** — inserita direttamente nel testo ChordPro prima del simbolo, imposta la dimensione in punti per quel tratto. Esempio:
+
+  ```chordpro
+  {textsize:24}𝄞{textsize}
+  ```
+
+  La seconda `{textsize}` (senza argomento) ripristina la dimensione predefinita.
+
+- **Direttiva `{textsize:N%}`** — versione percentuale, relativa alla dimensione base del documento. Esempio per un simbolo al 150%:
+
+  ```chordpro
+  {textsize:150%}𝅘𝅥𝅮{textsize}
+  ```
+
+- **Zoom dell'anteprima** — il cursore di zoom nella barra dell'anteprima scala tutta la pagina (testo + simboli) senza modificare le dimensioni del file. Non influisce sulla stampa.
+
+> **Nota tecnica** — Il renderer moltiplica automaticamente la dimensione in punti del font per il fattore di zoom corrente prima di creare il `wx.GraphicsFont`, in modo che i simboli SMP abbiano sempre le stesse proporzioni del testo GDI circostante.
+
+### Aggiungere librerie di simboli personalizzate
+
+Songpress++ carica automaticamente **tutti** i file `.ttf` presenti nella cartella `fonts/` all'interno della directory di installazione. Per aggiungere il supporto a nuovi simboli Unicode è sufficiente copiare il file del font in quella cartella — non è richiesta nessuna configurazione aggiuntiva.
+
+```
+<installazione>/
+  fonts/
+    FreeSerif.ttf           ← già incluso — copertura completa Musical Symbols
+    Bravura.ttf             ← font SMuFL (notazione musicale professionale)
+    NotoMusic.ttf           ← Google Noto — ampia copertura SMP
+    SegoeUISymbol.ttf       ← eventuale copia locale di Segoe UI Symbol
+    qualsiasi_altro.ttf     ← viene caricato e usato automaticamente
+```
+
+**Ordine di priorità** — I font vengono provati nell'ordine seguente:
+
+1. `FreeSerif.ttf` — ha precedenza assoluta (copertura Musical Symbols garantita)
+2. `Bravura.ttf` — se presente
+3. `NotoMusic.ttf` / `NotoMusicRegular.ttf` — se presenti
+4. Tutti gli altri `.ttf` nella cartella, in ordine alfabetico
+5. **Segoe UI Symbol** — font di sistema Windows 10/11 (fallback automatico, nessun file da copiare)
+6. Font corrente del documento — ultimo tentativo (mostra rettangoli per i glifi mancanti)
+
+Per ogni carattere SMP, Songpress++ percorre questa lista e usa il primo font che wx riesce a caricare correttamente. Se un font non copre un particolare glifo, GDI+ non fa ulteriore fallback automatico — il font corretto deve quindi trovarsi nella cartella `fonts/`.
+
+> **Suggerimento** — I font **SMuFL** (Standard Music Font Layout, <https://www.smufl.org>) come Bravura, Petaluma o Leland coprono centinaia di simboli musicali specializzati non inclusi in FreeSerif. Per la notazione gregoriana o mensurale sono consigliati font come **Caeciliae** o **Volpiano**.
 
 ---
 

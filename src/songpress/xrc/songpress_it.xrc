@@ -105,12 +105,12 @@
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="insertPageBreak">
-          <label>A capo _pagina</label>
+          <label>Interruzione di  _pagina</label>
           <accel>CTRL+SHIFT+RETURN</accel>
           <help>Inserisci un'interruzione di pagina esplicita per la stampa</help>
         </object>
         <object class="wxMenuItem" name="insertColumnBreak">
-          <label>A capo _colonna</label>
+          <label>Interruzione di _colonna</label>
           <accel>CTRL+SHIFT+K</accel>
           <help>Inserisci un'interruzione di colonna esplicita per il layout a due colonne</help>
         </object>
@@ -265,15 +265,15 @@
           <object class="wxMenuItem" name="format">
             <label>_Formato</label>
             <accel></accel>
-            <help>Mostra/nascondi la barra degli strumenti di formattazione</help>
+            <help>Mostra/nascondi la barra degli strumenti di formattazione (Anteprima Songpress++)</help>
             <checkable>1</checkable>
             <checked>1</checked>
           </object>
         </object>
         <object class="wxMenuItem" name="preview">
-          <label>_Anteprima</label>
+          <label>_Anteprima Songpress++</label>
           <accel></accel>
-          <help>Mostra/nascondi il pannello di anteprima</help>
+          <help>Mostra/nascondi il pannello di Anteprima Songpress++</help>
           <checkable>1</checkable>
           <checked>1</checked>
         </object>
@@ -349,6 +349,11 @@
           <accel></accel>
           <help>Inserisci un blocco bridge con i comandi start__bridge / end__bridge</help>
         </object>
+        <object class="wxMenuItem" name="insertGrid">
+          <label>_Griglia {start__of__grid}\\{end__of__grid}</label>
+          <accel></accel>
+          <help>Inserisci un blocco griglia di accordi con i comandi start_of_grid / end_of_grid</help>
+        </object>
         <object class="wxMenuItem" name="insertTempo">
           <label>_Tempo {tempo:}</label>
           <accel></accel>
@@ -380,6 +385,11 @@
           <label>_Immagine {image:}</label>
           <accel></accel>
           <help>Inserisci un'immagine (PNG, JPG, GIF) nella canzone</help>
+        </object>
+        <object class="wxMenuItem" name="insertMusicalSymbol">
+          <label>_Simbolo musicale (Unicode)...</label>
+          <accel>Ctrl+Shift+M</accel>
+          <help>Apre la mappa dei simboli musicali e inserisce un carattere Unicode nel cursore</help>
         </object>
         <object class="wxMenuItem" name="insertVerseNum">
           <label>Strofa _numerata {start__verse__num}\\{end__verse__num}</label>

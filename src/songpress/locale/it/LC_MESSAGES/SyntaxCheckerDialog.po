@@ -1,13 +1,13 @@
-# Italian translation for SyntaxCheckerDialog
+# Italian translation for SyntaxChecker + SyntaxCheckerDialog
 # Copyright (C) 2026 Denisov21
 # License: GNU GPL v2
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: SyntaxCheckerDialog 1.0\n"
+"Project-Id-Version: Songpress++ 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-16 00:00+0000\n"
-"PO-Revision-Date: 2026-03-16 00:00+0000\n"
+"POT-Creation-Date: 2026-04-02 00:00+0000\n"
+"PO-Revision-Date: 2026-04-03 00:00+0000\n"
 "Last-Translator: Denisov21\n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -16,47 +16,103 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#. Titolo della finestra di dialogo
-#: SyntaxCheckerDialog.py:26
+# -----------------------------------------------------------------------
+# SyntaxCheckerDialog.py
+# -----------------------------------------------------------------------
+
+#. Window title
+#: SyntaxCheckerDialog.py:27
 msgid "Syntax check"
 msgstr "Verifica sintattica"
 
-#. Messaggio mostrato quando non ci sono errori
-#: SyntaxCheckerDialog.py:72
+#. Success message when no errors are found
+#: SyntaxCheckerDialog.py:81
 msgid "No syntax errors found."
 msgstr "Nessun errore sintattico trovato."
 
-#. Testo del pulsante per navigare all'errore selezionato
-#: SyntaxCheckerDialog.py:50
+#. Button: navigate to the selected error
+#: SyntaxCheckerDialog.py:56
 msgid "Go to error"
 msgstr "Vai all'errore"
 
-#. Testo del pulsante di chiusura
-#: SyntaxCheckerDialog.py:55
+#. Button: close the dialog
+#: SyntaxCheckerDialog.py:61
 msgid "Close"
 msgstr "Chiudi"
 
-#. Intestazione lista errori — forma singolare
-#: SyntaxCheckerDialog.py:86
+#. Error list header — singular
+#: SyntaxCheckerDialog.py:96
 msgid "Found 1 syntax error:"
 msgstr "Trovato 1 errore sintattico:"
 
-#. Intestazione lista errori — forma plurale
-#: SyntaxCheckerDialog.py:86
+#. Error list header — plural
+#: SyntaxCheckerDialog.py:98
 msgid "Found {count} syntax errors:"
 msgstr "Trovati {count} errori sintattici:"
 
-#. Etichetta colonna "Riga" nella lista errori
-#: SyntaxCheckerDialog.py:93
+#. Column header: line number
+#: SyntaxCheckerDialog.py:111
 msgid "Line"
 msgstr "Riga"
 
-#. Etichetta colonna "Colonna" nella lista errori
-#: SyntaxCheckerDialog.py:94
+#. Column header: column number
+#: SyntaxCheckerDialog.py:112
 msgid "Column"
 msgstr "Colonna"
 
-#. Etichetta colonna "Descrizione" nella lista errori
-#: SyntaxCheckerDialog.py:95
+#. Column header: error description
+#: SyntaxCheckerDialog.py:113
 msgid "Description"
 msgstr "Descrizione"
+
+# -----------------------------------------------------------------------
+# SyntaxChecker.py — error messages
+# -----------------------------------------------------------------------
+
+#. Square bracket opened but never closed
+#: SyntaxChecker.py
+msgid "Opening square bracket '[' not closed"
+msgstr "Parentesi quadra aperta '[' non chiusa"
+
+#. Chord brackets with no content inside
+#: SyntaxChecker.py
+msgid "Empty chord '[]'"
+msgstr "Accordo vuoto '[]'"
+
+#. Closing square bracket with no matching opening bracket
+#: SyntaxChecker.py
+msgid "Closing square bracket ']' without opening"
+msgstr "Parentesi quadra chiusa ']' senza apertura"
+
+#. Curly brace opened but never closed
+#: SyntaxChecker.py
+msgid "Opening curly brace '{' not closed"
+msgstr "Parentesi graffa aperta '{' non chiusa"
+
+#. Closing curly brace with no matching opening brace
+#: SyntaxChecker.py
+msgid "Closing curly brace '}' without opening"
+msgstr "Parentesi graffa chiusa '}' senza apertura"
+
+#. Curly braces with no command name inside
+#: SyntaxChecker.py
+msgid "Empty command '{}'"
+msgstr "Comando vuoto '{}'"
+
+#. Command name not in the list of known ChordPro commands
+#. {cmd} is replaced at runtime with the actual command, e.g. {stat_chorus}
+#: SyntaxChecker.py
+msgid "Unknown command: '{cmd}'"
+msgstr "Comando sconosciuto: '{cmd}'"
+
+#. Known command used without a required value (e.g. {title:} with no text)
+#. {cmd} is replaced at runtime with the actual command+colon, e.g. {title:}
+#: SyntaxChecker.py
+msgid "Command '{cmd}' requires a value"
+msgstr "Il comando '{cmd}' richiede un valore"
+
+#. Optional-value command written with ':' but no value (e.g. {textsize:} instead of {textsize})
+#. {cmd} is replaced with the erroneous form, {reset} with the correct reset form
+#: SyntaxChecker.py
+msgid "Command '{cmd}' has ':' but no value; use '{reset}' to reset"
+msgstr "Il comando '{cmd}' ha ':' ma nessun valore; usa '{reset}' per ripristinare il default"
