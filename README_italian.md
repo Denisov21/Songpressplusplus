@@ -74,9 +74,11 @@ In sintesi: `Avvio SONGPRESS2.vbs` è la versione di sviluppo/debug, `Avvio SONG
 - **Posizionamento accordi** visualizza gli accordi o sopra o sotto il testo.
 - **Posizione e dimensioni finestra** Salva e ricorda l'ultima posizione della finestra della finestra.
 
-## Modifica nome e versione programma
+## Immagini programma
 
-![Songpress++ cambio nome e versione](src/songpress/img/GUIDE/Versione_it.png)
+![Songpress++ cambio nome e versione](src/songpress/img/GUIDE/Schermata_principale_it.png)
+
+![Songpress++ cambio nome e versione](src/songpress/img/GUIDE/Menu_contestuale_it.png)
 
 ## Problemi noti
 

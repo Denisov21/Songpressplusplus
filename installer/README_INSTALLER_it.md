@@ -40,3 +40,7 @@ installer/
 ```
 
 Percorso di installazione: `%LOCALAPPDATA%\Songpress-local\bin\songpress.exe`
+
+## Modifica nome e versione programma
+
+![Songpress++ cambio nome e versione](../src/songpress/img/GUIDE/Versione_it.png)

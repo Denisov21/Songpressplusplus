@@ -3,10 +3,13 @@
 # Purpose:     wxWidgets dialog with a FontComboBox
 #            selector
 # Author:         Luca Allulli (webmaster@roma21.it)
+# Modified by:  Denisov21
 # Created:     2009-08-14
 # Copyright: Luca Allulli (https://www.skeed.it/songpress)
+# Copyright: Modifications © 2026 Denisov21
 # License:     GNU GPL v2
 ##############################################################
+
 
 from .PreviewCanvas import *
 from .FontComboBox import FontComboBox
@@ -15,7 +18,7 @@ _ = wx.GetTranslation
 
 
 class FontFaceDialog(wx.Dialog):
-    def __init__(self, parent, id, title, songFormat, songDecorator, decoratorFormat):
+    def __init__(self, parent, id, title, songFormat, songDecorator, decoratorFormat, greyBackground=True):
         self.format = songFormat
         self.originalFont = songFormat.face
         self.decoratorFormat = decoratorFormat
@@ -41,6 +44,7 @@ class FontFaceDialog(wx.Dialog):
         hSizer2.Add(m_staticText2, 0, wx.ALL, 5)
         
         self.previewCanvas = PreviewCanvas(self, songFormat, songDecorator, embedded=True)
+        self.previewCanvas.SetGreyBackground(greyBackground)
         hSizer2.Add(self.previewCanvas.main_panel, 1, wx.EXPAND | wx.ALL, 5)
         previewSong = _("{t:My Bonnie}\n\nMy [D]Bonnie lies [G]over the [D]ocean\noh [G]bring back my [A]Bonnie to [D]me!\n\n{soc}\n[D]Bring back, [E-]bring back,\n[A]bring back my Bonnie to [D]me!\n{eoc}")
         self.previewCanvas.Refresh(previewSong)

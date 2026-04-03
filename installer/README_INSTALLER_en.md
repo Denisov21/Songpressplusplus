@@ -39,3 +39,7 @@ installer/
 ```
 
 Install path: `%LOCALAPPDATA%\Songpress-local\bin\songpress.exe`
+
+## Change program name and version
+
+![Songpress++ cambio nome e versione](../src/songpress/img/GUIDE/Versione_en.png)

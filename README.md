@@ -74,9 +74,11 @@ In summary: `Avvio SONGPRESS2.vbs` is the development/debug version, `Avvio SONG
 - **Chord Positioning** displays chords either above or below the lyrics.
 - **Window Position and Size** Saves and remembers the last position of the window.
 
-## Change program name and version
+## Screenshot program
 
-![Songpress++ change name and version](src/songpress/img/GUIDE/Versione_en.png)
+![Songpress++ cambio nome e versione](src/songpress/img/GUIDE/Schermata_principale_en.png)
+
+![Songpress++ menu contestuale](src/songpress/img/GUIDE/Menu_contestuale_en.png)
 
 ## Known Issues
 

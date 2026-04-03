@@ -3766,7 +3766,8 @@ class SongpressFrame(SDIMainFrame):
             _("Song font - Songpress++"),
             self.pref.format,
             self.pref.decorator,
-            self.pref.decoratorFormat
+            self.pref.decoratorFormat,
+            greyBackground=getattr(self.pref, 'greyBackground', True)
         )
         if f.ShowModal() == wx.ID_OK:
             self.pref.SetFont(f.GetValue())
