@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: songpress\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-05 16:22+0200\n"
-"PO-Revision-Date: 2026-03-31 00:00+0100
+"PO-Revision-Date: 2026-03-31 00:00+0100\n"
 "Last-Translator: Denisov21\n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -509,3 +509,7 @@ msgstr "Colore barra Editor"
 #: PreferencesDialog.py general tab — preview caption bar colour
 msgid "Preview caption colour"
 msgstr "Colore barra Anteprima"
+
+#: PreferencesDialog.py general tab — open templates folder button
+msgid "Open templates folder"
+msgstr "Apri cartella template"
