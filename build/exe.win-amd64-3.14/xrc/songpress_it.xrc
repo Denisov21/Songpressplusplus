@@ -1,0 +1,1230 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<resource xmlns="http://www.wxwidgets.org/wxxrc" version="2.5.3.0">
+  <object class="wxFrame" name="MainFrame">
+    <size>611,477</size>
+    <style>wxCAPTION|wxCLOSE_BOX|wxDEFAULT_FRAME_STYLE|wxMAXIMIZE_BOX|wxMINIMIZE_BOX|wxRESIZE_BORDER|wxSYSTEM_MENU|wxTAB_TRAVERSAL</style>
+    <title>Songpress</title>
+    <aui_managed>0</aui_managed>
+    <object class="wxMenuBar" name="menuBar">
+      <object class="wxMenu" name="file">
+        <label>_File</label>
+        <object class="wxMenuItem" name="new">
+          <label>_Nuovo</label>
+          <accel>CTRL+N</accel>
+          <help>Crea una nuova canzone</help>
+          <bitmap>../img/new.png</bitmap>
+        </object>
+        <object class="wxMenu" name="newFromTemplate">
+          <label>Nuovo da _modello</label>
+        </object>
+        <object class="wxMenuItem" name="open">
+          <label>_Apri...</label>
+          <accel>CTRL+O</accel>
+          <help>Apri una canzone esistente</help>
+          <bitmap>../img/open.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="importFromPdf">
+          <label>Importa testo da _PDF...</label>
+          <accel></accel>
+          <help>Importa testo da un file PDF con testo selezionabile nell'editor</help>
+        </object>
+        <object class="wxMenuItem" name="save">
+          <label>_Salva</label>
+          <accel>SHIFT+F12</accel>
+          <help>Salva la canzone con il nome file corrente</help>
+          <bitmap>../img/save.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="saveAs">
+          <label>Salva _come...</label>
+          <accel></accel>
+          <help>Chiedi un nome file per la canzone e salvala</help>
+        </object>
+        <object class="wxMenu" name="export">
+          <label>E_sporta</label>
+          <object class="wxMenuItem" name="exportToClipboardAsAVectorImage">
+            <label>Esporta negli _appunti come immagine vettoriale</label>
+            <accel>CTRL+D</accel>
+            <help>Copia la canzone formattata negli appunti per incollarla in qualsiasi programma</help>
+          </object>
+          <object class="wxMenuItem" name="exportAsSvg">
+            <label>Esporta come _SVG...</label>
+            <accel></accel>
+            <help>Esporta immagine come immagine vettoriale</help>
+          </object>
+          <object class="wxMenuItem" name="exportAsEmf">
+            <label>Esporta come _Enhanced Metafile...</label>
+            <accel></accel>
+            <help>Esporta immagine come Windows Metafile vettoriale</help>
+          </object>
+          <object class="wxMenuItem" name="exportAsPng">
+            <label>Esporta come _PNG...</label>
+            <accel></accel>
+            <help>Esporta immagine come immagine raster</help>
+            <bitmap>../img/png_export.png</bitmap>
+          </object>
+          <object class="wxMenuItem" name="exportAsHtml">
+            <label>Esporta come _HTML...</label>
+            <accel></accel>
+            <help>Esporta la canzone formattata come pagina web</help>
+            <bitmap>../img/html_export.png</bitmap>
+          </object>
+          <object class="wxMenuItem" name="exportAsTab">
+            <label>Esporta come _TAB/TXT...</label>
+            <accel></accel>
+            <help>Esporta la canzone come file di testo con accordi sopra il testo</help>
+          </object>
+          <object class="wxMenuItem" name="exportAsPptx">
+            <label>Esporta _karaoke come PPTX...</label>
+            <accel></accel>
+            <help>Crea una presentazione PowerPoint in stile karaoke</help>
+          </object>
+          <object class="wxMenuItem" name="exportAsPdf">
+            <label>Esporta come _PDF...</label>
+            <accel></accel>
+            <help>Esporta la canzone formattata come file PDF</help>
+            <bitmap>../img/pdf_export.png</bitmap>
+          </object>
+        </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="print">
+          <label>_Stampa...</label>
+          <accel>CTRL+P</accel>
+          <help>Stampa la canzone</help>
+          <bitmap>../img/print.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="printPreview">
+          <label>Ante_prima di stampa...</label>
+          <accel></accel>
+          <help>Mostra l'anteprima di stampa della canzone</help>
+          <bitmap>../img/preview.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="pageSetup">
+          <label>Imposta_zione pagina...</label>
+          <accel></accel>
+          <help>Imposta dimensione e orientamento del foglio</help>
+        </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="insertPageBreak">
+          <label>Interruzione di  _pagina</label>
+          <accel>CTRL+SHIFT+RETURN</accel>
+          <help>Inserisci un'interruzione di pagina esplicita per la stampa</help>
+        </object>
+        <object class="wxMenuItem" name="insertColumnBreak">
+          <label>Interruzione di _colonna</label>
+          <accel>CTRL+SHIFT+K</accel>
+          <help>Inserisci un'interruzione di colonna esplicita per il layout a due colonne</help>
+        </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="restart">
+          <label>_Riavvia</label>
+          <accel></accel>
+          <help>Riavvia Songpress</help>
+          <bitmap>../img/restart.png</bitmap>
+        </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="exit">
+          <label>_Esci</label>
+          <accel></accel>
+          <help>Chiudi Songpress</help>
+          <bitmap>../img/close.png</bitmap>
+        </object>
+        <object class="separator"/>
+      </object>
+      <object class="wxMenu" name="edit">
+        <label>_Modifica</label>
+        <object class="wxMenuItem" name="undo">
+          <label>_Annulla</label>
+          <accel>CTRL+Z</accel>
+          <help>Annulla ultima modifica</help>
+          <bitmap>../img/undo.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="redo">
+          <label>_Ripeti</label>
+          <accel>CTRL+Y</accel>
+          <help>Ripeti la modifica annullata</help>
+          <bitmap>../img/redo.png</bitmap>
+        </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="cut">
+          <label>_Taglia</label>
+          <accel>CTRL+X</accel>
+          <help>Sposta il testo selezionato negli appunti</help>
+          <bitmap>../img/cut.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="copy">
+          <label>C_opia</label>
+          <accel>CTRL+C</accel>
+          <help>Copia il testo selezionato negli appunti</help>
+          <bitmap>../img/copy.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="copyOnlyText">
+          <label>Copia solo il _testo</label>
+          <accel></accel>
+          <help>Copia il testo selezionato negli appunti, ignorando accordi e tag ChordPro</help>
+        </object>
+        <object class="wxMenuItem" name="copyAsImage">
+          <label>Copia come _immagine</label>
+          <accel>CTRL+D</accel>
+          <help>Copia l'intera canzone FORMATTATA (o le strofe selezionate) negli appunti</help>
+          <bitmap>../img/copyAsImage2.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="paste">
+          <label>_Incolla</label>
+          <accel>CTRL+V</accel>
+          <help>Leggi il testo dagli appunti e inseriscilo alla posizione del cursore</help>
+          <bitmap>../img/paste.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="pasteChords">
+          <label>Incolla _accordi</label>
+          <accel></accel>
+          <help>Integra gli accordi del testo copiato nella selezione corrente</help>
+          <bitmap>../img/pasteChords.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="propagateVerseChords">
+          <label>Propaga accordi della _strofa</label>
+          <accel></accel>
+          <help>Copia gli accordi dalla prima strofa a tutte le strofe con lo stesso numero di righe</help>
+        </object>
+        <object class="wxMenuItem" name="propagateChorusChords">
+          <label>Propaga accordi del _ritornello</label>
+          <accel></accel>
+          <help>Copia gli accordi dal primo ritornello a tutti i ritornelli con lo stesso numero di righe</help>
+        </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="find">
+          <label>_Cerca...</label>
+          <accel>CTRL+F</accel>
+          <help>Cerca del testo</help>
+          <bitmap>../img/search.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="findNext">
+          <label>Cerca _successivo</label>
+          <accel>F3</accel>
+          <help>Cerca l'occorrenza successiva del testo</help>
+        </object>
+        <object class="wxMenuItem" name="findPrevious">
+          <label>Cerca _precedente</label>
+          <accel>SHIFT+F3</accel>
+          <help>Cerca l'occorrenza precedente del testo</help>
+        </object>
+        <object class="wxMenuItem" name="replace">
+          <label>S_ostituisci...</label>
+          <accel>CTRL+R</accel>
+          <help>Sostituisci del testo con altro testo</help>
+        </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="selectAll">
+          <label>Seleziona _tutto</label>
+          <accel>CTRL+A</accel>
+          <help>Seleziona l'intera canzone</help>
+          <bitmap>../img/selectAll.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="selectNextChord">
+          <label>Seleziona accordo s_uccessivo</label>
+          <accel>ALT+RIGHT</accel>
+          <help>Trova il prossimo accordo e selezionalo</help>
+        </object>
+        <object class="wxMenuItem" name="selectPreviousChord">
+          <label>Seleziona accordo p_recedente</label>
+          <accel>ALT+LEFT</accel>
+          <help>Trova l'accordo precedente e selezionalo</help>
+        </object>
+        <object class="wxMenuItem" name="moveChordRight">
+          <label>Sposta accordo a _destra</label>
+          <accel>SHIFT+ALT+RIGHT</accel>
+          <help>Sposta l'accordo sotto il cursore di una posizione a destra</help>
+        </object>
+        <object class="wxMenuItem" name="moveChordLeft">
+          <label>Sposta accordo a _sinistra</label>
+          <accel>SHIFT+ALT+LEFT</accel>
+          <help>Sposta l'accordo sotto il cursore di una posizione a sinistra</help>
+        </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="removeChords">
+          <label>Rimuovi a_ccordi</label>
+          <accel></accel>
+          <help>Rimuovi tutti gli accordi nella selezione corrente</help>
+        </object>
+        <object class="wxMenuItem" name="integrateChords">
+          <label>Inte_gra accordi</label>
+          <accel></accel>
+          <help>Integra gli accordi della riga corrente con il testo della riga seguente</help>
+        </object>
+      </object>
+      <object class="wxMenu" name="view">
+        <label>_Visualizza</label>
+        <object class="wxMenu" name="toolbars">
+          <label>Barre degli _strumenti</label>
+          <object class="wxMenuItem" name="standard">
+            <label>_Standard</label>
+            <accel></accel>
+            <help>Mostra/nascondi la barra degli strumenti con i pulsanti file e comuni</help>
+            <checkable>1</checkable>
+            <checked>1</checked>
+          </object>
+          <object class="wxMenuItem" name="format">
+            <label>_Formato</label>
+            <accel></accel>
+            <help>Mostra/nascondi la barra degli strumenti di formattazione (Anteprima Songpress++)</help>
+            <checkable>1</checkable>
+            <checked>1</checked>
+          </object>
+        </object>
+        <object class="wxMenuItem" name="preview">
+          <label>_Anteprima Songpress++</label>
+          <accel></accel>
+          <help>Mostra/nascondi il pannello di Anteprima Songpress++</help>
+          <checkable>1</checkable>
+          <checked>1</checked>
+        </object>
+        <object class="wxMenuItem" name="showPageBreakLines">
+          <label>Mostra linee di interruzione pagina</label>
+          <accel></accel>
+          <help>Mostra o nascondi la linea blu di interruzione pagina nell'anteprima</help>
+          <checkable>1</checkable>
+          <checked>1</checked>
+        </object>
+        <object class="wxMenuItem" name="showColumnBreakLines">
+          <label>Mostra linee di interruzione colonna</label>
+          <accel></accel>
+          <help>Mostra o nascondi la linea blu di interruzione colonna nell'anteprima</help>
+          <checkable>1</checkable>
+          <checked>1</checked>
+        </object>
+      </object>
+      <object class="wxMenu" name="insert">
+        <label>_Inserisci</label>
+        <object class="wxMenuItem" name="title">
+          <label>_Titolo</label>
+          <accel>CTRL+T</accel>
+          <help>Inserisci un comando per visualizzare il titolo della canzone</help>
+          <bitmap>../img/title.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="subtitle">
+          <label>_Sottotitolo</label>
+          <accel></accel>
+          <help>Inserisci un comando per visualizzare il sottotitolo della canzone</help>
+        </object>
+        <object class="wxMenuItem" name="chord">
+          <label>A_ccordo</label>
+          <accel>CTRL+H</accel>
+          <help>Inserisci parentesi quadre che conterranno un accordo</help>
+          <bitmap>../img/chord.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="chorus">
+          <label>Rit_ornello</label>
+          <accel>CTRL+U</accel>
+          <help>Inserisci una coppia di comandi che conterranno il ritornello</help>
+          <bitmap>../img/chorus.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="comment">
+          <label>Co_mmento</label>
+          <accel>CTRL+M</accel>
+          <help>Inserisci un comando per visualizzare un commento</help>
+        </object>
+        <object class="wxMenuItem" name="verseWithCustomLabelOrWithoutLabel">
+          <label>Strofa con etichetta _personalizzata o senza...</label>
+          <accel></accel>
+          <help>Inserisci una strofa con etichetta personalizzata o senza etichetta</help>
+          <bitmap>../img/verse.png</bitmap>
+        </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="insertVerse">
+          <label>Strofa _non numerata {start__verse}\\{end__verse}</label>
+          <accel></accel>
+          <help>Inserisci una strofa non numerata con i comandi start__verse / end__verse</help>
+        </object>
+        <object class="wxMenuItem" name="insertChorusBlock">
+          <label>_Ritornello {start__chorus}\\{end__chorus}</label>
+          <accel></accel>
+          <help>Inserisci un blocco ritornello con i comandi start__chorus / end__chorus</help>
+        </object>
+        <object class="wxMenuItem" name="insertChordBlock">
+          <label>Accordi di _intro {start__chord}\\{end__chord}</label>
+          <accel></accel>
+          <help>Inserisci una sezione di accordi intro con i comandi start__chord / end__chord</help>
+        </object>
+        <object class="wxMenuItem" name="insertBridge">
+          <label>_Bridge {start__bridge}\\{end__bridge}</label>
+          <accel></accel>
+          <help>Inserisci un blocco bridge con i comandi start__bridge / end__bridge</help>
+        </object>
+        <object class="wxMenuItem" name="insertGrid">
+          <label>_Griglia {start__of__grid}\\{end__of__grid}</label>
+          <accel></accel>
+          <help>Inserisci un blocco griglia di accordi con i comandi start_of_grid / end_of_grid</help>
+        </object>
+        <object class="wxMenuItem" name="insertTempo">
+          <label>_Tempo {tempo:}</label>
+          <accel></accel>
+          <help>Inserisci la direttiva ChordPro per impostare il tempo della canzone (BPM)</help>
+          <bitmap>../img/metronome.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="insertTime">
+          <label>_Indicazione del tempo {time:}</label>
+          <accel></accel>
+          <help>Inserisci la direttiva ChordPro per impostare il tempo musicale (es. 4/4, 3/4)</help>
+        </object>
+        <object class="wxMenuItem" name="insertKey">
+          <label>_Tonalità {key:}</label>
+          <accel></accel>
+          <help>Inserisci la direttiva ChordPro per impostare la tonalità (es. Am, Do, Sol)</help>
+        </object>
+        <object class="wxMenuItem" name="insertTaste">
+          <label>Tastiera _accordo {taste:}</label>
+          <accel></accel>
+          <help>Inserisci la direttiva per visualizzare una tastiera per accordi in fondo alla canzone</help>
+          <bitmap>../img/taste.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="insertDefine">
+          <label>Diagramma accordo _chitarra {define:}</label>
+          <accel></accel>
+          <help>Inserisci la direttiva per visualizzare un diagramma di accordo chitarra in fondo alla canzone</help>
+        </object>
+        <object class="wxMenuItem" name="insertImage">
+          <label>_Immagine {image:}</label>
+          <accel></accel>
+          <help>Inserisci un'immagine (PNG, JPG, GIF) nella canzone</help>
+        </object>
+        <object class="wxMenuItem" name="insertMusicalSymbol">
+          <label>_Simbolo musicale (Unicode)...</label>
+          <accel>Ctrl+Shift+M</accel>
+          <help>Apre la mappa dei simboli musicali e inserisce un carattere Unicode nel cursore</help>
+        </object>
+        <object class="wxMenuItem" name="insertVerseNum">
+          <label>Strofa _numerata {start__verse__num}\\{end__verse__num}</label>
+          <accel></accel>
+          <help>Inserisci una strofa numerata con i comandi start__verse__num / end__verse__num</help>
+        </object>
+      </object>
+      <object class="wxMenu" name="formatMenu">
+        <label>F_ormato</label>
+        <object class="wxMenuItem" name="songFont">
+          <label>Carattere canzone...</label>
+          <accel></accel>
+          <help>Seleziona il carattere della canzone</help>
+        </object>
+        <object class="wxMenuItem" name="textFont">
+          <label>Carattere _testo...</label>
+          <accel></accel>
+          <help>Modifica il carattere e il colore del testo dalla posizione del cursore o nella selezione</help>
+        </object>
+        <object class="wxMenuItem" name="chordFont">
+          <label>Carattere a_ccordo...</label>
+          <accel></accel>
+          <help>Modifica il carattere e il colore degli accordi dalla posizione del cursore o nella selezione</help>
+        </object>
+        <object class="wxMenuItem" name="labelVerses">
+          <label>_Etichetta strofe</label>
+          <accel></accel>
+          <help>Mostra/nascondi le etichette all'inizio delle strofe e del ritornello</help>
+          <bitmap>../img/labelVerses.png</bitmap>
+          <checkable>1</checkable>
+          <checked>1</checked>
+        </object>
+        <object class="wxMenuItem" name="chorusLabel">
+          <label>Etichetta _ritornello...</label>
+          <accel></accel>
+          <help>Imposta l'etichetta per il ritornello</help>
+        </object>
+        <object class="wxMenu" name="showChordsFor">
+          <label>_Mostra accordi per</label>
+          <object class="wxMenuItem" name="noChords">
+            <label>_Nessun accordo</label>
+            <accel></accel>
+            <help>Non visualizzare gli accordi</help>
+            <radio>1</radio>
+          </object>
+          <object class="wxMenuItem" name="oneVerseForEachChordPattern">
+            <label>_Una strofa per ogni schema di accordi</label>
+            <accel></accel>
+            <help>Quando compare una strofa con un nuovo schema di accordi, visualizza gli accordi</help>
+            <radio>1</radio>
+          </object>
+          <object class="wxMenuItem" name="wholeSong">
+            <label>_Tutta la canzone</label>
+            <accel></accel>
+            <help>Visualizza gli accordi per tutta la canzone</help>
+            <radio>1</radio>
+          </object>
+        </object>
+        <object class="wxMenu" name="chordsPosition">
+          <label>_Posizione accordi</label>
+          <object class="wxMenuItem" name="chordsAbove">
+            <label>Accordi _sopra</label>
+            <accel></accel>
+            <help>Visualizza gli accordi sopra il testo</help>
+            <radio>1</radio>
+          </object>
+          <object class="wxMenuItem" name="chordsBelow">
+            <label>Accordi _sotto</label>
+            <accel></accel>
+            <help>Visualizza gli accordi sotto il testo</help>
+            <radio>1</radio>
+          </object>
+        </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="insertLinespacing">
+          <label>_Interlinea {linespacing}</label>
+          <accel></accel>
+          <help>Inserisci la direttiva ChordPro per impostare l'interlinea</help>
+          <bitmap>../img/line_spacing.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="insertChordtopspacing">
+          <label>Spaziatura _superiore accordi {chordtopspacing}</label>
+          <accel></accel>
+          <help>Inserisci la direttiva ChordPro per impostare la spaziatura sopra gli accordi</help>
+        </object>
+      </object>
+      <object class="wxMenu" name="tools">
+        <label>_Strumenti</label>
+        <object class="wxMenuItem" name="transpose">
+          <label>_Trasponi...</label>
+          <accel></accel>
+          <help>Trasponi la canzone o il testo selezionato</help>
+        </object>
+        <object class="wxMenuItem" name="simplifyChords">
+          <label>S_emplifica accordi...</label>
+          <accel></accel>
+          <help>Trasponi gli accordi nella tonalità più semplice</help>
+        </object>
+        <object class="wxMenuItem" name="changeChordNotation">
+          <label>Cambia _notazione accordi...</label>
+          <accel></accel>
+          <help>Cambia la notazione degli accordi (es. C D E vs Do Re Mi) della canzone o della selezione</help>
+        </object>
+        <object class="wxMenuItem" name="cleanupChords">
+          <label>_Normalizza accordi...</label>
+          <accel></accel>
+          <help>Normalizza gli accordi secondo la notazione corrente</help>
+        </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="convertTabToChordpro">
+          <label>Converti _Tab in ChordPro</label>
+          <accel></accel>
+          <help>Converti la canzone dalla notazione tab (accordi su righe separate) in ChordPro</help>
+        </object>
+        <object class="wxMenuItem" name="removeSpuriousBlankLines">
+          <label>Rimuovi righe vuote s_uperflue</label>
+          <accel></accel>
+          <help>Rimuovi le righe vuote all'interno di una strofa</help>
+        </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="normalizeSpaces">
+          <label>_Normalizza spazi multipli</label>
+          <accel></accel>
+          <help>Sostituisci sequenze di spazi multipli con un singolo spazio</help>
+        </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="syntaxCheck">
+          <label>Controllo _sintassi</label>
+          <accel>F7</accel>
+          <help>Controlla la sintassi ChordPro del documento (parentesi, comandi)</help>
+          <bitmap>../img/syntaxCheck.png</bitmap>
+        </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="options">
+          <label>_Opzioni...</label>
+          <accel></accel>
+          <help>Imposta le opzioni del programma</help>
+          <bitmap>../img/setting.png</bitmap>
+        </object>
+      </object>
+      <object class="wxMenu" name="helpMenu">
+        <label>_?</label>
+        <object class="wxMenuItem" name="guide">
+          <label>_Guida</label>
+          <accel>F1</accel>
+          <help>Mostra il manuale utente</help>
+        </object>
+        <object class="wxMenuItem" name="guideMarkdown">
+          <label>_Guida di Songpress++...</label>
+          <accel></accel>
+          <help>Apri il riferimento ai comandi ChordPro e Songpress</help>
+          <bitmap>../img/help.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="about">
+          <label>_Informazioni...</label>
+          <accel></accel>
+          <help>Mostra i crediti</help>
+        </object>
+      </object>
+    </object>
+    <object class="wxStatusBar" name="m_statusBar1">
+      <style>wxSTB_SIZEGRIP</style>
+      <fields>1</fields>
+    </object>
+  </object>
+  <object class="wxDialog" name="TransposeDialog">
+    <style>wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER</style>
+    <title>Trasponi</title>
+    <object class="wxBoxSizer" name="bSizer1">
+      <orient>wxVERTICAL</orient>
+      <object class="sizeritem">
+        <flag>wxEXPAND</flag>
+        <border>5</border>
+        <option>1</option>
+        <object class="wxBoxSizer" name="bSizer2">
+          <orient>wxHORIZONTAL</orient>
+          <object class="sizeritem">
+            <flag>wxALL</flag>
+            <border>5</border>
+            <option>0</option>
+            <object class="wxStaticText" name="label1">
+              <label>Notazione accordi:</label>
+              <wrap>-1</wrap>
+            </object>
+          </object>
+          <object class="sizeritem">
+            <flag>wxALL</flag>
+            <border>5</border>
+            <option>1</option>
+            <object class="wxChoice" name="notation">
+              <selection>0</selection>
+              <content/>
+            </object>
+          </object>
+        </object>
+      </object>
+      <object class="sizeritem">
+        <flag>wxEXPAND</flag>
+        <border>5</border>
+        <option>1</option>
+        <object class="wxBoxSizer" name="bSizer21">
+          <orient>wxHORIZONTAL</orient>
+          <object class="sizeritem">
+            <flag>wxALL</flag>
+            <border>5</border>
+            <option>0</option>
+            <object class="wxStaticText" name="label11">
+              <label>Da tonalità:</label>
+              <wrap>-1</wrap>
+            </object>
+          </object>
+          <object class="sizeritem">
+            <flag>wxALL</flag>
+            <border>5</border>
+            <option>1</option>
+            <object class="wxChoice" name="fromKey">
+              <selection>0</selection>
+              <content/>
+            </object>
+          </object>
+        </object>
+      </object>
+      <object class="sizeritem">
+        <flag>wxEXPAND</flag>
+        <border>5</border>
+        <option>1</option>
+        <object class="wxBoxSizer" name="bSizer2111">
+          <orient>wxHORIZONTAL</orient>
+          <object class="sizeritem">
+            <flag>wxALL</flag>
+            <border>5</border>
+            <option>0</option>
+            <object class="wxStaticText" name="label1111">
+              <label>Semitoni:</label>
+              <wrap>-1</wrap>
+            </object>
+          </object>
+          <object class="sizeritem">
+            <flag>wxALL</flag>
+            <border>5</border>
+            <option>1</option>
+            <object class="wxSpinCtrl" name="semitones">
+              <style>wxSP_ARROW_KEYS|wxSP_WRAP</style>
+              <value>2</value>
+              <min>-11</min>
+              <max>12</max>
+            </object>
+          </object>
+        </object>
+      </object>
+      <object class="sizeritem">
+        <flag>wxEXPAND</flag>
+        <border>5</border>
+        <option>1</option>
+        <object class="wxBoxSizer" name="bSizer211">
+          <orient>wxHORIZONTAL</orient>
+          <object class="sizeritem">
+            <flag>wxALL</flag>
+            <border>5</border>
+            <option>0</option>
+            <object class="wxStaticText" name="label111">
+              <label>A tonalità:</label>
+              <wrap>-1</wrap>
+            </object>
+          </object>
+          <object class="sizeritem">
+            <flag>wxALL</flag>
+            <border>5</border>
+            <option>1</option>
+            <object class="wxChoice" name="toKey">
+              <selection>0</selection>
+              <content/>
+            </object>
+          </object>
+        </object>
+      </object>
+      <object class="sizeritem">
+        <flag>wxALL|wxEXPAND</flag>
+        <border>5</border>
+        <option>0</option>
+        <object class="wxStdDialogButtonSizer" name="m_sdbSizer1">
+          <object class="button">
+            <object class="wxButton" name="wxID_OK"/>
+          </object>
+          <object class="button">
+            <object class="wxButton" name="wxID_CANCEL"/>
+          </object>
+        </object>
+      </object>
+    </object>
+  </object>
+  <object class="wxDialog" name="NotationDialog">
+    <size>361,175</size>
+    <style>wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER</style>
+    <title>Cambia notazione</title>
+    <object class="wxBoxSizer" name="bSizer1">
+      <orient>wxVERTICAL</orient>
+      <object class="sizeritem">
+        <flag>wxEXPAND</flag>
+        <border>5</border>
+        <option>1</option>
+        <object class="wxBoxSizer" name="bSizer2">
+          <orient>wxHORIZONTAL</orient>
+          <object class="sizeritem">
+            <flag>wxALL</flag>
+            <border>5</border>
+            <option>0</option>
+            <object class="wxStaticText" name="label1">
+              <label>Da notazione:</label>
+              <wrap>-1</wrap>
+            </object>
+          </object>
+          <object class="sizeritem">
+            <flag>wxALL</flag>
+            <border>5</border>
+            <option>1</option>
+            <object class="wxChoice" name="fromNotation">
+              <selection>0</selection>
+              <content/>
+            </object>
+          </object>
+        </object>
+      </object>
+      <object class="sizeritem">
+        <flag>wxEXPAND</flag>
+        <border>5</border>
+        <option>1</option>
+        <object class="wxBoxSizer" name="bSizer21">
+          <orient>wxHORIZONTAL</orient>
+          <object class="sizeritem">
+            <flag>wxALL</flag>
+            <border>5</border>
+            <option>0</option>
+            <object class="wxStaticText" name="label11">
+              <label>A notazione:</label>
+              <wrap>-1</wrap>
+            </object>
+          </object>
+          <object class="sizeritem">
+            <flag>wxALL</flag>
+            <border>5</border>
+            <option>1</option>
+            <object class="wxChoice" name="toNotation">
+              <selection>0</selection>
+              <content/>
+            </object>
+          </object>
+        </object>
+      </object>
+      <object class="sizeritem">
+        <flag>wxALL|wxEXPAND</flag>
+        <border>5</border>
+        <option>0</option>
+        <object class="wxStdDialogButtonSizer" name="m_sdbSizer1">
+          <object class="button">
+            <object class="wxButton" name="wxID_OK"/>
+          </object>
+          <object class="button">
+            <object class="wxButton" name="wxID_CANCEL"/>
+          </object>
+        </object>
+      </object>
+    </object>
+  </object>
+  <object class="wxDialog" name="NormalizeDialog">
+    <style>wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER</style>
+    <title>Normalizza accordi</title>
+    <object class="wxBoxSizer" name="bSizer1">
+      <orient>wxVERTICAL</orient>
+      <object class="sizeritem">
+        <flag>wxEXPAND</flag>
+        <border>5</border>
+        <option>1</option>
+        <object class="wxBoxSizer" name="bSizer2">
+          <orient>wxHORIZONTAL</orient>
+          <object class="sizeritem">
+            <flag>wxALL</flag>
+            <border>5</border>
+            <option>0</option>
+            <object class="wxStaticText" name="label1">
+              <label>Notazione:</label>
+              <wrap>-1</wrap>
+            </object>
+          </object>
+          <object class="sizeritem">
+            <flag>wxALL</flag>
+            <border>5</border>
+            <option>1</option>
+            <object class="wxChoice" name="fromNotation">
+              <selection>0</selection>
+              <content/>
+            </object>
+          </object>
+        </object>
+      </object>
+      <object class="sizeritem">
+        <flag>wxALL|wxEXPAND</flag>
+        <border>5</border>
+        <option>0</option>
+        <object class="wxStdDialogButtonSizer" name="m_sdbSizer1">
+          <object class="button">
+            <object class="wxButton" name="wxID_OK"/>
+          </object>
+          <object class="button">
+            <object class="wxButton" name="wxID_CANCEL"/>
+          </object>
+        </object>
+      </object>
+    </object>
+  </object>
+  <object class="wxPanel" name="DecoSlider">
+    <style>wxTAB_TRAVERSAL</style>
+    <bg>#ffffff</bg>
+    <object class="wxBoxSizer" name="bSizer9">
+      <orient>wxVERTICAL</orient>
+      <object class="sizeritem">
+        <flag>wxALL|wxEXPAND</flag>
+        <border>5</border>
+        <option>0</option>
+        <object class="wxSlider" name="slider">
+          <style>wxSL_AUTOTICKS|wxSL_HORIZONTAL</style>
+          <value>0</value>
+          <min>0</min>
+          <max>4</max>
+        </object>
+      </object>
+      <object class="sizeritem">
+        <flag>wxEXPAND | wxALL</flag>
+        <border>5</border>
+        <option>1</option>
+        <object class="wxPanel" name="panel">
+          <style>wxTAB_TRAVERSAL</style>
+          <bg>#ffffff</bg>
+        </object>
+      </object>
+    </object>
+  </object>
+  <object class="wxDialog" name="PreferencesDialog">
+    <size>535,500</size>
+    <style>wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER</style>
+    <title>Opzioni di Songpress</title>
+    <centered>1</centered>
+    <object class="wxBoxSizer" name="bSizer10">
+      <orient>wxVERTICAL</orient>
+      <object class="sizeritem">
+        <flag>wxEXPAND | wxALL</flag>
+        <border>5</border>
+        <option>1</option>
+        <object class="wxNotebook" name="notebook">
+          <object class="notebookpage">
+            <label>Generale</label>
+            <selected>1</selected>
+            <object class="wxPanel" name="general">
+              <style>wxTAB_TRAVERSAL</style>
+              <object class="wxBoxSizer" name="bSizer11">
+                <orient>wxVERTICAL</orient>
+                <object class="sizeritem">
+                  <flag>wxEXPAND</flag>
+                  <border>5</border>
+                  <option>0</option>
+                  <object class="wxBoxSizer" name="bSizer12">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                      <flag>wxALL</flag>
+                      <border>5</border>
+                      <option>0</option>
+                      <object class="wxStaticText" name="label1">
+                        <label>Font editor</label>
+                        <wrap>-1</wrap>
+                      </object>
+                    </object>
+                    <object class="sizeritem">
+                      <flag>wxALL</flag>
+                      <border>5</border>
+                      <option>1</option>
+                      <object class="FontComboBox" name="fontCB"/>
+                    </object>
+                    <object class="sizeritem">
+                      <flag>wxALL</flag>
+                      <border>5</border>
+                      <option>0</option>
+                      <object class="wxStaticText" name="m_staticText8">
+                        <label>Dimensione</label>
+                        <wrap>-1</wrap>
+                      </object>
+                    </object>
+                    <object class="sizeritem">
+                      <flag>wxALL</flag>
+                      <border>5</border>
+                      <option>0</option>
+                      <object class="wxComboBox" name="sizeCB">
+                        <value>12</value>
+                        <content>
+                          <item>7</item>
+                          <item>8</item>
+                          <item>9</item>
+                          <item>10</item>
+                          <item>11</item>
+                          <item>12</item>
+                          <item>13</item>
+                          <item>14</item>
+                          <item>16</item>
+                          <item>18</item>
+                          <item>20</item>
+                        </content>
+                      </object>
+                    </object>
+                  </object>
+                </object>
+                <object class="sizeritem">
+                  <flag>wxEXPAND</flag>
+                  <border>5</border>
+                  <option>1</option>
+                  <object class="wxBoxSizer" name="bSizer13">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                      <flag>wxALL</flag>
+                      <border>5</border>
+                      <option>0</option>
+                      <object class="wxStaticText" name="m_staticText9">
+                        <label>Anteprima</label>
+                        <wrap>-1</wrap>
+                      </object>
+                    </object>
+                    <object class="sizeritem">
+                      <flag>wxALL|wxEXPAND</flag>
+                      <border>5</border>
+                      <option>1</option>
+                      <object class="Editor" name="editor"/>
+                    </object>
+                  </object>
+                </object>
+                <object class="sizeritem">
+                  <flag>wxEXPAND</flag>
+                  <border>5</border>
+                  <option>0</option>
+                  <object class="wxBoxSizer" name="bSizer141">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                      <flag>wxALL</flag>
+                      <border>5</border>
+                      <option>0</option>
+                      <object class="wxStaticText" name="m_staticText101">
+                        <label>Notazione predefinita</label>
+                        <wrap>-1</wrap>
+                      </object>
+                    </object>
+                    <object class="sizeritem">
+                      <flag>wxALL</flag>
+                      <border>5</border>
+                      <option>1</option>
+                      <object class="wxChoice" name="notationCh">
+                        <selection>0</selection>
+                        <content/>
+                      </object>
+                    </object>
+                  </object>
+                </object>
+                <object class="sizeritem">
+                  <flag>wxEXPAND</flag>
+                  <border>5</border>
+                  <option>0</option>
+                  <object class="wxBoxSizer" name="bSizer1412">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                      <flag>wxALL</flag>
+                      <border>5</border>
+                      <option>0</option>
+                      <object class="wxStaticText" name="m_staticText1012">
+                        <label>Estensione file predefinita</label>
+                        <wrap>-1</wrap>
+                      </object>
+                    </object>
+                    <object class="sizeritem">
+                      <flag>wxALL</flag>
+                      <border>5</border>
+                      <option>1</option>
+                      <object class="wxChoice" name="extension">
+                        <selection>0</selection>
+                        <content/>
+                      </object>
+                    </object>
+                  </object>
+                </object>
+                <object class="sizeritem">
+                  <flag>wxEXPAND</flag>
+                  <border>5</border>
+                  <option>0</option>
+                  <object class="wxBoxSizer" name="bSizer14">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                      <flag>wxALL</flag>
+                      <border>5</border>
+                      <option>0</option>
+                      <object class="wxStaticText" name="m_staticText10">
+                        <label>Lingua</label>
+                        <wrap>-1</wrap>
+                      </object>
+                    </object>
+                    <object class="sizeritem">
+                      <flag>wxALL</flag>
+                      <border>5</border>
+                      <option>1</option>
+                      <object class="wxChoice" name="langCh">
+                        <selection>0</selection>
+                        <content/>
+                      </object>
+                    </object>
+                  </object>
+                </object>
+              </object>
+            </object>
+          </object>
+          <object class="notebookpage">
+            <label>AutoAdatta</label>
+            <selected>0</selected>
+            <object class="wxPanel" name="autoAdjust">
+              <style>wxTAB_TRAVERSAL</style>
+              <object class="wxBoxSizer" name="bSizer18">
+                <orient>wxVERTICAL</orient>
+                <object class="sizeritem">
+                  <flag>wxALL</flag>
+                  <border>5</border>
+                  <option>0</option>
+                  <object class="wxCheckBox" name="autoRemoveBlankLines">
+                    <label>Proponi rimozione righe vuote</label>
+                    <checked>0</checked>
+                  </object>
+                </object>
+                <object class="sizeritem">
+                  <flag>wxALL</flag>
+                  <border>5</border>
+                  <option>0</option>
+                  <object class="wxCheckBox" name="autoTab2Chordpro">
+                    <label>Proponi conversione canzoni in tab</label>
+                    <checked>0</checked>
+                  </object>
+                </object>
+                <object class="sizeritem">
+                  <flag>wxALL</flag>
+                  <border>5</border>
+                  <option>0</option>
+                  <object class="wxCheckBox" name="autoAdjustEasyKey">
+                    <label>Proponi trasposizione per semplificare gli accordi</label>
+                    <checked>0</checked>
+                  </object>
+                </object>
+                <object class="sizeritem">
+                  <flag>wxEXPAND | wxALL</flag>
+                  <border>5</border>
+                  <option>1</option>
+                  <object class="wxScrolledWindow" name="simplifyPanel">
+                    <style>wxHSCROLL|wxVSCROLL|wxBORDER_SUNKEN</style>
+                    <bg>#ffffff</bg>
+                    <scrollrate>5,5</scrollrate>
+                  </object>
+                </object>
+              </object>
+            </object>
+          </object>
+        </object>
+      </object>
+      <object class="sizeritem">
+        <flag>wxALL|wxEXPAND</flag>
+        <border>5</border>
+        <option>0</option>
+        <object class="wxStdDialogButtonSizer" name="m_sdbSizer3">
+          <object class="button">
+            <object class="wxButton" name="wxID_OK"/>
+          </object>
+          <object class="button">
+            <object class="wxButton" name="wxID_CANCEL"/>
+          </object>
+        </object>
+      </object>
+    </object>
+  </object>
+  <object class="wxPanel" name="UpdatePanel">
+    <style>wxTAB_TRAVERSAL</style>
+    <object class="wxBoxSizer" name="bSizer17">
+      <orient>wxVERTICAL</orient>
+      <object class="sizeritem">
+        <flag>wxEXPAND</flag>
+        <border>5</border>
+        <option>1</option>
+        <object class="wxFlexGridSizer" name="fgSizer1">
+          <vgap>0</vgap>
+          <hgap>0</hgap>
+          <growablerows>1</growablerows>
+          <growablecols>1</growablecols>
+          <rows>2</rows>
+          <cols>2</cols>
+          <object class="sizeritem">
+            <flag>wxALL</flag>
+            <border>5</border>
+            <option>0</option>
+            <object class="wxStaticText" name="m_staticText12">
+              <label>Numero di versione</label>
+              <wrap>-1</wrap>
+            </object>
+          </object>
+          <object class="sizeritem">
+            <flag>wxALL|wxEXPAND</flag>
+            <border>5</border>
+            <option>0</option>
+            <object class="wxTextCtrl" name="version">
+              <style>wxTE_READONLY</style>
+              <value></value>
+              <maxlength>0</maxlength>
+            </object>
+          </object>
+          <object class="sizeritem">
+            <flag>wxALL</flag>
+            <border>5</border>
+            <option>0</option>
+            <object class="wxStaticText" name="m_staticText13">
+              <label>Novità</label>
+              <wrap>-1</wrap>
+            </object>
+          </object>
+          <object class="sizeritem">
+            <flag>wxALL|wxEXPAND</flag>
+            <border>5</border>
+            <option>1</option>
+            <object class="wxHtmlWindow" name="new_features">
+              <style>wxHW_SCROLLBAR_AUTO</style>
+            </object>
+          </object>
+        </object>
+      </object>
+      <object class="sizeritem">
+        <flag>wxEXPAND</flag>
+        <border>5</border>
+        <option>0</option>
+        <object class="wxBoxSizer" name="bSizer18">
+          <orient>wxHORIZONTAL</orient>
+          <object class="spacer">
+            <flag>wxEXPAND</flag>
+            <border>5</border>
+            <option>1</option>
+            <size>0,0</size>
+          </object>
+          <object class="sizeritem">
+            <flag>wxALL</flag>
+            <border>5</border>
+            <option>0</option>
+            <object class="wxButton" name="download">
+              <label>Scarica</label>
+              <default>0</default>
+              <auth_needed>0</auth_needed>
+              <markup>0</markup>
+              <bitmap/>
+            </object>
+          </object>
+          <object class="sizeritem">
+            <flag>wxALL</flag>
+            <border>5</border>
+            <option>0</option>
+            <object class="wxButton" name="remind">
+              <label>Ricordamelo più tardi</label>
+              <default>0</default>
+              <auth_needed>0</auth_needed>
+              <markup>0</markup>
+              <bitmap/>
+            </object>
+          </object>
+          <object class="sizeritem">
+            <flag>wxALL</flag>
+            <border>5</border>
+            <option>0</option>
+            <object class="wxButton" name="skip">
+              <label>Salta questa versione</label>
+              <default>0</default>
+              <auth_needed>0</auth_needed>
+              <markup>0</markup>
+              <bitmap/>
+            </object>
+          </object>
+        </object>
+      </object>
+    </object>
+  </object>
+  <object class="wxDialog" name="UpdateDialog">
+    <size>258,250</size>
+    <style>wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER</style>
+    <title>Sono disponibili aggiornamenti</title>
+    <centered>1</centered>
+    <object class="wxBoxSizer" name="bSizer20">
+      <orient>wxVERTICAL</orient>
+      <object class="sizeritem">
+        <flag>wxALL|wxEXPAND</flag>
+        <border>5</border>
+        <option>1</option>
+        <object name="updatesSizer"/>
+      </object>
+    </object>
+  </object>
+  <object class="wxDialog" name="ListDialog">
+    <size>413,240</size>
+    <style>wxDEFAULT_DIALOG_STYLE</style>
+    <title>Songpress</title>
+    <centered>1</centered>
+    <object class="wxBoxSizer" name="bSizer24">
+      <orient>wxVERTICAL</orient>
+      <object class="sizeritem">
+        <flag>wxALL</flag>
+        <border>5</border>
+        <option>0</option>
+        <object class="wxStaticText" name="label">
+          <label>Label text</label>
+          <wrap>-1</wrap>
+        </object>
+      </object>
+      <object class="sizeritem">
+        <flag>wxALL|wxEXPAND</flag>
+        <border>5</border>
+        <option>3</option>
+        <object class="wxListBox" name="elements">
+          <style>wxLB_SINGLE</style>
+          <content/>
+        </object>
+      </object>
+      <object class="sizeritem">
+        <flag>wxEXPAND</flag>
+        <border>5</border>
+        <option>0</option>
+        <object class="wxStdDialogButtonSizer" name="m_sdbSizer5">
+          <object class="button">
+            <object class="wxButton" name="wxID_OK"/>
+          </object>
+          <object class="button">
+            <object class="wxButton" name="wxID_CANCEL"/>
+          </object>
+        </object>
+      </object>
+    </object>
+  </object>
+</resource>

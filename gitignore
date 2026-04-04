@@ -1,0 +1,18 @@
+# Ambienti virtuali
+.venv-build/
+
+# IDE
+.idea/
+
+# Build e distribuzione
+# Esclude le sottocartelle di build, non i file
+build/*/
+dist/
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+
+# File di log
+*.log

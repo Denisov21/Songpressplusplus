@@ -92,3 +92,6 @@ Quando il fattore di scala del display di sistema non è impostato su 1, l'outpu
 
 - Sito web versione originale: <http://www.skeed.it/songpress>
 - Repository fork: <https://github.com/Denisov21/Songpressplusplus>
+
+---
+*Questo file è codificato UTF-8 senza BOM.*

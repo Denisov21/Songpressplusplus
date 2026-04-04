@@ -11,7 +11,9 @@ Descrizione di ogni file e cartella presente nel progetto.
 | `src/` | Codice sorgente dell'applicazione (vedi dettaglio sotto). |
 | `installer/` | File per la creazione dell'installer. |
 | `build/` | Output di compilazione e packaging. |
-| `.idea/` | Configurazione IDE (PyCharm). Non va inclusa nel controllo versione. |
+| `dist/` | Distribuzione finale: contiene i file pronti per la distribuzione (es. eseguibili PyInstaller, archivi). |
+| `.venv-build/` | Ambiente virtuale Python dedicato alla build/packaging (es. PyInstaller). Separato dall'ambiente di sviluppo principale. |
+| `.idea/` | Configurazione IDE (PyCharm). |
 | `.git/` | Repository Git. |
 
 ---
@@ -23,6 +25,7 @@ Descrizione di ogni file e cartella presente nel progetto.
 | File | Descrizione |
 | ---- | ----------- |
 | `pyproject.toml` | Configurazione del progetto Python (dipendenze, metadata, build system). Fonte unica di verità per versione app e dipendenze. |
+| `.gitignore` | Elenco di file e cartelle esclusi dal controllo versione Git (es. `.venv-build/`, `.idea/`, `build/`, `dist/`, `__pycache__/`). Quindi non vengono caricate in Git. |
 | `.gitattributes` | Attributi Git per la gestione dei fine riga e dei file binari. |
 
 ### Documentazione
@@ -174,7 +177,7 @@ Descrizione di ogni file e cartella presente nel progetto.
 | `img/` | Immagini e icone dell'interfaccia grafica. |
 | `decorators/` | Moduli o risorse per le decorazioni visive delle sezioni (stili grafici dei blocchi). |
 | `locale/` | Cataloghi di traduzione compilati (`.mo`) e sorgenti (`.po`), organizzati per lingua (es. `locale/it/LC_MESSAGES/`). |
-| `__pycache__/` | Cache dei bytecode Python (`.pyc`). Generata automaticamente, non va inclusa nel controllo versione. |
+| `__pycache__/` | Cache dei bytecode Python (`.pyc`). Generata automaticamente. |
 
 ---
 
@@ -203,3 +206,16 @@ I file `.mo` sono le versioni **compilate** dei `.po`, lette a runtime da wxPyth
 | `SyntaxCheckerDialog.po` / `.mo` | `SyntaxCheckerDialog.py` |
 | `Transpose.po` / `.mo` | `Transpose.py` |
 | `TransposeDialog.po` / `.mo` | `TransposeDialog.py` / `MyTransposeDialog.py` |
+
+---
+
+## Codifica dei file
+
+Tutti i file di testo del progetto (`.py`, `.md`, `.po`, `.vbs`, `.toml`, `.json`, `.txt`, `.xrc`, `.fbp`) devono essere salvati in codifica **UTF-8** (senza BOM).
+
+I file `.mo` sono binari e non hanno una codifica di testo propria.
+
+
+
+---
+*Questo file è codificato UTF-8 senza BOM.*

@@ -46,7 +46,7 @@ Songpressplusplus/
 Sostituisci il percorso seguente con quello completo del tuo progetto Songpress++:
 
 ```powershell
-cd "E:\Users\Utente\Documents\GitHub\Songpressplusplus"
+cd "E:\Users\Utente\Downloads\SongpressV26\Songpressplusplus"
 ```
 
 ### 2. Consenti l'esecuzione di script (solo al primo utilizzo, una tantum per il sistema)

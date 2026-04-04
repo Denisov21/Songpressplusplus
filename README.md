@@ -92,3 +92,7 @@ When the system display scale factor is not set to 1, the SVG output produced by
 
 - Original project website: <http://www.skeed.it/songpress>
 - Fork repository: <https://github.com/Denisov21/Songpressplusplus>
+
+---
+
+*File encoding: UTF-8*
