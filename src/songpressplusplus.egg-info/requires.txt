@@ -1,8 +1,0 @@
-wxPython<5.0.0,>=4.2.4
-requests<3.0.0,>=2.32.4
-python-pptx<2.0.0,>=1.0.2
-pyshortcuts<2.0.0,>=1.9.5
-reportlab<5.0.0,>=4.0.0
-pypdf<7.0.0,>=6.0.0
-markdown<4.0.0,>=3.4
-mistune<4.0.0,>=3.0.0

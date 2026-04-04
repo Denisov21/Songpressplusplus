@@ -6,29 +6,31 @@ Songpress++ è incentrato sulla formattazione delle canzoni. Una volta che la ca
 
 ## Installazione su Windows
 
-## Prerequisiti
-
-Richiesta connessione Internet per scaricare i pacchetti Python necessari!
-
-### Python 3
-
-Songpress++ richiede **Python 3** installato sul sistema.
-
-1. Scarica Python 3 da [https://www.python.org](https://www.python.org)
-1. Durante l'installazione, assicurati di spuntare **"Add Python to PATH"**
-1. Completa l'installazione normalmente
-
 ### Utenti finali
 
-Scarica ed esegui il file `songpress-local-setup.exe`. L'installer (dipende da internet) e guida l'utente attraverso l'installazione passo passo. Versione portabile o installabile.
+1. Scarica ed esegui il file `songpress++-setup.exe`
+2. L'installer guida l'utente attraverso l'installazione passo passo
+3. **Nessuna configurazione manuale richiesta**: l'installer scarica automaticamente Python (se non già presente nel sistema) e tutti i pacchetti necessari direttamente da internet
+4. Disponibile in versione portabile o installabile
 
-Tutti i file vengono installati in un'unica cartella all'interno della directory _User_ del utente corrente, consentendo una disinstallazione pulita tramite il proprio programma di disinstallazione.
+> **Nota:** È necessaria una connessione internet durante la prima installazione.
+
+Tutti i file vengono installati in un'unica cartella all'interno della directory _User_ dell'utente corrente, consentendo una disinstallazione pulita tramite il proprio programma di disinstallazione.
 
 ### Sviluppo
 
-Si può anche scaricare l'intero pacchetto e avviare src/Avvio SONGPRESS.vbs o Avvio SONGPRESS2.vbs
+#### Prerequisiti
 
-Le differenze sono due, entrambe significative:
+- **Python >= 3.12** installato e aggiunto al PATH
+- Installare i pacchetti necessari:
+
+```
+pip install -r requirements.txt
+```
+
+Poi avviare `src/Avvio SONGPRESS.vbs` oppure `src/Avvio SONGPRESS2.vbs`.
+
+Le differenze tra i due launcher sono due, entrambe significative:
 
 1. Ricerca di Python
 

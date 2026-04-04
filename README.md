@@ -6,29 +6,31 @@ Songpress++ is focused on song formatting. Once the song is ready, you can copy/
 
 ## Installation on Windows
 
-## Prerequisites
-
-Internet connection required to download the necessary Python packages!
-
-### Python 3
-
-Songpress++ requires **Python 3** installed on your system.
-
-1. Download Python 3 from [https://www.python.org](https://www.python.org)
-1. During installation, make sure to check **"Add Python to PATH"**
-1. Complete the installation normally
-
 ### End Users
 
-Download and run the `songpress-local-setup.exe` file. The installer (requires an internet connection) guides the user through the installation step by step. Available as either a portable or installable version.
+1. Download and run `songpress++-setup.exe`
+2. The installer will guide you through the installation step by step
+3. **No manual setup required**: the installer automatically downloads Python (if not already present on the system) and all necessary packages directly from the internet
+4. Available as either a portable or installable version
+
+> **Note:** An internet connection is required during the first installation.
 
 All files are installed in a single folder within the current user's _User_ directory, allowing a clean uninstallation through its own uninstaller.
 
 ### Development
 
-You can also download the entire package and launch src/Avvio SONGPRESS.vbs or Avvio SONGPRESS2.vbs
+#### Prerequisites
 
-There are two differences, both significant:
+- **Python >= 3.12** installed and added to PATH
+- Install the required packages:
+
+```
+pip install -r requirements.txt
+```
+
+Then launch `src/Avvio SONGPRESS.vbs` or `src/Avvio SONGPRESS2.vbs`.
+
+There are two differences between the two launchers, both significant:
 
 1. Python detection
 
