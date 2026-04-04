@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: songpress\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-05 16:22+0200\n"
-"PO-Revision-Date: 2026-03-31 00:00+0100\n"
+"PO-Revision-Date: 2026-04-04 20:36+0200\n"
 "Last-Translator: Denisov21\n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -254,10 +254,6 @@ msgid "Unassociate all"
 msgstr "Disassocia tutto"
 
 #: PreferencesDialog.py
-msgid "Tempo icon size"
-msgstr "Dimensione icone tempo"
-
-#: PreferencesDialog.py
 msgid "Propagate verse chords"
 msgstr "Propaga accordi strofa"
 
@@ -266,13 +262,8 @@ msgid "Propagate chorus chords"
 msgstr "Propaga accordi ritornello"
 
 #: PreferencesDialog.py
-msgid "Save window size and position on exit"
-msgstr "Salva dimensioni e posizione della finestra all'uscita"
-
-#: PreferencesDialog.py
 msgid "Songpress++ Preview"
 msgstr "Anteprima Songpress++"
-
 
 #: PreferencesDialog.py
 msgid "Show page indicator (e.g. 'Page 1 of 3')"
@@ -288,11 +279,9 @@ msgstr "Sfondo grigio nell'anteprima (stile pagina)"
 
 #: PreferencesDialog.py
 msgid ""
-"Show the preview on a grey background to simulate a printed page. When "
-"disabled, the background is white."
+"Show the preview on a grey background to simulate a printed page. When disabled, the background is white."
 msgstr ""
-"Mostra l'anteprima su sfondo grigio per simulare una pagina stampata. "
-"Se disabilitato, lo sfondo è bianco."
+"Mostra l'anteprima su sfondo grigio per simulare una pagina stampata. Se disabilitato, lo sfondo è bianco."
 
 #: PreviewCanvas.py
 msgid "Page %d of %d"
@@ -304,13 +293,11 @@ msgstr "Ritarda aggiornamento anteprima durante la digitazione (debounce)"
 
 #: PreferencesDialog.py
 msgid ""
-"When enabled, the preview redraws only after a short pause in typing "
-"(300 ms), reducing CPU usage. When disabled, every keystroke "
-"immediately updates the preview."
+"When enabled, the preview redraws only after a short pause in typing (300 ms), reducing CPU usage. When "
+"disabled, every keystroke immediately updates the preview."
 msgstr ""
-"Se abilitato, l'anteprima viene ridisegnata solo dopo una breve pausa "
-"nella digitazione (300 ms), riducendo l'uso della CPU. Se disabilitato, "
-"ogni tasto aggiorna immediatamente l'anteprima."
+"Se abilitato, l'anteprima viene ridisegnata solo dopo una breve pausa nella digitazione (300 ms), "
+"riducendo l'uso della CPU. Se disabilitato, ogni tasto aggiorna immediatamente l'anteprima."
 
 #: PreferencesDialog.py
 msgid "Double-click on preview jumps to source line in editor"
@@ -318,11 +305,11 @@ msgstr "Doppio clic sull'anteprima porta alla riga sorgente nell'editor"
 
 #: PreferencesDialog.py
 msgid ""
-"When enabled, double-clicking on any word or chord in the preview moves the "
-"cursor to the corresponding line in the editor."
+"When enabled, double-clicking on any word or chord in the preview moves the cursor to the corresponding "
+"line in the editor."
 msgstr ""
-"Se abilitato, il doppio clic su una parola o un accordo nell'anteprima "
-"sposta il cursore alla riga corrispondente nell'editor."
+"Se abilitato, il doppio clic su una parola o un accordo nell'anteprima sposta il cursore alla riga "
+"corrispondente nell'editor."
 
 #: PreferencesDialog.py
 msgid "Set minimum size for the preview panel at startup (370×520)"
@@ -330,11 +317,11 @@ msgstr "Imposta la dimensione minima del pannello anteprima all'avvio (370×520)
 
 #: PreferencesDialog.py
 msgid ""
-"When enabled, the preview panel cannot be resized below 370×520 pixels. "
-"This prevents the panel from appearing too small when the application starts."
+"When enabled, the preview panel cannot be resized below 370×520 pixels. This prevents the panel from "
+"appearing too small when the application starts."
 msgstr ""
-"Se abilitato, il pannello anteprima non può essere ridimensionato al di sotto "
-"di 370×520 pixel. In questo modo il pannello non appare troppo piccolo all'avvio."
+"Se abilitato, il pannello anteprima non può essere ridimensionato al di sotto di 370×520 pixel. In questo "
+"modo il pannello non appare troppo piccolo all'avvio."
 
 #: PreferencesDialog.py guide viewer group title
 msgid "Quick guide"
@@ -454,7 +441,7 @@ msgstr "Tabella  —  celle con bordi"
 msgid "Each bar is rendered as a cell with a visible border, like a grid table."
 msgstr "Ogni battuta viene disegnata come una cella con bordo visibile, come una tabella a griglia."
 
-#: PreferencesDialog.py format tab — chord grid default label label
+#: PreferencesDialog.py format tab — chord grid default label
 msgid "Default label (used when {start_of_grid} has no label):"
 msgstr "Etichetta predefinita (usata quando {start_of_grid} non ha etichetta):"
 
@@ -464,12 +451,11 @@ msgstr "Griglia"
 
 #: PreferencesDialog.py format tab — chord grid default label tooltip
 msgid ""
-"This text is shown as the section label when {start_of_grid} is used "
-"without an explicit label argument.\n"
+"This text is shown as the section label when {start_of_grid} is used without an explicit label argument.\n"
 "Example: {start_of_grid: label} overrides this value."
 msgstr ""
-"Questo testo viene mostrato come etichetta di sezione quando {start_of_grid} "
-"viene usato senza un argomento etichetta esplicito.\n"
+"Questo testo viene mostrato come etichetta di sezione quando {start_of_grid} viene usato senza un "
+"argomento etichetta esplicito.\n"
 "Esempio: {start_of_grid: etichetta} sovrascrive questo valore."
 
 #: PreferencesDialog.py format tab — chord grid space as pipe checkbox
@@ -513,3 +499,41 @@ msgstr "Colore barra Anteprima"
 #: PreferencesDialog.py general tab — open templates folder button
 msgid "Open templates folder"
 msgstr "Apri cartella template"
+
+#: PreferencesDialog.py format tab — musical symbol insertion group title
+msgid "Musical symbol insertion"
+msgstr "Inserimento simbolo musicale"
+
+#: PreferencesDialog.py format tab — musical symbol custom size checkbox
+msgid "Custom size when inserting musical symbols (pt):"
+msgstr "Dimensione personalizzata all'inserimento dei simboli musicali (pt):"
+
+#: PreferencesDialog.py format tab — musical symbol custom size tooltip
+msgid ""
+"When enabled, inserted musical symbols are wrapped with\n"
+"{textsize:N}...{textsize:} to apply the chosen point size."
+msgstr ""
+"Se abilitato, i simboli musicali inseriti vengono racchiusi con\n"
+"{textsize:N}...{textsize:} per applicare la dimensione in punti scelta."
+
+#: PreferencesDialog.py format tab — musical symbol wrap in verse checkbox
+msgid "Wrap symbol in a verse block (not counted)"
+msgstr "Incorpora il simbolo in una strofa (non conteggiata)"
+
+#: PreferencesDialog.py format tab — musical symbol wrap in verse tooltip
+msgid ""
+"When enabled, the inserted symbol is wrapped inside\n"
+"{start_verse}...{end_verse} so it is not counted\n"
+"in the verse numbering."
+msgstr ""
+"Se abilitato, il simbolo inserito viene racchiuso in\n"
+"{start_verse}...{end_verse} in modo da non essere conteggiato\n"
+"nella numerazione delle strofe."
+
+#: PreferencesDialog.py general tab — save window geometry checkbox
+msgid "Save window size and position on exit"
+msgstr "Salva dimensione e posizione della finestra all'uscita"
+
+#: PreferencesDialog.py format tab — tempo icon size label
+msgid "Tempo icon size"
+msgstr "Dimensione icone tempo"
