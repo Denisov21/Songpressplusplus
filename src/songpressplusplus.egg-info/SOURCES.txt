@@ -1,0 +1,10 @@
+README.md
+license.txt
+license.txt.tpl
+pyproject.toml
+src/songpressplusplus.egg-info/PKG-INFO
+src/songpressplusplus.egg-info/SOURCES.txt
+src/songpressplusplus.egg-info/dependency_links.txt
+src/songpressplusplus.egg-info/entry_points.txt
+src/songpressplusplus.egg-info/requires.txt
+src/songpressplusplus.egg-info/top_level.txt
