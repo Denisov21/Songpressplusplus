@@ -1,5 +1,7 @@
 """
 sync_deps.py — Sincronizza le dipendenze da pyproject.toml a install_check.vbs
+sync_deps.py — Sincronizza le dipendenze da pyproject.toml a requirements.txt
+Per disabilitare l'aggiornamento del requirements basta passare --req ""
 
 Uso:
     python sync_deps.py
@@ -54,7 +56,16 @@ def build_deps_block(deps):
     return "\n".join(lines)
 
 
-def sync(toml_path, vbs_path):
+def sync_requirements(req_path, deps_raw):
+    """
+    Riscrive requirements.txt con le stesse dipendenze del pyproject.toml.
+    """
+    content = "\n".join(deps_raw) + "\n"
+    Path(req_path).write_text(content, encoding="utf-8")
+    print(f"  '{req_path}' aggiornato.")
+
+
+def sync(toml_path, vbs_path, req_path=None):
     # Legge pyproject.toml
     with open(toml_path, "rb") as f:
         toml = tomllib.load(f)
@@ -114,15 +125,23 @@ def sync(toml_path, vbs_path):
     Path(vbs_path).write_text(vbs_text, encoding="utf-8")
     print(f"  '{vbs_path}' aggiornato.")
 
+    # 5. requirements.txt (opzionale)
+    if req_path is not None and req_path.exists():
+        sync_requirements(req_path, raw_deps)
+    elif req_path is not None:
+        print(f"  ATTENZIONE: '{req_path}' non trovato, saltato.")
+
 
 def main():
     parser = argparse.ArgumentParser(description="Sincronizza deps da pyproject.toml a install_check.vbs")
-    parser.add_argument("--toml", default="pyproject.toml",    help="Percorso pyproject.toml")
+    parser.add_argument("--toml", default="pyproject.toml",        help="Percorso pyproject.toml")
     parser.add_argument("--vbs",  default="src/install_check.vbs", help="Percorso install_check.vbs")
+    parser.add_argument("--req",  default="requirements.txt",      help="Percorso requirements.txt (default: stessa cartella del toml)")
     args = parser.parse_args()
 
     toml_path = Path(args.toml)
     vbs_path  = Path(args.vbs)
+    req_path  = Path(args.req) if args.req else None
 
     if not toml_path.exists():
         print(f"Errore: '{toml_path}' non trovato.")
@@ -131,8 +150,8 @@ def main():
         print(f"Errore: '{vbs_path}' non trovato.")
         sys.exit(1)
 
-    print(f"Sincronizzazione: {toml_path} → {vbs_path}")
-    sync(toml_path, vbs_path)
+    print(f"Sincronizzazione: {toml_path} → {vbs_path}, {req_path}")
+    sync(toml_path, vbs_path, req_path)
     print("Fatto.")
 
 
