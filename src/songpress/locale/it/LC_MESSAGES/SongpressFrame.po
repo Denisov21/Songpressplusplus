@@ -945,3 +945,11 @@ msgstr "Attiva/disattiva schermo intero"
 #: SongpressFrame.py editor pane caption
 msgid "Editor"
 msgstr "Editor"
+
+#: SongpressFrame.py OnChord
+msgid "Chord:"
+msgstr "Accordo:"
+
+#: SongpressFrame.py OnChord
+msgid "Keep this dialog open after inserting"
+msgstr "Mantieni questa finestra aperta dopo l'inserimento"

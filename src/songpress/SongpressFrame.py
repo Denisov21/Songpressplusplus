@@ -1182,6 +1182,7 @@ class SongpressFrame(SDIMainFrame):
         self._shrink_to_fit = False  # True = auto-shrink to avoid bottom clipping
         self._min_margin_shrink = 5   # margine minimo (mm) usato dallo shrink automatico
         self._print_options_pinned = False  # True = keep print options dialog open after OK
+        self._chord_dialog_pinned = False   # True = keep insert-chord dialog open after OK
         self._showPageBreakLines = True
         self._showColumnBreakLines = True
         self._showPageBreakLinesMenuId = xrc.XRCID('showPageBreakLines')
@@ -1735,17 +1736,17 @@ class SongpressFrame(SDIMainFrame):
     def OnInsertLinespacing(self, evt):
         """Inserisce la direttiva {linespacing: <valore>}."""
         msg = _("Enter the line spacing value (e.g. 0 to remove extra space):")
-        d = wx.TextEntryDialog(self.frame, msg, _("Line spacing"), "0")
+        d = wx.NumberEntryDialog(self.frame, msg, _("Value:"), _("Line spacing"), 13, 0, 100)
         if d.ShowModal() == wx.ID_OK:
-            val = d.GetValue().strip()
+            val = d.GetValue()
             self.InsertWithCaret("{linespacing: %s}" % val) #modifica qui con x_linespacing
 
     def OnInsertChordtopspacing(self, evt):
         """Inserisce la direttiva {chordtopspacing: <valore>}."""
         msg = _("Enter the space above chords value (e.g. 0 to remove extra space):")
-        d = wx.TextEntryDialog(self.frame, msg, _("Space above chords"), "0")
+        d = wx.NumberEntryDialog(self.frame, msg, _("Value:"), _("Space above chords"), 0, 0, 100)
         if d.ShowModal() == wx.ID_OK:
-            val = d.GetValue().strip()
+            val = d.GetValue()
             self.InsertWithCaret("{chordtopspacing: %s}" % val)
 
     def OnInsertVerse(self, evt):
@@ -4437,7 +4438,93 @@ class SongpressFrame(SDIMainFrame):
         self.InsertWithCaret("{subtitle:|}")
 
     def OnChord(self, evt):
-        self.InsertWithCaret("[|]")
+        # Se il dialogo è già aperto (modalità pinnata), riportalo in primo piano
+        if getattr(self, '_chord_dlg', None) is not None:
+            try:
+                self._chord_dlg.Raise()
+                self._chord_dlg.SetFocus()
+                return
+            except Exception:
+                self._chord_dlg = None
+
+        PIN_OFF = u"📌"
+        PIN_ON  = u"📍"
+
+        # Dialogo non modale: il cursore dell'editor rimane raggiungibile con le frecce
+        dlg = wx.Dialog(
+            self.frame,
+            title=_(u"Insert chord"),
+            style=wx.DEFAULT_DIALOG_STYLE | wx.STAY_ON_TOP,
+        )
+        self._chord_dlg = dlg
+
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        # Campo testo
+        row = wx.BoxSizer(wx.HORIZONTAL)
+        row.Add(wx.StaticText(dlg, label=_(u"Chord:")),
+                0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        txt = wx.TextCtrl(dlg, size=(140, -1), style=wx.TE_PROCESS_ENTER)
+        row.Add(txt, 1, wx.EXPAND)
+        vbox.Add(row, 0, wx.EXPAND | wx.ALL, 10)
+
+        # Bottoni: [📌] [OK] [Annulla]
+        btn_pin    = wx.Button(dlg, wx.ID_ANY,
+                               PIN_ON if self._chord_dialog_pinned else PIN_OFF,
+                               size=(32, -1))
+        btn_pin.SetToolTip(_(u"Keep this dialog open after inserting"))
+        btn_ok     = wx.Button(dlg, wx.ID_OK,     _(u"OK"))
+        btn_cancel = wx.Button(dlg, wx.ID_CANCEL, _(u"Cancel"))
+        btn_ok.SetDefault()
+
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        btn_sizer.Add(btn_pin,    0, wx.RIGHT, 4)
+        btn_sizer.AddStretchSpacer()
+        btn_sizer.Add(btn_ok,     0, wx.RIGHT, 4)
+        btn_sizer.Add(btn_cancel, 0)
+        vbox.Add(btn_sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
+        dlg.SetSizer(vbox)
+        vbox.Fit(dlg)
+
+        def _insert():
+            chord = txt.GetValue().strip()
+            if chord:
+                self.InsertWithCaret("[%s]" % chord)
+            else:
+                self.InsertWithCaret("[|]")
+            # Dopo inserimento: focus torna all'editor per usare le frecce
+            self.text.SetFocus()
+
+        def on_pin(e):
+            self._chord_dialog_pinned = not self._chord_dialog_pinned
+            btn_pin.SetLabel(PIN_ON if self._chord_dialog_pinned else PIN_OFF)
+
+        def on_ok(e):
+            _insert()
+            if self._chord_dialog_pinned:
+                txt.SetValue("")
+                # Focus all'editor: le frecce spostano il cursore nel testo
+                self.text.SetFocus()
+            else:
+                dlg.Destroy()
+
+        def on_cancel(e):
+            dlg.Destroy()
+
+        def on_close(e):
+            self._chord_dlg = None
+            e.Skip()
+
+        # Enter nel campo testo = OK
+        txt.Bind(wx.EVT_TEXT_ENTER, on_ok)
+        btn_pin.Bind(wx.EVT_BUTTON, on_pin)
+        btn_ok.Bind(wx.EVT_BUTTON, on_ok)
+        btn_cancel.Bind(wx.EVT_BUTTON, on_cancel)
+        dlg.Bind(wx.EVT_CLOSE, on_close)
+
+        # Dialogo non modale: Show() invece di ShowModal()
+        dlg.Show()
 
     def OnVerse(self, evt):
         label = wx.GetTextFromUser(
