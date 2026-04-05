@@ -180,6 +180,17 @@ class Editor(StyledTextCtrl):
         fg = wx.Colour(0, 0, 0) if luminance > 128 else wx.Colour(255, 255, 255)
         self.SetSelForeground(True, fg)
 
+    def SetSyntaxColour(self, style_id, hex_str):
+        """Imposta il colore foreground di uno stile STC tramite hex string."""
+        try:
+            h = hex_str.strip().lstrip('#')
+            c = wx.Colour(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)) if len(h) == 6 else wx.Colour(0, 0, 0)
+        except Exception:
+            c = wx.Colour(0, 0, 0)
+        self.StyleSetForeground(style_id, c)
+        self.Colourise(0, -1)
+        self.Refresh()
+
     def New(self):
         self.ClearAll()
 
@@ -479,7 +490,16 @@ class Editor(StyledTextCtrl):
         if show_paste:
             add_item(_("&Paste"),  lambda e: self.Paste(),              png_path=img('paste.png'),  enabled=can_paste)
         if show_delete:
-            add_item(_("&Delete"), lambda e: self.ReplaceSelection(''), png_path=img('delete.png'), enabled=has_selection)
+            def _do_delete(e):
+                if cm_pref('cmConfirmDelete'):
+                    if wx.MessageBox(
+                        _("Delete the selected text?"),
+                        _("Songpress++"),
+                        wx.YES_NO | wx.ICON_QUESTION
+                    ) != wx.YES:
+                        return
+                self.ReplaceSelection('')
+            add_item(_("&Delete"), _do_delete, png_path=img('delete.png'), enabled=has_selection)
         if show_cut or show_copy or show_paste or show_delete:
             menu.AppendSeparator()
 

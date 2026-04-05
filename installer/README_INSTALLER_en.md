@@ -4,17 +4,21 @@ In order to build the Windows installer you need to download:
 
 - Windows x64 binaries of `uv`, e.g. [Releases · astral-sh/uv](https://github.com/astral-sh/uv/releases/)
 - The [NSIS compiler](https://nsis.sourceforge.io/Download)
-- The [INetC plug-in – NSIS amd64-unicode](https://nsis.sourceforge.io/Inetc_plug-in)
+- The [INetC plug-in – NSIS amd64-unicode](https://nsis.sourceforge.io/Inetc_plug-in) (for the 64-bit installer)
+- The [INetC plug-in – NSIS x86-unicode](https://nsis.sourceforge.io/Inetc_plug-in) (for the 32-bit installer)
 
 Extract `uv.exe` from the zip into this folder.
-Then launch the NSIS compiler and compile the `songpressx64.nsi` script.
+Then launch the NSIS compiler and compile the appropriate `.nsi` script:
+
+- **64-bit installer**: compile `songpressx64.nsi`
+- **32-bit installer**: compile `songpressx32.nsi`
 
 ## Step-by-step compilation
 
 1. Open the NSIS program
 2. Click on **Compile NSI scripts**
 3. Press **File → Load Script**
-4. Select `songpressx64.nsi`
+4. Select `songpressx64.nsi` (64-bit) or `songpressx32.nsi` (32-bit)
 5. Click **Compile**
 
 ## NSI file
@@ -25,7 +29,9 @@ The script contains:
 
 ```nsi
 Unicode true
-!addplugindir /amd64-unicode "plugins"
+Target: NSIS_TARGET_X86   ; 32-bit installer only (songpressx32.nsi)
+!addplugindir /amd64-unicode "plugins/64-bit"
+!addplugindir /x86-unicode  "plugins/x86-bit"
 !include "MUI2.nsh"
 ```
 
@@ -46,11 +52,15 @@ The temporary file is deleted immediately afterwards.
 ```
 installer/
 ├── songpressx64.nsi
+├── songpressx32.nsi
 ├── songpressplusplus.ico
 ├── uv.exe
 ├── license.txt
 └── plugins/
-    └── INetC.dll      ← from the INetC zip, folder Plugins\amd64-unicode\
+    ├── 64-bit/
+    │   └── INetC.dll      ← from the INetC zip, folder Plugins\amd64-unicode\
+    └── x86-bit/
+        └── INetC.dll      ← from the INetC zip, folder Plugins\x86-unicode\
 ```
 
 The `installer\` folder must be placed directly inside the project root
@@ -98,13 +108,14 @@ The installer language (Italian/English) is selected at startup.
 
 ## Final result
 
-If compilation succeeds, the following file will appear in the `installer/` folder:
+If compilation succeeds, the following files will appear in the `installer/` folder:
 
 ```
-songpress++-setup.exe
+songpress++-setup.exe        ← 64-bit installer
+songpress++-setup-x32.exe   ← 32-bit installer
 ```
 
-This is the Windows installer ready for distribution.
+These are the Windows installers ready for distribution.
 
 ---
 *This file is UTF-8 encoded without BOM.*

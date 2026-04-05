@@ -95,6 +95,62 @@ class PreferencesDialog(wx.Dialog):
         bSizerCapPreview.Add(self.capPreviewSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
         grpEditor.Add(bSizerCapPreview, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
 
+        # ── Colori sintassi editor ──────────────────────────────────
+        grpSyntax = wx.StaticBoxSizer(wx.StaticBox(self.general, wx.ID_ANY, _(u"Syntax colours")), wx.VERTICAL)
+
+        # Barra temi
+        bSizerTheme = wx.BoxSizer(wx.HORIZONTAL)
+        self.labelTheme = wx.StaticText(self.general, wx.ID_ANY, _(u"Theme:"))
+        bSizerTheme.Add(self.labelTheme, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.themeCh = wx.Choice(self.general, wx.ID_ANY, wx.DefaultPosition, wx.Size(150, -1), [])
+        bSizerTheme.Add(self.themeCh, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.themeLoadBtn  = wx.Button(self.general, wx.ID_ANY, _(u"Load"),   wx.DefaultPosition, wx.Size(60, -1))
+        self.themeSaveBtn  = wx.Button(self.general, wx.ID_ANY, _(u"Save"),   wx.DefaultPosition, wx.Size(60, -1))
+        self.themeDeleteBtn = wx.Button(self.general, wx.ID_ANY, _(u"Delete"), wx.DefaultPosition, wx.Size(60, -1))
+        bSizerTheme.Add(self.themeLoadBtn,   0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 3)
+        bSizerTheme.Add(self.themeSaveBtn,   0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 3)
+        bSizerTheme.Add(self.themeDeleteBtn, 0, wx.ALIGN_CENTER_VERTICAL)
+        grpSyntax.Add(bSizerTheme, 0, wx.EXPAND | wx.ALL, 5)
+
+        # Bind eventi temi
+        self.themeLoadBtn.Bind(wx.EVT_BUTTON,  self.OnThemeLoad)
+        self.themeSaveBtn.Bind(wx.EVT_BUTTON,  self.OnThemeSave)
+        self.themeDeleteBtn.Bind(wx.EVT_BUTTON, self.OnThemeDelete)
+
+        _syntax_rows = [
+            ('normal',  _(u"Normal text"),  '#000000'),
+            ('chorus',  _(u"Chorus"),       '#000000'),
+            ('chord',   _(u"Chords"),       '#FF0000'),
+            ('command', _(u"Commands"),     '#0000FF'),
+            ('attr',    _(u"Attributes"),   '#008000'),
+            ('comment', _(u"Comments"),     '#808080'),
+            ('tabgrid', _(u"Tab / Grid"),   '#8B5A00'),
+        ]
+        _syntaxGrid = wx.FlexGridSizer(len(_syntax_rows), 4, 3, 5)
+        _syntaxGrid.AddGrowableCol(0, 1)
+        self.syntaxHexCtrls   = {}
+        self.syntaxSwatches   = {}
+        self.syntaxPickBtns   = {}
+        for key, label, default in _syntax_rows:
+            lbl = wx.StaticText(self.general, wx.ID_ANY, label)
+            _syntaxGrid.Add(lbl, 0, wx.ALIGN_CENTER_VERTICAL)
+            hx = wx.TextCtrl(self.general, wx.ID_ANY, default, wx.DefaultPosition, wx.Size(80, -1))
+            _syntaxGrid.Add(hx, 0, wx.ALIGN_CENTER_VERTICAL)
+            btn = wx.Button(self.general, wx.ID_ANY, _(u"Pick…"), wx.DefaultPosition, wx.Size(60, -1))
+            _syntaxGrid.Add(btn, 0, wx.ALIGN_CENTER_VERTICAL)
+            sw = wx.Panel(self.general, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
+            _syntaxGrid.Add(sw, 0, wx.ALIGN_CENTER_VERTICAL)
+            self.syntaxHexCtrls[key] = hx
+            self.syntaxSwatches[key] = sw
+            self.syntaxPickBtns[key] = btn
+        grpSyntax.Add(_syntaxGrid, 0, wx.EXPAND | wx.ALL, 5)
+        grpEditor.Add(grpSyntax, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
+        # Bind eventi sintassi
+        for key in self.syntaxHexCtrls:
+            self.syntaxHexCtrls[key].Bind(wx.EVT_TEXT, self.OnSyntaxHexChanged)
+            self.syntaxPickBtns[key].Bind(wx.EVT_BUTTON, self.OnSyntaxPickColour)
+
         # Preview
         bSizer13 = wx.BoxSizer(wx.HORIZONTAL)
         self.m_staticText9 = wx.StaticText(self.general, wx.ID_ANY, _(u"Preview"), wx.DefaultPosition, wx.DefaultSize, 0)
@@ -106,65 +162,77 @@ class PreferencesDialog(wx.Dialog):
 
         bSizer11.Add(grpEditor, 1, wx.EXPAND | wx.ALL, 8)
 
+        self.general.SetSizer(bSizer11)
+        self.general.Layout()
+        bSizer11.Fit(self.general)
+        self.notebook.AddPage(self.general, _(u"General"), True)
+
+        # ── Tab "Generale 2" ─────────────────────────────────────────
+        self.general2 = wx.Panel(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL)
+        bSizer11b = wx.BoxSizer(wx.VERTICAL)
+
         # ── Gruppo: Canzone ──────────────────────────────────────────
-        grpSong = wx.StaticBoxSizer(wx.StaticBox(self.general, wx.ID_ANY, _(u"Song")), wx.VERTICAL)
+        grpSong = wx.StaticBoxSizer(wx.StaticBox(self.general2, wx.ID_ANY, _(u"Song")), wx.VERTICAL)
 
         bSizer141 = wx.BoxSizer(wx.HORIZONTAL)
-        self.m_staticText101 = wx.StaticText(self.general, wx.ID_ANY, _(u"Default notation"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.m_staticText101 = wx.StaticText(self.general2, wx.ID_ANY, _(u"Default notation"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.m_staticText101.Wrap(-1)
         bSizer141.Add(self.m_staticText101, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         notationChChoices = []
-        self.notationCh = wx.Choice(self.general, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, notationChChoices, 0)
+        self.notationCh = wx.Choice(self.general2, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, notationChChoices, 0)
         self.notationCh.SetSelection(0)
         bSizer141.Add(self.notationCh, 1, wx.ALIGN_CENTER_VERTICAL)
         grpSong.Add(bSizer141, 0, wx.EXPAND | wx.ALL, 5)
 
         bSizer1412 = wx.BoxSizer(wx.HORIZONTAL)
-        self.m_staticText1012 = wx.StaticText(self.general, wx.ID_ANY, _(u"Default file extension"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.m_staticText1012 = wx.StaticText(self.general2, wx.ID_ANY, _(u"Default file extension"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.m_staticText1012.Wrap(-1)
         bSizer1412.Add(self.m_staticText1012, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         extensionChoices = []
-        self.extension = wx.Choice(self.general, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, extensionChoices, 0)
+        self.extension = wx.Choice(self.general2, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, extensionChoices, 0)
         self.extension.SetSelection(0)
         bSizer1412.Add(self.extension, 1, wx.ALIGN_CENTER_VERTICAL)
         grpSong.Add(bSizer1412, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
 
         bSizer14 = wx.BoxSizer(wx.HORIZONTAL)
-        self.m_staticText10 = wx.StaticText(self.general, wx.ID_ANY, _(u"Language"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.m_staticText10 = wx.StaticText(self.general2, wx.ID_ANY, _(u"Language"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.m_staticText10.Wrap(-1)
         bSizer14.Add(self.m_staticText10, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.langCh = wx.adv.BitmapComboBox(self.general, wx.ID_ANY, style=wx.CB_READONLY)
+        self.langCh = wx.adv.BitmapComboBox(self.general2, wx.ID_ANY, style=wx.CB_READONLY)
         self.langCh.SetSelection(0)
         bSizer14.Add(self.langCh, 1, wx.ALIGN_CENTER_VERTICAL)
         grpSong.Add(bSizer14, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
 
-        bSizer11.Add(grpSong, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        bSizer11b.Add(grpSong, 0, wx.EXPAND | wx.ALL, 8)
 
         # ── Gruppo: Generale ─────────────────────────────────────────
-        grpGeneral = wx.StaticBoxSizer(wx.StaticBox(self.general, wx.ID_ANY, _(u"General")), wx.VERTICAL)
+        grpGeneral = wx.StaticBoxSizer(wx.StaticBox(self.general2, wx.ID_ANY, _(u"General")), wx.VERTICAL)
 
         bSizerClearRecent = wx.BoxSizer(wx.HORIZONTAL)
-        self.clearRecentFilesBtn = wx.Button(self.general, wx.ID_ANY, _(u"Clear recent files"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.clearRecentFilesBtn = wx.Button(self.general2, wx.ID_ANY, _(u"Clear recent files"), wx.DefaultPosition, wx.DefaultSize, 0)
         bSizerClearRecent.Add(self.clearRecentFilesBtn, 0)
-        self.openTemplatesFolderBtn = wx.Button(self.general, wx.ID_ANY, _(u"Open templates folder"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.openTemplatesFolderBtn = wx.Button(self.general2, wx.ID_ANY, _(u"Open templates folder"), wx.DefaultPosition, wx.DefaultSize, 0)
         bSizerClearRecent.Add(self.openTemplatesFolderBtn, 0, wx.LEFT, 8)
         grpGeneral.Add(bSizerClearRecent, 0, wx.ALL, 5)
 
-        self.showPrintPreviewCB = wx.CheckBox(self.general, wx.ID_ANY, _(u"Show print preview before printing"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.showPrintPreviewCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Show print preview before printing"), wx.DefaultPosition, wx.DefaultSize, 0)
         grpGeneral.Add(self.showPrintPreviewCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
 
-        self.multiCursorCB = wx.CheckBox(self.general, wx.ID_ANY, _(u"Enable multi-cursor (Alt+Click, Ctrl+D)"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.multiCursorCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Enable multi-cursor (Alt+Click, Ctrl+D)"), wx.DefaultPosition, wx.DefaultSize, 0)
         grpGeneral.Add(self.multiCursorCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
 
-        self.saveWindowGeometryCB = wx.CheckBox(self.general, wx.ID_ANY, _(u"Save window size and position on exit"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.saveWindowGeometryCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Save window size and position on exit"), wx.DefaultPosition, wx.DefaultSize, 0)
         grpGeneral.Add(self.saveWindowGeometryCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
 
-        bSizer11.Add(grpGeneral, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        self.showDebugMsgCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Show debug messages (theme save path)"), wx.DefaultPosition, wx.DefaultSize, 0)
+        grpGeneral.Add(self.showDebugMsgCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
 
-        self.general.SetSizer(bSizer11)
-        self.general.Layout()
-        bSizer11.Fit(self.general)
-        self.notebook.AddPage(self.general, _(u"General"), True)
+        bSizer11b.Add(grpGeneral, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
+        self.general2.SetSizer(bSizer11b)
+        self.general2.Layout()
+        bSizer11b.Fit(self.general2)
+        self.notebook.AddPage(self.general2, _(u"General 2"), False)
 
         self.autoAdjust = wx.Panel(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL)
         bSizer18 = wx.BoxSizer(wx.VERTICAL)
@@ -552,10 +620,12 @@ class PreferencesDialog(wx.Dialog):
         self.cmCopy   = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Copy"))
         self.cmPaste  = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Paste"))
         self.cmDelete = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Delete"))
+        self.cmConfirmDelete = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Ask confirmation before deleting"))
         grpEdit.Add(self.cmCut,    0, wx.ALL, 4)
         grpEdit.Add(self.cmCopy,   0, wx.ALL, 4)
         grpEdit.Add(self.cmPaste,  0, wx.ALL, 4)
         grpEdit.Add(self.cmDelete, 0, wx.ALL, 4)
+        grpEdit.Add(self.cmConfirmDelete, 0, wx.LEFT | wx.BOTTOM, 20)  # indentato sotto Delete
         bSizerCM.Add(grpEdit, 0, wx.EXPAND | wx.ALL, 5)
 
         # --- Gruppo Azioni speciali ---
@@ -675,6 +745,8 @@ class PreferencesDialog(wx.Dialog):
         self.btnPin.Bind(wx.EVT_BUTTON, self.OnPin)
         self.clearRecentFilesBtn.Bind(wx.EVT_BUTTON, self.OnClearRecentFiles)
         self.openTemplatesFolderBtn.Bind(wx.EVT_BUTTON, self.OnOpenTemplatesFolder)
+        self.showDebugMsgCB.Bind(wx.EVT_CHECKBOX, self.OnShowDebugMsgChanged)
+        self.cmConfirmDelete.Bind(wx.EVT_CHECKBOX, self.OnCmConfirmDeleteChanged)
 
     def __del__(self):
         pass
@@ -731,4 +803,25 @@ class PreferencesDialog(wx.Dialog):
         event.Skip()
 
     def OnUnassociateAll(self, event):
+        event.Skip()
+
+    def OnSyntaxHexChanged(self, event):
+        event.Skip()
+
+    def OnSyntaxPickColour(self, event):
+        event.Skip()
+
+    def OnThemeLoad(self, event):
+        event.Skip()
+
+    def OnThemeSave(self, event):
+        event.Skip()
+
+    def OnThemeDelete(self, event):
+        event.Skip()
+
+    def OnShowDebugMsgChanged(self, event):
+        event.Skip()
+
+    def OnCmConfirmDeleteChanged(self, event):
         event.Skip()

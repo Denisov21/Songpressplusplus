@@ -9,7 +9,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-11-22 17:58+0100\n"
 "PO-Revision-Date: 2026-01-03 08:49+0100\n"
-"Last-Translator: l.allulli <l.allulli@gmail.com>\n"
+"Last-Translator: Denisov21\n"
 "Language-Team: Italian (http://www.transifex.com/skeed/songpress-2/language/"
 "it/)\n"
 "Language: it\n"
@@ -82,3 +82,27 @@ msgstr "Tedesca/Scandinava (C C#/Db D... Bb H)"
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/Transpose.py:217
 msgid "Traditional German (C Cis/Des D... B H)"
 msgstr "Tedesca tradizionale (C Cis/Des D... B H)"
+
+#: Transpose.py:276
+msgid "Nashville (1, 2, 3, 4, 5, 6, 7)"
+msgstr "Nashville (1, 2, 3, 4, 5, 6, 7)"
+
+#: Transpose.py:322
+msgid "Roman (I, II, III, IV, V, VI, VII)"
+msgstr "Romana (I, II, III, IV, V, VI, VII)"
+
+#: TransposeDialog.py:82
+msgid "Accidentals:"
+msgstr "Alterazioni:"
+
+#: TransposeDialog.py:85
+msgid "Automatic"
+msgstr "Automatico"
+
+#: TransposeDialog.py:85
+msgid "Sharps (#)"
+msgstr "Diesis (#)"
+
+#: TransposeDialog.py:85
+msgid "Flats (b)"
+msgstr "Bemolle (b)"

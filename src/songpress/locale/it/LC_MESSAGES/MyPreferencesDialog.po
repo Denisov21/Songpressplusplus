@@ -9,7 +9,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-25 15:21+0200\n"
 "PO-Revision-Date: 2016-03-06 21:27+0000\n"
-"Last-Translator: l.allulli <l.allulli@gmail.com>\n"
+"Last-Translator: Denisov21\n"
 "Language-Team: Italian (http://www.transifex.com/skeed/songpress-2/language/"
 "it/)\n"
 "Language: it\n"
@@ -20,6 +20,7 @@ msgstr ""
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/MyPreferencesDialog.py:34
 msgid ""
+"#Comment\n"
 "{t:My Bonnie}\n"
 "\n"
 "My [D]Bonnie lies [G]over the [D]ocean\n"
@@ -47,3 +48,87 @@ msgstr "Language settings will be applied when you restart Songpress."
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/MyPreferencesDialog.py:121
 msgid "Songpress"
 msgstr "Songpress"
+
+#: PreferencesDialog.py (Syntax colours group)
+msgid "Syntax colours"
+msgstr "Colori sintassi"
+
+#: PreferencesDialog.py (Theme label)
+msgid "Theme:"
+msgstr "Tema:"
+
+#: PreferencesDialog.py (Theme buttons)
+msgid "Load"
+msgstr "Carica"
+
+#: PreferencesDialog.py (Theme buttons)
+msgid "Save"
+msgstr "Salva"
+
+#: PreferencesDialog.py (Theme buttons)
+msgid "Delete"
+msgstr "Elimina"
+
+#: PreferencesDialog.py (Syntax colour rows)
+msgid "Normal text"
+msgstr "Testo normale"
+
+#: PreferencesDialog.py (Syntax colour rows)
+msgid "Chorus"
+msgstr "Ritornello"
+
+#: PreferencesDialog.py (Syntax colour rows)
+msgid "Chords"
+msgstr "Accordi"
+
+#: PreferencesDialog.py (Syntax colour rows)
+msgid "Commands"
+msgstr "Comandi"
+
+#: PreferencesDialog.py (Syntax colour rows)
+msgid "Attributes"
+msgstr "Attributi"
+
+#: PreferencesDialog.py (Syntax colour rows)
+msgid "Comments"
+msgstr "Commenti"
+
+#: PreferencesDialog.py (Syntax colour rows)
+msgid "Tab / Grid"
+msgstr "Tab / Griglia"
+
+#: MyPreferencesDialog.py (Theme dialogs)
+msgid "Theme name:"
+msgstr "Nome tema:"
+
+#: MyPreferencesDialog.py (Theme dialogs)
+msgid "Save theme"
+msgstr "Salva tema"
+
+#: MyPreferencesDialog.py (Theme dialogs)
+msgid "Delete theme «%s»?"
+msgstr "Eliminare il tema «%s»?"
+
+#: MyPreferencesDialog.py (Theme errors)
+msgid "Cannot create themes folder:\n%s\n\n%s"
+msgstr "Impossibile creare la cartella temi:\n%s\n\n%s"
+
+#: MyPreferencesDialog.py (Theme errors)
+msgid "Cannot save theme file:\n%s"
+msgstr "Impossibile salvare il file tema:\n%s"
+
+#: MyPreferencesDialog.py (Theme errors)
+msgid "Cannot read theme file:\n%s"
+msgstr "Impossibile leggere il file tema:\n%s"
+
+#: PreferencesDialog.py (General 2 tab)
+msgid "General 2"
+msgstr "Generale 2"
+
+#: PreferencesDialog.py (Debug checkbox)
+msgid "Show debug messages (theme save path)"
+msgstr "Mostra messaggi di debug (percorso salvataggio tema)"
+
+#: MyPreferencesDialog.py (Debug messagebox)
+msgid "DEBUG: saving theme to:\n%s\n\n(folder exists: %s)"
+msgstr "DEBUG: salvataggio tema in:\n%s\n\n(cartella esistente: %s)"

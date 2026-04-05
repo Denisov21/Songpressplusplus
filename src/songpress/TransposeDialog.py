@@ -75,7 +75,20 @@ class TransposeDialog ( wx.Dialog ):
         bSizer211.Add( self.toKey, 1, wx.ALL, 5 )
         
         bSizer1.Add( bSizer211, 1, wx.EXPAND, 5 )
-        
+
+        bSizerAlt = wx.BoxSizer( wx.HORIZONTAL )
+
+        self.labelAlt = wx.StaticText( self, wx.ID_ANY, _(u"Accidentals:"), wx.DefaultPosition, wx.DefaultSize, 0 )
+        self.labelAlt.Wrap( -1 )
+        bSizerAlt.Add( self.labelAlt, 0, wx.ALL, 5 )
+
+        accidentalsChoices = [_(u"Automatic"), _(u"Sharps (#)"), _(u"Flats (b)")]
+        self.accidentals = wx.Choice( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, accidentalsChoices, 0 )
+        self.accidentals.SetSelection( 0 )
+        bSizerAlt.Add( self.accidentals, 1, wx.ALL, 5 )
+
+        bSizer1.Add( bSizerAlt, 1, wx.EXPAND, 5 )
+
         m_sdbSizer1 = wx.StdDialogButtonSizer()
         self.m_sdbSizer1OK = wx.Button( self, wx.ID_OK )
         m_sdbSizer1.AddButton( self.m_sdbSizer1OK )
@@ -93,6 +106,7 @@ class TransposeDialog ( wx.Dialog ):
         self.fromKey.Bind( wx.EVT_CHOICE, self.OnFromKey )
         self.semitones.Bind( wx.EVT_SPINCTRL, self.OnSemitones )
         self.toKey.Bind( wx.EVT_CHOICE, self.OnToKey )
+        self.accidentals.Bind( wx.EVT_CHOICE, self.OnAccidentals )
     
     def __del__( self ):
         pass
@@ -110,5 +124,6 @@ class TransposeDialog ( wx.Dialog ):
     
     def OnToKey( self, event ):
         event.Skip()
-    
 
+    def OnAccidentals( self, event ):
+        event.Skip()

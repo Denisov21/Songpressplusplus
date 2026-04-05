@@ -4,17 +4,21 @@ Per compilare il programma di installazione Windows e' necessario scaricare:
 
 - I binari Windows x64 di `uv`, ad esempio [Releases · astral-sh/uv](https://github.com/astral-sh/uv/releases/)
 - Il [compilatore NSIS](https://nsis.sourceforge.io/Download)
-- Il [plug-in INetC – NSIS amd64-unicode](https://nsis.sourceforge.io/Inetc_plug-in)
+- Il [plug-in INetC – NSIS amd64-unicode](https://nsis.sourceforge.io/Inetc_plug-in) (per l'installer a 64 bit)
+- Il [plug-in INetC – NSIS x86-unicode](https://nsis.sourceforge.io/Inetc_plug-in) (per l'installer a 32 bit)
 
 Estrarre `uv.exe` dallo zip in questa cartella.
-Avviare poi il compilatore NSIS e compilare lo script `songpressx64.nsi`.
+Avviare poi il compilatore NSIS e compilare lo script `.nsi` appropriato:
+
+- **Installer a 64 bit**: compilare `songpressx64.nsi`
+- **Installer a 32 bit**: compilare `songpressx32.nsi`
 
 ## Compilazione passo per passo
 
 1. Apri il programma NSIS
 2. Clicca su **Compile NSI scripts**
 3. Premi **File → Load Script**
-4. Seleziona `songpressx64.nsi`
+4. Seleziona `songpressx64.nsi` (64 bit) oppure `songpressx32.nsi` (32 bit)
 5. Clicca **Compile**
 
 ## File NSI
@@ -25,7 +29,9 @@ Lo script contiene:
 
 ```nsi
 Unicode true
-!addplugindir /amd64-unicode "plugins"
+Target: NSIS_TARGET_X86   ; solo installer a 32 bit (songpressx32.nsi)
+!addplugindir /amd64-unicode "plugins/64-bit"
+!addplugindir /x86-unicode  "plugins/x86-bit"
 !include "MUI2.nsh"
 ```
 
@@ -46,11 +52,15 @@ Il file temporaneo viene eliminato immediatamente dopo.
 ```
 installer/
 ├── songpressx64.nsi
+├── songpressx32.nsi
 ├── songpressplusplus.ico
 ├── uv.exe
 ├── license.txt
 └── plugins/
-    └── INetC.dll      ← dallo zip di INetC, cartella Plugins\amd64-unicode\
+    ├── 64-bit/
+    │   └── INetC.dll      ← dallo zip di INetC, cartella Plugins\amd64-unicode\
+    └── x86-bit/
+        └── INetC.dll      ← dallo zip di INetC, cartella Plugins\x86-unicode\
 ```
 
 La cartella `installer\` deve trovarsi direttamente dentro la radice del progetto
@@ -98,13 +108,14 @@ La lingua dell'installer (italiano/inglese) viene selezionata all'avvio.
 
 ## Risultato finale
 
-Se la compilazione va a buon fine, nella cartella `installer/` apparirà il file:
+Se la compilazione va a buon fine, nella cartella `installer/` appariranno i file:
 
 ```
-songpress++-setup.exe
+songpress++-setup.exe        ← installer a 64 bit
+songpress++-setup-x32.exe   ← installer a 32 bit
 ```
 
-Questo è l'installer Windows pronto per la distribuzione.
+Questi sono gli installer Windows pronti per la distribuzione.
 
 ---
 *Questo file è codificato UTF-8 senza BOM.*

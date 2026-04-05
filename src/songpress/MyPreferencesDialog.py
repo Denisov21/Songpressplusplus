@@ -36,7 +36,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.fontCB.Bind(wx.EVT_TEXT_ENTER, self.OnFontSelected, self.fontCB)
         self.fontCB.Bind(wx.EVT_COMBOBOX, self.OnFontSelected, self.fontCB)
 
-        previewSong = _("{t:My Bonnie}\n\nMy [D]Bonnie lies [G]over the [D]ocean\noh [G]bring back my [A]Bonnie to [D]me!\n\n{soc}\n[D]Bring back, [E-]bring back,\n[A]bring back my Bonnie to [D]me!\n{eoc}")
+        previewSong = _("#Comment\n{t:My Bonnie}\n\nMy [D]Bonnie lies [G]over the [D]ocean\noh [G]bring back my [A]Bonnie to [D]me!\n\n{soc}\n[D]Bring back, [E-]bring back,\n[A]bring back my Bonnie to [D]me!\n{eoc}")
         self.editor.SetText(previewSong)
         self.editor.SetFont(self.pref.editorFace, self.pref.editorSize)
         self.editor.SetReadOnly(True)
@@ -107,6 +107,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.cmCopy.SetValue(self.pref.cmCopy)
         self.cmPaste.SetValue(self.pref.cmPaste)
         self.cmDelete.SetValue(self.pref.cmDelete)
+        self.cmConfirmDelete.SetValue(getattr(self.pref, 'cmConfirmDelete', False))
         self.cmPasteChords.SetValue(self.pref.cmPasteChords)
         self.cmPropagateVerseChords.SetValue(getattr(self.pref, 'cmPropagateVerseChords', True))
         self.cmPropagateChorusChords.SetValue(getattr(self.pref, 'cmPropagateChorusChords', True))
@@ -144,6 +145,21 @@ class MyPreferencesDialog(PreferencesDialog):
         self.capPreviewSwatch.SetBackgroundColour(self._hex_to_colour(cap_pv_hex))
         self.capPreviewSwatch.Refresh()
 
+        # Syntax colours
+        sc = getattr(self.pref, 'syntaxColours', {})
+        defaults = getattr(self.pref.__class__, 'SYNTAX_COLOUR_DEFAULTS',
+                           {'normal': '#000000', 'chorus': '#000000', 'chord': '#FF0000',
+                            'command': '#0000FF', 'attr': '#008000', 'comment': '#808080', 'tabgrid': '#8B5A00'})
+        for key in self.syntaxHexCtrls:
+            hex_val = sc.get(key, defaults.get(key, '#000000'))
+            self.syntaxHexCtrls[key].SetValue(hex_val)
+            self.syntaxSwatches[key].SetBackgroundColour(self._hex_to_colour(hex_val))
+            self.syntaxSwatches[key].Refresh()
+            self._applySyntaxColour(key, hex_val)
+
+        # Themes
+        self._refreshThemeList()
+
         # Show print preview
         self.showPrintPreviewCB.SetValue(getattr(self.pref, 'showPrintPreview', True))
 
@@ -152,6 +168,9 @@ class MyPreferencesDialog(PreferencesDialog):
 
         # Salvataggio geometria finestra
         self.saveWindowGeometryCB.SetValue(getattr(self.pref, 'saveWindowGeometry', True))
+
+        # Debug messages
+        self.showDebugMsgCB.SetValue(getattr(self.pref, 'showDebugMsg', False))
 
         # Opzioni anteprima (tab Songpress)
         self.showPageIndicatorCB.SetValue(getattr(self.pref, 'showPageIndicator', True))
@@ -338,6 +357,261 @@ class MyPreferencesDialog(PreferencesDialog):
             self.capPreviewSwatch.SetBackgroundColour(chosen)
             self.capPreviewSwatch.Refresh()
         dlg.Destroy()
+
+    # ------------------------------------------------------------------
+    # Syntax colours (normal, chorus, chord, command, attr, comment, tabgrid)
+    # ------------------------------------------------------------------
+
+    # Map from style key to STC style id (must match Editor.py constants)
+    _SYNTAX_KEY_TO_STC = {
+        'normal':   11,  # STC_STYLE_NORMAL
+        'chorus':   15,  # STC_STYLE_CHORUS
+        'chord':    12,  # STC_STYLE_CHORD
+        'command':  13,  # STC_STYLE_COMMAND
+        'attr':     14,  # STC_STYLE_ATTR
+        'comment':  16,  # STC_STYLE_COMMENT
+        'tabgrid':  17,  # STC_STYLE_TAB_GRID
+    }
+
+    def _syntaxKeyFromWidget(self, widget):
+        """Restituisce la chiave sintassi associata al TextCtrl o Button dato."""
+        for key in self.syntaxHexCtrls:
+            if self.syntaxHexCtrls[key] is widget:
+                return key
+            if self.syntaxPickBtns[key] is widget:
+                return key
+        return None
+
+    def _applySyntaxColour(self, key, hex_val):
+        """Applica il colore sintattico all'editor di anteprima."""
+        style_id = self._SYNTAX_KEY_TO_STC.get(key)
+        if style_id is not None:
+            self.editor.SetSyntaxColour(style_id, hex_val)
+
+    def OnSyntaxHexChanged(self, evt):
+        key = self._syntaxKeyFromWidget(evt.GetEventObject())
+        if key is None:
+            evt.Skip()
+            return
+        hex_val = self.syntaxHexCtrls[key].GetValue()
+        c = self._hex_to_colour(hex_val)
+        self.syntaxSwatches[key].SetBackgroundColour(c)
+        self.syntaxSwatches[key].Refresh()
+        self._applySyntaxColour(key, hex_val)
+        evt.Skip()
+
+    def OnSyntaxPickColour(self, evt):
+        key = self._syntaxKeyFromWidget(evt.GetEventObject())
+        if key is None:
+            evt.Skip()
+            return
+        current = self._hex_to_colour(self.syntaxHexCtrls[key].GetValue())
+        data = wx.ColourData()
+        data.SetColour(current)
+        data.SetChooseFull(True)
+        pref_attr = 'customColoursSyntax_' + key
+        self._apply_custom_colours(data, pref_attr)
+        dlg = wx.ColourDialog(self, data)
+        if dlg.ShowModal() == wx.ID_OK:
+            result_data = dlg.GetColourData()
+            chosen = result_data.GetColour()
+            hex_val = self._colour_to_hex(chosen)
+            self._read_custom_colours(result_data, pref_attr)
+            self.syntaxHexCtrls[key].SetValue(hex_val)
+            self.syntaxSwatches[key].SetBackgroundColour(chosen)
+            self.syntaxSwatches[key].Refresh()
+            self._applySyntaxColour(key, hex_val)
+        dlg.Destroy()
+
+    # ------------------------------------------------------------------
+    # Themes  (templates/themes/<name>.ini)
+    # ------------------------------------------------------------------
+
+    # Chiavi scritte/lette nel file tema — stessa struttura del registro
+    _THEME_COLOUR_KEYS = [
+        ('bg',         'editorBgHex',            '#FFFFFF'),
+        ('sel',        'selColourHex',            '#C0C0C0'),
+        ('capEditor',  'captionEditorActiveHex',  '#4682C8'),
+        ('capPreview', 'captionPreviewActiveHex', '#329B82'),
+    ]
+    _THEME_SYNTAX_KEYS = ['normal', 'chorus', 'chord', 'command', 'attr', 'comment', 'tabgrid']
+
+    def _get_themes_dir(self):
+        """Restituisce la cartella templates/themes/ accanto al pacchetto sorgente.
+
+        Usa __file__ (sempre affidabile) invece di sys.executable.
+        Fallback su APPDATA se la cartella sorgente è in sola lettura.
+        """
+        import os as _os
+        # questo file  →  .../src/songpress/MyPreferencesDialog.py
+        # pkg_dir      →  .../src/songpress/
+        # themes_dir   →  .../src/songpress/templates/themes/
+        pkg_dir    = _os.path.dirname(_os.path.abspath(__file__))
+        themes_dir = _os.path.join(pkg_dir, 'templates', 'themes')
+        try:
+            _os.makedirs(themes_dir, exist_ok=True)
+            return themes_dir
+        except OSError:
+            pass  # cartella sola lettura → APPDATA
+
+        import sys as _sys
+        if _sys.platform == 'win32':
+            appdata = _os.environ.get('APPDATA', _os.path.expanduser('~'))
+            themes_dir = _os.path.join(appdata, 'Songpress++', 'templates', 'themes')
+        else:
+            themes_dir = _os.path.join(_os.path.expanduser('~'), '.Songpress++', 'templates', 'themes')
+        try:
+            _os.makedirs(themes_dir, exist_ok=True)
+        except Exception as e:
+            wx.MessageBox(
+                _(u"Cannot create themes folder:\n%s\n\n%s") % (themes_dir, e),
+                _(u"Songpress++"), wx.OK | wx.ICON_ERROR, self
+            )
+        return themes_dir
+
+    def _theme_files(self):
+        import os as _os
+        d = self._get_themes_dir()
+        return sorted(
+            f[:-4] for f in _os.listdir(d) if f.lower().endswith('.ini')
+        )
+
+    def _refreshThemeList(self, select_name=None):
+        self.themeCh.Clear()
+        names = self._theme_files()
+        for n in names:
+            self.themeCh.Append(n)
+        if select_name and select_name in names:
+            self.themeCh.SetSelection(names.index(select_name))
+        elif names:
+            self.themeCh.SetSelection(0)
+        # abilita/disabilita tasti
+        has = len(names) > 0
+        self.themeLoadBtn.Enable(has)
+        self.themeDeleteBtn.Enable(has)
+
+    def _theme_to_dict(self):
+        """Raccoglie tutti i colori dal dialogo corrente in un dict."""
+        d = {}
+        d['bg']         = self.editorBgHexCtrl.GetValue().strip()
+        d['sel']        = self.selColourHexCtrl.GetValue().strip()
+        d['capEditor']  = self.capEditorHexCtrl.GetValue().strip()
+        d['capPreview'] = self.capPreviewHexCtrl.GetValue().strip()
+        for key in self._THEME_SYNTAX_KEYS:
+            d['syntax_' + key] = self.syntaxHexCtrls[key].GetValue().strip()
+        return d
+
+    def _apply_theme_dict(self, d):
+        """Applica un dict colori a tutti i controlli del dialogo."""
+        def _set(ctrl, swatch, val, apply_fn=None):
+            ctrl.SetValue(val)
+            swatch.SetBackgroundColour(self._hex_to_colour(val))
+            swatch.Refresh()
+            if apply_fn:
+                apply_fn(val)
+
+        _set(self.editorBgHexCtrl,    self.editorBgSwatch,    d.get('bg',         '#FFFFFF'), self._applyEditorBg)
+        _set(self.selColourHexCtrl,   self.selColourSwatch,   d.get('sel',        '#C0C0C0'), self._applySelColour)
+        _set(self.capEditorHexCtrl,   self.capEditorSwatch,   d.get('capEditor',  '#4682C8'))
+        _set(self.capPreviewHexCtrl,  self.capPreviewSwatch,  d.get('capPreview', '#329B82'))
+        for key in self._THEME_SYNTAX_KEYS:
+            val = d.get('syntax_' + key, '#000000')
+            self.syntaxHexCtrls[key].SetValue(val)
+            self.syntaxSwatches[key].SetBackgroundColour(self._hex_to_colour(val))
+            self.syntaxSwatches[key].Refresh()
+            self._applySyntaxColour(key, val)
+
+    def _save_theme_file(self, name, d):
+        import os as _os
+        import configparser
+        import datetime
+        path = _os.path.join(self._get_themes_dir(), name + '.ini')
+        cfg = configparser.ConfigParser()
+        cfg['colours'] = d
+        header = (
+            "# Songpress++ colour theme\n"
+            "# Name    : {name}\n"
+            "# Saved   : {date}\n"
+            "# Version : 1.0\n"
+            "#\n"
+            "# This file can be edited manually.\n"
+            "# Place it in templates/themes/ to make it available in Songpress++.\n"
+            "#\n"
+        ).format(
+            name=name,
+            date=datetime.datetime.now().strftime('%Y-%m-%d %H:%M'),
+        )
+        try:
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(header)
+                cfg.write(f)
+        except Exception as e:
+            wx.MessageBox(
+                _(u"Cannot save theme file:\n%s") % path + "\n\n" + str(e),
+                _(u"Songpress++"), wx.OK | wx.ICON_ERROR, self
+            )
+            return False
+        return True
+
+    def _load_theme_file(self, name):
+        import os as _os
+        import configparser
+        path = _os.path.join(self._get_themes_dir(), name + '.ini')
+        cfg = configparser.ConfigParser()
+        cfg.read(path, encoding='utf-8')
+        return dict(cfg['colours']) if 'colours' in cfg else {}
+
+    def OnThemeLoad(self, evt):
+        idx = self.themeCh.GetSelection()
+        if idx == wx.NOT_FOUND:
+            return
+        name = self.themeCh.GetString(idx)
+        d = self._load_theme_file(name)
+        if d:
+            self._apply_theme_dict(d)
+
+    def OnThemeSave(self, evt):
+        idx = self.themeCh.GetSelection()
+        current = self.themeCh.GetString(idx) if idx != wx.NOT_FOUND else u''
+        dlg = wx.TextEntryDialog(self, _(u"Theme name:"), _(u"Save theme"), current)
+        result = dlg.ShowModal()
+        name = dlg.GetValue().strip()
+        dlg.Destroy()
+        if result != wx.ID_OK or not name:
+            return
+        import re as _re
+        import os as _os
+        name = _re.sub(r'[\\/:*?"<>|]', '_', name)
+        themes_dir = self._get_themes_dir()
+        path = _os.path.join(themes_dir, name + '.ini')
+        if getattr(self.pref, 'showDebugMsg', False):
+            wx.MessageBox(
+                _(u"DEBUG: saving theme to:\n%s\n\n(folder exists: %s)") % (
+                    path, str(_os.path.isdir(themes_dir))
+                ),
+                u"Songpress++ DEBUG", wx.OK | wx.ICON_INFORMATION, self
+            )
+        d = self._theme_to_dict()
+        if self._save_theme_file(name, d):
+            self._refreshThemeList(select_name=name)
+
+    def OnThemeDelete(self, evt):
+        idx = self.themeCh.GetSelection()
+        if idx == wx.NOT_FOUND:
+            return
+        name = self.themeCh.GetString(idx)
+        if wx.MessageBox(
+            _(u"Delete theme «%s»?") % name,
+            _(u"Songpress++"),
+            wx.YES_NO | wx.ICON_QUESTION, self
+        ) == wx.YES:
+            import os as _os
+            path = _os.path.join(self._get_themes_dir(), name + '.ini')
+            try:
+                _os.remove(path)
+            except Exception:
+                pass
+            self._refreshThemeList()
 
     def OnEditorBgPickColour(self, evt):
         current = self._hex_to_colour(self.editorBgHexCtrl.GetValue())
@@ -884,6 +1158,16 @@ class MyPreferencesDialog(PreferencesDialog):
                 cb.SetValue(False)
         evt.Skip()
 
+    def OnShowDebugMsgChanged(self, evt):
+        """Aggiorna pref.showDebugMsg immediatamente, senza attendere OK."""
+        self.pref.showDebugMsg = self.showDebugMsgCB.GetValue()
+        evt.Skip()
+
+    def OnCmConfirmDeleteChanged(self, evt):
+        """Aggiorna pref.cmConfirmDelete immediatamente, senza attendere OK."""
+        self.pref.cmConfirmDelete = self.cmConfirmDelete.GetValue()
+        evt.Skip()
+
     def OnOk(self, evt):
         # Assign ALL values to pref BEFORE Save() so everything is persisted
         self.pref.editorFace, self.pref.editorSize = self.GetFont()
@@ -906,12 +1190,18 @@ class MyPreferencesDialog(PreferencesDialog):
         # Caption bar colours
         self.pref.captionEditorActiveHex  = self.capEditorHexCtrl.GetValue().strip()
         self.pref.captionPreviewActiveHex = self.capPreviewHexCtrl.GetValue().strip()
+        # Syntax colours
+        if not hasattr(self.pref, 'syntaxColours') or self.pref.syntaxColours is None:
+            self.pref.syntaxColours = {}
+        for key in self.syntaxHexCtrls:
+            self.pref.syntaxColours[key] = self.syntaxHexCtrls[key].GetValue().strip()
         # Show print preview
         self.pref.showPrintPreview = self.showPrintPreviewCB.GetValue()
         # Multi-cursor
         self.pref.multiCursor = self.multiCursorCB.GetValue()
         # Salvataggio geometria finestra
         self.pref.saveWindowGeometry = self.saveWindowGeometryCB.GetValue()
+        self.pref.showDebugMsg = self.showDebugMsgCB.GetValue()
         # Opzioni anteprima (tab Songpress)
         self.pref.showPageIndicator = self.showPageIndicatorCB.GetValue()
         self.pref.greyBackground    = self.greyBackgroundCB.GetValue()
@@ -967,6 +1257,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.cmCopy         = self.cmCopy.GetValue()
         self.pref.cmPaste        = self.cmPaste.GetValue()
         self.pref.cmDelete       = self.cmDelete.GetValue()
+        self.pref.cmConfirmDelete = self.cmConfirmDelete.GetValue()
         self.pref.cmPasteChords           = self.cmPasteChords.GetValue()
         self.pref.cmPropagateVerseChords  = self.cmPropagateVerseChords.GetValue()
         self.pref.cmPropagateChorusChords = self.cmPropagateChorusChords.GetValue()

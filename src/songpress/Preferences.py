@@ -69,7 +69,7 @@ class Preferences(object):
         self.format = SongFormat()
         self.decoratorFormat = StandardVerseNumbers.Format(self.format, _("Chorus"))
         self.decorator = StandardVerseNumbers.Decorator(self.decoratorFormat)
-        self.notations = [enNotation, itNotation, itUcNotation, deNotation, tradDeNotation, frNotation, ptNotation]
+        self.notations = [enNotation, itNotation, itUcNotation, deNotation, tradDeNotation, frNotation, ptNotation, nashvilleNotation, romanNotation]
         self.easyChordsGroup = {}
         self.titleLineWidth = 4
         self.verseBoxWidth = 1
@@ -220,6 +220,8 @@ class Preferences(object):
         self._LoadPreviewOptions()
         self._LoadGridDisplayMode()
         self._LoadMusicalSymbol()
+        self._LoadSyntaxColours()
+        self._LoadDebugOptions()
 
     def _LoadKlavierColour(self):
         self.config.SetPath('/KlavierColour')
@@ -238,6 +240,8 @@ class Preferences(object):
         self.cmCopy         = rb('copy')
         self.cmPaste        = rb('paste')
         self.cmDelete       = rb('delete')
+        v = self.config.Read('confirmDelete')
+        self.cmConfirmDelete = bool(int(v)) if v != '' else False
         self.cmPasteChords           = rb('pasteChords')
         self.cmPropagateVerseChords  = rb('propagateVerseChords')
         self.cmPropagateChorusChords = rb('propagateChorusChords')
@@ -370,6 +374,8 @@ class Preferences(object):
         self._SavePreviewOptions()
         self._SaveGridDisplayMode()
         self._SaveMusicalSymbol()
+        self._SaveSyntaxColours()
+        self._SaveDebugOptions()
         self.config.Flush()
 
     def _SaveKlavierColour(self):
@@ -385,6 +391,7 @@ class Preferences(object):
         self.config.Write('copy',         '1' if getattr(self, 'cmCopy',         True) else '0')
         self.config.Write('paste',        '1' if getattr(self, 'cmPaste',        True) else '0')
         self.config.Write('delete',       '1' if getattr(self, 'cmDelete',       True) else '0')
+        self.config.Write('confirmDelete', '1' if getattr(self, 'cmConfirmDelete', False) else '0')
         self.config.Write('pasteChords',           '1' if getattr(self, 'cmPasteChords',           True) else '0')
         self.config.Write('propagateVerseChords',  '1' if getattr(self, 'cmPropagateVerseChords',  True) else '0')
         self.config.Write('propagateChorusChords', '1' if getattr(self, 'cmPropagateChorusChords', True) else '0')
@@ -414,6 +421,42 @@ class Preferences(object):
         self.config.SetPath('/CaptionColours')
         self.config.Write('EditorActiveHex',  getattr(self, 'captionEditorActiveHex',  '#4682C8'))
         self.config.Write('PreviewActiveHex', getattr(self, 'captionPreviewActiveHex', '#329B82'))
+        self.config.SetPath('/')
+
+    # Colori predefiniti per ogni stile sintattico dell'editor
+    SYNTAX_COLOUR_DEFAULTS = {
+        'normal':   '#000000',
+        'chorus':   '#000000',
+        'chord':    '#FF0000',
+        'command':  '#0000FF',
+        'attr':     '#008000',
+        'comment':  '#808080',
+        'tabgrid':  '#8B5A00',
+    }
+
+    def _LoadSyntaxColours(self):
+        self.config.SetPath('/EditorSyntaxColours')
+        self.syntaxColours = {}
+        for key, default in self.SYNTAX_COLOUR_DEFAULTS.items():
+            h = self.config.Read(key)
+            self.syntaxColours[key] = h if h else default
+        self.config.SetPath('/')
+
+    def _SaveSyntaxColours(self):
+        self.config.SetPath('/EditorSyntaxColours')
+        for key, default in self.SYNTAX_COLOUR_DEFAULTS.items():
+            self.config.Write(key, self.syntaxColours.get(key, default))
+        self.config.SetPath('/')
+
+    def _LoadDebugOptions(self):
+        self.config.SetPath('/Debug')
+        v = self.config.Read('showDebugMsg')
+        self.showDebugMsg = bool(int(v)) if v != '' else False
+        self.config.SetPath('/')
+
+    def _SaveDebugOptions(self):
+        self.config.SetPath('/Debug')
+        self.config.Write('showDebugMsg', '1' if getattr(self, 'showDebugMsg', False) else '0')
         self.config.SetPath('/')
 
     def _SavePrintOptions(self):

@@ -17,22 +17,38 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/TransposeDialog.py:23
+#: TransposeDialog.py:23
 msgid "Transpose"
 msgstr ""
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/TransposeDialog.py:31
+#: TransposeDialog.py:31
 msgid "Chord notation:"
 msgstr ""
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/TransposeDialog.py:44
+#: TransposeDialog.py:44
 msgid "From key:"
 msgstr ""
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/TransposeDialog.py:57
+#: TransposeDialog.py:57
 msgid "Semitones:"
 msgstr ""
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/TransposeDialog.py:68
+#: TransposeDialog.py:68
 msgid "To key:"
+msgstr ""
+
+#: TransposeDialog.py:82
+msgid "Accidentals:"
+msgstr ""
+
+#: TransposeDialog.py:85
+msgid "Automatic"
+msgstr ""
+
+#: TransposeDialog.py:85
+msgid "Sharps (#)"
+msgstr ""
+
+#: TransposeDialog.py:85
+msgid "Flats (b)"
 msgstr ""

@@ -12,7 +12,7 @@ Option Explicit
 Const PYTHON_MIN_MAJOR = 3
 Const PYTHON_MIN_MINOR = 12
 Const APP_NAME        = "Songpress++"
-Const APP_VERSION     = "1.0.0"
+Const APP_VERSION     = "2.2.3"
 
 ' Dipendenze: nome pip | import Python | versione minima | versione massima (esclusa)
 ' Formato array: nome_pip, import_name, ver_min, ver_max

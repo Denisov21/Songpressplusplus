@@ -1,11 +1,12 @@
 # -*- coding: iso-8859-1 -*-
-
 ###############################################################
 # Name:             Transpose.py
 # Purpose:     Transposing services
 # Author:         Luca Allulli (webmaster@roma21.it)
+# Modified by:  Denisov21
 # Created:     2009-11-18
 # Copyright: Luca Allulli (https://www.skeed.it/songpress)
+#               Modifications copyright Denisov21
 # License:     GNU GPL v2
 ##############################################################
 
@@ -227,6 +228,103 @@ tradDeNotation = TraditionalGermanNotation(
 )
 
 
+# ---------------------------------------------------------------------------
+# Nashville Notation (1 2 3 4 5 6 7)
+# ---------------------------------------------------------------------------
+# I gradi 1-7 corrispondono a C D E F G A B (scala di Do).
+# Le alterazioni prefisse (b/#) vengono normalizzate come suffisse
+# internamente per compatibilita' con la logica di translateChord.
+# ---------------------------------------------------------------------------
+
+class NashvilleNotation(Notation):
+    """Notazione Nashville: accordi come 1, 2m, b3, 4, 5, 6m, b7..."""
+
+    _DEGREE_TO_IDX = {'1': 0, '2': 1, '3': 2, '4': 3, '5': 4, '6': 5, '7': 6}
+    _IDX_TO_DEGREE = {0: '1', 1: '2', 2: '3', 3: '4', 4: '5', 5: '6', 6: '7'}
+
+    def SplitChord(self, c):
+        """[b#]?[1-7]qualita -> ('grado[b#]', 'qualita')
+        Il prefisso b/# viene spostato come suffisso della radice in modo che
+        translateChord possa estrarlo con la logica standard (c[-1]).
+        Esempi: 'b7' -> ('7b', ''), '5m' -> ('5', 'm'), '#4' -> ('4#', '')
+        """
+        import re as _re
+        m = _re.match(r'^([b#]?)([1-7])(.*)', c)
+        if not m:
+            return ('', c)
+        return (m.group(2) + m.group(1), m.group(3))
+
+    def Chord2Ord(self, chord):
+        """Radice Nashville con eventuale b/# finale -> indice interno (0-6)."""
+        import re as _re
+        m = _re.match(r'^([1-7])[b#]?$', chord)
+        if not m:
+            raise KeyError(chord)
+        return self._DEGREE_TO_IDX[m.group(1)]
+
+    def Ord2Chord(self, pos):
+        return self._IDX_TO_DEGREE.get(pos, '1')
+
+    def PostprocessingFromStandard(self, c, a):
+        """Riporta l'alterazione da suffisso a prefisso: '5b' -> 'b5'."""
+        if len(c) > 1 and c[-1] in ('#', 'b'):
+            return c[-1] + c[:-1], a
+        return c, a
+
+
+nashvilleNotation = NashvilleNotation(
+    "nashvilleNotation",
+    _("Nashville (1, 2, 3, 4, 5, 6, 7)"),
+    ['1', '2', '3', '4', '5', '6', '7'],
+    [], []
+)
+
+
+# ---------------------------------------------------------------------------
+# Roman Notation (I II III IV V VI VII)
+# ---------------------------------------------------------------------------
+
+class RomanNotation(Notation):
+    """Notazione Romana: accordi come I, IIm, bIII, IV, V, VIm, bVII..."""
+
+    _DEGREE_TO_IDX = {'I': 0, 'II': 1, 'III': 2, 'IV': 3, 'V': 4, 'VI': 5, 'VII': 6}
+    _IDX_TO_DEGREE = {0: 'I', 1: 'II', 2: 'III', 3: 'IV', 4: 'V', 5: 'VI', 6: 'VII'}
+
+    def SplitChord(self, c):
+        """[b#]?(VII|VI|...)qualita -> ('grado[b#]', 'qualita')
+        Esempi: 'bVII' -> ('VIIb', ''), 'IVm' -> ('IV', 'm')
+        """
+        import re as _re
+        m = _re.match(r'^([b#]?)(VII|VI|V|IV|III|II|I)(.*)', c, _re.IGNORECASE)
+        if not m:
+            return ('', c)
+        return (m.group(2).upper() + m.group(1), m.group(3))
+
+    def Chord2Ord(self, chord):
+        """Radice Romana con eventuale b/# finale -> indice interno (0-6)."""
+        import re as _re
+        m = _re.match(r'^(VII|VI|V|IV|III|II|I)[b#]?$', chord.upper())
+        if not m:
+            raise KeyError(chord)
+        return self._DEGREE_TO_IDX[m.group(1)]
+
+    def Ord2Chord(self, pos):
+        return self._IDX_TO_DEGREE.get(pos, 'I')
+
+    def PostprocessingFromStandard(self, c, a):
+        """Riporta l'alterazione da suffisso a prefisso: 'VIIb' -> 'bVII'."""
+        if len(c) > 1 and c[-1] in ('#', 'b'):
+            return c[-1] + c[:-1], a
+        return c, a
+
+
+romanNotation = RomanNotation(
+    "romanNotation",
+    _("Roman (I, II, III, IV, V, VI, VII)"),
+    ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'],
+    [], []
+)
+
 defaultLangNotation = {
     'en': enNotation,
     'it': itNotation,
@@ -236,6 +334,12 @@ defaultLangNotation = {
 
 
 naturalScale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+flatScale    = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B']
+
+# Accidentals constants
+ACCIDENTALS_AUTO   = 0
+ACCIDENTALS_SHARPS = 1
+ACCIDENTALS_FLATS  = 2
 
 tone = {
     'C': 0,
@@ -286,6 +390,10 @@ referenceVector = [0.65713162540630443, 0.0, 0.037841466800806009, 0.0, 0.0, 0.0
 
 
 def splitChord(c, locNotation=enNotation):
+    # Nashville e Roman definiscono SplitChord per gestire gradi multi-carattere
+    # e alterazioni prefisse; le altre notazioni usano il loop standard.
+    if hasattr(locNotation, 'SplitChord'):
+        return locNotation.SplitChord(c)
     for k in locNotation.chords:
         if c.upper().startswith(k.upper()):
             if len(c) != len(k):
@@ -312,27 +420,37 @@ def chord2pos(chord, key="C"):
     return (tone[c.upper()] + a - tone[s.upper()] - b) % 12
 
 
-def __pos2chord(pos, key):
+def __pos2chord(pos, key, accidentals=ACCIDENTALS_AUTO):
     n, i = interval[pos]
     # if pos in scale, use it
     if i == 0:
         return scales[key][1][n]
-    # else use natural scale
+    # chromatic note: choose between # and b based on accidentals preference
     ref = scales[key][0]
     diff = (pos + ref) % 12
-    return naturalScale[diff]
+    if accidentals == ACCIDENTALS_FLATS:
+        return flatScale[diff]
+    elif accidentals == ACCIDENTALS_SHARPS:
+        return naturalScale[diff]
+    else:
+        # auto: follow the key signature convention
+        # flat keys (>=6 flats on the circle) prefer flats, sharp keys prefer sharps
+        # scales dict entries with 'b' in the key name are flat keys
+        if 'b' in key or key == 'F':
+            return flatScale[diff]
+        return naturalScale[diff]
 
 
-def transpose(s, d, chord, notation=enNotation):
+def transpose(s, d, chord, notation=enNotation, accidentals=ACCIDENTALS_AUTO):
     sl = chord.find("/")
     if sl > -1:
-        return "%s/%s" % (transpose(s, d, chord[:sl], notation), transpose(s, d, chord[sl + 1:], notation))
+        return "%s/%s" % (transpose(s, d, chord[:sl], notation, accidentals), transpose(s, d, chord[sl + 1:], notation, accidentals))
     chord = translateChord(chord, notation, enNotation)
     c, v = splitChord(chord)
     if c == "":
         return chord
     p = chord2pos(c, s)
-    return translateChord(__pos2chord(p, d) + v, enNotation, notation)
+    return translateChord(__pos2chord(p, d, accidentals) + v, enNotation, notation)
 
 
 def translateChord(chord, sNotation=enNotation, dNotation=enNotation):
@@ -358,14 +476,14 @@ def translateChord(chord, sNotation=enNotation, dNotation=enNotation):
     return d + b
 
 
-def transposeChordPro(s, d, text, notation=enNotation):
+def transposeChordPro(s, d, text, notation=enNotation, accidentals=ACCIDENTALS_AUTO):
     r = re.compile(r'\[([^]]*)\]')
     p = 0
     b = ''
     for m in r.finditer(text):
         b += "%s[%s]" % (
             text[p:m.start()],
-            transpose(s, d, m.group(1), notation)
+            transpose(s, d, m.group(1), notation, accidentals)
         )
         p = m.end()
     return b + text[p:]

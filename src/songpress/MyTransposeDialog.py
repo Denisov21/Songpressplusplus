@@ -1,9 +1,11 @@
 ###############################################################
 # Name:             MyTransposeDialog.py
-# Purpose:     Transposing dialog
+# Purpose:      Transposing dialog
 # Author:         Luca Allulli (webmaster@roma21.it)
+# Modified by:  Denisov21
 # Created:     2009-12-02
 # Copyright: Luca Allulli (https://www.skeed.it/songpress)
+#               Modifications copyright Denisov21
 # License:     GNU GPL v2
 ##############################################################
 
@@ -57,7 +59,8 @@ class MyTransposeDialog(TransposeDialog):
             self.fromKey.GetClientData(self.fromKey.GetSelection()),
             self.toKey.GetClientData(self.toKey.GetSelection()),
             self.text,
-            self.notation.GetClientData(self.notation.GetSelection())
+            self.notation.GetClientData(self.notation.GetSelection()),
+            self.accidentals.GetSelection()
         )
         
     def OnSemitones(self, evt):

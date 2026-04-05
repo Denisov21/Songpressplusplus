@@ -1196,6 +1196,10 @@ class SongpressFrame(SDIMainFrame):
         self.text.SetFont(self.pref.editorFace, self.pref.editorSize)
         self.text.SetBgColour(getattr(self.pref, 'editorBgHex', '#FFFFFF'))
         self.text.SetSelColour(getattr(self.pref, 'selColourHex', '#3399FF'))
+        _sc = getattr(self.pref, 'syntaxColours', {})
+        for _k, _sid in [('normal', 11), ('chorus', 15), ('chord', 12), ('command', 13), ('attr', 14), ('comment', 16), ('tabgrid', 17)]:
+            if _k in _sc:
+                self.text.SetSyntaxColour(_sid, _sc[_k])
         self.text.ApplyMultiCursor(getattr(self.pref, 'multiCursor', False))
         # Se la perspective è stata salvata prima dell'introduzione della barra
         # "Editor" sul pannello centrale, va resettata una volta sola.
@@ -4331,6 +4335,10 @@ class SongpressFrame(SDIMainFrame):
             self._applyKlavierHighlightColor()
             self.text.SetBgColour(getattr(self.pref, 'editorBgHex', '#FFFFFF'))
             self.text.SetSelColour(getattr(self.pref, 'selColourHex', '#3399FF'))
+            _sc = getattr(self.pref, 'syntaxColours', {})
+            for _k, _sid in [('normal', 11), ('chorus', 15), ('chord', 12), ('command', 13), ('attr', 14), ('comment', 16), ('tabgrid', 17)]:
+                if _k in _sc:
+                    self.text.SetSyntaxColour(_sid, _sc[_k])
             self.text.ApplyMultiCursor(getattr(self.pref, 'multiCursor', False))
             self._SaveCustomColours()
             self.previewCanvas.SetTempoDisplay(getattr(self.pref, 'tempoDisplay', 0))

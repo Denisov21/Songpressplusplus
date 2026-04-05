@@ -537,3 +537,44 @@ msgstr "Salva dimensione e posizione della finestra all'uscita"
 #: PreferencesDialog.py format tab — tempo icon size label
 msgid "Tempo icon size"
 msgstr "Dimensione icone tempo"
+
+#: PreferencesDialog.py:99
+msgid "Syntax colours"
+msgstr "Colori sintassi"
+
+#: PreferencesDialog.py:101
+msgid "Normal text"
+msgstr "Testo normale"
+
+#: PreferencesDialog.py:102
+msgid "Chorus"
+msgstr "Rit."
+
+#: PreferencesDialog.py:103
+msgid "Chords"
+msgstr "Accordi"
+
+#: PreferencesDialog.py:104
+msgid "Commands"
+msgstr "Comandi"
+
+#: PreferencesDialog.py:105
+msgid "Attributes"
+msgstr "Attributi"
+
+#: PreferencesDialog.py:106
+msgid "Comments"
+msgstr "Commenti"
+
+#: PreferencesDialog.py:107
+msgid "Tab / Grid"
+msgstr "Tab / Griglia"
+
+
+#: PreferencesDialog.py (Context menu - Edit group)
+msgid "Ask confirmation before deleting"
+msgstr "Chiedi conferma prima di eliminare"
+
+#: Editor.py (Delete confirmation dialog)
+msgid "Delete the selected text?"
+msgstr "Eliminare il testo selezionato?"
