@@ -10,7 +10,7 @@ and is not compatible with macOS or Linux.
 ## Prerequisites
 
 | Requirement | Notes |
-|-----------|------|
+|-------------|-------|
 | Python 3.12+ | Installed and in the system `PATH` |
 | Internet connection | To download dependencies into the venv on first run |
 
@@ -31,6 +31,7 @@ Songpressplusplus/
 │       ├── templates/
 │       │   ├── songs/
 │       │   ├── slides/
+│       │   ├── themes/      ← syntax colour themes (.ini)
 │       │   └── fonts/       ← optional .ttf fonts
 │       └── xrc/
 ├── pyproject.toml
@@ -46,7 +47,7 @@ Songpressplusplus/
 Replace the path below with the full path to your Songpress++ project:
 
 ```powershell
-cd "E:\Users\Utente\Downloads\SongpressV26\Songpressplusplus"
+cd "E:\Users\Utente\Downloads\SongpressV28\Songpressplusplus"
 ```
 
 ### 2. Allow script execution (first time only, system-wide setting)
@@ -74,7 +75,7 @@ Unblock-File .\installer\Build-Portable.ps1
 The script automatically performs these steps:
 
 | Step | Operation |
-|------|------|
+|------|-----------|
 | 1 | Creates `.venv-build\` in the project root (first run only) |
 | 2 | Installs cx_Freeze + all dependencies into the isolated venv |
 | 3 | Runs `cx_Freeze build_exe` using the configuration in `pyproject.toml` |
@@ -87,7 +88,7 @@ The script automatically performs these steps:
 
 ```
 dist/
-└── Songpress++-2.2.2-portable.zip
+└── Songpress++-3.0.0-portable.zip
     └── exe.win-amd64-3.12\      ← folder to extract and distribute
         ├── Songpress++.exe
         ├── python3xx.dll
@@ -97,6 +98,7 @@ dist/
         ├── templates/
         │   ├── songs/
         │   ├── slides/
+        │   ├── themes/
         │   └── fonts/
         ├── xrc/
         └── pyproject.toml
@@ -111,6 +113,7 @@ dist/
 | Executable | `<extracted folder>\Songpress++.exe` |
 | Song templates | `<extracted folder>\templates\songs\` |
 | Slide templates | `<extracted folder>\templates\slides\` |
+| Colour themes | `<extracted folder>\templates\themes\` |
 | Fonts | `<extracted folder>\templates\fonts\` |
 
 Since `templates\` is next to the exe, Songpress++ automatically detects it
@@ -121,7 +124,7 @@ as a portable installation (logic in `MyPreferencesDialog.OnOpenTemplatesFolder`
 ## Estimated times
 
 | Operation | First run | Subsequent runs |
-|------------|-----------------|-----------------|
+|-----------|-----------|-----------------|
 | venv creation + dependency download | 5–15 min | — (venv reused) |
 | cx_Freeze build | 2–5 min | 2–5 min |
 | ZIP compression | 1–2 min | 1–2 min |
@@ -146,18 +149,37 @@ The version in the ZIP filename is read automatically from `pyproject.toml`:
 
 ```toml
 [project]
-version = "2.2.2"   ← update here, everything else is automatic
+version = "3.0.0"   ← update here, everything else is automatic
 ```
 
 ---
 
-## Cleanup
+## Cleanup and troubleshooting
 
-To start from scratch (venv + build):
+### Start from scratch (venv + build)
 
 ```powershell
 Remove-Item -Recurse -Force .venv-build, build
+.\installer\Build-Portable.ps1
 ```
+
+### Error "Unable to create process" or "The system cannot find the file specified"
+
+This error occurs when `.venv-build` was created in a previous project folder
+(e.g. `SongpressV26`) and the project was then moved or copied to a new folder
+(e.g. `SongpressV28`).
+
+Python venvs contain absolute internal paths and **cannot be moved**. The script
+detects the existing venv and reuses it, but its paths still point to the old location.
+
+**Fix:** delete the venv and recreate everything from scratch:
+
+```powershell
+Remove-Item -Recurse -Force .\.venv-build
+.\installer\Build-Portable.ps1
+```
+
+The script will create a fresh venv with the correct paths for the current folder.
 
 ---
 

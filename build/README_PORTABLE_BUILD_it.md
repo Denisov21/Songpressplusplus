@@ -31,6 +31,7 @@ Songpressplusplus/
 │       ├── templates/
 │       │   ├── songs/
 │       │   ├── slides/
+│       │   ├── themes/      ← temi colori sintassi (.ini)
 │       │   └── fonts/       ← font .ttf opzionali
 │       └── xrc/
 ├── pyproject.toml
@@ -46,7 +47,7 @@ Songpressplusplus/
 Sostituisci il percorso seguente con quello completo del tuo progetto Songpress++:
 
 ```powershell
-cd "E:\Users\Utente\Downloads\SongpressV26\Songpressplusplus"
+cd "E:\Users\Utente\Downloads\SongpressV28\Songpressplusplus"
 ```
 
 ### 2. Consenti l'esecuzione di script (solo al primo utilizzo, una tantum per il sistema)
@@ -87,7 +88,7 @@ Lo script esegue automaticamente questi passi:
 
 ```
 dist/
-└── Songpress++-2.2.2-portable.zip
+└── Songpress++-3.0.0-portable.zip
     └── exe.win-amd64-3.12\      ← cartella da estrarre e distribuire
         ├── Songpress++.exe
         ├── python3xx.dll
@@ -97,6 +98,7 @@ dist/
         ├── templates/
         │   ├── songs/
         │   ├── slides/
+        │   ├── themes/
         │   └── fonts/
         ├── xrc/
         └── pyproject.toml
@@ -111,6 +113,7 @@ dist/
 | Eseguibile | `<cartella estratta>\Songpress++.exe` |
 | Template canzoni | `<cartella estratta>\templates\songs\` |
 | Template slide | `<cartella estratta>\templates\slides\` |
+| Temi colori | `<cartella estratta>\templates\themes\` |
 | Font | `<cartella estratta>\templates\fonts\` |
 
 Poiché `templates\` è accanto all'exe, Songpress++ lo rileva automaticamente
@@ -146,18 +149,37 @@ La versione nel nome del ZIP viene letta automaticamente da `pyproject.toml`:
 
 ```toml
 [project]
-version = "2.2.2"   ← aggiorna qui, il resto è automatico
+version = "3.0.0"   ← aggiorna qui, il resto è automatico
 ```
 
 ---
 
-## Pulizia
+## Pulizia e risoluzione problemi
 
-Per ripartire da zero (venv + build):
+### Ripartire da zero (venv + build)
 
 ```powershell
 Remove-Item -Recurse -Force .venv-build, build
+.\installer\Build-Portable.ps1
 ```
+
+### Errore "Unable to create process" o "Impossibile trovare il file specificato"
+
+Questo errore si verifica quando il `.venv-build` è stato creato in una cartella
+precedente del progetto (ad esempio `SongpressV26`) e poi il progetto è stato
+spostato o copiato in una nuova cartella (ad esempio `SongpressV28`).
+
+I venv Python contengono path assoluti interni e **non sono spostabili**. Lo script
+rileva il venv esistente e lo riutilizza, ma i path puntano alla vecchia posizione.
+
+**Soluzione:** eliminare il venv e ricreare tutto da zero:
+
+```powershell
+Remove-Item -Recurse -Force .\.venv-build
+.\installer\Build-Portable.ps1
+```
+
+Lo script creerà un venv nuovo con i path corretti della cartella attuale.
 
 ---
 
