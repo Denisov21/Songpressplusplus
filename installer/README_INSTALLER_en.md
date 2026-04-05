@@ -4,8 +4,6 @@ In order to build the Windows installer you need to download:
 
 - Windows x64 binaries of `uv`, e.g. [Releases · astral-sh/uv](https://github.com/astral-sh/uv/releases/)
 - The [NSIS compiler](https://nsis.sourceforge.io/Download)
-- The [INetC plug-in – NSIS amd64-unicode](https://nsis.sourceforge.io/Inetc_plug-in) (for the 64-bit installer)
-- The [INetC plug-in – NSIS x86-unicode](https://nsis.sourceforge.io/Inetc_plug-in) (for the 32-bit installer)
 
 Extract `uv.exe` from the zip into this folder.
 Then launch the NSIS compiler and compile the appropriate `.nsi` script:
@@ -18,7 +16,7 @@ Then launch the NSIS compiler and compile the appropriate `.nsi` script:
 1. Open the NSIS program
 2. Click on **Compile NSI scripts**
 3. Press **File → Load Script**
-4. Select `songpressx64.nsi` (64-bit) or `songpressx32.nsi` (32-bit)
+4. Select `songpressx64.nsi` (64-bit) or `songpressx86.nsi` (32-bit)
 5. Click **Compile**
 
 ## NSI file
@@ -29,23 +27,27 @@ The script contains:
 
 ```nsi
 Unicode true
-Target: NSIS_TARGET_X86   ; 32-bit installer only (songpressx32.nsi)
-!addplugindir /amd64-unicode "plugins/64-bit"
-!addplugindir /x86-unicode  "plugins/x86-bit"
 !include "MUI2.nsh"
 ```
+
+No external DLLs or `!addplugindir` directives are needed: both installers use
+**NScurl**, which is bundled with NSIS.
 
 The version number is read automatically from `pyproject.toml` via `!searchparse`,
 so it does not need to be updated manually in the NSI script.
 
-## Notes
+## Internet connection check plugin
 
-URL changed: the internet connection check uses `http://1.1.1.1/` — Cloudflare's IP,
-which always responds in a few milliseconds without SSL, avoiding potential TLS hangs.
+Both installers use **NScurl** (built-in NSIS) — no external DLL required.
 
-`inetc::head` → `inetc::get`: HEAD requests via INetC are notoriously unreliable on
-Windows 10/11. Using `get` downloads a tiny body and works much more reliably.
-The temporary file is deleted immediately afterwards.
+```nsi
+NScurl::http GET "http://1.1.1.1/" "$INSTDIR\nettest.tmp" /TIMEOUT 10000 /END
+Pop $0   ; "OK" or error string
+Delete "$INSTDIR\nettest.tmp"
+```
+
+URL: `http://1.1.1.1/` — Cloudflare's IP, always responds in milliseconds without SSL,
+avoiding potential TLS hangs.
 
 ## Folder structure
 
@@ -55,13 +57,11 @@ installer/
 ├── songpressx32.nsi
 ├── songpressplusplus.ico
 ├── uv.exe
-├── license.txt
-└── plugins/
-    ├── 64-bit/
-    │   └── INetC.dll      ← from the INetC zip, folder Plugins\amd64-unicode\
-    └── x86-bit/
-        └── INetC.dll      ← from the INetC zip, folder Plugins\x86-unicode\
+└── license.txt
 ```
+
+> The `plugins/` folder is no longer needed: both installers use NScurl (built-in NSIS)
+> and require no external DLLs.
 
 The `installer\` folder must be placed directly inside the project root
 (the one containing `pyproject.toml`), because the script uses `SRCDIR = ".."`.
@@ -81,7 +81,7 @@ The `installer\` folder must be placed directly inside the project root
 
 The entire `templates\` folder (including all subfolders: `songs`, `slides`, `fonts`
 and any future additions) is copied recursively from the uv package tree
-into the correct destination at install time, so the user can edit them directly:
+into the correct destination at install time.
 
 - **Standard install**: `%APPDATA%\Songpress++\templates\`
 - **Portable install**: `<portable folder>\templates\` (next to the exe)
@@ -89,8 +89,6 @@ into the correct destination at install time, so the user can edit them directly
 On uninstall the user is asked whether to delete the data folder (default: No).
 
 ## Installer page options
-
-During installation a page is shown with the following options:
 
 | Option | Default | Description |
 |--------|---------|-------------|
@@ -111,11 +109,9 @@ The installer language (Italian/English) is selected at startup.
 If compilation succeeds, the following files will appear in the `installer/` folder:
 
 ```
-songpress++-setup.exe        ← 64-bit installer
-songpress++-setup-x32.exe   ← 32-bit installer
+songpress++64bit-setup.exe        ← 64-bit installer
+songpress++x86-setup-x32.exe   ← 32-bit installer
 ```
-
-These are the Windows installers ready for distribution.
 
 ---
 *This file is UTF-8 encoded without BOM.*

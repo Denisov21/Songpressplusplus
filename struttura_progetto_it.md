@@ -25,6 +25,7 @@ Descrizione di ogni file e cartella presente nel progetto.
 | File | Descrizione |
 | ---- | ----------- |
 | `pyproject.toml` | Configurazione del progetto Python (dipendenze, metadata, build system). Fonte unica di verità per versione app e dipendenze. |
+| `requirements.txt` | Elenco delle dipendenze Python necessarie per l'esecuzione dell'applicazione. Generato da `pyproject.toml` o mantenuto manualmente; usato da `pip install -r requirements.txt` per installare l'ambiente di sviluppo. |
 | `.gitignore` | Elenco di file e cartelle esclusi dal controllo versione Git (es. `.venv-build/`, `.idea/`, `build/`, `dist/`, `__pycache__/`). Quindi non vengono caricate in Git. |
 | `.gitattributes` | Attributi Git per la gestione dei fine riga e dei file binari. |
 

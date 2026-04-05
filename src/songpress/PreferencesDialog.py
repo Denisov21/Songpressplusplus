@@ -104,9 +104,25 @@ class PreferencesDialog(wx.Dialog):
         bSizerTheme.Add(self.labelTheme, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         self.themeCh = wx.Choice(self.general, wx.ID_ANY, wx.DefaultPosition, wx.Size(150, -1), [])
         bSizerTheme.Add(self.themeCh, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.themeLoadBtn  = wx.Button(self.general, wx.ID_ANY, _(u"Load"),   wx.DefaultPosition, wx.Size(60, -1))
-        self.themeSaveBtn  = wx.Button(self.general, wx.ID_ANY, _(u"Save"),   wx.DefaultPosition, wx.Size(60, -1))
-        self.themeDeleteBtn = wx.Button(self.general, wx.ID_ANY, _(u"Delete"), wx.DefaultPosition, wx.Size(60, -1))
+        self.themeLoadBtn  = wx.Button(self.general, wx.ID_ANY, _(u"Load"),   wx.DefaultPosition, wx.Size(75, -1))
+        self.themeSaveBtn  = wx.Button(self.general, wx.ID_ANY, _(u"Save"),   wx.DefaultPosition, wx.Size(75, -1))
+        self.themeDeleteBtn = wx.Button(self.general, wx.ID_ANY, _(u"Delete"), wx.DefaultPosition, wx.Size(75, -1))
+        # Icone pulsanti tema
+        import os as _os
+        _icons_dir = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 'img')
+        def _load_btn_icon(filename):
+            path = _os.path.join(_icons_dir, filename)
+            if _os.path.isfile(path):
+                img = wx.Image(path, wx.BITMAP_TYPE_PNG)
+                img.Rescale(16, 16, wx.IMAGE_QUALITY_HIGH)
+                return wx.BitmapBundle.FromBitmap(wx.Bitmap(img))
+            return None
+        _bmp_load   = _load_btn_icon('carica.png')
+        _bmp_save   = _load_btn_icon('salva.png')
+        _bmp_delete = _load_btn_icon('elimina.png')
+        if _bmp_load:   self.themeLoadBtn.SetBitmap(_bmp_load)
+        if _bmp_save:   self.themeSaveBtn.SetBitmap(_bmp_save)
+        if _bmp_delete: self.themeDeleteBtn.SetBitmap(_bmp_delete)
         bSizerTheme.Add(self.themeLoadBtn,   0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 3)
         bSizerTheme.Add(self.themeSaveBtn,   0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 3)
         bSizerTheme.Add(self.themeDeleteBtn, 0, wx.ALIGN_CENTER_VERTICAL)

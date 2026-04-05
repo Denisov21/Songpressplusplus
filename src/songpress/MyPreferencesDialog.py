@@ -22,13 +22,14 @@ _ = wx.GetTranslation
 
 
 class MyPreferencesDialog(PreferencesDialog):
-    def __init__(self, parent, preferences, easyChords, on_apply=None, previewCanvas=None):
+    def __init__(self, parent, preferences, easyChords, on_apply=None, previewCanvas=None, on_theme_change=None):
         self.pref = preferences
         self.frame = self
         PreferencesDialog.__init__(self, parent)
 
         self._pinned = False
         self._on_apply = on_apply  # callback chiamato ad ogni OK con pin attivo
+        self._on_theme_change = on_theme_change  # callback chiamato quando la lista temi cambia (salva/elimina)
         self._previewCanvas = previewCanvas  # riferimento opzionale per applicare subito le opzioni anteprima
         self.easyChords = easyChords
         self.clearRecentFiles = False
@@ -431,8 +432,8 @@ class MyPreferencesDialog(PreferencesDialog):
     _THEME_COLOUR_KEYS = [
         ('bg',         'editorBgHex',            '#FFFFFF'),
         ('sel',        'selColourHex',            '#C0C0C0'),
-        ('capEditor',  'captionEditorActiveHex',  '#4682C8'),
-        ('capPreview', 'captionPreviewActiveHex', '#329B82'),
+        ('capeditor',  'captionEditorActiveHex',  '#4682C8'),
+        ('cappreview', 'captionPreviewActiveHex', '#329B82'),
     ]
     _THEME_SYNTAX_KEYS = ['normal', 'chorus', 'chord', 'command', 'attr', 'comment', 'tabgrid']
 
@@ -495,8 +496,8 @@ class MyPreferencesDialog(PreferencesDialog):
         d = {}
         d['bg']         = self.editorBgHexCtrl.GetValue().strip()
         d['sel']        = self.selColourHexCtrl.GetValue().strip()
-        d['capEditor']  = self.capEditorHexCtrl.GetValue().strip()
-        d['capPreview'] = self.capPreviewHexCtrl.GetValue().strip()
+        d['capeditor']  = self.capEditorHexCtrl.GetValue().strip()
+        d['cappreview'] = self.capPreviewHexCtrl.GetValue().strip()
         for key in self._THEME_SYNTAX_KEYS:
             d['syntax_' + key] = self.syntaxHexCtrls[key].GetValue().strip()
         return d
@@ -512,8 +513,8 @@ class MyPreferencesDialog(PreferencesDialog):
 
         _set(self.editorBgHexCtrl,    self.editorBgSwatch,    d.get('bg',         '#FFFFFF'), self._applyEditorBg)
         _set(self.selColourHexCtrl,   self.selColourSwatch,   d.get('sel',        '#C0C0C0'), self._applySelColour)
-        _set(self.capEditorHexCtrl,   self.capEditorSwatch,   d.get('capEditor',  '#4682C8'))
-        _set(self.capPreviewHexCtrl,  self.capPreviewSwatch,  d.get('capPreview', '#329B82'))
+        _set(self.capEditorHexCtrl,   self.capEditorSwatch,   d.get('capeditor',  '#4682C8'))
+        _set(self.capPreviewHexCtrl,  self.capPreviewSwatch,  d.get('cappreview', '#329B82'))
         for key in self._THEME_SYNTAX_KEYS:
             val = d.get('syntax_' + key, '#000000')
             self.syntaxHexCtrls[key].SetValue(val)
@@ -594,6 +595,8 @@ class MyPreferencesDialog(PreferencesDialog):
         d = self._theme_to_dict()
         if self._save_theme_file(name, d):
             self._refreshThemeList(select_name=name)
+            if self._on_theme_change is not None:
+                self._on_theme_change()
 
     def OnThemeDelete(self, evt):
         idx = self.themeCh.GetSelection()
@@ -612,6 +615,8 @@ class MyPreferencesDialog(PreferencesDialog):
             except Exception:
                 pass
             self._refreshThemeList()
+            if self._on_theme_change is not None:
+                self._on_theme_change()
 
     def OnEditorBgPickColour(self, evt):
         current = self._hex_to_colour(self.editorBgHexCtrl.GetValue())

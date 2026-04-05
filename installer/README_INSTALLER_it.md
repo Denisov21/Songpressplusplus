@@ -1,11 +1,9 @@
 # Come compilare il programma di installazione Windows
 
-Per compilare il programma di installazione Windows e' necessario scaricare:
+Per compilare il programma di installazione Windows è necessario scaricare:
 
 - I binari Windows x64 di `uv`, ad esempio [Releases · astral-sh/uv](https://github.com/astral-sh/uv/releases/)
 - Il [compilatore NSIS](https://nsis.sourceforge.io/Download)
-- Il [plug-in INetC – NSIS amd64-unicode](https://nsis.sourceforge.io/Inetc_plug-in) (per l'installer a 64 bit)
-- Il [plug-in INetC – NSIS x86-unicode](https://nsis.sourceforge.io/Inetc_plug-in) (per l'installer a 32 bit)
 
 Estrarre `uv.exe` dallo zip in questa cartella.
 Avviare poi il compilatore NSIS e compilare lo script `.nsi` appropriato:
@@ -18,7 +16,7 @@ Avviare poi il compilatore NSIS e compilare lo script `.nsi` appropriato:
 1. Apri il programma NSIS
 2. Clicca su **Compile NSI scripts**
 3. Premi **File → Load Script**
-4. Seleziona `songpressx64.nsi` (64 bit) oppure `songpressx32.nsi` (32 bit)
+4. Seleziona `songpressx64.nsi` (64 bit) oppure `songpressx86.nsi` (32 bit)
 5. Clicca **Compile**
 
 ## File NSI
@@ -29,23 +27,27 @@ Lo script contiene:
 
 ```nsi
 Unicode true
-Target: NSIS_TARGET_X86   ; solo installer a 32 bit (songpressx32.nsi)
-!addplugindir /amd64-unicode "plugins/64-bit"
-!addplugindir /x86-unicode  "plugins/x86-bit"
 !include "MUI2.nsh"
 ```
+
+Non sono necessarie DLL esterne né direttive `!addplugindir`: entrambi gli installer
+usano **NScurl**, già incluso in NSIS.
 
 La versione viene letta automaticamente da `pyproject.toml` tramite `!searchparse`,
 quindi non è necessario aggiornarla manualmente nello script NSI.
 
-## Note
+## Plugin per la verifica della connessione Internet
 
-URL modificato: il controllo della connessione Internet usa `http://1.1.1.1/` — l'IP di Cloudflare,
-che risponde sempre in pochi millisecondi senza SSL, evitando possibili blocchi TLS.
+Entrambi gli installer usano **NScurl** (built-in NSIS) — nessuna DLL esterna richiesta.
 
-`inetc::head` → `inetc::get`: le richieste HEAD tramite INetC sono notoriamente inaffidabili su
-Windows 10/11. L'uso di `get` scarica un body minimo e funziona in modo molto più stabile.
-Il file temporaneo viene eliminato immediatamente dopo.
+```nsi
+NScurl::http GET "http://1.1.1.1/" "$INSTDIR\nettest.tmp" /TIMEOUT 10000 /END
+Pop $0   ; "OK" oppure stringa di errore
+Delete "$INSTDIR\nettest.tmp"
+```
+
+URL di test: `http://1.1.1.1/` — IP di Cloudflare, risponde sempre in pochi millisecondi
+senza SSL, evitando possibili blocchi TLS.
 
 ## Struttura delle cartelle
 
@@ -55,13 +57,11 @@ installer/
 ├── songpressx32.nsi
 ├── songpressplusplus.ico
 ├── uv.exe
-├── license.txt
-└── plugins/
-    ├── 64-bit/
-    │   └── INetC.dll      ← dallo zip di INetC, cartella Plugins\amd64-unicode\
-    └── x86-bit/
-        └── INetC.dll      ← dallo zip di INetC, cartella Plugins\x86-unicode\
+└── license.txt
 ```
+
+> La cartella `plugins/` non è più necessaria: entrambi gli installer usano NScurl
+> (built-in NSIS) e non richiedono DLL esterne.
 
 La cartella `installer\` deve trovarsi direttamente dentro la radice del progetto
 (quella che contiene `pyproject.toml`), perché lo script usa `SRCDIR = ".."`.
@@ -81,7 +81,7 @@ La cartella `installer\` deve trovarsi direttamente dentro la radice del progett
 
 L'intera cartella `templates\` (incluse tutte le sottocartelle: `songs`, `slides`, `fonts`
 e qualsiasi aggiunta futura) viene copiata ricorsivamente dall'albero del pacchetto uv
-nella destinazione corretta durante l'installazione, così l'utente può modificarli direttamente:
+nella destinazione corretta durante l'installazione.
 
 - **Installazione standard**: `%APPDATA%\Songpress++\templates\`
 - **Installazione portabile**: `<cartella portabile>\templates\` (accanto all'exe)
@@ -89,8 +89,6 @@ nella destinazione corretta durante l'installazione, così l'utente può modific
 In fase di disinstallazione viene chiesto se eliminare la cartella dati (default: No).
 
 ## Opzioni della pagina di installazione
-
-Durante l'installazione viene mostrata una pagina con le seguenti opzioni:
 
 | Opzione | Default | Descrizione |
 |---------|---------|-------------|
@@ -111,11 +109,9 @@ La lingua dell'installer (italiano/inglese) viene selezionata all'avvio.
 Se la compilazione va a buon fine, nella cartella `installer/` appariranno i file:
 
 ```
-songpress++-setup.exe        ← installer a 64 bit
-songpress++-setup-x32.exe   ← installer a 32 bit
+songpress++x86-setup.exe         ← installer a 64 bit
+songpress++x86-setup.exe   ← installer a 32 bit
 ```
-
-Questi sono gli installer Windows pronti per la distribuzione.
 
 ---
 *Questo file è codificato UTF-8 senza BOM.*

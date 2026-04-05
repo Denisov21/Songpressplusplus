@@ -39,81 +39,33 @@ freely, subject to the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
 ```
 
-> The zlib license is compatible with GNU GPL v2 (the license of Songpress++).
-> INetC is used **by the installer only** and is not distributed with the
-> application: NSIS temporarily extracts it to `$PLUGINSDIR` during
-> installation, after which it is removed automatically.
+---
+
+## Current usage in Songpress++
+
+**INetC is no longer used.** Both installers now use **NScurl**, which is bundled
+with NSIS by default (both amd64-unicode and x86-unicode). No external DLL is required.
+
+| Installer | Plugin | External DLL |
+|-----------|--------|--------------|
+| **64-bit** (`songpressx64.nsi`) | NScurl (built-in NSIS) | none |
+| **32-bit** (`songpressx86.nsi`) | NScurl (built-in NSIS) | none |
+
+INetC was previously used for the internet connection check, but was replaced by NScurl
+because it is already included in NSIS, works identically on both 32-bit and 64-bit,
+and requires no extra files in the project.
+
+The `plugins/` folder and `!addplugindir` directives have been removed from both scripts.
 
 ---
 
-## Installing the plugin in the project
-
-Extract `INetC.dll` from the zip archive, from the `Plugins\x86-unicode\`
-folder, and place it here:
-
-```
-installer/
-└── plugins/
-    └── INetC.dll    ← x86-unicode build
-```
-
-Add the following line to the `.nsi` file, **before** `!include "MUI2.nsh"`:
+## NScurl — replacement syntax
 
 ```nsi
-!addplugindir /x86-unicode "plugins"
-```
+NScurl::http GET "http://1.1.1.1/" "$INSTDIR\nettest.tmp" /TIMEOUT 10000 /END
+Pop $0   ; "OK" or error string
+Delete "$INSTDIR\nettest.tmp"
 
-This line is already present in the project's `songpress++.nsi` file.
-
----
-
-## Available commands
-
-### `inetc::get` — File download
-
-```nsi
-inetc::get [options] URL local_file [URL2 local_file2 ...] [/END]
-Pop $0  ; "OK" or error string
-```
-
-**Main options:**
-
-| Option | Description |
-|--------|-------------|
-| `/SILENT` | Hides progress bar and popup |
-| `/CONNECTTIMEOUT seconds` | Connection timeout (default: current IE value) |
-| `/RECEIVETIMEOUT seconds` | Receive timeout |
-| `/NOPROXY` | Disables proxy for this connection |
-| `/PROXY IP:PORT` | Explicit proxy address |
-| `/USERNAME login /PASSWORD pwd` | Proxy credentials |
-| `/NOCANCEL` | Prevents the user from cancelling the download |
-| `/WEAKSECURITY` | Ignores unknown or revoked certificates |
-| `/POPUP alias` | Shows a detailed popup progress dialog |
-| `/BANNER text` | Shows a simple popup banner (MSI style) |
-| `/USERAGENT text` | Sets the HTTP User-Agent header |
-| `/HEADER text` | Adds or replaces an HTTP request header |
-| `/TOSTACK` | Writes the response to the NSIS stack instead of a file |
-| `/TOSTACKCONV` | Like `/TOSTACK` but with encoding conversion |
-| `/RESUME question` | On error, shows a retry dialog with the given question text |
-
----
-
-### `inetc::head` — HTTP headers only (used in Songpress++)
-
-```nsi
-inetc::head [options] URL local_file
-Pop $0  ; "OK" or error string
-```
-
-Same as `get` but retrieves **HTTP headers only**, without downloading the
-response body. Much faster — ideal for connectivity checks.
-Supports the same options as `get`.
-
-**Usage in Songpress++:**
-
-```nsi
-inetc::head /SILENT /CONNECTTIMEOUT 5000 "https://pypi.org/"
-Pop $0
 ${If} $0 == "OK"
     ; connection OK
 ${Else}
@@ -123,32 +75,37 @@ ${EndIf}
 
 ---
 
-### `inetc::post` — HTTP POST upload
+## INetC command reference (kept for historical reference)
+
+### `inetc::get` — File download
 
 ```nsi
-inetc::post text_to_post [options] URL response_file
-Pop $0
+inetc::get [options] URL local_file [URL2 local_file2 ...] [/END]
+Pop $0  ; "OK" or error string
 ```
 
-Sets HTTP POST mode. The `/FILE` option allows sending the contents of a file
-instead of a plain string.
+| Option | Description |
+|--------|-------------|
+| `/SILENT` | Hides progress bar and popup |
+| `/CONNECTTIMEOUT seconds` | Connection timeout |
+| `/RECEIVETIMEOUT seconds` | Receive timeout |
+| `/NOPROXY` | Disables proxy |
+| `/PROXY IP:PORT` | Explicit proxy address |
+| `/NOCANCEL` | Prevents cancellation |
+| `/WEAKSECURITY` | Ignores unknown/revoked certificates |
+| `/TOSTACK` | Writes response to NSIS stack |
+| `/RESUME question` | Retry dialog on error |
+
+### `inetc::head` — HTTP headers only
+
+Same as `get` but downloads headers only. Unreliable on Windows 10/11 —
+use `inetc::get` or NScurl instead.
 
 ---
 
-### `inetc::put` — HTTP PUT upload
-
-```nsi
-inetc::put [options] URL local_file [URL2 local_file2 ...] [/END]
-Pop $0
-```
-
----
-
-## Return values
-
-All functions push a result onto the NSIS stack:
+## Return values (both INetC and NScurl)
 
 | Value | Meaning |
 |-------|---------|
 | `"OK"` | Operation succeeded |
-| any other string | Error description (e.g. `"Host not found"`, `"Connection refused"`, `"SSL error"`) |
+| any other string | Error description (e.g. `"Host not found"`, `"Connection refused"`) |
