@@ -48,8 +48,8 @@ with NSIS by default (both amd64-unicode and x86-unicode). No external DLL is re
 
 | Installer | Plugin | External DLL |
 |-----------|--------|--------------|
-| **64-bit** (`songpressx64.nsi`) | NScurl (built-in NSIS) | none |
-| **32-bit** (`songpressx86.nsi`) | NScurl (built-in NSIS) | none |
+| **64-bit** (`songpress++64bit.nsi`) | NScurl (built-in NSIS) | none |
+| **32-bit** (`songpress++x86.nsi`) | NScurl (built-in NSIS) | none |
 
 INetC was previously used for the internet connection check, but was replaced by NScurl
 because it is already included in NSIS, works identically on both 32-bit and 64-bit,

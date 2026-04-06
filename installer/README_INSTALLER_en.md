@@ -53,14 +53,14 @@ avoiding potential TLS hangs.
 
 ```
 installer/
-├── songpressx64.nsi
-├── songpressx32.nsi
+├── songpress++64bit.nsi
+├── songpress++x86.nsi
 ├── songpressplusplus.ico
 ├── uv.exe
 └── license.txt
 ```
 
-> The `plugins/` folder is no longer needed: both installers use NScurl (built-in NSIS)
+> The `plugins/` folder is not needed: both installers use NScurl (built-in NSIS)
 > and require no external DLLs.
 
 The `installer\` folder must be placed directly inside the project root

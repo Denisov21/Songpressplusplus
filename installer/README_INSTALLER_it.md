@@ -8,8 +8,8 @@ Per compilare il programma di installazione Windows è necessario scaricare:
 Estrarre `uv.exe` dallo zip in questa cartella.
 Avviare poi il compilatore NSIS e compilare lo script `.nsi` appropriato:
 
-- **Installer a 64 bit**: compilare `songpressx++64bit.nsi`
-- **Installer a 32 bit**: compilare `songpressx++x86.nsi`
+- **Installer a 64 bit**: compilare `songpress++64bit.nsi`
+- **Installer a 32 bit**: compilare `songpress++x86.nsi`
 
 ## Compilazione passo per passo
 
@@ -60,7 +60,7 @@ installer/
 └── license.txt
 ```
 
-> La cartella `plugins/` non è più necessaria: entrambi gli installer usano NScurl
+> La cartella `plugins/` non è necessaria: entrambi gli installer usano NScurl
 > (built-in NSIS) e non richiedono DLL esterne.
 
 La cartella `installer\` deve trovarsi direttamente dentro la radice del progetto
