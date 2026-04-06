@@ -3459,6 +3459,38 @@ class SongpressFrame(SDIMainFrame):
         hw.SetPage(html)
         hw.Bind(wx.html.EVT_HTML_LINK_CLICKED,
                 lambda e: wx.LaunchDefaultBrowser(e.GetLinkInfo().GetHref()))
+
+        # ── Menu contestuale tasto destro ──────────────────────────────
+        def _on_hw_right_click(evt):
+            menu = wx.Menu()
+
+            # Icona copy.png dalla cartella img del progetto
+            _copy_img = wx.Image(glb.AddPath('img/copy.png'))
+            bmp_copy = wx.Bitmap(_copy_img) if _copy_img.IsOk() else wx.NullBitmap
+
+            item_copy = wx.MenuItem(menu, wx.ID_COPY, _("Copy"))
+            if bmp_copy.IsOk():
+                item_copy.SetBitmap(bmp_copy)
+            menu.Append(item_copy)
+
+            # Abilita "Copia" solo se c'è testo selezionato
+            sel = hw.SelectionToText()
+            menu.Enable(wx.ID_COPY, bool(sel))
+
+            def _copy(e):
+                text = hw.SelectionToText()
+                if text and wx.TheClipboard.Open():
+                    wx.TheClipboard.SetData(wx.TextDataObject(text))
+                    wx.TheClipboard.Close()
+
+            menu.Bind(wx.EVT_MENU, _copy, id=wx.ID_COPY)
+
+            hw.PopupMenu(menu)
+            menu.Destroy()
+
+        hw.Bind(wx.EVT_RIGHT_DOWN, _on_hw_right_click)
+        # ── Fine menu contestuale ──────────────────────────────────────
+
         sizer.Add(hw, 1, wx.EXPAND | wx.ALL, 4)
 
         # Barra inferiore: pulsante Schermo intero a sinistra, Chiudi a destra

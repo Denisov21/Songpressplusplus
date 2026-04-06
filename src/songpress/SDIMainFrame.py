@@ -262,7 +262,7 @@ class SDIMainFrame(wx.FileDropTarget):
         else:
             cc = 0
 
-        d = wx.MessageDialog(self.frame, _("Your %s has been modified. Do you want to save it?") % (self.docType), self.appLongName, wx.YES_NO | wx.ICON_QUESTION | cc)
+        d = wx.MessageDialog(self.frame, _("Your %s has been modified. Do you want to save it?") % (self.docType), self.appLongName, wx.YES_NO | wx.ICON_INFORMATION | cc)
         res = d.ShowModal()
         if res == wx.ID_CANCEL:
             return False
@@ -298,7 +298,7 @@ class SDIMainFrame(wx.FileDropTarget):
                         self.frame,
                         msg,
                         self.appLongName,
-                        wx.YES_NO | wx.CANCEL | wx.ICON_QUESTION
+                        wx.YES_NO | wx.CANCEL | wx.ICON_WARNING
                     )
                     res = d.ShowModal()
                     if res == wx.ID_CANCEL:

@@ -8,15 +8,15 @@ In order to build the Windows installer you need to download:
 Extract `uv.exe` from the zip into this folder.
 Then launch the NSIS compiler and compile the appropriate `.nsi` script:
 
-- **64-bit installer**: compile `songpressx64.nsi`
-- **32-bit installer**: compile `songpressx32.nsi`
+- **64-bit installer**: compile `songpress++64bit.nsi`
+- **32-bit installer**: compile `songpress++x86.nsi`
 
 ## Step-by-step compilation
 
 1. Open the NSIS program
 2. Click on **Compile NSI scripts**
 3. Press **File → Load Script**
-4. Select `songpressx64.nsi` (64-bit) or `songpressx86.nsi` (32-bit)
+4. Select `songpress++64bit.nsi` (64-bit) or `songpress++x86.nsi` (32-bit)
 5. Click **Compile**
 
 ## NSI file
@@ -110,7 +110,7 @@ If compilation succeeds, the following files will appear in the `installer/` fol
 
 ```
 songpress++64bit-setup.exe        ← 64-bit installer
-songpress++x86-setup-x32.exe   ← 32-bit installer
+songpress++x86-setup.exe          ← 32-bit installer
 ```
 
 ---

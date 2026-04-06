@@ -8,15 +8,15 @@ Per compilare il programma di installazione Windows è necessario scaricare:
 Estrarre `uv.exe` dallo zip in questa cartella.
 Avviare poi il compilatore NSIS e compilare lo script `.nsi` appropriato:
 
-- **Installer a 64 bit**: compilare `songpressx64.nsi`
-- **Installer a 32 bit**: compilare `songpressx32.nsi`
+- **Installer a 64 bit**: compilare `songpressx++64bit.nsi`
+- **Installer a 32 bit**: compilare `songpressx++x86.nsi`
 
 ## Compilazione passo per passo
 
 1. Apri il programma NSIS
 2. Clicca su **Compile NSI scripts**
 3. Premi **File → Load Script**
-4. Seleziona `songpressx64.nsi` (64 bit) oppure `songpressx86.nsi` (32 bit)
+4. Seleziona `songpress++64bit.nsi` (64 bit) oppure `songpress++x86.nsi` (32 bit)
 5. Clicca **Compile**
 
 ## File NSI
@@ -53,8 +53,8 @@ senza SSL, evitando possibili blocchi TLS.
 
 ```
 installer/
-├── songpressx64.nsi
-├── songpressx32.nsi
+├── songpress++64bit.nsi
+├── songpress++x86.nsi
 ├── songpressplusplus.ico
 ├── uv.exe
 └── license.txt
@@ -109,8 +109,8 @@ La lingua dell'installer (italiano/inglese) viene selezionata all'avvio.
 Se la compilazione va a buon fine, nella cartella `installer/` appariranno i file:
 
 ```
-songpress++x86-setup.exe         ← installer a 64 bit
-songpress++x86-setup.exe   ← installer a 32 bit
+songpress++64bit-setup.exe         ← installer a 64 bit
+songpress++x86-setup.exe           ← installer a 32 bit
 ```
 
 ---
