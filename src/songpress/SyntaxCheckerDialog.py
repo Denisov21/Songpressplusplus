@@ -33,8 +33,8 @@ class SyntaxCheckerDialog(wx.Dialog):
         self._status_bar = wx.StatusBar(self, style=wx.STB_SIZEGRIP)
         self._status_bar.SetStatusText("")
         self.GetSizer().Add(self._status_bar, 0, wx.EXPAND)
-        self.SetMinSize((520, 400))
-        self.SetSize((520, 400))
+        self.SetMinSize((550, 400))
+        self.SetSize((550, 400))
         self.CentreOnParent()
 
     # ------------------------------------------------------------------
@@ -73,7 +73,7 @@ class SyntaxCheckerDialog(wx.Dialog):
         self.SetSizer(dlg_sizer)
 
     def _build_success(self, panel, sizer):
-        panel.SetBackgroundColour(wx.Colour(154, 205, 50))  # yellowgreen
+        panel.SetBackgroundColour(wx.Colour(180, 230, 140))  # verde chiaro tenue
         icon = wx.StaticBitmap(
             panel,
             bitmap=wx.ArtProvider.GetBitmap(wx.ART_TICK_MARK, wx.ART_MESSAGE_BOX, (32, 32))
@@ -91,6 +91,7 @@ class SyntaxCheckerDialog(wx.Dialog):
         sizer.Add(hbox, 1, wx.EXPAND | wx.ALL, 6)
 
     def _build_error_list(self, panel, sizer):
+        panel.SetBackgroundColour(wx.Colour(255, 180, 140))  # arancione-rosso chiaro
         count = len(self._result.errors)
         if count == 1:
             header_text = _("Found 1 syntax error:")
@@ -98,6 +99,7 @@ class SyntaxCheckerDialog(wx.Dialog):
             header_text = _("Found {count} syntax errors:").format(count=count)
 
         header = wx.StaticText(panel, label=header_text)
+        header.SetForegroundColour(wx.Colour(0, 0, 0))
         font = header.GetFont()
         font.SetWeight(wx.FONTWEIGHT_BOLD)
         header.SetFont(font)
@@ -110,7 +112,7 @@ class SyntaxCheckerDialog(wx.Dialog):
         )
         self._list.InsertColumn(0, _("Line"),        width=60)
         self._list.InsertColumn(1, _("Column"),      width=70)
-        self._list.InsertColumn(2, _("Description"), width=360)
+        self._list.InsertColumn(2, _("Description"), width=-1)  # si espande automaticamente
 
         for err in self._result.errors:
             idx = self._list.InsertItem(self._list.GetItemCount(), str(err.line))
@@ -119,12 +121,22 @@ class SyntaxCheckerDialog(wx.Dialog):
 
         self._list.Bind(wx.EVT_LIST_ITEM_SELECTED,  self._on_item_selected)
         self._list.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self._on_goto)
+        self._list.Bind(wx.EVT_SIZE, self._on_list_resize)
 
         sizer.Add(self._list, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
     # ------------------------------------------------------------------
     # Event handling
     # ------------------------------------------------------------------
+
+    def _on_list_resize(self, event):
+        """Keeps the Description column filling the remaining list width."""
+        total = self._list.GetClientSize().width
+        fixed = self._list.GetColumnWidth(0) + self._list.GetColumnWidth(1)
+        remaining = total - fixed
+        if remaining > 0:
+            self._list.SetColumnWidth(2, remaining)
+        event.Skip()
 
     def _on_item_selected(self, event):
         if hasattr(self, "_goto_btn"):
