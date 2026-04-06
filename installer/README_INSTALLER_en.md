@@ -100,6 +100,24 @@ On uninstall the user is asked whether to delete the data folder (default: No).
 
 The installer language (Italian/English) is selected at startup.
 
+## File association and legacy ProgID cleanup
+
+The installers register file extensions under the ProgID `Songpress.ChordPro`
+in the user registry (`HKCU\Software\Classes`).
+
+Earlier versions of the installer used the incorrect ProgID `Songpress.crd`, which
+could prevent `.crd` files from opening with a double-click even after reinstalling.
+The current `.nsi` scripts include **automatic cleanup** of this legacy ProgID:
+
+- **During installation**: before registering the new associations, the scripts remove
+  `HKCU\Software\Classes\Songpress.crd` and its `OpenWithProgids` entries for all
+  managed extensions.
+- **During uninstallation**: the legacy ProgID is also removed if still present.
+
+If file association does not work on a system with an old installation, the registry
+can be corrected manually by importing `fix_songpress_assoc.reg`
+(available in the `installer\` folder).
+
 ## Change program name and version
 
 ![Songpress++ change name and version](../src/songpress/img/GUIDE/Versione_en.png)

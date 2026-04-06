@@ -100,6 +100,24 @@ In fase di disinstallazione viene chiesto se eliminare la cartella dati (default
 
 La lingua dell'installer (italiano/inglese) viene selezionata all'avvio.
 
+## Associazione file e pulizia ProgID legacy
+
+Gli installer registrano le estensioni di file sotto il ProgID `Songpress.ChordPro`
+nel registro utente (`HKCU\Software\Classes`).
+
+Versioni precedenti dell'installer usavano il ProgID `Songpress.crd` (errato), che
+poteva impedire l'apertura dei file `.crd` con doppio clic anche dopo una reinstallazione.
+Gli script `.nsi` attuali includono una **pulizia automatica** di questo ProgID legacy:
+
+- **In fase di installazione**: prima di registrare le nuove associazioni, vengono
+  rimossi `HKCU\Software\Classes\Songpress.crd` e le relative voci `OpenWithProgids`
+  per tutte le estensioni gestite.
+- **In fase di disinstallazione**: viene rimosso anche il ProgID legacy se ancora presente.
+
+Se l'associazione non funziona su un sistema con una vecchia installazione, è possibile
+correggere il registro manualmente importando il file `fix_songpress_assoc.reg`
+(disponibile nella cartella `installer\`).
+
 ## Modifica nome e versione programma
 
 ![Songpress++ cambio nome e versione](../src/songpress/img/GUIDE/Versione_it.png)

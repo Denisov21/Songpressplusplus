@@ -1,0 +1,28 @@
+Windows Registry Editor Version 5.00
+
+; Rimuove il vecchio ProgID errato
+[-HKEY_CURRENT_USER\Software\Classes\Songpress.crd]
+
+; Rimuove la voce errata da OpenWithProgids
+[-HKEY_CURRENT_USER\Software\Classes\.crd\OpenWithProgids]
+
+; Associa .crd al ProgID corretto
+[HKEY_CURRENT_USER\Software\Classes\.crd]
+@="Songpress.ChordPro"
+
+[HKEY_CURRENT_USER\Software\Classes\.crd\OpenWithProgids]
+"Songpress.ChordPro"=hex(0):
+
+; Definisce il ProgID Songpress.ChordPro
+[HKEY_CURRENT_USER\Software\Classes\Songpress.ChordPro]
+@="ChordPro"
+
+[HKEY_CURRENT_USER\Software\Classes\Songpress.ChordPro\DefaultIcon]
+@="E:\\Users\\Utente\\AppData\\Local\\Songpress++\\bin\\songpressplusplus.ico,0"
+
+[HKEY_CURRENT_USER\Software\Classes\Songpress.ChordPro\shell\Open]
+"MUIVerb"="Songpress++"
+"Icon"="E:\\Users\\Utente\\AppData\\Local\\Songpress++\\bin\\songpressplusplus.ico"
+
+[HKEY_CURRENT_USER\Software\Classes\Songpress.ChordPro\shell\Open\command]
+@="\"E:\\Users\\Utente\\AppData\\Local\\Songpress++\\bin\\songpress.exe\" \"%1\""
