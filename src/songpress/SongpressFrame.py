@@ -2804,12 +2804,12 @@ class SongpressFrame(SDIMainFrame):
         # paired block delimiters whose content must NOT be treated as verse
         # (start_chord/end_chord, grid/end_grid, tab/end_tab, bridge, etc.)
         SOB = re.compile(
-            r'^\s*\{(?:start_chord|start_of_bridge|sob|start_of_tab|sot'
+            r'^\s*\{(?:start_chord|start_bridge|start_of_bridge|sob|start_of_tab|sot'
             r'|start_of_grid|sog|grid)[^}]*\}',
             re.IGNORECASE,
         )
         EOB = re.compile(
-            r'^\s*\{(?:end_chord|end_of_bridge|eob|end_of_tab|eot'
+            r'^\s*\{(?:end_chord|end_bridge|end_of_bridge|eob|end_of_tab|eot'
             r'|end_of_grid|eog)\s*\}',
             re.IGNORECASE,
         )

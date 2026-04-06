@@ -61,6 +61,8 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 | `{soc:Etichetta}`                         | ✅  | ⌨️   | Ritornello con etichetta personalizzata                                                                                              |
 | `{start_chorus:Etichetta}`/`{end_chorus}` | 🔧  | ⌨️   | Forma alternativa per il ritornello (con etichetta opzionale)                                                                        |
 | `{start_bridge:Etichetta}`/`{end_bridge}` | 🔧  | ⌨️   | Bridge con etichetta opzionale; se omessa, il valore predefinito è «Bridge»                                                          |
+| `{start_of_bridge}`/`{end_of_bridge}`     | ✅  | 🖊    | Forma ChordPro standard per il bridge; equivalente a `{start_bridge}`/`{end_bridge}`                                                 |
+| `{sob}`/`{eob}`                           | ✅  | 🖊    | Abbreviazione di `start_of_bridge`/`end_of_bridge`                                                                                   |
 | `{start_chord:Etichetta}`/`{end_chord}`   | 🔧  | ⌨️   | Blocco intro/accordi; se l'etichetta è omessa, il valore predefinito è «Intro»                                                       |
 | `{start_of_tab}`/`{end_of_tab}`           | ✅  | 🖊    | Blocco tablatura ASCII; il contenuto viene visualizzato con font monospace (Courier New) e l'etichetta «Tab»                         |
 | `{sot}`/`{eot}`                           | ✅  | 🖊    | Abbreviazione di `start_of_tab`/`end_of_tab`                                                                                         |
@@ -69,7 +71,7 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 | `{grid}`                                  | ✅  | 🖊    | Forma alternativa di `start_of_grid` (senza chiusura esplicita)                                                                      |
 | `{new_song}`                              | 🔧  | 🖊    | Avvia una nuova canzone nello stesso documento: azzera i contatori di strofe e ritornelli in modo che la numerazione ricominci da 1  |
 
-> **Nota su `{start_of_bridge}`** — Questa forma (con `of_`) non è gestita dal renderer; usare `{start_bridge}`/`{end_bridge}`.
+> **Nota sul bridge** — Sono supportate entrambe le forme: `{start_bridge}`/`{end_bridge}` (forma Songpress++, inseribile dal menu) e `{start_of_bridge}`/`{end_of_bridge}` (forma ChordPro standard, con abbreviazioni `{sob}`/`{eob}`). Le due forme sono equivalenti e intercambiabili.
 
 ### Interruzioni di pagina e colonna
 

@@ -61,6 +61,8 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | `{soc:Label}`                             | ✅  | ⌨️   | Chorus with custom label                                                                                               |
 | `{start_chorus:Label}`/`{end_chorus}`     | 🔧  | ⌨️   | Alternative chorus form (with optional label)                                                                          |
 | `{start_bridge:Label}`/`{end_bridge}`     | 🔧  | ⌨️   | Bridge with optional label; defaults to «Bridge» if omitted                                                            |
+| `{start_of_bridge}`/`{end_of_bridge}`     | ✅  | 🖊    | Standard ChordPro form for bridge; equivalent to `{start_bridge}`/`{end_bridge}`                                       |
+| `{sob}`/`{eob}`                           | ✅  | 🖊    | Abbreviation for `start_of_bridge`/`end_of_bridge`                                                                     |
 | `{start_chord:Label}`/`{end_chord}`       | 🔧  | ⌨️   | Intro/chord block; defaults to «Intro» if label is omitted                                                             |
 | `{start_of_tab}`/`{end_of_tab}`           | ✅  | 🖊    | ASCII tab block; content is rendered in monospace font (Courier New) with the label «Tab»                              |
 | `{sot}`/`{eot}`                           | ✅  | 🖊    | Abbreviation for `start_of_tab`/`end_of_tab`                                                                           |
@@ -69,7 +71,7 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | `{grid}`                                  | ✅  | 🖊    | Alternative form of `start_of_grid` (no explicit closing tag required)                                                 |
 | `{new_song}`                              | 🔧  | 🖊    | Starts a new song in the same document: resets verse and chorus counters so numbering restarts from 1                  |
 
-> **Note on `{start_of_bridge}`** — This form (with `of_`) is not handled by the renderer; use `{start_bridge}`/`{end_bridge}` instead.
+> **Note on bridge** — Both forms are supported: `{start_bridge}`/`{end_bridge}` (Songpress++ form, insertable from the menu) and `{start_of_bridge}`/`{end_of_bridge}` (standard ChordPro form, with abbreviations `{sob}`/`{eob}`). The two forms are equivalent and interchangeable.
 
 ### Page and Column Breaks
 
