@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: Songpress++ 1.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-04-02 00:00+0000\n"
-"PO-Revision-Date: 2026-04-03 00:00+0000\n"
+"PO-Revision-Date: 2026-04-06 20:10+0200\n"
 "Last-Translator: Denisov21\n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -15,15 +15,15 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.9\n"
 
 # -----------------------------------------------------------------------
 # SyntaxCheckerDialog.py
 # -----------------------------------------------------------------------
-
 #. Window title
 #: SyntaxCheckerDialog.py:27
 msgid "Syntax check"
-msgstr "Verifica sintattica"
+msgstr "Controllo sintassi"
 
 #. Success message when no errors are found
 #: SyntaxCheckerDialog.py:81
@@ -68,7 +68,6 @@ msgstr "Descrizione"
 # -----------------------------------------------------------------------
 # SyntaxChecker.py — error messages
 # -----------------------------------------------------------------------
-
 #. Square bracket opened but never closed
 #: SyntaxChecker.py
 msgid "Opening square bracket '[' not closed"
@@ -116,3 +115,11 @@ msgstr "Il comando '{cmd}' richiede un valore"
 #: SyntaxChecker.py
 msgid "Command '{cmd}' has ':' but no value; use '{reset}' to reset"
 msgstr "Il comando '{cmd}' ha ':' ma nessun valore; usa '{reset}' per ripristinare il default"
+
+#: SyntaxChecker.py
+msgid "Command '{cmd}' requires a numeric value, got: '{val}'"
+msgstr "Il comando '{cmd}' richiede un valore numerico, trovato: '{val}'"
+
+#: SyntaxChecker.py
+msgid "Command '{cmd}' requires a time signature (e.g. 4/4), got: '{val}'"
+msgstr "Il comando '{cmd}' richiede una misura (es. 4/4), trovato: '{val}'"

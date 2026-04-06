@@ -256,6 +256,18 @@ def _validate_command(content: str, line_num: int, col: int, result: SyntaxCheck
         "linespacing", "chordtopspacing",
     }
 
+    # Commands whose value, when present, must be numeric (int or float).
+    _REQUIRES_NUMERIC_VALUE = {
+        "textsize", "chordsize",
+        "linespacing", "chordtopspacing",
+        "capo",
+        "tempo", "tempo_m", "tempo_s", "tempo_sp", "tempo_c", "tempo_cp",
+    }
+
+    # Commands whose value must be a time signature: two positive integers
+    # separated by '/', e.g. 4/4, 3/4, 6/8.
+    _REQUIRES_TIME_SIGNATURE = {"time"}
+
     if cmd_name not in _KNOWN_COMMANDS:
         result.errors.append(SyntaxError(
             line=line_num,
@@ -276,6 +288,33 @@ def _validate_command(content: str, line_num: int, col: int, result: SyntaxCheck
             )
         ))
         return
+
+    if cmd_name in _REQUIRES_TIME_SIGNATURE and cmd_value is not None and cmd_value != "":
+        import re as _re
+        if not _re.fullmatch(r'[1-9][0-9]*/[1-9][0-9]*', cmd_value.strip()):
+            result.errors.append(SyntaxError(
+                line=line_num,
+                column=col,
+                message=_("Command '{cmd}' requires a time signature (e.g. 4/4), got: '{val}'").format(
+                    cmd="{" + cmd_name + ":}",
+                    val=cmd_value,
+                )
+            ))
+            return
+
+    if cmd_name in _REQUIRES_NUMERIC_VALUE and cmd_value is not None and cmd_value != "":
+        try:
+            float(cmd_value)
+        except ValueError:
+            result.errors.append(SyntaxError(
+                line=line_num,
+                column=col,
+                message=_("Command '{cmd}' requires a numeric value, got: '{val}'").format(
+                    cmd="{" + cmd_name + ":}",
+                    val=cmd_value,
+                )
+            ))
+            return
 
     if cmd_name in _REQUIRES_VALUE:
         if cmd_value is None or cmd_value == "":
