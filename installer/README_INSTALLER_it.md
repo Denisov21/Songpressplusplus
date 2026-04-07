@@ -110,9 +110,13 @@ poteva impedire l'apertura dei file `.crd` con doppio clic anche dopo una reinst
 Gli script `.nsi` attuali includono una **pulizia automatica** di questo ProgID legacy:
 
 - **In fase di installazione**: prima di registrare le nuove associazioni, vengono
-  rimossi `HKCU\Software\Classes\Songpress.crd` e le relative voci `OpenWithProgids`
-  per tutte le estensioni gestite.
-- **In fase di disinstallazione**: viene rimosso anche il ProgID legacy se ancora presente.
+  rimossi `HKCU\Software\Classes\Songpress.crd` e le voci `OpenWithProgids` relative
+  a `Songpress.crd` per tutte le estensioni gestite (`.crd`, `.pro`, `.chopro`,
+  `.chordpro`, `.cho`).
+- **In fase di disinstallazione**: viene rimossa la chiave `Songpress.crd` e,
+  per ciascuna delle estensioni gestite, la voce `Songpress.crd` in `OpenWithProgids`;
+  successivamente vengono rimosse tutte le associazioni `Songpress.ChordPro` tramite
+  il macro `APP_UNASSOCIATE`.
 
 Se l'associazione non funziona su un sistema con una vecchia installazione, è possibile
 correggere il registro manualmente importando il file `fix_songpress_assoc.reg`

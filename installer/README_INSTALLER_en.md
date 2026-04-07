@@ -110,9 +110,11 @@ could prevent `.crd` files from opening with a double-click even after reinstall
 The current `.nsi` scripts include **automatic cleanup** of this legacy ProgID:
 
 - **During installation**: before registering the new associations, the scripts remove
-  `HKCU\Software\Classes\Songpress.crd` and its `OpenWithProgids` entries for all
-  managed extensions.
-- **During uninstallation**: the legacy ProgID is also removed if still present.
+  `HKCU\Software\Classes\Songpress.crd` and the `Songpress.crd` entry in `OpenWithProgids`
+  for each managed extension (`.crd`, `.pro`, `.chopro`, `.chordpro`, `.cho`).
+- **During uninstallation**: the `Songpress.crd` key is deleted and the `Songpress.crd`
+  entry is removed from `OpenWithProgids` for each managed extension; then all
+  `Songpress.ChordPro` associations are removed via the `APP_UNASSOCIATE` macro.
 
 If file association does not work on a system with an old installation, the registry
 can be corrected manually by importing `fix_songpress_assoc.reg`
