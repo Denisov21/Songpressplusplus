@@ -646,19 +646,12 @@ class MyPreferencesDialog(PreferencesDialog):
 
     def OnOpenTemplatesFolder(self, evt):
         import os as _os
-        import sys as _sys
         import subprocess
 
-        # Determina se l'installazione è portabile:
-        # l'installer portabile copia templates\ accanto all'exe,
-        # quindi la sua presenza indica modalità portabile.
-        exe_dir = _os.path.dirname(_os.path.abspath(_sys.executable))
-        portable_templates = _os.path.join(exe_dir, 'templates')
-        if _os.path.isdir(portable_templates):
-            path = portable_templates
-        else:
-            path = _os.path.join(_os.environ.get('APPDATA', _os.path.expanduser('~')),
-                                 'Songpress++', 'templates')
+        # Usa lo stesso percorso di _get_themes_dir(): la cartella templates/
+        # accanto al pacchetto sorgente (AppData\Local\...\songpress\templates).
+        pkg_dir = _os.path.dirname(_os.path.abspath(__file__))
+        path = _os.path.join(pkg_dir, 'templates')
 
         _os.makedirs(_os.path.join(path, 'songs'), exist_ok=True)
         _os.makedirs(_os.path.join(path, 'slides'), exist_ok=True)

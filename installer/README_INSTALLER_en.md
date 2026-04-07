@@ -72,19 +72,19 @@ The `installer\` folder must be placed directly inside the project root
 |------|------|
 | Application (standard) | `%LOCALAPPDATA%\Songpress++\bin\songpress.exe` |
 | Application (portable) | `%DESKTOP%\Songpress++\bin\songpress.exe` |
-| Song templates (standard) | `%APPDATA%\Songpress++\templates\songs\` |
-| Slides templates (standard) | `%APPDATA%\Songpress++\templates\slides\` |
-| Fonts (standard) | `%APPDATA%\Songpress++\templates\fonts\` |
-| Song templates (portable) | `%DESKTOP%\Songpress++\templates\songs\` |
-| Slides templates (portable) | `%DESKTOP%\Songpress++\templates\slides\` |
-| Fonts (portable) | `%DESKTOP%\Songpress++\templates\fonts\` |
+| Song templates (standard) | `<install folder>\templates\songs\` |
+| Slides templates (standard) | `<install folder>\templates\slides\` |
+| Fonts (standard) | `<install folder>\templates\fonts\` |
+| Song templates (portable) | `<install folder>\templates\songs\` |
+| Slides templates (portable) | `<install folder>\templates\slides\` |
+| Fonts (portable) | `<install folder>\templates\fonts\` |
 
 The entire `templates\` folder (including all subfolders: `songs`, `slides`, `fonts`
 and any future additions) is copied recursively from the uv package tree
 into the correct destination at install time.
 
-- **Standard install**: `%APPDATA%\Songpress++\templates\`
-- **Portable install**: `<portable folder>\templates\` (next to the exe)
+- **Standard install**: `<install folder>\templates\` (next to the exe, in the folder chosen during setup)
+- **Portable install**: `<install folder>\templates\` (next to the exe)
 
 On uninstall the user is asked whether to delete the data folder (default: No).
 

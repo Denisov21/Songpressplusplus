@@ -72,19 +72,19 @@ La cartella `installer\` deve trovarsi direttamente dentro la radice del progett
 |------|----------|
 | Applicazione (standard) | `%LOCALAPPDATA%\Songpress++\bin\songpress.exe` |
 | Applicazione (portabile) | `%DESKTOP%\Songpress++\bin\songpress.exe` |
-| Template canzoni (standard) | `%APPDATA%\Songpress++\templates\songs\` |
-| Template slide (standard) | `%APPDATA%\Songpress++\templates\slides\` |
-| Font (standard) | `%APPDATA%\Songpress++\templates\fonts\` |
-| Template canzoni (portabile) | `%DESKTOP%\Songpress++\templates\songs\` |
-| Template slide (portabile) | `%DESKTOP%\Songpress++\templates\slides\` |
-| Font (portabile) | `%DESKTOP%\Songpress++\templates\fonts\` |
+| Template canzoni (standard) | `<cartella installazione>\templates\songs\` |
+| Template slide (standard) | `<cartella installazione>\templates\slides\` |
+| Font (standard) | `<cartella installazione>\templates\fonts\` |
+| Template canzoni (portabile) | `<cartella installazione>\templates\songs\` |
+| Template slide (portabile) | `<cartella installazione>\templates\slides\` |
+| Font (portabile) | `<cartella installazione>\templates\fonts\` |
 
 L'intera cartella `templates\` (incluse tutte le sottocartelle: `songs`, `slides`, `fonts`
 e qualsiasi aggiunta futura) viene copiata ricorsivamente dall'albero del pacchetto uv
 nella destinazione corretta durante l'installazione.
 
-- **Installazione standard**: `%APPDATA%\Songpress++\templates\`
-- **Installazione portabile**: `<cartella portabile>\templates\` (accanto all'exe)
+- **Installazione standard**: `<cartella installazione>\templates\` (accanto all'exe, nella cartella scelta durante il setup)
+- **Installazione portabile**: `<cartella installazione>\templates\` (accanto all'exe)
 
 In fase di disinstallazione viene chiesto se eliminare la cartella dati (default: No).
 
