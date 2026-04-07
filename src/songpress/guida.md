@@ -41,8 +41,7 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 | `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo con icona **croma puntata**                                                         |
 | `{time:N/M}`        |              | ✅  | ⌨️   | Indicazione di tempo (es. `{time:4/4}`, `{time:3/4}`); visualizzata con simbolo grafico   |
 
-> **Nota sul tempo** — Le direttive `{tempo*}` hanno tre modalità di visualizzazione, configurabili nelle preferenze: icona nota + valore (es. `♩ = 120`), testo `BPM: 120`, o testo semplice `Tempo: 120`.
-> Impostando la modalità su *nascosto* (`-1`), il valore viene trattato come puro metadato — non appare nell'anteprima né in stampa.
+> **Nota sul tempo** — Le direttive `{tempo*}` hanno quattro modalità di visualizzazione, configurabili nelle preferenze: icona nota + valore (es. `♩ = 120`), testo `BPM: 120`, testo semplice `Tempo: 120`, oppure nessuna visualizzazione. Spuntando l'opzione *Metadato*, il valore viene trattato come puro metadato — non appare nell'anteprima né in stampa.
 
 ---
 

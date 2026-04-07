@@ -1172,6 +1172,7 @@ class SongpressFrame(SDIMainFrame):
         self._LoadPageMargins()
         self._LoadTempoDisplay()
         self._LoadKlavierColour()
+        self._LoadGuidePrefs()
         self._applyKlavierHighlightColor()
         self._LoadCustomColours()
         self._two_pages_per_sheet = False
@@ -1240,6 +1241,7 @@ class SongpressFrame(SDIMainFrame):
         self.SaveWindowGeometry()
         self._SavePageMargins()
         self._SaveTempoDisplay()
+        self._SaveGuidePrefs()
         self._SaveKlavierColour()
         self._SaveCustomColours()
         self.pref.Save()
@@ -1258,6 +1260,7 @@ class SongpressFrame(SDIMainFrame):
             self.SaveWindowGeometry()
             self._SavePageMargins()
             self._SaveTempoDisplay()
+            self._SaveGuidePrefs()
             self._SaveKlavierColour()
             self._SaveCustomColours()
             self.pref.Save()
@@ -1346,6 +1349,30 @@ class SongpressFrame(SDIMainFrame):
                 self.pref.keyDisplay = (val == '1')
         except Exception:
             pass
+
+    def _SaveGuidePrefs(self):
+        """Salva le preferenze della guida rapida (zoom e tema) nel config."""
+        try:
+            self.config.SetPath('/GuidePrefs')
+            self.config.Write('zoom', str(getattr(self.pref, 'guideZoom', 100)))
+            self.config.Write('darkMode', '1' if getattr(self.pref, 'guideDarkMode', False) else '0')
+        except Exception:
+            pass
+
+    def _LoadGuidePrefs(self):
+        """Ripristina le preferenze della guida rapida (zoom e tema) dal config."""
+        try:
+            self.config.SetPath('/GuidePrefs')
+            val = self.config.Read('zoom')
+            if val:
+                self.pref.guideZoom = max(50, min(200, int(val)))
+            else:
+                self.pref.guideZoom = 100
+            val = self.config.Read('darkMode')
+            self.pref.guideDarkMode = (val == '1')
+        except Exception:
+            self.pref.guideZoom = 100
+            self.pref.guideDarkMode = False
 
     def _SaveKlavierColour(self):
         """Salva il colore dei tasti klavier nel config."""
@@ -3448,17 +3475,14 @@ class SongpressFrame(SDIMainFrame):
         dlg = wx.Dialog(
             self.frame,
             title=_("Quick guide - Songpress++"),
-            size=(760, 620),
+            size=(1000, 620),
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.MAXIMIZE_BOX,
         )
-        dlg.SetMinSize(wx.Size(500, 400))
+        dlg.SetMinSize(wx.Size(640, 620))
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         hw = wx.html.HtmlWindow(dlg, style=wx.html.HW_SCROLLBAR_AUTO)
-        hw.SetPage(html)
-        hw.Bind(wx.html.EVT_HTML_LINK_CLICKED,
-                lambda e: wx.LaunchDefaultBrowser(e.GetLinkInfo().GetHref()))
 
         # ── Menu contestuale tasto destro ──────────────────────────────
         def _on_hw_right_click(evt):
@@ -3493,9 +3517,111 @@ class SongpressFrame(SDIMainFrame):
 
         sizer.Add(hw, 1, wx.EXPAND | wx.ALL, 4)
 
-        # Barra inferiore: pulsante Schermo intero a sinistra, Chiudi a destra
+        # ── Stato zoom e tema — ripristinati dalle preferenze ────────
+        _zoom_pct = [max(50, min(200, getattr(self.pref, 'guideZoom', 100)))]
+        _dark_mode = [bool(getattr(self.pref, 'guideDarkMode', False))]
+
+        # Palette colori per i due temi
+        _THEME = {
+            False: {   # chiaro
+                'bg':       '#ffffff',
+                'text':     '#000000',
+                'link':     '#0066cc',
+                'pre_bg':   '#f4f4f4',
+                'pre_fg':   '#000000',
+                'th_bg':    '#e8e8e8',
+                'td_border':'#cccccc',
+                'bq_fg':    '#555555',
+                'h_fg':     '#000000',
+            },
+            True: {    # scuro
+                'bg':       '#1e1e1e',
+                'text':     '#d4d4d4',
+                'link':     '#4fc1ff',
+                'pre_bg':   '#2d2d2d',
+                'pre_fg':   '#ce9178',
+                'th_bg':    '#3a3a3a',
+                'td_border':'#555555',
+                'bq_fg':    '#999999',
+                'h_fg':     '#9cdcfe',
+            },
+        }
+
+        import re as _re
+
+        def _colorize_body(body_html, dark):
+            """
+            wx.html.HtmlWindow non applica CSS <style>: usa solo attributi HTML
+            legacy. Sostituiamo quindi i tag rilevanti con versioni colorate via
+            attributi bgcolor/color/text.
+            """
+            p = _THEME[dark]
+
+            # <pre ...> → <pre bgcolor="..." color="...">
+            body_html = _re.sub(
+                r'<pre(\s[^>]*)?>',
+                lambda m: '<pre bgcolor="%s"><font color="%s">' % (p['pre_bg'], p['pre_fg']),
+                body_html, flags=_re.IGNORECASE,
+            )
+            body_html = _re.sub(r'</pre>', '</font></pre>', body_html, flags=_re.IGNORECASE)
+
+            # <th ...> → <th bgcolor="...">
+            body_html = _re.sub(
+                r'<th(\s[^>]*)?>',
+                lambda m: '<th bgcolor="%s">' % p['th_bg'],
+                body_html, flags=_re.IGNORECASE,
+            )
+
+            # Colore intestazioni h1-h4
+            for hn in ('h1', 'h2', 'h3', 'h4'):
+                body_html = _re.sub(
+                    r'<' + hn + r'(\s[^>]*)?>',
+                    lambda m, _hn=hn: '<%s><font color="%s">' % (_hn, p['h_fg']),
+                    body_html, flags=_re.IGNORECASE,
+                )
+                body_html = _re.sub(
+                    r'</' + hn + r'>',
+                    '</font></%s>' % hn,
+                    body_html, flags=_re.IGNORECASE,
+                )
+
+            return body_html
+
+        def _rebuild_page(dark):
+            """Ricostruisce l'HTML con attributi colore compatibili con
+            wx.html.HtmlWindow e aggiorna anche il colore di sfondo del widget."""
+            p = _THEME[dark]
+            body_colored = _colorize_body(html_body, dark)
+
+            # Attributi <body> legacy: bgcolor, text, link
+            styled = (
+                '<html><head></head>'
+                '<body bgcolor="%s" text="%s" link="%s">'
+                '%s'
+                '</body></html>'
+            ) % (p['bg'], p['text'], p['link'], body_colored)
+
+            # Colore di sfondo del widget wx (visibile durante lo scroll)
+            hw.SetBackgroundColour(wx.Colour(
+                int(p['bg'][1:3], 16),
+                int(p['bg'][3:5], 16),
+                int(p['bg'][5:7], 16),
+            ))
+            hw.SetPage(styled)
+            hw.Bind(wx.html.EVT_HTML_LINK_CLICKED,
+                    lambda e: wx.LaunchDefaultBrowser(e.GetLinkInfo().GetHref()))
+
+        # Estraiamo il body dall'HTML già generato per poterlo riciclare
+        _body_m = _re.search(r'<body>(.*)</body>', html, _re.DOTALL | _re.IGNORECASE)
+        html_body = _body_m.group(1) if _body_m else html
+
+        # Carichiamo la pagina iniziale con il tema salvato
+        _rebuild_page(_dark_mode[0])
+
+        # ── Barra inferiore ──────────────────────────────────────────
         btn_row = wx.BoxSizer(wx.HORIZONTAL)
 
+        # Pulsante Schermo intero
         btn_max = wx.Button(dlg, wx.ID_ANY, _("Full screen"))
         btn_max.SetToolTip(_("Toggle full screen"))
 
@@ -3509,8 +3635,6 @@ class SongpressFrame(SDIMainFrame):
 
         btn_max.Bind(wx.EVT_BUTTON, _on_toggle_max)
 
-        # Imposta larghezza minima in base al testo più largo tra le due etichette,
-        # così il pulsante non si restringe quando il label cambia.
         def _fix_btn_max_size():
             dc = wx.ClientDC(btn_max)
             dc.SetFont(btn_max.GetFont())
@@ -3524,17 +3648,88 @@ class SongpressFrame(SDIMainFrame):
             btn_max.GetContainingSizer().Layout()
         wx.CallAfter(_fix_btn_max_size)
 
+        # ── Zoom: pulsante −, slider, pulsante +, etichetta % ────────
+        btn_zoom_out = wx.Button(dlg, wx.ID_ANY, u"−", size=(28, -1))
+        btn_zoom_out.SetToolTip(_("Zoom out"))
+
+        zoom_slider = wx.Slider(
+            dlg, value=_zoom_pct[0], minValue=50, maxValue=200,
+            size=(160, -1),
+            style=wx.SL_HORIZONTAL,
+        )
+        zoom_slider.SetToolTip(_("Zoom (50% – 200%)"))
+
+        btn_zoom_in = wx.Button(dlg, wx.ID_ANY, u"+", size=(28, -1))
+        btn_zoom_in.SetToolTip(_("Zoom in"))
+
+        lbl_zoom = wx.StaticText(dlg, label=u"%d%%" % _zoom_pct[0], size=(40, -1))
+
+        def _apply_zoom(pct):
+            _zoom_pct[0] = max(50, min(200, pct))
+            zoom_slider.SetValue(_zoom_pct[0])
+            lbl_zoom.SetLabel(u"%d%%" % _zoom_pct[0])
+            # wx.html.HtmlWindow espone SetFonts per variare la dimensione
+            # Il secondo argomento è il font fisso; i successivi sono le 7 taglie
+            base = _zoom_pct[0] // 10   # 5‥20 per zoom 50‥200
+            sizes = [base - 2, base - 1, base, base + 1,
+                     base + 2, base + 4, base + 6]
+            hw.SetFonts("", "", sizes)
+            hw.Refresh()
+
+        def _on_zoom_out(e):
+            _apply_zoom(_zoom_pct[0] - 10)
+        def _on_zoom_in(e):
+            _apply_zoom(_zoom_pct[0] + 10)
+        def _on_slider(e):
+            _apply_zoom(zoom_slider.GetValue())
+
+        btn_zoom_out.Bind(wx.EVT_BUTTON, _on_zoom_out)
+        btn_zoom_in.Bind(wx.EVT_BUTTON,  _on_zoom_in)
+        zoom_slider.Bind(wx.EVT_SLIDER,  _on_slider)
+
+        # ── Radiobutton tema Chiaro / Scuro ──────────────────────────
+        rb_light = wx.RadioButton(dlg, label=_(u"☀ Light"), style=wx.RB_GROUP)
+        rb_dark  = wx.RadioButton(dlg, label=_(u"☾ Dark"))
+        # Ripristina la selezione salvata
+        rb_dark.SetValue(_dark_mode[0])
+        rb_light.SetValue(not _dark_mode[0])
+
+        def _on_theme(e):
+            dark = rb_dark.GetValue()
+            _dark_mode[0] = dark
+            _rebuild_page(dark)
+            _apply_zoom(_zoom_pct[0])   # riapplica lo zoom dopo il reload
+
+        rb_light.Bind(wx.EVT_RADIOBUTTON, _on_theme)
+        rb_dark.Bind(wx.EVT_RADIOBUTTON,  _on_theme)
+
         btn_close = wx.Button(dlg, wx.ID_OK, _("Close"))
 
-        btn_row.Add(btn_max,   0, wx.RIGHT, 8)
+        # Layout barra: [Schermo intero]  [−][slider][+][%]  [☀ Light][☾ Dark]  [Chiudi]
+        btn_row.Add(btn_max,      0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
         btn_row.AddStretchSpacer()
-        btn_row.Add(btn_close, 0)
+        btn_row.Add(btn_zoom_out, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
+        btn_row.Add(zoom_slider,  0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
+        btn_row.Add(btn_zoom_in,  0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        btn_row.Add(lbl_zoom,     0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 16)
+        btn_row.Add(rb_light,     0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        btn_row.Add(rb_dark,      0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 16)
+        btn_row.Add(btn_close,    0, wx.ALIGN_CENTER_VERTICAL)
 
         sizer.Add(btn_row, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
         dlg.SetSizer(sizer)
         dlg.Layout()
+
+        # Applica zoom e tema iniziali (dopo che tutti i controlli sono creati)
+        _apply_zoom(_zoom_pct[0])
+
         dlg.ShowModal()
+
+        # Salva le preferenze in pref (su disco le scriverà OnClose/_SaveGuidePrefs)
+        self.pref.guideZoom     = _zoom_pct[0]
+        self.pref.guideDarkMode = _dark_mode[0]
+
         dlg.Destroy()
 
     def _md_to_html(self, md_text):

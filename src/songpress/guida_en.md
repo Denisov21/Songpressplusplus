@@ -41,8 +41,7 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo with **dotted eighth note** icon                                                   |
 | `{time:N/M}`        |              | ✅  | ⌨️   | Time signature (e.g. `{time:4/4}`, `{time:3/4}`); rendered with a graphical time symbol  |
 
-> **Note on tempo** — The `{tempo*}` directives have three display modes, configurable in preferences: note icon + value (e.g. `♩ = 120`), text `BPM: 120`, or plain text `Tempo: 120`.
-> Setting the mode to *hidden* (`-1`) treats the value as pure metadata — it does not appear in the preview or in print.
+> **Note on tempo** — The `{tempo*}` directives have four display modes, configurable in preferences: note icon + value (e.g. `♩ = 120`), text `BPM: 120`, plain text `Tempo: 120`, or no display at all. Checking the *Metadata* option treats the value as pure metadata — it does not appear in the preview or in print.
 
 ---
 
