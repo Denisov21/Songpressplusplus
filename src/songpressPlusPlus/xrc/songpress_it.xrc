@@ -306,7 +306,7 @@
           <help>Inserisci un comando per visualizzare il sottotitolo della canzone</help>
         </object>
         <object class="wxMenuItem" name="chord">
-          <label>A_ccordo</label>
+          <label>A_ccordo...</label>
           <accel>CTRL+H</accel>
           <help>Inserisci parentesi quadre che conterranno un accordo</help>
           <bitmap>../img/chord.png</bitmap>

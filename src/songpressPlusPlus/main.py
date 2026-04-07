@@ -46,7 +46,7 @@ def main():
     sys.excepthook = errdlg.ExceptionHook
     if platform.system() == 'Windows':
         import ctypes
-        appid = f'songpress.{glb.VERSION}'
+        appid = f'songpressplusplus.{glb.VERSION}'
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
     songpressApp = SongpressApp()
     songpressApp.MainLoop()

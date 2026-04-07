@@ -786,7 +786,7 @@
             <property name="help">Insert square brackets that will host a chord</property>
             <property name="id">ID_CHORD</property>
             <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">C&amp;hord</property>
+            <property name="label">C&amp;hord...</property>
             <property name="name">chord</property>
             <property name="permission">none</property>
             <property name="shortcut">CTRL+H</property>

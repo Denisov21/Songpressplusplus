@@ -2,13 +2,15 @@
 # Name:             StandardVerseNumbers.py
 # Purpose:     Decorator that adds verse numbering
 # Author:         Luca Allulli (webmaster@roma21.it)
+# Modified by:  Denisov21
 # Created:     2009-03-14
 # Copyright: Luca Allulli (https://www.skeed.it/songpress)
+# Copyright: Modifications © 2026 Denisov21
 # License:     GNU GPL v2
 ##############################################################
 
-from songpress.SongDecorator import *
-from songpress.SongFormat import *
+from ..SongDecorator import *
+from ..SongFormat import *
 import wx
 
 class Format(FontFormat):

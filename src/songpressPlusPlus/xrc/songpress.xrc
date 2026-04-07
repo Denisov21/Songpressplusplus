@@ -306,7 +306,7 @@
           <help>Insert a command to display song subtitle</help>
         </object>
         <object class="wxMenuItem" name="chord">
-          <label>C_hord</label>
+          <label>C_hord...</label>
           <accel>CTRL+H</accel>
           <help>Insert square brackets that will host a chord</help>
           <bitmap>../img/chord.png</bitmap>
