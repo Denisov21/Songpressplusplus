@@ -173,6 +173,9 @@ class MyPreferencesDialog(PreferencesDialog):
         # Debug messages
         self.showDebugMsgCB.SetValue(getattr(self.pref, 'showDebugMsg', False))
 
+        # Intellisense direttive
+        self.intellisenseCB.SetValue(getattr(self.pref, 'intellisense', True))
+
         # Opzioni anteprima (tab Songpress)
         self.showPageIndicatorCB.SetValue(getattr(self.pref, 'showPageIndicator', True))
         self.greyBackgroundCB.SetValue(getattr(self.pref, 'greyBackground', True))
@@ -1207,6 +1210,8 @@ class MyPreferencesDialog(PreferencesDialog):
         # Salvataggio geometria finestra
         self.pref.saveWindowGeometry = self.saveWindowGeometryCB.GetValue()
         self.pref.showDebugMsg = self.showDebugMsgCB.GetValue()
+        # Intellisense direttive
+        self.pref.intellisense = self.intellisenseCB.GetValue()
         # Opzioni anteprima (tab Songpress)
         self.pref.showPageIndicator = self.showPageIndicatorCB.GetValue()
         self.pref.greyBackground    = self.greyBackgroundCB.GetValue()

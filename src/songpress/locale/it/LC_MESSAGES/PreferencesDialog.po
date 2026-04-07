@@ -578,3 +578,7 @@ msgstr "Chiedi conferma prima di eliminare"
 #: Editor.py (Delete confirmation dialog)
 msgid "Delete the selected text?"
 msgstr "Eliminare il testo selezionato?"
+
+#: PreferencesDialog.py
+msgid "Enable directive intellisense (Ctrl+Space)"
+msgstr "Abilita intellisense direttive (Ctrl+Spazio)"

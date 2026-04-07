@@ -571,6 +571,12 @@ Tutte le principali direttive sono accessibili tramite il menu **Inserisci**, ch
 
 - **Controlla sintassi** — analizza il testo e segnala le direttive non riconosciute o malformate, con la possibilità di navigare direttamente all'errore
 
+### Intellisense direttive (`Ctrl+Spazio`)
+
+Premendo `Ctrl+Spazio` con il cursore posizionato all'interno di una coppia di parentesi graffe `{…}`, l'editor mostra un elenco a comparsa con tutte le direttive ChordPro supportate da Songpress++. Selezionando una voce dall'elenco (con `Enter` o doppio clic), la direttiva viene inserita nella posizione corretta.
+
+Questa funzionalità può essere abilitata o disabilitata in **Strumenti → Opzioni… → scheda Generale → Abilita intellisense direttive (Ctrl+Spazio)**.
+
 ---
 
 ## Simboli musicali Unicode — finestra di dialogo

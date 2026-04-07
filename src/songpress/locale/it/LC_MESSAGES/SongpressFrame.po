@@ -953,3 +953,23 @@ msgstr "Accordo:"
 #: SongpressFrame.py OnChord
 msgid "Keep this dialog open after inserting"
 msgstr "Mantieni questa finestra aperta dopo l'inserimento"
+
+#: SongpressFrame.py guide dialog zoom out button tooltip
+msgid "Zoom out"
+msgstr "Riduci"
+
+#: SongpressFrame.py guide dialog zoom in button tooltip
+msgid "Zoom in"
+msgstr "Ingrandisci"
+
+#: SongpressFrame.py guide dialog zoom slider tooltip
+msgid "Zoom (50% – 200%)"
+msgstr "Zoom (50% – 200%)"
+
+#: SongpressFrame.py guide dialog light theme radiobutton
+msgid "☀ Light"
+msgstr "☀ Chiaro"
+
+#: SongpressFrame.py guide dialog dark theme radiobutton
+msgid "☾ Dark"
+msgstr "☾ Scuro"

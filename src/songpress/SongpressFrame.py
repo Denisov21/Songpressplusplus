@@ -971,6 +971,7 @@ class SongpressFrame(SDIMainFrame):
         self.text.SetDropTarget(dt)
         self.frame.Bind(wx.stc.EVT_STC_UPDATEUI, self.OnUpdateUI, self.text)
         self.text.Bind(wx.EVT_KEY_DOWN, self.OnTextKeyDown, self.text)
+        self.text.Bind(wx.stc.EVT_STC_AUTOCOMP_SELECTION, self._OnIntellisenseSelection, self.text)
         # Other objects
         self.previewCanvas = PreviewCanvas(self.frame, self.pref.format, self.pref.notations, self.pref.decorator)
         # Registra la callback doppio-click: naviga alla riga sorgente nell'editor
@@ -1254,7 +1255,7 @@ class SongpressFrame(SDIMainFrame):
             self.frame,
             _("Are you sure you want to restart Songpress++?"),
             _("Restart"),
-            wx.YES_NO | wx.ICON_QUESTION | wx.NO_DEFAULT,
+            wx.YES_NO | wx.ICON_WARNING | wx.NO_DEFAULT,
         )
         if d.ShowModal() == wx.ID_YES:
             self.SaveWindowGeometry()
@@ -2713,6 +2714,13 @@ class SongpressFrame(SDIMainFrame):
             evt.ControlDown(),
         )
 
+        # Ctrl+Space → intellisense direttive ChordPro
+        if tp == (wx.WXK_SPACE, False, False, True):
+            if getattr(self.pref, 'intellisense', True):
+                self._ShowDirectiveIntellisense()
+            evt.Skip(False)
+            return
+
         # Dentro {start_of_grid}: Alt+Shift+← / → spostano la cella del grid
         if tp == (314, True, True, False):
             if self._GetGridContext() is not None:
@@ -2730,6 +2738,149 @@ class SongpressFrame(SDIMainFrame):
             evt.Skip(False)
         else:
             evt.Skip()
+
+    # ── Lista completa delle direttive ChordPro supportate da Songpress++ ──
+    _CHORDPRO_DIRECTIVES = [
+        # Metadati
+        'title', 'subtitle', 'artist', 'composer', 'lyricist', 'arranger',
+        'copyright', 'album', 'year', 'key', 'time', 'tempo', 'capo',
+        'duration', 'ccli', 'tempo_m', 'tempo_s', 'tempo_sp', 'tempo_c', 'tempo_cp',
+        # Struttura
+        'start_of_chorus', 'end_of_chorus',
+        'start_of_verse', 'end_of_verse',
+        'start_of_bridge', 'end_of_bridge',
+        'start_of_tab', 'end_of_tab',
+        'start_of_grid', 'end_of_grid',
+        'start_verse', 'end_verse',
+        'start_verse_num', 'end_verse_num',
+        'start_chord', 'end_chord',
+        'new_page', 'new_physical_page', 'column_break',
+        # Formattazione
+        'comment', 'comment_italic', 'comment_box',
+        'image', 'linespacing', 'chordtopspacing',
+        # Alias comuni
+        't', 'st', 'c', 'ci', 'cb', 'np', 'npp',
+        'soc', 'eoc', 'sov', 'eov', 'sob', 'eob', 'sot', 'eot',
+    ]
+
+    def _ShowDirectiveIntellisense(self):
+        """Mostra il popup di completamento direttive ChordPro (Ctrl+Space).
+
+        Logica:
+        - Legge il testo della riga corrente dal primo carattere fino al cursore.
+        - Se trova una '{' aperta (senza '}' successiva), estrae il prefisso
+          digitato dopo '{' (solo la parte prima di ':' o ' ').
+        - Filtra _CHORDPRO_DIRECTIVES con quel prefisso (case-insensitive).
+        - Chiama AutoCompShow() con le corrispondenze ordinate.
+        - Se la lista è già attiva (l'utente ha già aperto il popup), la aggiorna.
+        """
+        stc = self.text
+
+        # Se c'è già un autocomplete attivo, lo chiudiamo per riaprirlo aggiornato
+        if stc.AutoCompActive():
+            stc.AutoCompCancel()
+
+        pos      = stc.GetCurrentPos()
+        line_num = stc.LineFromPosition(pos)
+        line_start = stc.PositionFromLine(line_num)
+        # Testo dalla riga fino alla posizione cursore
+        text_before = stc.GetTextRange(line_start, pos)
+
+        # Cerchiamo l'ultima '{' non chiusa nel testo prima del cursore
+        brace_pos = text_before.rfind('{')
+        if brace_pos == -1:
+            # Nessuna parentesi graffa: mostriamo tutte le direttive
+            prefix = ''
+            typed_len = 0
+        else:
+            after_brace = text_before[brace_pos + 1:]
+            # Se c'è già una '}' dopo l'ultima '{', siamo fuori da una direttiva
+            if '}' in after_brace:
+                prefix = ''
+                typed_len = 0
+            else:
+                # Il prefisso è quello digitato dopo '{', fino a ':' o spazio
+                prefix = after_brace.split(':')[0].split(' ')[0]
+                typed_len = len(prefix)
+
+        # Filtra la lista (case-insensitive)
+        prefix_lower = prefix.lower()
+        matches = sorted(
+            d for d in self._CHORDPRO_DIRECTIVES
+            if d.startswith(prefix_lower)
+        )
+
+        if not matches:
+            return
+
+        # Scintilla vuole la lista separata da spazi (o da AutoCompSetSeparator)
+        stc.AutoCompSetSeparator(ord(' '))
+        stc.AutoCompSetIgnoreCase(True)
+        stc.AutoCompSetAutoHide(True)
+        stc.AutoCompSetDropRestOfWord(False)
+        stc.AutoCompShow(typed_len, ' '.join(matches))
+
+    # Direttive che non accettano valore (si chiudono con '}' direttamente)
+    _DIRECTIVES_NO_VALUE = {
+        'end_of_chorus', 'end_of_verse', 'end_of_bridge',
+        'end_of_tab', 'end_of_grid', 'end_verse', 'end_verse_num',
+        'end_chord', 'new_page', 'new_physical_page', 'column_break',
+        'eoc', 'eov', 'eob', 'eot', 'np', 'npp',
+    }
+
+    def _OnIntellisenseSelection(self, evt):
+        """Dopo che Scintilla ha inserito la direttiva, aggiunge ':|}' o '}' e
+        posiziona il cursore nel punto giusto per digitare il valore."""
+        directive = evt.GetText().lower()
+        stc = self.text
+
+        # Scintilla ha già sostituito il prefisso con la direttiva selezionata.
+        # Dobbiamo verificare se dopo il cursore c'è già '}' (utente stava
+        # modificando una direttiva esistente) o se dobbiamo inserire il suffisso.
+        pos = stc.GetCurrentPos()
+        char_after = stc.GetTextRange(pos, stc.PositionAfter(pos))
+
+        if char_after in ('}', ':'):
+            # Già completata — non tocchiamo nulla
+            evt.Skip()
+            return
+
+        # Dobbiamo anche verificare se la '{' è già presente prima della direttiva
+        # (caso normale) oppure se l'utente ha usato Ctrl+Space senza '{'.
+        line_num   = stc.LineFromPosition(pos)
+        line_start = stc.PositionFromLine(line_num)
+        text_before = stc.GetTextRange(line_start, pos)
+        has_open_brace = '{' in text_before and text_before.rfind('{') > text_before.rfind('}')
+
+        if directive in self._DIRECTIVES_NO_VALUE:
+            suffix = '}' if has_open_brace else '{' + directive + '}'
+            if has_open_brace:
+                stc.InsertText(pos, '}')
+                stc.GotoPos(pos + 1)
+            else:
+                # Sostituiamo il testo inserito da Scintilla con la forma completa
+                dir_len = len(directive)
+                stc.SetTargetStart(pos - dir_len)
+                stc.SetTargetEnd(pos)
+                stc.ReplaceTarget('{' + directive + '}')
+                stc.GotoPos(pos - dir_len + len('{' + directive + '}'))
+        else:
+            # Direttiva con valore: inseriamo ':|}' e mettiamo il cursore su '|'
+            if has_open_brace:
+                stc.InsertText(pos, ':|}')
+                stc.GotoPos(pos + 1)           # cursore tra ':' e '}'
+                stc.SetSelection(pos + 1, pos + 2)  # seleziona il placeholder '|'
+            else:
+                full = '{' + directive + ':|}' 
+                dir_len = len(directive)
+                stc.SetTargetStart(pos - dir_len)
+                stc.SetTargetEnd(pos)
+                stc.ReplaceTarget(full)
+                cursor_pos = pos - dir_len + len('{' + directive + ':')
+                stc.GotoPos(cursor_pos)
+                stc.SetSelection(cursor_pos, cursor_pos + 1)
+
+        evt.Skip()
 
     def Copy(self):
         self.text.Copy()
@@ -3475,10 +3626,10 @@ class SongpressFrame(SDIMainFrame):
         dlg = wx.Dialog(
             self.frame,
             title=_("Quick guide - Songpress++"),
-            size=(1000, 620),
+            size=(760, 620),
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.MAXIMIZE_BOX,
         )
-        dlg.SetMinSize(wx.Size(640, 620))
+        dlg.SetMinSize(wx.Size(550, 400))
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 

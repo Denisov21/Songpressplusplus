@@ -222,6 +222,7 @@ class Preferences(object):
         self._LoadMusicalSymbol()
         self._LoadSyntaxColours()
         self._LoadDebugOptions()
+        self._LoadIntellisense()
 
     def _LoadKlavierColour(self):
         self.config.SetPath('/KlavierColour')
@@ -376,6 +377,7 @@ class Preferences(object):
         self._SaveMusicalSymbol()
         self._SaveSyntaxColours()
         self._SaveDebugOptions()
+        self._SaveIntellisense()
         self.config.Flush()
 
     def _SaveKlavierColour(self):
@@ -457,6 +459,17 @@ class Preferences(object):
     def _SaveDebugOptions(self):
         self.config.SetPath('/Debug')
         self.config.Write('showDebugMsg', '1' if getattr(self, 'showDebugMsg', False) else '0')
+        self.config.SetPath('/')
+
+    def _LoadIntellisense(self):
+        self.config.SetPath('/Editor')
+        v = self.config.Read('intellisense')
+        self.intellisense = bool(int(v)) if v != '' else True
+        self.config.SetPath('/')
+
+    def _SaveIntellisense(self):
+        self.config.SetPath('/Editor')
+        self.config.Write('intellisense', '1' if getattr(self, 'intellisense', True) else '0')
         self.config.SetPath('/')
 
     def _SavePrintOptions(self):

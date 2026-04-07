@@ -571,6 +571,12 @@ All main directives are accessible via the **Insert** menu, which opens support 
 
 - **Check syntax** — analyzes the text and reports unrecognized or malformed directives, with the ability to navigate directly to the error
 
+### Directive Intellisense (`Ctrl+Space`)
+
+Pressing `Ctrl+Space` while the cursor is inside a pair of curly braces `{…}` opens a pop-up list of all ChordPro directives supported by Songpress++. Selecting an entry from the list (with `Enter` or double-click) inserts the directive at the correct position.
+
+This feature can be enabled or disabled in **Tools → Options… → General tab → Enable directive intellisense (Ctrl+Space)**.
+
 ---
 
 ## Musical Symbols Unicode — Dialog
