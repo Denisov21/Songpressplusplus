@@ -78,9 +78,9 @@ In sintesi: `Avvio SONGPRESS2.vbs` è la versione di sviluppo/debug, `Avvio SONG
 
 ## Immagini programma
 
-![Songpress++ cambio nome e versione](src/songpress/img/GUIDE/Schermata_principale_it.png)
+![Songpress++ cambio nome e versione](src/songpressplusplus/img/GUIDE/Schermata_principale_it.png)
 
-![Songpress++ cambio nome e versione](src/songpress/img/GUIDE/Menu_contestuale_it.png)
+![Songpress++ cambio nome e versione](src/songpressplusplus/img/GUIDE/Menu_contestuale_it.png)
 
 ## Problemi noti
 

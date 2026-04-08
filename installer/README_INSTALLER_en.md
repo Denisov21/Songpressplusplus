@@ -144,7 +144,7 @@ in the future, update this value by measuring the `$INSTDIR\bin`, `$INSTDIR\tool
 
 ## Change program name and version
 
-![Songpress++ change name and version](../src/songpress/img/GUIDE/Versione_en.png)
+![Songpress++ change name and version](../src/songpressplusplus/img/GUIDE/Versione_en.png)
 
 ## Final result
 

@@ -144,7 +144,7 @@ cambia dimensione in futuro, aggiorna questo valore misurando le cartelle
 
 ## Modifica nome e versione programma
 
-![Songpress++ cambio nome e versione](../src/songpress/img/GUIDE/Versione_it.png)
+![Songpress++ cambio nome e versione](../src/songpressplusplus/img/GUIDE/Versione_it.png)
 
 ## Risultato finale
 

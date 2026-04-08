@@ -2754,12 +2754,12 @@ class SongpressFrame(SDIMainFrame):
         'start_verse', 'end_verse',
         'start_verse_num', 'end_verse_num',
         'start_chord', 'end_chord',
-        'new_page', 'new_physical_page', 'column_break',
+        'new_page', 'column_break',
         # Formattazione
         'comment', 'comment_italic', 'comment_box',
         'image', 'linespacing', 'chordtopspacing',
         # Alias comuni
-        't', 'st', 'c', 'ci', 'cb', 'np', 'npp',
+        't', 'st', 'c', 'ci', 'cb', 'np',
         'soc', 'eoc', 'sov', 'eov', 'sob', 'eob', 'sot', 'eot',
     ]
 
@@ -2824,8 +2824,8 @@ class SongpressFrame(SDIMainFrame):
     _DIRECTIVES_NO_VALUE = {
         'end_of_chorus', 'end_of_verse', 'end_of_bridge',
         'end_of_tab', 'end_of_grid', 'end_verse', 'end_verse_num',
-        'end_chord', 'new_page', 'new_physical_page', 'column_break',
-        'eoc', 'eov', 'eob', 'eot', 'np', 'npp',
+        'end_chord', 'new_page', 'column_break',
+        'eoc', 'eov', 'eob', 'eot', 'np',
     }
 
     def _OnIntellisenseSelection(self, evt):

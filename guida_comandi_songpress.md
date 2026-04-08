@@ -30,8 +30,12 @@ Songpress++ utilizza il formato **ChordPro** esteso. I comandi sono racchiusi tr
 4. [Metadati](#4-metadati)
    - [artist](#artist)
    - [composer](#composer)
+   - [lyricist](#lyricist)
+   - [arranger](#arranger)
    - [album](#album)
    - [year](#year)
+   - [duration](#duration)
+   - [ccli](#ccli)
    - [copyright](#copyright)
    - [key](#key)
    - [capo](#capo)
@@ -405,6 +409,30 @@ Nome del compositore della musica (può differire dall'artista esecutore).
 
 ---
 
+### `lyricist`
+
+**Sintassi:** `{lyricist: Nome paroliere}`
+
+Nome dell'autore del testo (paroliere), quando diverso dal compositore della musica.
+
+```chordpro
+{lyricist: Paul McCartney}
+```
+
+---
+
+### `arranger`
+
+**Sintassi:** `{arranger: Nome arrangiatore}`
+
+Nome dell'arrangiatore. Metadato di sola memorizzazione, non visualizzato nell'anteprima.
+
+```chordpro
+{arranger: George Martin}
+```
+
+---
+
 ### `album`
 
 **Sintassi:** `{album: Titolo album}`
@@ -425,6 +453,30 @@ Anno di pubblicazione o composizione.
 
 ```chordpro
 {year: 1969}
+```
+
+---
+
+### `duration`
+
+**Sintassi:** `{duration: Durata}`
+
+Durata della canzone. Il formato consigliato è `mm:ss` (es. `3:45`), ma il campo accetta qualsiasi stringa testuale. Metadato di sola memorizzazione, non visualizzato nell'anteprima.
+
+```chordpro
+{duration: 3:45}
+```
+
+---
+
+### `ccli`
+
+**Sintassi:** `{ccli: Numero}`
+
+Numero di licenza **CCLI** (Christian Copyright Licensing International), usato in ambito liturgico/corale per tracciare i brani coperti da licenza CCLI. Metadato di sola memorizzazione, non visualizzato nell'anteprima.
+
+```chordpro
+{ccli: 1234567}
 ```
 
 ---
@@ -1070,8 +1122,12 @@ Accessibile da **Formato → Indicazione di tempo** (o clic sull'indicazione nel
 | `{comment_box: ...}` | `{cb:}` | Annotazioni | Commento in riquadro |
 | `{artist: ...}` | — | Metadati | Nome artista |
 | `{composer: ...}` | — | Metadati | Nome compositore |
+| `{lyricist: ...}` | — | Metadati | Nome paroliere (autore del testo) |
+| `{arranger: ...}` | — | Metadati | Nome arrangiatore |
 | `{album: ...}` | — | Metadati | Titolo album |
 | `{year: ...}` | — | Metadati | Anno di pubblicazione |
+| `{duration: ...}` | — | Metadati | Durata della canzone |
+| `{ccli: ...}` | — | Metadati | Numero licenza CCLI |
 | `{copyright: ...}` | — | Metadati | Testo copyright |
 | `{key: ...}` | — | Metadati | Tonalità della canzone |
 | `{capo: N}` | — | Metadati | Posizione del capotasto |
