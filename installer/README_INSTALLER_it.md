@@ -70,11 +70,11 @@ La cartella `installer\` deve trovarsi direttamente dentro la radice del progett
 
 | Cosa | Percorso |
 |------|----------|
-| Applicazione (standard) | `%LOCALAPPDATA%\Songpress++\bin\songpress.exe` |
-| Applicazione (portabile) | `%DESKTOP%\Songpress++\bin\songpress.exe` |
-| Template canzoni (standard) | `<cartella installazione>\templates\songs\` |
-| Template slide (standard) | `<cartella installazione>\templates\slides\` |
-| Font (standard) | `<cartella installazione>\templates\fonts\` |
+| Applicazione (standard) | `%LOCALAPPDATA%\Songpress++\bin\SongPressPlusPlus.exe` |
+| Applicazione (portabile) | `%DESKTOP%\Songpress++\bin\SongPressPlusPlus.exe` |
+| Template canzoni (standard) | `%APPDATA%\Songpress++\templates\songs\` |
+| Template slide (standard) | `%APPDATA%\Songpress++\templates\slides\` |
+| Font (standard) | `%APPDATA%\Songpress++\templates\fonts\` |
 | Template canzoni (portabile) | `<cartella installazione>\templates\songs\` |
 | Template slide (portabile) | `<cartella installazione>\templates\slides\` |
 | Font (portabile) | `<cartella installazione>\templates\fonts\` |
@@ -83,7 +83,7 @@ L'intera cartella `templates\` (incluse tutte le sottocartelle: `songs`, `slides
 e qualsiasi aggiunta futura) viene copiata ricorsivamente dall'albero del pacchetto uv
 nella destinazione corretta durante l'installazione.
 
-- **Installazione standard**: `<cartella installazione>\templates\` (accanto all'exe, nella cartella scelta durante il setup)
+- **Installazione standard**: `%APPDATA%\Songpress++\templates\`
 - **Installazione portabile**: `<cartella installazione>\templates\` (accanto all'exe)
 
 In fase di disinstallazione viene chiesto se eliminare la cartella dati (default: No).
@@ -102,25 +102,45 @@ La lingua dell'installer (italiano/inglese) viene selezionata all'avvio.
 
 ## Associazione file e pulizia ProgID legacy
 
-Gli installer registrano le estensioni di file sotto il ProgID `Songpress.ChordPro`
+Gli installer registrano le estensioni di file sotto il ProgID `SongpressPlusPlus.ChordPro`
 nel registro utente (`HKCU\Software\Classes`).
 
-Versioni precedenti dell'installer usavano il ProgID `Songpress.crd` (errato), che
-poteva impedire l'apertura dei file `.crd` con doppio clic anche dopo una reinstallazione.
-Gli script `.nsi` attuali includono una **pulizia automatica** di questo ProgID legacy:
+Versioni precedenti dell'installer usavano i ProgID `Songpress.crd` e `Songpress.ChordPro`
+(errati), che potevano impedire l'apertura dei file `.crd` con doppio clic anche dopo una
+reinstallazione. Gli script `.nsi` attuali includono una **pulizia automatica** di entrambi
+i ProgID legacy:
 
-- **In fase di installazione**: prima di registrare le nuove associazioni, vengono
-  rimossi `HKCU\Software\Classes\Songpress.crd` e le voci `OpenWithProgids` relative
-  a `Songpress.crd` per tutte le estensioni gestite (`.crd`, `.pro`, `.chopro`,
+- **In fase di installazione**: prima di registrare le nuove associazioni, vengono rimossi
+  `HKCU\Software\Classes\Songpress.crd`, `HKCU\Software\Classes\Songpress.ChordPro` e le
+  relative voci `OpenWithProgids` per tutte le estensioni gestite (`.crd`, `.pro`, `.chopro`,
   `.chordpro`, `.cho`).
-- **In fase di disinstallazione**: viene rimossa la chiave `Songpress.crd` e,
-  per ciascuna delle estensioni gestite, la voce `Songpress.crd` in `OpenWithProgids`;
-  successivamente vengono rimosse tutte le associazioni `Songpress.ChordPro` tramite
-  il macro `APP_UNASSOCIATE`.
+- **In fase di disinstallazione**: vengono rimossi entrambi i ProgID legacy e le relative
+  voci `OpenWithProgids`; successivamente vengono rimosse tutte le associazioni
+  `SongpressPlusPlus.ChordPro` tramite il macro `APP_UNASSOCIATE`.
 
 Se l'associazione non funziona su un sistema con una vecchia installazione, è possibile
 correggere il registro manualmente importando il file `fix_songpress_assoc.reg`
 (disponibile nella cartella `installer\`).
+
+## Spazio richiesto visualizzato dal wizard
+
+Il wizard mostra sempre **100 KB** come spazio richiesto, perché NSIS conta solo i file
+fisicamente inclusi nel pacchetto (in questo caso la sola icona `.ico`). Il grosso
+dell'installazione — Python, i pacchetti uv, i tool — viene scaricato e installato a
+runtime da `uv tool install` e NSIS non può calcolarlo in anticipo.
+
+Per mostrare una stima realistica, lo script include la direttiva `AddSize`:
+
+```nsi
+Section "Songpress++" SongpressSection
+  SectionIn RO
+  AddSize 117760   ; spazio stimato: ~115 MB (uv + Python + pacchetti)
+  SetOutPath "$INSTDIR"
+```
+
+Il valore `117760` corrisponde a 115 MB (115 × 1024 KB). Se l'installazione reale
+cambia dimensione in futuro, aggiorna questo valore misurando le cartelle
+`$INSTDIR\bin`, `$INSTDIR\tools` e `$INSTDIR\python` dopo un'installazione completa.
 
 ## Modifica nome e versione programma
 

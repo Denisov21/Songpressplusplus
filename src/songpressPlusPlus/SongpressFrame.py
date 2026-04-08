@@ -3839,8 +3839,13 @@ class SongpressFrame(SDIMainFrame):
         zoom_slider.Bind(wx.EVT_SLIDER,  _on_slider)
 
         # ── Radiobutton tema Chiaro / Scuro ──────────────────────────
-        rb_light = wx.RadioButton(dlg, label=_(u"☀ Light"), style=wx.RB_GROUP)
-        rb_dark  = wx.RadioButton(dlg, label=_(u"☾ Dark"))
+        rb_light = wx.RadioButton(dlg, label=_(u"Chiaro"), style=wx.RB_GROUP)
+        rb_dark  = wx.RadioButton(dlg, label=_(u"Scuro"))
+        # Icone sole / luna
+        _sun_bmp  = wx.Bitmap(wx.Image(glb.AddPath('img/sun.png')))
+        _moon_bmp = wx.Bitmap(wx.Image(glb.AddPath('img/moon.png')))
+        icon_light = wx.StaticBitmap(dlg, -1, _sun_bmp)
+        icon_dark  = wx.StaticBitmap(dlg, -1, _moon_bmp)
         # Ripristina la selezione salvata
         rb_dark.SetValue(_dark_mode[0])
         rb_light.SetValue(not _dark_mode[0])
@@ -3856,14 +3861,16 @@ class SongpressFrame(SDIMainFrame):
 
         btn_close = wx.Button(dlg, wx.ID_OK, _("Close"))
 
-        # Layout barra: [Schermo intero]  [−][slider][+][%]  [☀ Light][☾ Dark]  [Chiudi]
+        # Layout barra: [Schermo intero]  [−][slider][+][%]  [Chiaro ☀][Scuro ☾]  [Chiudi]
         btn_row.Add(btn_max,      0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
         btn_row.AddStretchSpacer()
         btn_row.Add(btn_zoom_out, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
         btn_row.Add(zoom_slider,  0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
         btn_row.Add(btn_zoom_in,  0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         btn_row.Add(lbl_zoom,     0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 16)
-        btn_row.Add(rb_light,     0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        btn_row.Add(icon_light,   0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
+        btn_row.Add(rb_light,     0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        btn_row.Add(icon_dark,    0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
         btn_row.Add(rb_dark,      0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 16)
         btn_row.Add(btn_close,    0, wx.ALIGN_CENTER_VERTICAL)
 
