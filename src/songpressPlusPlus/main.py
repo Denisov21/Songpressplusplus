@@ -20,6 +20,13 @@ from . import errdlg
 
 
 class SongpressApp(wx.App):
+    def __init__(self):
+        # redirect=False: non redirigere stdout/stderr verso una finestra di dialogo.
+        # Indispensabile nella build frozen (cx_Freeze) su Windows: con redirect=True
+        # il framework tenta di creare una finestra di output che può bloccare l'avvio
+        # quando l'app viene lanciata per associazione file (doppio click).
+        super().__init__(redirect=False)
+
     def OnInit(self):
         self.SetAppName(glb.PROG_NAME)
         self.VERSION = glb.VERSION
@@ -42,12 +49,32 @@ class SongpressApp(wx.App):
         return True
 
 
+def _log(msg):
+    """Scrive un log su file per diagnosticare problemi di avvio da doppio click."""
+    import datetime
+    try:
+        import os as _os
+        log_path = _os.path.join(
+            _os.path.expanduser('~'), 'AppData', 'Local', 'Songpress++', 'startup.log'
+        )
+        _os.makedirs(_os.path.dirname(log_path), exist_ok=True)
+        with open(log_path, 'a', encoding='utf-8') as f:
+            f.write(f"[{datetime.datetime.now():%Y-%m-%d %H:%M:%S}] {msg}\n")
+    except Exception:
+        pass
+
+
 def main():
+    _log(f"main() avviato  argv={sys.argv}")
     sys.excepthook = errdlg.ExceptionHook
     if platform.system() == 'Windows':
         import ctypes
-        appid = f'songpressplusplus.{glb.VERSION}'
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
+        # AppUserModelID stabile (senza versione): Windows lo usa per raggruppare
+        # le finestre sulla taskbar e per abbinare l'app alle associazioni file.
+        # Se cambia ad ogni versione Windows perde il collegamento tra ProgID e app.
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+            'Denisov21.SongpressPlusPlus'
+        )
     songpressApp = SongpressApp()
     songpressApp.MainLoop()
 

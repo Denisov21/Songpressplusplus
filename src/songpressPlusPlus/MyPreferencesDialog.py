@@ -711,19 +711,23 @@ class MyPreferencesDialog(PreferencesDialog):
         return '"{}" "{}" "%1"'.format(pythonw, launcher)
 
     def _EnsureWinLauncher(self, root_dir, main_py):
-        """Crea/aggiorna lo script launcher .pyw nella cartella dati dell'app (Windows)."""
+        """Crea/aggiorna lo script launcher .pyw nella cartella dati dell'app (Windows).
+
+        Usa runpy.run_module invece di exec(open(main_py).read()) perché main.py
+        contiene import relativi (from .Globals import glb) che non funzionano
+        se il file viene eseguito con exec fuori dal package.
+        """
         import os as _os
         launcher_dir = _os.path.join(_os.path.expanduser('~'), 'AppData', 'Local',
                                      'Songpress', 'launcher')
         _os.makedirs(launcher_dir, exist_ok=True)
         launcher_path = _os.path.join(launcher_dir, 'songpress_open.pyw')
         script = (
-            'import sys, os\n'
+            'import sys, runpy\n'
             'sys.path.insert(0, {root!r})\n'
-            'if len(sys.argv) > 1:\n'
-            '    sys.argv = [sys.argv[0]] + sys.argv[1:]\n'
-            'exec(open({main!r}, encoding="utf-8").read())\n'
-        ).format(root=root_dir, main=main_py)
+            '# sys.argv[1] è il file da aprire, già presente grazie a Windows\n'
+            'runpy.run_module("songpress.main", run_name="__main__", alter_sys=True)\n'
+        ).format(root=root_dir)
         with open(launcher_path, 'w', encoding='utf-8') as f:
             f.write(script)
         return launcher_path
@@ -737,13 +741,20 @@ class MyPreferencesDialog(PreferencesDialog):
             return self._IsExtAssociatedLinux(ext)
         return False
 
+    # ProgID condiviso — deve corrispondere a quello usato dal NSIS installer
+    _WIN_PROG_ID = 'SongpressPlusPlus.ChordPro'
+    # ProgID legacy scritti da versioni precedenti (da pulire in fase di associazione)
+    _WIN_LEGACY_PROG_IDS = ['Songpress.crd', 'Songpress.pro', 'Songpress.chopro',
+                             'Songpress.chordpro', 'Songpress.cho', 'Songpress.tab',
+                             'Songpress.ChordPro']
+
     def _IsExtAssociatedWin(self, ext):
         """Controlla l'associazione in HKCU (Windows).
         Verifica solo che il ProgID punti al nostro — non controlla il percorso exe.
         """
         try:
             import winreg
-            prog_id = 'Songpress.{}'.format(ext)
+            prog_id = self._WIN_PROG_ID
             key_path = r'Software\Classes\.{}'.format(ext)
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path) as k:
                 current = winreg.QueryValue(k, '')
@@ -807,16 +818,32 @@ class MyPreferencesDialog(PreferencesDialog):
         """Associa l'estensione a Songpress++ in HKCU (compatibile Win 11)."""
         import winreg
         import os as _os
-        prog_id  = 'Songpress.{}'.format(ext)
+        prog_id  = self._WIN_PROG_ID
         app_name = self._GetWinAppExeName()          # nome fisso per Applications\
         cmd      = self._GetLaunchCmd(exe)           # comando nel ProgID
         app_cmd  = self._GetWinWrapperCmd(exe)       # comando in Applications\ (con wrapper)
         ico_path = _os.path.normpath(glb.AddPath('img/songpress++.ico'))
 
+        # 0. Pulizia ProgID legacy per questa estensione (da versioni precedenti)
+        for legacy_id in self._WIN_LEGACY_PROG_IDS:
+            try:
+                self._DeleteRegKeyRecursive(winreg.HKEY_CURRENT_USER,
+                                            r'Software\Classes\{}'.format(legacy_id))
+            except Exception:
+                pass
+            for owp in [r'Software\Classes\.{}\OpenWithProgids'.format(ext),
+                        r'Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.{}\OpenWithProgids'.format(ext)]:
+                try:
+                    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, owp,
+                                        access=winreg.KEY_SET_VALUE) as k:
+                        winreg.DeleteValue(k, legacy_id)
+                except Exception:
+                    pass
+
         # 1. ProgID: descrizione, DefaultIcon, shell\open (MUIVerb+Icon), command
         with winreg.CreateKey(winreg.HKEY_CURRENT_USER,
                               r'Software\Classes\{}'.format(prog_id)) as k:
-            winreg.SetValue(k, '', winreg.REG_SZ, 'Songpress++ {} file'.format(ext.upper()))
+            winreg.SetValue(k, '', winreg.REG_SZ, 'Songpress++ ChordPro file')
         try:
             with winreg.CreateKey(winreg.HKEY_CURRENT_USER,
                                   r'Software\Classes\{}\DefaultIcon'.format(prog_id)) as k:
@@ -892,7 +919,7 @@ class MyPreferencesDialog(PreferencesDialog):
     def _UnassociateExtWin(self, ext):
         """Rimuove completamente l'associazione Songpress++ per l'estensione in HKCU."""
         import winreg
-        prog_id  = 'Songpress.{}'.format(ext)
+        prog_id  = self._WIN_PROG_ID
         app_name = self._GetWinAppExeName()
 
         # 1. Rimuovi il valore default dell'estensione (solo se è il nostro ProgID)
@@ -925,18 +952,17 @@ class MyPreferencesDialog(PreferencesDialog):
         except Exception:
             pass
 
-        # 3. Elimina l'intero albero del ProgID da Software\Classes
-        try:
-            self._DeleteRegKeyRecursive(
-                winreg.HKEY_CURRENT_USER,
-                r'Software\Classes\{}'.format(prog_id)
-            )
-        except Exception:
-            pass
-
-        # 4. Rimuovi Applications\<app_name> solo se nessuna altra ext è ancora associata
+        # 3. Elimina il ProgID e Applications\<app_name> solo se nessuna altra ext lo usa ancora.
+        #    Il ProgID è condiviso: non va rimosso finché almeno un'altra estensione è associata.
         other_exts = [e for e in ["crd", "cho", "chordpro", "chopro", "pro", "tab"] if e != ext]
         if not any(self._IsExtAssociatedWin(e) for e in other_exts):
+            try:
+                self._DeleteRegKeyRecursive(
+                    winreg.HKEY_CURRENT_USER,
+                    r'Software\Classes\{}'.format(prog_id)
+                )
+            except Exception:
+                pass
             try:
                 self._DeleteRegKeyRecursive(
                     winreg.HKEY_CURRENT_USER,

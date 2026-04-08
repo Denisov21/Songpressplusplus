@@ -203,15 +203,36 @@ class SDIMainFrame(wx.FileDropTarget):
 
     def OnDropFiles(self, arr):
         """Handler for drop action: opens the dropped file, if it is exactly one"""
+        import datetime, os as _os
+        def _log(msg):
+            try:
+                log_path = _os.path.join(
+                    _os.path.expanduser('~'), 'AppData', 'Local', 'Songpress++', 'startup.log'
+                )
+                _os.makedirs(_os.path.dirname(log_path), exist_ok=True)
+                with open(log_path, 'a', encoding='utf-8') as f:
+                    f.write(f"[{datetime.datetime.now():%Y-%m-%d %H:%M:%S}] {msg}\n")
+            except Exception:
+                pass
+        _log(f"OnDropFiles arr={arr}")
         if len(arr) == 1:
             fn = arr[0]
-            if os.path.isfile(fn) and self.AskSaveModified():
+            exists = os.path.isfile(fn)
+            _log(f"  fn={fn!r}  exists={exists}")
+            if exists and self.AskSaveModified():
                 self.document = fn
-                self.Open()
+                try:
+                    self.Open()
+                    _log("  Open() OK")
+                except Exception as e:
+                    _log(f"  Open() EXCEPTION: {e}")
+                    raise
                 self.UpdateRecentFileList(fn)
                 self.modified = False
                 self.UpdateTitle()
                 return True
+            elif not exists:
+                _log(f"  SKIP: file not found")
         return False
 
     def OnClose(self, evt):
@@ -452,6 +473,18 @@ class SDIMainFrame(wx.FileDropTarget):
             self.UpdateTitle()
 
     def FinalizePaneInitialization(self):
+        import datetime, os as _os
+        def _log(msg):
+            try:
+                log_path = _os.path.join(
+                    _os.path.expanduser('~'), 'AppData', 'Local', 'Songpress++', 'startup.log'
+                )
+                _os.makedirs(_os.path.dirname(log_path), exist_ok=True)
+                with open(log_path, 'a', encoding='utf-8') as f:
+                    f.write(f"[{datetime.datetime.now():%Y-%m-%d %H:%M:%S}] {msg}\n")
+            except Exception:
+                pass
+        _log(f"FinalizePaneInitialization  argv={sys.argv}")
         self.config.SetPath('/SDIMainFrame')
         v = self.config.Read("Version", "0.0")
         vs = v.split('.')
@@ -466,6 +499,8 @@ class SDIMainFrame(wx.FileDropTarget):
                 self.menuBar.Check(menuid, self._mgr.GetPane(self.panesByMenu[menuid]).IsShown())
         else:
             self._mgr.Update()
-        if len(sys.argv) > 1:
-            self.OnDropFiles([sys.argv[1]])
         self.frame.Show()
+        if len(sys.argv) > 1:
+            fn = sys.argv[1]
+            _log(f"Scheduled OnDropFiles for: {fn!r}  exists={_os.path.isfile(fn)}")
+            wx.CallAfter(self.OnDropFiles, [fn])
