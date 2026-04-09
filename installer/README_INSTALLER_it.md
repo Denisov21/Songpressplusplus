@@ -94,7 +94,7 @@ In fase di disinstallazione viene chiesto se eliminare la cartella dati (default
 |---------|---------|-------------|
 | **Installazione standard** | ✔ | Installa in `%LOCALAPPDATA%\Songpress++`, crea scorciatoie nel menu Start |
 | **Installazione portabile** | — | Installa in `%DESKTOP%\Songpress++`, nessuna voce nel registro né scorciatoie |
-| **Associa estensioni** | — | Associa `.crd .pro .chopro .chordpro .cho` a Songpress++ |
+| **Associa estensioni** | — | Associa `.crd .pro .chopro .chordpro .cho .tab` a Songpress++ |
 | **Verifica connessione** | ✔ | Testa la connessione Internet prima di scaricare i pacchetti |
 | **Collegamento sul Desktop** | ✔ | Crea un collegamento `.lnk` sul Desktop (solo installazione standard) |
 
@@ -110,17 +110,22 @@ Versioni precedenti dell'installer usavano i ProgID `Songpress.crd` e `Songpress
 reinstallazione. Gli script `.nsi` attuali includono una **pulizia automatica** di entrambi
 i ProgID legacy:
 
-- **In fase di installazione**: prima di registrare le nuove associazioni, vengono rimossi
-  `HKCU\Software\Classes\Songpress.crd`, `HKCU\Software\Classes\Songpress.ChordPro` e le
-  relative voci `OpenWithProgids` per tutte le estensioni gestite (`.crd`, `.pro`, `.chopro`,
-  `.chordpro`, `.cho`).
-- **In fase di disinstallazione**: vengono rimossi entrambi i ProgID legacy e le relative
-  voci `OpenWithProgids`; successivamente vengono rimosse tutte le associazioni
-  `SongpressPlusPlus.ChordPro` tramite il macro `APP_UNASSOCIATE`.
+> **Modalità portabile**: in modalità portabile il registro non viene toccato in alcun
+> modo — né in scrittura né in lettura. Nessuna associazione file viene creata, nessuna
+> pulizia legacy viene eseguita e nessuna chiave di disinstallazione viene registrata.
+> L'intera installazione rimane confinata alla cartella di destinazione.
 
-Se l'associazione non funziona su un sistema con una vecchia installazione, è possibile
-correggere il registro manualmente importando il file `fix_songpress_assoc.reg`
-(disponibile nella cartella `installer\`).
+- **In fase di installazione (solo modalità standard)**: prima di registrare le nuove
+  associazioni, vengono rimossi `HKCU\Software\Classes\Songpress.crd`,
+  `HKCU\Software\Classes\Songpress.ChordPro` e le relative voci `OpenWithProgids` per
+  tutte le estensioni gestite (`.crd`, `.pro`, `.chopro`, `.chordpro`, `.cho`).
+- **In fase di disinstallazione**: vengono rimossi entrambi i ProgID legacy e le relative
+  voci `OpenWithProgids`; successivamente vengono rimossi in modo **selettivo** anche tutti
+  i riferimenti a `SongpressPlusPlus.ChordPro`: il valore `Default` e la voce
+  `OpenWithProgids` per ciascuna estensione gestita, più la chiave
+  `HKCU\Software\Classes\SongpressPlusPlus.ChordPro`. Le chiavi `.EXT` stesse **non vengono
+  cancellate**, per non rimuovere accidentalmente le associazioni di altri programmi
+  eventualmente presenti sullo stesso sistema.
 
 ## Spazio richiesto visualizzato dal wizard
 

@@ -36,6 +36,7 @@ Descrizione di ogni file e cartella presente nel progetto.
 | `README.md` | Documentazione principale del progetto in inglese. |
 | `README_italian.md` | Documentazione principale del progetto in italiano. |
 | `struttura_progetto_it.md` | Questo file. Descrizione di ogni file e cartella del progetto. |
+| `guida_associazioni_file.md` | Guida alla verifica e sistemazione delle associazioni file su Windows. Copre: verifica del registro, correzione manuale tramite PowerShell, separazione tra cartella programma (`%LOCALAPPDATA%`) e dati utente (`%APPDATA%`), test di avvio con log diagnostico, reinstallazione pulita e uso della scheda "Associazioni file" in Songpress++. |
 | `Elenco programmi, pacchetti Python e versioni.md` | Elenco dei programmi, pacchetti Python e versioni utilizzate. |
 
 ### Licenza
@@ -52,7 +53,7 @@ Descrizione di ogni file e cartella presente nel progetto.
 | `sync_deps.py` | Sincronizza automaticamente versione app e dipendenze da `pyproject.toml` a `src/install_check.vbs`. Eseguire dopo ogni modifica al toml: `python sync_deps.py` |
 | `menu_sorter.py` | Strumento standalone wxPython per l'ordinamento alfabetico delle voci di menu nei file **XRC** (wxWidgets) e **FBP** (wxFormBuilder). Carica il file, mostra i menu trovati in un pannello a sinistra e, per il menu selezionato, elenca i gruppi di voci (separati da separatori) con checkbox individuali per scegliere quali ordinare. Supporta "Ordina selezionati", "Ordina tutti" e salvataggio con backup automatico (`.bak`). I colori dell'interfaccia sono personalizzabili tramite `menu_sorter_colors.json` e un dialogo opzioni integrato. Eseguibile direttamente: `python menu_sorter.py` |
 | `menu_sorter_colors.json` | File di configurazione JSON dei colori dell'interfaccia di `menu_sorter.py`. Sovrascrive i valori predefiniti per le chiavi: `DARK_BG`, `PANEL_BG`, `ACCENT`, `ACCENT_LIGHT`, `TEXT_MAIN`, `TEXT_DIM`, `SUCCESS`, `WARNING`. Generato automaticamente dal dialogo Opzioni di `menu_sorter.py`; modificabile anche manualmente. |
-| `fix_songpress_assoc.reg` | Script del Registro di Windows per correggere l'associazione dei file `.crd` a Songpress++. Rimuove il ProgID errato (`Songpress.crd`) e la relativa voce `OpenWithProgids`, quindi ricrea l'associazione corretta con il ProgID `Songpress.ChordPro`, inclusi icona e comando di apertura. Da eseguire una tantum in caso di associazione file mancante o corrotta (doppio clic o `regedit /s fix_songpress_assoc.reg`). |
+| `fix_songpress_assoc.reg` | ~~Script del Registro di Windows per correggere l'associazione dei file `.crd` a Songpress++.~~ **Obsoleto** — le associazioni vengono ora gestite correttamente dal NSIS installer e dalla scheda "Associazioni file" in Songpress++. Può essere eliminato. |
 
 ---
 
