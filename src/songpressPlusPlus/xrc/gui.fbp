@@ -328,7 +328,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/column.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Insert an explicit column break for two-column layout</property>
@@ -736,7 +736,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/column.png</property>
             <property name="checked">1</property>
             <property name="enabled">1</property>
             <property name="help">Show or hide the blue column break line in the preview</property>
@@ -806,7 +806,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/comment.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Insert a command to display a comment</property>
@@ -953,7 +953,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap">Load From File; ../img/taste.png</property>
+            <property name="bitmap">Load From File; ../img/taste2.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Insert directive to show the first chord keyboard with finger numbers</property>
@@ -979,7 +979,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/picture.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Insert an image (PNG, JPG, GIF) into the song</property>
@@ -992,7 +992,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/symbol.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Open the musical symbol map and insert a Unicode character at the cursor</property>

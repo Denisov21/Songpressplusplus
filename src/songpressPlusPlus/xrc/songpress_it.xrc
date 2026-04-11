@@ -113,6 +113,7 @@
           <label>Interruzione di _colonna</label>
           <accel>CTRL+SHIFT+K</accel>
           <help>Inserisci un'interruzione di colonna esplicita per il layout a due colonne</help>
+          <bitmap>../img/column.png</bitmap>
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="restart">
@@ -290,6 +291,7 @@
           <help>Mostra o nascondi la linea blu di interruzione colonna nell'anteprima</help>
           <checkable>1</checkable>
           <checked>1</checked>
+          <bitmap>../img/column.png</bitmap>
         </object>
       </object>
       <object class="wxMenu" name="insert">
@@ -321,6 +323,7 @@
           <label>Co_mmento</label>
           <accel>CTRL+M</accel>
           <help>Inserisci un comando per visualizzare un commento</help>
+          <bitmap>../img/comment.png</bitmap>
         </object>
         <object class="wxMenuItem" name="verseWithCustomLabelOrWithoutLabel">
           <label>Strofa con etichetta _personalizzata o senza...</label>
@@ -380,7 +383,7 @@
           <label>Diteggiatura _primo accordo {fingering:}</label>
           <accel></accel>
           <help>Inserisci la direttiva per mostrare la tastiera del primo accordo con i numeri delle dita</help>
-          <bitmap>../img/taste.png</bitmap>
+          <bitmap>../img/taste2.png</bitmap>
         </object>
         <object class="wxMenuItem" name="insertDefine">
           <label>Diagramma accordo _chitarra {define:}</label>
@@ -391,10 +394,12 @@
           <label>_Immagine {image:}</label>
           <accel></accel>
           <help>Inserisci un'immagine (PNG, JPG, GIF) nella canzone</help>
+		  <bitmap>../img/picture.png</bitmap>
         </object>
         <object class="wxMenuItem" name="insertMusicalSymbol">
           <label>_Simbolo musicale (Unicode)...</label>
           <accel>Ctrl+Shift+M</accel>
+          <bitmap>../img/symbol.png</bitmap>
           <help>Apre la mappa dei simboli musicali e inserisce un carattere Unicode nel cursore</help>
         </object>
         <object class="wxMenuItem" name="insertVerseNum">

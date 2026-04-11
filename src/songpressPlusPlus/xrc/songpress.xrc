@@ -113,6 +113,7 @@
           <label>Column _break</label>
           <accel>CTRL+SHIFT+K</accel>
           <help>Insert an explicit column break for two-column layout</help>
+          <bitmap>../img/column.png</bitmap>
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="restart">
@@ -290,6 +291,7 @@
           <help>Show or hide the blue column break line in the preview</help>
           <checkable>1</checkable>
           <checked>1</checked>
+          <bitmap>../img/column.png</bitmap>
         </object>
       </object>
       <object class="wxMenu" name="insert">
@@ -321,6 +323,7 @@
           <label>Co_mment</label>
           <accel>CTRL+M</accel>
           <help>Insert a command to display a comment</help>
+          <bitmap>../img/comment.png</bitmap>
         </object>
         <object class="wxMenuItem" name="verseWithCustomLabelOrWithoutLabel">
           <label>_Verse with custom label or without label...</label>
@@ -380,7 +383,7 @@
           <label>_First chord fingering {fingering:}</label>
           <accel></accel>
           <help>Insert directive to show the first chord keyboard with finger numbers</help>
-          <bitmap>../img/taste.png</bitmap>
+          <bitmap>../img/taste2.png</bitmap>
         </object>
         <object class="wxMenuItem" name="insertDefine">
           <label>Guitar _chord diagram {define:}</label>
@@ -390,11 +393,13 @@
         <object class="wxMenuItem" name="insertImage">
           <label>_Image {image:}</label>
           <accel></accel>
+          <bitmap>../img/picture.png</bitmap>
           <help>Insert an image (PNG, JPG, GIF) into the song</help>
         </object>
         <object class="wxMenuItem" name="insertMusicalSymbol">
           <label>_Musical symbol (Unicode)...</label>
           <accel>Ctrl+Shift+M</accel>
+          <bitmap>../img/symbol.png</bitmap>
           <help>Open the musical symbol map and insert a Unicode character at the cursor</help>
         </object>
         <object class="wxMenuItem" name="insertVerseNum">
