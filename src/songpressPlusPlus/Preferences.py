@@ -209,6 +209,7 @@ class Preferences(object):
         verseBoxWidth = self.config.Read('VerseBoxWidth')
         self.verseBoxWidth = int(verseBoxWidth) if verseBoxWidth else 1
         self._LoadKlavierColour()
+        self._LoadFingerNumColour()
         self._LoadContextMenu()
         self._LoadEditorBg()
         self._LoadSelColour()
@@ -228,6 +229,12 @@ class Preferences(object):
         self.config.SetPath('/KlavierColour')
         h = self.config.Read('highlightHex')
         self.klavierHighlightHex = h if h else '#D23C3C'
+        self.config.SetPath('/')
+
+    def _LoadFingerNumColour(self):
+        self.config.SetPath('/FingerNumColour')
+        h = self.config.Read('fingerNumHex')
+        self.fingerNumColourHex = h if h else '#1A1A1A'
         self.config.SetPath('/')
 
     def _LoadContextMenu(self):
@@ -364,6 +371,7 @@ class Preferences(object):
         self.config.Write('TitleLineWidth', str(self.titleLineWidth))
         self.config.Write('VerseBoxWidth', str(self.verseBoxWidth))
         self._SaveKlavierColour()
+        self._SaveFingerNumColour()
         self._SaveContextMenu()
         self._SaveEditorBg()
         self._SaveSelColour()
@@ -383,6 +391,11 @@ class Preferences(object):
     def _SaveKlavierColour(self):
         self.config.SetPath('/KlavierColour')
         self.config.Write('highlightHex', getattr(self, 'klavierHighlightHex', '#D23C3C'))
+        self.config.SetPath('/')
+
+    def _SaveFingerNumColour(self):
+        self.config.SetPath('/FingerNumColour')
+        self.config.Write('fingerNumHex', getattr(self, 'fingerNumColourHex', '#1A1A1A'))
         self.config.SetPath('/')
 
     def _SaveContextMenu(self):

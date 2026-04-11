@@ -30,6 +30,15 @@ pip install -r requirements.txt
 
 Poi avviare `src/Avvio SONGPRESS.vbs` oppure `src/Avvio SONGPRESS2.vbs`.
 
+In alternativa, è possibile avviare l'applicazione direttamente con Python dalla root del progetto:
+
+```
+cd E:\Users\Utente\Downloads\SongpressV33_OK\Songpressplusplus
+python main.py
+```
+
+> **Nota:** `main.py` va eseguito dalla directory radice del progetto (`Songpressplusplus\`), dove si trova, affinché il pacchetto `songpressPlusPlus` venga trovato correttamente nel Python path.
+
 Le differenze tra i due launcher sono due, entrambe significative:
 
 1. Ricerca di Python

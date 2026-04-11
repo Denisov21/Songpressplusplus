@@ -376,6 +376,12 @@
           <help>Inserisci la direttiva per visualizzare una tastiera per accordi in fondo alla canzone</help>
           <bitmap>../img/taste.png</bitmap>
         </object>
+        <object class="wxMenuItem" name="insertFingering">
+          <label>Diteggiatura _primo accordo {fingering:}</label>
+          <accel></accel>
+          <help>Inserisci la direttiva per mostrare la tastiera del primo accordo con i numeri delle dita</help>
+          <bitmap>../img/taste.png</bitmap>
+        </object>
         <object class="wxMenuItem" name="insertDefine">
           <label>Diagramma accordo _chitarra {define:}</label>
           <accel></accel>

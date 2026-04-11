@@ -432,11 +432,42 @@ When the cursor is inside a `{start_of_grid}` block:
 | -------------------------------------------- | --- | ---- | ---------------------------------------------------------------------- |
 | `{define: C base-fret 1 frets X 3 2 0 1 0}`  | ✅  | ⌨️   | Defines a guitar chord diagram                                         |
 | `{taste:Chord}`                              | 🔧  | ⌨️   | Shows highlighted keys on the keyboard (klavier) — e.g. `{taste:Am}`   |
+| `{fingering: Chord}`                         | 🔧  | ⌨️   | Shows the **first chord** keyboard with finger numbers — e.g. `{fingering: Am 3=C 1=E 2=A}` |
 | `{image: filename}`                          | ✅  | ⌨️   | Inserts an image (PNG, JPG, GIF, BMP, TIFF) into the song              |
 
 The keyboard (klavier) displays the keys corresponding to the specified chord, highlighted with the color set in preferences.
 
 ![Songpress++ Chord Key Color Option](./img/GUIDE/accordi_3_en.png)
+
+### First Chord Fingering — `{fingering:}`
+
+The `{fingering:}` directive is a variant of the klavier keyboard designed to show **how to position the hand on the first chord** of the song. In addition to highlighting the chord keys, it can display a finger number on each key.
+
+**Format:**
+
+```chordpro
+{fingering: Am}
+{fingering: Am 3=La 1=Mi 2=Do}
+{fingering: G 2=G 1=B 3=D}
+```
+
+The `finger=note` part is optional. Numbers correspond to the fingers of the hand:
+
+| Number | Finger |
+| ------ | ------ |
+| 1      | Thumb  |
+| 2      | Index  |
+| 3      | Middle |
+| 4      | Ring   |
+| 5      | Little |
+
+Notes can be written in Italian notation (`Do`, `Re`, `Mi`, `Fa`, `Sol`, `La`, `Si`, with `#` for sharps) or English notation (`C`, `D`, `E`, `F`, `G`, `A`, `B`).
+
+**Inserting from the menu:** *Insert → Other → First chord fingering {fingering:}*
+A dialog opens that automatically shows the notes of the chord and lets you assign a finger to each one using a drop-down menu.
+
+**Finger number color:**
+The color of the numbers displayed on the keys is set in *Options → Format → Chords and tempo → Finger number colour*. The default is near-black (`#1A1A1A`); on black keys the number appears in white to ensure contrast.
 
 ### Image Directive
 

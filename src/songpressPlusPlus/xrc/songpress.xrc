@@ -376,6 +376,12 @@
           <help>Insert directive to display a chord keyboard at the end of the song</help>
           <bitmap>../img/taste.png</bitmap>
         </object>
+        <object class="wxMenuItem" name="insertFingering">
+          <label>_First chord fingering {fingering:}</label>
+          <accel></accel>
+          <help>Insert directive to show the first chord keyboard with finger numbers</help>
+          <bitmap>../img/taste.png</bitmap>
+        </object>
         <object class="wxMenuItem" name="insertDefine">
           <label>Guitar _chord diagram {define:}</label>
           <accel></accel>

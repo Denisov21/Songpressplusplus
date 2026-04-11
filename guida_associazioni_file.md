@@ -148,7 +148,44 @@ Per verificare dove punta `~` (usato per il log e per i dati utente):
 
 ---
 
-## 6. Reinstallazione pulita
+## 6. Ripristino tramite songpress_cleanup.py
+
+`songpress_cleanup.py` è un tool standalone con GUI che permette di ripristinare
+le associazioni file senza reinstallare e senza modificare manualmente il registro.
+
+**Avvio:**
+
+```
+python songpress_cleanup.py
+```
+
+**Passi:**
+
+1. Avvia lo script — si apre la finestra **Songpress++ Cleanup Tool**
+2. Clicca il pulsante **🔗 Ripristina associazioni...** (giallo-verde, in basso)
+3. Nel dialog che si apre, il percorso di installazione viene rilevato automaticamente
+   dalla scansione di tutte le unità disponibili e dal registro
+4. Se il percorso non compare nell'elenco, premi **Sfoglia...** e seleziona
+   manualmente la cartella `Songpress++` (quella che contiene la sottocartella `bin\`)
+5. Clicca **Ripristina associazioni**
+
+**Cosa fa internamente:**
+
+- Rimuove i ProgID legacy `Songpress.crd` e `Songpress.ChordPro` (se presenti)
+- Elimina le voci `OpenWithProgids` sporche per tutte le estensioni gestite
+- Riscrive da zero il ProgID `SongpressPlusPlus.ChordPro` con il percorso letterale
+  dell'exe rilevato (nessuna variabile d'ambiente — funziona correttamente
+  anche su drive diversi da `C:`)
+- Associa `.crd .pro .chopro .chordpro .cho .tab` al ProgID corretto
+- Notifica la shell (`SHChangeNotify`) per aggiornare Esplora risorse
+
+> **Nota:** se le icone dei file non si aggiornano subito dopo il ripristino,
+> riavvia Esplora risorse con `taskkill /f /im explorer.exe` seguito da `explorer.exe`.
+
+
+---
+
+## 7. Reinstallazione pulita
 
 La reinstallazione corregge automaticamente il registro. Il NSIS scrive il comando
 usando `$INSTDIR` risolto a runtime, quindi il percorso sarà sempre corretto
@@ -168,7 +205,7 @@ Get-ItemProperty "HKCU:\Software\Classes\SongpressPlusPlus.ChordPro\shell\open\c
 
 ---
 
-## 7. Verifica dalla scheda "Associazioni file" in Songpress++
+## 8. Verifica dalla scheda "Associazioni file" in Songpress++
 
 Dentro Songpress++, dal menu *Opzioni → Preferenze → Associazioni file*:
 

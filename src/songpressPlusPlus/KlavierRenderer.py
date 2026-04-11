@@ -136,26 +136,84 @@ def _normalize_chord(chord_str, notations):
         return chord_str
 
 
-def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys, label_font=None, highlight_color=None):
+def _note_name_to_semitone(note_str):
+    """
+    Converte un nome di nota (italiano o inglese) in semitono (0-11).
+    Restituisce None se non riconosciuta.
+    """
+    s = note_str.strip().lower()
+    for name, semi in _ITALIAN_NOTES:
+        if s == name:
+            return semi
+    for name, semi in _ENGLISH_NOTES:
+        if s == name:
+            return semi
+    return None
+
+
+def parse_fingering(fingering_str):
+    """
+    Parsa la stringa del comando {fingering: ...}.
+
+    Formati supportati:
+        "Am"                          → accordo senza diteggiatura esplicita
+        "Am 1=Do 2=Mi 3=La"           → accordo con dito=nota (notazione italiana)
+        "Am 1=C 2=E 3=A"              → accordo con dito=nota (notazione inglese)
+        "Am 1=Do 2=Mi 3=La 5=Do"      → pollice sul Do basso + altre dita
+
+    Restituisce:
+        chord_name  : str  — il nome dell'accordo (prima parola)
+        finger_map  : dict — {semitono: numero_dito} per i tasti con dito assegnato
+                             (può essere vuoto se non ci sono assegnazioni)
+    """
+    parts = fingering_str.strip().split()
+    if not parts:
+        return None, {}
+
+    chord_name = parts[0]
+    finger_map = {}   # semitono -> numero dito (int)
+
+    # Parsa le assegnazioni "dito=nota"
+    for token in parts[1:]:
+        m = re.match(r'^(\d+)=(.+)$', token)
+        if not m:
+            continue
+        finger_num = int(m.group(1))
+        note_name  = m.group(2)
+        semi = _note_name_to_semitone(note_name)
+        if semi is not None:
+            finger_map[semi] = finger_num
+
+    return chord_name, finger_map
+
+
+def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
+                  label_font=None, highlight_color=None, finger_map=None,
+                  finger_num_color=None):
     """
     Disegna una tastiera di un'ottava su dc.
-    highlighted_keys: lista di semitoni (0-11) da evidenziare.
-    highlight_color: wx.Colour per i tasti evidenziati (default rosso).
+
+    highlighted_keys : lista di semitoni (0-11) da evidenziare.
+    highlight_color  : wx.Colour per i tasti evidenziati (default rosso).
+    finger_map       : dict {semitono: numero_dito} — se presente, disegna
+                       il numero del dito sul tasto corrispondente.
     """
     if highlight_color is None:
         highlight_color = wx.Colour(210, 60, 60)
+    if finger_map is None:
+        finger_map = {}
 
     white_w = w // 7
     black_w = max(4, int(white_w * 0.55))
     black_h = int(h * 0.62)
-    kbd_w = white_w * 7
+    kbd_w   = white_w * 7
 
-    # Sfondo e bordo esterno
+    # ── Sfondo e bordo esterno ────────────────────────────────────
     dc.SetBrush(wx.WHITE_BRUSH)
     dc.SetPen(wx.Pen(wx.Colour(80, 80, 80), 1))
     dc.DrawRectangle(x, y, kbd_w, h)
 
-    # Tasti bianchi
+    # ── Tasti bianchi ─────────────────────────────────────────────
     for i, semi in enumerate(_WHITE_KEYS):
         kx = x + i * white_w
         if semi in highlighted_keys:
@@ -165,7 +223,7 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys, label_font=None,
         dc.SetPen(wx.Pen(wx.Colour(80, 80, 80), 1))
         dc.DrawRectangle(kx, y, white_w, h)
 
-    # Tasti neri (sopra)
+    # ── Tasti neri ────────────────────────────────────────────────
     for semi, gap_idx in _BLACK_KEYS.items():
         kx = x + gap_idx * white_w + white_w - black_w // 2
         if semi in highlighted_keys:
@@ -175,7 +233,42 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys, label_font=None,
         dc.SetPen(wx.Pen(wx.Colour(40, 40, 40), 1))
         dc.DrawRectangle(kx, y, black_w, black_h)
 
-    # Etichetta accordo sopra
+    # ── Numeri delle dita sui tasti ───────────────────────────────
+    if finger_map:
+        finger_font = wx.Font(
+            max(5, white_w - 4),
+            wx.FONTFAMILY_DEFAULT,
+            wx.FONTSTYLE_NORMAL,
+            wx.FONTWEIGHT_BOLD,
+        )
+        dc.SetFont(finger_font)
+
+        for semi, finger_num in finger_map.items():
+            label = str(finger_num)
+            lw, lh = dc.GetTextExtent(label)
+
+            is_black = semi in _BLACK_KEYS
+
+            if is_black:
+                # Tasto nero: numero nella parte bassa del tasto nero
+                gap_idx = _BLACK_KEYS[semi]
+                kx = x + gap_idx * white_w + white_w - black_w // 2
+                cx = kx + black_w // 2
+                cy = y + black_h - lh - 2
+                # Colore custom o bianco di default (contrasto su nero)
+                dc.SetTextForeground(finger_num_color if finger_num_color else wx.WHITE)
+            else:
+                # Tasto bianco: numero nella parte bassa del tasto
+                white_idx = _WHITE_KEYS.index(semi)
+                kx = x + white_idx * white_w
+                cx = kx + white_w // 2
+                cy = y + h - lh - 3
+                # Colore custom o nero di default (contrasto su bianco)
+                dc.SetTextForeground(finger_num_color if finger_num_color else wx.BLACK)
+
+            dc.DrawText(label, cx - lw // 2, cy)
+
+    # ── Etichetta accordo sopra ───────────────────────────────────
     if label_font:
         dc.SetFont(label_font)
     lw, lh = dc.GetTextExtent(chord_name)
@@ -185,21 +278,25 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys, label_font=None,
     dc.DrawText(chord_name, tx, ty)
 
 
-def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font, pen_scale=1.0, notations=None, highlight_color=None):
+def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
+                         pen_scale=1.0, notations=None, highlight_color=None,
+                         finger_num_color=None):
     """
     Disegna tutte le tastiere in klavier_list in fondo alla canzone.
+    Ogni elemento può essere una stringa accordo semplice ("Am")
+    oppure una stringa con diteggiatura ("Am 1=Do 2=Mi 3=La").
     Restituisce l'altezza totale occupata.
     """
     if not klavier_list:
         return 0
 
-    white_w = 16
-    kbd_w = white_w * 7
-    kbd_h = 44
+    white_w  = 16
+    kbd_w    = white_w * 7
+    kbd_h    = 44
     padding_x = 22
     padding_y = 14
-    label_h = 18
-    row_h = label_h + kbd_h + padding_y
+    label_h   = 18
+    row_h     = label_h + kbd_h + padding_y
 
     label_font = wx.Font(
         max(7, int(base_font.GetPointSize() * 0.85)),
@@ -210,12 +307,13 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font, pen_scal
         base_font.GetFaceName()
     )
 
-    # Linea separatrice
+    # ── Linea separatrice ─────────────────────────────────────────
     sep_y = start_y + 10
-    dc.SetPen(wx.Pen(wx.Colour(180, 180, 180), max(1, round(1 / pen_scale)), wx.PENSTYLE_DOT))
+    dc.SetPen(wx.Pen(wx.Colour(180, 180, 180),
+                     max(1, round(1 / pen_scale)), wx.PENSTYLE_DOT))
     dc.DrawLine(start_x, sep_y, start_x + 500, sep_y)
 
-    # Titolo sezione
+    # ── Titolo sezione ────────────────────────────────────────────
     title_font = wx.Font(
         max(7, int(base_font.GetPointSize() * 0.8)),
         wx.FONTFAMILY_DEFAULT,
@@ -234,18 +332,109 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font, pen_scal
     cur_y = sep_y + 26
     max_x = start_x + 560
 
-    for chord_name in klavier_list:
+    for entry in klavier_list:
+        # Parsa: potrebbe essere "Am" oppure "Am 1=Do 2=Mi 3=La"
+        chord_name, finger_map = parse_fingering(entry)
+        if chord_name is None:
+            continue
+
         normalized = _normalize_chord(chord_name, notations)
         keys = get_chord_keys(normalized)
         if keys is None:
-            keys = get_chord_keys(chord_name)  # fallback
+            keys = get_chord_keys(chord_name)   # fallback
         if keys is None:
             continue
+
         if cur_x + kbd_w > max_x:
             cur_x = start_x
             cur_y += row_h
 
-        draw_keyboard(dc, cur_x, cur_y + label_h, kbd_w, kbd_h, chord_name, keys, label_font, highlight_color)
+        draw_keyboard(
+            dc, cur_x, cur_y + label_h, kbd_w, kbd_h,
+            chord_name, keys, label_font, highlight_color,
+            finger_map=finger_map,
+            finger_num_color=finger_num_color,
+        )
+        cur_x += kbd_w + padding_x
+
+    total_h = (cur_y + row_h) - start_y + 10
+    return total_h
+
+
+def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
+                           pen_scale=1.0, notations=None, highlight_color=None,
+                           finger_num_color=None):
+    """
+    Identico a draw_klavier_section ma destinato alle tastiere {fingering:}.
+    La sezione porta il titolo 'Diteggiatura primo accordo' anziché 'Accordi'.
+    """
+    if not fingering_list:
+        return 0
+
+    white_w   = 16
+    kbd_w     = white_w * 7
+    kbd_h     = 44
+    padding_x = 22
+    padding_y = 14
+    label_h   = 18
+    row_h     = label_h + kbd_h + padding_y
+
+    label_font = wx.Font(
+        max(7, int(base_font.GetPointSize() * 0.85)),
+        wx.FONTFAMILY_DEFAULT,
+        wx.FONTSTYLE_NORMAL,
+        wx.FONTWEIGHT_BOLD,
+        False,
+        base_font.GetFaceName()
+    )
+
+    # ── Linea separatrice ─────────────────────────────────────────
+    sep_y = start_y + 10
+    dc.SetPen(wx.Pen(wx.Colour(180, 180, 180),
+                     max(1, round(1 / pen_scale)), wx.PENSTYLE_DOT))
+    dc.DrawLine(start_x, sep_y, start_x + 500, sep_y)
+
+    # ── Titolo sezione ────────────────────────────────────────────
+    title_font = wx.Font(
+        max(7, int(base_font.GetPointSize() * 0.8)),
+        wx.FONTFAMILY_DEFAULT,
+        wx.FONTSTYLE_ITALIC,
+        wx.FONTWEIGHT_NORMAL,
+        False,
+        base_font.GetFaceName()
+    )
+    dc.SetFont(title_font)
+    dc.SetPen(wx.NullPen)
+    dc.SetTextForeground(wx.Colour(110, 110, 110))
+    dc.DrawText("Diteggiatura primo accordo", start_x, sep_y + 4)
+    dc.SetTextForeground(wx.BLACK)
+
+    cur_x = start_x
+    cur_y = sep_y + 26
+    max_x = start_x + 560
+
+    for entry in fingering_list:
+        chord_name, finger_map = parse_fingering(entry)
+        if chord_name is None:
+            continue
+
+        normalized = _normalize_chord(chord_name, notations)
+        keys = get_chord_keys(normalized)
+        if keys is None:
+            keys = get_chord_keys(chord_name)
+        if keys is None:
+            continue
+
+        if cur_x + kbd_w > max_x:
+            cur_x = start_x
+            cur_y += row_h
+
+        draw_keyboard(
+            dc, cur_x, cur_y + label_h, kbd_w, kbd_h,
+            chord_name, keys, label_font, highlight_color,
+            finger_map=finger_map,
+            finger_num_color=finger_num_color,
+        )
         cur_x += kbd_w + padding_x
 
     total_h = (cur_y + row_h) - start_y + 10

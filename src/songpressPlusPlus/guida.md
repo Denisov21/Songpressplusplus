@@ -432,11 +432,42 @@ Quando il cursore si trova dentro un blocco `{start_of_grid}`:
 | -------------------------------------------- | --- | ---- | ------------------------------------------------------------------------ |
 | `{define: C base-fret 1 frets X 3 2 0 1 0}`  | ✅  | ⌨️   | Definisce un diagramma accordo per chitarra                              |
 | `{taste:Accordo}`                            | 🔧  | ⌨️   | Mostra i tasti evidenziati sulla tastiera (klavier) — es. `{taste:Am}`   |
+| `{fingering: Accordo}`                       | 🔧  | ⌨️   | Mostra la tastiera del **primo accordo** con i numeri delle dita — es. `{fingering: Am 3=Do 1=Mi 2=La}` |
 | `{image: nomefile}`                          | ✅  | ⌨️   | Inserisce un'immagine (PNG, JPG, GIF, BMP, TIFF) nella canzone           |
 
 La tastiera (klavier) visualizza i tasti corrispondenti all'accordo specificato, evidenziati con il colore impostato nelle preferenze.
 
 ![Songpress++ Opzione colore tasti accordi](./img/GUIDE/accordi_3_it.png)
+
+### Diteggiatura del primo accordo — `{fingering:}`
+
+La direttiva `{fingering:}` è una variante della tastiera klavier pensata per indicare **come posizionare la mano sul primo accordo** della canzone. Oltre a evidenziare i tasti dell'accordo, può mostrare il numero del dito su ogni tasto.
+
+**Formato:**
+
+```chordpro
+{fingering: Am}
+{fingering: Am 3=Do 1=Mi 2=La}
+{fingering: G 2=Sol 1=Si 3=Re}
+```
+
+La parte `dito=nota` è opzionale. I numeri corrispondono alle dita della mano destra (o sinistra, secondo convenzione):
+
+| Numero | Dito    |
+| ------ | ------- |
+| 1      | Pollice |
+| 2      | Indice  |
+| 3      | Medio   |
+| 4      | Anulare |
+| 5      | Mignolo |
+
+Le note si scrivono in notazione italiana (`Do`, `Re`, `Mi`, `Fa`, `Sol`, `La`, `Si`, con `#` per i diesis) o inglese (`C`, `D`, `E`, `F`, `G`, `A`, `B`).
+
+**Inserimento dal menu:** *Inserisci → Altro → Diteggiatura primo accordo {fingering:}*
+Si apre una finestra che mostra automaticamente le note dell'accordo e permette di assegnare un dito a ciascuna con un menu a tendina.
+
+**Colore dei numeri delle dita:**
+Il colore dei numeri visualizzati sui tasti si imposta in *Opzioni → Formattazione → Accordi e tempo → Colore numeri diteggiatura*. Per impostazione predefinita è quasi nero (`#1A1A1A`); su tasti neri il numero appare in bianco per garantire il contrasto.
 
 ### Direttiva immagine
 

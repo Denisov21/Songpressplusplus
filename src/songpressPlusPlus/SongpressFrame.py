@@ -1175,6 +1175,7 @@ class SongpressFrame(SDIMainFrame):
         self._LoadKlavierColour()
         self._LoadGuidePrefs()
         self._applyKlavierHighlightColor()
+        self._applyFingerNumColor()
         self._LoadCustomColours()
         self._two_pages_per_sheet = False
         self._columns_per_page = 1  # 1 = colonna singola, 2 = due colonne per pagina
@@ -1603,6 +1604,7 @@ class SongpressFrame(SDIMainFrame):
         # --- Insert => Chord keyboard (klavier) ---
         Bind(self.OnInsertKlavierChord, 'insertTaste')
         Bind(self.OnInsertDefine, 'insertDefine')
+        Bind(self.OnInsertFingering, 'insertFingering')
         Bind(self.OnInsertImage, 'insertImage')
         Bind(self.OnInsertMusicalSymbol, 'insertMusicalSymbol')
         # --- File => Importa da PDF ---
@@ -2152,6 +2154,176 @@ class SongpressFrame(SDIMainFrame):
                 self.InsertWithCaret("{define: |}")
         d.Destroy()
 
+    def OnInsertFingering(self, evt):
+        """Dialog per {fingering:} — accordo + numero dito per ogni nota."""
+
+        # ── Note italiane riconosciute dal KlavierRenderer ────────────
+        _IT_SEMITONE = {
+            'do': 0,  'do#': 1, 'dob': 11,
+            're': 2,  're#': 3, 'reb': 1,
+            'mi': 4,  'mi#': 5, 'mib': 3,
+            'fa': 5,  'fa#': 6, 'fab': 4,
+            'sol': 7, 'sol#': 8,'solb': 6,
+            'la': 9,  'la#': 10,'lab': 8,
+            'si': 11, 'si#': 0, 'sib': 10,
+        }
+        _EN_SEMITONE = {
+            'c': 0,  'c#': 1,  'cb': 11,
+            'd': 2,  'd#': 3,  'db': 1,
+            'e': 4,  'e#': 5,  'eb': 3,
+            'f': 5,  'f#': 6,  'fb': 4,
+            'g': 7,  'g#': 8,  'gb': 6,
+            'a': 9,  'a#': 10, 'ab': 8,
+            'b': 11, 'b#': 0,  'bb': 10,
+        }
+        _CHORD_INTERVALS = [
+            ('maj7', [0,4,7,11]), ('maj', [0,4,7]),
+            ('m7b5', [0,3,6,10]), ('m7',  [0,3,7,10]),
+            ('min',  [0,3,7]),    ('m',   [0,3,7]),
+            ('dim7', [0,3,6,9]), ('dim',  [0,3,6]),
+            ('aug',  [0,4,8]),   ('sus4', [0,5,7]),
+            ('sus2', [0,2,7]),   ('7',    [0,4,7,10]),
+            ('5',    [0,7]),     ('-',    [0,3,7]),
+            ('',     [0,4,7]),
+        ]
+        _SEMI_TO_IT = {
+            0: 'Do', 1: 'Do#', 2: 'Re', 3: 'Re#', 4: 'Mi',
+            5: 'Fa', 6: 'Fa#', 7: 'Sol', 8: 'Sol#', 9: 'La',
+            10: 'La#', 11: 'Si',
+        }
+
+        def chord_semitones(chord_str):
+            s = chord_str.strip(); sl = s.lower()
+            root = None; rest = ''
+            for name, semi in sorted(_IT_SEMITONE.items(), key=lambda x: -len(x[0])):
+                if sl.startswith(name):
+                    root = semi; rest = s[len(name):]; break
+            if root is None:
+                for name, semi in sorted(_EN_SEMITONE.items(), key=lambda x: -len(x[0])):
+                    if sl.startswith(name):
+                        root = semi; rest = s[len(name):]; break
+            if root is None:
+                return []
+            rest = rest.split('/')[0].strip()
+            ivs = [0, 4, 7]
+            for suffix, intervals in _CHORD_INTERVALS:
+                if rest.lower().startswith(suffix.lower()):
+                    ivs = intervals; break
+            return [_SEMI_TO_IT[(root + i) % 12] for i in ivs]
+
+        # ── Costruisce il dialog ──────────────────────────────────────
+        dlg = wx.Dialog(self.frame, title=_(u"First chord fingering"),
+                        style=wx.DEFAULT_DIALOG_STYLE)
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        # Campo accordo
+        hbox_chord = wx.BoxSizer(wx.HORIZONTAL)
+        hbox_chord.Add(wx.StaticText(dlg, -1, _(u"Chord:")),
+                       0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        txt_chord = wx.TextCtrl(dlg, -1, u"", size=(120, -1))
+        hbox_chord.Add(txt_chord, 0)
+        vbox.Add(hbox_chord, 0, wx.ALL, 10)
+
+        # Istruzione
+        lbl_info = wx.StaticText(
+            dlg, -1,
+            _(u"Assign a finger number to each note of the chord.\n"
+              u"(1=thumb  2=index  3=middle  4=ring  5=little)\n"
+              u"Leave '\u2014' for fingers not used."))
+        vbox.Add(lbl_info, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        # Pannello contenitore per la griglia — viene ricostruita dinamicamente
+        grid_panel = wx.Panel(dlg, -1)
+        grid_panel.SetSizer(wx.BoxSizer(wx.VERTICAL))   # sizer vuoto iniziale
+        vbox.Add(grid_panel, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        # Anteprima direttiva
+        vbox.Add(wx.StaticLine(dlg), 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 8)
+        vbox.Add(wx.StaticText(dlg, -1, _(u"Directive preview:")),
+                 0, wx.LEFT | wx.TOP, 10)
+        txt_preview = wx.TextCtrl(dlg, -1, u"{fingering: }",
+                                  style=wx.TE_READONLY)
+        txt_preview.SetBackgroundColour(
+            wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE))
+        vbox.Add(txt_preview, 0, wx.EXPAND | wx.ALL, 10)
+
+        btn_sizer = dlg.CreateButtonSizer(wx.OK | wx.CANCEL)
+        vbox.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 8)
+        dlg.SetSizer(vbox)
+
+        # ── Stato dinamico ────────────────────────────────────────────
+        finger_choices = [u"\u2014", u"1", u"2", u"3", u"4", u"5"]
+        current_notes  = []   # note attuali
+        note_rows      = []   # (StaticText, Choice) correnti
+
+        def _build():
+            chord = txt_chord.GetValue().strip()
+            if not chord:
+                return u"{fingering: }"
+            parts = [chord]
+            for i, (lbl, ch) in enumerate(note_rows):
+                sel = ch.GetSelection()
+                if sel > 0:
+                    parts.append(u"%d=%s" % (sel, current_notes[i]))
+            return u"{fingering: %s}" % u" ".join(parts)
+
+        def _update_preview(e=None):
+            txt_preview.SetValue(_build())
+
+        def _rebuild_grid(notes):
+            """Distrugge e ricrea la griglia nel grid_panel con le note date."""
+            note_rows.clear()
+            # Rimuovi tutti i figli esistenti
+            for child in grid_panel.GetChildren():
+                child.Destroy()
+
+            if not notes:
+                grid_panel.GetSizer().Layout()
+                return
+
+            # FlexGridSizer: 2 colonne, righe variabili
+            fgs = wx.FlexGridSizer(cols=2, vgap=6, hgap=12)
+            fgs.Add(wx.StaticText(grid_panel, -1, _(u"Note")),
+                    0, wx.ALIGN_CENTER)
+            fgs.Add(wx.StaticText(grid_panel, -1, _(u"Finger")),
+                    0, wx.ALIGN_CENTER)
+            for note in notes:
+                lbl = wx.StaticText(grid_panel, -1, note)
+                ch  = wx.Choice(grid_panel, -1, choices=finger_choices)
+                ch.SetSelection(0)
+                ch.Bind(wx.EVT_CHOICE, _update_preview)
+                fgs.Add(lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 4)
+                fgs.Add(ch,  0, wx.ALIGN_CENTER_VERTICAL)
+                note_rows.append((lbl, ch))
+
+            # Sostituisce il sizer del panel
+            grid_panel.SetSizer(fgs)
+            fgs.Layout()
+
+        def _on_chord_change(e=None):
+            chord = txt_chord.GetValue().strip()
+            notes = chord_semitones(chord) if chord else []
+            current_notes.clear()
+            current_notes.extend(notes)
+            _rebuild_grid(notes)
+            # Ricalcola il layout dell'intero dialog
+            vbox.Layout()
+            vbox.Fit(dlg)
+            _update_preview()
+
+        txt_chord.Bind(wx.EVT_TEXT, _on_chord_change)
+
+        vbox.Fit(dlg)
+        dlg.CentreOnParent()
+
+        if dlg.ShowModal() == wx.ID_OK:
+            directive = _build()
+            if directive != u"{fingering: }":
+                self.InsertWithCaret(directive)
+            else:
+                self.InsertWithCaret(u"{fingering: |}")
+        dlg.Destroy()
+
     def OnImportFromPdf(self, evt):
         """Import text from a PDF file (selectable text only, no OCR)."""
         try:
@@ -2461,6 +2633,7 @@ class SongpressFrame(SDIMainFrame):
         decorator.showPageBreakLines = getattr(self, '_showPageBreakLines', True)
         decorator.showColumnBreakLines = getattr(self, '_showColumnBreakLines', True)
         decorator.klavierHighlightColor = self._getKlavierHighlightColour()
+        decorator.fingerNumColor = self._getFingerNumColour()
         r = Renderer(self.pref.format, decorator, self.pref.notations)
         r.tempoDisplay = getattr(self.pref, 'tempoDisplay', 0)
         r.timeDisplay = getattr(self.pref, 'timeDisplay', True)
@@ -2761,6 +2934,8 @@ class SongpressFrame(SDIMainFrame):
         # Alias comuni
         't', 'st', 'c', 'ci', 'cb', 'np',
         'soc', 'eoc', 'sov', 'eov', 'sob', 'eob', 'sot', 'eot',
+        # Diagrammi e tastiera
+        'define', 'taste', 'fingering',
     ]
 
     def _ShowDirectiveIntellisense(self):
@@ -3635,6 +3810,150 @@ class SongpressFrame(SDIMainFrame):
 
         hw = wx.html.HtmlWindow(dlg, style=wx.html.HW_SCROLLBAR_AUTO)
 
+        # ── Stato ricerca nella guida ─────────────────────────────────
+        _search_state = {'term': '', 'matches': [], 'idx': -1, 'html_orig': ''}
+
+        def _guide_search_open():
+            """Apre un mini-dialogo di ricerca testuale nella guida."""
+            import re as _re2
+
+            sdlg = wx.Dialog(
+                dlg, title=_("Find in guide"),
+                style=wx.DEFAULT_DIALOG_STYLE | wx.STAY_ON_TOP,
+            )
+            vsz = wx.BoxSizer(wx.VERTICAL)
+
+            # ── Riga 1: etichetta + campo testo ───────────────────────
+            row_find = wx.BoxSizer(wx.HORIZONTAL)
+            row_find.Add(
+                wx.StaticText(sdlg, label=_("Find:")),
+                0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6,
+            )
+            txt = wx.TextCtrl(
+                sdlg, value=_search_state['term'],
+                size=(260, -1), style=wx.TE_PROCESS_ENTER,
+            )
+            row_find.Add(txt, 1, wx.EXPAND)
+            vsz.Add(row_find, 0, wx.EXPAND | wx.ALL, 10)
+
+            # ── Riga 2: bottoni navigazione + contatore + Chiudi ──────
+            row_btns = wx.BoxSizer(wx.HORIZONTAL)
+
+            # Frecce: stesse icone wx usate dalla toolbar di anteprima stampa
+            def _make_arrow_btn(parent, art_id, img_name, label_fallback):
+                """
+                Crea un BitmapButton con l'icona wx.ArtProvider (stessa usata
+                dal PreviewControlBar). Fallback: PNG img/, poi testo puro.
+                """
+                bmp = wx.ArtProvider.GetBitmap(art_id, wx.ART_BUTTON, (24, 24))
+                if not bmp.IsOk():
+                    img = wx.Image(glb.AddPath('img/' + img_name))
+                    bmp = wx.Bitmap(img) if img.IsOk() else wx.NullBitmap
+                if bmp.IsOk():
+                    btn = wx.BitmapButton(parent, bitmap=bmp,
+                                         style=wx.BU_AUTODRAW)
+                    btn.SetToolTip(label_fallback)
+                else:
+                    btn = wx.Button(parent, label=label_fallback)
+                return btn
+
+            btn_prev = _make_arrow_btn(sdlg, wx.ART_GO_BACK,    'arrow_left.png',  _("Previous"))
+            btn_next = _make_arrow_btn(sdlg, wx.ART_GO_FORWARD,  'arrow_right.png', _("Next"))
+            btn_next.SetDefault()
+
+            lbl_count = wx.StaticText(sdlg, label='', size=(90, -1))
+            lbl_count.SetForegroundColour(wx.Colour(80, 80, 80))
+
+            btn_close = wx.Button(sdlg, wx.ID_CANCEL, _("Close"))
+
+            row_btns.Add(btn_prev,  0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+            row_btns.Add(btn_next,  0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 12)
+            row_btns.Add(lbl_count, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+            row_btns.AddStretchSpacer()
+            row_btns.Add(btn_close, 0, wx.ALIGN_CENTER_VERTICAL)
+            vsz.Add(row_btns, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+            sdlg.SetSizer(vsz)
+            vsz.Fit(sdlg)
+            # Larghezza minima per evitare tagli del contatore
+            cur_w, cur_h = sdlg.GetSize()
+            sdlg.SetMinSize(wx.Size(max(cur_w, 440), cur_h))
+            sdlg.SetSize(wx.Size(max(cur_w, 440), cur_h))
+
+            # ── Logica di ricerca ─────────────────────────────────────
+            def _do_search(term, goto_idx=0):
+                """Evidenzia tutte le occorrenze di *term* nell'HtmlWindow."""
+                _search_state['term'] = term
+                orig = _search_state.get('html_orig', '')
+                if not orig:
+                    return
+                if not term:
+                    hw.SetPage(orig)
+                    _search_state['matches'] = []
+                    _search_state['idx'] = -1
+                    lbl_count.SetLabel('')
+                    return
+                escaped = _re2.escape(term)
+                highlighted = _re2.sub(
+                    r'(?i)(%s)' % escaped,
+                    r'<font bgcolor="#FFFF00" color="#000000"><b>\1</b></font>',
+                    orig,
+                )
+                hw.SetPage(highlighted)
+                plain = hw.ToText()
+                matches = [m.start() for m in _re2.finditer(
+                    escaped, plain, _re2.IGNORECASE)]
+                _search_state['matches'] = matches
+                n = len(matches)
+                if n == 0:
+                    lbl_count.SetLabel(_("Not found"))
+                    lbl_count.SetForegroundColour(wx.Colour(180, 0, 0))
+                    _search_state['idx'] = -1
+                else:
+                    idx = max(0, min(goto_idx, n - 1))
+                    _search_state['idx'] = idx
+                    lbl_count.SetLabel(_("%d of %d") % (idx + 1, n))
+                    lbl_count.SetForegroundColour(wx.Colour(80, 80, 80))
+                lbl_count.GetParent().Layout()
+
+            def _on_next(e):
+                term = txt.GetValue().strip()
+                if not term:
+                    return
+                idx = _search_state['idx']
+                n   = len(_search_state['matches'])
+                _do_search(term, (idx + 1) % n if n else 0)
+
+            def _on_prev(e):
+                term = txt.GetValue().strip()
+                if not term:
+                    return
+                idx = _search_state['idx']
+                n   = len(_search_state['matches'])
+                _do_search(term, (idx - 1) % n if n else 0)
+
+            def _on_close_search(e):
+                orig = _search_state.get('html_orig', '')
+                if orig:
+                    hw.SetPage(orig)
+                _search_state['matches'] = []
+                _search_state['idx'] = -1
+                sdlg.EndModal(wx.ID_CANCEL)
+
+            btn_next.Bind(wx.EVT_BUTTON, _on_next)
+            btn_prev.Bind(wx.EVT_BUTTON, _on_prev)
+            btn_close.Bind(wx.EVT_BUTTON, _on_close_search)
+            txt.Bind(wx.EVT_TEXT_ENTER, _on_next)
+            sdlg.Bind(wx.EVT_CLOSE, _on_close_search)
+
+            txt.SetFocus()
+            txt.SetSelection(-1, -1)   # seleziona tutto il testo preesistente
+            if _search_state['term']:
+                _do_search(_search_state['term'])
+
+            sdlg.ShowModal()
+            sdlg.Destroy()
+
         # ── Menu contestuale tasto destro ──────────────────────────────
         def _on_hw_right_click(evt):
             menu = wx.Menu()
@@ -3659,6 +3978,27 @@ class SongpressFrame(SDIMainFrame):
                     wx.TheClipboard.Close()
 
             menu.Bind(wx.EVT_MENU, _copy, id=wx.ID_COPY)
+
+            menu.AppendSeparator()
+
+            # ── Voce "Cerca" con icona img/search.png ─────────────────
+            _id_search = wx.NewIdRef()
+            _search_img = wx.Image(glb.AddPath('img/search.png'))
+            _bmp_search = wx.Bitmap(_search_img) if _search_img.IsOk() \
+                else wx.ArtProvider.GetBitmap(wx.ART_FIND, wx.ART_MENU, (16, 16))
+            item_search = wx.MenuItem(menu, _id_search, _("Find in guide...") + u"\tCtrl+F")
+            if _bmp_search.IsOk():
+                item_search.SetBitmap(_bmp_search)
+            menu.Append(item_search)
+
+            def _on_search(e):
+                # Salva l'HTML corrente la prima volta (prima di ogni evidenziazione)
+                if not _search_state.get('html_orig'):
+                    _search_state['html_orig'] = hw.GetParser().GetSource() \
+                        if hw.GetParser() else ''
+                _guide_search_open()
+
+            menu.Bind(wx.EVT_MENU, _on_search, id=_id_search)
 
             hw.PopupMenu(menu)
             menu.Destroy()
@@ -4719,6 +5059,7 @@ class SongpressFrame(SDIMainFrame):
             self.SetDefaultExtension(self.pref.defaultExtension)
             self.previewCanvas.SetLineWidths(self.pref.titleLineWidth, self.pref.verseBoxWidth)
             self._applyKlavierHighlightColor()
+            self._applyFingerNumColor()
             self.text.SetBgColour(getattr(self.pref, 'editorBgHex', '#FFFFFF'))
             self.text.SetSelColour(getattr(self.pref, 'selColourHex', '#3399FF'))
             _sc = getattr(self.pref, 'syntaxColours', {})
@@ -4764,6 +5105,20 @@ class SongpressFrame(SDIMainFrame):
             return wx.Colour(r, g, b)
         except Exception:
             return wx.Colour(210, 60, 60)
+
+    def _getFingerNumColour(self):
+        """Restituisce wx.Colour per i numeri delle dita sulla tastiera."""
+        hex_str = getattr(self.pref, 'fingerNumColourHex', '#1A1A1A')
+        try:
+            h = hex_str.strip().lstrip('#')
+            r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+            return wx.Colour(r, g, b)
+        except Exception:
+            return wx.Colour(26, 26, 26)
+
+    def _applyFingerNumColor(self):
+        """Applica il colore dei numeri dita al decorator."""
+        self.pref.decorator.fingerNumColor = self._getFingerNumColour()
 
     def StripSelection(self):
         """
@@ -5177,6 +5532,7 @@ class SongpressFrame(SDIMainFrame):
             sd.showKlavier = True
             sd.showGuitarDiagrams = True
             sd.klavierHighlightColor = self._getKlavierHighlightColour()
+            sd.fingerNumColor = self._getFingerNumColour()
             self.previewCanvas.SetDecorator(sd)
         self.previewCanvas.SetLineWidths(self.pref.titleLineWidth, self.pref.verseBoxWidth)
         self.previewCanvas.SetShowPageBreakLines(getattr(self, '_showPageBreakLines', True))

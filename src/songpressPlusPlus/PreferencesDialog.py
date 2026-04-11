@@ -325,6 +325,18 @@ class PreferencesDialog(wx.Dialog):
         bSizerKlavier.Add(self.klavierColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
         grpChordsTime.Add(bSizerKlavier, 0, wx.EXPAND | wx.ALL, 5)
 
+        bSizerFingerNum = wx.BoxSizer(wx.HORIZONTAL)
+        self.labelFingerNumColour = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Finger number colour"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelFingerNumColour.Wrap(-1)
+        bSizerFingerNum.Add(self.labelFingerNumColour, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.fingerNumHexCtrl = wx.TextCtrl(self.formatPanel, wx.ID_ANY, u"#1A1A1A", wx.DefaultPosition, wx.Size(80, -1), 0)
+        bSizerFingerNum.Add(self.fingerNumHexCtrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.fingerNumColourBtn = wx.Button(self.formatPanel, wx.ID_ANY, _(u"Pick\u2026"), wx.DefaultPosition, wx.Size(60, -1), 0)
+        bSizerFingerNum.Add(self.fingerNumColourBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.fingerNumColourSwatch = wx.Panel(self.formatPanel, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
+        bSizerFingerNum.Add(self.fingerNumColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
+        grpChordsTime.Add(bSizerFingerNum, 0, wx.EXPAND | wx.ALL, 5)
+
         # Dimensione icone tempo ({tempo_*})
         bSizerTempoIcon = wx.BoxSizer(wx.HORIZONTAL)
         self.labelTempoIconSize = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Tempo icon size"), wx.DefaultPosition, wx.DefaultSize, 0)
@@ -725,6 +737,8 @@ class PreferencesDialog(wx.Dialog):
         # Connect colour events
         self.klavierColourBtn.Bind(wx.EVT_BUTTON, self.OnKlavierPickColour)
         self.klavierHexCtrl.Bind(wx.EVT_TEXT, self.OnKlavierHexChanged)
+        self.fingerNumColourBtn.Bind(wx.EVT_BUTTON, self.OnFingerNumPickColour)
+        self.fingerNumHexCtrl.Bind(wx.EVT_TEXT, self.OnFingerNumHexChanged)
         self.editorBgBtn.Bind(wx.EVT_BUTTON, self.OnEditorBgPickColour)
         self.editorBgHexCtrl.Bind(wx.EVT_TEXT, self.OnEditorBgHexChanged)
         self.selColourBtn.Bind(wx.EVT_BUTTON, self.OnSelColourPickColour)
@@ -783,6 +797,12 @@ class PreferencesDialog(wx.Dialog):
         event.Skip()
 
     def OnKlavierPickColour(self, event):
+        event.Skip()
+
+    def OnFingerNumHexChanged(self, event):
+        event.Skip()
+
+    def OnFingerNumPickColour(self, event):
         event.Skip()
 
     def OnEditorBgHexChanged(self, event):

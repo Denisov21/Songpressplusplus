@@ -73,28 +73,231 @@ _KNOWN_COMMANDS = {
     # Images
     "image",
     # Chord diagrams / keyboard
-    "define", "taste",
+    "define", "taste", "fingering",
 }
 
+# ── Dati per la validazione di {fingering:} ──────────────────────────────────
+
+# Note italiane → semitono
+_IT_NOTES = {
+    'do': 0,  'do#': 1,  'dob': 11,
+    're': 2,  're#': 3,  'reb': 1,
+    'mi': 4,  'mi#': 5,  'mib': 3,
+    'fa': 5,  'fa#': 6,  'fab': 4,
+    'sol': 7, 'sol#': 8, 'solb': 6,
+    'la': 9,  'la#': 10, 'lab': 8,
+    'si': 11, 'si#': 0,  'sib': 10,
+}
+
+# Note inglesi → semitono
+_EN_NOTES = {
+    'c': 0,  'c#': 1,  'cb': 11,
+    'd': 2,  'd#': 3,  'db': 1,
+    'e': 4,  'e#': 5,  'eb': 3,
+    'f': 5,  'f#': 6,  'fb': 4,
+    'g': 7,  'g#': 8,  'gb': 6,
+    'a': 9,  'a#': 10, 'ab': 8,
+    'b': 11, 'b#': 0,  'bb': 10,
+    'h': 11,
+}
+
+# Suffissi accordo → intervalli (semitoni dalla fondamentale)
+_CHORD_INTERVALS = [
+    ('maj7',  [0, 4, 7, 11]),
+    ('maj',   [0, 4, 7]),
+    ('m7b5',  [0, 3, 6, 10]),
+    ('m7',    [0, 3, 7, 10]),
+    ('min',   [0, 3, 7]),
+    ('m',     [0, 3, 7]),
+    ('dim7',  [0, 3, 6, 9]),
+    ('dim',   [0, 3, 6]),
+    ('aug',   [0, 4, 8]),
+    ('sus4',  [0, 5, 7]),
+    ('sus2',  [0, 2, 7]),
+    ('7',     [0, 4, 7, 10]),
+    ('5',     [0, 7]),
+    ('-',     [0, 3, 7]),
+    ('',      [0, 4, 7]),
+]
+
+# Semitono → nome canonico italiano (per i messaggi di errore)
+_SEMI_TO_IT = {
+    0: 'Do', 1: 'Do#', 2: 'Re', 3: 'Re#', 4: 'Mi',
+    5: 'Fa', 6: 'Fa#', 7: 'Sol', 8: 'Sol#', 9: 'La',
+    10: 'La#', 11: 'Si',
+}
+
+
+def _note_to_semitone(note_str: str):
+    """Converte nome nota (IT o EN) in semitono 0-11, o None se non riconosciuta."""
+    s = note_str.strip().lower()
+    if s in _IT_NOTES:
+        return _IT_NOTES[s]
+    if s in _EN_NOTES:
+        return _EN_NOTES[s]
+    return None
+
+
+def _parse_chord_semitones(chord_str: str):
+    """
+    Parsa il nome di un accordo e restituisce il set di semitoni (0-11)
+    che ne fanno parte, oppure None se l'accordo non è riconosciuto.
+    """
+    s = chord_str.strip()
+    sl = s.lower()
+    root = None
+    rest = ''
+
+    # Prova notazione italiana (ordine per lunghezza decrescente)
+    for name in sorted(_IT_NOTES, key=len, reverse=True):
+        if sl.startswith(name):
+            root = _IT_NOTES[name]
+            rest = s[len(name):]
+            break
+
+    # Prova notazione inglese
+    if root is None:
+        for name in sorted(_EN_NOTES, key=len, reverse=True):
+            if sl.startswith(name):
+                root = _EN_NOTES[name]
+                rest = s[len(name):]
+                break
+
+    if root is None:
+        return None
+
+    # Ignora il basso dopo /
+    rest = rest.split('/')[0].strip()
+
+    # Trova gli intervalli del tipo di accordo
+    intervals = [0, 4, 7]   # default maggiore
+    for suffix, ivs in _CHORD_INTERVALS:
+        if rest.lower().startswith(suffix.lower()):
+            intervals = ivs
+            break
+
+    return {(root + i) % 12 for i in intervals}
+
+
+def _validate_fingering(cmd_value: str, line_num: int, col: int,
+                        result: SyntaxCheckResult):
+    """
+    Valida il valore di {fingering: ...}.
+
+    Controlli:
+    1. Il primo token deve essere un accordo riconosciuto.
+    2. I token successivi devono avere il formato  N=NomeNota  (N intero 1-5).
+    3. Ogni nota indicata deve appartenere all'accordo specificato.
+    4. Lo stesso dito non può essere assegnato due volte.
+    5. La stessa nota non può ricevere due dita diverse.
+    """
+    parts = cmd_value.strip().split()
+    if not parts:
+        # Valore vuoto: già gestito da _REQUIRES_VALUE
+        return
+
+    chord_name = parts[0]
+    chord_semitones = _parse_chord_semitones(chord_name)
+
+    if chord_semitones is None:
+        result.errors.append(SyntaxError(
+            line=line_num, column=col,
+            message=_("{{fingering}}: unrecognized chord '{chord}'").format(
+                chord=chord_name)
+        ))
+        return   # senza accordo valido non ha senso continuare
+
+    # Parsa le assegnazioni dito=nota
+    used_fingers = {}   # finger_num → nota_str
+    used_semitones = {} # semitono → finger_num
+
+    for token in parts[1:]:
+        m = re.match(r'^(\d+)=(.+)$', token)
+        if not m:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_(
+                    "{{fingering}}: invalid token '{tok}' — expected format: finger=note (e.g. 2=Mi)"
+                ).format(tok=token)
+            ))
+            continue
+
+        finger_num = int(m.group(1))
+        note_str   = m.group(2)
+
+        # Dito fuori range 1-5
+        if finger_num < 1 or finger_num > 5:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_(
+                    "{{fingering}}: finger number {n} is out of range (1–5)"
+                ).format(n=finger_num)
+            ))
+            continue
+
+        # Nota non riconosciuta
+        semi = _note_to_semitone(note_str)
+        if semi is None:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_(
+                    "{{fingering}}: unrecognized note '{note}'"
+                ).format(note=note_str)
+            ))
+            continue
+
+        # Nota non appartiene all'accordo
+        if semi not in chord_semitones:
+            expected = ', '.join(
+                _SEMI_TO_IT[s] for s in sorted(chord_semitones))
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_(
+                    "{{fingering}}: note '{note}' does not belong to {chord} ({expected})"
+                ).format(note=note_str, chord=chord_name, expected=expected)
+            ))
+            continue
+
+        # Dito già usato
+        if finger_num in used_fingers:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_(
+                    "{{fingering}}: finger {n} assigned twice ({a} and {b})"
+                ).format(n=finger_num,
+                         a=used_fingers[finger_num], b=note_str)
+            ))
+            continue
+
+        # Nota già assegnata a un altro dito
+        if semi in used_semitones:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_(
+                    "{{fingering}}: note '{note}' assigned to both finger {a} and finger {b}"
+                ).format(note=note_str,
+                         a=used_semitones[semi], b=finger_num)
+            ))
+            continue
+
+        used_fingers[finger_num]  = note_str
+        used_semitones[semi]      = finger_num
+
+
 # Pattern per un accordo valido tra parentesi quadre
-# Notazione italiana: Do Re Mi Fa Sol La Si (con alterazioni # b)
-# Notazione inglese:  C D E F G A B (con alterazioni # b)
 _CHORD_PATTERN = re.compile(
-    r'^[A-Ga-g]?(?:Do|Re|Mi|Fa|Sol|La|Si|[A-G])'  # nota base
-    r'[#b]?'                                         # alterazione opzionale
-    r'(?:m|min|maj|aug|dim|sus)?'                    # qualità opzionale
-    r'\d*'                                           # numero opzionale (es. 7, 9)
-    r'(?:/[A-G](?:Do|Re|Mi|Fa|Sol|La|Si)?[#b]?)?'   # basso opzionale (es. /Sol)
+    r'^[A-Ga-g]?(?:Do|Re|Mi|Fa|Sol|La|Si|[A-G])'
+    r'[#b]?'
+    r'(?:m|min|maj|aug|dim|sus)?'
+    r'\d*'
+    r'(?:/[A-G](?:Do|Re|Mi|Fa|Sol|La|Si)?[#b]?)?'
     r'$'
 )
 
 
 def _strip_inline_comment(line: str) -> str:
-    """Return the portion of *line* before any bare # comment marker.
-    A # inside [] or {} is part of a chord/command and is NOT a comment.
-    """
-    depth_sq = 0  # inside []
-    depth_cu = 0  # inside {}
+    depth_sq = 0
+    depth_cu = 0
     for i, ch in enumerate(line):
         if ch == '[':
             depth_sq += 1
@@ -110,32 +313,14 @@ def _strip_inline_comment(line: str) -> str:
 
 
 def check(text: str) -> SyntaxCheckResult:
-    """
-    Run a syntax check on the ChordPro text.
-
-    Checks:
-    - Unclosed or spurious square brackets (chords)
-    - Empty chord brackets []
-    - Unclosed or spurious curly braces (commands)
-    - Unknown commands
-    - Commands that require a value but have none (e.g. {title:} with no text)
-
-    Returns a SyntaxCheckResult with the list of errors found.
-    """
     result = SyntaxCheckResult()
     lines = text.splitlines()
 
     for line_idx, line in enumerate(lines):
         line_num = line_idx + 1
-
-        # Skip full-line comments
         if line.lstrip().startswith("#"):
             continue
-
-        # Strip inline comment: everything after a bare # that is not inside
-        # [] or {} is treated as a comment and must not be analysed.
         line = _strip_inline_comment(line)
-
         _check_square_brackets(line, line_num, result)
         _check_curly_braces(line, line_num, result)
 
@@ -143,56 +328,44 @@ def check(text: str) -> SyntaxCheckResult:
 
 
 def _check_square_brackets(line: str, line_num: int, result: SyntaxCheckResult):
-    """Check square brackets (chords)."""
     i = 0
     while i < len(line):
         ch = line[i]
-
         if ch == '[':
-            # Look for the matching closing bracket
             close = line.find(']', i + 1)
             if close == -1:
                 result.errors.append(SyntaxError(
-                    line=line_num,
-                    column=i + 1,
+                    line=line_num, column=i + 1,
                     message=_("Opening square bracket '[' not closed")
                 ))
-                break  # no point continuing on this line
+                break
             else:
                 content = line[i + 1:close].strip()
                 if content == "":
                     result.errors.append(SyntaxError(
-                        line=line_num,
-                        column=i + 1,
+                        line=line_num, column=i + 1,
                         message=_("Empty chord '[]'")
                     ))
                 i = close + 1
-
         elif ch == ']':
-            # Closing bracket without opening
             result.errors.append(SyntaxError(
-                line=line_num,
-                column=i + 1,
+                line=line_num, column=i + 1,
                 message=_("Closing square bracket ']' without opening")
             ))
             i += 1
-
         else:
             i += 1
 
 
 def _check_curly_braces(line: str, line_num: int, result: SyntaxCheckResult):
-    """Check commands inside curly braces."""
     i = 0
     while i < len(line):
         ch = line[i]
-
         if ch == '{':
             close = line.find('}', i + 1)
             if close == -1:
                 result.errors.append(SyntaxError(
-                    line=line_num,
-                    column=i + 1,
+                    line=line_num, column=i + 1,
                     message=_("Opening curly brace '{' not closed")
                 ))
                 break
@@ -200,39 +373,33 @@ def _check_curly_braces(line: str, line_num: int, result: SyntaxCheckResult):
                 content = line[i + 1:close].strip()
                 _validate_command(content, line_num, i + 1, result)
                 i = close + 1
-
         elif ch == '}':
             result.errors.append(SyntaxError(
-                line=line_num,
-                column=i + 1,
+                line=line_num, column=i + 1,
                 message=_("Closing curly brace '}' without opening")
             ))
             i += 1
-
         else:
             i += 1
 
 
-def _validate_command(content: str, line_num: int, col: int, result: SyntaxCheckResult):
-    """Validate the content of a {…} command."""
+def _validate_command(content: str, line_num: int, col: int,
+                      result: SyntaxCheckResult):
     if not content:
         result.errors.append(SyntaxError(
-            line=line_num,
-            column=col,
+            line=line_num, column=col,
             message=_("Empty command '{}'")
         ))
         return
 
-    # Separa nome comando e valore opzionale
     if ':' in content:
         cmd_name, cmd_value = content.split(':', 1)
-        cmd_name = cmd_name.strip().lower()
+        cmd_name  = cmd_name.strip().lower()
         cmd_value = cmd_value.strip()
     else:
-        cmd_name = content.strip().lower()
+        cmd_name  = content.strip().lower()
         cmd_value = None
 
-    # Commands that ALWAYS require a non-empty value (omitting the value is an error).
     _REQUIRES_VALUE = {
         "t", "title",
         "st", "subtitle",
@@ -241,22 +408,17 @@ def _validate_command(content: str, line_num: int, col: int, result: SyntaxCheck
         "key", "capo",
         "tempo", "tempo_m", "tempo_s", "tempo_sp", "tempo_c", "tempo_cp",
         "time",
-        "define", "taste",
+        "define", "taste", "fingering",
         "start_chord",
         "image",
     }
 
-    # Commands where the value is OPTIONAL:
-    # used WITH a value to set, used WITHOUT a value to reset to default.
-    #   {textfont:Arial}  → set font
-    #   {textfont}        → reset to default  ← NOT an error
     _OPTIONAL_VALUE = {
         "textsize", "textfont", "textcolour", "textcolor",
         "chordsize", "chordfont", "chordcolour", "chordcolor",
         "linespacing", "chordtopspacing",
     }
 
-    # Commands whose value, when present, must be numeric (int or float).
     _REQUIRES_NUMERIC_VALUE = {
         "textsize", "chordsize",
         "linespacing", "chordtopspacing",
@@ -264,24 +426,19 @@ def _validate_command(content: str, line_num: int, col: int, result: SyntaxCheck
         "tempo", "tempo_m", "tempo_s", "tempo_sp", "tempo_c", "tempo_cp",
     }
 
-    # Commands whose value must be a time signature: two positive integers
-    # separated by '/', e.g. 4/4, 3/4, 6/8.
     _REQUIRES_TIME_SIGNATURE = {"time"}
 
     if cmd_name not in _KNOWN_COMMANDS:
         result.errors.append(SyntaxError(
-            line=line_num,
-            column=col,
-            message=_("Unknown command: '{cmd}'").format(cmd="{" + cmd_name + "}")
+            line=line_num, column=col,
+            message=_("Unknown command: '{cmd}'").format(
+                cmd="{" + cmd_name + "}")
         ))
         return
 
-    # Se i due punti sono presenti ma il valore è vuoto, è sempre un errore:
-    # la forma corretta per il reset è {cmd} senza i due punti.
     if cmd_value is not None and cmd_value == "" and cmd_name in _OPTIONAL_VALUE:
         result.errors.append(SyntaxError(
-            line=line_num,
-            column=col,
+            line=line_num, column=col,
             message=_("Command '{cmd}' has ':' but no value; use '{reset}' to reset").format(
                 cmd="{" + cmd_name + ":}",
                 reset="{" + cmd_name + "}",
@@ -293,8 +450,7 @@ def _validate_command(content: str, line_num: int, col: int, result: SyntaxCheck
         import re as _re
         if not _re.fullmatch(r'[1-9][0-9]*/[1-9][0-9]*', cmd_value.strip()):
             result.errors.append(SyntaxError(
-                line=line_num,
-                column=col,
+                line=line_num, column=col,
                 message=_("Command '{cmd}' requires a time signature (e.g. 4/4), got: '{val}'").format(
                     cmd="{" + cmd_name + ":}",
                     val=cmd_value,
@@ -307,8 +463,7 @@ def _validate_command(content: str, line_num: int, col: int, result: SyntaxCheck
             float(cmd_value)
         except ValueError:
             result.errors.append(SyntaxError(
-                line=line_num,
-                column=col,
+                line=line_num, column=col,
                 message=_("Command '{cmd}' requires a numeric value, got: '{val}'").format(
                     cmd="{" + cmd_name + ":}",
                     val=cmd_value,
@@ -319,7 +474,12 @@ def _validate_command(content: str, line_num: int, col: int, result: SyntaxCheck
     if cmd_name in _REQUIRES_VALUE:
         if cmd_value is None or cmd_value == "":
             result.errors.append(SyntaxError(
-                line=line_num,
-                column=col,
-                message=_("Command '{cmd}' requires a value").format(cmd="{" + cmd_name + ":}")
+                line=line_num, column=col,
+                message=_("Command '{cmd}' requires a value").format(
+                    cmd="{" + cmd_name + ":}")
             ))
+            return
+
+    # ── Validazione specifica per {fingering:} ────────────────────
+    if cmd_name == "fingering" and cmd_value:
+        _validate_fingering(cmd_value, line_num, col, result)

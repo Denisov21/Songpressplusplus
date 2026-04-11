@@ -120,6 +120,12 @@ class MyPreferencesDialog(PreferencesDialog):
         self.klavierHexCtrl.SetValue(default_hex)
         self.klavierColourSwatch.SetBackgroundColour(self._hex_to_colour(default_hex))
 
+        # Finger number colour
+        fn_hex = getattr(self.pref, 'fingerNumColourHex', '#1A1A1A')
+        if hasattr(self, 'fingerNumHexCtrl'):
+            self.fingerNumHexCtrl.SetValue(fn_hex)
+            self.fingerNumColourSwatch.SetBackgroundColour(self._hex_to_colour(fn_hex))
+
         # Editor background colour
         bg_hex = getattr(self.pref, 'editorBgHex', '#FFFFFF')
         if hasattr(self, 'editorBgHexCtrl'):
@@ -278,6 +284,28 @@ class MyPreferencesDialog(PreferencesDialog):
             self.klavierHexCtrl.SetValue(self._colour_to_hex(chosen))
             self.klavierColourSwatch.SetBackgroundColour(chosen)
             self.klavierColourSwatch.Refresh()
+        dlg.Destroy()
+
+    def OnFingerNumHexChanged(self, evt):
+        c = self._hex_to_colour(self.fingerNumHexCtrl.GetValue())
+        self.fingerNumColourSwatch.SetBackgroundColour(c)
+        self.fingerNumColourSwatch.Refresh()
+        evt.Skip()
+
+    def OnFingerNumPickColour(self, evt):
+        current = self._hex_to_colour(self.fingerNumHexCtrl.GetValue())
+        data = wx.ColourData()
+        data.SetColour(current)
+        data.SetChooseFull(True)
+        self._apply_custom_colours(data, 'customColoursFingerNum')
+        dlg = wx.ColourDialog(self, data)
+        if dlg.ShowModal() == wx.ID_OK:
+            result_data = dlg.GetColourData()
+            chosen = result_data.GetColour()
+            self._read_custom_colours(result_data, 'customColoursFingerNum')
+            self.fingerNumHexCtrl.SetValue(self._colour_to_hex(chosen))
+            self.fingerNumColourSwatch.SetBackgroundColour(chosen)
+            self.fingerNumColourSwatch.Refresh()
         dlg.Destroy()
 
     def OnEditorBgHexChanged(self, evt):
@@ -1210,6 +1238,8 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.titleLineWidth = self.titleLineWidthSpin.GetValue()
         self.pref.verseBoxWidth = self.verseBoxWidthSpin.GetValue()
         self.pref.klavierHighlightHex = self.klavierHexCtrl.GetValue().strip()
+        if hasattr(self, 'fingerNumHexCtrl'):
+            self.pref.fingerNumColourHex = self.fingerNumHexCtrl.GetValue().strip()
         if hasattr(self, 'editorBgHexCtrl'):
             self.pref.editorBgHex = self.editorBgHexCtrl.GetValue().strip()
         if hasattr(self, 'selColourHexCtrl'):

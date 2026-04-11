@@ -357,6 +357,7 @@ class Renderer(object):
         self.song.chordsBelow = self.chordsBelow
         self.song.klavier_list = []  # accordi da mostrare come tastiere
         self.song.define_list  = []  # diagrammi chitarra da mostrare
+
         self.song.columns = self.columns
         self.song.columnHeight = self.columnHeight
         self.song.timeDisplay = self.timeDisplay
@@ -788,6 +789,14 @@ class Renderer(object):
                         a = self.GetAttribute()
                         if a is not None and a.strip() != '':
                             self.song.define_list.append(a.strip())
+                    elif cmd == 'fingering':
+                        # Diteggiatura del primo accordo con numeri dita.
+                        # Formato: {fingering: Am 1=Do 2=Mi 3=La}
+                        # La stringa intera (accordo + mappa dita) va in klavier_list:
+                        # il KlavierRenderer aggiornato la parsa e disegna i numeri.
+                        a = self.GetAttribute()
+                        if a is not None and a.strip() != '':
+                            self.song.klavier_list.append(a.strip())
                     elif cmd == 'image':
                         a = self.GetAttribute()
                         if a is not None and a.strip():

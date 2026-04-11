@@ -56,6 +56,8 @@ class SongDecorator(object):
         self.showColumnBreakLines = True
         # Colour for highlighted keys in klavier diagrams (wx.Colour or None = default red)
         self.klavierHighlightColor = None
+        # Colour for finger number labels on klavier keys (wx.Colour or None = auto contrast)
+        self.fingerNumColor = None
         
     def SetMarginText(self, text):
         # Modify text margins
@@ -717,7 +719,8 @@ class SongDecorator(object):
                 h = draw_klavier_section(
                     self.dc, klavier_list, start_x, start_y,
                     base_font, self.pen_scale, self.notation,
-                    self.klavierHighlightColor
+                    self.klavierHighlightColor,
+                    finger_num_color=self.fingerNumColor,
                 )
                 current_extra_h += h + 20
 

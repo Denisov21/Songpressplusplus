@@ -94,7 +94,7 @@ In fase di disinstallazione viene chiesto se eliminare la cartella dati (default
 |---------|---------|-------------|
 | **Installazione standard** | ✔ | Installa in `%LOCALAPPDATA%\Songpress++`, crea scorciatoie nel menu Start |
 | **Installazione portabile** | — | Installa in `%DESKTOP%\Songpress++`, nessuna voce nel registro né scorciatoie |
-| **Associa estensioni** | — | Associa `.crd .pro .chopro .chordpro .cho .tab` a Songpress++ |
+| **Associa estensioni** | ✔ | Associa `.crd .pro .chopro .chordpro .cho .tab` a Songpress++ |
 | **Verifica connessione** | ✔ | Testa la connessione Internet prima di scaricare i pacchetti |
 | **Collegamento sul Desktop** | ✔ | Crea un collegamento `.lnk` sul Desktop (solo installazione standard) |
 
@@ -110,15 +110,10 @@ Versioni precedenti dell'installer usavano i ProgID `Songpress.crd` e `Songpress
 reinstallazione. Gli script `.nsi` attuali includono una **pulizia automatica** di entrambi
 i ProgID legacy:
 
-> **Modalità portabile**: in modalità portabile il registro non viene toccato in alcun
-> modo — né in scrittura né in lettura. Nessuna associazione file viene creata, nessuna
-> pulizia legacy viene eseguita e nessuna chiave di disinstallazione viene registrata.
-> L'intera installazione rimane confinata alla cartella di destinazione.
-
-- **In fase di installazione (solo modalità standard)**: prima di registrare le nuove
-  associazioni, vengono rimossi `HKCU\Software\Classes\Songpress.crd`,
-  `HKCU\Software\Classes\Songpress.ChordPro` e le relative voci `OpenWithProgids` per
-  tutte le estensioni gestite (`.crd`, `.pro`, `.chopro`, `.chordpro`, `.cho`).
+- **In fase di installazione**: prima di registrare le nuove associazioni, vengono rimossi
+  `HKCU\Software\Classes\Songpress.crd`, `HKCU\Software\Classes\Songpress.ChordPro` e le
+  relative voci `OpenWithProgids` per tutte le estensioni gestite (`.crd`, `.pro`, `.chopro`,
+  `.chordpro`, `.cho`).
 - **In fase di disinstallazione**: vengono rimossi entrambi i ProgID legacy e le relative
   voci `OpenWithProgids`; successivamente vengono rimossi in modo **selettivo** anche tutti
   i riferimenti a `SongpressPlusPlus.ChordPro`: il valore `Default` e la voce

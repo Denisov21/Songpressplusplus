@@ -94,7 +94,7 @@ On uninstall the user is asked whether to delete the data folder (default: No).
 |--------|---------|-------------|
 | **Standard installation** | ✔ | Installs to `%LOCALAPPDATA%\Songpress++`, creates Start menu shortcuts |
 | **Portable installation** | — | Installs to `%DESKTOP%\Songpress++`, no registry entries or shortcuts |
-| **Associate extensions** | — | Associates `.crd .pro .chopro .chordpro .cho .tab` with Songpress++ |
+| **Associate extensions** | ✔ | Associates `.crd .pro .chopro .chordpro .cho .tab` with Songpress++ |
 | **Check connection** | ✔ | Tests the Internet connection before downloading packages |
 | **Desktop shortcut** | ✔ | Creates a `.lnk` shortcut on the Desktop (standard install only) |
 
@@ -110,15 +110,10 @@ Earlier versions of the installer used the incorrect ProgIDs `Songpress.crd` and
 even after reinstalling. The current `.nsi` scripts include **automatic cleanup** of both
 legacy ProgIDs:
 
-> **Portable mode**: in portable mode the registry is not touched in any way — neither
-> for reading nor writing. No file associations are created, no legacy cleanup is
-> performed, and no uninstall key is registered. The entire installation stays confined
-> to the destination folder.
-
-- **During installation (standard mode only)**: before registering the new associations,
-  the scripts remove `HKCU\Software\Classes\Songpress.crd`,
-  `HKCU\Software\Classes\Songpress.ChordPro` and their `OpenWithProgids` entries for each
-  managed extension (`.crd`, `.pro`, `.chopro`, `.chordpro`, `.cho`).
+- **During installation**: before registering the new associations, the scripts remove
+  `HKCU\Software\Classes\Songpress.crd`, `HKCU\Software\Classes\Songpress.ChordPro` and
+  their `OpenWithProgids` entries for each managed extension (`.crd`, `.pro`, `.chopro`,
+  `.chordpro`, `.cho`).
 - **During uninstallation**: both legacy ProgID keys and their `OpenWithProgids` entries
   are deleted; then all references to `SongpressPlusPlus.ChordPro` are removed
   **selectively**: the `Default` value and the `OpenWithProgids` entry for each managed
