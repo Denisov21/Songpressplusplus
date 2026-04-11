@@ -366,7 +366,7 @@ def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
                            finger_num_color=None):
     """
     Identico a draw_klavier_section ma destinato alle tastiere {fingering:}.
-    Non mostra titolo di sezione.
+    La sezione porta il titolo 'Diteggiatura primo accordo' anziché 'Accordi'.
     """
     if not fingering_list:
         return 0
@@ -394,8 +394,23 @@ def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
                      max(1, round(1 / pen_scale)), wx.PENSTYLE_DOT))
     dc.DrawLine(start_x, sep_y, start_x + 500, sep_y)
 
+    # ── Titolo sezione ────────────────────────────────────────────
+    title_font = wx.Font(
+        max(7, int(base_font.GetPointSize() * 0.8)),
+        wx.FONTFAMILY_DEFAULT,
+        wx.FONTSTYLE_ITALIC,
+        wx.FONTWEIGHT_NORMAL,
+        False,
+        base_font.GetFaceName()
+    )
+    dc.SetFont(title_font)
+    dc.SetPen(wx.NullPen)
+    dc.SetTextForeground(wx.Colour(110, 110, 110))
+    dc.DrawText("Diteggiatura primo accordo", start_x, sep_y + 4)
+    dc.SetTextForeground(wx.BLACK)
+
     cur_x = start_x
-    cur_y = sep_y + 8
+    cur_y = sep_y + 26
     max_x = start_x + 560
 
     for entry in fingering_list:

@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: songpress\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-05 16:22+0200\n"
-"PO-Revision-Date: 2026-03-27 22:30+0100
+"PO-Revision-Date: 2026-04-09 00:00+0200
 "Last-Translator: Denisov21\n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -90,6 +90,14 @@ msgstr "Visualizza come:"
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Enter a label for the chorus, or press Cancel to omit the label."
 msgstr "Inserisci un'etichetta per il ritornello, o premi Annulla per ometterla."
+
+#: SongpressFrame.py — OnInsertGrid dialog title
+msgid "Grid label"
+msgstr "Etichetta griglia"
+
+#: SongpressFrame.py — OnInsertGrid dialog message
+msgid "Enter a label for the grid, or press Cancel to omit the label."
+msgstr "Inserisci un'etichetta per la griglia, o premi Annulla per ometterla."
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "File guida.md not found in the program folder."
@@ -585,6 +593,36 @@ msgstr "Metadato"
 msgid "Guitar chord diagram"
 msgstr "Accordo chitarra"
 
+#: SongpressFrame.py — OnInsertFingering dialog title
+msgid "First chord fingering"
+msgstr "Diteggiatura primo accordo"
+
+#: SongpressFrame.py — OnInsertFingering chord field label
+msgid "Chord:"
+msgstr "Accordo:"
+
+#: SongpressFrame.py — OnInsertFingering instructions
+msgid ""
+"Assign a finger number to each note of the chord.\n"
+"(1=thumb  2=index  3=middle  4=ring  5=little)\n"
+"Leave '—' for fingers not used."
+msgstr ""
+"Assegna il numero del dito a ogni nota dell'accordo.\n"
+"(1=pollice  2=indice  3=medio  4=anulare  5=mignolo)\n"
+"Lascia '—' se non vuoi indicare quel dito."
+
+#: SongpressFrame.py — OnInsertFingering column header: note name
+msgid "Note"
+msgstr "Nota"
+
+#: SongpressFrame.py — OnInsertFingering column header: finger number
+msgid "Finger"
+msgstr "Dito"
+
+#: SongpressFrame.py — OnInsertFingering keyboard preview checkbox
+msgid "Show keyboard preview"
+msgstr "Mostra anteprima tastiera"
+
 #: SongpressFrame.py
 msgid "Enter chord definition (e.g. C base-fret 1 frets X 3 2 0 1 0):"
 msgstr "Inserisci la definizione dell'accordo (es. DO base-fret 1 frets X 3 2 0 1 0):"
@@ -973,3 +1011,28 @@ msgstr "☀ Chiaro"
 #: SongpressFrame.py guide dialog dark theme radiobutton
 msgid "☾ Dark"
 msgstr "☾ Scuro"
+
+#: SongpressFrame.py guide search dialog title
+msgid "Find in guide"
+msgstr "Cerca nella guida"
+
+#: SongpressFrame.py guide search dialog prev button
+msgid "Previous"
+msgstr "Precedente"
+
+#: SongpressFrame.py guide search dialog next button
+msgid "Next"
+msgstr "Successivo"
+
+#: SongpressFrame.py guide search dialog not found label
+msgid "Not found"
+msgstr "Non trovato"
+
+#: SongpressFrame.py guide search dialog match counter
+#, python-format
+msgid "%d of %d"
+msgstr "%d di %d"
+
+#: SongpressFrame.py guide search context menu item
+msgid "Find in guide..."
+msgstr "Cerca nella guida..."

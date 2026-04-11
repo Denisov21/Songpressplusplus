@@ -1,4 +1,13 @@
-﻿"""
+###############################################################
+# Name:             songpress_clenaup.py
+# Purpose:     Songpress++ Cleanup Tool Rimuove nel cestino tutte le cartelle e chiavi di registro lasciate da installazioni attuali o precedenti di Songpress++.
+# Author:        Denisov21
+# Created:     2026-04-11
+# Copyright:   Denisov21 © 2026
+# License:     GNU GPL v2
+##############################################################
+
+"""
 Songpress++ Cleanup Tool
 Rimuove nel cestino tutte le cartelle e chiavi di registro
 lasciate da installazioni attuali o precedenti di Songpress++.

@@ -463,6 +463,8 @@ The `finger=note` part is optional. Numbers correspond to the fingers of the han
 
 Notes can be written in Italian notation (`Do`, `Re`, `Mi`, `Fa`, `Sol`, `La`, `Si`, with `#` for sharps) or English notation (`C`, `D`, `E`, `F`, `G`, `A`, `B`).
 
+> **Note on notation** — The insertion dialog and the finger grid follow the **default notation** set in Songpress++ preferences (*Options → Default notation*). Note names shown in the grid and written into the generated directive change automatically according to the selected notation: with American notation you will see `A, C#, E`; with Italian `La, Do#, Mi`; with German `A, Cis, E`, and so on. Chord recognition in the *Chord* field also respects the current notation. Nashville and Roman notations are not supported for fingering.
+
 **Inserting from the menu:** *Insert → Other → First chord fingering {fingering:}*
 A dialog opens that automatically shows the notes of the chord and lets you assign a finger to each one using a drop-down menu.
 

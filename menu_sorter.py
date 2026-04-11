@@ -1,9 +1,15 @@
+###############################################################
+# Name:             menu_sorter.py 
+# Purpose:     Ordina voci di menu in file XRC e FBP
+# Author:        Denisov21
+# Created:     2026-04-11
+# Copyright:   Denisov21 © 2026
+# License:     GNU GPL v2
+##############################################################
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-menu_sorter.py  –  Ordina voci di menu in file XRC e FBP
-Autore: Denisov21  |  2026
-"""
+
 
 import wx
 import wx.lib.scrolledpanel as scrolled

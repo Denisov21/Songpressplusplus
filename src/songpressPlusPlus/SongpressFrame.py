@@ -47,6 +47,7 @@ from .utils import temp_dir, undo_action
 from .SyntaxChecker import check as syntax_check
 from .SyntaxCheckerDialog import SyntaxCheckerDialog, EVT_SYNTAX_GOTO
 from .MusicalSymbolDialog import MusicalSymbolDialog
+from . import KlavierRenderer
 
 _ = wx.GetTranslation
 
@@ -2157,7 +2158,40 @@ class SongpressFrame(SDIMainFrame):
     def OnInsertFingering(self, evt):
         """Dialog per {fingering:} — accordo + numero dito per ogni nota."""
 
-        # ── Note italiane riconosciute dal KlavierRenderer ────────────
+        # ── Notazione corrente dalle preferenze ───────────────────────
+        _cur_notation = self.pref.notations[0] if self.pref.notations else None
+
+        # Notazione italiana di riferimento (usata da KlavierRenderer)
+        _it_notation = None
+        for _n in self.pref.notations:
+            if hasattr(_n, 'id') and ('it' in _n.id.lower() or 'italian' in _n.id.lower()):
+                _it_notation = _n
+                break
+
+        # Mappa semitono → nome nota nella notazione italiana (base per KlavierRenderer)
+        _IT_12 = ['Do', 'Do#', 'Re', 'Re#', 'Mi', 'Fa',
+                  'Fa#', 'Sol', 'Sol#', 'La', 'La#', 'Si']
+
+        def _semi_to_note(semi):
+            """Restituisce il nome della nota (semitono 0-11) nella notazione corrente."""
+            it_name = _IT_12[semi % 12]
+            if _cur_notation is None or _it_notation is None:
+                return it_name
+            try:
+                return translateChord(it_name, _it_notation, _cur_notation)
+            except Exception:
+                return it_name
+
+        def _chord_to_it(chord_str):
+            """Converte un accordo dalla notazione corrente all'italiana per il parser."""
+            if _cur_notation is None or _it_notation is None:
+                return chord_str
+            try:
+                return translateChord(chord_str, _cur_notation, _it_notation)
+            except Exception:
+                return chord_str
+
+        # Note italiane -> semitono (per il parser interno)
         _IT_SEMITONE = {
             'do': 0,  'do#': 1, 'dob': 11,
             're': 2,  're#': 3, 'reb': 1,
@@ -2166,15 +2200,6 @@ class SongpressFrame(SDIMainFrame):
             'sol': 7, 'sol#': 8,'solb': 6,
             'la': 9,  'la#': 10,'lab': 8,
             'si': 11, 'si#': 0, 'sib': 10,
-        }
-        _EN_SEMITONE = {
-            'c': 0,  'c#': 1,  'cb': 11,
-            'd': 2,  'd#': 3,  'db': 1,
-            'e': 4,  'e#': 5,  'eb': 3,
-            'f': 5,  'f#': 6,  'fb': 4,
-            'g': 7,  'g#': 8,  'gb': 6,
-            'a': 9,  'a#': 10, 'ab': 8,
-            'b': 11, 'b#': 0,  'bb': 10,
         }
         _CHORD_INTERVALS = [
             ('maj7', [0,4,7,11]), ('maj', [0,4,7]),
@@ -2186,22 +2211,19 @@ class SongpressFrame(SDIMainFrame):
             ('5',    [0,7]),     ('-',    [0,3,7]),
             ('',     [0,4,7]),
         ]
-        _SEMI_TO_IT = {
-            0: 'Do', 1: 'Do#', 2: 'Re', 3: 'Re#', 4: 'Mi',
-            5: 'Fa', 6: 'Fa#', 7: 'Sol', 8: 'Sol#', 9: 'La',
-            10: 'La#', 11: 'Si',
-        }
 
         def chord_semitones(chord_str):
-            s = chord_str.strip(); sl = s.lower()
+            """
+            Parsa chord_str nella notazione corrente, restituisce i nomi delle
+            note dell'accordo nella notazione corrente (per la griglia dita).
+            """
+            # Normalizza verso italiano per il parser
+            it_chord = _chord_to_it(chord_str.strip())
+            sl = it_chord.lower()
             root = None; rest = ''
             for name, semi in sorted(_IT_SEMITONE.items(), key=lambda x: -len(x[0])):
                 if sl.startswith(name):
-                    root = semi; rest = s[len(name):]; break
-            if root is None:
-                for name, semi in sorted(_EN_SEMITONE.items(), key=lambda x: -len(x[0])):
-                    if sl.startswith(name):
-                        root = semi; rest = s[len(name):]; break
+                    root = semi; rest = it_chord[len(name):]; break
             if root is None:
                 return []
             rest = rest.split('/')[0].strip()
@@ -2209,7 +2231,8 @@ class SongpressFrame(SDIMainFrame):
             for suffix, intervals in _CHORD_INTERVALS:
                 if rest.lower().startswith(suffix.lower()):
                     ivs = intervals; break
-            return [_SEMI_TO_IT[(root + i) % 12] for i in ivs]
+            # Restituisce i nomi nella notazione corrente
+            return [_semi_to_note((root + i) % 12) for i in ivs]
 
         # ── Costruisce il dialog ──────────────────────────────────────
         dlg = wx.Dialog(self.frame, title=_(u"First chord fingering"),
@@ -2247,6 +2270,80 @@ class SongpressFrame(SDIMainFrame):
             wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE))
         vbox.Add(txt_preview, 0, wx.EXPAND | wx.ALL, 10)
 
+        # ── Checkbox anteprima tastiera ───────────────────────────────
+        cb_kbd = wx.CheckBox(dlg, -1, _(u"Show keyboard preview"))
+        vbox.Add(cb_kbd, 0, wx.LEFT | wx.BOTTOM, 10)
+
+        # Pannello di anteprima tastiera (visibile solo se checkbox attiva)
+        _KBD_WHITE_W = 18
+        _KBD_W       = _KBD_WHITE_W * 7   # 126 px
+        _KBD_H       = 50
+        _LABEL_H     = 18
+        _PANEL_W     = _KBD_W + 40
+        _PANEL_H     = _LABEL_H + _KBD_H + 10
+
+        kbd_panel = wx.Panel(dlg, -1, size=(_PANEL_W, _PANEL_H))
+        kbd_panel.SetBackgroundColour(wx.WHITE)
+        kbd_panel.Show(False)
+        vbox.Add(kbd_panel, 0, wx.LEFT | wx.BOTTOM, 10)
+
+        def _draw_kbd_preview(event=None):
+            """Ridisegna il mini-pannello tastiera con la diteggiatura attuale."""
+            dc = wx.PaintDC(kbd_panel) if event is not None else wx.ClientDC(kbd_panel)
+            dc.Clear()
+
+            chord = txt_chord.GetValue().strip()
+            if not chord:
+                return
+
+            # Ricava semitoni accordo e finger_map dalla direttiva corrente
+            directive_text = txt_preview.GetValue()
+            # Estrae la parte interna di {fingering: ...}
+            import re as _re
+            m = _re.match(r'\{fingering:\s*(.*)\}', directive_text)
+            inner = m.group(1).strip() if m else chord
+            chord_name, finger_map = KlavierRenderer.parse_fingering(inner)
+            if chord_name is None:
+                chord_name = chord
+                finger_map = {}
+
+            keys = KlavierRenderer.get_chord_keys(chord_name)
+            if keys is None:
+                return
+
+            ox = 14   # offset x
+            oy = _LABEL_H + 4   # offset y per la tastiera
+
+            # ── Etichetta accordo in grassetto ────────────────────────
+            label_font = wx.Font(
+                8, wx.FONTFAMILY_DEFAULT,
+                wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
+
+            # ── Tastiera (colori dalle preferenze) ────────────────────
+            highlight_color  = self._getKlavierHighlightColour()
+            finger_num_color = self._getFingerNumColour()
+            KlavierRenderer.draw_keyboard(
+                dc, ox, oy, _KBD_W, _KBD_H,
+                chord_name, keys, label_font,
+                highlight_color, finger_map=finger_map,
+                finger_num_color=finger_num_color,
+            )
+
+        kbd_panel.Bind(wx.EVT_PAINT, _draw_kbd_preview)
+
+        def _refresh_kbd(e=None):
+            if kbd_panel.IsShown():
+                kbd_panel.Refresh()
+
+        def _on_cb_kbd(e=None):
+            kbd_panel.Show(cb_kbd.GetValue())
+            vbox.Layout()
+            vbox.Fit(dlg)
+            if cb_kbd.GetValue():
+                kbd_panel.Refresh()
+
+        cb_kbd.Bind(wx.EVT_CHECKBOX, _on_cb_kbd)
+
         btn_sizer = dlg.CreateButtonSizer(wx.OK | wx.CANCEL)
         vbox.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 8)
         dlg.SetSizer(vbox)
@@ -2269,6 +2366,7 @@ class SongpressFrame(SDIMainFrame):
 
         def _update_preview(e=None):
             txt_preview.SetValue(_build())
+            _refresh_kbd()
 
         def _rebuild_grid(notes):
             """Distrugge e ricrea la griglia nel grid_panel con le note date."""
