@@ -472,6 +472,25 @@ class Renderer(object):
                     elif cmd == 'row' or cmd == 'r':
                         # Riga vuota autonoma (spacer verticale senza testo né linee)
                         self.RowSpacer()
+                    elif cmd == 'bar':
+                        # {bar} dentro un blocco grid è già gestito come separatore
+                        # di battuta nel parser di riga; fuori da una grid è ignorato.
+                        pass
+                    elif cmd == 'start_of_part' or cmd == 'sop':
+                        # Sezione generica (ChordPro 6): trattata come strofa
+                        # con etichetta opzionale; non numerata di default.
+                        a = self.GetAttribute()
+                        label = a.strip() if (a and a.strip()) else _("Part")
+                        self.BeginBlock(SongBlock.verse, label)
+                    elif cmd == 'end_of_part' or cmd == 'eop':
+                        if state == SongBlock.verse:
+                            self.EndBlock()
+                    # Metadati estesi (ChordPro 6) — trattati come puri metadati:
+                    # non visualizzati nell'anteprima, ignorati silenziosamente.
+                    elif cmd in ('sorttitle', 'keywords', 'topic', 'collection',
+                                 'language', 'pagetype', 'columns', 'meta',
+                                 'transpose'):
+                        self.GetAttribute()   # consuma il token `:valore` senza usarlo
                     elif cmd == 'new_song':
                         # Inizio nuovo brano nello stesso documento:
                         # chiudi il blocco corrente e azzera i contatori
@@ -871,11 +890,15 @@ class Renderer(object):
 
         path = parts[0]
 
-        # Risolvi il percorso rispetto alla directory del documento aperto, se disponibile
-        if not os.path.isabs(path) and hasattr(self, '_document_dir') and self._document_dir:
-            candidate = os.path.join(self._document_dir, path)
-            if os.path.isfile(candidate):
-                path = candidate
+        # Immagine embedded (data: URI base64): non serve risolvere il percorso.
+        # Il campo path viene passato direttamente a SongImageBox, che lo decodifica
+        # in un file temporaneo tramite resolve_path() al momento del rendering.
+        if not path.startswith('data:'):
+            # Risolvi il percorso rispetto alla directory del documento aperto, se disponibile
+            if not os.path.isabs(path) and hasattr(self, '_document_dir') and self._document_dir:
+                candidate = os.path.join(self._document_dir, path)
+                if os.path.isfile(candidate):
+                    path = candidate
 
         width = 0
         height = 0

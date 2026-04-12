@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: Songpress++ 1.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-04-02 00:00+0000\n"
-"PO-Revision-Date: 2026-04-06 20:10+0200\n"
+"PO-Revision-Date: 2026-04-12 16:00+0200\n"
 "Last-Translator: Denisov21\n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -123,3 +123,92 @@ msgstr "Il comando '{cmd}' richiede un valore numerico, trovato: '{val}'"
 #: SyntaxChecker.py
 msgid "Command '{cmd}' requires a time signature (e.g. 4/4), got: '{val}'"
 msgstr "Il comando '{cmd}' richiede una misura (es. 4/4), trovato: '{val}'"
+
+# -----------------------------------------------------------------------
+# SyntaxChecker.py — {fingering} validation messages
+# -----------------------------------------------------------------------
+#. {fingering}: chord name not recognised
+#. {chord} is replaced at runtime with the unrecognised chord name
+#: SyntaxChecker.py
+msgid "{{fingering}}: unrecognized chord '{chord}'"
+msgstr "{{fingering}}: accordo non riconosciuto '{chord}'"
+
+#. {fingering}: a token after the chord name is not in the form N=Note
+#. {tok} is replaced at runtime with the malformed token
+#: SyntaxChecker.py
+msgid "{{fingering}}: invalid token '{tok}' — expected format: finger=note (e.g. 2=Mi)"
+msgstr "{{fingering}}: token non valido '{tok}' — formato atteso: dito=nota (es. 2=Mi)"
+
+#. {fingering}: finger number is not between 1 and 5
+#. {n} is replaced at runtime with the out-of-range number
+#: SyntaxChecker.py
+msgid "{{fingering}}: finger number {n} is out of range (1–5)"
+msgstr "{{fingering}}: il numero di dito {n} è fuori intervallo (1–5)"
+
+#. {fingering}: note name not recognised (neither Italian nor English notation)
+#. {note} is replaced at runtime with the unrecognised note name
+#: SyntaxChecker.py
+msgid "{{fingering}}: unrecognized note '{note}'"
+msgstr "{{fingering}}: nota non riconosciuta '{note}'"
+
+#. {fingering}: the specified note does not belong to the given chord
+#. {note} = note name; {chord} = chord name; {expected} = comma-separated list of valid notes
+#: SyntaxChecker.py
+msgid "{{fingering}}: note '{note}' does not belong to {chord} ({expected})"
+msgstr "{{fingering}}: la nota '{note}' non appartiene all'accordo {chord} ({expected})"
+
+#. {fingering}: the same finger number appears more than once
+#. {n} = finger number; {a} = first note assigned; {b} = second note assigned
+#: SyntaxChecker.py
+msgid "{{fingering}}: finger {n} assigned twice ({a} and {b})"
+msgstr "{{fingering}}: il dito {n} è assegnato due volte ({a} e {b})"
+
+#. {fingering}: the same note is assigned to two different fingers
+#. {note} = note name; {a} = first finger; {b} = second finger
+#: SyntaxChecker.py
+msgid "{{fingering}}: note '{note}' assigned to both finger {a} and finger {b}"
+msgstr "{{fingering}}: la nota '{note}' è assegnata sia al dito {a} sia al dito {b}"
+
+# -----------------------------------------------------------------------
+# SyntaxChecker.py — {image} validation messages
+# -----------------------------------------------------------------------
+#. {image}: an option key=value pair has an unknown key name
+#. {opt} is replaced at runtime with the full token, e.g. "pippo=5"
+#: SyntaxChecker.py
+msgid "{{image}}: unknown option '{opt}'"
+msgstr "{{image}}: opzione sconosciuta '{opt}'"
+
+#. {image}: align= has a value other than left, center or right
+#. {val} is replaced at runtime with the invalid value
+#: SyntaxChecker.py
+msgid "{{image}}: align must be left, center or right, got '{val}'"
+msgstr "{{image}}: align deve essere left, center o right, trovato '{val}'"
+
+#. {image}: a numeric option (width, height, scale, border) has a non-numeric value
+#. {key} = option name; {val} = the invalid value
+#: SyntaxChecker.py
+msgid "{{image}}: option '{key}' requires a numeric value, got '{val}'"
+msgstr "{{image}}: l'opzione '{key}' richiede un valore numerico, trovato '{val}'"
+
+#. {image}: the data: URI is missing ';' or 'base64,' — it is structurally invalid
+#: SyntaxChecker.py
+msgid "{{image}}: malformed embedded data URI (expected 'data:<mime>;base64,<data>')"
+msgstr "{{image}}: data URI embedded non valido (atteso 'data:<mime>;base64,<dati>')"
+
+# -----------------------------------------------------------------------
+# SyntaxChecker.py — {meta} validation messages
+# -----------------------------------------------------------------------
+#. {meta}: the value must contain at least two tokens: a key and a value
+#. {val} is replaced at runtime with the malformed value string
+#: SyntaxChecker.py
+msgid "{{meta}} requires 'key value' format, got: '{val}'"
+msgstr "{{meta}} richiede il formato 'chiave valore', trovato: '{val}'"
+
+# -----------------------------------------------------------------------
+# SyntaxChecker.py — {bar} / {row} / {r} validation messages
+# -----------------------------------------------------------------------
+#. {bar}, {row}, {r}: these commands take no value — the user wrote e.g. {row: 5}
+#. {cmd} is replaced at runtime with the command name
+#: SyntaxChecker.py
+msgid "Command '{{cmd}}' does not accept a value"
+msgstr "Il comando '{{cmd}}' non accetta un valore"

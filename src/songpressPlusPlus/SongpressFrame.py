@@ -1969,6 +1969,16 @@ class SongpressFrame(SDIMainFrame):
         txt = wx.TextCtrl(d, -1, u"")
         vbox.Add(txt, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 8)
 
+        # --- Rileva automaticamente ---
+        cb_detect = wx.CheckBox(d, -1, _(u"Detect automatically from chords"))
+        cb_detect.SetToolTip(_(
+            u"Analyses the chords in the song (text between [ ]) "
+            u"and fills in the most likely key automatically."))
+        vbox.Add(cb_detect, 0, wx.LEFT | wx.TOP, 8)
+        lbl_detect = wx.StaticText(d, -1, u"")
+        lbl_detect.SetForegroundColour(wx.Colour(0, 100, 0))
+        vbox.Add(lbl_detect, 0, wx.LEFT | wx.BOTTOM, 8)
+
         cb_meta = wx.CheckBox(d, -1, _("Metadata"))
         vbox.Add(cb_meta, 0, wx.LEFT | wx.TOP | wx.BOTTOM, 8)
 
@@ -1976,8 +1986,46 @@ class SongpressFrame(SDIMainFrame):
         cb_meta.SetValue(is_meta)
         txt.Enable(not is_meta)
 
+        def _do_detect():
+            """Rileva la tonalità dagli accordi del testo corrente."""
+            try:
+                t = self.text.GetText()
+                notation = autodetectNotation(t, self.pref.notations)
+                count, detected_key, dc, easiest_key, de = findEasiestKey(
+                    t, self.pref.GetEasyChords(), notation)
+                if count > 0 and detected_key:
+                    # Converti nella notazione preferita dall'utente
+                    key_str = translateChord(detected_key, notation, notation)
+                    txt.SetValue(key_str)
+                    lbl_detect.SetLabel(
+                        _(u"✔ Detected: %s (from %d chords)") % (key_str, count))
+                    lbl_detect.SetForegroundColour(wx.Colour(0, 120, 0))
+                else:
+                    txt.SetValue(u"")
+                    lbl_detect.SetLabel(_(u"⚠ No chords found in the document"))
+                    lbl_detect.SetForegroundColour(wx.Colour(180, 80, 0))
+            except Exception:
+                lbl_detect.SetLabel(_(u"⚠ Detection failed"))
+                lbl_detect.SetForegroundColour(wx.Colour(180, 0, 0))
+            d.Layout()
+            d.Fit()
+
+        def on_detect(e):
+            if cb_detect.GetValue():
+                txt.Enable(False)
+                _do_detect()
+            else:
+                lbl_detect.SetLabel(u"")
+                txt.SetValue(u"")
+                txt.Enable(not cb_meta.GetValue())
+                d.Layout()
+                d.Fit()
+
         def on_meta(e):
-            txt.Enable(not cb_meta.GetValue())
+            if not cb_detect.GetValue():
+                txt.Enable(not cb_meta.GetValue())
+
+        cb_detect.Bind(wx.EVT_CHECKBOX, on_detect)
         cb_meta.Bind(wx.EVT_CHECKBOX, on_meta)
 
         btn_sizer = d.CreateButtonSizer(wx.OK | wx.CANCEL)
@@ -2481,6 +2529,8 @@ class SongpressFrame(SDIMainFrame):
         """Dialog per inserire {image: ...} con selezione file e parametri."""
         doc = getattr(self, 'document', '') or ''
         default_dir = os.path.dirname(os.path.abspath(doc)) if doc else ''
+        # Estensione del file documento corrente (dalle preferenze)
+        doc_ext = getattr(getattr(self, 'pref', None), 'defaultExtension', None) or 'crd'''
 
         d = wx.Dialog(self.frame, title=_("Insert image"), style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
         vbox = wx.BoxSizer(wx.VERTICAL)
@@ -2504,6 +2554,7 @@ class SongpressFrame(SDIMainFrame):
         txt_w.SetValue(0)
         gb.Add(txt_w, pos=(0, 1), flag=wx.EXPAND)
         ch_w_unit = wx.Choice(d, -1, choices=["pt", "%"])
+        ch_w_unit.SetSelection(0)   # default: pt
         gb.Add(ch_w_unit, pos=(0, 2), flag=wx.ALIGN_CENTER_VERTICAL)
 
         # Height — SpinCtrlDouble: solo interi
@@ -2513,6 +2564,7 @@ class SongpressFrame(SDIMainFrame):
         txt_h.SetValue(0)
         gb.Add(txt_h, pos=(1, 1), flag=wx.EXPAND)
         ch_h_unit = wx.Choice(d, -1, choices=["pt", "%"])
+        ch_h_unit.SetSelection(0)   # default: pt
         gb.Add(ch_h_unit, pos=(1, 2), flag=wx.ALIGN_CENTER_VERTICAL)
 
         # Scale — SpinCtrlDouble: valori decimali 1–500, step 1
@@ -2548,6 +2600,19 @@ class SongpressFrame(SDIMainFrame):
         hbox_border.Add(txt_border, 0)
         vbox.Add(hbox_border, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
+        # --- Incorpora nel file ---
+        vbox.Add(wx.StaticLine(d), 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 8)
+        cb_embed = wx.CheckBox(d, -1, _("Embed image in file (base64, no external dependency)"))
+        cb_embed.SetToolTip(
+            _("If checked, the image data is encoded in base64 and stored directly "
+              "inside the .crd file. The song becomes self-contained but the file "
+              "size grows. If unchecked, only the file path is stored (link)."
+            ).replace(".crd", ".%s" % doc_ext))
+        vbox.Add(cb_embed, 0, wx.LEFT | wx.RIGHT | wx.TOP, 8)
+        lbl_embed_warn = wx.StaticText(d, -1, "")
+        lbl_embed_warn.SetForegroundColour(wx.Colour(160, 100, 0))
+        vbox.Add(lbl_embed_warn, 0, wx.LEFT | wx.BOTTOM, 8)
+
         # --- Anteprima direttiva ---
         vbox.Add(wx.StaticLine(d), 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 8)
         vbox.Add(wx.StaticText(d, -1, _("Directive preview:")), 0, wx.LEFT | wx.TOP, 8)
@@ -2561,52 +2626,103 @@ class SongpressFrame(SDIMainFrame):
         vbox.Fit(d)
 
         # --- Funzione aggiornamento anteprima ---
-        def _build_directive():
-            path = txt_path.GetValue().strip()
-            if not path:
-                return "{image: }"
-            # Virgolette se il path contiene spazi o backslash (Windows)
-            if ' ' in path or '\\' in path:
-                path_str = '"%s"' % path.replace('"', '\\"')
-            else:
-                path_str = path
-            parts = [path_str]
-            # Width: 0 = non specificato
+        def _build_options():
+            """Restituisce la lista delle opzioni (width, height, scale, align, border)
+            come lista di stringhe, indipendentemente dal path/token dell'immagine.
+            Condivisa tra anteprima e inserimento finale."""
+            opts = []
             w = int(txt_w.GetValue())
             if w > 0:
                 unit = ch_w_unit.GetStringSelection()
-                parts.append("width=%d%s" % (w, "%" if unit == "%" else ""))
-            # Height: 0 = non specificato
+                opts.append("width=%d%s" % (w, "%" if unit == "%" else ""))
             h = int(txt_h.GetValue())
             if h > 0:
                 unit = ch_h_unit.GetStringSelection()
-                parts.append("height=%d%s" % (h, "%" if unit == "%" else ""))
-            # Scale: 100 = nessuna scala (default)
+                opts.append("height=%d%s" % (h, "%" if unit == "%" else ""))
             sc = txt_scale.GetValue()
             if sc != 100.0:
-                parts.append("scale=%g%%" % sc)
+                opts.append("scale=%g%%" % sc)
             if rb_left.GetValue():
-                parts.append("align=left")
+                opts.append("align=left")
             elif rb_right.GetValue():
-                parts.append("align=right")
+                opts.append("align=right")
             # center è il default, non serve scriverlo
             if cb_border.GetValue():
                 bv = txt_border.GetValue()
-                parts.append("border=%g" % bv if bv != 1.0 else "border")
-            return "{image: %s}" % " ".join(parts)
+                opts.append("border=%g" % bv if bv != 1.0 else "border")
+            return opts
+
+        def _build_directive(for_insert=False):
+            """Costruisce la stringa della direttiva {image: ...}.
+
+            Se for_insert=True e la checkbox 'incorpora' è attiva, il file viene
+            letto, codificato in base64 e incorporato direttamente come data: URI.
+            Altrimenti viene usato il percorso (relativo se nella stessa cartella).
+            """
+            path = txt_path.GetValue().strip()
+            if not path:
+                return "{image: }"
+
+            embed = cb_embed.GetValue()
+
+            if for_insert and embed and os.path.isfile(path):
+                # ── Incorpora come data: URI base64 ──────────────────────
+                import base64, mimetypes
+                mime = mimetypes.guess_type(path)[0] or "image/png"
+                with open(path, "rb") as _f:
+                    b64 = base64.b64encode(_f.read()).decode("ascii")
+                path_token = "data:%s;base64,%s" % (mime, b64)
+            else:
+                # ── Percorso file (relativo o assoluto) ──────────────────
+                if default_dir and os.path.isabs(path):
+                    try:
+                        if os.path.dirname(os.path.abspath(path)) == default_dir:
+                            path = os.path.basename(path)
+                    except Exception:
+                        pass
+                if ' ' in path or '\\' in path:
+                    path_token = '"%s"' % path.replace('"', '\\"')
+                else:
+                    path_token = path
+
+            return "{image: %s}" % " ".join([path_token] + _build_options())
+
+        def _update_embed_warn(e=None):
+            """Aggiorna il label con la stima dei KB aggiunti al file."""
+            if not cb_embed.GetValue():
+                lbl_embed_warn.SetLabel("")
+                lbl_embed_warn.GetParent().Layout()
+                return
+            path = txt_path.GetValue().strip()
+            if path and os.path.isfile(path):
+                size_kb = os.path.getsize(path) / 1024
+                est_kb  = size_kb * 1.34   # base64 aumenta di ~33%
+                if est_kb >= 1024:
+                    lbl_embed_warn.SetLabel(
+                        (_(u"⚠ Approx. %.1f MB will be added to the .crd file") % (est_kb / 1024)
+                         ).replace(".crd", ".%s" % doc_ext))
+                else:
+                    lbl_embed_warn.SetLabel(
+                        (_(u"⚠ Approx. %.0f KB will be added to the .crd file") % est_kb
+                         ).replace(".crd", ".%s" % doc_ext))
+            else:
+                lbl_embed_warn.SetLabel("")
+            lbl_embed_warn.GetParent().Layout()
 
         def _update_preview(e=None):
-            txt_preview.SetValue(_build_directive())
-
-        # Bind aggiornamento anteprima a tutti i controlli
-        txt_path.Bind(wx.EVT_TEXT, _update_preview)
-        for ctrl in (txt_w, txt_h, txt_scale, txt_border):
-            ctrl.Bind(wx.EVT_SPINCTRLDOUBLE, _update_preview)
-        for ctrl in (ch_w_unit, ch_h_unit):
-            ctrl.Bind(wx.EVT_CHOICE, _update_preview)
-        for ctrl in (rb_left, rb_center, rb_right):
-            ctrl.Bind(wx.EVT_RADIOBUTTON, _update_preview)
-        cb_border.Bind(wx.EVT_CHECKBOX, lambda e: (txt_border.Enable(cb_border.GetValue()), _update_preview()))
+            embed = cb_embed.GetValue()
+            path  = txt_path.GetValue().strip()
+            if embed and path and os.path.isfile(path):
+                # Il dato base64 è illeggibile nell'anteprima: mostra
+                # "<embedded>" al posto del token, ma include tutte le
+                # opzioni reali (width, height, scale, align, border)
+                # così l'utente può vedere e modificare le impostazioni.
+                opts = _build_options()
+                tokens = ["data:<embedded>"] + opts
+                txt_preview.SetValue("{image: %s}" % " ".join(tokens))
+            else:
+                txt_preview.SetValue(_build_directive(for_insert=False))
+            _update_embed_warn()
 
         def _on_browse(e):
             fd = wx.FileDialog(
@@ -2625,10 +2741,27 @@ class SongpressFrame(SDIMainFrame):
                 txt_path.SetValue(path)
             fd.Destroy()
 
+        # ── Bind aggiornamento anteprima ─────────────────────────────────
+        txt_path.Bind(wx.EVT_TEXT, _update_preview)
+        for ctrl in (txt_w, txt_h, txt_scale, txt_border):
+            ctrl.Bind(wx.EVT_SPINCTRLDOUBLE, _update_preview)
+        for ctrl in (ch_w_unit, ch_h_unit):
+            ctrl.Bind(wx.EVT_CHOICE, _update_preview)
+        def _on_radio(e):
+            # wx.CallAfter garantisce che GetValue() di tutti i radio button
+            # sia già aggiornato quando _update_preview legge rb_left/rb_right.
+            wx.CallAfter(_update_preview)
+            e.Skip()
+        for ctrl in (rb_left, rb_center, rb_right):
+            ctrl.Bind(wx.EVT_RADIOBUTTON, _on_radio)
+        cb_border.Bind(wx.EVT_CHECKBOX,
+                       lambda e: (txt_border.Enable(cb_border.GetValue()), _update_preview()))
+        cb_embed.Bind(wx.EVT_CHECKBOX, _update_preview)
+
         btn_browse.Bind(wx.EVT_BUTTON, _on_browse)
 
         if d.ShowModal() == wx.ID_OK:
-            directive = _build_directive()
+            directive = _build_directive(for_insert=True)
             if directive != "{image: }":
                 self.InsertWithCaret(directive)
         d.Destroy()
@@ -2704,7 +2837,11 @@ class SongpressFrame(SDIMainFrame):
         return '\n'.join(filtered)
 
     def _get_display_text(self):
-        """Restituisce il testo del documento con i comandi # {...} rimossi."""
+        """Restituisce il testo del documento con i comandi # {...} rimossi.
+        Aggiorna anche la directory del documento nel renderer, in modo che
+        i percorsi relativi di {image: ...} vengano risolti correttamente.
+        """
+        self.previewCanvas.SetDocumentDir(self.document)
         return self._strip_hash_commands(self.text.GetText())
 
     def UpdateEverything(self):
@@ -3016,22 +3153,31 @@ class SongpressFrame(SDIMainFrame):
         'title', 'subtitle', 'artist', 'composer', 'lyricist', 'arranger',
         'copyright', 'album', 'year', 'key', 'time', 'tempo', 'capo',
         'duration', 'ccli', 'tempo_m', 'tempo_s', 'tempo_sp', 'tempo_c', 'tempo_cp',
+        # Metadati estesi (ChordPro 6)
+        'sorttitle', 'keywords', 'topic', 'collection', 'language', 'pagetype',
+        'columns', 'meta',
         # Struttura
         'start_of_chorus', 'end_of_chorus',
         'start_of_verse', 'end_of_verse',
         'start_of_bridge', 'end_of_bridge',
         'start_of_tab', 'end_of_tab',
         'start_of_grid', 'end_of_grid',
+        'start_of_part', 'end_of_part',
         'start_verse', 'end_verse',
         'start_verse_num', 'end_verse_num',
         'start_chord', 'end_chord',
         'new_page', 'column_break',
+        'row', 'bar',
         # Formattazione
         'comment', 'comment_italic', 'comment_box',
         'image', 'linespacing', 'chordtopspacing',
+        'textfont', 'textsize', 'textcolour',
+        'chordfont', 'chordsize', 'chordcolour',
+        'transpose',
         # Alias comuni
         't', 'st', 'c', 'ci', 'cb', 'np',
         'soc', 'eoc', 'sov', 'eov', 'sob', 'eob', 'sot', 'eot',
+        'sop', 'eop',
         # Diagrammi e tastiera
         'define', 'taste', 'fingering',
     ]
@@ -3098,7 +3244,8 @@ class SongpressFrame(SDIMainFrame):
         'end_of_chorus', 'end_of_verse', 'end_of_bridge',
         'end_of_tab', 'end_of_grid', 'end_verse', 'end_verse_num',
         'end_chord', 'new_page', 'column_break',
-        'eoc', 'eov', 'eob', 'eot', 'np',
+        'end_of_part', 'row', 'bar',
+        'eoc', 'eov', 'eob', 'eot', 'np', 'eop',
     }
 
     def _OnIntellisenseSelection(self, evt):

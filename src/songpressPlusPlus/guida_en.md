@@ -40,6 +40,14 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | `{tempo_c:BPM}`     |              | 🔧  | 🖊    | Tempo with **eighth note** icon                                                          |
 | `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo with **dotted eighth note** icon                                                   |
 | `{time:N/M}`        |              | ✅  | ⌨️   | Time signature (e.g. `{time:4/4}`, `{time:3/4}`); rendered with a graphical time symbol  |
+| `{sorttitle:Text}`  |              | ✅  | 🖊    | Alternative title used for alphabetical sorting (metadata only, not displayed)           |
+| `{keywords:...}`    |              | ✅  | 🖊    | Search keywords (metadata only, not displayed)                                           |
+| `{topic:...}`       |              | ✅  | 🖊    | Topic / category (metadata only, not displayed)                                          |
+| `{collection:...}`  |              | ✅  | 🖊    | Collection or songbook (metadata only, not displayed)                                    |
+| `{language:...}`    |              | ✅  | 🖊    | Language of the lyrics (metadata only, not displayed)                                    |
+| `{meta:key value}`  |              | ✅  | 🖊    | Generic free-form metadata (not displayed)                                               |
+
+> **Note on extended metadata** — The directives `{sorttitle}`, `{keywords}`, `{topic}`, `{collection}`, `{language}`, and `{meta}` are recognised and accepted by the parser for compatibility with ChordPro 6 files, but their value is not shown in the preview or in print: they are treated as pure metadata and consumed silently.
 
 > **Note on tempo** — The `{tempo*}` directives have four display modes, configurable in preferences: note icon + value (e.g. `♩ = 120`), text `BPM: 120`, plain text `Tempo: 120`, or no display at all. Checking the *Metadata* option treats the value as pure metadata — it does not appear in the preview or in print.
 
@@ -68,6 +76,10 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | `{start_of_grid}`/`{end_of_grid}`         | ✅  | ⌨️   | Chord grid block; rendered with the label «Grid»                                                                       |
 | `{sog}`/`{eog}`                           | ✅  | 🖊    | Abbreviation for `start_of_grid`/`end_of_grid`                                                                         |
 | `{grid}`                                  | ✅  | 🖊    | Alternative form of `start_of_grid` (no explicit closing tag required)                                                 |
+| `{row}` / `{r}` *(inside grid)*           | 🔧  | 🖊    | Inserts an empty separator row inside a grid block                                                                     |
+| `{bar}` *(inside grid)*                   | ✅  | 🖊    | Explicit bar separator inside a grid block                                                                             |
+| `{start_of_part:Label}`/`{end_of_part}`   | ✅  | 🖊    | Generic section (ChordPro 6): rendered as an unnumbered verse with a free label; defaults to «Part» if omitted         |
+| `{sop}`/`{eop}`                           | ✅  | 🖊    | Abbreviation for `start_of_part`/`end_of_part`                                                                         |
 | `{new_song}`                              | 🔧  | 🖊    | Starts a new song in the same document: resets verse and chorus counters so numbering restarts from 1                  |
 
 > **Note on bridge** — Both forms are supported: `{start_bridge}`/`{end_bridge}` (Songpress++ form, insertable from the menu) and `{start_of_bridge}`/`{end_of_bridge}` (standard ChordPro form, with abbreviations `{sob}`/`{eob}`). The two forms are equivalent and interchangeable.
@@ -110,7 +122,8 @@ These directives change the font for the following section; used without an argu
 | --------------------- | --- | ---- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `{linespacing:N}`     | 🔧  | ⌨️   | Line spacing in points (e.g. `{linespacing:1}`); without argument restores the default value                                   |
 | `{chordtopspacing:N}` | 🔧  | ⌨️   | Space above chords in points (e.g. `{chordtopspacing:0}` to remove it); without argument restores the default value            |
-| `{row}` or `{r}`      | 🔧  | 🖊    | Inserts half a vertical blank line (spacer) — not available in the menu, must be typed manually                                |
+| `{row}` or `{r}`      | 🔧  | 🖊    | Inserts half a vertical blank line (spacer) outside grid blocks — not available in the menu                                    |
+| `{bar}`               | ✅  | 🖊    | Explicit bar separator inside a `{start_of_grid}` block; ignored outside a grid context                                       |
 
 ---
 
@@ -410,6 +423,49 @@ When the cursor is inside a `{start_of_grid}` block:
 
 ---
 
+## `{start_of_part}` / `{end_of_part}` 🖊
+
+**Abbreviations:** `{sop}` / `{eop}`
+
+### Description — start_of_part
+
+Delimits a **generic section** of the song as defined by the ChordPro 6 specification. Use it when no other structural directive (`{start_of_verse}`, `{start_of_chorus}`, `{start_of_bridge}` …) adequately describes the section: for example an instrumental introduction, an interlude, a coda, or any part that needs a free-form label.
+
+In Songpress++ the block is treated as an unnumbered verse with the specified label. If the label is omitted, «Part» is used as the default.
+
+### Syntax — start_of_part
+
+```chordpro
+{start_of_part: Intro}
+[Am][G][F][E7]
+{end_of_part}
+```
+
+With abbreviated aliases:
+
+```chordpro
+{sop: Coda}
+[G]Return to [D]you
+{eop}
+```
+
+Without a label (uses the default «Part»):
+
+```chordpro
+{start_of_part}
+[C][G][Am][F]
+{end_of_part}
+```
+
+### Usage Notes — start_of_part
+
+- The block is not numbered and does not increment the verse counter.
+- The label is free-form: it can be any text (e.g. «Intro», «Interlude», «Coda», «Solo», «Outro»).
+- It is functionally equivalent to `{start_verse:Label}` — the distinction is semantic, to maintain compatibility with ChordPro 6 files from other applications.
+- Not accessible from the **Insert** menu: it must be typed directly in the editor or inserted via intellisense (`Ctrl+Space`).
+
+---
+
 ## Comments and Editorial Notes
 
 ![Songpress++ Comment Window](./img/GUIDE/commento_en.png)
@@ -475,7 +531,9 @@ The color of the numbers displayed on the keys is set in *Options → Format →
 
 ![Songpress++ Insert Image](./img/GUIDE/inserisciImmagine_en.png)
 
-The `{image:}` directive embeds a raster image at the point where it appears in the song. The file path can be relative to the song file location or absolute.
+The `{image:}` directive inserts a raster image at the point where it appears in the song. Songpress++ supports two modes: **external link** (file path) and **embedded image** (base64).
+
+#### Directive options
 
 | Option         | Std | Description                                                                           |
 | -------------- | --- | ------------------------------------------------------------------------------------- |
@@ -498,7 +556,11 @@ The `{image:}` directive embeds a raster image at the point where it appears in 
 | BMP    | `.bmp`          |
 | TIFF   | `.tiff`, `.tif` |
 
-**Examples:**
+---
+
+#### Mode 1 — External link (file path)
+
+The image file stays on disk and is loaded each time the document is opened. If the image is in the same folder as the document, the filename alone is sufficient. Paths containing spaces or backslashes must be enclosed in double quotes.
 
 ```chordpro
 {image: logo.png}
@@ -507,18 +569,34 @@ The `{image:}` directive embeds a raster image at the point where it appears in 
 {image: "C:\Users\User\Pictures\photo.jpg" align=center}
 ```
 
-If the image file is in the same folder as the song file, just the filename is sufficient. Paths containing spaces or backslashes must be enclosed in double quotes.
+---
 
-The image can be inserted via **Insert → Other → Image {image:}**, which opens a dialog to select the file and set all options, with a real-time preview of the generated directive.
+#### Mode 2 — Embedded image (base64) 🔧
 
-The numeric fields in the dialog use spin controls:
+When the **Embed image in file** checkbox is enabled in the insert dialog, the image content is encoded in base64 and saved directly inside the document file. The file becomes fully self-contained: it does not depend on any external file and can be shared or moved without losing the image.
 
-| Field  | Initial value | Range  | Step | Notes                               |
-| ------ | ------------- | ------ | ---- | ----------------------------------- |
-| Width  | 0             | 0–9999 | 1    | 0 = not included in the directive   |
-| Height | 0             | 0–9999 | 1    | 0 = not included in the directive   |
-| Scale  | 100           | 1–500  | 1    | 100 = not included (it's default)   |
-| Border | 1             | 0–50   | 0.5  | active only if checkbox is checked  |
+```chordpro
+{image: data:image/png;base64,iVBORw0KGgoAAAANS... width=200 align=center}
+```
+
+The base64 data is generated automatically by the dialog — no manual editing is needed. Alignment, border and dimensions are set through the dialog controls as usual and are included in the directive even in embedded mode.
+
+> **Note on file size** — Base64 encoding increases the data size by approximately 33%. The dialog shows an estimate of the KB/MB that will be added to the document file before confirming. The file extension shown in the estimate reflects the default extension set in **Options → General 2 → Default file extension**.
+
+---
+
+#### Insert Image dialog
+
+The image can be inserted via **Insert → Other → Image {image:}**. The dialog lets you select the file, configure all options, and see the resulting directive in real time in the **Directive preview** field.
+
+| Field  | Initial value | Range  | Unit     | Notes                                                          |
+| ------ | ------------- | ------ | -------- | -------------------------------------------------------------- |
+| Width  | 0             | 0–9999 | `pt` / `%` | 0 = not included in the directive; default unit: `pt`        |
+| Height | 0             | 0–9999 | `pt` / `%` | 0 = not included in the directive; default unit: `pt`        |
+| Scale  | 100           | 1–500  | `%`      | 100 = not included (it's the default)                         |
+| Border | 1             | 0–50   | pt       | active only if the **Border** checkbox is checked; step 0.5   |
+
+The **Embed image in file (base64, no external dependency)** checkbox is located at the bottom of the dialog, below the Border section. When active, the preview shows `{image: data:<embedded> ...}` with the real options (alignment, border, etc.) visible and editable in real time.
 
 ---
 

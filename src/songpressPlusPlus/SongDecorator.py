@@ -257,7 +257,7 @@ class SongDecorator(object):
             imgbox.h = 0
             return
         try:
-            img = wx.Image(imgbox.path)
+            img = wx.Image(imgbox.resolve_path())
             if not img.IsOk():
                 imgbox.w = 0
                 imgbox.h = 0
@@ -821,7 +821,7 @@ class SongDecorator(object):
         if not imgbox.path or not getattr(imgbox, '_final_w', 0) or not getattr(imgbox, '_final_h', 0):
             return
         try:
-            img = wx.Image(imgbox.path)
+            img = wx.Image(imgbox.resolve_path())
             if not img.IsOk():
                 return
             final_w = imgbox._final_w

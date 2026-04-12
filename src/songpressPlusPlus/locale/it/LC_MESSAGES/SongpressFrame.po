@@ -585,6 +585,32 @@ msgstr "Testo del commento:"
 msgid "# commento"
 msgstr "# commento"
 
+#: SongpressFrame.py — OnInsertKey auto-detect checkbox
+msgid "Detect automatically from chords"
+msgstr "Rileva automaticamente dagli accordi"
+
+#: SongpressFrame.py — OnInsertKey auto-detect checkbox tooltip
+#. Tooltip shown when hovering the auto-detect checkbox in the Key dialog.
+#. "[ ]" refers to the square brackets used to mark chords in ChordPro format.
+msgid "Analyses the chords in the song (text between [ ]) and fills in the most likely key automatically."
+msgstr "Analizza gli accordi del brano (testo tra [ ]) e compila automaticamente la tonalità più probabile."
+
+#: SongpressFrame.py — OnInsertKey auto-detect success label
+#. Label shown when key detection succeeds.
+#. %s = detected key name (e.g. "Am"); %d = number of chords analysed.
+msgid "✔ Detected: %s (from %d chords)"
+msgstr "✔ Rilevata: %s (da %d accordi)"
+
+#: SongpressFrame.py — OnInsertKey auto-detect no chords warning
+#. Label shown when no chords are found in the document.
+msgid "⚠ No chords found in the document"
+msgstr "⚠ Nessun accordo trovato nel documento"
+
+#: SongpressFrame.py — OnInsertKey auto-detect failure warning
+#. Label shown when key detection raises an unexpected exception.
+msgid "⚠ Detection failed"
+msgstr "⚠ Rilevamento non riuscito"
+
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Metadata"
 msgstr "Metadato"
@@ -790,6 +816,28 @@ msgstr "Destra"
 #: SongpressFrame.py insert image border label
 msgid "Border (pt):"
 msgstr "Bordo (pt):"
+
+#: SongpressFrame.py insert image embed checkbox
+msgid "Embed image in file (base64, no external dependency)"
+msgstr "Incorpora immagine nel file (base64, senza dipendenza esterna)"
+
+#: SongpressFrame.py insert image embed checkbox tooltip
+#. Tooltip shown when hovering the embed checkbox.
+#. The three sentences explain what happens when the option is on vs off.
+msgid "If checked, the image data is encoded in base64 and stored directly inside the .crd file. The song becomes self-contained but the file size grows. If unchecked, only the file path is stored (link)."
+msgstr "Se attivata, i dati dell'immagine vengono codificati in base64 e salvati direttamente nel file .crd. La canzone diventa autosufficiente ma le dimensioni del file aumentano. Se disattivata, viene salvato solo il percorso del file (collegamento)."
+
+#: SongpressFrame.py insert image embed size warning KB
+#. Warning label shown below the embed checkbox when the estimated size is < 1 MB.
+#. %.0f is replaced at runtime with the estimated KB to be added.
+msgid "⚠ Approx. %.0f KB will be added to the .crd file"
+msgstr "⚠ Circa %.0f KB verranno aggiunti al file .crd"
+
+#: SongpressFrame.py insert image embed size warning MB
+#. Warning label shown below the embed checkbox when the estimated size is >= 1 MB.
+#. %.1f is replaced at runtime with the estimated MB to be added.
+msgid "⚠ Approx. %.1f MB will be added to the .crd file"
+msgstr "⚠ Circa %.1f MB verranno aggiunti al file .crd"
 
 #: SongpressFrame.py insert image directive preview label
 msgid "Directive preview:"

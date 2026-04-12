@@ -40,6 +40,14 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 | `{tempo_c:BPM}`     |              | 🔧  | 🖊    | Tempo con icona **croma**                                                                 |
 | `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo con icona **croma puntata**                                                         |
 | `{time:N/M}`        |              | ✅  | ⌨️   | Indicazione di tempo (es. `{time:4/4}`, `{time:3/4}`); visualizzata con simbolo grafico   |
+| `{sorttitle:Testo}` |              | ✅  | 🖊    | Titolo alternativo usato per l'ordinamento alfabetico (metadato, non visualizzato)        |
+| `{keywords:...}`    |              | ✅  | 🖊    | Parole chiave per la ricerca (metadato, non visualizzato)                                 |
+| `{topic:...}`       |              | ✅  | 🖊    | Argomento / categoria (metadato, non visualizzato)                                        |
+| `{collection:...}`  |              | ✅  | 🖊    | Raccolta o canzoniere di appartenenza (metadato, non visualizzato)                        |
+| `{language:...}`    |              | ✅  | 🖊    | Lingua del testo (metadato, non visualizzato)                                             |
+| `{meta:chiave valore}` |           | ✅  | 🖊    | Metadato generico in forma libera (non visualizzato)                                      |
+
+> **Nota sui metadati estesi** — Le direttive `{sorttitle}`, `{keywords}`, `{topic}`, `{collection}`, `{language}`, `{meta}` vengono riconosciute e accettate dal parser per garantire la compatibilità con file ChordPro 6, ma il loro valore non viene visualizzato nell'anteprima né in stampa: sono trattate come puri metadati. Il token `:valore` viene consumato silenziosamente.
 
 > **Nota sul tempo** — Le direttive `{tempo*}` hanno quattro modalità di visualizzazione, configurabili nelle preferenze: icona nota + valore (es. `♩ = 120`), testo `BPM: 120`, testo semplice `Tempo: 120`, oppure nessuna visualizzazione. Spuntando l'opzione *Metadato*, il valore viene trattato come puro metadato — non appare nell'anteprima né in stampa.
 
@@ -68,6 +76,10 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 | `{start_of_grid}`/`{end_of_grid}`         | ✅  | ⌨️   | Blocco griglia accordi; visualizzato con l'etichetta «Grid»                                                                          |
 | `{sog}`/`{eog}`                           | ✅  | 🖊    | Abbreviazione di `start_of_grid`/`end_of_grid`                                                                                       |
 | `{grid}`                                  | ✅  | 🖊    | Forma alternativa di `start_of_grid` (senza chiusura esplicita)                                                                      |
+| `{row}` / `{r}` *(dentro grid)*           | 🔧  | 🖊    | Inserisce una riga vuota separatrice all'interno di un blocco griglia                                                                |
+| `{bar}` *(dentro grid)*                   | ✅  | 🖊    | Separatore di battuta esplicito all'interno di un blocco griglia                                                                     |
+| `{start_of_part:Etichetta}`/`{end_of_part}` | ✅  | 🖊  | Sezione generica (ChordPro 6): trattata come strofa con etichetta libera; se l'etichetta è omessa viene usato «Part»                |
+| `{sop}`/`{eop}`                           | ✅  | 🖊    | Abbreviazione di `start_of_part`/`end_of_part`                                                                                       |
 | `{new_song}`                              | 🔧  | 🖊    | Avvia una nuova canzone nello stesso documento: azzera i contatori di strofe e ritornelli in modo che la numerazione ricominci da 1  |
 
 > **Nota sul bridge** — Sono supportate entrambe le forme: `{start_bridge}`/`{end_bridge}` (forma Songpress++, inseribile dal menu) e `{start_of_bridge}`/`{end_of_bridge}` (forma ChordPro standard, con abbreviazioni `{sob}`/`{eob}`). Le due forme sono equivalenti e intercambiabili.
@@ -110,7 +122,8 @@ Queste direttive cambiano il font per la sezione seguente; usate senza argomento
 | --------------------- | --- | ---- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | `{linespacing:N}`     | 🔧  | ⌨️   | Interlinea in punti (es. `{linespacing:1}`); senza argomento ripristina il valore predefinito                                      |
 | `{chordtopspacing:N}` | 🔧  | ⌨️   | Spazio sopra gli accordi in punti (es. `{chordtopspacing:0}` per eliminarlo); senza argomento ripristina il valore predefinito     |
-| `{row}` o `{r}`       | 🔧  | 🖊    | Inserisce mezza riga verticale vuota (spaziatore) — non disponibile nel menu, deve essere digitato manualmente                     |
+| `{row}` o `{r}`       | 🔧  | 🖊    | Inserisce mezza riga verticale vuota (spaziatore) fuori dai blocchi griglia — non disponibile nel menu                            |
+| `{bar}`               | ✅  | 🖊    | Separatore di battuta esplicito all'interno di un blocco `{start_of_grid}`; ignorato fuori dal contesto griglia                   |
 
 ---
 
@@ -410,6 +423,49 @@ Quando il cursore si trova dentro un blocco `{start_of_grid}`:
 
 ---
 
+## `{start_of_part}` / `{end_of_part}` 🖊
+
+**Alias abbreviati:** `{sop}` / `{eop}`
+
+### Descrizione — start_of_part
+
+Delimita una **sezione generica** della canzone secondo la specifica ChordPro 6. È la scelta giusta quando nessun'altra direttiva strutturale (`{start_of_verse}`, `{start_of_chorus}`, `{start_of_bridge}` …) descrive adeguatamente la sezione: ad esempio un'introduzione strumentale, un interludio, una coda o qualsiasi parte con etichetta libera.
+
+In Songpress++ il blocco viene trattato come una strofa non numerata con l'etichetta specificata. Se l'etichetta è omessa, viene usata «Part» come valore predefinito.
+
+### Sintassi — start_of_part
+
+```chordpro
+{start_of_part: Intro}
+[Am][G][F][E7]
+{end_of_part}
+```
+
+Con alias abbreviati:
+
+```chordpro
+{sop: Coda}
+[G]Ritorna a [D]te
+{eop}
+```
+
+Senza etichetta (usa il default «Part»):
+
+```chordpro
+{start_of_part}
+[C][G][Am][F]
+{end_of_part}
+```
+
+### Note d'uso — start_of_part
+
+- Il blocco non è numerato e non incrementa il contatore delle strofe.
+- L'etichetta è libera: può essere qualsiasi testo (es. «Intro», «Interludio», «Coda», «Assolo», «Outro»).
+- È equivalente funzionalmente a `{start_verse:Etichetta}` — la distinzione è semantica, per mantenere la compatibilità con file ChordPro 6 provenienti da altre applicazioni.
+- Non è accessibile dal menu **Inserisci**: deve essere digitato direttamente nell'editor o inserito tramite l'intellisense (`Ctrl+Space`).
+
+---
+
 ## Commenti e note redazionali
 
 ![Songpress++ Finestra Commento](./img/GUIDE/commento_it.png)
@@ -475,7 +531,9 @@ Il colore dei numeri visualizzati sui tasti si imposta in *Opzioni → Formattaz
 
 ![Songpress++ Inserisci immagine](./img/GUIDE/inserisciImmagine_it.png)
 
-La direttiva `{image:}` incorpora un'immagine raster nel punto in cui appare nella canzone. Il percorso del file può essere relativo alla posizione del file della canzone o assoluto.
+La direttiva `{image:}` inserisce un'immagine raster nel punto in cui appare nella canzone. Songpress++ supporta due modalità: **collegamento esterno** (percorso file) e **immagine incorporata** (embedded base64).
+
+#### Opzioni della direttiva
 
 | Opzione        | Std | Descrizione                                                                             |
 | -------------- | --- | --------------------------------------------------------------------------------------- |
@@ -498,7 +556,11 @@ La direttiva `{image:}` incorpora un'immagine raster nel punto in cui appare nel
 | BMP     | `.bmp`          |
 | TIFF    | `.tiff`, `.tif` |
 
-**Esempi:**
+---
+
+#### Modalità 1 — Collegamento esterno (percorso file)
+
+Il file immagine rimane su disco e viene caricato ogni volta che il documento viene aperto. Se il file immagine si trova nella stessa cartella del documento, è sufficiente il solo nome del file. I percorsi contenenti spazi o backslash devono essere racchiusi tra virgolette doppie.
 
 ```chordpro
 {image: logo.png}
@@ -507,18 +569,34 @@ La direttiva `{image:}` incorpora un'immagine raster nel punto in cui appare nel
 {image: "C:\Users\Utente\Immagini\foto.jpg" align=center}
 ```
 
-Se il file immagine si trova nella stessa cartella del file della canzone, è sufficiente il solo nome del file. I percorsi contenenti spazi o backslash devono essere racchiusi tra virgolette doppie.
+---
 
-L'immagine può essere inserita tramite **Inserisci → Altro → Immagine {image:}**, che apre una finestra di dialogo per selezionare il file e impostare tutte le opzioni, con un'anteprima in tempo reale della direttiva generata.
+#### Modalità 2 — Immagine incorporata (embedded base64) 🔧
 
-I campi numerici nella finestra di dialogo usano controlli spin:
+Quando si attiva la checkbox **Incorpora immagine nel file** nel dialogo di inserimento, il contenuto dell'immagine viene codificato in base64 e salvato direttamente all'interno del file documento. Il file diventa così completamente autosufficiente: non dipende da file esterni e può essere condiviso o spostato senza perdere l'immagine.
 
-| Campo      | Valore iniziale | Intervallo | Passo | Note                                     |
-| ---------- | --------------- | ---------- | ----- | ---------------------------------------- |
-| Larghezza  | 0               | 0–9999     | 1     | 0 = non incluso nella direttiva          |
-| Altezza    | 0               | 0–9999     | 1     | 0 = non incluso nella direttiva          |
-| Scala      | 100             | 1–500      | 1     | 100 = non incluso (è il valore default)  |
-| Bordo      | 1               | 0–50       | 0.5   | attivo solo se la checkbox è spuntata    |
+```chordpro
+{image: data:image/png;base64,iVBORw0KGgoAAAANS... width=200 align=center}
+```
+
+Il dato base64 viene generato automaticamente dal dialogo — non è necessario scriverlo manualmente. Allineamento, bordo e dimensioni si impostano normalmente tramite i controlli del dialogo e vengono inclusi nella direttiva anche in modalità embedded.
+
+> **Nota sulla dimensione** — La codifica base64 aumenta la dimensione del dato di circa il 33%. Il dialogo mostra una stima dei KB/MB che verranno aggiunti al file documento prima di confermare. Il nome dell'estensione nella stima riflette l'estensione predefinita impostata in **Opzioni → Generale 2 → Estensione dei file predefinita**.
+
+---
+
+#### Finestra di dialogo Inserisci immagine
+
+L'immagine può essere inserita tramite **Inserisci → Altro → Immagine {image:}**. Il dialogo permette di selezionare il file, impostare tutte le opzioni e vedere in tempo reale la direttiva che verrà generata nel campo **Anteprima direttiva**.
+
+| Campo      | Valore iniziale | Intervallo | Unità    | Note                                                         |
+| ---------- | --------------- | ---------- | -------- | ------------------------------------------------------------ |
+| Larghezza  | 0               | 0–9999     | `pt` / `%` | 0 = non incluso nella direttiva; unità di default: `pt`   |
+| Altezza    | 0               | 0–9999     | `pt` / `%` | 0 = non incluso nella direttiva; unità di default: `pt`   |
+| Scala      | 100             | 1–500      | `%`      | 100 = non incluso (è il valore default)                      |
+| Bordo      | 1               | 0–50       | pt       | attivo solo se la checkbox **Bordo** è spuntata; passo 0,5  |
+
+La checkbox **Incorpora immagine nel file (base64, senza dipendenza esterna)** si trova nella parte inferiore del dialogo, sotto la sezione Bordo. Quando attiva, l'anteprima mostra `{image: data:<embedded> ...}` con le opzioni reali (allineamento, bordo, ecc.) visibili e modificabili in tempo reale.
 
 ---
 

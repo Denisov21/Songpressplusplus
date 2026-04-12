@@ -141,6 +141,10 @@ class SongImageBox(SongBox):
      def __init__(self, path, width=0, height=0, scale=1.0, align='center', border=0):
           SongBox.__init__(self, 0, 0, 0, 0)
           self.path = path
+          # Se path è un data: URI (immagine embedded in base64), _temp_path
+          # viene popolato la prima volta che serve il file fisico e viene
+          # riutilizzato per i render successivi finché l'oggetto è vivo.
+          self._temp_path = None
           self.img_width = width    # larghezza richiesta (0 = auto)
           self.img_height = height  # altezza richiesta (0 = auto)
           self.scale = scale
@@ -150,6 +154,47 @@ class SongImageBox(SongBox):
           self.drawBlock = True
           self.pageBreakBefore = False
           self.columnBreakBefore = False
+
+     def is_embedded(self):
+          """True se l'immagine è un data: URI base64 (non un percorso file)."""
+          return isinstance(self.path, str) and self.path.startswith('data:')
+
+     def resolve_path(self):
+          """Restituisce il percorso fisico usabile da wx.Image.
+
+          Per immagini embedded decodifica il base64 in un file temporaneo
+          (creato una sola volta, riutilizzato nei render successivi).
+          Per immagini normali restituisce self.path direttamente.
+          """
+          if not self.is_embedded():
+               return self.path
+          if self._temp_path and __import__('os').path.isfile(self._temp_path):
+               return self._temp_path
+          import base64, tempfile, os
+          try:
+               # Formato: data:<mime>;base64,<dati>
+               header, b64data = self.path.split(',', 1)
+               raw = base64.b64decode(b64data)
+               mime = header.split(':')[1].split(';')[0].lower() if ':' in header else 'image/png'
+               ext_map = {'image/png': '.png', 'image/jpeg': '.jpg',
+                          'image/gif': '.gif', 'image/bmp': '.bmp',
+                          'image/tiff': '.tif', 'image/webp': '.webp'}
+               ext = ext_map.get(mime, '.png')
+               tmp = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
+               tmp.write(raw)
+               tmp.close()
+               self._temp_path = tmp.name
+               return self._temp_path
+          except Exception:
+               return self.path
+
+     def __del__(self):
+          """Rimuove il file temporaneo quando l'oggetto viene distrutto."""
+          if self._temp_path:
+               try:
+                    __import__('os').unlink(self._temp_path)
+               except Exception:
+                    pass
 
      # Necessario per RelocateBox / GetLastLineTextHeight chiamati su song.boxes
      def GetLastLineTextHeight(self):

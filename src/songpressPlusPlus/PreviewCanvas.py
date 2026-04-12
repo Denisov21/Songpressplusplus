@@ -840,6 +840,17 @@ class PreviewCanvas(object):
         if parent:
             parent.Layout()
 
+    def SetDocumentDir(self, doc_path):
+        """Comunica al renderer la directory del documento aperto.
+
+        Usato da {image: filename.png}: se il percorso e' relativo, viene
+        risolto rispetto alla directory del file .crd/.cho corrente.
+        Passare stringa vuota o None quando il documento non e' ancora
+        stato salvato su disco (nuovo documento senza nome).
+        """
+        import os
+        self.renderer._document_dir = os.path.dirname(doc_path) if doc_path else ""
+
     def SetGreyBackground(self, grey):
         """Imposta sfondo grigio (True) o bianco (False) nel pannello anteprima."""
         self._greyBackground = bool(grey)   # aggiorna il flag letto da OnPaint

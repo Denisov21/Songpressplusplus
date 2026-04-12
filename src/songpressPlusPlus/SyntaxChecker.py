@@ -48,6 +48,8 @@ _KNOWN_COMMANDS = {
     "c", "comment",
     "ci", "comment_italic",
     "cb", "comment_box",
+    # Song structure — ChordPro 6 generic section
+    "sop", "start_of_part", "eop", "end_of_part",
     # Song structure — Songpress++ extensions
     "start_verse",     "end_verse",
     "start_verse_num", "end_verse_num",
@@ -55,10 +57,18 @@ _KNOWN_COMMANDS = {
     "start_chord",     "end_chord",
     "start_bridge",    "end_bridge",
     "row", "r",
+    "bar",
     "new_song",
-    # Metadata
-    "artist", "composer", "album", "year", "copyright",
+    # Metadata — standard
+    "artist", "composer", "lyricist", "arranger",
+    "album", "year", "copyright",
     "key", "capo",
+    "duration", "ccli",
+    # Metadata — extended (ChordPro 6, metadata-only, not rendered)
+    "sorttitle", "keywords", "topic", "collection", "language",
+    "pagetype", "columns", "meta",
+    # Transpose (ChordPro 6, consumed silently)
+    "transpose",
     # Page / column layout
     "new_page", "np",
     "column_break", "colb",
@@ -383,6 +393,58 @@ def _check_curly_braces(line: str, line_num: int, result: SyntaxCheckResult):
             i += 1
 
 
+def _validate_image_options(opts_str: str, line_num: int, col: int,
+                            result: SyntaxCheckResult):
+    """Valida le opzioni della direttiva {image:} che seguono il path o il token base64.
+
+    Opzioni valide: width=N[%], height=N[%], scale=N%, align=left|center|right,
+                    border[=N], e le parole chiave bare left/center/right/border.
+    Segnala errore per chiavi sconosciute o valori non numerici.
+    """
+    import re as _re
+    if not opts_str:
+        return
+    _VALID_ALIGN = {"left", "center", "right"}
+    _VALID_KEYS  = {"width", "height", "scale", "align", "border"}
+    _BARE_OK     = {"left", "center", "right", "border"}
+
+    for token in opts_str.split():
+        if "=" in token:
+            key, _sep, val = token.partition("=")
+            key = key.strip().lower()
+            val = val.strip()
+            if key not in _VALID_KEYS:
+                result.errors.append(SyntaxError(
+                    line=line_num, column=col,
+                    message=_("{{image}}: unknown option '{opt}'").format(opt=token)
+                ))
+            elif key == "align":
+                if val.lower() not in _VALID_ALIGN:
+                    result.errors.append(SyntaxError(
+                        line=line_num, column=col,
+                        message=_(
+                            "{{image}}: align must be left, center or right, got '{val}'"
+                        ).format(val=val)
+                    ))
+            elif key in ("width", "height", "scale", "border"):
+                num = val.rstrip("%")
+                try:
+                    float(num)
+                except ValueError:
+                    result.errors.append(SyntaxError(
+                        line=line_num, column=col,
+                        message=_(
+                            "{{image}}: option '{key}' requires a numeric value, got '{val}'"
+                        ).format(key=key, val=val)
+                    ))
+        else:
+            if token.lower() not in _BARE_OK:
+                result.errors.append(SyntaxError(
+                    line=line_num, column=col,
+                    message=_("{{image}}: unknown option '{opt}'").format(opt=token)
+                ))
+
+
 def _validate_command(content: str, line_num: int, col: int,
                       result: SyntaxCheckResult):
     if not content:
@@ -404,19 +466,37 @@ def _validate_command(content: str, line_num: int, col: int,
         "t", "title",
         "st", "subtitle",
         "c", "comment", "ci", "comment_italic", "cb", "comment_box",
-        "artist", "composer", "album", "year", "copyright",
+        "artist", "composer", "lyricist", "arranger",
+        "album", "year", "copyright",
         "key", "capo",
+        "duration", "ccli",
         "tempo", "tempo_m", "tempo_s", "tempo_sp", "tempo_c", "tempo_cp",
         "time",
         "define", "taste", "fingering",
         "start_chord",
         "image",
+        # Metadati estesi: richiedono un valore (non ha senso scriverli vuoti)
+        "sorttitle", "keywords", "topic", "collection", "language",
+        "meta",
     }
 
     _OPTIONAL_VALUE = {
+        # Formattazione testo/accordo: senza valore = reset al default
         "textsize", "textfont", "textcolour", "textcolor",
         "chordsize", "chordfont", "chordcolour", "chordcolor",
         "linespacing", "chordtopspacing",
+        # Sezioni con etichetta opzionale
+        "start_of_verse", "end_of_verse", "sov", "eov",
+        "start_of_chorus", "end_of_chorus", "soc", "eoc",
+        "start_of_bridge", "end_of_bridge", "sob", "eob",
+        "start_of_tab",    "sot",
+        "start_of_grid",   "sog", "grid",
+        "start_of_part",   "end_of_part", "sop", "eop",
+        "start_verse",     "start_verse_num",
+        "start_chorus",    "start_bridge",
+        "verse",
+        # Metadati opzionali
+        "pagetype", "columns", "transpose",
     }
 
     _REQUIRES_NUMERIC_VALUE = {
@@ -424,6 +504,8 @@ def _validate_command(content: str, line_num: int, col: int,
         "linespacing", "chordtopspacing",
         "capo",
         "tempo", "tempo_m", "tempo_s", "tempo_sp", "tempo_c", "tempo_cp",
+        "columns",
+        "transpose",
     }
 
     _REQUIRES_TIME_SIGNATURE = {"time"}
@@ -480,6 +562,69 @@ def _validate_command(content: str, line_num: int, col: int,
             ))
             return
 
+    # ── Validazione specifica per {image:} ──────────────────────
+    # Il valore di {image:} può essere:
+    #   1. Un percorso file (relativo o assoluto, con o senza virgolette)
+    #   2. Un data: URI base64 con opzioni facoltative dopo il token:
+    #      data:<mime>;base64,<dati> [width=N] [height=N] [scale=N%]
+    #      [align=left|center|right] [border[=N]]
+    if cmd_name == "image" and cmd_value:
+        stripped = cmd_value.strip()
+        if stripped.startswith("data:"):
+            # Estrai solo il token base64 (il primo token prima del primo spazio)
+            data_token = stripped.split()[0] if " " in stripped else stripped
+            if ";" not in data_token or "base64," not in data_token:
+                result.errors.append(SyntaxError(
+                    line=line_num, column=col,
+                    message=_(
+                        "{{image}}: malformed embedded data URI "
+                        "(expected 'data:<mime>;base64,<data>')"
+                    )
+                ))
+            else:
+                # Valida le opzioni che seguono il token base64
+                _validate_image_options(
+                    stripped[len(data_token):].strip(),
+                    line_num, col, result
+                )
+            return   # non applicare ulteriori controlli sul valore
+        else:
+            # Percorso file: valida le eventuali opzioni (tutto dopo il path)
+            # Il path può essere tra virgolette o no
+            import shlex as _shlex
+            try:
+                lex = _shlex.shlex(stripped, posix=False)
+                lex.whitespace_split = True
+                lex.whitespace = " \t"
+                raw = list(lex)
+            except ValueError:
+                raw = stripped.split()
+            if len(raw) > 1:
+                _validate_image_options(
+                    " ".join(raw[1:]), line_num, col, result
+                )
+
     # ── Validazione specifica per {fingering:} ────────────────────
     if cmd_name == "fingering" and cmd_value:
         _validate_fingering(cmd_value, line_num, col, result)
+
+    # ── Validazione specifica per {meta:} ─────────────────────────
+    # Il formato atteso è:  {meta: chiave valore}  (almeno due token)
+    if cmd_name == "meta" and cmd_value:
+        parts = cmd_value.strip().split()
+        if len(parts) < 2:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_(
+                    "{{meta}} requires 'key value' format, got: '{val}'"
+                ).format(val=cmd_value)
+            ))
+
+    # ── Controllo: {bar} e {row}/{r} non accettano valori ─────────
+    if cmd_name in ("bar", "row", "r") and cmd_value is not None:
+        result.errors.append(SyntaxError(
+            line=line_num, column=col,
+            message=_(
+                "Command '{{cmd}}' does not accept a value"
+            ).format(cmd=cmd_name)
+        ))
