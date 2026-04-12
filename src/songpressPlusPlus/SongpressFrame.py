@@ -4048,11 +4048,11 @@ class SongpressFrame(SDIMainFrame):
         import re
         # Pattern che cattura qualsiasi variante del percorso verso img/GUIDE/
         _guide_pat = re.compile(
-            r'(!\[[^\]]*\]\()(?:\.\.\/src\/songpress\/|\.\/)?img\/GUIDE\/'
+            r'(!\[[^\]]*\]\()(?:\.\.\/src\/songpressPlusPlus\/|\.\/)?img\/GUIDE\/'
         )
         if getattr(self.pref, 'guideMarkdownImgPath', False):
             # Typora: percorso assoluto relativo alla root del progetto
-            md_text = _guide_pat.sub(r'\1../src/songpress/img/GUIDE/', md_text)
+            md_text = _guide_pat.sub(r'\1../src/songpressPlusPlus/img/GUIDE/', md_text)
         else:
             # App: percorso relativo al file .md in src/songpress/
             md_text = _guide_pat.sub(r'\1img/GUIDE/', md_text)
@@ -4143,7 +4143,10 @@ class SongpressFrame(SDIMainFrame):
 
             # ── Logica di ricerca ─────────────────────────────────────
             def _do_search(term, goto_idx=0):
-                """Evidenzia tutte le occorrenze di *term* nell'HtmlWindow."""
+                """Evidenzia tutte le occorrenze di *term* nell'HtmlWindow.
+                Il match attivo è in yellowgreen; gli altri in giallo chiaro.
+                Un anchor <a name="__active__"> sul match attivo permette
+                a wx.html.HtmlWindow di scorrere automaticamente fino ad esso."""
                 _search_state['term'] = term
                 orig = _search_state.get('html_orig', '')
                 if not orig:
@@ -4155,27 +4158,40 @@ class SongpressFrame(SDIMainFrame):
                     lbl_count.SetLabel('')
                     return
                 escaped = _re2.escape(term)
-                highlighted = _re2.sub(
-                    r'(?i)(%s)' % escaped,
-                    r'<font bgcolor="#FFFF00" color="#000000"><b>\1</b></font>',
-                    orig,
-                )
-                hw.SetPage(highlighted)
-                plain = hw.ToText()
+                # Conta le occorrenze nel testo plain (prima di applicare l'HTML)
+                plain = _re2.sub(r'<[^>]+>', '', orig)
                 matches = [m.start() for m in _re2.finditer(
                     escaped, plain, _re2.IGNORECASE)]
-                _search_state['matches'] = matches
                 n = len(matches)
                 if n == 0:
+                    hw.SetPage(orig)
                     lbl_count.SetLabel(_("Not found"))
                     lbl_count.SetForegroundColour(wx.Colour(180, 0, 0))
+                    _search_state['matches'] = matches
                     _search_state['idx'] = -1
-                else:
-                    idx = max(0, min(goto_idx, n - 1))
-                    _search_state['idx'] = idx
-                    lbl_count.SetLabel(_("%d of %d") % (idx + 1, n))
-                    lbl_count.SetForegroundColour(wx.Colour(80, 80, 80))
+                    lbl_count.GetParent().Layout()
+                    return
+                idx = max(0, min(goto_idx, n - 1))
+                _search_state['matches'] = matches
+                _search_state['idx'] = idx
+                lbl_count.SetLabel(_("%d of %d") % (idx + 1, n))
+                lbl_count.SetForegroundColour(wx.Colour(80, 80, 80))
                 lbl_count.GetParent().Layout()
+                # Costruisce l'HTML con tutti i match evidenziati;
+                # il match attivo riceve bgcolor yellowgreen + anchor navigabile.
+                counter = [0]
+                def _replace_match(m):
+                    i = counter[0]
+                    counter[0] += 1
+                    text = m.group(1)
+                    if i == idx:
+                        return ('<a name="__active__"></a>'
+                                '<font bgcolor="#9ACD32" color="#000000"><b>' + text + '</b></font>')
+                    return '<font bgcolor="#FFFF99" color="#000000">' + text + '</font>'
+                highlighted = _re2.sub(r'(?i)(%s)' % escaped, _replace_match, orig)
+                hw.SetPage(highlighted)
+                # Scorre fino al match attivo tramite l'ancora __active__
+                hw.ScrollToAnchor("__active__")
 
             def _on_next(e):
                 term = txt.GetValue().strip()
@@ -4247,7 +4263,7 @@ class SongpressFrame(SDIMainFrame):
             _search_img = wx.Image(glb.AddPath('img/search.png'))
             _bmp_search = wx.Bitmap(_search_img) if _search_img.IsOk() \
                 else wx.ArtProvider.GetBitmap(wx.ART_FIND, wx.ART_MENU, (16, 16))
-            item_search = wx.MenuItem(menu, _id_search, _("Find in guide...") + u"\tCtrl+F")
+            item_search = wx.MenuItem(menu, _id_search, _("Find in guide..."))
             if _bmp_search.IsOk():
                 item_search.SetBitmap(_bmp_search)
             menu.Append(item_search)

@@ -374,31 +374,31 @@ msgid "Image paths"
 msgstr "Percorsi immagini"
 
 #: PreferencesDialog.py image paths checkbox label
-msgid "Use absolute image paths for external Markdown editor (../src/songpress/img/GUIDE/...)"
-msgstr "Usa percorsi immagine assoluti per un editor Markdown esterno (../src/songpress/img/GUIDE/...)"
+msgid "Use absolute image paths for external Markdown editor (../src/songpressPlusPlus/img/GUIDE/...)"
+msgstr "Usa percorsi immagine assoluti per un editor Markdown esterno (../src/songpressPlusPlus/img/GUIDE/...)"
 
 #: PreferencesDialog.py image paths checkbox label (alternate wording in .py)
-msgid "Use absolute image paths for Markdown editor (../src/songpress/img/GUIDE/...)"
-msgstr "Usa percorsi immagine assoluti per editor Markdown (../src/songpress/img/GUIDE/...)"
+msgid "Use absolute image paths for Markdown editor (../src/songpressPlusPlus/img/GUIDE/...)"
+msgstr "Usa percorsi immagine assoluti per editor Markdown (../src/songpressPlusPlus/img/GUIDE/...)"
 
 #: PreferencesDialog.py image paths checkbox tooltip
 msgid ""
 "When enabled, image paths in the guide are rewritten to the full\n"
-"../src/songpress/img/GUIDE/ form, for use with external Markdown editors.\n"
+"../src/songpressPlusPlus/img/GUIDE/ form, for use with external Markdown editors.\n"
 "Leave disabled for normal in-app viewing."
 msgstr ""
 "Se abilitato, i percorsi delle immagini nella guida vengono riscritti nella forma\n"
-"../src/songpress/img/GUIDE/, compatibili con editor Markdown esterni.\n"
+"../src/songpressPlusPlus/img/GUIDE/, compatibili con editor Markdown esterni.\n"
 "Lascia disabilitato per la visualizzazione normale nell'applicazione."
 
 #: PreferencesDialog.py image paths checkbox tooltip (alternate wording in .py)
 msgid ""
 "When enabled, image paths in the guide are rewritten to the full\n"
-"../src/songpress/img/GUIDE/ form, for use with Markdown editors.\n"
+"../src/songpressPlusPlus/img/GUIDE/ form, for use with Markdown editors.\n"
 "Leave enabled for Songpress++ built-in viewer."
 msgstr ""
 "Se abilitato, i percorsi delle immagini nella guida vengono riscritti nella forma\n"
-"../src/songpress/img/GUIDE/, compatibili con editor Markdown esterni.\n"
+"../src/songpressPlusPlus/img/GUIDE/, compatibili con editor Markdown esterni.\n"
 "Lascia abilitato per il visualizzatore integrato di Songpress++."
 
 #: PreferencesDialog.py general tab — song group title

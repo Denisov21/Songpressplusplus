@@ -609,11 +609,11 @@ class PreferencesDialog(wx.Dialog):
         )
         self.guideMarkdownImgPathCb = wx.CheckBox(
             self.guidePanel, wx.ID_ANY,
-            _(u"Use absolute image paths for Markdown editor (../src/songpress/img/GUIDE/...)")
+            _(u"Use absolute image paths for Markdown editor (../src/songpressPlusPlus/img/GUIDE/...)")
         )
         self.guideMarkdownImgPathCb.SetToolTip(
             _(u"When enabled, image paths in the guide are rewritten to the full\n"
-              u"../src/songpress/img/GUIDE/ form, for use with Markdown editors.\n"
+              u"../src/songpressPlusPlus/img/GUIDE/ form, for use with Markdown editors.\n"
               u"Leave enabled for Songpress++ built-in viewer.")
         )
         grpImgPath.Add(self.guideMarkdownImgPathCb, 0, wx.ALL, 5)
