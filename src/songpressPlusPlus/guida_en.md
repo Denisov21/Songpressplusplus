@@ -18,6 +18,17 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 [G]Amazing [G7]grace, how [C]sweet the [G]sound
 ```
 
+### How to type `{` and `}` on the keyboard
+
+| System | `{` (opening brace) | `}` (closing brace) |
+| ------ | ------------------- | ------------------- |
+| **Windows / Linux** — Italian layout | <kbd>Alt Gr</kbd> + <kbd>Shift</kbd> + <kbd>[</kbd> | <kbd>Alt Gr</kbd> + <kbd>Shift</kbd> + <kbd>]</kbd> |
+| **Windows / Linux** — US layout | <kbd>Shift</kbd> + <kbd>[</kbd> | <kbd>Shift</kbd> + <kbd>]</kbd> |
+| **Mac** — Italian layout | <kbd>Option</kbd> + <kbd>Shift</kbd> + <kbd>[</kbd> | <kbd>Option</kbd> + <kbd>Shift</kbd> + <kbd>]</kbd> |
+| **Mac** — US layout | <kbd>Option</kbd> + <kbd>[</kbd> | <kbd>Option</kbd> + <kbd>]</kbd> |
+
+> **Tip** — In Songpress++ you can use autocomplete: type `{` followed by the first letters of the directive and press <kbd>Ctrl</kbd>+<kbd>Space</kbd> to open the completion menu. The directive will be inserted complete with `:` and `}` where needed.
+
 ---
 
 ## Song Metadata
@@ -28,6 +39,8 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | `{subtitle:Text}`   | `{st:...}`   | ✅  | ⌨️   | Subtitle or secondary artist                                                             |
 | `{artist:Name}`     |              | ✅  | 🖊    | Artist / performer (rendered as subtitle)                                                |
 | `{composer:Name}`   |              | ✅  | 🖊    | Composer (rendered as subtitle)                                                          |
+| `{lyricist:Name}`   |              | ✅  | 🖊    | Lyricist / text author (rendered as «Lyrics: …»)                                         |
+| `{arranger:Name}`   |              | ✅  | 🖊    | Arranger (rendered as «Arrangement: …»)                                                  |
 | `{album:Title}`     |              | ✅  | 🖊    | Album title (rendered as «Album: …»)                                                     |
 | `{year:Year}`       |              | ✅  | 🖊    | Publication year (rendered as subtitle)                                                  |
 | `{copyright:Text}`  |              | ✅  | 🖊    | Copyright notice (rendered as «© …»)                                                     |

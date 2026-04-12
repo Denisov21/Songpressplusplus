@@ -18,6 +18,17 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 [G]Amazing [G7]grace, how [C]sweet the [G]sound
 ```
 
+### Come digitare `{` e `}` sulla tastiera
+
+| Sistema | `{` (graffa aperta) | `}` (graffa chiusa) |
+| ------- | ------------------- | ------------------- |
+| **Windows / Linux** — layout italiano | <kbd>Alt Gr</kbd> + <kbd>Shift</kbd> + <kbd>[</kbd> | <kbd>Alt Gr</kbd> + <kbd>Shift</kbd> + <kbd>]</kbd> |
+| **Windows / Linux** — layout USA | <kbd>Shift</kbd> + <kbd>[</kbd> | <kbd>Shift</kbd> + <kbd>]</kbd> |
+| **Mac** — layout italiano | <kbd>Option</kbd> + <kbd>Shift</kbd> + <kbd>[</kbd> | <kbd>Option</kbd> + <kbd>Shift</kbd> + <kbd>]</kbd> |
+| **Mac** — layout USA | <kbd>Option</kbd> + <kbd>[</kbd> | <kbd>Option</kbd> + <kbd>]</kbd> |
+
+> **Suggerimento** — In Songpress++ puoi usare l'autocompletamento: digita `{` seguito dalle prime lettere della direttiva e premi <kbd>Ctrl</kbd>+<kbd>Spazio</kbd> per aprire il menu di completamento. La direttiva verrà inserita completa di `:` e `}` dove necessario.
+
 ---
 
 ## Metadati della canzone
@@ -28,6 +39,8 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 | `{subtitle:Testo}`  | `{st:...}`   | ✅  | ⌨️   | Sottotitolo o artista secondario                                                          |
 | `{artist:Nome}`     |              | ✅  | 🖊    | Artista / interprete (visualizzato come sottotitolo)                                      |
 | `{composer:Nome}`   |              | ✅  | 🖊    | Compositore (visualizzato come sottotitolo)                                               |
+| `{lyricist:Nome}`   |              | ✅  | 🖊    | Paroliere / autore del testo (visualizzato come «Testo: …»)                               |
+| `{arranger:Nome}`   |              | ✅  | 🖊    | Arrangiatore (visualizzato come «Arrangiamento: …»)                                       |
 | `{album:Titolo}`    |              | ✅  | 🖊    | Titolo dell'album (visualizzato come «Album: …»)                                          |
 | `{year:Anno}`       |              | ✅  | 🖊    | Anno di pubblicazione (visualizzato come sottotitolo)                                     |
 | `{copyright:Testo}` |              | ✅  | 🖊    | Nota di copyright (visualizzata come «© …»)                                               |

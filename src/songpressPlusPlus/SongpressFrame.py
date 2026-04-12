@@ -3168,6 +3168,7 @@ class SongpressFrame(SDIMainFrame):
         'start_chord', 'end_chord',
         'new_page', 'column_break',
         'row', 'bar',
+        'new_song',
         # Formattazione
         'comment', 'comment_italic', 'comment_box',
         'image', 'linespacing', 'chordtopspacing',
@@ -3246,50 +3247,67 @@ class SongpressFrame(SDIMainFrame):
         'end_chord', 'new_page', 'column_break',
         'end_of_part', 'row', 'bar',
         'eoc', 'eov', 'eob', 'eot', 'np', 'eop',
+        'new_song',
     }
 
     def _OnIntellisenseSelection(self, evt):
-        """Dopo che Scintilla ha inserito la direttiva, aggiunge ':|}' o '}' e
-        posiziona il cursore nel punto giusto per digitare il valore."""
+        """Gestisce la selezione dall'autocomplete ChordPro.
+
+        EVT_STC_AUTOCOMP_SELECTION scatta PRIMA che Scintilla inserisca il testo
+        selezionato. Usare wx.CallAfter garantisce che il suffisso venga aggiunto
+        solo dopo che Scintilla ha completato l'inserimento.
+        """
         directive = evt.GetText().lower()
+        wx.CallAfter(self._ApplyDirectiveSuffix, directive)
+        evt.Skip()   # lascia che Scintilla proceda con l'inserimento normale
+
+    def _ApplyDirectiveSuffix(self, directive):
+        """Aggiunge ':|}' o '}' dopo la direttiva appena inserita da Scintilla
+        e posiziona il cursore nel punto giusto per digitare il valore.
+        Chiamata tramite wx.CallAfter, quindi il testo è già aggiornato."""
         stc = self.text
 
-        # Scintilla ha già sostituito il prefisso con la direttiva selezionata.
-        # Dobbiamo verificare se dopo il cursore c'è già '}' (utente stava
-        # modificando una direttiva esistente) o se dobbiamo inserire il suffisso.
         pos = stc.GetCurrentPos()
         char_after = stc.GetTextRange(pos, stc.PositionAfter(pos))
 
-        if char_after in ('}', ':'):
-            # Già completata — non tocchiamo nulla
-            evt.Skip()
+        # Se la direttiva è già seguita da ':' o '}' l'utente stava modificando
+        # una direttiva esistente: non toccare nulla.
+        if char_after == ':':
             return
 
-        # Dobbiamo anche verificare se la '{' è già presente prima della direttiva
-        # (caso normale) oppure se l'utente ha usato Ctrl+Space senza '{'.
         line_num   = stc.LineFromPosition(pos)
         line_start = stc.PositionFromLine(line_num)
         text_before = stc.GetTextRange(line_start, pos)
         has_open_brace = '{' in text_before and text_before.rfind('{') > text_before.rfind('}')
 
         if directive in self._DIRECTIVES_NO_VALUE:
-            suffix = '}' if has_open_brace else '{' + directive + '}'
-            if has_open_brace:
+            # Direttiva senza valore: chiude con '}'
+            if char_after == '}':
+                stc.GotoPos(stc.PositionAfter(pos))
+            elif has_open_brace:
                 stc.InsertText(pos, '}')
                 stc.GotoPos(pos + 1)
             else:
-                # Sostituiamo il testo inserito da Scintilla con la forma completa
                 dir_len = len(directive)
                 stc.SetTargetStart(pos - dir_len)
                 stc.SetTargetEnd(pos)
                 stc.ReplaceTarget('{' + directive + '}')
                 stc.GotoPos(pos - dir_len + len('{' + directive + '}'))
         else:
-            # Direttiva con valore: inseriamo ':|}' e mettiamo il cursore su '|'
-            if has_open_brace:
+            # Direttiva con valore: aggiunge ':|}' e seleziona il placeholder
+            if char_after == '}':
+                # '}' presente ma manca ':valore' — sostituisce '}' con ':|}'
+                pos_close = stc.PositionAfter(pos)
+                stc.SetTargetStart(pos)
+                stc.SetTargetEnd(pos_close)
+                stc.ReplaceTarget(':|')
+                stc.InsertText(pos + 2, '}')
+                stc.GotoPos(pos + 1)
+                stc.SetSelection(pos + 1, pos + 2)
+            elif has_open_brace:
                 stc.InsertText(pos, ':|}')
-                stc.GotoPos(pos + 1)           # cursore tra ':' e '}'
-                stc.SetSelection(pos + 1, pos + 2)  # seleziona il placeholder '|'
+                stc.GotoPos(pos + 1)
+                stc.SetSelection(pos + 1, pos + 2)
             else:
                 full = '{' + directive + ':|}' 
                 dir_len = len(directive)
@@ -3299,8 +3317,6 @@ class SongpressFrame(SDIMainFrame):
                 cursor_pos = pos - dir_len + len('{' + directive + ':')
                 stc.GotoPos(cursor_pos)
                 stc.SetSelection(cursor_pos, cursor_pos + 1)
-
-        evt.Skip()
 
     def Copy(self):
         self.text.Copy()
