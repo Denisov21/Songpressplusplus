@@ -338,60 +338,60 @@
           <help>Inserisci una strofa non numerata con i comandi start__verse / end__verse</help>
         </object>
         <object class="wxMenuItem" name="insertChorusBlock">
-          <label>_Ritornello {start__chorus}\\{end__chorus}</label>
+          <label>_Ritornello {start__chorus}\\{end__chorus}...</label>
           <accel></accel>
           <help>Inserisci un blocco ritornello con i comandi start__chorus / end__chorus</help>
         </object>
         <object class="wxMenuItem" name="insertChordBlock">
-          <label>Accordi di _intro {start__chord}\\{end__chord}</label>
+          <label>Accordi di _intro {start__chord}\\{end__chord}...</label>
           <accel></accel>
           <help>Inserisci una sezione di accordi intro con i comandi start__chord / end__chord</help>
         </object>
         <object class="wxMenuItem" name="insertBridge">
-          <label>_Bridge {start__bridge}\\{end__bridge}</label>
+          <label>_Bridge {start__bridge}\\{end__bridge}...</label>
           <accel></accel>
           <help>Inserisci un blocco bridge con i comandi start__bridge / end__bridge</help>
         </object>
         <object class="wxMenuItem" name="insertGrid">
-          <label>_Griglia {start__of__grid}\\{end__of__grid}</label>
+          <label>_Griglia {start__of__grid}\\{end__of__grid}...</label>
           <accel></accel>
           <help>Inserisci un blocco griglia di accordi con i comandi start_of_grid / end_of_grid</help>
         </object>
         <object class="wxMenuItem" name="insertTempo">
-          <label>_Tempo {tempo:}</label>
+          <label>_Tempo {tempo:}...</label>
           <accel></accel>
           <help>Inserisci la direttiva ChordPro per impostare il tempo della canzone (BPM)</help>
           <bitmap>../img/metronome.png</bitmap>
         </object>
         <object class="wxMenuItem" name="insertTime">
-          <label>_Indicazione del tempo {time:}</label>
+          <label>_Indicazione del tempo {time:}...</label>
           <accel></accel>
           <help>Inserisci la direttiva ChordPro per impostare il tempo musicale (es. 4/4, 3/4)</help>
         </object>
         <object class="wxMenuItem" name="insertKey">
-          <label>_Tonalità {key:}</label>
+          <label>_Tonalità {key:}...</label>
           <accel></accel>
           <help>Inserisci la direttiva ChordPro per impostare la tonalità (es. Am, Do, Sol)</help>
         </object>
         <object class="wxMenuItem" name="insertTaste">
-          <label>Tastiera _accordo {taste:}</label>
+          <label>Tastiera _accordo {taste:}...</label>
           <accel></accel>
           <help>Inserisci la direttiva per visualizzare una tastiera per accordi in fondo alla canzone</help>
           <bitmap>../img/taste.png</bitmap>
         </object>
         <object class="wxMenuItem" name="insertFingering">
-          <label>Diteggiatura _primo accordo {fingering:}</label>
+          <label>Diteggiatura _primo accordo {fingering:}...</label>
           <accel></accel>
           <help>Inserisci la direttiva per mostrare la tastiera del primo accordo con i numeri delle dita</help>
           <bitmap>../img/taste2.png</bitmap>
         </object>
         <object class="wxMenuItem" name="insertDefine">
-          <label>Diagramma accordo _chitarra {define:}</label>
+          <label>Diagramma accordo _chitarra {define:}...</label>
           <accel></accel>
           <help>Inserisci la direttiva per visualizzare un diagramma di accordo chitarra in fondo alla canzone</help>
         </object>
         <object class="wxMenuItem" name="insertImage">
-          <label>_Immagine {image:}</label>
+          <label>_Immagine {image:}...</label>
           <accel></accel>
           <help>Inserisci un'immagine (PNG, JPG, GIF) nella canzone</help>
 		  <bitmap>../img/picture.png</bitmap>

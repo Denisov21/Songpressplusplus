@@ -272,9 +272,9 @@
           </object>
         </object>
         <object class="wxMenuItem" name="preview">
-          <label>Sonpress++ _Preview</label>
+          <label>Songpress++ _Preview</label>
           <accel></accel>
-          <help>Show/hide Sonpress++ Preview pane</help>
+          <help>Show/hide Songpress++ Preview pane</help>
           <checkable>1</checkable>
           <checked>1</checked>
         </object>
@@ -338,60 +338,60 @@
           <help>Insert an unnumbered verse with start__verse / end__verse commands</help>
         </object>
         <object class="wxMenuItem" name="insertChorusBlock">
-          <label>_Chorus {start__chorus}\\{end__chorus}</label>
+          <label>_Chorus {start__chorus}\\{end__chorus}...</label>
           <accel></accel>
           <help>Insert a chorus block with start__chorus / end__chorus commands</help>
         </object>
         <object class="wxMenuItem" name="insertChordBlock">
-          <label>Intro _chords {start__chord}\\{end__chord}</label>
+          <label>Intro _chords {start__chord}\\{end__chord}...</label>
           <accel></accel>
           <help>Insert an intro chord section with start__chord / end__chord commands</help>
         </object>
         <object class="wxMenuItem" name="insertBridge">
-          <label>_Bridge {start__bridge}\\{end__bridge}</label>
+          <label>_Bridge {start__bridge}\\{end__bridge}...</label>
           <accel></accel>
           <help>Insert a bridge block with start__bridge / end__bridge commands</help>
         </object>
         <object class="wxMenuItem" name="insertGrid">
-          <label>_Grid {start__of__grid}\\{end__of__grid}</label>
+          <label>_Grid {start__of__grid}\\{end__of__grid}...</label>
           <accel></accel>
           <help>Insert a chord grid block with start_of_grid / end_of_grid commands</help>
         </object>
         <object class="wxMenuItem" name="insertTempo">
-          <label>_Tempo {tempo:}</label>
+          <label>_Tempo {tempo:}...</label>
           <accel></accel>
           <help>Insert ChordPro directive to set song tempo (BPM)</help>
           <bitmap>../img/metronome.png</bitmap>
         </object>
         <object class="wxMenuItem" name="insertTime">
-          <label>Time _signature {time:}</label>
+          <label>Time _signature {time:}...</label>
           <accel></accel>
           <help>Insert ChordPro directive to set time signature (e.g. 4/4, 3/4)</help>
         </object>
         <object class="wxMenuItem" name="insertKey">
-          <label>_Key {key:}</label>
+          <label>_Key {key:}...</label>
           <accel></accel>
           <help>Insert ChordPro directive to set song key (e.g. Am, C, G)</help>
         </object>
         <object class="wxMenuItem" name="insertTaste">
-          <label>Chord _keyboard {taste:}</label>
+          <label>Chord _keyboard {taste:}...</label>
           <accel></accel>
           <help>Insert directive to display a chord keyboard at the end of the song</help>
           <bitmap>../img/taste.png</bitmap>
         </object>
         <object class="wxMenuItem" name="insertFingering">
-          <label>_First chord fingering {fingering:}</label>
+          <label>_First chord fingering {fingering:}...</label>
           <accel></accel>
           <help>Insert directive to show the first chord keyboard with finger numbers</help>
           <bitmap>../img/taste2.png</bitmap>
         </object>
         <object class="wxMenuItem" name="insertDefine">
-          <label>Guitar _chord diagram {define:}</label>
+          <label>Guitar _chord diagram {define:}...</label>
           <accel></accel>
           <help>Insert directive to display a guitar chord diagram at the end of the song</help>
         </object>
         <object class="wxMenuItem" name="insertImage">
-          <label>_Image {image:}</label>
+          <label>_Image {image:}...</label>
           <accel></accel>
           <bitmap>../img/picture.png</bitmap>
           <help>Insert an image (PNG, JPG, GIF) into the song</help>
