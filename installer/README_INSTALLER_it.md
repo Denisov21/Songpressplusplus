@@ -57,11 +57,49 @@ installer/
 ├── songpress++x86.nsi
 ├── songpressplusplus.ico
 ├── uv.exe
-└── license.txt
+├── license.txt
+└── tools/
+    ├── rcedit-x64.exe
+    ├── rcedit-x86.exe
+    ├── set_iconx64.bat
+    └── set_iconx86.bat
 ```
 
 > La cartella `plugins/` non è necessaria: entrambi gli installer usano NScurl
 > (built-in NSIS) e non richiedono DLL esterne.
+
+## Cartella tools/
+
+La cartella `tools/` contiene utility usate **solo durante la build** — non vengono
+incluse nell'installer né nell'applicazione finale.
+
+| File | Scopo |
+|------|-------|
+| `rcedit-x64.exe` | Tool da riga di comando per incorporare un'icona in un `.exe` Windows (sistemi 64 bit) |
+| `rcedit-x86.exe` | Tool da riga di comando per incorporare un'icona in un `.exe` Windows (sistemi 32 bit) |
+| `set_iconx64.bat` | Script di supporto per sistemi **64 bit** — usa `rcedit-x64.exe` |
+| `set_iconx86.bat` | Script di supporto per sistemi **32 bit** — usa `rcedit-x86.exe` |
+
+### Come usare i bat
+
+Eseguire il bat appropriato **dopo** aver compilato l'applicazione con cx_Freeze e **prima**
+di compilare l'installer NSIS, in modo che il `.exe` finale abbia già l'icona corretta.
+
+- Su sistemi **64 bit**: usare `set_iconx64.bat`
+- Su sistemi **32 bit**: usare `set_iconx86.bat`
+
+1. Fare doppio clic sul bat corretto (richiederà i privilegi di amministratore automaticamente)
+2. Quando richiesto, trascinare `SongPressPlusPlus.exe` nella finestra (oppure incollare il percorso)
+3. Quando richiesto, trascinare `songpressplusplus.ico` nella finestra (oppure incollare il percorso)
+4. Lo script applicherà l'icona e confermerà il successo
+
+> **Download rcedit**: https://github.com/electron/rcedit/releases — scaricare entrambi
+> `rcedit-x64.exe` e `rcedit-x86.exe` e posizionarli nella cartella `tools/`.
+
+> **Nota antivirus**: Windows Defender potrebbe segnalare rcedit come `Exploit.PayloadProtect`.
+> Si tratta di un **falso positivo** dovuto alla natura dello strumento (modifica binari exe).
+> Per sbloccarlo: Sicurezza di Windows → Protezione da virus e minacce → Cronologia protezione
+> → seleziona il rilevamento → Azioni → **Consenti nel dispositivo**.
 
 La cartella `installer\` deve trovarsi direttamente dentro la radice del progetto
 (quella che contiene `pyproject.toml`), perché lo script usa `SRCDIR = ".."`.
@@ -154,6 +192,21 @@ Se la compilazione va a buon fine, nella cartella `installer/` appariranno i fil
 songpress++64bit-setup.exe         ← installer a 64 bit
 songpress++x86-setup.exe           ← installer a 32 bit
 ```
+
+### Ordine di build consigliato
+
+1. Compilare l'applicazione con cx_Freeze
+2. Eseguire `tools\set_iconx64.bat` (o `set_iconx86.bat` su 32 bit) per incorporare l'icona in `SongPressPlusPlus.exe`
+3. Compilare lo script NSIS per generare l'installer
+
+## Note
+
+### SongpressOpen.pyw
+
+Dopo l'installazione potrebbe essere presente nella cartella `bin\` il file
+`SongpressOpen.pyw`. Si tratta di un residuo del Songpress originale di Luca Allulli
+e non è referenziato da nessuna parte del progetto (né in `pyproject.toml` né negli
+script NSI). **Può essere cancellato tranquillamente.**
 
 ---
 *Questo file è codificato UTF-8 senza BOM.*

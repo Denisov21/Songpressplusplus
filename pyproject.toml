@@ -1,5 +1,5 @@
 [project]
-name = "songpressplusplus"
+name = "SongpressPlusPlus"
 version = "3.3.3"
 description = "Songpress++ is a free, easy to use song typeset program for Windows and Linux, that generates high-quality songbooks."
 authors = [
