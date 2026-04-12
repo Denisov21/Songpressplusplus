@@ -87,7 +87,7 @@ In summary: `Avvio SONGPRESS2.vbs` is the development/debug version, `Avvio SONG
 
 ## Screenshot program
 
-![Songpress++ cambio nome e versione](src/songpressplusplus/img/GUIDE/Schermata_principale_en.png)
+![Songpress++ cambio nome e versione](../src/songpressplusplus/img/GUIDE/Schermata_principale_en.png)
 
 ![Songpress++ menu contestuale](src/songpressplusplus/img/GUIDE/Menu_contestuale_en.png)
 
