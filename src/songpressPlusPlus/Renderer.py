@@ -644,6 +644,14 @@ class Renderer(object):
                         a = self.GetAttribute()
                         if a is not None and a.strip() != '':
                             self.AddSubTitle(a.strip())
+                    elif cmd == 'lyricist':
+                        a = self.GetAttribute()
+                        if a is not None and a.strip() != '':
+                            self.AddSubTitle(_(u'Testo: %s') % a.strip())
+                    elif cmd == 'arranger':
+                        a = self.GetAttribute()
+                        if a is not None and a.strip() != '':
+                            self.AddSubTitle(_(u'Arrangiamento: %s') % a.strip())
                     elif cmd == 'album':
                         a = self.GetAttribute()
                         if a is not None and a.strip() != '':

@@ -17,6 +17,7 @@ Songpress++ utilizza il formato **ChordPro** esteso. I comandi sono racchiusi tr
    - [start_of_bridge / end_of_bridge](#start_of_bridge--end_of_bridge)
    - [start_bridge / end_bridge](#start_bridge--end_bridge)
    - [start_chord / end_chord](#start_chord--end_chord)
+   - [start_of_part / end_of_part](#start_of_part--end_of_part)
    - [verse](#verse)
    - [row / r](#row--r)
    - [new_song](#new_song)
@@ -63,6 +64,7 @@ Songpress++ utilizza il formato **ChordPro** esteso. I comandi sono racchiusi tr
 9. [Diagrammi e immagini](#9-diagrammi-e-immagini)
    - [define](#define)
    - [taste](#taste)
+   - [fingering](#fingering)
    - [image](#image)
 10. [Accordi inline](#10-accordi-inline)
 11. [Commenti di riga](#11-commenti-di-riga)
@@ -228,6 +230,25 @@ Crea un blocco generico di tipo strofa, con etichetta personalizzata. Utile per 
 
 ---
 
+### `start_of_part` / `end_of_part`
+
+**Sintassi:**
+```chordpro
+{start_of_part: Etichetta opzionale}
+...testo...
+{end_of_part}
+```
+
+Sezione generica conforme a **ChordPro 6**. Trattata esattamente come `start_chord` / `end_chord`: crea un blocco strofa con l'etichetta indicata, non numerato automaticamente. Se l'etichetta è omessa, viene usata l'etichetta predefinita `Part`. Le abbreviazioni sono `{sop}` e `{eop}`.
+
+```chordpro
+{sop: Outro}
+[Em]Testo della sezione finale
+{eop}
+```
+
+---
+
 ### `verse`
 
 **Sintassi:** `{verse: Etichetta}`
@@ -303,6 +324,7 @@ Delimita un blocco **griglia accordi** (schema armonico per battute). Le abbrevi
 | Parametro | Descrizione | Esempio |
 |---|---|---|
 | `size=N` | Moltiplicatore dimensione celle (default: 1). Accetta decimali. | `size=2` |
+| `sizedir=horizontal\|vertical\|both` | Direzione a cui si applica `size=`: orizzontale, verticale o entrambe (default: valore dalle preferenze, solitamente `both`) | `sizedir=horizontal` |
 | `chordtopspacing=N` | Spazio extra in pixel sopra ogni riga della griglia | `chordtopspacing=10` |
 | `linespacing=N` | Spazio extra in pixel sotto ogni riga della griglia | `linespacing=8` |
 | Etichetta libera | Testo dell'etichetta del blocco (dopo i parametri key=value) | `size=2 Ritornello` |
@@ -385,6 +407,8 @@ Come `comment`, ma il testo viene racchiuso in un **riquadro grafico** per evide
 
 I metadati vengono memorizzati nella canzone ma **non appaiono visivamente nell'anteprima** come elementi separati (eccetto `title`, `subtitle`, `key`, `capo`). Sono inclusi nei formati di esportazione che li supportano.
 
+> **Metadati ChordPro 6 ignorati silenziosamente:** i seguenti comandi sono riconosciuti e consumati dal renderer senza generare errori, ma non producono alcun output visivo né vengono esportati: `{sorttitle}`, `{keywords}`, `{topic}`, `{collection}`, `{language}`, `{pagetype}`, `{columns}`, `{meta}`, `{transpose}`. Possono essere inclusi nel file per compatibilità con altri editor ChordPro senza effetti collaterali.
+
 ### `artist`
 
 **Sintassi:** `{artist: Nome artista}`
@@ -413,11 +437,13 @@ Nome del compositore della musica (può differire dall'artista esecutore).
 
 **Sintassi:** `{lyricist: Nome paroliere}`
 
-Nome dell'autore del testo (paroliere), quando diverso dal compositore della musica.
+Nome dell'autore del testo (paroliere), quando diverso dal compositore della musica. Viene visualizzato nell'anteprima come sottotitolo con il prefisso **`Testo:`**.
 
 ```chordpro
 {lyricist: Paul McCartney}
 ```
+
+> Visualizzato come: *Testo: Paul McCartney*
 
 ---
 
@@ -425,11 +451,13 @@ Nome dell'autore del testo (paroliere), quando diverso dal compositore della mus
 
 **Sintassi:** `{arranger: Nome arrangiatore}`
 
-Nome dell'arrangiatore. Metadato di sola memorizzazione, non visualizzato nell'anteprima.
+Nome dell'arrangiatore. Viene visualizzato nell'anteprima come sottotitolo con il prefisso **`Arrangiamento:`**.
 
 ```chordpro
 {arranger: George Martin}
 ```
+
+> Visualizzato come: *Arrangiamento: George Martin*
 
 ---
 
@@ -806,7 +834,22 @@ Mostra la **tastiera di pianoforte** con le note dell'accordo evidenziate (funzi
 
 ---
 
-### `image`
+### `fingering`
+
+**Sintassi:** `{fingering: NomeAccordo N=Nota [N=Nota ...]}`
+
+Mostra la **tastiera di pianoforte** di un accordo con la **diteggiatura numerata**: sopra ogni tasto premuto viene visualizzato il numero del dito corrispondente. Estende `{taste}` aggiungendo una mappa dito→nota.
+
+Il formato è: nome dell'accordo, seguito da coppie `numero_dito=nota_italiana` (es. `1=Do`, `2=Mi`, `3=Sol`). Il KlavierRenderer interpreta la mappa e disegna i numeri sui tasti. Il colore dei numeri è configurabile nelle preferenze.
+
+```chordpro
+{fingering: Am 1=Do 2=Mi 3=La}
+{fingering: C 1=Mi 2=Sol 3=Do}
+```
+
+> I comandi `{taste}` e `{fingering}` utilizzano la stessa lista interna (`klavier_list`): possono coesistere liberamente nello stesso file.
+
+---
 
 **Sintassi:**
 ```
@@ -1111,6 +1154,7 @@ Accessibile da **Formato → Indicazione di tempo** (o clic sull'indicazione nel
 | `{start_of_bridge}` / `{end_of_bridge}` | `{sob}` / `{eob}` | Struttura | Delimita un bridge |
 | `{start_bridge}` / `{end_bridge}` | — | Struttura | Variante alternativa di start_of_bridge |
 | `{start_chord}` / `{end_chord}` | — | Struttura | Blocco generico con etichetta personalizzata |
+| `{start_of_part}` / `{end_of_part}` | `{sop}` / `{eop}` | Struttura | Sezione generica ChordPro 6 (non numerata) |
 | `{verse: ...}` | — | Struttura | Blocco strofa con etichetta specifica |
 | `{row}` | `{r}` | Struttura | Riga separatrice vuota |
 | `{new_song}` | — | Struttura | Reset completo del renderer |
@@ -1122,8 +1166,8 @@ Accessibile da **Formato → Indicazione di tempo** (o clic sull'indicazione nel
 | `{comment_box: ...}` | `{cb:}` | Annotazioni | Commento in riquadro |
 | `{artist: ...}` | — | Metadati | Nome artista |
 | `{composer: ...}` | — | Metadati | Nome compositore |
-| `{lyricist: ...}` | — | Metadati | Nome paroliere (autore del testo) |
-| `{arranger: ...}` | — | Metadati | Nome arrangiatore |
+| `{lyricist: ...}` | — | Metadati | Nome paroliere — visualizzato con prefisso "Testo:" |
+| `{arranger: ...}` | — | Metadati | Nome arrangiatore — visualizzato con prefisso "Arrangiamento:" |
 | `{album: ...}` | — | Metadati | Titolo album |
 | `{year: ...}` | — | Metadati | Anno di pubblicazione |
 | `{duration: ...}` | — | Metadati | Durata della canzone |
@@ -1150,6 +1194,7 @@ Accessibile da **Formato → Indicazione di tempo** (o clic sull'indicazione nel
 | `{chordtopspacing: N}` | — | Accordi | Spazio tra accordi e testo |
 | `{define: ...}` | — | Diagrammi | Diagramma chitarra personalizzato |
 | `{taste: ...}` | — | Diagrammi | Tastiera pianoforte (Klavier) |
+| `{fingering: ...}` | — | Diagrammi | Tastiera pianoforte con diteggiatura numerata |
 | `{image: ...}` | — | Immagini | Inserisce un'immagine |
 | `[Accordo]` | — | Accordi inline | Accordo posizionato nel testo |
 | `# testo` | — | Commenti | Riga di commento (ignorata) |
