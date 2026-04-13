@@ -666,7 +666,10 @@ Tutte le principali direttive sono accessibili tramite il menu **Inserisci**, ch
 
 ### Trasposizione e notazione
 
-- **Trasponi** — apre la finestra di dialogo per trasporre tutti gli accordi
+- **Trasponi** — apre la finestra di dialogo per trasporre tutti gli accordi. La trasposizione viene applicata a **tutte le notazioni assolute** presenti nel testo (Americana, Italiana, Italiana maiuscola, Tedesca, Tedesca tradizionale, Francese, Portoghese): anche un file con accordi scritti in notazioni miste (es. `[Sol]` e `[G]` nello stesso file) viene trasposto correttamente nella sua interezza.
+
+  > **Nota — Notazioni relative (Nashville e Romana):** le notazioni **Nashville** (1, 2, 3… 7) e **Romana** (I, II, III… VII) rappresentano *gradi della scala* e non altezze assolute. Per questo motivo vengono escluse dalla trasposizione: spostare il grado `[1]` da Do a Re non avrebbe alcun senso musicale, poiché il grado rimane invariato indipendentemente dalla tonalità. Se il testo contiene accordi in notazione Nashville o Romana, questi restano inalterati dopo la trasposizione.
+
 - **Semplifica accordi** — trova la tonalità più facile da suonare
 - **Cambia notazione** — converte tra notazione anglosassone (C D E…) e solfeggio (Do Re Mi…)
 - **Normalizza accordi** — standardizza la scrittura degli accordi (es. `Hm` → `Bm`)

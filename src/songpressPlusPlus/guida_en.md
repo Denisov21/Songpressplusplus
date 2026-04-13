@@ -666,7 +666,10 @@ All main directives are accessible via the **Insert** menu, which opens support 
 
 ### Transposition and Notation
 
-- **Transpose** — opens the dialog to transpose all chords
+- **Transpose** — opens the dialog to transpose all chords. Transposition is applied to **all absolute-pitch notations** present in the text (American, Italian, Uppercase Italian, German, Traditional German, French, Portuguese): even a file containing chords written in mixed notations (e.g. `[Sol]` and `[G]` in the same file) is transposed correctly in its entirety.
+
+  > **Note — Relative notations (Nashville and Roman):** **Nashville** (1, 2, 3… 7) and **Roman** (I, II, III… VII) notations represent *scale degrees*, not absolute pitches. For this reason they are intentionally excluded from transposition: shifting degree `[1]` from C to D would make no musical sense, since the degree remains the same regardless of key. If the text contains chords in Nashville or Roman notation, they are left unchanged after transposition.
+
 - **Simplify chords** — finds the easiest key to play
 - **Change notation** — converts between Anglo-Saxon notation (C D E…) and solfège (Do Re Mi…)
 - **Normalize chords** — standardizes chord spelling (e.g. `Hm` → `Bm`)

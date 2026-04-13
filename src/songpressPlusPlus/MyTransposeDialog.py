@@ -12,6 +12,10 @@
 from .TransposeDialog import *
 from .Transpose import *
 
+# Notations that represent relative degrees (not absolute pitch):
+# transposing them would shift the degree labels, which makes no sense.
+_RELATIVE_NOTATION_CLASSES = (NashvilleNotation, RomanNotation)
+
 
 class MyTransposeDialog(TransposeDialog):
     def __init__(self, parent, notations, text):
@@ -55,13 +59,23 @@ class MyTransposeDialog(TransposeDialog):
         self.toKey.SetSelection((self.fromKey.GetSelection() + s) % 12)
         
     def GetTransposed(self):
-        return transposeChordPro(
-            self.fromKey.GetClientData(self.fromKey.GetSelection()),
-            self.toKey.GetClientData(self.toKey.GetSelection()),
-            self.text,
-            self.notation.GetClientData(self.notation.GetSelection()),
-            self.accidentals.GetSelection()
-        )
+        s = self.fromKey.GetClientData(self.fromKey.GetSelection())
+        d = self.toKey.GetClientData(self.toKey.GetSelection())
+        acc = self.accidentals.GetSelection()
+
+        # Apply transposition for every absolute-pitch notation so that
+        # a song containing chords written in mixed notations (e.g. both
+        # "Sol" and "G" in the same file) is transposed correctly in full.
+        # Relative-degree notations (Nashville, Roman) are intentionally
+        # skipped: their degree labels do not represent absolute pitches
+        # and must not be shifted.
+        text = self.text
+        for n in self.notations:
+            if isinstance(n, _RELATIVE_NOTATION_CLASSES):
+                continue
+            text = transposeChordPro(s, d, text, n, acc)
+
+        return text
         
     def OnSemitones(self, evt):
         self.UpdateToKey()
