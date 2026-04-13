@@ -1259,7 +1259,13 @@ class SongpressFrame(SDIMainFrame):
             _("Restart"),
             wx.YES_NO | wx.ICON_WARNING | wx.NO_DEFAULT,
         )
-        if d.ShowModal() == wx.ID_YES:
+        result = d.ShowModal()
+        d.Destroy()
+        if result == wx.ID_YES:
+            # Se ci sono modifiche non salvate, chiede se salvare.
+            # AskSaveModified() restituisce False se l'utente annulla → abort.
+            if not self.AskSaveModified():
+                return
             self.SaveWindowGeometry()
             self._SavePageMargins()
             self._SaveTempoDisplay()
@@ -1269,15 +1275,14 @@ class SongpressFrame(SDIMainFrame):
             self.pref.Save()
             self.config.Flush()
             if getattr(sys, 'frozen', False):
-                # Eseguibile cx_Freeze
+                # Eseguibile cx_Freeze: sys.executable è il .exe
                 subprocess.Popen([sys.executable] + sys.argv[1:])
             else:
-                # Installazione pip: entry-point 'songpress = songpress.main:main'
-                subprocess.Popen(
-                    [sys.executable, '-m', 'songpress.main'] + sys.argv[1:]
-                )
-            wx.GetApp().ExitMainLoop()
-        d.Destroy()
+                # Esecuzione da sorgente (es. python main.py) oppure
+                # installazione pip con entry-point script:
+                # in entrambi i casi sys.argv[0] è lo script da rieseguire.
+                subprocess.Popen([sys.executable, sys.argv[0]] + sys.argv[1:])
+            wx.CallAfter(wx.Exit)
 
     def _SavePageMargins(self):
         """Salva i margini, il formato carta, l'orientamento e le opzioni
