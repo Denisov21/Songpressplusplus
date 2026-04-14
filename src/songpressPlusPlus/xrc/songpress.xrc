@@ -116,13 +116,6 @@
           <bitmap>../img/column.png</bitmap>
         </object>
         <object class="separator"/>
-        <object class="wxMenuItem" name="restart">
-          <label>_Restart</label>
-          <accel></accel>
-          <help>Restart Songpress</help>
-          <bitmap>../img/restart.png</bitmap>
-        </object>
-        <object class="separator"/>
         <object class="wxMenuItem" name="exit">
           <label>_Exit</label>
           <accel></accel>
@@ -389,6 +382,7 @@
           <label>Guitar _chord diagram {define:}...</label>
           <accel></accel>
           <help>Insert directive to display a guitar chord diagram at the end of the song</help>
+          <bitmap>../img/guitar.png</bitmap>
         </object>
         <object class="wxMenuItem" name="insertImage">
           <label>_Image {image:}...</label>

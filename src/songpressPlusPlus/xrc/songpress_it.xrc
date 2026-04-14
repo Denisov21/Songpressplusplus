@@ -116,13 +116,6 @@
           <bitmap>../img/column.png</bitmap>
         </object>
         <object class="separator"/>
-        <object class="wxMenuItem" name="restart">
-          <label>_Riavvia</label>
-          <accel></accel>
-          <help>Riavvia Songpress</help>
-          <bitmap>../img/restart.png</bitmap>
-        </object>
-        <object class="separator"/>
         <object class="wxMenuItem" name="exit">
           <label>_Esci</label>
           <accel></accel>
@@ -389,6 +382,7 @@
           <label>Diagramma accordo _chitarra {define:}...</label>
           <accel></accel>
           <help>Inserisci la direttiva per visualizzare un diagramma di accordo chitarra in fondo alla canzone</help>
+          <bitmap>../img/guitar.png</bitmap>
         </object>
         <object class="wxMenuItem" name="insertImage">
           <label>_Immagine {image:}...</label>

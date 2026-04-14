@@ -1251,39 +1251,6 @@ class SongpressFrame(SDIMainFrame):
         self.config.Flush()
         super().OnClose(evt)
 
-    def OnRestart(self, evt):
-        """Chiede conferma e riavvia l'applicazione."""
-        d = wx.MessageDialog(
-            self.frame,
-            _("Are you sure you want to restart Songpress++?"),
-            _("Restart"),
-            wx.YES_NO | wx.ICON_WARNING | wx.NO_DEFAULT,
-        )
-        result = d.ShowModal()
-        d.Destroy()
-        if result == wx.ID_YES:
-            # Se ci sono modifiche non salvate, chiede se salvare.
-            # AskSaveModified() restituisce False se l'utente annulla → abort.
-            if not self.AskSaveModified():
-                return
-            self.SaveWindowGeometry()
-            self._SavePageMargins()
-            self._SaveTempoDisplay()
-            self._SaveGuidePrefs()
-            self._SaveKlavierColour()
-            self._SaveCustomColours()
-            self.pref.Save()
-            self.config.Flush()
-            if getattr(sys, 'frozen', False):
-                # Eseguibile cx_Freeze: sys.executable è il .exe
-                subprocess.Popen([sys.executable] + sys.argv[1:])
-            else:
-                # Esecuzione da sorgente (es. python main.py) oppure
-                # installazione pip con entry-point script:
-                # in entrambi i casi sys.argv[0] è lo script da rieseguire.
-                subprocess.Popen([sys.executable, sys.argv[0]] + sys.argv[1:])
-            wx.CallAfter(wx.Exit)
-
     def _SavePageMargins(self):
         """Salva i margini, il formato carta, l'orientamento e le opzioni
         di riduzione automatica nel config."""
@@ -1580,7 +1547,6 @@ class SongpressFrame(SDIMainFrame):
         Bind(self.OnNormalizeChords, 'cleanupChords')
         Bind(self.OnConvertTabToChordpro, 'convertTabToChordpro')
         Bind(self.OnRemoveSpuriousBlankLines, 'removeSpuriousBlankLines')
-        Bind(self.OnRestart, 'restart')
         Bind(self.OnOptions, 'options')
         Bind(self.OnGuide, 'guide')
         Bind(self.OnGuideMarkdown, 'guideMarkdown')
