@@ -104,6 +104,19 @@ compiling the NSIS installer, so that the final `.exe` already has the correct i
 The `installer\` folder must be placed directly inside the project root
 (the one containing `pyproject.toml`), because the script uses `SRCDIR = ".."`.
 
+## ⚠️ Do not install in Program Files
+
+**Do not install Songpress++ into `C:\Program Files` or `C:\Program Files (x86)`.**
+
+These folders are protected by UAC (User Account Control) and require administrator
+privileges for any write operation. Songpress++ downloads and updates its packages at
+runtime via `uv`: if installed in `Program Files`, these operations would fail silently
+or produce access-denied errors.
+
+Always use the default paths suggested by the installer (`%LOCALAPPDATA%` for the
+standard installation, `%DESKTOP%` for the portable one), which require no elevated
+privileges.
+
 ## Install paths
 
 | What | Path |
