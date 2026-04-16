@@ -53,6 +53,7 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 | `{tempo_c:BPM}`     |              | 🔧  | 🖊    | Tempo con icona **croma**                                                                 |
 | `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo con icona **croma puntata**                                                         |
 | `{time:N/M}`        |              | ✅  | ⌨️   | Indicazione di tempo (es. `{time:4/4}`, `{time:3/4}`); visualizzata con simbolo grafico   |
+| `{duration: Acc=N …}` |            | ✅  | ⌨️   | Durata in battiti degli accordi (es. `{duration: Do=2 Sol=1}`); usata per calcolare i numeri di battito visualizzati sopra gli accordi |
 | `{sorttitle:Testo}` |              | ✅  | 🖊    | Titolo alternativo usato per l'ordinamento alfabetico (metadato, non visualizzato)        |
 | `{keywords:...}`    |              | ✅  | 🖊    | Parole chiave per la ricerca (metadato, non visualizzato)                                 |
 | `{topic:...}`       |              | ✅  | 🖊    | Argomento / categoria (metadato, non visualizzato)                                        |
@@ -540,6 +541,65 @@ Si apre una finestra che mostra automaticamente le note dell'accordo e permette 
 **Colore dei numeri delle dita:**
 Il colore dei numeri visualizzati sui tasti si imposta in *Opzioni → Formattazione → Accordi e tempo → Colore numeri diteggiatura*. Per impostazione predefinita è quasi nero (`#1A1A1A`); su tasti neri il numero appare in bianco per garantire il contrasto.
 
+### Durata degli accordi — `{duration:}`
+
+La direttiva `{duration:}` specifica la **durata in battiti** di ciascun accordo della riga successiva. Songpress++ usa queste informazioni per calcolare e visualizzare i **numeri di battito** sopra gli accordi nell'anteprima, aiutando l'esecutore a capire il ritmo senza leggere la partitura.
+
+**Formato:**
+
+```chordpro
+{duration: NomeAccordo=N NomeAccordo=N …}
+```
+
+- `NomeAccordo` — nome dell'accordo in notazione italiana (`Do`, `Sol`, `La-`, `Re7`…) o inglese (`C`, `G`, `Am`, `D7`…)
+- `N` — numero intero di battiti ≥ 1
+- Gli accordi sono separati da spazi
+- Solo gli accordi elencati ricevono un'indicazione di battito; gli altri vengono ignorati
+
+**Esempi:**
+
+```chordpro
+{duration: Do=4 Sol=2 La-=2 Fa=4}
+[Do]Amaz[Sol]ing [La-]grace, how [Fa]sweet
+```
+
+```chordpro
+{duration: G=2 Em=2 C=4}
+[G]Nel [Em]mezzo del [C]cammino
+```
+
+```chordpro
+{duration: Am=4 F=2 C=2 G=4}
+[Am]Tanti [F]au[C]guri a [G]te
+```
+
+Ogni direttiva `{duration:}` si applica **alla riga di testo/accordi immediatamente successiva**. Per assegnare durate a più righe, inserisci una `{duration:}` prima di ognuna.
+
+**Inserimento dal menu — dialogo guidato:**
+
+Il comando *Inserisci → Durata accordo {duration:}…* riconosce automaticamente la situazione:
+
+- **Se la riga sotto il cursore non contiene accordi `[…]`** — inserisce direttamente `{duration: }` senza aprire nessuna finestra.
+- **Se la riga sotto il cursore contiene accordi `[…]`** — apre un dialogo con un campo numerico (`SpinCtrl`) per ogni accordo unico trovato, preimpostato su 1 battito. Mentre si modificano i valori, il campo **Anteprima** mostra in tempo reale la direttiva che verrà inserita (es. `{duration: Do=4 Sol=2 La-=2 Fa=1}`). Impostando un accordo a **0** viene escluso dalla direttiva.
+
+> **Nota** — La direttiva viene inserita nella posizione del cursore: posiziona il cursore sulla riga **sopra** la riga con gli accordi, poi seleziona il comando dal menu.
+
+**Visualizzazione nell'anteprima:**
+
+La voce **Visualizza → Mostra battiti accordi** abilita o disabilita la visualizzazione dei numeri di battito nell'anteprima. Colore, dimensione, grassetto e allineamento dei numeri si configurano in *Opzioni → Formattazione → Accordi e tempo*.
+
+**Controllo sintassi:**
+
+Il controllo sintassi integrato (`Strumenti → Controlla sintassi`) segnala gli errori nel valore di `{duration:}`:
+
+| Errore | Esempio | Segnalazione |
+| ------ | ------- | ------------ |
+| Token senza `=` | `{duration: Sol}` | formato non valido |
+| Accordo non riconosciuto | `{duration: Xyz=2}` | accordo sconosciuto |
+| Accordo ripetuto | `{duration: Sol=2 Sol=1}` | accordo duplicato |
+| Battiti mancanti | `{duration: Sol=}` | valore mancante |
+| Battiti non interi o ≤ 0 | `{duration: Sol=0}`, `Sol=1.5` | deve essere intero positivo |
+
 ### Direttiva immagine
 
 ![Songpress++ Inserisci immagine](./img/GUIDE/inserisciImmagine_it.png)
@@ -624,6 +684,7 @@ La checkbox **Incorpora immagine nel file (base64, senza dipendenza esterna)** s
 {capo: 0}
 
 {start_verse_num}
+{duration: C=2 G7=2}
 [C]Che bella [G7]cosa na jurnata 'e [C]sole
 [C]N'aria serena [G7]doppo na tempesta!
 {end_verse_num}

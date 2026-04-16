@@ -220,6 +220,7 @@ class Preferences(object):
         self._LoadWindowGeometryPref()
         self._LoadPreviewOptions()
         self._LoadGridDisplayMode()
+        self._LoadDurationBeats()
         self._LoadMusicalSymbol()
         self._LoadSyntaxColours()
         self._LoadDebugOptions()
@@ -382,6 +383,7 @@ class Preferences(object):
         self._SaveWindowGeometryPref()
         self._SavePreviewOptions()
         self._SaveGridDisplayMode()
+        self._SaveDurationBeats()
         self._SaveMusicalSymbol()
         self._SaveSyntaxColours()
         self._SaveDebugOptions()
@@ -524,6 +526,21 @@ class Preferences(object):
         self.config.Write('gridSizeDir', getattr(self, 'gridSizeDir', 'both'))
         self.config.SetPath('/')
 
+    def _LoadDurationBeats(self):
+        self.config.SetPath('/Format')
+        v = self.config.Read('durationBeatsColourHex')
+        self.durationBeatsColourHex = v if v else '#6464C8'
+        v2 = self.config.Read('durationBeatsSizePct')
+        try:
+            self.durationBeatsSizePct = max(30, min(int(v2), 150)) if v2 != '' else 60
+        except ValueError:
+            self.durationBeatsSizePct = 60
+        v3 = self.config.Read('durationBeatsBold')
+        self.durationBeatsBold = bool(int(v3)) if v3 != '' else False
+        v4 = self.config.Read('durationBeatsAlign')
+        self.durationBeatsAlign = v4 if v4 in ('left', 'center', 'right') else 'right'
+        self.config.SetPath('/')
+
     def _LoadMusicalSymbol(self):
         self.config.SetPath('/MusicalSymbol')
         v = self.config.Read('scaleEnabled')
@@ -535,6 +552,14 @@ class Preferences(object):
             self.symbolFontSize = 24
         v3 = self.config.Read('insertVerse')
         self.symbolInsertVerse = bool(int(v3)) if v3 != '' else False
+        self.config.SetPath('/')
+
+    def _SaveDurationBeats(self):
+        self.config.SetPath('/Format')
+        self.config.Write('durationBeatsColourHex', getattr(self, 'durationBeatsColourHex', '#6464C8'))
+        self.config.Write('durationBeatsSizePct',   str(getattr(self, 'durationBeatsSizePct', 60)))
+        self.config.Write('durationBeatsBold',      '1' if getattr(self, 'durationBeatsBold', False) else '0')
+        self.config.Write('durationBeatsAlign',    getattr(self, 'durationBeatsAlign', 'right'))
         self.config.SetPath('/')
 
     def _SaveMusicalSymbol(self):

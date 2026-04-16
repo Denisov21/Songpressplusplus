@@ -58,6 +58,8 @@ class SongDecorator(object):
         self.klavierHighlightColor = None
         # Colour for finger number labels on klavier keys (wx.Colour or None = auto contrast)
         self.fingerNumColor = None
+        # Whether to show beat count above chords ({duration} directive)
+        self.showDurationBeats = True
         
     def SetMarginText(self, text):
         # Modify text margins
@@ -657,7 +659,56 @@ class SongDecorator(object):
         
     def PostDrawLine(self, line, lx, ly):
         # lx, ly: coordinates of top-left corner of drawable area
-        pass        
+        # ── Numero battiti in apice sopra ogni accordo ({duration: ...}) ─
+        # Per ogni accordo con duration_beats >= 1, disegna il numero
+        # in apice in alto a destra del nome accordo, con font ridotto.
+        if not getattr(self, 'showDurationBeats', True):
+            return
+        for text in line.boxes:
+            if text.type != SongText.chord:
+                continue
+            beats = getattr(text, 'duration_beats', 0)
+            if beats < 1:
+                continue
+            label = str(beats)
+            # Font apice: dimensione e grassetto da preferenze
+            base_font = text.font
+            size_pct  = getattr(self, 'durationBeatsSizePct', 60)
+            is_bold   = getattr(self, 'durationBeatsBold', False)
+            apex_size = max(5, int(base_font.GetPointSize() * size_pct / 100))
+            apex_font = wx.Font(
+                apex_size,
+                base_font.GetFamily(),
+                base_font.GetStyle(),
+                wx.FONTWEIGHT_BOLD if is_bold else wx.FONTWEIGHT_NORMAL,
+                False,
+                base_font.GetFaceName(),
+            )
+            self.dc.SetFont(apex_font)
+            lw, lh = self.dc.GetTextExtent(label)
+            # Posizione orizzontale: sinistra / centro / destra rispetto all'accordo
+            chord_left  = int(lx + line.marginLeft + text.x + text.marginLeft)
+            chord_right = chord_left + int(text.w)
+            align = getattr(self, 'durationBeatsAlign', 'right')
+            if align == 'left':
+                ax = chord_left
+            elif align == 'center':
+                ax = chord_left + (int(text.w) - lw) // 2
+            else:  # right
+                ax = chord_right - lw
+            ay = int(ly + line.marginTop + text.y + text.marginTop) - lh - 1
+            # Colore da preferenze
+            colour_hex = getattr(self, 'durationBeatsColourHex', '#6464C8')
+            try:
+                colour = wx.Colour(colour_hex)
+            except Exception:
+                colour = wx.Colour(100, 100, 200)
+            self.dc.SetTextForeground(colour)
+            self.dc.SetBackgroundMode(wx.TRANSPARENT)
+            self.dc.DrawText(label, ax, ay)
+            # Ripristina font e colore originali
+            self.dc.SetFont(text.font)
+            self.dc.SetTextForeground(text.color)
         
     def PostDrawBlock(self, block, bx, by):
         # bx, by: coordinates of top-left corner of drawable area
@@ -811,6 +862,7 @@ class SongDecorator(object):
                         self.PreDrawText(text, tx, ty)
                         self.DrawText(text, tx, ty)
                         self.PostDrawText(text, tx, ty)
+                    self.PostDrawLine(line, lx, ly)
                 self.lastBlockOffsetY = by + block.GetTotalHeight()
                 self.PostDrawBlock(block, bx, by)
         if self.s.drawWholeSong:

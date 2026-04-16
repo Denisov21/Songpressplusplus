@@ -498,6 +498,58 @@ class PreferencesDialog(wx.Dialog):
         grpSymbol.Add(self.symbolInsertVerseCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
         bSizerFormat.Add(grpSymbol, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
+        # ── Gruppo: Beat count ({duration}) ─────────────────────────
+        grpDuration = wx.StaticBoxSizer(
+            wx.StaticBox(self.formatPanel, wx.ID_ANY, _(u"Beat count ({duration})")),
+            wx.VERTICAL
+        )
+
+        # Riga 1: colore
+        bSizerDurColour = wx.BoxSizer(wx.HORIZONTAL)
+        lblDurColour = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Colour"), wx.DefaultPosition, wx.DefaultSize, 0)
+        bSizerDurColour.Add(lblDurColour, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.durationBeatsHexCtrl = wx.TextCtrl(self.formatPanel, wx.ID_ANY, u"#6464C8", wx.DefaultPosition, wx.Size(80, -1), 0)
+        bSizerDurColour.Add(self.durationBeatsHexCtrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.durationBeatsColourBtn = wx.Button(self.formatPanel, wx.ID_ANY, _(u"Pick…"), wx.DefaultPosition, wx.Size(60, -1), 0)
+        bSizerDurColour.Add(self.durationBeatsColourBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.durationBeatsColourSwatch = wx.Panel(self.formatPanel, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
+        bSizerDurColour.Add(self.durationBeatsColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
+        grpDuration.Add(bSizerDurColour, 0, wx.EXPAND | wx.ALL, 5)
+
+        # Riga 2: dimensione font (% del font accordo)
+        bSizerDurSize = wx.BoxSizer(wx.HORIZONTAL)
+        lblDurSize = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Font size (% of chord font)"), wx.DefaultPosition, wx.DefaultSize, 0)
+        bSizerDurSize.Add(lblDurSize, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.durationBeatsSizeSpin = wx.SpinCtrl(self.formatPanel, wx.ID_ANY, "60", wx.DefaultPosition, wx.Size(70, -1), wx.SP_ARROW_KEYS, 30, 150, 60)
+        self.durationBeatsSizeSpin.SetToolTip(_(u"Size of the beat-count number as a percentage of the chord font size (default: 60%)"))
+        bSizerDurSize.Add(self.durationBeatsSizeSpin, 0, wx.ALIGN_CENTER_VERTICAL)
+        grpDuration.Add(bSizerDurSize, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
+        # Riga 3: grassetto
+        self.durationBeatsBoldCB = wx.CheckBox(self.formatPanel, wx.ID_ANY, _(u"Bold"))
+        self.durationBeatsBoldCB.SetToolTip(_(u"Draw the beat-count number in bold"))
+        grpDuration.Add(self.durationBeatsBoldCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
+        # Riga 4: allineamento (sinistra / centro / destra)
+        bSizerDurAlign = wx.BoxSizer(wx.HORIZONTAL)
+        lblDurAlign = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Position"), wx.DefaultPosition, wx.DefaultSize, 0)
+        bSizerDurAlign.Add(lblDurAlign, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.durationBeatsAlignLeft = wx.RadioButton(
+            self.formatPanel, wx.ID_ANY, _(u"Left"), style=wx.RB_GROUP)
+        self.durationBeatsAlignLeft.SetToolTip(_(u"Show beat count to the left of the chord name"))
+        self.durationBeatsAlignCenter = wx.RadioButton(
+            self.formatPanel, wx.ID_ANY, _(u"Center"))
+        self.durationBeatsAlignCenter.SetToolTip(_(u"Show beat count centered above the chord name"))
+        self.durationBeatsAlignRight = wx.RadioButton(
+            self.formatPanel, wx.ID_ANY, _(u"Right"))
+        self.durationBeatsAlignRight.SetToolTip(_(u"Show beat count to the right of the chord name"))
+        bSizerDurAlign.Add(self.durationBeatsAlignLeft,   0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        bSizerDurAlign.Add(self.durationBeatsAlignCenter, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        bSizerDurAlign.Add(self.durationBeatsAlignRight,  0, wx.ALIGN_CENTER_VERTICAL)
+        grpDuration.Add(bSizerDurAlign, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
+        bSizerFormat.Add(grpDuration, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
         self.formatPanel.SetSizer(bSizerFormat)
         self.formatPanel.Layout()
         bSizerFormat.Fit(self.formatPanel)
@@ -739,6 +791,8 @@ class PreferencesDialog(wx.Dialog):
         self.klavierHexCtrl.Bind(wx.EVT_TEXT, self.OnKlavierHexChanged)
         self.fingerNumColourBtn.Bind(wx.EVT_BUTTON, self.OnFingerNumPickColour)
         self.fingerNumHexCtrl.Bind(wx.EVT_TEXT, self.OnFingerNumHexChanged)
+        self.durationBeatsColourBtn.Bind(wx.EVT_BUTTON, self.OnDurationBeatsPickColour)
+        self.durationBeatsHexCtrl.Bind(wx.EVT_TEXT, self.OnDurationBeatsHexChanged)
         self.editorBgBtn.Bind(wx.EVT_BUTTON, self.OnEditorBgPickColour)
         self.editorBgHexCtrl.Bind(wx.EVT_TEXT, self.OnEditorBgHexChanged)
         self.selColourBtn.Bind(wx.EVT_BUTTON, self.OnSelColourPickColour)

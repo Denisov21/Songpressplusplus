@@ -286,6 +286,13 @@
           <checked>1</checked>
           <bitmap>../img/column.png</bitmap>
         </object>
+        <object class="wxMenuItem" name="showDurationBeats">
+          <label>Show beat count</label>
+          <accel></accel>
+          <help>Show or hide the beat count above chords ({duration} directive)</help>
+          <checkable>1</checkable>
+          <checked>1</checked>
+        </object>
       </object>
       <object class="wxMenu" name="insert">
         <label>_Insert</label>
@@ -365,6 +372,11 @@
           <label>_Key {key:}...</label>
           <accel></accel>
           <help>Insert ChordPro directive to set song key (e.g. Am, C, G)</help>
+        </object>
+        <object class="wxMenuItem" name="insertDuration">
+          <label>_Duration {duration:}...</label>
+          <accel></accel>
+          <help>Insert ChordPro directive to set beat duration of chords (e.g. 1, 2, 4)</help>
         </object>
         <object class="wxMenuItem" name="insertTaste">
           <label>Chord _keyboard {taste:}...</label>

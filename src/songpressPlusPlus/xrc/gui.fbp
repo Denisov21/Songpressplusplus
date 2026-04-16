@@ -731,6 +731,19 @@
             <property name="shortcut"></property>
             <property name="unchecked_bitmap"></property>
           </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap"></property>
+            <property name="checked">1</property>
+            <property name="enabled">1</property>
+            <property name="help">Show or hide the beat count above chords ({duration} directive)</property>
+            <property name="id">ID_SHOW_DURATION_BEATS</property>
+            <property name="kind">wxITEM_CHECK</property>
+            <property name="label">Show beat count</property>
+            <property name="name">showDurationBeats</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
         </object>
         <object class="wxMenu" expanded="true">
           <property name="label">&amp;Insert</property>
@@ -905,6 +918,19 @@
             <property name="kind">wxITEM_NORMAL</property>
             <property name="label">Time &amp;signature {time:}</property>
             <property name="name">insertTime</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap"></property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert ChordPro directive to set beat duration of chords (e.g. 1, 2, 4)</property>
+            <property name="id">ID_INSERT_DURATION</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">&amp;Duration {duration:}...</property>
+            <property name="name">insertDuration</property>
             <property name="permission">none</property>
             <property name="shortcut"></property>
             <property name="unchecked_bitmap"></property>

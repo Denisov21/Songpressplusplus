@@ -1189,8 +1189,10 @@ class SongpressFrame(SDIMainFrame):
         self._chord_dialog_pinned = False   # True = keep insert-chord dialog open after OK
         self._showPageBreakLines = True
         self._showColumnBreakLines = True
+        self._showDurationBeats = True
         self._showPageBreakLinesMenuId = xrc.XRCID('showPageBreakLines')
         self._showColumnBreakLinesMenuId = xrc.XRCID('showColumnBreakLines')
+        self._showDurationBeatsMenuId = xrc.XRCID('showDurationBeats')
         self.findReplaceDialog = None
         self._lastFindSt    = ''
         self._lastFindFlags = 0
@@ -1541,6 +1543,7 @@ class SongpressFrame(SDIMainFrame):
         Bind(self.OnChordsBelow, 'chordsBelow')
         Bind(self.OnTogglePageBreakLines, 'showPageBreakLines')
         Bind(self.OnToggleColumnBreakLines, 'showColumnBreakLines')
+        Bind(self.OnToggleDurationBeats, 'showDurationBeats')
         Bind(self.OnTranspose, 'transpose')
         Bind(self.OnSimplifyChords, 'simplifyChords')
         Bind(self.OnChangeChordNotation, 'changeChordNotation')
@@ -1567,6 +1570,7 @@ class SongpressFrame(SDIMainFrame):
         Bind(self.OnInsertTempo, 'insertTempo')
         Bind(self.OnInsertTime, 'insertTime')
         Bind(self.OnInsertKey, 'insertKey')
+        Bind(self.OnInsertDuration, 'insertDuration')
         Bind(self.OnInsertCapo, 'insertCapo')
         Bind(self.OnInsertArtist, 'insertArtist')
         Bind(self.OnInsertComposer, 'insertComposer')
@@ -2045,6 +2049,117 @@ class SongpressFrame(SDIMainFrame):
     def OnInsertYear(self, evt):
         """Inserisce la direttiva {year: <anno>}."""
         self._InsertSimpleDirective('year', _(u"Enter the year (e.g. 1975):"), u"")
+
+    def OnInsertDuration(self, evt):
+        """Inserisce la direttiva {duration: }.
+        
+        Se nella riga immediatamente successiva al cursore sono presenti accordi
+        nella forma [Accordo], propone un dialogo per assegnare il numero di battiti
+        a ciascun accordo, producendo {duration: DO=2 SOL=1 ...}.
+        In caso contrario inserisce semplicemente {duration: }.
+        """
+        import re
+
+        # ── 1. Leggi la riga successiva a quella corrente ────────────────
+        stc       = self.text
+        cur_pos   = stc.GetCurrentPos()
+        cur_line  = stc.LineFromPosition(cur_pos)
+        next_line = cur_line + 1
+        next_text = stc.GetLine(next_line) if next_line < stc.GetLineCount() else u""
+
+        # ── 2. Estrai accordi unici mantenendo l'ordine di comparsa ──────
+        raw_chords = re.findall(r'\[([^\]]+)\]', next_text)
+        # rimuovi suffissi di basso (tutto dopo '/') e tieni unici in ordine
+        seen   = {}
+        chords = []
+        for c in raw_chords:
+            root = c.split('/')[0].strip()
+            if root and root not in seen:
+                seen[root] = True
+                chords.append(root)
+
+        # ── 3a. Nessun accordo trovato: inserimento semplice ─────────────
+        if not chords:
+            self.InsertWithCaret(u"{duration: }")
+            return
+
+        # ── 3b. Accordi trovati: dialogo per i battiti ───────────────────
+        dlg = wx.Dialog(
+            self.frame,
+            title=_(u"Duration — beats per chord"),
+            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
+        )
+
+        outer = wx.BoxSizer(wx.VERTICAL)
+
+        # Istruzione
+        lbl_intro = wx.StaticText(
+            dlg,
+            label=_(u"Assign the number of beats to each chord.\n"
+                    u"Leave blank to omit a chord from the directive.")
+        )
+        outer.Add(lbl_intro, 0, wx.ALL, 10)
+
+        # Griglia accordo → SpinCtrl
+        grid = wx.FlexGridSizer(cols=2, hgap=8, vgap=6)
+        grid.AddGrowableCol(1)
+        spin_map = {}   # root → SpinCtrl
+
+        for chord in chords:
+            grid.Add(
+                wx.StaticText(dlg, label=chord),
+                0, wx.ALIGN_CENTER_VERTICAL
+            )
+            spin = wx.SpinCtrl(dlg, value=u"1", min=0, max=32, initial=1, size=(70, -1))
+            # 0 = ometti
+            spin.SetToolTip(_(u"0 = omit this chord"))
+            grid.Add(spin, 0, wx.EXPAND)
+            spin_map[chord] = spin
+
+        outer.Add(grid, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        # Anteprima della direttiva generata
+        lbl_preview_title = wx.StaticText(dlg, label=_(u"Preview:"))
+        outer.Add(lbl_preview_title, 0, wx.LEFT | wx.RIGHT, 10)
+        lbl_preview = wx.StaticText(dlg, label=u"")
+        lbl_preview.SetForegroundColour(wx.Colour(0, 100, 0))
+        font_preview = lbl_preview.GetFont()
+        font_preview.SetFamily(wx.FONTFAMILY_TELETYPE)
+        lbl_preview.SetFont(font_preview)
+        outer.Add(lbl_preview, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        btn_sizer = dlg.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
+        outer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 8)
+
+        dlg.SetSizerAndFit(outer)
+        dlg.CentreOnParent()
+
+        def _update_preview(_evt=None):
+            parts = []
+            for ch in chords:
+                v = spin_map[ch].GetValue()
+                if v > 0:
+                    parts.append(u"%s=%d" % (ch, v))
+            directive = u"{duration: %s}" % u" ".join(parts) if parts else u"{duration: }"
+            lbl_preview.SetLabel(directive)
+            dlg.Layout()
+
+        for sp in spin_map.values():
+            sp.Bind(wx.EVT_SPINCTRL, _update_preview)
+            sp.Bind(wx.EVT_TEXT,     _update_preview)
+
+        _update_preview()   # mostra anteprima iniziale
+
+        if dlg.ShowModal() == wx.ID_OK:
+            parts = []
+            for ch in chords:
+                v = spin_map[ch].GetValue()
+                if v > 0:
+                    parts.append(u"%s=%d" % (ch, v))
+            directive = u"{duration: %s}" % u" ".join(parts) if parts else u"{duration: }"
+            self.InsertWithCaret(directive)
+
+        dlg.Destroy()
 
     def OnInsertMusicalSymbol(self, evt):
         """Apre la Symbol Map musicale e inserisce il carattere scelto nel cursore."""
@@ -2838,6 +2953,11 @@ class SongpressFrame(SDIMainFrame):
         decorator.exportMode = False
         decorator.showPageBreakLines = getattr(self, '_showPageBreakLines', True)
         decorator.showColumnBreakLines = getattr(self, '_showColumnBreakLines', True)
+        decorator.showDurationBeats      = getattr(self, '_showDurationBeats', True)
+        decorator.durationBeatsColourHex = getattr(self.pref, 'durationBeatsColourHex', '#6464C8')
+        decorator.durationBeatsSizePct   = getattr(self.pref, 'durationBeatsSizePct', 60)
+        decorator.durationBeatsBold      = getattr(self.pref, 'durationBeatsBold', False)
+        decorator.durationBeatsAlign     = getattr(self.pref, 'durationBeatsAlign', 'right')
         decorator.klavierHighlightColor = self._getKlavierHighlightColour()
         decorator.fingerNumColor = self._getFingerNumColour()
         r = Renderer(self.pref.format, decorator, self.pref.notations)
@@ -5322,6 +5442,12 @@ class SongpressFrame(SDIMainFrame):
             self.previewCanvas.SetGridDefaultLabel(getattr(self.pref, 'gridDefaultLabel', None))
             self.previewCanvas.SetGridSizeDir(getattr(self.pref, 'gridSizeDir', 'both'))
             self.previewCanvas.SetPageMarginsMm(self._margin_top, self._margin_bottom)
+            self.previewCanvas.SetDurationBeatsPrefs(
+                getattr(self.pref, 'durationBeatsColourHex', '#6464C8'),
+                getattr(self.pref, 'durationBeatsSizePct', 60),
+                getattr(self.pref, 'durationBeatsBold', False),
+                getattr(self.pref, 'durationBeatsAlign', 'right'),
+            )
             self.previewCanvas.Refresh(self._get_display_text())
             # Aggiorna il MinSize del pane AUI in base alla preferenza corrente
             self._ApplyPreviewMinSize()
@@ -5613,12 +5739,24 @@ class SongpressFrame(SDIMainFrame):
         self.previewCanvas.SetShowColumnBreakLines(self._showColumnBreakLines)
         self.previewCanvas.Refresh(self._get_display_text())
 
+    def OnToggleDurationBeats(self, evt):
+        self._showDurationBeats = evt.IsChecked()
+        self.previewCanvas.SetShowDurationBeats(self._showDurationBeats)
+        self.previewCanvas.SetDurationBeatsPrefs(
+            getattr(self.pref, 'durationBeatsColourHex', '#6464C8'),
+            getattr(self.pref, 'durationBeatsSizePct', 60),
+            getattr(self.pref, 'durationBeatsBold', False),
+            getattr(self.pref, 'durationBeatsAlign', 'right'),
+        )
+        self.previewCanvas.Refresh(self._get_display_text())
+
     def _UpdateBreakLinesMenuState(self):
         """Abilita o disabilita le voci di menu delle linee di interruzione
         in base alla visibilità del pannello anteprima."""
         preview_visible = self._mgr.GetPane('preview').IsShown()
         self.menuBar.Enable(self._showPageBreakLinesMenuId, preview_visible)
         self.menuBar.Enable(self._showColumnBreakLinesMenuId, preview_visible)
+        self.menuBar.Enable(self._showDurationBeatsMenuId, preview_visible)
 
     def _ApplyPreviewMinSize(self):
         """Reimposta BestSize e MinSize sul pane 'preview' e sul main_panel.
@@ -5655,6 +5793,7 @@ class SongpressFrame(SDIMainFrame):
         if evt.GetPane().name == 'preview':
             self.menuBar.Enable(self._showPageBreakLinesMenuId, False)
             self.menuBar.Enable(self._showColumnBreakLinesMenuId, False)
+            self.menuBar.Enable(self._showDurationBeatsMenuId, False)
         else:
             self._UpdateBreakLinesMenuState()
 
@@ -5785,4 +5924,11 @@ class SongpressFrame(SDIMainFrame):
         self.previewCanvas.SetLineWidths(self.pref.titleLineWidth, self.pref.verseBoxWidth)
         self.previewCanvas.SetShowPageBreakLines(getattr(self, '_showPageBreakLines', True))
         self.previewCanvas.SetShowColumnBreakLines(getattr(self, '_showColumnBreakLines', True))
+        self.previewCanvas.SetShowDurationBeats(getattr(self, '_showDurationBeats', True))
+        self.previewCanvas.SetDurationBeatsPrefs(
+            getattr(self.pref, 'durationBeatsColourHex', '#6464C8'),
+            getattr(self.pref, 'durationBeatsSizePct', 60),
+            getattr(self.pref, 'durationBeatsBold', False),
+            getattr(self.pref, 'durationBeatsAlign', 'right'),
+        )
         self.previewCanvas.Refresh(self._get_display_text())

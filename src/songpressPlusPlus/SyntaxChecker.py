@@ -445,6 +445,67 @@ def _validate_image_options(opts_str: str, line_num: int, col: int,
                 ))
 
 
+def _validate_duration(cmd_value: str, line_num: int, col: int,
+                       result: SyntaxCheckResult):
+    """
+    Valida il valore di {duration: ...}.
+
+    Formato atteso: uno o più token nella forma  NomeAccordo=N
+      - NomeAccordo  deve essere un nome accordo riconoscibile (IT o EN)
+      - N            deve essere un intero >= 1
+    """
+    parts = cmd_value.strip().split()
+    if not parts:
+        # Valore vuoto: già gestito da _REQUIRES_VALUE
+        return
+
+    for token in parts:
+        if '=' not in token:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_(
+                    "{{duration}}: invalid token '{tok}' — expected format: chord=beats (e.g. Sol=2)"
+                ).format(tok=token)
+            ))
+            continue
+
+        chord_part, _sep, beats_part = token.partition('=')
+        chord_part = chord_part.strip()
+        beats_part = beats_part.strip()
+
+        # ── Controlla il nome accordo ────────────────────────────
+        chord_semitones = _parse_chord_semitones(chord_part)
+        if chord_semitones is None:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_(
+                    "{{duration}}: unrecognized chord '{chord}'"
+                ).format(chord=chord_part)
+            ))
+
+        # ── Controlla i battiti ──────────────────────────────────
+        if not beats_part:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_(
+                    "{{duration}}: missing beat count for chord '{chord}'"
+                ).format(chord=chord_part)
+            ))
+            continue
+
+        try:
+            n = int(beats_part)
+            if n < 1:
+                raise ValueError
+        except ValueError:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_(
+                    "{{duration}}: beat count for '{chord}' must be a positive integer, got '{val}'"
+                ).format(chord=chord_part, val=beats_part)
+            ))
+
+
 def _validate_command(content: str, line_num: int, col: int,
                       result: SyntaxCheckResult):
     if not content:
@@ -607,6 +668,10 @@ def _validate_command(content: str, line_num: int, col: int,
     # ── Validazione specifica per {fingering:} ────────────────────
     if cmd_name == "fingering" and cmd_value:
         _validate_fingering(cmd_value, line_num, col, result)
+
+    # ── Validazione specifica per {duration:} ────────────────────
+    if cmd_name == "duration" and cmd_value:
+        _validate_duration(cmd_value, line_num, col, result)
 
     # ── Validazione specifica per {meta:} ─────────────────────────
     # Il formato atteso è:  {meta: chiave valore}  (almeno due token)

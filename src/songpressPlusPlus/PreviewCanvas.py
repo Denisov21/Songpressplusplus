@@ -758,6 +758,18 @@ class PreviewCanvas(object):
         self._showColumnBreakLines = show
         self.renderer.sd.showColumnBreakLines = show
 
+    def SetShowDurationBeats(self, show):
+        """Mostra o nasconde il numero di battiti sopra gli accordi ({duration})."""
+        self._showDurationBeats = show
+        self.renderer.sd.showDurationBeats = show
+
+    def SetDurationBeatsPrefs(self, colour_hex, size_pct, bold, align):
+        """Aggiorna colore, dimensione, grassetto e allineamento del beat count."""
+        self.renderer.sd.durationBeatsColourHex = colour_hex
+        self.renderer.sd.durationBeatsSizePct   = size_pct
+        self.renderer.sd.durationBeatsBold      = bold
+        self.renderer.sd.durationBeatsAlign     = align
+
     def SetTempoDisplay(self, tempoDisplay):
         self.renderer.tempoDisplay = tempoDisplay
 

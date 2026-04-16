@@ -53,6 +53,7 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | `{tempo_c:BPM}`     |              | 🔧  | 🖊    | Tempo with **eighth note** icon                                                          |
 | `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo with **dotted eighth note** icon                                                   |
 | `{time:N/M}`        |              | ✅  | ⌨️   | Time signature (e.g. `{time:4/4}`, `{time:3/4}`); rendered with a graphical time symbol  |
+| `{duration: Ch=N …}` |             | ✅  | ⌨️   | Beat duration of chords (e.g. `{duration: C=2 G=1}`); used to display beat numbers above chords |
 | `{sorttitle:Text}`  |              | ✅  | 🖊    | Alternative title used for alphabetical sorting (metadata only, not displayed)           |
 | `{keywords:...}`    |              | ✅  | 🖊    | Search keywords (metadata only, not displayed)                                           |
 | `{topic:...}`       |              | ✅  | 🖊    | Topic / category (metadata only, not displayed)                                          |
@@ -540,6 +541,65 @@ A dialog opens that automatically shows the notes of the chord and lets you assi
 **Finger number color:**
 The color of the numbers displayed on the keys is set in *Options → Format → Chords and tempo → Finger number colour*. The default is near-black (`#1A1A1A`); on black keys the number appears in white to ensure contrast.
 
+### Chord Beat Duration — `{duration:}`
+
+The `{duration:}` directive specifies the **beat duration** of each chord on the following line. Songpress++ uses this information to calculate and display **beat numbers** above the chords in the preview, helping the performer understand the rhythm without reading sheet music.
+
+**Format:**
+
+```chordpro
+{duration: ChordName=N ChordName=N …}
+```
+
+- `ChordName` — chord name in Italian notation (`Do`, `Sol`, `La-`, `Re7`…) or English (`C`, `G`, `Am`, `D7`…)
+- `N` — positive integer number of beats (≥ 1)
+- Chords are separated by spaces
+- Only the listed chords receive a beat indicator; others are ignored
+
+**Examples:**
+
+```chordpro
+{duration: C=4 G=2 Am=2 F=4}
+[C]Amaz[G]ing [Am]grace, how [F]sweet
+```
+
+```chordpro
+{duration: G=2 Em=2 C=4}
+[G]Nel [Em]mezzo del [C]cammino
+```
+
+```chordpro
+{duration: Am=4 F=2 C=2 G=4}
+[Am]Tanti [F]au[C]guri a [G]te
+```
+
+Each `{duration:}` directive applies to the **line of text/chords immediately below it**. To assign durations to multiple lines, place a `{duration:}` before each one.
+
+**Inserting from the menu — guided dialog:**
+
+The command *Insert → Chord duration {duration:}…* automatically detects the context:
+
+- **If the line below the cursor contains no `[…]` chords** — inserts `{duration: }` directly without opening any dialog.
+- **If the line below the cursor contains `[…]` chords** — opens a dialog with a numeric field (`SpinCtrl`) for each unique chord found, preset to 1 beat. As you change the values, the **Preview** field updates in real time showing the directive that will be inserted (e.g. `{duration: C=4 G=2 Am=2 F=1}`). Setting a chord to **0** excludes it from the directive.
+
+> **Note** — The directive is inserted at the cursor position: place the cursor on the line **above** the chord line, then select the command from the menu.
+
+**Preview display:**
+
+The menu item **View → Show chord beats** enables or disables the display of beat numbers in the preview. Color, size, bold, and alignment of the numbers are configured in *Options → Format → Chords and tempo*.
+
+**Syntax checking:**
+
+The built-in syntax checker (*Tools → Check syntax*) reports errors in the value of `{duration:}`:
+
+| Error | Example | Message |
+| ----- | ------- | ------- |
+| Token without `=` | `{duration: G}` | invalid format |
+| Unrecognised chord | `{duration: Xyz=2}` | unrecognized chord |
+| Duplicate chord | `{duration: G=2 G=1}` | chord appears more than once |
+| Missing beat count | `{duration: G=}` | missing beat count |
+| Non-integer or ≤ 0 beats | `{duration: G=0}`, `G=1.5` | must be a positive integer |
+
 ### Image Directive
 
 ![Songpress++ Insert Image](./img/GUIDE/inserisciImmagine_en.png)
@@ -624,6 +684,7 @@ The **Embed image in file (base64, no external dependency)** checkbox is located
 {capo: 0}
 
 {start_verse_num}
+{duration: C=2 G7=2}
 [C]Che bella [G7]cosa na jurnata 'e [C]sole
 [C]N'aria serena [G7]doppo na tempesta!
 {end_verse_num}

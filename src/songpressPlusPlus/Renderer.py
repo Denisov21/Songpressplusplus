@@ -293,6 +293,16 @@ class Renderer(object):
         else:
             format = self.format
         t = SongText(text, format.wxFont, type, format.color)
+        if type == SongText.chord and self._pending_duration:
+            # Associa la durata in battiti all'accordo corrispondente per posizione
+            # nella sequenza della direttiva {duration: ...}
+            if self._duration_chord_idx < len(self._pending_duration):
+                t.duration_beats = self._pending_duration[self._duration_chord_idx][1]
+                self._duration_chord_idx += 1
+                # Se abbiamo consumato tutti gli accordi, svuota la lista
+                if self._duration_chord_idx >= len(self._pending_duration):
+                    self._pending_duration = []
+                    self._duration_chord_idx = 0
         if not type == SongText.chord or self.sf.showChords > 0:
             self.currentLine.AddBox(t)
 
@@ -357,6 +367,10 @@ class Renderer(object):
         self.song.chordsBelow = self.chordsBelow
         self.song.klavier_list = []  # accordi da mostrare come tastiere
         self.song.define_list  = []  # diagrammi chitarra da mostrare
+        # Dizionario durate accordi dalla direttiva {duration: ACCORDO=battiti ...}
+        # Attivo per la riga immediatamente successiva alla direttiva.
+        self._pending_duration = []   # lista di (accordo, battiti) in ordine
+        self._duration_chord_idx = 0  # indice accordo corrente nella riga
 
         self.song.columns = self.columns
         self.song.columnHeight = self.columnHeight
@@ -831,6 +845,21 @@ class Renderer(object):
                             if box is not None:
                                 self.EndBlock()
                                 self.song.AddBox(box)
+                    elif cmd == 'duration':
+                        # Direttiva custom: {duration: DO=4 SOL=2 LA-=2 ...}
+                        # Associa il numero di battiti a ciascun accordo della riga successiva.
+                        a = self.GetAttribute()
+                        if a is not None and a.strip():
+                            dur = []
+                            for token in a.strip().split():
+                                if '=' in token:
+                                    chord, _sep, beats = token.partition('=')
+                                    try:
+                                        dur.append((chord.strip().upper(), int(beats.strip())))
+                                    except ValueError:
+                                        pass
+                            self._pending_duration = dur
+                            self._duration_chord_idx = 0
 
             self.EndLine()
             if empty:

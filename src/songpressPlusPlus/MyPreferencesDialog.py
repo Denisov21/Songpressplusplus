@@ -219,6 +219,17 @@ class MyPreferencesDialog(PreferencesDialog):
         self.gridSizeDirH.SetValue(_sd == 'horizontal')
         self.gridSizeDirV.SetValue(_sd == 'vertical')
 
+        # Beat count ({duration})
+        dur_hex = getattr(self.pref, 'durationBeatsColourHex', '#6464C8')
+        self.durationBeatsHexCtrl.SetValue(dur_hex)
+        self.durationBeatsColourSwatch.SetBackgroundColour(self._hex_to_colour(dur_hex))
+        self.durationBeatsSizeSpin.SetValue(getattr(self.pref, 'durationBeatsSizePct', 60))
+        self.durationBeatsBoldCB.SetValue(getattr(self.pref, 'durationBeatsBold', False))
+        _da = getattr(self.pref, 'durationBeatsAlign', 'right')
+        self.durationBeatsAlignLeft.SetValue(_da == 'left')
+        self.durationBeatsAlignCenter.SetValue(_da == 'center')
+        self.durationBeatsAlignRight.SetValue(_da == 'right')
+
         # File associations (solo Windows)
         if self._fileAssocAvailable:
             import sys as _sys
@@ -306,6 +317,25 @@ class MyPreferencesDialog(PreferencesDialog):
             self.fingerNumHexCtrl.SetValue(self._colour_to_hex(chosen))
             self.fingerNumColourSwatch.SetBackgroundColour(chosen)
             self.fingerNumColourSwatch.Refresh()
+        dlg.Destroy()
+
+    def OnDurationBeatsHexChanged(self, evt):
+        c = self._hex_to_colour(self.durationBeatsHexCtrl.GetValue())
+        self.durationBeatsColourSwatch.SetBackgroundColour(c)
+        self.durationBeatsColourSwatch.Refresh()
+
+    def OnDurationBeatsPickColour(self, evt):
+        current = self._hex_to_colour(self.durationBeatsHexCtrl.GetValue())
+        data = wx.ColourData()
+        data.SetColour(current)
+        self._read_custom_colours(data, 'customColoursDurationBeats')
+        dlg = wx.ColourDialog(self, data)
+        if dlg.ShowModal() == wx.ID_OK:
+            chosen = dlg.GetColourData().GetColour()
+            self._apply_custom_colours(dlg.GetColourData(), 'customColoursDurationBeats')
+            self.durationBeatsHexCtrl.SetValue(self._colour_to_hex(chosen))
+            self.durationBeatsColourSwatch.SetBackgroundColour(chosen)
+            self.durationBeatsColourSwatch.Refresh()
         dlg.Destroy()
 
     def OnEditorBgHexChanged(self, evt):
@@ -1309,6 +1339,16 @@ class MyPreferencesDialog(PreferencesDialog):
             self.pref.gridSizeDir = 'vertical'
         else:
             self.pref.gridSizeDir = 'both'
+        # Beat count ({duration})
+        self.pref.durationBeatsColourHex = self.durationBeatsHexCtrl.GetValue().strip()
+        self.pref.durationBeatsSizePct   = self.durationBeatsSizeSpin.GetValue()
+        self.pref.durationBeatsBold      = self.durationBeatsBoldCB.GetValue()
+        if self.durationBeatsAlignLeft.GetValue():
+            self.pref.durationBeatsAlign = 'left'
+        elif self.durationBeatsAlignCenter.GetValue():
+            self.pref.durationBeatsAlign = 'center'
+        else:
+            self.pref.durationBeatsAlign = 'right'
         # Context menu visibility — scritti in pref, Save() chiama _SaveContextMenu()
         self.pref.cmUndo         = self.cmUndo.GetValue()
         self.pref.cmRedo         = self.cmRedo.GetValue()

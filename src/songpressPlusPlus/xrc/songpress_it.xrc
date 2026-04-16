@@ -286,6 +286,13 @@
           <checked>1</checked>
           <bitmap>../img/column.png</bitmap>
         </object>
+        <object class="wxMenuItem" name="showDurationBeats">
+          <label>Mostra numero di battiti</label>
+          <accel></accel>
+          <help>Mostra o nascondi il numero di battiti sopra gli accordi (direttiva {duration})</help>
+          <checkable>1</checkable>
+          <checked>1</checked>
+        </object>
       </object>
       <object class="wxMenu" name="insert">
         <label>_Inserisci</label>
@@ -365,6 +372,11 @@
           <label>_Tonalità {key:}...</label>
           <accel></accel>
           <help>Inserisci la direttiva ChordPro per impostare la tonalità (es. Am, Do, Sol)</help>
+        </object>
+        <object class="wxMenuItem" name="insertDuration">
+          <label>_Durata accordo {duration:}...</label>
+          <accel></accel>
+          <help>Inserisci la direttiva ChordPro per impostare la durata in battute degli accordi (es. 1, 2, 4)</help>
         </object>
         <object class="wxMenuItem" name="insertTaste">
           <label>Tastiera _accordo {taste:}...</label>
