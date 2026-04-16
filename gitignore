@@ -4,6 +4,9 @@
 # IDE
 /.idea/
 
+# Egg info (setuptools)
+/*.egg-info/
+
 # Build e distribuzione
 # Esclude le sottocartelle di build, non i file
 /build/*/
