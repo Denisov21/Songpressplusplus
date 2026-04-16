@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: songpress\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-05 16:22+0200\n"
-"PO-Revision-Date: 2026-04-11 12:00+0200\n"
+"PO-Revision-Date: 2026-04-16 21:01+0200\n"
 "Last-Translator: Denisov21\n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -300,8 +300,8 @@ msgid ""
 "When enabled, the preview redraws only after a short pause in typing (300 ms), reducing CPU usage. When "
 "disabled, every keystroke immediately updates the preview."
 msgstr ""
-"Se abilitato, l'anteprima viene ridisegnata solo dopo una breve pausa nella digitazione (300 ms), "
-"riducendo l'uso della CPU. Se disabilitato, ogni tasto aggiorna immediatamente l'anteprima."
+"Se abilitato, l'anteprima viene ridisegnata solo dopo una breve pausa nella digitazione (300 ms), riducendo "
+"l'uso della CPU. Se disabilitato, ogni tasto aggiorna immediatamente l'anteprima."
 
 #: PreferencesDialog.py
 msgid "Double-click on preview jumps to source line in editor"
@@ -309,8 +309,8 @@ msgstr "Doppio clic sull'anteprima porta alla riga sorgente nell'editor"
 
 #: PreferencesDialog.py
 msgid ""
-"When enabled, double-clicking on any word or chord in the preview moves the cursor to the corresponding "
-"line in the editor."
+"When enabled, double-clicking on any word or chord in the preview moves the cursor to the corresponding line "
+"in the editor."
 msgstr ""
 "Se abilitato, il doppio clic su una parola o un accordo nell'anteprima sposta il cursore alla riga "
 "corrispondente nell'editor."
@@ -458,8 +458,8 @@ msgid ""
 "This text is shown as the section label when {start_of_grid} is used without an explicit label argument.\n"
 "Example: {start_of_grid: label} overrides this value."
 msgstr ""
-"Questo testo viene mostrato come etichetta di sezione quando {start_of_grid} viene usato senza un "
-"argomento etichetta esplicito.\n"
+"Questo testo viene mostrato come etichetta di sezione quando {start_of_grid} viene usato senza un argomento "
+"etichetta esplicito.\n"
 "Esempio: {start_of_grid: etichetta} sovrascrive questo valore."
 
 #: PreferencesDialog.py format tab — chord grid space as pipe checkbox
@@ -574,7 +574,6 @@ msgstr "Commenti"
 msgid "Tab / Grid"
 msgstr "Tab / Griglia"
 
-
 #: PreferencesDialog.py (Context menu - Edit group)
 msgid "Ask confirmation before deleting"
 msgstr "Chiedi conferma prima di eliminare"
@@ -586,3 +585,55 @@ msgstr "Eliminare il testo selezionato?"
 #: PreferencesDialog.py
 msgid "Enable directive intellisense (Ctrl+Space)"
 msgstr "Abilita intellisense direttive (Ctrl+Spazio)"
+
+#: PreferencesDialog.py format tab — beat count group title
+msgid "Beat count ({duration})"
+msgstr "Numero di battiti ({duration})"
+
+#: PreferencesDialog.py format tab — beat count colour label
+msgid "Colour"
+msgstr "Colore"
+
+#: PreferencesDialog.py format tab — beat count font size label
+msgid "Font size (% of chord font)"
+msgstr "Dimensione carattere (% del carattere accordo)"
+
+#: PreferencesDialog.py format tab — beat count font size tooltip
+msgid "Size of the beat-count number as a percentage of the chord font size (default: 60%)"
+msgstr "Dimensione del numero di battiti come percentuale del carattere accordo (predefinito: 60%)"
+
+#: PreferencesDialog.py format tab — beat count bold checkbox
+msgid "Bold"
+msgstr "Grassetto"
+
+#: PreferencesDialog.py format tab — beat count bold tooltip
+msgid "Draw the beat-count number in bold"
+msgstr "Disegna il numero di battiti in grassetto"
+
+#: PreferencesDialog.py format tab — beat count position label
+msgid "Position"
+msgstr "Posizione"
+
+#: PreferencesDialog.py format tab — beat count align left
+msgid "Left"
+msgstr "Sinistra"
+
+#: PreferencesDialog.py format tab — beat count align left tooltip
+msgid "Show beat count to the left of the chord name"
+msgstr "Mostra il numero di battiti a sinistra del nome accordo"
+
+#: PreferencesDialog.py format tab — beat count align center
+msgid "Center"
+msgstr "Centro"
+
+#: PreferencesDialog.py format tab — beat count align center tooltip
+msgid "Show beat count centered above the chord name"
+msgstr "Mostra il numero di battiti centrato sopra il nome accordo"
+
+#: PreferencesDialog.py format tab — beat count align right
+msgid "Right"
+msgstr "Destra"
+
+#: PreferencesDialog.py format tab — beat count align right tooltip
+msgid "Show beat count to the right of the chord name"
+msgstr "Mostra il numero di battiti a destra del nome accordo"

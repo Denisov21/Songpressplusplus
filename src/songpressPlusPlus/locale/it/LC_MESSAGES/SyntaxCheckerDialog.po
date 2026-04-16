@@ -212,3 +212,30 @@ msgstr "{{meta}} richiede il formato 'chiave valore', trovato: '{val}'"
 #: SyntaxChecker.py
 msgid "Command '{{cmd}}' does not accept a value"
 msgstr "Il comando '{{cmd}}' non accetta un valore"
+
+# -----------------------------------------------------------------------
+# SyntaxChecker.py — {duration} validation messages
+# -----------------------------------------------------------------------
+#. {duration}: a token is not in the form Chord=N
+#. {tok} is replaced at runtime with the malformed token
+#: SyntaxChecker.py
+msgid "{{duration}}: invalid token '{tok}' — expected format: chord=beats (e.g. Sol=2)"
+msgstr "{{duration}}: token non valido '{tok}' — formato atteso: accordo=battiti (es. Sol=2)"
+
+#. {duration}: chord name not recognised (neither Italian nor English notation)
+#. {chord} is replaced at runtime with the unrecognised chord name
+#: SyntaxChecker.py
+msgid "{{duration}}: unrecognized chord '{chord}'"
+msgstr "{{duration}}: accordo non riconosciuto '{chord}'"
+
+#. {duration}: the beat count after '=' is missing entirely
+#. {chord} is replaced at runtime with the chord name
+#: SyntaxChecker.py
+msgid "{{duration}}: missing beat count for chord '{chord}'"
+msgstr "{{duration}}: numero di battiti mancante per l'accordo '{chord}'"
+
+#. {duration}: beat count is not a positive integer (e.g. 0, -1, 1.5, letters)
+#. {chord} = chord name; {val} = the invalid value found
+#: SyntaxChecker.py
+msgid "{{duration}}: beat count for '{chord}' must be a positive integer, got '{val}'"
+msgstr "{{duration}}: i battiti per '{chord}' devono essere un intero positivo, trovato '{val}'"
