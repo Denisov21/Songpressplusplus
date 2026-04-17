@@ -1161,3 +1161,27 @@ msgstr "0 = ometti questo accordo"
 #: SongpressFrame.py OnInsertDuration preview label
 msgid "Preview:"
 msgstr "Anteprima:"
+
+#: SongpressFrame.py find dialog — highlight scope box label
+msgid "Highlight"
+msgstr "Evidenzia"
+
+#: SongpressFrame.py find dialog — highlight scope radio: editor only
+msgid "Editor only"
+msgstr "Solo editor"
+
+#: SongpressFrame.py find dialog — highlight scope radio: editor + preview
+msgid "Editor + Preview"
+msgstr "Editor + Anteprima"
+
+#: SongpressFrame.py find dialog — highlight colour box label
+msgid "Highlight colour"
+msgstr "Colore evidenziazione"
+
+#: SongpressFrame.py find dialog — open colour picker button
+msgid "Pick…"
+msgstr "Scegli…"
+
+#: SongpressFrame.py find dialog — reset highlight colour to default
+msgid "Default"
+msgstr "Predefinito"

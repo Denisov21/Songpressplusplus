@@ -225,6 +225,7 @@ class Preferences(object):
         self._LoadSyntaxColours()
         self._LoadDebugOptions()
         self._LoadIntellisense()
+        self._LoadDecoSliderColour()
 
     def _LoadKlavierColour(self):
         self.config.SetPath('/KlavierColour')
@@ -388,6 +389,7 @@ class Preferences(object):
         self._SaveSyntaxColours()
         self._SaveDebugOptions()
         self._SaveIntellisense()
+        self._SaveDecoSliderColour()
         self.config.Flush()
 
     def _SaveKlavierColour(self):
@@ -567,6 +569,17 @@ class Preferences(object):
         self.config.Write('scaleEnabled', '1' if getattr(self, 'symbolScaleEnabled', False) else '0')
         self.config.Write('fontSize', str(getattr(self, 'symbolFontSize', 24)))
         self.config.Write('insertVerse', '1' if getattr(self, 'symbolInsertVerse', False) else '0')
+        self.config.SetPath('/')
+
+    def _LoadDecoSliderColour(self):
+        self.config.SetPath('/DecoSlider')
+        h = self.config.Read('barColourHex')
+        self.decoSliderBarColourHex = h if h else '#2980B9'
+        self.config.SetPath('/')
+
+    def _SaveDecoSliderColour(self):
+        self.config.SetPath('/DecoSlider')
+        self.config.Write('barColourHex', getattr(self, 'decoSliderBarColourHex', '#2980B9'))
         self.config.SetPath('/')
 
     def SetChorusLabel(self, c):

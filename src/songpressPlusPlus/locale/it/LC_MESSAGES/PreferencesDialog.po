@@ -637,3 +637,15 @@ msgstr "Destra"
 #: PreferencesDialog.py format tab — beat count align right tooltip
 msgid "Show beat count to the right of the chord name"
 msgstr "Mostra il numero di battiti a destra del nome accordo"
+
+#: PreferencesDialog.py autoadjust tab — deco slider bar colour label
+msgid "Level bar colour"
+msgstr "Colore barra livello"
+
+#: MyDecoSlider.py — etichetta sinistra barra livello
+msgid "Easy"
+msgstr "Facile"
+
+#: MyDecoSlider.py — etichetta destra barra livello
+msgid "Difficult"
+msgstr "Difficile"

@@ -120,6 +120,11 @@ class MyPreferencesDialog(PreferencesDialog):
         self.klavierHexCtrl.SetValue(default_hex)
         self.klavierColourSwatch.SetBackgroundColour(self._hex_to_colour(default_hex))
 
+        # DecoSlider bar colour
+        deco_hex = getattr(self.pref, 'decoSliderBarColourHex', '#2980B9')
+        self.decoBarHexCtrl.SetValue(deco_hex)
+        self.decoBarColourSwatch.SetBackgroundColour(self._hex_to_colour(deco_hex))
+        self.decoBarColourSwatch.Refresh()
         # Finger number colour
         fn_hex = getattr(self.pref, 'fingerNumColourHex', '#1A1A1A')
         if hasattr(self, 'fingerNumHexCtrl'):
@@ -1268,6 +1273,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.titleLineWidth = self.titleLineWidthSpin.GetValue()
         self.pref.verseBoxWidth = self.verseBoxWidthSpin.GetValue()
         self.pref.klavierHighlightHex = self.klavierHexCtrl.GetValue().strip()
+        self.pref.decoSliderBarColourHex = self.decoBarHexCtrl.GetValue().strip()
         if hasattr(self, 'fingerNumHexCtrl'):
             self.pref.fingerNumColourHex = self.fingerNumHexCtrl.GetValue().strip()
         if hasattr(self, 'editorBgHexCtrl'):
@@ -1374,6 +1380,43 @@ class MyPreferencesDialog(PreferencesDialog):
                 self._on_apply()
         else:
             evt.Skip(True)
+
+    def OnDecoBarHexChanged(self, evt):
+        c = self._hex_to_colour(self.decoBarHexCtrl.GetValue())
+        self.decoBarColourSwatch.SetBackgroundColour(c)
+        self.decoBarColourSwatch.Refresh()
+        # Aggiorna subito tutti gli slider visibili
+        self._apply_deco_bar_colour(self.decoBarHexCtrl.GetValue().strip())
+        evt.Skip()
+
+    def OnDecoBarPickColour(self, evt):
+        current = self._hex_to_colour(self.decoBarHexCtrl.GetValue())
+        data = wx.ColourData()
+        data.SetColour(current)
+        data.SetChooseFull(True)
+        self._apply_custom_colours(data, 'customColoursDecoBar')
+        dlg = wx.ColourDialog(self, data)
+        if dlg.ShowModal() == wx.ID_OK:
+            result_data = dlg.GetColourData()
+            chosen = result_data.GetColour()
+            self._read_custom_colours(result_data, 'customColoursDecoBar')
+            self.decoBarHexCtrl.SetValue(self._colour_to_hex(chosen))
+            self.decoBarColourSwatch.SetBackgroundColour(chosen)
+            self.decoBarColourSwatch.Refresh()
+            self._apply_deco_bar_colour(self._colour_to_hex(chosen))
+        dlg.Destroy()
+
+    def _apply_deco_bar_colour(self, hex_str):
+        """Aggiorna BAR_COLOUR_FULL in MyDecoSlider e ridisegna tutti gli slider."""
+        try:
+            from . import MyDecoSlider as _mds
+            c = self._hex_to_colour(hex_str)
+            if c.IsOk():
+                _mds.BAR_COLOUR_FULL = c
+                for ds in self.decoSliders.values():
+                    ds.panel.Refresh()
+        except Exception:
+            pass
 
     def OnPin(self, evt):
         """Toggling del pin button: mantiene il dialogo aperto dopo OK."""

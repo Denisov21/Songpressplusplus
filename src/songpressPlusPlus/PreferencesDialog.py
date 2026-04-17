@@ -261,6 +261,18 @@ class PreferencesDialog(wx.Dialog):
         bSizer18.Add(self.autoTab2Chordpro, 0, wx.ALL, 5)
         self.autoAdjustEasyKey = wx.CheckBox(self.autoAdjust, wx.ID_ANY, _(u"Offer to transpose songs to simplify chords"), wx.DefaultPosition, wx.DefaultSize, 0)
         bSizer18.Add(self.autoAdjustEasyKey, 0, wx.ALL, 5)
+        bSizerDecoBar = wx.BoxSizer(wx.HORIZONTAL)
+        self.labelDecoBarColour = wx.StaticText(self.autoAdjust, wx.ID_ANY, _(u"Level bar colour"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelDecoBarColour.Wrap(-1)
+        bSizerDecoBar.Add(self.labelDecoBarColour, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.decoBarHexCtrl = wx.TextCtrl(self.autoAdjust, wx.ID_ANY, u"#2980B9", wx.DefaultPosition, wx.Size(80, -1), 0)
+        bSizerDecoBar.Add(self.decoBarHexCtrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.decoBarColourBtn = wx.Button(self.autoAdjust, wx.ID_ANY, _(u"Pick\u2026"), wx.DefaultPosition, wx.Size(60, -1), 0)
+        bSizerDecoBar.Add(self.decoBarColourBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.decoBarColourSwatch = wx.Panel(self.autoAdjust, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
+        bSizerDecoBar.Add(self.decoBarColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
+        bSizer18.Add(bSizerDecoBar, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
         self.simplifyPanel = wx.ScrolledWindow(self.autoAdjust, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.HSCROLL | wx.SUNKEN_BORDER | wx.VSCROLL)
         self.simplifyPanel.SetScrollRate(5, 5)
         self.simplifyPanel.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW))
@@ -793,6 +805,8 @@ class PreferencesDialog(wx.Dialog):
         self.fingerNumHexCtrl.Bind(wx.EVT_TEXT, self.OnFingerNumHexChanged)
         self.durationBeatsColourBtn.Bind(wx.EVT_BUTTON, self.OnDurationBeatsPickColour)
         self.durationBeatsHexCtrl.Bind(wx.EVT_TEXT, self.OnDurationBeatsHexChanged)
+        self.decoBarColourBtn.Bind(wx.EVT_BUTTON, self.OnDecoBarPickColour)
+        self.decoBarHexCtrl.Bind(wx.EVT_TEXT, self.OnDecoBarHexChanged)
         self.editorBgBtn.Bind(wx.EVT_BUTTON, self.OnEditorBgPickColour)
         self.editorBgHexCtrl.Bind(wx.EVT_TEXT, self.OnEditorBgHexChanged)
         self.selColourBtn.Bind(wx.EVT_BUTTON, self.OnSelColourPickColour)
@@ -917,4 +931,10 @@ class PreferencesDialog(wx.Dialog):
         event.Skip()
 
     def OnCmConfirmDeleteChanged(self, event):
+        event.Skip()
+
+    def OnDecoBarHexChanged(self, event):
+        event.Skip()
+
+    def OnDecoBarPickColour(self, event):
         event.Skip()

@@ -887,6 +887,30 @@ class PreviewCanvas(object):
         """
         self._debounceEnabled = bool(enabled)
 
+    def SetFindWord(self, word, flags=0, colour=None):
+        """Evidenzia *word* nel preview (chiamato da SongpressFindReplaceDialog).
+
+        Passa la parola cercata al SongDecorator e forza un ridisegno immediato.
+        flags:  stessi flag wx.stc usati in FindText (es. STC_FIND_MATCHCASE).
+        colour: wx.Colour per l'evidenziazione (None = usa il colore corrente).
+        """
+        self.renderer.sd.find_word  = word or ''
+        self.renderer.sd.find_flags = flags
+        if colour is not None:
+            self.renderer.sd.find_colour = colour
+        self.panel.Refresh()
+
+    def SetFindHighlightColour(self, colour):
+        """Aggiorna solo il colore di evidenziazione nel preview e ridisegna."""
+        self.renderer.sd.find_colour = colour
+        self.panel.Refresh()
+
+    def ClearFindWord(self):
+        """Rimuove l'evidenziazione dal preview (chiamato alla chiusura del dialogo)."""
+        self.renderer.sd.find_word  = ''
+        self.renderer.sd.find_flags = 0
+        self.panel.Refresh()
+
     def SetMinSizeEnabled(self, enabled):
         """Imposta (True) o rimuove (False) la dimensione minima del pannello anteprima.
 

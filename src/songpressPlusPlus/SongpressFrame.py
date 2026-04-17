@@ -184,6 +184,38 @@ class SongpressFindReplaceDialog(object):
 
         outer.Add(nb_and_btns, 1, wx.EXPAND)
 
+        # ── Riga inferiore: scope evidenziazione + colore ─────────────
+        bottom_row = wx.BoxSizer(wx.HORIZONTAL)
+
+        # Radio: solo editor / editor + preview
+        hl_scope_box = wx.StaticBoxSizer(
+            wx.StaticBox(self.dialog, label=_(u"Highlight")), wx.HORIZONTAL)
+        self.rbHlEditor  = wx.RadioButton(self.dialog,
+                                          label=_(u"Editor only"),
+                                          style=wx.RB_GROUP)
+        self.rbHlBoth    = wx.RadioButton(self.dialog,
+                                          label=_(u"Editor + Preview"))
+        self.rbHlBoth.SetValue(True)
+        hl_scope_box.Add(self.rbHlEditor, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4)
+        hl_scope_box.Add(self.rbHlBoth,   0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4)
+        bottom_row.Add(hl_scope_box, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 8)
+
+        # Colore evidenziazione: pulsante Pick + Default + swatch
+        hl_col_box = wx.StaticBoxSizer(
+            wx.StaticBox(self.dialog, label=_(u"Highlight colour")), wx.HORIZONTAL)
+        self.btnHlColour   = wx.Button(self.dialog, label=_(u"Pick\u2026"))
+        self.btnHlDefault  = wx.Button(self.dialog, label=_(u"Default"))
+        self._hl_colour  = self._load_find_colour()
+        self.swatchHl    = wx.Panel(self.dialog, size=(24, 24),
+                                    style=wx.BORDER_SIMPLE)
+        self.swatchHl.SetBackgroundColour(self._hl_colour)
+        hl_col_box.Add(self.btnHlColour,  0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4)
+        hl_col_box.Add(self.btnHlDefault, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4)
+        hl_col_box.Add(self.swatchHl,     0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4)
+        bottom_row.Add(hl_col_box, 0, wx.ALIGN_CENTER_VERTICAL)
+
+        outer.Add(bottom_row, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
         self.dialog.SetSizerAndFit(outer)
         self.dialog.CentreOnParent()
 
@@ -213,6 +245,11 @@ class SongpressFindReplaceDialog(object):
         self.notebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self._OnTabChanged)
         self.dialog.Bind(wx.EVT_CLOSE,      self._OnClose)
         self.dialog.Bind(wx.EVT_CHAR_HOOK,  self._OnCharHook)
+        self.btnHlColour.Bind(wx.EVT_BUTTON,  self._OnPickHlColour)
+        self.btnHlDefault.Bind(wx.EVT_BUTTON, self._OnDefaultHlColour)
+
+        # Applica il colore caricato subito all'apertura
+        self._apply_hl_colour(self._hl_colour)
 
         self.dialog.Show()
         self._FocusFindField()
@@ -348,6 +385,12 @@ class SongpressFindReplaceDialog(object):
             text.SetSelection(p, p + len(st))
             self.lblCount.SetLabel(u"")
             self.lblCount.SetForegroundColour(wx.Colour(0, 100, 180))
+            # Evidenzia nell'editor sempre; nel preview solo se rbHlBoth è attivo
+            self.owner.text.SetFindHighlight(st, flags)
+            if self.rbHlBoth.GetValue():
+                self.owner.previewCanvas.SetFindWord(st, flags)
+            else:
+                self.owner.previewCanvas.ClearFindWord()
         else:
             if not from_start:
                 if down:
@@ -450,9 +493,100 @@ class SongpressFindReplaceDialog(object):
         self.owner.findReplaceDialog = None
 
     def _OnClose(self, evt):
+        # Rimuove le evidenziazioni da editor e preview alla chiusura del dialogo
+        try:
+            self.owner.text.ClearFindHighlight()
+            self.owner.previewCanvas.ClearFindWord()
+        except Exception:
+            pass
         self.dialog = None
         self.owner.findReplaceDialog = None
         evt.Skip()
+
+    # --- Colore evidenziazione: load / save / pick -------------------------
+
+    _DEFAULT_HL_HEX = '#FFDC00'   # giallo default
+
+    def _load_find_colour(self):
+        """Legge il colore salvato in wx.Config; restituisce wx.Colour."""
+        try:
+            cfg = wx.Config.Get()
+            cfg.SetPath('/FindHighlight')
+            h = cfg.Read('colourHex')
+            cfg.SetPath('/')
+            if h:
+                h = h.strip().lstrip('#')
+                if len(h) == 6:
+                    return wx.Colour(int(h[0:2], 16),
+                                     int(h[2:4], 16),
+                                     int(h[4:6], 16))
+        except Exception:
+            pass
+        h = self._DEFAULT_HL_HEX.lstrip('#')
+        return wx.Colour(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+    def _save_find_colour(self, colour):
+        """Salva il colore in wx.Config."""
+        try:
+            cfg = wx.Config.Get()
+            cfg.SetPath('/FindHighlight')
+            cfg.Write('colourHex', '#%02X%02X%02X' % (
+                colour.Red(), colour.Green(), colour.Blue()))
+            cfg.SetPath('/')
+            cfg.Flush()
+        except Exception:
+            pass
+
+    def _apply_hl_colour(self, colour):
+        """Propaga il colore all'editor e al preview decorator."""
+        try:
+            self.owner.text.SetFindHighlightColour(colour)
+        except Exception:
+            pass
+        try:
+            self.owner.previewCanvas.SetFindHighlightColour(colour)
+        except Exception:
+            pass
+
+    def _OnPickHlColour(self, evt):
+        """Apre wx.ColourDialog per scegliere il colore di evidenziazione."""
+        data = wx.ColourData()
+        data.SetColour(self._hl_colour)
+        data.SetChooseFull(True)
+        dlg = wx.ColourDialog(self.dialog, data)
+        if dlg.ShowModal() == wx.ID_OK:
+            chosen = dlg.GetColourData().GetColour()
+            self._hl_colour = chosen
+            self.swatchHl.SetBackgroundColour(chosen)
+            self.swatchHl.Refresh()
+            self._apply_hl_colour(chosen)
+            self._save_find_colour(chosen)
+            # Riapplica l'highlight con il nuovo colore se c'è una parola cercata
+            st    = self._ActiveFindCtrl().GetValue()
+            flags = self._get_flags()
+            if st:
+                self.owner.text.SetFindHighlight(st, flags)
+                if self.rbHlBoth.GetValue():
+                    self.owner.previewCanvas.SetFindWord(st, flags, colour=chosen)
+        dlg.Destroy()
+
+    def _OnDefaultHlColour(self, evt):
+        """Ripristina il colore di evidenziazione al default (#FFDC00)."""
+        h = self._DEFAULT_HL_HEX.lstrip('#')
+        default = wx.Colour(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+        self._hl_colour = default
+        self.swatchHl.SetBackgroundColour(default)
+        self.swatchHl.Refresh()
+        self._apply_hl_colour(default)
+        self._save_find_colour(default)
+        st    = self._ActiveFindCtrl().GetValue()
+        flags = self._get_flags()
+        if st:
+            self.owner.text.SetFindHighlight(st, flags)
+            if self.rbHlBoth.GetValue():
+                self.owner.previewCanvas.SetFindWord(st, flags, colour=default)
+
+    # -----------------------------------------------------------------------
 
     def OnClose(self, evt):
         if self.dialog:

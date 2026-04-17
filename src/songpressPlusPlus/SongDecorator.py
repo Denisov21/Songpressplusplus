@@ -60,6 +60,10 @@ class SongDecorator(object):
         self.fingerNumColor = None
         # Whether to show beat count above chords ({duration} directive)
         self.showDurationBeats = True
+        # Parola da evidenziare nel preview (stringa cerca/trova, '' = nessuna)
+        self.find_word   = ''
+        self.find_flags  = 0   # stessi flag usati da wx.stc FindText
+        self.find_colour = wx.Colour(255, 220, 0)  # colore evidenziazione (modificabile)
         
     def SetMarginText(self, text):
         # Modify text margins
@@ -438,8 +442,32 @@ class SongDecorator(object):
         
     def PreDrawText(self, text, tx, ty):
         # tx, ty: coordinates of top-left corner of drawable area
-        pass
-        
+        fw = self.find_word
+        if not fw or not text.text:
+            return
+        import wx.stc as _stc
+        match_case = bool(self.find_flags & _stc.STC_FIND_MATCHCASE)
+        haystack = text.text if match_case else text.text.lower()
+        needle   = fw        if match_case else fw.lower()
+        if needle not in haystack:
+            return
+        self.dc.SetFont(text.font)
+        self.dc.SetPen(wx.TRANSPARENT_PEN)
+        self.dc.SetBrush(wx.Brush(self.find_colour, wx.SOLID))
+        bx = int(tx + text.marginLeft)
+        by = int(ty + text.marginTop)
+        bh = int(text.h)
+        nd_len = len(needle)
+        start  = 0
+        while True:
+            idx = haystack.find(needle, start)
+            if idx == -1:
+                break
+            prefix_w, _ = self.dc.GetTextExtent(text.text[:idx])
+            match_w,  _ = self.dc.GetTextExtent(text.text[idx:idx + nd_len])
+            self.dc.DrawRectangle(bx + prefix_w - 1, by, match_w + 2, bh)
+            start = idx + nd_len
+
     def DrawText(self, text, tx, ty):
         # tx, ty: coordinates of top-left corner of drawable area
         self.dc.SetFont(text.font)

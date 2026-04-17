@@ -191,6 +191,74 @@ class Editor(StyledTextCtrl):
         self.Colourise(0, -1)
         self.Refresh()
 
+    # --- Find highlight (indicatore STC n. 8, sfondo giallo) ---------------
+
+    FIND_INDICATOR = 8
+    # Colore evidenziazione trova — modificabile dall'utente (default giallo)
+    find_highlight_colour = wx.Colour(255, 220, 0)
+
+    def SetFindHighlight(self, word, flags=0):
+        """Evidenzia tutte le occorrenze di *word* con il colore scelto dall'utente."""
+        self.ClearFindHighlight()
+        if not word:
+            return
+        self.IndicatorSetStyle(self.FIND_INDICATOR, wx.stc.STC_INDIC_ROUNDBOX)
+        self.IndicatorSetForeground(self.FIND_INDICATOR, self.find_highlight_colour)
+        self.IndicatorSetAlpha(self.FIND_INDICATOR, 80)
+        self.IndicatorSetOutlineAlpha(self.FIND_INDICATOR, 200)
+        self.IndicatorSetUnder(self.FIND_INDICATOR, True)
+        self.SetIndicatorCurrent(self.FIND_INDICATOR)
+        total = self.GetLength()
+        p = 0
+        while True:
+            result = self.FindText(p, total, word, flags)
+            pos = result[0] if isinstance(result, tuple) else result
+            if pos == -1:
+                break
+            # len in bytes UTF-8 per IndicatorFillRange
+            byte_len = len(word.encode('utf-8'))
+            self.IndicatorFillRange(pos, byte_len)
+            p = pos + max(1, byte_len)
+
+    def ClearFindHighlight(self):
+        """Rimuove tutte le evidenziazioni del trova."""
+        self.SetIndicatorCurrent(self.FIND_INDICATOR)
+        self.IndicatorClearRange(0, self.GetLength())
+
+    def SetFindHighlightColour(self, colour):
+        """Aggiorna il colore e ridisegna tutte le occorrenze già evidenziate."""
+        self.find_highlight_colour = colour
+        # Aggiorna lo stile dell'indicatore
+        self.IndicatorSetStyle(self.FIND_INDICATOR, wx.stc.STC_INDIC_ROUNDBOX)
+        self.IndicatorSetForeground(self.FIND_INDICATOR, colour)
+        self.IndicatorSetAlpha(self.FIND_INDICATOR, 80)
+        self.IndicatorSetOutlineAlpha(self.FIND_INDICATOR, 200)
+        self.IndicatorSetUnder(self.FIND_INDICATOR, True)
+        # Scintilla non aggiorna i fill esistenti al cambio colore:
+        # bisogna cancellare e riscrivere gli indicatori già presenti.
+        # Troviamo tutte le posizioni con indicatore attivo e le rifacciamo.
+        self.SetIndicatorCurrent(self.FIND_INDICATOR)
+        total = self.GetLength()
+        pos = 0
+        while pos < total:
+            # Salta le posizioni senza indicatore
+            if not (self.IndicatorValueAt(self.FIND_INDICATOR, pos)):
+                pos = self.IndicatorEnd(self.FIND_INDICATOR, pos)
+                if pos <= 0:
+                    break
+                continue
+            # Trovato inizio di un run con indicatore attivo
+            start = pos
+            end   = self.IndicatorEnd(self.FIND_INDICATOR, pos)
+            if end <= start:
+                break
+            # Cancella e riscrive lo stesso range con il nuovo colore
+            self.IndicatorClearRange(start, end - start)
+            self.IndicatorFillRange(start,  end - start)
+            pos = end
+
+    # -----------------------------------------------------------------------
+
     def New(self):
         self.ClearAll()
 
