@@ -1185,3 +1185,17 @@ msgstr "Scegli…"
 #: SongpressFrame.py find dialog — reset highlight colour to default
 msgid "Default"
 msgstr "Predefinito"
+
+#: SongpressFrame.py fingering dialog — hand label
+msgid "Hand:"
+msgstr "Mano:"
+
+#: SongpressFrame.py fingering dialog — right hand radio button
+#: KlavierRenderer.py — hand label drawn below keyboard
+msgid "Right hand"
+msgstr "Mano destra"
+
+#: SongpressFrame.py fingering dialog — left hand radio button
+#: KlavierRenderer.py — hand label drawn below keyboard
+msgid "Left hand"
+msgstr "Mano sinistra"

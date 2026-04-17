@@ -541,6 +541,8 @@ class Preferences(object):
         self.durationBeatsBold = bool(int(v3)) if v3 != '' else False
         v4 = self.config.Read('durationBeatsAlign')
         self.durationBeatsAlign = v4 if v4 in ('left', 'center', 'right') else 'right'
+        v5 = self.config.Read('durationBeatsMode')
+        self.durationBeatsMode = v5 if v5 in ('number', 'dots', 'both') else 'number'
         self.config.SetPath('/')
 
     def _LoadMusicalSymbol(self):
@@ -561,7 +563,8 @@ class Preferences(object):
         self.config.Write('durationBeatsColourHex', getattr(self, 'durationBeatsColourHex', '#6464C8'))
         self.config.Write('durationBeatsSizePct',   str(getattr(self, 'durationBeatsSizePct', 60)))
         self.config.Write('durationBeatsBold',      '1' if getattr(self, 'durationBeatsBold', False) else '0')
-        self.config.Write('durationBeatsAlign',    getattr(self, 'durationBeatsAlign', 'right'))
+        self.config.Write('durationBeatsAlign',     getattr(self, 'durationBeatsAlign', 'right'))
+        self.config.Write('durationBeatsMode',      getattr(self, 'durationBeatsMode', 'number'))
         self.config.SetPath('/')
 
     def _SaveMusicalSymbol(self):

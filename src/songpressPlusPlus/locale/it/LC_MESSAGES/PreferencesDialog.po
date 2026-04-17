@@ -649,3 +649,31 @@ msgstr "Facile"
 #: MyDecoSlider.py — etichetta destra barra livello
 msgid "Difficult"
 msgstr "Difficile"
+
+#: PreferencesDialog.py format tab — beat count display mode label
+msgid "Display mode"
+msgstr "Modalità visualizzazione"
+
+#: PreferencesDialog.py format tab — beat count display mode: number
+msgid "Number"
+msgstr "Numero"
+
+#: PreferencesDialog.py format tab — beat count display mode: number tooltip
+msgid "Show beat count as a number above the chord"
+msgstr "Mostra il conteggio dei battiti come numero sopra l'accordo"
+
+#: PreferencesDialog.py format tab — beat count display mode: dots
+msgid "Dots"
+msgstr "Puntini"
+
+#: PreferencesDialog.py format tab — beat count display mode: dots tooltip
+msgid "Show beat count as dots between chords"
+msgstr "Mostra il conteggio dei battiti come puntini tra gli accordi"
+
+#: PreferencesDialog.py format tab — beat count display mode: both
+msgid "Both"
+msgstr "Entrambi"
+
+#: PreferencesDialog.py format tab — beat count display mode: both tooltip
+msgid "Show both number and dots"
+msgstr "Mostra sia il numero che i puntini"

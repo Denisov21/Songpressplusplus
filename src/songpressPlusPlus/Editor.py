@@ -259,6 +259,59 @@ class Editor(StyledTextCtrl):
 
     # -----------------------------------------------------------------------
 
+    # --- Duration dots (indicatore STC n. 9) --------------------------------
+    # Mostra puntini nell'editor tra accordi con {duration} quando la modalità
+    # è 'dots' o 'both'. I puntini sono applicati sul testo normale tra ] e [.
+
+    DOTS_INDICATOR = 9
+
+    def SetDurationDots(self, text, mode):
+        """Aggiorna i puntini di durata nell'editor.
+
+        *text*: testo completo del documento.
+        *mode*: 'number' (nessun punto), 'dots' o 'both'.
+        """
+        self.ClearDurationDots()
+        if mode not in ('dots', 'both'):
+            return
+        self.IndicatorSetStyle(self.DOTS_INDICATOR, wx.stc.STC_INDIC_DOTS)
+        self.IndicatorSetForeground(self.DOTS_INDICATOR, wx.Colour(100, 100, 200))
+        self.IndicatorSetUnder(self.DOTS_INDICATOR, True)
+        self.SetIndicatorCurrent(self.DOTS_INDICATOR)
+        import re as _re
+        # Cerca righe con accordi precedute da {duration: ...}
+        lines = text.splitlines(keepends=True)
+        byte_offset = 0
+        duration_pending = False
+        duration_map = {}   # accordo_idx -> battiti sulla prossima riga
+        for line in lines:
+            stripped = line.strip()
+            # Direttiva {duration: ...}
+            if stripped.lower().startswith('{duration:') and stripped.endswith('}'):
+                duration_pending = True
+                byte_offset += len(line.encode('utf-8'))
+                continue
+            if duration_pending:
+                duration_pending = False
+                # Trova tutti gli accordi [X] nella riga e il testo tra essi
+                # Disegna i puntini sul testo normale tra ] e il prossimo [
+                tokens = list(_re.finditer(r'\[([^\]]+)\]', line))
+                for i, m in enumerate(tokens):
+                    chord_end_byte = byte_offset + len(line[:m.end()].encode('utf-8'))
+                    if i + 1 < len(tokens):
+                        next_start_byte = byte_offset + len(line[:tokens[i+1].start()].encode('utf-8'))
+                        span = next_start_byte - chord_end_byte
+                        if span > 0:
+                            self.IndicatorFillRange(chord_end_byte, span)
+            byte_offset += len(line.encode('utf-8'))
+
+    def ClearDurationDots(self):
+        """Rimuove i puntini di durata dall'editor."""
+        self.SetIndicatorCurrent(self.DOTS_INDICATOR)
+        self.IndicatorClearRange(0, self.GetLength())
+
+    # -----------------------------------------------------------------------
+
     def New(self):
         self.ClearAll()
 

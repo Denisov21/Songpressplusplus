@@ -234,6 +234,10 @@ class MyPreferencesDialog(PreferencesDialog):
         self.durationBeatsAlignLeft.SetValue(_da == 'left')
         self.durationBeatsAlignCenter.SetValue(_da == 'center')
         self.durationBeatsAlignRight.SetValue(_da == 'right')
+        _dm = getattr(self.pref, 'durationBeatsMode', 'number')
+        self.durationModeNumber.SetValue(_dm == 'number')
+        self.durationModeDots.SetValue(_dm == 'dots')
+        self.durationModeBoth.SetValue(_dm == 'both')
 
         # File associations (solo Windows)
         if self._fileAssocAvailable:
@@ -1355,6 +1359,12 @@ class MyPreferencesDialog(PreferencesDialog):
             self.pref.durationBeatsAlign = 'center'
         else:
             self.pref.durationBeatsAlign = 'right'
+        if self.durationModeNumber.GetValue():
+            self.pref.durationBeatsMode = 'number'
+        elif self.durationModeDots.GetValue():
+            self.pref.durationBeatsMode = 'dots'
+        else:
+            self.pref.durationBeatsMode = 'both'
         # Context menu visibility — scritti in pref, Save() chiama _SaveContextMenu()
         self.pref.cmUndo         = self.cmUndo.GetValue()
         self.pref.cmRedo         = self.cmRedo.GetValue()

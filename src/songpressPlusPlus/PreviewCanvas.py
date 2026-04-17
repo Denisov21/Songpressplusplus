@@ -763,12 +763,13 @@ class PreviewCanvas(object):
         self._showDurationBeats = show
         self.renderer.sd.showDurationBeats = show
 
-    def SetDurationBeatsPrefs(self, colour_hex, size_pct, bold, align):
-        """Aggiorna colore, dimensione, grassetto e allineamento del beat count."""
+    def SetDurationBeatsPrefs(self, colour_hex, size_pct, bold, align, mode='number'):
+        """Aggiorna colore, dimensione, grassetto, allineamento e modalità del beat count."""
         self.renderer.sd.durationBeatsColourHex = colour_hex
         self.renderer.sd.durationBeatsSizePct   = size_pct
         self.renderer.sd.durationBeatsBold      = bold
         self.renderer.sd.durationBeatsAlign     = align
+        self.renderer.sd.durationBeatsMode      = mode
 
     def SetTempoDisplay(self, tempoDisplay):
         self.renderer.tempoDisplay = tempoDisplay

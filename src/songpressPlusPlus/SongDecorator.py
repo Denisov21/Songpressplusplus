@@ -60,6 +60,8 @@ class SongDecorator(object):
         self.fingerNumColor = None
         # Whether to show beat count above chords ({duration} directive)
         self.showDurationBeats = True
+        # Modalità visualizzazione battiti: 'number' | 'dots' | 'both'
+        self.durationBeatsMode = 'number'
         # Parola da evidenziare nel preview (stringa cerca/trova, '' = nessuna)
         self.find_word   = ''
         self.find_flags  = 0   # stessi flag usati da wx.stc FindText
@@ -687,19 +689,31 @@ class SongDecorator(object):
         
     def PostDrawLine(self, line, lx, ly):
         # lx, ly: coordinates of top-left corner of drawable area
-        # ── Numero battiti in apice sopra ogni accordo ({duration: ...}) ─
-        # Per ogni accordo con duration_beats >= 1, disegna il numero
-        # in apice in alto a destra del nome accordo, con font ridotto.
+        # ── Numero/puntini battiti sopra ogni accordo ({duration: ...}) ─
         if not getattr(self, 'showDurationBeats', True):
             return
-        for text in line.boxes:
+        mode = getattr(self, 'durationBeatsMode', 'number')
+        colour_hex = getattr(self, 'durationBeatsColourHex', '#6464C8')
+        try:
+            colour = wx.Colour(colour_hex)
+        except Exception:
+            colour = wx.Colour(100, 100, 200)
+
+        # Costruisce la sequenza completa dei box della riga in ordine di x
+        all_boxes = sorted(line.boxes, key=lambda t: t.x)
+
+        for idx, text in enumerate(all_boxes):
             if text.type != SongText.chord:
                 continue
             beats = getattr(text, 'duration_beats', 0)
             if beats < 1:
                 continue
-            label = str(beats)
-            # Font apice: dimensione e grassetto da preferenze
+
+            chord_left  = int(lx + line.marginLeft + text.x + text.marginLeft)
+            chord_right = chord_left + int(text.w)
+            chord_top   = int(ly + line.marginTop + text.y + text.marginTop)
+
+            # Font apice
             base_font = text.font
             size_pct  = getattr(self, 'durationBeatsSizePct', 60)
             is_bold   = getattr(self, 'durationBeatsBold', False)
@@ -713,31 +727,51 @@ class SongDecorator(object):
                 base_font.GetFaceName(),
             )
             self.dc.SetFont(apex_font)
-            lw, lh = self.dc.GetTextExtent(label)
-            # Posizione orizzontale: sinistra / centro / destra rispetto all'accordo
-            chord_left  = int(lx + line.marginLeft + text.x + text.marginLeft)
-            chord_right = chord_left + int(text.w)
-            align = getattr(self, 'durationBeatsAlign', 'right')
-            if align == 'left':
-                ax = chord_left
-            elif align == 'center':
-                ax = chord_left + (int(text.w) - lw) // 2
-            else:  # right
-                ax = chord_right - lw
-            ay = int(ly + line.marginTop + text.y + text.marginTop) - lh - 1
-            # Colore da preferenze
-            colour_hex = getattr(self, 'durationBeatsColourHex', '#6464C8')
-            try:
-                colour = wx.Colour(colour_hex)
-            except Exception:
-                colour = wx.Colour(100, 100, 200)
             self.dc.SetTextForeground(colour)
             self.dc.SetBackgroundMode(wx.TRANSPARENT)
-            self.dc.DrawText(label, ax, ay)
-            # Ripristina font e colore originali
+
+            # ── Modalità NUMERO ──────────────────────────────────────
+            if mode in ('number', 'both'):
+                label = str(beats)
+                lw, lh = self.dc.GetTextExtent(label)
+                align = getattr(self, 'durationBeatsAlign', 'right')
+                if align == 'left':
+                    ax = chord_left
+                elif align == 'center':
+                    ax = chord_left + (int(text.w) - lw) // 2
+                else:
+                    ax = chord_right - lw
+                ay = chord_top - lh - 1
+                self.dc.DrawText(label, ax, ay)
+
+            # ── Modalità PUNTINI ─────────────────────────────────────
+            # ── Modalità PUNTINI ─────────────────────────────────────
+            if mode in ('dots', 'both'):
+                dot_r = max(1, int(apex_size * 0.30))
+                self.dc.SetFont(apex_font)
+                _mw, mh = self.dc.GetTextExtent('0')
+                if mode == 'both':
+                    # Sopra il numero: numero è a (chord_top - mh - 1),
+                    # puntini ancora più in alto
+                    dot_y = chord_top - mh - 1 - dot_r - 2
+                else:
+                    # Al posto del numero
+                    dot_y = chord_top - dot_r - 2
+                box_w = max(int(text.w), dot_r * 3 * beats)
+                self.dc.SetPen(wx.TRANSPARENT_PEN)
+                self.dc.SetBrush(wx.Brush(colour, wx.SOLID))
+                for i in range(beats):
+                    frac  = (i + 0.5) / beats
+                    dot_x = chord_left + int(box_w * frac)
+                    self.dc.DrawCircle(dot_x, dot_y, dot_r)
+                self.dc.SetBrush(wx.NullBrush)
+                self.dc.SetPen(wx.NullPen)
+
+            # Ripristina font e colore
             self.dc.SetFont(text.font)
             self.dc.SetTextForeground(text.color)
-        
+
+
     def PostDrawBlock(self, block, bx, by):
         # bx, by: coordinates of top-left corner of drawable area
         # ── Tabella griglia accordi (modalità 'table') ────────────────

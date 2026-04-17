@@ -196,10 +196,12 @@ def _validate_fingering(cmd_value: str, line_num: int, col: int,
 
     Controlli:
     1. Il primo token deve essere un accordo riconosciuto.
-    2. I token successivi devono avere il formato  N=NomeNota  (N intero 1-5).
+    2. I token successivi devono avere il formato  N=NomeNota  (N intero 1-5)
+       oppure  hand=R  /  hand=L  (indicazione di mano, opzionale).
     3. Ogni nota indicata deve appartenere all'accordo specificato.
     4. Lo stesso dito non può essere assegnato due volte.
     5. La stessa nota non può ricevere due dita diverse.
+    6. Il token hand= accetta solo i valori R e L (case-insensitive).
     """
     parts = cmd_value.strip().split()
     if not parts:
@@ -217,11 +219,30 @@ def _validate_fingering(cmd_value: str, line_num: int, col: int,
         ))
         return   # senza accordo valido non ha senso continuare
 
-    # Parsa le assegnazioni dito=nota
+    # Parsa le assegnazioni dito=nota (e il token hand= opzionale)
     used_fingers = {}   # finger_num → nota_str
     used_semitones = {} # semitono → finger_num
+    hand_seen = False
 
     for token in parts[1:]:
+        # ── Token hand=R / hand=L ────────────────────────────────
+        m_hand = re.match(r'^hand=(.+)$', token, re.IGNORECASE)
+        if m_hand:
+            hand_val = m_hand.group(1).upper()
+            if hand_val not in ('R', 'L'):
+                result.errors.append(SyntaxError(
+                    line=line_num, column=col,
+                    message=_(
+                        "{{fingering}}: hand must be R (right) or L (left), got '{val}'"
+                    ).format(val=m_hand.group(1))
+                ))
+            elif hand_seen:
+                result.errors.append(SyntaxError(
+                    line=line_num, column=col,
+                    message=_("{{fingering}}: 'hand' specified more than once")
+                ))
+            hand_seen = True
+            continue
         m = re.match(r'^(\d+)=(.+)$', token)
         if not m:
             result.errors.append(SyntaxError(

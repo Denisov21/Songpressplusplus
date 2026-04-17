@@ -156,25 +156,31 @@ def parse_fingering(fingering_str):
     Parsa la stringa del comando {fingering: ...}.
 
     Formati supportati:
-        "Am"                          → accordo senza diteggiatura esplicita
-        "Am 1=Do 2=Mi 3=La"           → accordo con dito=nota (notazione italiana)
-        "Am 1=C 2=E 3=A"              → accordo con dito=nota (notazione inglese)
-        "Am 1=Do 2=Mi 3=La 5=Do"      → pollice sul Do basso + altre dita
+        "Am"                               → accordo senza diteggiatura
+        "Am hand=R 1=Do 2=Mi 3=La"        → mano destra
+        "Am hand=L 1=Do 2=Mi 3=La"        → mano sinistra
+        "Am 1=Do 2=Mi 3=La"               → senza indicazione di mano
 
     Restituisce:
         chord_name  : str  — il nome dell'accordo (prima parola)
-        finger_map  : dict — {semitono: numero_dito} per i tasti con dito assegnato
-                             (può essere vuoto se non ci sono assegnazioni)
+        finger_map  : dict — {semitono: numero_dito}
+        hand        : str  — 'R', 'L' o None
     """
     parts = fingering_str.strip().split()
     if not parts:
-        return None, {}
+        return None, {}, None
 
     chord_name = parts[0]
-    finger_map = {}   # semitono -> numero dito (int)
+    finger_map = {}
+    hand = None
 
-    # Parsa le assegnazioni "dito=nota"
     for token in parts[1:]:
+        # hand=R o hand=L
+        m_hand = re.match(r'^hand=([RLrl])$', token, re.IGNORECASE)
+        if m_hand:
+            hand = m_hand.group(1).upper()
+            continue
+        # dito=nota
         m = re.match(r'^(\d+)=(.+)$', token)
         if not m:
             continue
@@ -184,19 +190,19 @@ def parse_fingering(fingering_str):
         if semi is not None:
             finger_map[semi] = finger_num
 
-    return chord_name, finger_map
+    return chord_name, finger_map, hand
 
 
 def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
                   label_font=None, highlight_color=None, finger_map=None,
-                  finger_num_color=None):
+                  finger_num_color=None, hand=None):
     """
     Disegna una tastiera di un'ottava su dc.
 
     highlighted_keys : lista di semitoni (0-11) da evidenziare.
     highlight_color  : wx.Colour per i tasti evidenziati (default rosso).
-    finger_map       : dict {semitono: numero_dito} — se presente, disegna
-                       il numero del dito sul tasto corrispondente.
+    finger_map       : dict {semitono: numero_dito}.
+    hand             : 'R' = mano destra, 'L' = mano sinistra, None = non mostrato.
     """
     if highlight_color is None:
         highlight_color = wx.Colour(210, 60, 60)
@@ -277,6 +283,24 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
     dc.SetTextForeground(wx.BLACK)
     dc.DrawText(chord_name, tx, ty)
 
+    # ── Etichetta mano — riga sotto la tastiera ──────────────────
+    if hand in ('R', 'L'):
+        hand_font = wx.Font(
+            max(5, lh - 3),
+            wx.FONTFAMILY_DEFAULT,
+            wx.FONTSTYLE_ITALIC,
+            wx.FONTWEIGHT_NORMAL,
+        )
+        dc.SetFont(hand_font)
+        try:
+            hand_label = wx.GetTranslation(u"Right hand") if hand == 'R' else wx.GetTranslation(u"Left hand")
+        except Exception:
+            hand_label = u"Right hand" if hand == 'R' else u"Left hand"
+        hw, hh = dc.GetTextExtent(hand_label)
+        dc.SetTextForeground(wx.Colour(90, 90, 90))
+        # Centrata sotto la tastiera
+        dc.DrawText(hand_label, x + (kbd_w - hw) // 2, y + h + 3)
+
 
 def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
                          pen_scale=1.0, notations=None, highlight_color=None,
@@ -333,8 +357,8 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
     max_x = start_x + 560
 
     for entry in klavier_list:
-        # Parsa: potrebbe essere "Am" oppure "Am 1=Do 2=Mi 3=La"
-        chord_name, finger_map = parse_fingering(entry)
+        # Parsa: potrebbe essere "Am" oppure "Am hand=R 1=Do 2=Mi 3=La"
+        chord_name, finger_map, hand = parse_fingering(entry)
         if chord_name is None:
             continue
 
@@ -354,6 +378,7 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
             chord_name, keys, label_font, highlight_color,
             finger_map=finger_map,
             finger_num_color=finger_num_color,
+            hand=hand,
         )
         cur_x += kbd_w + padding_x
 
@@ -399,7 +424,7 @@ def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
     max_x = start_x + 560
 
     for entry in fingering_list:
-        chord_name, finger_map = parse_fingering(entry)
+        chord_name, finger_map, hand = parse_fingering(entry)
         if chord_name is None:
             continue
 
@@ -419,6 +444,7 @@ def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
             chord_name, keys, label_font, highlight_color,
             finger_map=finger_map,
             finger_num_color=finger_num_color,
+            hand=hand,
         )
         cur_x += kbd_w + padding_x
 

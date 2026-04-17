@@ -2515,6 +2515,17 @@ class SongpressFrame(SDIMainFrame):
         hbox_chord.Add(txt_chord, 0)
         vbox.Add(hbox_chord, 0, wx.ALL, 10)
 
+        # Mano destra / sinistra
+        hbox_hand = wx.BoxSizer(wx.HORIZONTAL)
+        hbox_hand.Add(wx.StaticText(dlg, -1, _(u"Hand:")),
+                      0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        rb_right = wx.RadioButton(dlg, -1, _(u"Right"), style=wx.RB_GROUP)
+        rb_left  = wx.RadioButton(dlg, -1, _(u"Left"))
+        rb_right.SetValue(True)
+        hbox_hand.Add(rb_right, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
+        hbox_hand.Add(rb_left,  0, wx.ALIGN_CENTER_VERTICAL)
+        vbox.Add(hbox_hand, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
         # Istruzione
         lbl_info = wx.StaticText(
             dlg, -1,
@@ -2570,7 +2581,7 @@ class SongpressFrame(SDIMainFrame):
             import re as _re
             m = _re.match(r'\{fingering:\s*(.*)\}', directive_text)
             inner = m.group(1).strip() if m else chord
-            chord_name, finger_map = KlavierRenderer.parse_fingering(inner)
+            chord_name, finger_map, _hand = KlavierRenderer.parse_fingering(inner)
             if chord_name is None:
                 chord_name = chord
                 finger_map = {}
@@ -2581,6 +2592,16 @@ class SongpressFrame(SDIMainFrame):
 
             ox = 14   # offset x
             oy = _LABEL_H + 4   # offset y per la tastiera
+
+            # ── Etichetta mano (sinistra/destra) ─────────────────────
+            hand_font = wx.Font(
+                8, wx.FONTFAMILY_DEFAULT,
+                wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+            dc.SetFont(hand_font)
+            dc.SetTextForeground(wx.Colour(80, 80, 80))
+            hand_str = _(u"Right hand") if rb_right.GetValue() else _(u"Left hand")
+            hw, _hh = dc.GetTextExtent(hand_str)
+            dc.DrawText(hand_str, ox + _KBD_W - hw, 2)
 
             # ── Etichetta accordo in grassetto ────────────────────────
             label_font = wx.Font(
@@ -2625,7 +2646,8 @@ class SongpressFrame(SDIMainFrame):
             chord = txt_chord.GetValue().strip()
             if not chord:
                 return u"{fingering: }"
-            parts = [chord]
+            hand = u"R" if rb_right.GetValue() else u"L"
+            parts = [chord, u"hand=%s" % hand]
             for i, (lbl, ch) in enumerate(note_rows):
                 sel = ch.GetSelection()
                 if sel > 0:
@@ -2678,6 +2700,8 @@ class SongpressFrame(SDIMainFrame):
             _update_preview()
 
         txt_chord.Bind(wx.EVT_TEXT, _on_chord_change)
+        rb_right.Bind(wx.EVT_RADIOBUTTON, lambda e: (_update_preview(), _refresh_kbd()))
+        rb_left.Bind(wx.EVT_RADIOBUTTON,  lambda e: (_update_preview(), _refresh_kbd()))
 
         vbox.Fit(dlg)
         dlg.CentreOnParent()
@@ -3092,6 +3116,7 @@ class SongpressFrame(SDIMainFrame):
         decorator.durationBeatsSizePct   = getattr(self.pref, 'durationBeatsSizePct', 60)
         decorator.durationBeatsBold      = getattr(self.pref, 'durationBeatsBold', False)
         decorator.durationBeatsAlign     = getattr(self.pref, 'durationBeatsAlign', 'right')
+        decorator.durationBeatsMode     = getattr(self.pref, 'durationBeatsMode', 'number')
         decorator.klavierHighlightColor = self._getKlavierHighlightColour()
         decorator.fingerNumColor = self._getFingerNumColour()
         r = Renderer(self.pref.format, decorator, self.pref.notations)
@@ -5581,6 +5606,7 @@ class SongpressFrame(SDIMainFrame):
                 getattr(self.pref, 'durationBeatsSizePct', 60),
                 getattr(self.pref, 'durationBeatsBold', False),
                 getattr(self.pref, 'durationBeatsAlign', 'right'),
+                getattr(self.pref, 'durationBeatsMode', 'number'),
             )
             self.previewCanvas.Refresh(self._get_display_text())
             # Aggiorna il MinSize del pane AUI in base alla preferenza corrente
@@ -5881,6 +5907,7 @@ class SongpressFrame(SDIMainFrame):
             getattr(self.pref, 'durationBeatsSizePct', 60),
             getattr(self.pref, 'durationBeatsBold', False),
             getattr(self.pref, 'durationBeatsAlign', 'right'),
+            getattr(self.pref, 'durationBeatsMode', 'number'),
         )
         self.previewCanvas.Refresh(self._get_display_text())
 
@@ -6064,5 +6091,6 @@ class SongpressFrame(SDIMainFrame):
             getattr(self.pref, 'durationBeatsSizePct', 60),
             getattr(self.pref, 'durationBeatsBold', False),
             getattr(self.pref, 'durationBeatsAlign', 'right'),
+            getattr(self.pref, 'durationBeatsMode', 'number'),
         )
         self.previewCanvas.Refresh(self._get_display_text())

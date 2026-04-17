@@ -560,6 +560,24 @@ class PreferencesDialog(wx.Dialog):
         bSizerDurAlign.Add(self.durationBeatsAlignRight,  0, wx.ALIGN_CENTER_VERTICAL)
         grpDuration.Add(bSizerDurAlign, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
 
+        # Riga 5: modalità visualizzazione (numero / puntini / entrambi)
+        bSizerDurMode = wx.BoxSizer(wx.HORIZONTAL)
+        lblDurMode = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Display mode"), wx.DefaultPosition, wx.DefaultSize, 0)
+        bSizerDurMode.Add(lblDurMode, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.durationModeNumber = wx.RadioButton(
+            self.formatPanel, wx.ID_ANY, _(u"Number"), style=wx.RB_GROUP)
+        self.durationModeNumber.SetToolTip(_(u"Show beat count as a number above the chord"))
+        self.durationModeDots   = wx.RadioButton(
+            self.formatPanel, wx.ID_ANY, _(u"Dots"))
+        self.durationModeDots.SetToolTip(_(u"Show beat count as dots between chords"))
+        self.durationModeBoth   = wx.RadioButton(
+            self.formatPanel, wx.ID_ANY, _(u"Both"))
+        self.durationModeBoth.SetToolTip(_(u"Show both number and dots"))
+        bSizerDurMode.Add(self.durationModeNumber, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        bSizerDurMode.Add(self.durationModeDots,   0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        bSizerDurMode.Add(self.durationModeBoth,   0, wx.ALIGN_CENTER_VERTICAL)
+        grpDuration.Add(bSizerDurMode, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
         bSizerFormat.Add(grpDuration, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
         self.formatPanel.SetSizer(bSizerFormat)
