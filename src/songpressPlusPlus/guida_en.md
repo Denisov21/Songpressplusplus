@@ -26,8 +26,11 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | **Windows / Linux** — US layout | <kbd>Shift</kbd> + <kbd>[</kbd> | <kbd>Shift</kbd> + <kbd>]</kbd> |
 | **Mac** — Italian layout | <kbd>Option</kbd> + <kbd>Shift</kbd> + <kbd>[</kbd> | <kbd>Option</kbd> + <kbd>Shift</kbd> + <kbd>]</kbd> |
 | **Mac** — US layout | <kbd>Option</kbd> + <kbd>[</kbd> | <kbd>Option</kbd> + <kbd>]</kbd> |
+| **Windows** — ASCII code (any layout) | <kbd>Alt</kbd> + <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> | <kbd>Alt</kbd> + <kbd>1</kbd><kbd>2</kbd><kbd>5</kbd> |
 
-> **Tip** — In Songpress++ you can use autocomplete: type `{` followed by the first letters of the directive and press <kbd>Ctrl</kbd>+<kbd>Space</kbd> to open the completion menu. The directive will be inserted complete with `:` and `}` where needed.
+> **Note on the ASCII method** — Hold <kbd>Alt</kbd>, type the number on the numeric keypad (not the digit row at the top of the keyboard), then release <kbd>Alt</kbd>. Works on Windows only.
+
+> **Tip — Intellisense** — In Songpress++ you can use autocomplete: type `{` followed by the first letters of the directive and press <kbd>Ctrl</kbd>+<kbd>Space</kbd> to open the completion menu. The directive will be inserted complete with `:` and `}` where needed. Each entry shows an icon: **✅** marks an official ChordPro directive, **🔧** marks a Songpress++-exclusive extension.
 
 ---
 

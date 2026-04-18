@@ -1107,6 +1107,7 @@ class SongpressFrame(SDIMainFrame):
         self.frame.Bind(wx.stc.EVT_STC_UPDATEUI, self.OnUpdateUI, self.text)
         self.text.Bind(wx.EVT_KEY_DOWN, self.OnTextKeyDown, self.text)
         self.text.Bind(wx.stc.EVT_STC_AUTOCOMP_SELECTION, self._OnIntellisenseSelection, self.text)
+        self._RegisterIntellisenseImages()
         # Other objects
         self.previewCanvas = PreviewCanvas(self.frame, self.pref.format, self.pref.notations, self.pref.decorator)
         # Registra la callback doppio-click: naviga alla riga sorgente nell'editor
@@ -2220,7 +2221,7 @@ class SongpressFrame(SDIMainFrame):
         # ── 3b. Accordi trovati: dialogo per i battiti ───────────────────
         dlg = wx.Dialog(
             self.frame,
-            title=_(u"Duration — beats per chord"),
+            title=_(u"Beats_time — beats per chord"),
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         )
 
@@ -3398,39 +3399,116 @@ class SongpressFrame(SDIMainFrame):
             evt.Skip()
 
     # ── Lista completa delle direttive ChordPro supportate da Songpress++ ──
+    # Direttive proprietarie di Songpress++ (non standard ChordPro)
+    # Direttive NON presenti nella specifica ufficiale chordpro.org → icona 🔧
+    # Fonte: https://www.chordpro.org/chordpro/chordpro-directives/
+    _SONGPRESSPLUSPLUS_DIRECTIVES = {
+        # Metadati estesi non ufficiali
+        'beats_time',                              # S++ – battiti per accordo
+        'ccli',                                    # S++ – codice CCLI (non in spec)
+        'arranger',                                # S++ – non in spec ufficiale
+        'keywords', 'topic', 'collection',        # S++ – non in spec ufficiale
+        'language',                                # S++ – non in spec ufficiale
+        # Varianti tempo proprietarie
+        'tempo_m', 'tempo_s', 'tempo_sp',
+        'tempo_c', 'tempo_cp',
+        # Struttura proprietaria
+        'start_of_part', 'end_of_part',           # S++ – non in spec
+        'start_verse', 'end_verse',               # S++ – non in spec
+        'start_verse_num', 'end_verse_num',       # S++ – non in spec
+        'start_chord', 'end_chord',               # S++ – non in spec
+        'row', 'bar',                             # S++ – non in spec
+        'sop', 'eop',                             # S++ – alias non ufficiali
+        # Formattazione proprietaria
+        'linespacing', 'chordtopspacing',         # S++ – non in spec
+        # Diagrammi/tastiera proprietari
+        'taste', 'fingering',                     # S++ – estensioni S++
+    }
+
+    # ID immagine per AutoComp (Scintilla RegisterImage)
+    # Tipo 1 -> icona verde "✅" = direttiva ChordPro standard ufficiale
+    # Tipo 2 -> icona arancione "🔧" = direttiva esclusiva Songpress++
+    _AUTOCOMP_IMG_CHORDPRO   = 1
+    _AUTOCOMP_IMG_SPPLUSPLUS = 2
+
+    def _RegisterIntellisenseImages(self):
+        """Registra le icone 16x16 usate nel popup intellisense.
+
+        Tipo 1 -> ✅ sfondo verde   = direttiva ChordPro ufficiale
+                     (fonte: chordpro.org/chordpro/chordpro-directives/)
+        Tipo 2 -> 🔧 sfondo arancione = direttiva esclusiva Songpress++
+        """
+        def _make_icon(label, bg, fg):
+            """Crea bitmap 16x16 con label centrata (supporta emoji Unicode)."""
+            bmp = wx.Bitmap(16, 16, 32)
+            dc = wx.MemoryDC(bmp)
+            dc.SetBackground(wx.Brush(wx.Colour(*bg)))
+            dc.Clear()
+            dc.SetTextForeground(wx.Colour(*fg))
+            # Font leggermente più piccolo per lasciare spazio alle emoji
+            font = wx.Font(wx.FontInfo(8).FaceName('Segoe UI Emoji')
+                           if wx.Platform == '__WXMSW__'
+                           else wx.FontInfo(8))
+            dc.SetFont(font)
+            tw, th = dc.GetTextExtent(label)
+            dc.DrawText(label, max(0, (16 - tw) // 2), max(0, (16 - th) // 2))
+            dc.SelectObject(wx.NullBitmap)
+            return bmp
+
+        # ✅ verde scuro su bianco — ChordPro ufficiale
+        img_cp = _make_icon(u'\u2705', bg=(235, 250, 235), fg=(30, 130, 30))
+        # 🔧 chiave su arancione chiaro — Songpress++ esclusivo
+        img_sp = _make_icon(u'\U0001F527', bg=(255, 240, 220), fg=(180, 90, 0))
+        self.text.RegisterImage(self._AUTOCOMP_IMG_CHORDPRO,   img_cp)
+        self.text.RegisterImage(self._AUTOCOMP_IMG_SPPLUSPLUS, img_sp)
+
+    # Lista completa direttive mostrate nell'intellisense.
+    # La classificazione ✅/🔧 è derivata dalla specifica ufficiale:
+    # https://www.chordpro.org/chordpro/chordpro-directives/
     _CHORDPRO_DIRECTIVES = [
-        # Metadati
-        'title', 'subtitle', 'artist', 'composer', 'lyricist', 'arranger',
+        # ── Metadati ufficiali ChordPro ✅ ────────────────────────────
+        'title', 'subtitle', 'artist', 'composer', 'lyricist',
         'copyright', 'album', 'year', 'key', 'time', 'tempo', 'capo',
-        'beats_time', 'ccli', 'duration', 'tempo_m', 'tempo_s', 'tempo_sp', 'tempo_c', 'tempo_cp',
-        # Metadati estesi (ChordPro 6)
-        'sorttitle', 'keywords', 'topic', 'collection', 'language', 'pagetype',
-        'columns', 'meta',
-        # Struttura
+        'duration', 'sorttitle', 'meta',
+        # ── Metadati estesi ✅ (ChordPro 6) ───────────────────────────
+        'pagetype', 'columns',
+        # ── Metadati Songpress++ 🔧 ────────────────────────────────────
+        'arranger',                                        # non in spec
+        'beats_time',                                      # S++ esclusivo
+        'ccli',                                            # non in spec
+        'keywords', 'topic', 'collection', 'language',    # non in spec
+        'tempo_m', 'tempo_s', 'tempo_sp', 'tempo_c', 'tempo_cp',
+        # ── Struttura ufficiale ChordPro ✅ ───────────────────────────
         'start_of_chorus', 'end_of_chorus',
         'start_of_verse', 'end_of_verse',
         'start_of_bridge', 'end_of_bridge',
         'start_of_tab', 'end_of_tab',
         'start_of_grid', 'end_of_grid',
+        'new_page', 'column_break',
+        'new_song',
+        # ── Struttura Songpress++ 🔧 ───────────────────────────────────
         'start_of_part', 'end_of_part',
         'start_verse', 'end_verse',
         'start_verse_num', 'end_verse_num',
         'start_chord', 'end_chord',
-        'new_page', 'column_break',
         'row', 'bar',
-        'new_song',
-        # Formattazione
+        # ── Formattazione ufficiale ChordPro ✅ ───────────────────────
         'comment', 'comment_italic', 'comment_box',
-        'image', 'linespacing', 'chordtopspacing',
+        'image',
         'textfont', 'textsize', 'textcolour',
         'chordfont', 'chordsize', 'chordcolour',
         'transpose',
-        # Alias comuni
+        # ── Formattazione Songpress++ 🔧 ───────────────────────────────
+        'linespacing', 'chordtopspacing',
+        # ── Alias ufficiali ChordPro ✅ ───────────────────────────────
         't', 'st', 'c', 'ci', 'cb', 'np',
         'soc', 'eoc', 'sov', 'eov', 'sob', 'eob', 'sot', 'eot',
+        # ── Alias Songpress++ 🔧 ───────────────────────────────────────
         'sop', 'eop',
-        # Diagrammi e tastiera
-        'define', 'taste', 'fingering',
+        # ── Diagrammi/accordi ufficiali ChordPro ✅ ───────────────────
+        'define',
+        # ── Diagrammi/tastiera Songpress++ 🔧 ─────────────────────────
+        'taste', 'fingering',
     ]
 
     def _ShowDirectiveIntellisense(self):
@@ -3483,12 +3561,22 @@ class SongpressFrame(SDIMainFrame):
         if not matches:
             return
 
+        # Aggiunge il suffisso ?N per mostrare l'icona nel popup:
+        #   ?1 = icona "C" azzurra  -> direttiva ChordPro standard
+        #   ?2 = icona "S" arancione -> direttiva esclusiva Songpress++
+        def _tagged(d):
+            img_id = (self._AUTOCOMP_IMG_SPPLUSPLUS
+                      if d in self._SONGPRESSPLUSPLUS_DIRECTIVES
+                      else self._AUTOCOMP_IMG_CHORDPRO)
+            return '%s?%d' % (d, img_id)
+
         # Scintilla vuole la lista separata da spazi (o da AutoCompSetSeparator)
+        # NOTA: il separatore deve essere diverso da '?' usato per le immagini.
         stc.AutoCompSetSeparator(ord(' '))
         stc.AutoCompSetIgnoreCase(True)
         stc.AutoCompSetAutoHide(True)
         stc.AutoCompSetDropRestOfWord(False)
-        stc.AutoCompShow(typed_len, ' '.join(matches))
+        stc.AutoCompShow(typed_len, ' '.join(_tagged(d) for d in matches))
 
     # Direttive che non accettano valore (si chiudono con '}' direttamente)
     _DIRECTIVES_NO_VALUE = {

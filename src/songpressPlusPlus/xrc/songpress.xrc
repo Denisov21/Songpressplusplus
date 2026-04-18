@@ -374,7 +374,7 @@
           <help>Insert ChordPro directive to set song key (e.g. Am, C, G)</help>
         </object>
         <object class="wxMenuItem" name="insertDuration">
-          <label>_Duration {duration:}...</label>
+          <label>_Duration {beats_time:}...</label>
           <accel></accel>
           <help>Insert ChordPro directive to set beat duration of chords (e.g. 1, 2, 4)</help>
         </object>

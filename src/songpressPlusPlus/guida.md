@@ -26,8 +26,11 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 | **Windows / Linux** — layout USA | <kbd>Shift</kbd> + <kbd>[</kbd> | <kbd>Shift</kbd> + <kbd>]</kbd> |
 | **Mac** — layout italiano | <kbd>Option</kbd> + <kbd>Shift</kbd> + <kbd>[</kbd> | <kbd>Option</kbd> + <kbd>Shift</kbd> + <kbd>]</kbd> |
 | **Mac** — layout USA | <kbd>Option</kbd> + <kbd>[</kbd> | <kbd>Option</kbd> + <kbd>]</kbd> |
+| **Windows** — codice ASCII (qualsiasi layout) | <kbd>Alt</kbd> + <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> | <kbd>Alt</kbd> + <kbd>1</kbd><kbd>2</kbd><kbd>5</kbd> |
 
-> **Suggerimento** — In Songpress++ puoi usare l'autocompletamento: digita `{` seguito dalle prime lettere della direttiva e premi <kbd>Ctrl</kbd>+<kbd>Spazio</kbd> per aprire il menu di completamento. La direttiva verrà inserita completa di `:` e `}` dove necessario.
+> **Nota sul metodo ASCII** — Tieni premuto <kbd>Alt</kbd>, digita il numero sul tastierino numerico (non i tasti numerici sulla fila superiore), poi rilascia <kbd>Alt</kbd>. Funziona solo su Windows.
+
+> **Suggerimento — Intellisense** — In Songpress++ puoi usare l'autocompletamento: digita `{` seguito dalle prime lettere della direttiva e premi <kbd>Ctrl</kbd>+<kbd>Spazio</kbd> per aprire il menu di completamento. La direttiva verrà inserita completa di `:` e `}` dove necessario. Ogni voce mostra un'icona: **✅** indica una direttiva ChordPro ufficiale, **🔧** indica un'estensione esclusiva di Songpress++.
 
 ---
 

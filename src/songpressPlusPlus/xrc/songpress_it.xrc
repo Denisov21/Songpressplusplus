@@ -374,7 +374,7 @@
           <help>Inserisci la direttiva ChordPro per impostare la tonalità (es. Am, Do, Sol)</help>
         </object>
         <object class="wxMenuItem" name="insertDuration">
-          <label>_Durata accordo {duration:}...</label>
+          <label>_Durata accordo {beats_time:}...</label>
           <accel></accel>
           <help>Inserisci la direttiva ChordPro per impostare la durata in battute degli accordi (es. 1, 2, 4)</help>
         </object>

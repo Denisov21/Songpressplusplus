@@ -248,7 +248,7 @@ msgstr ""
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:242
 msgid "Paste chords"
-msgstr "Incolla Accordi"
+msgstr "Incolla accordi"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:243
 msgid "Merge chords from the copied text into the current selection"
@@ -440,7 +440,7 @@ msgstr "Etichetta del ritornello"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:996
 msgid "Please enter a label for chorus"
-msgstr "Etichetta per il ritornello"
+msgstr "Inserisci un'etichetta per il ritornello"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1023
 msgid "It looks like there are spurious blank lines in the song.\n"
@@ -574,7 +574,7 @@ msgstr "Indicazione di tempo"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Enter the time signature (e.g. 4/4, 3/4, 6/8):"
-msgstr "Inserisci il tempo in frazioni (es. 4/4, 3/4, 6/8):"
+msgstr "Inserisci l'indicazione di tempo (es. 4/4, 3/4, 6/8):"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Time"
@@ -590,7 +590,7 @@ msgstr "Tasti accordo"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Enter the chord name (e.g. C, G, Am, D7):"
-msgstr "Inserisci il nome dell'accordo (es. Do, Sol, La-, Re7):"
+msgstr "Inserisci il nome dell'accordo (es. C, G, Am, D7):"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Print options"
@@ -660,7 +660,7 @@ msgstr "⚠ Rilevamento non riuscito"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Metadata"
-msgstr "Metadato"
+msgstr "Metadati"
 
 #: SongpressFrame.py
 msgid "Guitar chord diagram"
@@ -1143,8 +1143,8 @@ msgid "Find in guide..."
 msgstr "Cerca nella guida..."
 
 #: SongpressFrame.py OnInsertDuration dialog title
-msgid "Duration — beats per chord"
-msgstr "Duration — battiti per accordo"
+msgid "Beats_time — beats per chord"
+msgstr "Beats_time — battiti per accordo"
 
 #: SongpressFrame.py OnInsertDuration dialog intro
 msgid ""
