@@ -103,13 +103,15 @@ class SongDecorator(object):
             if t.w == 0 and _has_smp(text):
                 t.w, t.h = self._GetTextExtentSMP(text)
             if getattr(t, 'is_time_sig', False):
-                # Per la frazione musicale: larghezza = max(num, den), altezza = 2 * cifra
+                # Per la frazione musicale: larghezza = max(num, den),
+                # altezza = cifra_sopra + gap + 1px linea + gap + cifra_sotto
                 parts = text.split('/')
                 if len(parts) == 2:
                     nw, nh = self.dc.GetTextExtent(parts[0].strip())
                     dw, dh = self.dc.GetTextExtent(parts[1].strip())
+                    gap = max(2, nh // 4)
                     t.w = max(nw, dw)
-                    t.h = nh + dh
+                    t.h = nh + gap + 1 + gap + dh
             if t.type == SongText.chord:
                 hasChords = True
                 self.SetMarginChord(t)
@@ -568,20 +570,21 @@ class SongDecorator(object):
                     num, den = parts[0].strip(), parts[1].strip()
                     bx = int(tx + text.marginLeft)
                     by = int(ty + text.marginTop)
-                    total_h = int(text.h)
-                    half_h = total_h // 2
-                    # Misura larghezza massima tra numeratore e denominatore
+                    # Misura larghezza e altezza di numeratore e denominatore
                     nw, nh = self.dc.GetTextExtent(num)
                     dw, dh = self.dc.GetTextExtent(den)
                     max_w = max(nw, dw)
+                    # Gap verticale tra testo e linea di separazione (in px)
+                    gap = max(2, nh // 4)
+                    line_y = by + nh + gap
                     # Disegna numeratore centrato in alto
                     self.dc.DrawText(num, bx + (max_w - nw) // 2, by)
                     # Linea orizzontale di separazione
                     pen = wx.Pen(text.color, max(1, int(1 / self.pen_scale)))
                     self.dc.SetPen(pen)
-                    self.dc.DrawLine(bx, by + half_h, bx + max_w, by + half_h)
-                    # Disegna denominatore centrato in basso
-                    self.dc.DrawText(den, bx + (max_w - dw) // 2, by + half_h)
+                    self.dc.DrawLine(bx, line_y, bx + max_w, line_y)
+                    # Disegna denominatore centrato in basso, dopo il gap
+                    self.dc.DrawText(den, bx + (max_w - dw) // 2, line_y + gap)
                     return
             except Exception:
                 pass
