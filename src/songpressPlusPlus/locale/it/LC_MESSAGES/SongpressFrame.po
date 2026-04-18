@@ -1199,3 +1199,87 @@ msgstr "Mano destra"
 #: KlavierRenderer.py — hand label drawn below keyboard
 msgid "Left hand"
 msgstr "Mano sinistra"
+
+#: SongpressFrame.py OnSongStatistics dialog title
+msgid "Song Statistics"
+msgstr "Statistiche brano"
+
+#: SongpressFrame.py OnSongStatistics untitled
+msgid "(untitled)"
+msgstr "(senza titolo)"
+
+#: SongpressFrame.py OnSongStatistics rating
+msgid "Excellent for beginners"
+msgstr "Ottimo per principianti"
+
+#: SongpressFrame.py OnSongStatistics rating
+msgid "Accessible"
+msgstr "Accessibile"
+
+#: SongpressFrame.py OnSongStatistics rating
+msgid "Intermediate"
+msgstr "Intermedio"
+
+#: SongpressFrame.py OnSongStatistics rating
+msgid "Advanced"
+msgstr "Avanzato"
+
+#: SongpressFrame.py OnSongStatistics rating
+msgid "Very difficult"
+msgstr "Molto difficile"
+
+#: SongpressFrame.py OnSongStatistics section header
+msgid "Structure"
+msgstr "Struttura"
+
+#: SongpressFrame.py OnSongStatistics section header
+msgid "Lyrics"
+msgstr "Testo"
+
+#: SongpressFrame.py OnSongStatistics section header
+msgid "Chords"
+msgstr "Accordi"
+
+#: SongpressFrame.py OnSongStatistics row label
+msgid "Verses"
+msgstr "Strofe"
+
+#: SongpressFrame.py OnSongStatistics row label
+msgid "Choruses"
+msgstr "Ritornelli"
+
+#: SongpressFrame.py OnSongStatistics row label
+msgid "Bridges"
+msgstr "Bridge"
+
+#: SongpressFrame.py OnSongStatistics row label
+msgid "Estimated pages"
+msgstr "Pagine stimate"
+
+#: SongpressFrame.py OnSongStatistics row label
+msgid "Lyrics lines"
+msgstr "Righe di testo"
+
+#: SongpressFrame.py OnSongStatistics row label
+msgid "Words"
+msgstr "Parole"
+
+#: SongpressFrame.py OnSongStatistics row label
+msgid "Total chords"
+msgstr "Totale accordi"
+
+#: SongpressFrame.py OnSongStatistics row label
+msgid "Unique chords"
+msgstr "Accordi unici"
+
+#: SongpressFrame.py OnSongStatistics row label
+msgid "Of which complex"
+msgstr "Di cui complessi"
+
+#: SongpressFrame.py OnSongStatistics row label
+msgid "Estimated duration"
+msgstr "Durata stimata"
+
+#: SongpressFrame.py OnSongStatistics no metadata note
+msgid "  (no musical metadata found)"
+msgstr "  (nessun metadato musicale trovato)"

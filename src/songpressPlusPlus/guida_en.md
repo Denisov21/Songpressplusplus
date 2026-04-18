@@ -799,7 +799,40 @@ All main directives are accessible via the **Insert** menu, which opens support 
 
 ### Syntax Check
 
-- **Check syntax** — analyzes the text and reports unrecognized or malformed directives, with the ability to navigate directly to the error
+- **Check syntax** (`Tools › Syntax check`, <kbd>F7</kbd>) — analyzes the text and reports unrecognized or malformed directives, with the ability to navigate directly to the error.
+
+### Song Statistics (<kbd>F8</kbd>)
+
+**Tools › Song Statistics…** opens a summary dialog that analyzes the open document and provides an instant difficulty rating.
+
+#### Dialog Sections
+
+| Section | Information shown |
+|---|---|
+| **Structure** | Number of verses, choruses, bridges and estimated pages |
+| **Lyrics** | Active lyrics lines and word count (chords and directives excluded) |
+| **Chords** | Total chords, unique chords and percentage of complex chords (7th, dim, aug, sus, add…) |
+| **Metadata** | Key, tempo BPM, time signature, capo and estimated duration (if present in the file) |
+
+#### Difficulty Rating
+
+The dialog shows a **1-to-5-star** rating based on a 0–100 score calculated automatically:
+
+| Stars | Verdict | Conditions |
+|---|---|---|
+| ★★★★★ | Excellent for beginners | ≤ 12 unique chords, no complex chords |
+| ★★★★☆ | Accessible | Few complex chords or simple structure |
+| ★★★☆☆ | Intermediate | Moderately complex chords |
+| ★★☆☆☆ | Advanced | Many complex chords or elaborate structure |
+| ★☆☆☆☆ | Very difficult | Song with no chords or very complex chords |
+
+The bar below the stars displays the raw score (0–100).
+
+#### Estimated Duration
+
+If the file contains the `{tempo:}` and `{time:}` directives, the dialog calculates an approximate duration estimate by multiplying the number of chord changes by the duration of each beat.
+
+> **Note** — The estimate is indicative: it does not account for repeats, multiple choruses or pauses.
 
 ### Directive Intellisense (`Ctrl+Space`)
 

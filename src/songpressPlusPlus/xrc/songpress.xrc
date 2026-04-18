@@ -539,6 +539,12 @@
           <help>Check ChordPro syntax of the document (brackets, commands)</help>
           <bitmap>../img/syntaxCheck.png</bitmap>
         </object>
+        <object class="wxMenuItem" name="songStatistics">
+          <label>Song _Statistics...</label>
+          <accel>F8</accel>
+          <help>Show song statistics and difficulty rating (chords, structure, words)</help>
+          <bitmap>../img/statistics.png</bitmap>
+        </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="options">
           <label>_Options...</label>

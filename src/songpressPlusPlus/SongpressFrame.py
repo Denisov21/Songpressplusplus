@@ -1722,6 +1722,7 @@ class SongpressFrame(SDIMainFrame):
         Bind(self.OnImportFromPdf, 'importFromPdf')
         # --- Verifica sintattica ---
         Bind(self.OnSyntaxCheck, 'syntaxCheck')
+        Bind(self.OnSongStatistics, 'songStatistics')
         self.frame.Bind(EVT_SYNTAX_GOTO, self.OnSyntaxGoto)
 
     # ------------------------------------------------------------------
@@ -1860,6 +1861,248 @@ class SongpressFrame(SDIMainFrame):
         text = self.text.GetText()
         result = syntax_check(text)
         dlg = SyntaxCheckerDialog(self.frame, result)
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    # ------------------------------------------------------------------
+    # Song statistics
+    # ------------------------------------------------------------------
+
+    def OnSongStatistics(self, evt):
+        """Analizza il brano e mostra un dialogo con statistiche e valutazione."""
+        import re, math
+
+        text = self.text.GetText()
+
+        # ── 1. Estrai metadati dalla direttive ─────────────────────────
+        def _meta(key):
+            m = re.search(r'\{\s*' + key + r'\s*:\s*([^}]+)\}', text, re.IGNORECASE)
+            return m.group(1).strip() if m else ''
+
+        song_title  = _meta('title') or _meta('t')
+        song_key    = _meta('key')
+        song_tempo  = _meta('tempo') or _meta('tempo_s') or _meta('tempo_m')
+        song_time   = _meta('time')
+        song_capo   = _meta('capo')
+        song_artist = _meta('artist')
+
+        # ── 2. Righe attive (escludi commenti e direttive pure) ────────
+        lines_all = text.splitlines()
+        lines_active = [l for l in lines_all
+                        if l.strip() and not l.strip().startswith('#')
+                        and not re.match(r'\s*\{[^}]+\}\s*$', l)]
+
+        # ── 3. Conteggio accordi unici e totali ────────────────────────
+        all_chords_raw = re.findall(r'\[([A-Ga-g][^\]]*?)\]', text)
+        all_chords = [c.strip() for c in all_chords_raw if c.strip()]
+        unique_chords = set(re.sub(r'/[A-G][#b]?$', '', c) for c in all_chords)
+        n_chords_total  = len(all_chords)
+        n_chords_unique = len(unique_chords)
+
+        # ── 4. Conteggio strofe e ritornelli ──────────────────────────
+        n_verses  = len(re.findall(
+            r'\{\s*(?:start_of_verse|start_verse(?:_num)?|sov)\b[^}]*\}',
+            text, re.IGNORECASE))
+        n_chorus  = len(re.findall(
+            r'\{\s*(?:start_of_chorus|start_chorus|soc)\b[^}]*\}',
+            text, re.IGNORECASE))
+        n_bridge  = len(re.findall(
+            r'\{\s*(?:start_of_bridge|start_bridge|sob)\b[^}]*\}',
+            text, re.IGNORECASE))
+        n_pages   = len(re.findall(
+            r'\{\s*(?:new_page|np)\s*\}', text, re.IGNORECASE)) + 1
+
+        # ── 5. Parole del testo (escludi accordi e direttive) ─────────
+        text_no_chords = re.sub(r'\[[^\]]*\]', '', text)
+        text_no_dir    = re.sub(r'\{[^}]*\}', '', text_no_chords)
+        text_no_comm   = re.sub(r'^#.*$', '', text_no_dir, flags=re.MULTILINE)
+        words = re.findall(r"[\w'\u00C0-\u024F]+", text_no_comm)
+        n_words = len(words)
+        n_lines = len(lines_active)
+
+        # ── 6. Complessità accordi (semplice euristica) ───────────────
+        # Accordi "difficili": con 7, 9, 11, 13, dim, aug, sus, add, maj, m7, °
+        hard_pat = re.compile(
+            r'(?:7|9|11|13|dim|aug|sus|add|maj|°|\+)', re.IGNORECASE)
+        n_hard = sum(1 for c in unique_chords if hard_pat.search(c))
+        pct_hard = (n_hard / n_chords_unique * 100) if n_chords_unique else 0
+
+        # ── 7. Stima durata (se {tempo} e {time} presenti) ────────────
+        duration_str = ''
+        try:
+            bpm   = int(re.search(r'\d+', song_tempo).group()) if song_tempo else 0
+            num_m = int(re.search(r'(\d+)/', song_time).group(1)) if song_time else 0
+            # conta i cambi accordo come battute approssimate
+            if bpm > 0 and num_m > 0 and n_chords_total > 0:
+                beats_total = n_chords_total * num_m  # stima grossolana
+                secs = beats_total / bpm * 60
+                duration_str = '%d:%02d' % (int(secs) // 60, int(secs) % 60)
+        except Exception:
+            pass
+
+        # ── 8. Valutazione complessiva ────────────────────────────────
+        # Punteggio 0-100, poi mappiamo su stelle e giudizio
+        score = 100
+
+        # Troppi accordi unici = difficile
+        if n_chords_unique > 12:
+            score -= min(30, (n_chords_unique - 12) * 3)
+        # Accordi difficili
+        score -= int(pct_hard * 0.4)
+        # Struttura complessa
+        if n_verses + n_chorus > 8:
+            score -= 10
+        # Brano vuoto o quasi
+        if n_chords_total == 0:
+            score = 0
+        score = max(0, min(100, score))
+
+        if score >= 85:
+            stars, verdict = '★★★★★', _('Excellent for beginners')
+        elif score >= 70:
+            stars, verdict = '★★★★☆', _('Accessible')
+        elif score >= 50:
+            stars, verdict = '★★★☆☆', _('Intermediate')
+        elif score >= 30:
+            stars, verdict = '★★☆☆☆', _('Advanced')
+        else:
+            stars, verdict = '★☆☆☆☆', _('Very difficult')
+
+        # ── 9. Costruzione dialogo ────────────────────────────────────
+        dlg = wx.Dialog(
+            self.frame,
+            title=_('Song Statistics'),
+            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
+        )
+        dlg.SetMinSize(wx.Size(400, 650))
+
+        BG    = wx.Colour(250, 250, 252)
+        HDR   = wx.Colour(52, 101, 164)
+        STAR_ON  = wx.Colour(255, 180, 0)
+
+        panel = wx.Panel(dlg)
+        panel.SetBackgroundColour(BG)
+        root = wx.BoxSizer(wx.VERTICAL)
+
+        # ── Intestazione ──────────────────────────────────────────────
+        hdr_panel = wx.Panel(panel)
+        hdr_panel.SetBackgroundColour(HDR)
+        hdr_sz = wx.BoxSizer(wx.VERTICAL)
+
+        lbl_name = wx.StaticText(hdr_panel,
+            label=song_title if song_title else _('(untitled)'))
+        f = lbl_name.GetFont()
+        f.SetWeight(wx.FONTWEIGHT_BOLD)
+        f.SetPointSize(f.GetPointSize() + 3)
+        lbl_name.SetFont(f)
+        lbl_name.SetForegroundColour(wx.WHITE)
+
+        if song_artist:
+            lbl_artist = wx.StaticText(hdr_panel, label=song_artist)
+            lbl_artist.SetForegroundColour(wx.Colour(200, 220, 255))
+
+        hdr_sz.Add(lbl_name, 0, wx.ALL, 10)
+        if song_artist:
+            hdr_sz.Add(lbl_artist, 0, wx.LEFT | wx.BOTTOM, 10)
+        hdr_panel.SetSizer(hdr_sz)
+        root.Add(hdr_panel, 0, wx.EXPAND)
+
+        body = wx.BoxSizer(wx.VERTICAL)
+
+        # ── Valutazione con stelle ────────────────────────────────────
+        eval_panel = wx.Panel(panel)
+        eval_panel.SetBackgroundColour(wx.Colour(240, 245, 255))
+        eval_sz = wx.BoxSizer(wx.HORIZONTAL)
+
+        lbl_stars = wx.StaticText(eval_panel, label=stars)
+        f_stars = lbl_stars.GetFont()
+        f_stars.SetPointSize(f_stars.GetPointSize() + 6)
+        lbl_stars.SetFont(f_stars)
+        lbl_stars.SetForegroundColour(STAR_ON)
+
+        lbl_verdict = wx.StaticText(eval_panel, label='  ' + verdict)
+        f_v = lbl_verdict.GetFont()
+        f_v.SetWeight(wx.FONTWEIGHT_BOLD)
+        lbl_verdict.SetFont(f_v)
+
+        eval_sz.Add(lbl_stars,  0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)
+        eval_sz.Add(lbl_verdict, 0, wx.ALIGN_CENTER_VERTICAL)
+        eval_panel.SetSizer(eval_sz)
+        body.Add(eval_panel, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 6)
+
+        # ── Barra punteggio ───────────────────────────────────────────
+        gauge = wx.Gauge(panel, range=100, size=(-1, 8))
+        gauge.SetValue(score)
+        body.Add(gauge, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 12)
+
+        body.AddSpacer(10)
+
+        # ── Griglia statistiche ───────────────────────────────────────
+        def _section(label):
+            lbl = wx.StaticText(panel, label=label)
+            f2 = lbl.GetFont()
+            f2.SetWeight(wx.FONTWEIGHT_BOLD)
+            f2.SetPointSize(f2.GetPointSize() + 1)
+            lbl.SetFont(f2)
+            lbl.SetForegroundColour(HDR)
+            body.Add(lbl, 0, wx.LEFT | wx.TOP, 12)
+            body.Add(wx.StaticLine(panel), 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+
+        def _row(key, value):
+            hz = wx.BoxSizer(wx.HORIZONTAL)
+            k_lbl = wx.StaticText(panel, label=key)
+            v_lbl = wx.StaticText(panel, label=str(value))
+            fv = v_lbl.GetFont()
+            fv.SetWeight(wx.FONTWEIGHT_BOLD)
+            v_lbl.SetFont(fv)
+            hz.Add(k_lbl, 1, wx.ALIGN_CENTER_VERTICAL)
+            hz.Add(v_lbl, 0, wx.ALIGN_CENTER_VERTICAL)
+            body.Add(hz, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 16)
+            body.AddSpacer(3)
+
+        _section(_('Structure'))
+        _row(_('Verses'),         n_verses if n_verses else '—')
+        _row(_('Choruses'),     n_chorus if n_chorus else '—')
+        _row(_('Bridges'),         n_bridge if n_bridge else '—')
+        _row(_('Estimated pages'), n_pages)
+
+        _section(_('Lyrics'))
+        _row(_('Lyrics lines'), n_lines)
+        _row(_('Words'),         n_words)
+
+        _section(_('Chords'))
+        _row(_('Total chords'),       n_chords_total)
+        _row(_('Unique chords'),        n_chords_unique)
+        _row(_('Of which complex'),
+             '%d  (%.0f%%)' % (n_hard, pct_hard) if n_chords_unique else '—')
+
+        _section(_('Metadata'))
+        if song_key:   _row(_('Key'),  song_key)
+        if song_tempo: _row(_('Tempo'),     song_tempo + ' BPM')
+        if song_time:  _row(_('Time signature'),    song_time)
+        if song_capo:  _row(_('Capo'),      song_capo)
+        if duration_str: _row(_('Estimated duration'), duration_str)
+
+        if not any([song_key, song_tempo, song_time, song_capo]):
+            body.Add(wx.StaticText(panel,
+                label=_('  (no musical metadata found)')),
+                0, wx.LEFT | wx.BOTTOM, 16)
+
+        # ── Pulsante OK ───────────────────────────────────────────────
+        body.AddSpacer(10)
+        btn = wx.Button(panel, wx.ID_OK, 'OK')
+        btn.SetDefault()
+        body.Add(btn, 0, wx.ALIGN_CENTER | wx.BOTTOM, 12)
+
+        root.Add(body, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 0)
+        panel.SetSizer(root)
+        root.Fit(panel)
+
+        dlg_sz = wx.BoxSizer(wx.VERTICAL)
+        dlg_sz.Add(panel, 1, wx.EXPAND)
+        dlg.SetSizer(dlg_sz)
+        dlg_sz.Fit(dlg)
+
         dlg.ShowModal()
         dlg.Destroy()
 

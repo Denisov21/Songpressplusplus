@@ -799,7 +799,40 @@ Tutte le principali direttive sono accessibili tramite il menu **Inserisci**, ch
 
 ### Controllo sintassi
 
-- **Controlla sintassi** — analizza il testo e segnala le direttive non riconosciute o malformate, con la possibilità di navigare direttamente all'errore
+- **Controlla sintassi** (`Strumenti › Controllo sintassi`, <kbd>F7</kbd>) — analizza il testo e segnala le direttive non riconosciute o malformate, con la possibilità di navigare direttamente all'errore.
+
+### Statistiche brano (<kbd>F8</kbd>)
+
+**Strumenti › Statistiche brano…** apre una finestra di riepilogo che analizza il documento aperto e produce una valutazione immediata della difficoltà.
+
+#### Sezioni del dialogo
+
+| Sezione | Informazioni mostrate |
+|---|---|
+| **Struttura** | Numero di strofe, ritornelli, bridge e pagine stimate |
+| **Testo** | Righe di testo attive e conteggio parole (esclusi accordi e direttive) |
+| **Accordi** | Totale accordi, accordi unici e percentuale di accordi complessi (7ª, dim, aug, sus, add…) |
+| **Metadati** | Tonalità, tempo BPM, indicazione di tempo, capo e durata stimata (se presenti nel file) |
+
+#### Valutazione difficoltà
+
+La finestra mostra una valutazione da **1 a 5 stelle** basata su un punteggio 0–100 calcolato automaticamente:
+
+| Stelle | Giudizio | Condizioni |
+|---|---|---|
+| ★★★★★ | Ottimo per principianti | ≤ 12 accordi unici, nessun accordo complesso |
+| ★★★★☆ | Accessibile | Pochi accordi complessi o struttura semplice |
+| ★★★☆☆ | Intermedio | Accordi moderatamente complessi |
+| ★★☆☆☆ | Avanzato | Molti accordi complessi o struttura articolata |
+| ★☆☆☆☆ | Molto difficile | Brano senza accordi o con accordi molto complessi |
+
+La barra sotto le stelle visualizza il punteggio grezzo (0–100).
+
+#### Durata stimata
+
+Se il file contiene le direttive `{tempo:}` e `{time:}`, il dialogo calcola una stima approssimativa della durata moltiplicando il numero di cambi accordo per la durata di ogni battuta.
+
+> **Nota** — La stima è orientativa: non tiene conto di ripetizioni, ritornelli multipli o pause.
 
 ### Intellisense direttive (`Ctrl+Spazio`)
 

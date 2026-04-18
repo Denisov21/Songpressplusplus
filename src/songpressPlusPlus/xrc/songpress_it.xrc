@@ -539,6 +539,12 @@
           <help>Controlla la sintassi ChordPro del documento (parentesi, comandi)</help>
           <bitmap>../img/syntaxCheck.png</bitmap>
         </object>
+        <object class="wxMenuItem" name="songStatistics">
+          <label>_Statistiche brano...</label>
+          <accel>F8</accel>
+          <help>Mostra statistiche e valutazione della difficoltà del brano (accordi, struttura, parole)</help>
+          <bitmap>../img/statistics.png</bitmap>
+        </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="options">
           <label>_Opzioni...</label>
