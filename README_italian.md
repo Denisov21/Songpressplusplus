@@ -37,6 +37,8 @@ cd E:\Users\Utente\Downloads\SongpressV33_OK\Songpressplusplus
 python main.py
 ```
 
+> **Nota:** Il percorso indicato (`E:\Users\Utente\Downloads\SongpressV33_OK\Songpressplusplus`) è un esempio. Sostituiscilo con il percorso effettivo in cui hai clonato o estratto il progetto sul tuo sistema.
+
 > **Nota:** `main.py` va eseguito dalla directory radice del progetto (`Songpressplusplus\`), dove si trova, affinché il pacchetto `songpressPlusPlus` venga trovato correttamente nel Python path.
 
 Le differenze tra i due launcher sono due, entrambe significative:
@@ -68,22 +70,68 @@ In sintesi: `Avvio SONGPRESS2.vbs` è la versione di sviluppo/debug, `Avvio SONG
 
 ## Funzionalità principali
 
+### Editing
 - Produzione di **spartiti per chitarra di alta qualità** (testo e accordi)
 - **Facile** da imparare, veloce da usare
-- Possibilità di **incollare le canzoni formattate** in qualsiasi applicazione Linux e Windows per impaginare il canzoniere con la massima flessibilità (Affinity, Microsoft Word, LibreOffice, Microsoft Publisher, Inkscape, ecc.)
-- **Esportazione** delle canzoni formattate in PNG e HTML (pagine web e frammenti)
+- **Autocomplete ChordPro (IntelliSense)**: le direttive vengono suggerite e completate automaticamente durante la digitazione, con inserimento intelligente delle parentesi e dei due punti
+- **Supporto per multicursore**: possibilità di creare e lavorare con più cursori simultaneamente
+- **Trova e Sostituisci**: dialogo unificato con due tab (Trova / Sostituisci), ricerca per parola intera, distinzione maiuscole/minuscole e **espressioni regolari**, con colore di evidenziazione configurabile e cronologia delle ricerche
+- **Verifica sintattica**: controlla la sintassi ChordPro e salta direttamente a ogni errore trovato nel documento
+- **Nuovo da template**: crea un nuovo brano a partire da un template ChordPro preconfezionato
+
+### Accordi
 - **Trasposizione degli accordi** con rilevamento automatico della tonalità
-- **Semplificazione degli accordi** per chitarristi principianti: individua la tonalità più facile da suonare e trasponi la canzone automaticamente
-- Supporto per diverse **notazioni degli accordi**: americana (C, D, E), italiana (Do, Re, Mi), francese, tedesca e portoghese; con conversione della notazione
-- Supporto per i formati di accordi **ChordPro e Tab** (su due righe)
-- **Pulizia** di canzoni disordinate con righe vuote spurie (come quelle copiate e incollate da pagine web) e notazioni degli accordi non omogenee
-- **Anteprima di stampa** visualizza l'anteprima di stampa.
-- **Stampa** permette di stampare o di esportare in pdf.
-- **Crea canzoniere** permette di creare una raccolta in pdf, con tutti i brani in una determinata cartella.
-- **Altri comandi** tanti nuovi ed interessanti comandi tutti da scoprire.
-- **Supporto per multicursore** possibilità di creare e lavorare con più cursori simultaneamente.
-- **Posizionamento accordi** visualizza gli accordi o sopra o sotto il testo.
-- **Posizione e dimensioni finestra** Salva e ricorda l'ultima posizione della finestra della finestra.
+- **Semplificazione degli accordi** per chitarristi principianti: individua la tonalità più facile da suonare e traspone la canzone automaticamente
+- **Propagazione degli accordi**: copia gli accordi dalla prima strofa (o dal primo ritornello) a tutte le strofe (o ritornelli) successivi con lo stesso numero di righe, con un solo clic
+- **Integrazione degli accordi**: unisce gli accordi copiati negli appunti nella selezione corrente (*Incolla accordi*)
+- **Sposta accordo a destra / sinistra**: posiziona con precisione i singoli accordi lungo la riga del testo
+- **Rimuovi accordi**: elimina tutti gli accordi dal testo, conservando solo il testo
+- Supporto per diverse **notazioni degli accordi**: americana (C, D, E), italiana (Do, Re, Mi), francese, tedesca e portoghese; con conversione tra notazioni
+- Supporto per i formati di accordi **ChordPro e Tab** (su due righe); rilevamento automatico e conversione da Tab a ChordPro
+
+### Formattazione e impaginazione
+- **Posizionamento accordi**: visualizza gli accordi sopra o sotto il testo
+- **Mostra/nascondi accordi**: cursore per mostrare l'intero brano, solo un pattern di accordi per strofa, o nessun accordo
+- **Etichette strofe e ritornelli**: attiva/disattiva le etichette, con testo del ritornello personalizzabile
+- **Etichette strofa personalizzate**: inserisce strofe con etichetta custom o senza etichetta
+- **Inserimento blocchi strutturati**: inserisce rapidamente dal menu strofa, strofa numerata, ritornello, bridge, blocco accordi e blocco griglia
+- **Metadati**: inserisce dal menu titolo, sottotitolo, artista, compositore, album, anno, copyright, tonalità, capotasto, tempo, metro e durata
+- **Inserimento simboli musicali**: dialogo dedicato per inserire simboli musicali speciali nel testo
+- **Inserimento diagrammi di accordi** (*klavier*): inserisce diagrammi di diteggiatura, con colore di evidenziazione e numerazione delle dita configurabili
+- **Spaziatura righe e pagine**: inserisce spaziatura riga personalizzata, spaziatura sopra gli accordi, interruzioni di pagina manuali (`{new_page}`) e interruzioni di colonna
+- **Linee di interruzione pagina e colonna**: guide visive mostrate nel pannello di anteprima
+- **Visualizzazione battiti di durata**: mostra indicatori ritmici nell'anteprima
+
+### Anteprima e stampa
+- **Pannello di anteprima in tempo reale**: il brano formattato si aggiorna mentre si digita; il pannello è agganciabile e ridimensionabile
+- **Visualizzazione di tempo, metro e tonalità** nell'intestazione dell'anteprima, con dimensione icona configurabile
+- **Visualizzazione griglia accordi**: modalità di rendering della griglia configurabile (stile barra), etichetta predefinita e direzione del ridimensionamento
+- **Formato pagina e margini**: formato carta e margini top/bottom/left/right configurabili, salvati tra le sessioni
+- **Layout multi-colonna**: stampa o anteprima del brano su una o due colonne per pagina
+- **Due pagine per foglio**: stampa due pagine logiche affiancate su un singolo foglio fisico
+- **Adatta alla pagina / riduci automaticamente**: ridimensiona il brano per evitare il ritaglio del contenuto in fondo alla pagina
+- **Anteprima di stampa**: anteprima completa prima di stampare
+- **Stampa**: stampa il brano o esporta in PDF, con supporto per interruzioni di pagina esplicite tramite i comandi `{new_page}` / `{np}`
+- **Crea canzoniere**: genera una raccolta PDF completa da tutti i brani presenti in una cartella selezionata
+
+### Esportazione e appunti
+- Possibilità di **incollare le canzoni formattate** come immagine vettoriale in qualsiasi applicazione Windows o Linux (Affinity, Microsoft Word, LibreOffice, Microsoft Publisher, Inkscape, ecc.)
+- **Copia come immagine**: copia il brano formattato (o le strofe selezionate) negli appunti come Windows Metafile (WMF) su Windows, o come SVG + PNG su Linux
+- **Esportazione in EMF** (Windows Metafile, solo Windows) e in formato **vettoriale SVG**
+- **Esportazione in PNG** e **HTML** (pagine web complete o frammenti)
+- **Copia solo testo**: copia il testo del brano senza accordi negli appunti
+
+### Pulizia e importazione
+- **Pulizia di righe vuote spurie**: rileva e rimuove automaticamente le righe vuote in eccesso (tipiche nei brani copiati da pagine web)
+- **Normalizza notazione accordi**: uniforma le notazioni degli accordi non omogenee nel documento
+- **Normalizza spazi multipli**: rimuove gli spazi in eccesso nel testo
+- **Importa da PDF**: estrae il testo di un brano da un file PDF e lo apre per la modifica
+
+### Interfaccia e preferenze
+- **Interfaccia bilingue**: italiano e inglese
+- **Editor personalizzabile**: tipo e dimensione del carattere, colore di sfondo, colore di selezione e colorazione sintattica per elemento (testo normale, ritornello, accordi, comandi, attributi, commenti, griglia tab)
+- **Guida integrata**: visualizzatore di aiuto con rendering Markdown, controllo zoom (50 %–200 %), tema chiaro/scuro, modalità a schermo intero e ricerca nel documento
+- **Posizione e dimensioni finestra**: salva e ripristina l'ultima posizione e il layout della finestra (prospettiva AUI)
 
 ## Immagini programma
 

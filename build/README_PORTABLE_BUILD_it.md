@@ -47,8 +47,10 @@ Songpressplusplus/
 Sostituisci il percorso seguente con quello completo del tuo progetto Songpress++:
 
 ```powershell
-cd "E:\Users\Utente\Downloads\SongpressV28\Songpressplusplus"
+cd "E:\Users\Utente\Downloads\SongpressV30\Songpressplusplus"
 ```
+
+> **Nota:** Il percorso indicato è un esempio. Sostituiscilo con il percorso effettivo in cui hai clonato o estratto il progetto sul tuo sistema.
 
 ### 2. Consenti l'esecuzione di script (solo al primo utilizzo, una tantum per il sistema)
 
@@ -77,6 +79,7 @@ Lo script esegue automaticamente questi passi:
 | Passo | Operazione |
 |-------|-----------|
 | 1 | Crea `.venv-build\` nella radice del progetto (solo al primo avvio) |
+| 1b | Aggiorna pip nel venv (solo al primo avvio) |
 | 2 | Installa cx_Freeze + tutte le dipendenze nel venv isolato |
 | 3 | Esegue `cx_Freeze build_exe` usando la configurazione in `pyproject.toml` |
 | 4 | Copia `templates\fonts\` nella cartella build se non già inclusa |
@@ -88,7 +91,7 @@ Lo script esegue automaticamente questi passi:
 
 ```
 dist/
-└── Songpress++-3.0.0-portable.zip
+└── Songpress++-3.0.1-portable.zip
     └── exe.win-amd64-3.12\      ← cartella da estrarre e distribuire
         ├── Songpress++.exe
         ├── python3xx.dll
@@ -149,12 +152,42 @@ La versione nel nome del ZIP viene letta automaticamente da `pyproject.toml`:
 
 ```toml
 [project]
-version = "3.0.0"   ← aggiorna qui, il resto è automatico
+version = "3.0.1"   ← aggiorna qui, il resto è automatico
 ```
 
 ---
 
 ## Pulizia e risoluzione problemi
+
+### Avviso aggiornamento pip durante la build
+
+Se compare un messaggio come:
+
+```
+NOTICE: A new release of pip is available: 25.x → 26.x
+```
+
+pip è funzionante ma non aggiornato nel `.venv-build`. Per aggiornarlo, usa `&` e
+le virgolette perché il percorso del progetto può contenere spazi:
+
+```powershell
+& "E:\Users\Utente\Downloads\SongpressV30_OK\Songpressplusplus\.venv-build\Scripts\python.exe" -m pip install --upgrade pip
+```
+
+> **Nota:** Sostituisci `E:\Users\Utente\Downloads\SongpressV30_OK\Songpressplusplus` con il percorso effettivo del tuo progetto.
+
+In alternativa, attiva prima il venv e poi usa la forma breve:
+
+```powershell
+& "E:\Users\Utente\Downloads\SongpressV30_OK\Songpressplusplus\.venv-build\Scripts\Activate.ps1"
+python -m pip install --upgrade pip
+```
+
+> **Nota:** Come sopra — sostituisci il percorso con quello effettivo del tuo progetto.
+
+Questo avviso non blocca la build; l'aggiornamento è facoltativo.
+
+---
 
 ### Ripartire da zero (venv + build)
 

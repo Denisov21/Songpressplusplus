@@ -37,6 +37,8 @@ cd E:\Users\Utente\Downloads\SongpressV33_OK\Songpressplusplus
 python main.py
 ```
 
+> **Note:** The path shown above (`E:\Users\Utente\Downloads\SongpressV33_OK\Songpressplusplus`) is an example. Replace it with the actual path where you cloned or extracted the project on your system.
+
 > **Note:** `main.py` must be run from the project root directory (`Songpressplusplus\`), where it is located, so that the `songpressPlusPlus` package is correctly found on the Python path.
 
 There are two differences between the two launchers, both significant:
@@ -68,22 +70,68 @@ In summary: `Avvio SONGPRESS2.vbs` is the development/debug version, `Avvio SONG
 
 ## Main Features
 
+### Editing
 - Production of **high-quality guitar charts** (lyrics and chords)
 - **Easy** to learn, fast to use
-- Ability to **paste formatted songs** into any Linux and Windows application to lay out the songbook with maximum flexibility (Affinity, Microsoft Word, LibreOffice, Microsoft Publisher, Inkscape, etc.)
-- **Export** of formatted songs to PNG and HTML (web pages and fragments)
+- **ChordPro autocomplete (IntelliSense)**: directives are suggested and completed automatically as you type, with smart bracket and colon insertion
+- **Multi-Cursor Support**: create and edit with multiple simultaneous cursors
+- **Find & Replace**: unified dialog with two tabs (Find / Replace), support for whole-word search, case sensitivity, and **regular expressions**, with configurable highlight colour and search history
+- **Syntax check**: validates ChordPro syntax and jumps directly to any error found in the document
+- **New from template**: start a new song from a pre-built ChordPro template
+
+### Chords
 - **Chord transposition** with automatic key detection
 - **Chord simplification** for beginner guitarists: identifies the easiest key to play and automatically transposes the song
-- Support for various **chord notations**: American (C, D, E), Italian (Do, Re, Mi), French, German, and Portuguese; with notation conversion
-- Support for **ChordPro and Tab** chord formats (on two lines)
-- **Cleanup** of messy songs with spurious blank lines (such as those copied and pasted from web pages) and inconsistent chord notations
-- **Print Preview** displays a print preview.
-- **Print** allows you to print or export to PDF.
-- **Create Songbook** allows you to create a collection in PDF format, with all the songs in a specific folder.
-- **Other Commands** many new and interesting commands to discover.
-- **Multi-Cursor Support** allows you to create and work with multiple cursors simultaneously.
-- **Chord Positioning** displays chords either above or below the lyrics.
-- **Window Position and Size** Saves and remembers the last position of the window.
+- **Chord propagation**: copies chords from the first verse (or first chorus) to all subsequent verses (or choruses) with the same number of lines, with a single click
+- **Chord integration**: merge chords from the clipboard into the current selection (*Paste chords*)
+- **Move chord left / right**: shift individual chords along the lyric line for precise positioning
+- **Remove chords**: strips all chords from the text, leaving lyrics only
+- Support for various **chord notations**: American (C, D, E), Italian (Do, Re, Mi), French, German, and Portuguese; with notation conversion between systems
+- Support for **ChordPro and Tab** chord formats (on two lines); automatic detection and conversion from Tab to ChordPro
+
+### Formatting & Layout
+- **Chord positioning**: display chords above or below the lyrics
+- **Show/hide chords**: slider control to show the full song, one chord pattern per verse only, or no chords at all
+- **Verse and chorus labels**: toggle labels on or off, with customisable chorus label text
+- **Custom verse labels**: insert verses with a custom label or without a label
+- **Structured block insertion**: quickly insert verse, numbered verse, chorus, bridge, chord block, and grid blocks from the menu
+- **Metadata fields**: insert title, subtitle, artist, composer, album, year, copyright, key, capo, tempo, time signature, and duration directly from the menu
+- **Musical symbol insertion**: dedicated dialog for inserting special music symbols into the text
+- **Chord diagram insertion** (*klavier*): insert fingering diagrams for chords, with configurable highlight colour and finger numbering
+- **Line and page spacing**: insert custom line spacing, chord-top spacing, manual page breaks (`{new_page}`), and column breaks
+- **Page break lines and column break lines**: visual guides shown in the preview panel
+- **Duration beats display**: show rhythmic beat markers in the preview
+
+### Preview & Print
+- **Live preview panel**: the formatted song updates in real time as you edit; the panel is dockable and resizable
+- **Tempo, time signature, and key display** in the preview header, with configurable icon size
+- **Chord grid display**: configurable grid rendering mode (pipe style), default label, and sizing direction
+- **Page size and margins**: configurable paper size and top/bottom/left/right margins, persisted across sessions
+- **Multi-column layout**: print or preview the song in one or two columns per page
+- **Two pages per sheet**: print two logical pages side by side on a single physical sheet
+- **Fit to page / shrink to fit**: automatically scales the song to avoid content being clipped at the bottom
+- **Print Preview**: full print preview before printing
+- **Print**: print the song or export it to PDF, with support for explicit page breaks via `{new_page}` / `{np}` commands
+- **Create Songbook**: generate a complete PDF collection from all songs in a selected folder
+
+### Export & Clipboard
+- Ability to **paste formatted songs** as a vector image into any Windows or Linux application (Affinity, Microsoft Word, LibreOffice, Microsoft Publisher, Inkscape, etc.)
+- **Copy as image**: copies the formatted song (or selected verses) to the clipboard as a Windows Metafile (WMF) on Windows, or as SVG + PNG on Linux
+- **Export to EMF** (Windows Metafile, Windows only) and to **SVG vector** format
+- **Export to PNG** and **HTML** (complete web pages or fragments)
+- **Copy plain text only**: copies the lyrics without chord markup to the clipboard
+
+### Cleanup & Import
+- **Cleanup of spurious blank lines**: automatically detects and removes extra blank lines (common in songs copied from web pages)
+- **Normalize chord notation**: standardises inconsistent chord notation across the document
+- **Normalize multiple spaces**: removes extra spaces from the text
+- **Import from PDF**: extract song text from a PDF file and open it for editing
+
+### Interface & Preferences
+- **Bilingual interface**: English and Italian
+- **Customisable editor**: configurable font face, size, background colour, selection colour, and per-element syntax colouring (normal text, chorus, chords, commands, attributes, comments, tab grid)
+- **Integrated guide**: built-in help viewer with Markdown rendering, zoom control (50 %–200 %), light/dark theme, full-screen mode, and in-document search
+- **Window position and size**: saves and restores the last window position and layout (AUI perspective)
 
 ## Screenshot program
 
