@@ -929,7 +929,7 @@
             <property name="help">Insert ChordPro directive to set beat duration of chords (e.g. 1, 2, 4)</property>
             <property name="id">ID_INSERT_DURATION</property>
             <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">&amp;Duration {beats_time:}...</property>
+            <property name="label">&amp;Duration {beats__time:}...</property>
             <property name="name">insertDuration</property>
             <property name="permission">none</property>
             <property name="shortcut"></property>
