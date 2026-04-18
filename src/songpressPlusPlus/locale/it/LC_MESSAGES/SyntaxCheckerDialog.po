@@ -216,26 +216,69 @@ msgstr "Il comando '{{cmd}}' non accetta un valore"
 # -----------------------------------------------------------------------
 # SyntaxChecker.py — {duration} validation messages
 # -----------------------------------------------------------------------
-#. {duration}: a token is not in the form Chord=N
+#. {beats_time}: a token is not in the form Chord=N
 #. {tok} is replaced at runtime with the malformed token
 #: SyntaxChecker.py
-msgid "{{duration}}: invalid token '{tok}' — expected format: chord=beats (e.g. Sol=2)"
-msgstr "{{duration}}: token non valido '{tok}' — formato atteso: accordo=battiti (es. Sol=2)"
+msgid "{{beats_time}}: invalid token '{tok}' — expected format: chord=beats (e.g. Sol=2)"
+msgstr "{{beats_time}}: token non valido '{tok}' — formato atteso: accordo=battiti (es. Sol=2)"
 
-#. {duration}: chord name not recognised (neither Italian nor English notation)
+#. {beats_time}: chord name not recognised (neither Italian nor English notation)
 #. {chord} is replaced at runtime with the unrecognised chord name
 #: SyntaxChecker.py
-msgid "{{duration}}: unrecognized chord '{chord}'"
-msgstr "{{duration}}: accordo non riconosciuto '{chord}'"
+msgid "{{beats_time}}: unrecognized chord '{chord}'"
+msgstr "{{beats_time}}: accordo non riconosciuto '{chord}'"
 
-#. {duration}: the beat count after '=' is missing entirely
+#. {beats_time}: the beat count after '=' is missing entirely
 #. {chord} is replaced at runtime with the chord name
 #: SyntaxChecker.py
-msgid "{{duration}}: missing beat count for chord '{chord}'"
-msgstr "{{duration}}: numero di battiti mancante per l'accordo '{chord}'"
+msgid "{{beats_time}}: missing beat count for chord '{chord}'"
+msgstr "{{beats_time}}: numero di battiti mancante per l'accordo '{chord}'"
 
-#. {duration}: beat count is not a positive integer (e.g. 0, -1, 1.5, letters)
+#. {beats_time}: beat count is not a positive integer (e.g. 0, -1, 1.5, letters)
 #. {chord} = chord name; {val} = the invalid value found
 #: SyntaxChecker.py
-msgid "{{duration}}: beat count for '{chord}' must be a positive integer, got '{val}'"
-msgstr "{{duration}}: i battiti per '{chord}' devono essere un intero positivo, trovato '{val}'"
+msgid "{{beats_time}}: beat count for '{chord}' must be a positive integer, got '{val}'"
+msgstr "{{beats_time}}: i battiti per '{chord}' devono essere un intero positivo, trovato '{val}'"
+
+# -----------------------------------------------------------------------
+#. {fingering}: 'hand=' key appears more than once in the directive value
+#: SyntaxChecker.py
+msgid "{{fingering}}: 'hand' specified more than once"
+msgstr "{{fingering}}: 'hand' specificato più di una volta"
+
+#. {fingering}: hand value is not R or L
+#. {val} is replaced at runtime with the invalid value found
+#: SyntaxChecker.py
+msgid "{{fingering}}: hand must be R (right) or L (left), got '{val}'"
+msgstr "{{fingering}}: hand deve essere R (destra) o L (sinistra), trovato '{val}'"
+
+# -----------------------------------------------------------------------
+#. {duration}: value looks like CHORD=N tokens — user confused {duration:} with {beats_time:}
+#: SyntaxChecker.py
+msgid "{{duration}}: value looks like chord beats (e.g. 'Do=2 Sol=1') — use {{beats_time:}} for per-chord beat counts; {{duration:}} is for song duration (e.g. '3:45')"
+msgstr "{{duration}}: il valore sembra battiti per accordo (es. 'Do=2 Sol=1') — usa {{beats_time:}} per i battiti per accordo; {{duration:}} serve per la durata della canzone (es. '3:45')"
+
+#. {duration}: value is a literal placeholder like 'mm:ss' or 'hh:mm:ss', not a real time
+#. {val} is replaced at runtime with the placeholder found
+#: SyntaxChecker.py
+msgid "{{duration}}: '{val}' looks like an unfilled placeholder — use a real duration value (e.g. '3:45' or '1:02:30')"
+msgstr "{{duration}}: '{val}' sembra un segnaposto non compilato — inserisci un valore reale (es. '3:45' oppure '1:02:30')"
+
+#. {duration}: seconds field (mm:ss) is > 59
+#. {sec} is replaced at runtime with the out-of-range value
+#: SyntaxChecker.py
+msgid "{{duration}}: seconds value '{sec}' is out of range (0-59)"
+msgstr "{{duration}}: il valore dei secondi '{sec}' è fuori intervallo (0-59)"
+
+#. {duration}: minutes field (hh:mm:ss) is > 59
+#. {min} is replaced at runtime with the out-of-range value
+#: SyntaxChecker.py
+msgid "{{duration}}: minutes value '{min}' is out of range (0-59)"
+msgstr "{{duration}}: il valore dei minuti '{min}' è fuori intervallo (0-59)"
+
+#. {duration}: value does not match any recognised time format
+#. {val} is replaced at runtime with the unrecognised value
+#: SyntaxChecker.py
+msgid "{{duration}}: invalid format '{val}' — expected mm:ss or hh:mm:ss (e.g. '3:45' or '1:02:30')"
+msgstr "{{duration}}: formato non valido '{val}' — atteso mm:ss o hh:mm:ss (es. '3:45' oppure '1:02:30')"
+

@@ -467,6 +467,91 @@ def _validate_image_options(opts_str: str, line_num: int, col: int,
                 ))
 
 
+def _validate_duration(cmd_value: str, line_num: int, col: int,
+                       result: SyntaxCheckResult):
+    """
+    Valida il valore di {duration: ...}.
+
+    Formato atteso: durata numerica — mm:ss oppure hh:mm:ss.
+      - Tutti i segmenti devono essere numeri interi (0-99).
+      - I secondi devono essere 0-59.
+      - Sono accettati anche valori senza separatori come '180' (secondi).
+    Vengono segnalati come errore:
+      - Placeholder letterali come 'mm:ss' o 'hh:mm:ss'.
+      - Valori che sembrano token ACCORDO=N (appartengono a {beats_time:}).
+      - Qualsiasi formato non riconoscibile.
+    """
+    import re as _re
+    val = cmd_value.strip()
+    if not val:
+        return
+
+    # Errore: sembra una lista di token ACCORDO=N → suggerisci {beats_time:}
+    if _re.fullmatch(r'([A-Za-z][A-Za-z0-9#b\-]*=\d+\s*)+', val):
+        result.errors.append(SyntaxError(
+            line=line_num, column=col,
+            message=_(
+                "{{duration}}: value looks like chord beats (e.g. 'Do=2 Sol=1') — "
+                "use {{beats_time:}} for per-chord beat counts; "
+                "{{duration:}} is for song duration (e.g. '3:45')"
+            )
+        ))
+        return
+
+    # Errore: placeholder letterale mm:ss / hh:mm:ss (non compilato)
+    if _re.fullmatch(r'[hmHMS:]+', val) and not _re.search(r'\d', val):
+        result.errors.append(SyntaxError(
+            line=line_num, column=col,
+            message=_(
+                "{{duration}}: '{val}' looks like an unfilled placeholder — "
+                "use a real duration value (e.g. '3:45' or '1:02:30')"
+            ).format(val=val)
+        ))
+        return
+
+    # Formato valido: solo cifre (secondi totali), mm:ss, hh:mm:ss
+    if _re.fullmatch(r'\d+', val):
+        return   # secondi interi — ok
+
+    m = _re.fullmatch(r'(\d{1,2}):(\d{2})', val)
+    if m:
+        if int(m.group(2)) > 59:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_(
+                    "{{duration}}: seconds value '{sec}' is out of range (0-59)"
+                ).format(sec=m.group(2))
+            ))
+        return
+
+    m = _re.fullmatch(r'(\d{1,2}):(\d{2}):(\d{2})', val)
+    if m:
+        if int(m.group(2)) > 59:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_(
+                    "{{duration}}: minutes value '{min}' is out of range (0-59)"
+                ).format(min=m.group(2))
+            ))
+        elif int(m.group(3)) > 59:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_(
+                    "{{duration}}: seconds value '{sec}' is out of range (0-59)"
+                ).format(sec=m.group(3))
+            ))
+        return
+
+    # Nessun formato riconoscibile
+    result.errors.append(SyntaxError(
+        line=line_num, column=col,
+        message=_(
+            "{{duration}}: invalid format '{val}' — "
+            "expected mm:ss or hh:mm:ss (e.g. '3:45' or '1:02:30')"
+        ).format(val=val)
+    ))
+
+
 def _validate_beats_time(cmd_value: str, line_num: int, col: int,
                        result: SyntaxCheckResult):
     """
@@ -695,6 +780,10 @@ def _validate_command(content: str, line_num: int, col: int,
     # ── Validazione specifica per {beats_time:} ─────────────────
     if cmd_name == "beats_time" and cmd_value:
         _validate_beats_time(cmd_value, line_num, col, result)
+
+    # ── Validazione specifica per {duration:} ────────────────────
+    if cmd_name == "duration" and cmd_value:
+        _validate_duration(cmd_value, line_num, col, result)
 
     # ── Validazione specifica per {meta:} ─────────────────────────
     # Il formato atteso è:  {meta: chiave valore}  (almeno due token)

@@ -53,7 +53,8 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | `{tempo_c:BPM}`     |              | 🔧  | 🖊    | Tempo with **eighth note** icon                                                          |
 | `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo with **dotted eighth note** icon                                                   |
 | `{time:N/M}`        |              | ✅  | ⌨️   | Time signature (e.g. `{time:4/4}`, `{time:3/4}`); rendered with a graphical time symbol  |
-| `{duration: Ch=N …}` |             | ✅  | ⌨️   | Beat duration of chords (e.g. `{duration: C=2 G=1}`); displays a number, dots, or both above chords (configurable in preferences) |
+| `{beats_time: Ch=N …}` |           | 🔧  | ⌨️   | Beat duration of chords (e.g. `{beats_time: C=2 G=1}`); displays a number, dots, or both above chords (configurable in preferences) |
+| `{duration:mm:ss}`  |              | ✅  | 🖊    | Total song duration (pure metadata, not shown in preview; e.g. `{duration: 3:45}`) |
 | `{sorttitle:Text}`  |              | ✅  | 🖊    | Alternative title used for alphabetical sorting (metadata only, not displayed)           |
 | `{keywords:...}`    |              | ✅  | 🖊    | Search keywords (metadata only, not displayed)                                           |
 | `{topic:...}`       |              | ✅  | 🖊    | Topic / category (metadata only, not displayed)                                          |
@@ -61,7 +62,7 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | `{language:...}`    |              | ✅  | 🖊    | Language of the lyrics (metadata only, not displayed)                                    |
 | `{meta:key value}`  |              | ✅  | 🖊    | Generic free-form metadata (not displayed)                                               |
 
-> **Note on extended metadata** — The directives `{sorttitle}`, `{keywords}`, `{topic}`, `{collection}`, `{language}`, and `{meta}` are recognised and accepted by the parser for compatibility with ChordPro 6 files, but their value is not shown in the preview or in print: they are treated as pure metadata and consumed silently.
+> **Note on extended metadata** — The directives `{sorttitle}`, `{keywords}`, `{topic}`, `{collection}`, `{language}`, `{meta}`, and `{duration}` are recognised and accepted by the parser for compatibility with ChordPro 6 files, but their value is not shown in the preview or in print: they are treated as pure metadata and consumed silently.
 
 > **Note on tempo** — The `{tempo*}` directives have four display modes, configurable in preferences: note icon + value (e.g. `♩ = 120`), text `BPM: 120`, plain text `Tempo: 120`, or no display at all. Checking the *Metadata* option treats the value as pure metadata — it does not appear in the preview or in print.
 
@@ -561,14 +562,14 @@ The built-in syntax checker (*Tools → Check Syntax*) validates the `hand=` tok
 | Invalid value | `{fingering: Am hand=X}` | `hand` must be R or L |
 | Duplicate `hand=` token | `{fingering: Am hand=R hand=L}` | `hand` specified more than once |
 
-### Chord Beat Duration — `{duration:}`
+### Chord Beat Duration — `{beats_time:}`
 
-The `{duration:}` directive specifies the **beat duration** of each chord on the following line. Songpress++ uses this information to calculate and display **beat numbers** above the chords in the preview, helping the performer understand the rhythm without reading sheet music.
+The `{beats_time:}` directive specifies the **beat duration** of each chord on the following line. Songpress++ uses this information to calculate and display **beat numbers** above the chords in the preview, helping the performer understand the rhythm without reading sheet music.
 
 **Format:**
 
 ```chordpro
-{duration: ChordName=N ChordName=N …}
+{beats_time: ChordName=N ChordName=N …}
 ```
 
 - `ChordName` — chord name in Italian notation (`Do`, `Sol`, `La-`, `Re7`…) or English (`C`, `G`, `Am`, `D7`…)
@@ -579,28 +580,28 @@ The `{duration:}` directive specifies the **beat duration** of each chord on the
 **Examples:**
 
 ```chordpro
-{duration: C=4 G=2 Am=2 F=4}
+{beats_time: C=4 G=2 Am=2 F=4}
 [C]Amaz[G]ing [Am]grace, how [F]sweet
 ```
 
 ```chordpro
-{duration: G=2 Em=2 C=4}
+{beats_time: G=2 Em=2 C=4}
 [G]Nel [Em]mezzo del [C]cammino
 ```
 
 ```chordpro
-{duration: Am=4 F=2 C=2 G=4}
+{beats_time: Am=4 F=2 C=2 G=4}
 [Am]Tanti [F]au[C]guri a [G]te
 ```
 
-Each `{duration:}` directive applies to the **line of text/chords immediately below it**. To assign durations to multiple lines, place a `{duration:}` before each one.
+Each `{beats_time:}` directive applies to the **line of text/chords immediately below it**. To assign durations to multiple lines, place a `{beats_time:}` before each one.
 
 **Inserting from the menu — guided dialog:**
 
-The command *Insert → Chord duration {duration:}…* automatically detects the context:
+The command *Insert → Chord duration {beats_time:}…* automatically detects the context:
 
-- **If the line below the cursor contains no `[…]` chords** — inserts `{duration: }` directly without opening any dialog.
-- **If the line below the cursor contains `[…]` chords** — opens a dialog with a numeric field (`SpinCtrl`) for each unique chord found, preset to 1 beat. As you change the values, the **Preview** field updates in real time showing the directive that will be inserted (e.g. `{duration: C=4 G=2 Am=2 F=1}`). Setting a chord to **0** excludes it from the directive.
+- **If the line below the cursor contains no `[…]` chords** — inserts `{beats_time: }` directly without opening any dialog.
+- **If the line below the cursor contains `[…]` chords** — opens a dialog with a numeric field (`SpinCtrl`) for each unique chord found, preset to 1 beat. As you change the values, the **Preview** field updates in real time showing the directive that will be inserted (e.g. `{beats_time: C=4 G=2 Am=2 F=1}`). Setting a chord to **0** excludes it from the directive.
 
 > **Note** — The directive is inserted at the cursor position: place the cursor on the line **above** the chord line, then select the command from the menu.
 
@@ -608,7 +609,7 @@ The command *Insert → Chord duration {duration:}…* automatically detects the
 
 The menu item **View → Show chord beats** enables or disables the display of beat numbers in the preview. When enabled, a beat indicator appears above each chord according to the mode set in preferences.
 
-**Preferences — *Options → Format → Beat count ({duration})*:**
+**Preferences — *Options → Format → Beat count ({beats_time})*:**
 
 | Option | Values | Default | Description |
 | ------ | ------ | ------- | ----------- |
@@ -628,15 +629,15 @@ The menu item **View → Show chord beats** enables or disables the display of b
 
 **Syntax checking:**
 
-The built-in syntax checker (*Tools → Check syntax*) reports errors in the value of `{duration:}`:
+The built-in syntax checker (*Tools → Check syntax*) reports errors in the value of `{beats_time:}`:
 
 | Error | Example | Message |
 | ----- | ------- | ------- |
-| Token without `=` | `{duration: G}` | invalid format |
-| Unrecognised chord | `{duration: Xyz=2}` | unrecognized chord |
-| Duplicate chord | `{duration: G=2 G=1}` | chord appears more than once |
-| Missing beat count | `{duration: G=}` | missing beat count |
-| Non-integer or ≤ 0 beats | `{duration: G=0}`, `G=1.5` | must be a positive integer |
+| Token without `=` | `{beats_time: G}` | invalid format |
+| Unrecognised chord | `{beats_time: Xyz=2}` | unrecognized chord |
+| Duplicate chord | `{beats_time: G=2 G=1}` | chord appears more than once |
+| Missing beat count | `{beats_time: G=}` | missing beat count |
+| Non-integer or ≤ 0 beats | `{beats_time: G=0}`, `G=1.5` | must be a positive integer |
 
 ### Image Directive
 
@@ -722,7 +723,7 @@ The **Embed image in file (base64, no external dependency)** checkbox is located
 {capo: 0}
 
 {start_verse_num}
-{duration: C=2 G7=2}
+{beats_time: C=2 G7=2}
 [C]Che bella [G7]cosa na jurnata 'e [C]sole
 [C]N'aria serena [G7]doppo na tempesta!
 {end_verse_num}
