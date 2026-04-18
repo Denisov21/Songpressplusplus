@@ -58,7 +58,7 @@ class SongDecorator(object):
         self.klavierHighlightColor = None
         # Colour for finger number labels on klavier keys (wx.Colour or None = auto contrast)
         self.fingerNumColor = None
-        # Whether to show beat count above chords ({duration} directive)
+        # Whether to show beat count above chords ({beats_time} directive)
         self.showDurationBeats = True
         # Modalità visualizzazione battiti: 'number' | 'dots' | 'both'
         self.durationBeatsMode = 'number'
@@ -692,7 +692,7 @@ class SongDecorator(object):
         
     def PostDrawLine(self, line, lx, ly):
         # lx, ly: coordinates of top-left corner of drawable area
-        # ── Numero/puntini battiti sopra ogni accordo ({duration: ...}) ─
+        # ── Numero/puntini battiti sopra ogni accordo ({beats_time: ...}) ─
         if not getattr(self, 'showDurationBeats', True):
             return
         mode = getattr(self, 'durationBeatsMode', 'number')

@@ -591,8 +591,8 @@ msgid "Enable directive intellisense (Ctrl+Space)"
 msgstr "Abilita intellisense direttive (Ctrl+Spazio)"
 
 #: PreferencesDialog.py format tab — beat count group title
-msgid "Beat count ({duration})"
-msgstr "Numero di battiti ({duration})"
+msgid "Beat count ({beats_time})"
+msgstr "Numero di battiti ({beats_time})"
 
 #: PreferencesDialog.py format tab — beat count colour label
 msgid "Colour"

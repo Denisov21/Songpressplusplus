@@ -1704,7 +1704,7 @@ class SongpressFrame(SDIMainFrame):
         Bind(self.OnInsertTempo, 'insertTempo')
         Bind(self.OnInsertTime, 'insertTime')
         Bind(self.OnInsertKey, 'insertKey')
-        Bind(self.OnInsertDuration, 'insertDuration')
+        Bind(self.OnInsertBeatsTime, 'insertDuration')
         Bind(self.OnInsertCapo, 'insertCapo')
         Bind(self.OnInsertArtist, 'insertArtist')
         Bind(self.OnInsertComposer, 'insertComposer')
@@ -2184,13 +2184,13 @@ class SongpressFrame(SDIMainFrame):
         """Inserisce la direttiva {year: <anno>}."""
         self._InsertSimpleDirective('year', _(u"Enter the year (e.g. 1975):"), u"")
 
-    def OnInsertDuration(self, evt):
-        """Inserisce la direttiva {duration: }.
+    def OnInsertBeatsTime(self, evt):
+        """Inserisce la direttiva {beats_time: }.
         
         Se nella riga immediatamente successiva al cursore sono presenti accordi
         nella forma [Accordo], propone un dialogo per assegnare il numero di battiti
-        a ciascun accordo, producendo {duration: DO=2 SOL=1 ...}.
-        In caso contrario inserisce semplicemente {duration: }.
+        a ciascun accordo, producendo {beats_time: DO=2 SOL=1 ...}.
+        In caso contrario inserisce semplicemente {beats_time: }.
         """
         import re
 
@@ -2214,7 +2214,7 @@ class SongpressFrame(SDIMainFrame):
 
         # ── 3a. Nessun accordo trovato: inserimento semplice ─────────────
         if not chords:
-            self.InsertWithCaret(u"{duration: }")
+            self.InsertWithCaret(u"{beats_time: }")
             return
 
         # ── 3b. Accordi trovati: dialogo per i battiti ───────────────────
@@ -2274,7 +2274,7 @@ class SongpressFrame(SDIMainFrame):
                 v = spin_map[ch].GetValue()
                 if v > 0:
                     parts.append(u"%s=%d" % (ch, v))
-            directive = u"{duration: %s}" % u" ".join(parts) if parts else u"{duration: }"
+            directive = u"{beats_time: %s}" % u" ".join(parts) if parts else u"{beats_time: }"
             lbl_preview.SetLabel(directive)
             dlg.Layout()
 
@@ -2290,7 +2290,7 @@ class SongpressFrame(SDIMainFrame):
                 v = spin_map[ch].GetValue()
                 if v > 0:
                     parts.append(u"%s=%d" % (ch, v))
-            directive = u"{duration: %s}" % u" ".join(parts) if parts else u"{duration: }"
+            directive = u"{beats_time: %s}" % u" ".join(parts) if parts else u"{beats_time: }"
             self.InsertWithCaret(directive)
 
         dlg.Destroy()
@@ -3402,7 +3402,7 @@ class SongpressFrame(SDIMainFrame):
         # Metadati
         'title', 'subtitle', 'artist', 'composer', 'lyricist', 'arranger',
         'copyright', 'album', 'year', 'key', 'time', 'tempo', 'capo',
-        'duration', 'ccli', 'tempo_m', 'tempo_s', 'tempo_sp', 'tempo_c', 'tempo_cp',
+        'beats_time', 'ccli', 'duration', 'tempo_m', 'tempo_s', 'tempo_sp', 'tempo_c', 'tempo_cp',
         # Metadati estesi (ChordPro 6)
         'sorttitle', 'keywords', 'topic', 'collection', 'language', 'pagetype',
         'columns', 'meta',

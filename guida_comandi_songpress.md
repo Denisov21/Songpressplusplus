@@ -51,6 +51,7 @@ Songpress++ utilizza il formato **ChordPro** esteso. I comandi sono racchiusi tr
    - [tempo_sp](#tempo_sp)
    - [tempo_cp](#tempo_cp)
    - [time](#time)
+   - [beats_time](#beats_time)
 7. [Formattazione del testo](#7-formattazione-del-testo)
    - [textsize](#textsize)
    - [textfont](#textfont)
@@ -489,11 +490,14 @@ Anno di pubblicazione o composizione.
 
 **Sintassi:** `{duration: Durata}`
 
-Durata della canzone. Il formato consigliato è `mm:ss` (es. `3:45`), ma il campo accetta qualsiasi stringa testuale. Metadato di sola memorizzazione, non visualizzato nell'anteprima.
+Durata della canzone. Il formato consigliato è `mm:ss` (es. `3:45`), ma il campo accetta qualsiasi stringa testuale. **Metadato di sola memorizzazione**: il valore viene consumato silenziosamente dal renderer e non appare nell'anteprima né in stampa. Può essere incluso nel file per compatibilità con altri editor ChordPro o per uso esterno (esportatori, database).
 
 ```chordpro
 {duration: 3:45}
+{duration: 4:28}
 ```
+
+> Per associare durate in battiti ai singoli accordi di una riga, usare invece `{beats_time:}` (sezione 6).
 
 ---
 
@@ -684,6 +688,25 @@ Indica il **metro** della canzone (indicazione di misura). N è il numero di tem
 {time: 3/4}
 {time: 6/8}
 ```
+
+---
+
+### `beats_time`
+
+**Sintassi:** `{beats_time: ACCORDO=battiti ACCORDO=battiti ...}`
+
+Associa un numero di **battiti** a ciascun accordo della riga immediatamente successiva. I token hanno forma `ACCORDO=N`, dove `N` è un intero positivo. Gli accordi si indicano in maiuscolo; il bemolle si scrive con il trattino (`La-` = La♭).
+
+L'associazione è **posizionale**: il primo token si riferisce al primo accordo `[...]` della riga, il secondo al secondo, e così via. Se il numero di token è inferiore al numero di accordi, i restanti accordi non ricevono durata.
+
+```chordpro
+{beats_time: Do=4 Sol=2 La-=2}
+[Do]Prima par[Sol]te bre[La-]ve
+```
+
+I valori di durata vengono mostrati nell'anteprima accanto agli accordi (se l'opzione **Mostra durate battiti** è attiva nel menu Visualizza). Colore, dimensione e modalità di visualizzazione sono configurabili in *Preferenze → Formato → Durate battiti*.
+
+> La direttiva agisce solo sulla riga successiva; non ha effetto su righe più distanti. Per la durata complessiva della canzone usare `{duration:}` (sezione 4).
 
 ---
 
@@ -1170,7 +1193,7 @@ Accessibile da **Formato → Indicazione di tempo** (o clic sull'indicazione nel
 | `{arranger: ...}` | — | Metadati | Nome arrangiatore — visualizzato con prefisso "Arrangiamento:" |
 | `{album: ...}` | — | Metadati | Titolo album |
 | `{year: ...}` | — | Metadati | Anno di pubblicazione |
-| `{duration: ...}` | — | Metadati | Durata della canzone |
+| `{duration: ...}` | — | Metadati | Durata della canzone (metadato puro, non visualizzato) |
 | `{ccli: ...}` | — | Metadati | Numero licenza CCLI |
 | `{copyright: ...}` | — | Metadati | Testo copyright |
 | `{key: ...}` | — | Metadati | Tonalità della canzone |
@@ -1184,6 +1207,7 @@ Accessibile da **Formato → Indicazione di tempo** (o clic sull'indicazione nel
 | `{tempo_sp: N}` | — | Musicale | Tempo in BPM (semiminima puntata) |
 | `{tempo_cp: N}` | — | Musicale | Tempo in BPM (croma puntata) |
 | `{time: N/D}` | — | Musicale | Metro (indicazione di misura) |
+| `{beats_time: ACC=N ...}` | — | Musicale | Durata in battiti degli accordi della riga successiva |
 | `{textsize: N}` | — | Testo | Dimensione font testo |
 | `{textfont: ...}` | — | Testo | Font del testo |
 | `{textcolour: ...}` | `{textcolor:}` | Testo | Colore del testo |

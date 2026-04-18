@@ -89,6 +89,18 @@ In sintesi: `Avvio SONGPRESS2.vbs` è la versione di sviluppo/debug, `Avvio SONG
 - Supporto per diverse **notazioni degli accordi**: americana (C, D, E), italiana (Do, Re, Mi), francese, tedesca e portoghese; con conversione tra notazioni
 - Supporto per i formati di accordi **ChordPro e Tab** (su due righe); rilevamento automatico e conversione da Tab a ChordPro
 
+> **Perché preferire il formato ChordPro al Tab?**
+>
+> Il formato **Tab** (o "a due righe") affianca gli accordi al testo su righe separate, allineandoli spazialmente carattere per carattere. Sebbene sia semplice da digitare, presenta limiti importanti: è fragile rispetto ai cambi di font o dimensione del testo, difficile da modificare senza rompere l'allineamento, e non portabile tra applicazioni diverse.
+>
+> Il formato **ChordPro** incorpora invece gli accordi direttamente nel testo tra parentesi quadre (es. `Amaz[G]ing grace`), rendendoli indipendenti dalla formattazione visiva. I vantaggi sono significativi:
+> - **Robustezza**: l'accordo è legato alla parola, non alla colonna; cambiare font o dimensione non rompe mai il layout
+> - **Modificabilità**: aggiungere o rimuovere parole non richiede di riallineare manualmente tutti gli accordi
+> - **Trasposizione affidabile**: la trasposizione automatica funziona in modo preciso perché gli accordi sono strutturalmente distinti dal testo
+> - **Portabilità**: il formato ChordPro è uno standard aperto, riconosciuto da decine di applicazioni su tutte le piattaforme
+>
+> Per questi motivi, Songpress++ supporta la **conversione automatica da Tab a ChordPro** ed è consigliabile convertire i brani nel formato ChordPro prima di lavorarci.
+
 ### Formattazione e impaginazione
 - **Posizionamento accordi**: visualizza gli accordi sopra o sotto il testo
 - **Mostra/nascondi accordi**: cursore per mostrare l'intero brano, solo un pattern di accordi per strofa, o nessun accordo
@@ -139,7 +151,80 @@ In sintesi: `Avvio SONGPRESS2.vbs` è la versione di sviluppo/debug, `Avvio SONG
 
 ![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Menu_contestuale_it.png)
 
-## Problemi noti
+## Aggiungere una nuova direttiva ChordPro (guida per sviluppatori)
+
+Per aggiungere una nuova direttiva (es. `{miocomando: valore}`) è necessario modificare fino a **sei file**, a seconda che la direttiva sia un puro metadato, produca un output visivo nell'anteprima, o abbia un'azione UI dedicata.
+
+### 1. `Renderer.py` — parsing ed esecuzione *(sempre richiesto)*
+
+È il file centrale. All'interno del metodo `Render()`, trovare la catena `elif cmd == ...` e aggiungere un nuovo ramo:
+
+```python
+elif cmd == 'miocomando':
+    a = self.GetAttribute()
+    if a is not None and a.strip():
+        # usare a.strip()
+```
+
+Le **direttive solo-metadato** (non visualizzate nell'anteprima) vanno invece aggiunte alla tupla di consumo silenzioso già esistente:
+
+```python
+elif cmd in ('sorttitle', 'keywords', ..., 'duration', 'miocomando'):
+    self.GetAttribute()   # consuma il token `:valore` senza usarlo
+```
+
+### 2. `SyntaxChecker.py` — validazione *(sempre richiesto)*
+
+Aggiungere `"miocomando"` a **due** insiemi dentro `_validate_command()`:
+
+- **`_KNOWN_COMMANDS`** — marca la direttiva come riconosciuta (evita errori "comando sconosciuto").
+- **`_REQUIRES_VALUE`** — se la direttiva richiede un valore non vuoto; oppure **`_OPTIONAL_VALUE`** — se può essere usata senza valore per ripristinare un default.
+
+Facoltativamente, aggiungere una funzione dedicata `_validate_miocomando()` per validazioni di formato (vedere `_validate_beats_time()` come riferimento) e chiamarla in fondo a `_validate_command()`.
+
+### 3. `SongpressFrame.py` — IntelliSense e azione UI opzionale *(sempre richiesto)*
+
+- Aggiungere `'miocomando'` a `_CHORDPRO_DIRECTIVES` — fa apparire la direttiva nel popup di completamento automatico **Ctrl+Spazio**.
+- Se la direttiva non accetta valore (si chiude subito con `}`), aggiungerla a `_DIRECTIVES_NO_VALUE`.
+- Se si vuole una **voce di menu** per inserire la direttiva, aggiungere un metodo handler `OnInsertMiocomando()` e collegarlo con `Bind(self.OnInsertMiocomando, 'insertMiocomando')`.
+
+### 4. `songpress.xrc` + `songpress_it.xrc` — voci di menu *(solo se si aggiunge una voce di menu)*
+
+Aggiungere un blocco `wxMenuItem` nella sezione `<object class="wxMenu">` appropriata:
+
+```xml
+<object class="wxMenuItem" name="insertMiocomando">
+  <label>_Mio comando {miocomando:}...</label>
+  <accel></accel>
+  <help>Inserisci la direttiva ChordPro per ...</help>
+</object>
+```
+
+Aggiungere lo stesso blocco con l'etichetta inglese in `songpress.xrc`.
+
+### 5. `gui.fbp` — sorgente wxFormBuilder *(solo se si aggiunge una voce di menu)*
+
+Aggiungere il corrispondente oggetto `wxMenuItem` nel file di progetto wxFormBuilder, specchiando la voce XRC. Questo mantiene il designer visuale sincronizzato con i file XRC.
+
+### 6. `PreferencesDialog.po` + file di traduzione *(solo se si aggiungono stringhe UI)*
+
+Se la nuova direttiva introduce nuove stringhe traducibili (etichette, tooltip, messaggi di errore), aggiungere le corrispondenti coppie `msgid` / `msgstr` nel file `.po`.
+
+---
+
+### Riferimento rapido — checklist dei file
+
+| File | Quando modificare |
+|---|---|
+| `Renderer.py` | Sempre — aggiungere il ramo `elif cmd == 'miocomando':` |
+| `SyntaxChecker.py` | Sempre — aggiungere a `_KNOWN_COMMANDS` e `_REQUIRES_VALUE` / `_OPTIONAL_VALUE` |
+| `SongpressFrame.py` | Sempre — aggiungere a `_CHORDPRO_DIRECTIVES`; opzionalmente aggiungere handler di menu |
+| `songpress.xrc` | Solo se si aggiunge una voce di menu (UI inglese) |
+| `songpress_it.xrc` | Solo se si aggiunge una voce di menu (UI italiana) |
+| `gui.fbp` | Solo se si aggiunge una voce di menu (sorgente wxFormBuilder) |
+| `PreferencesDialog.po` | Solo se si aggiungono nuove stringhe traducibili |
+
+
 
 ### Linux: esportazione SVG e scaling del display
 

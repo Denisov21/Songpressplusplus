@@ -89,6 +89,18 @@ In summary: `Avvio SONGPRESS2.vbs` is the development/debug version, `Avvio SONG
 - Support for various **chord notations**: American (C, D, E), Italian (Do, Re, Mi), French, German, and Portuguese; with notation conversion between systems
 - Support for **ChordPro and Tab** chord formats (on two lines); automatic detection and conversion from Tab to ChordPro
 
+> **Why prefer ChordPro format over Tab?**
+>
+> The **Tab** (or "two-line") format places chords above the lyrics on separate lines, aligned character by character. While straightforward to type, it has significant limitations: it is fragile when the font or text size changes, difficult to edit without breaking alignment, and not portable across different applications.
+>
+> **ChordPro** instead embeds chords directly inside the lyrics using square brackets (e.g. `Amaz[G]ing grace`), making them independent of visual formatting. The advantages are substantial:
+> - **Robustness**: chords are bound to words, not columns — changing font or size never breaks the layout
+> - **Editability**: adding or removing words does not require manually realigning all chords
+> - **Reliable transposition**: automatic transposition works accurately because chords are structurally separate from the text
+> - **Portability**: ChordPro is an open standard recognised by dozens of applications across all platforms
+>
+> For these reasons, Songpress++ supports **automatic conversion from Tab to ChordPro**, and it is recommended to convert songs to ChordPro format before working on them.
+
 ### Formatting & Layout
 - **Chord positioning**: display chords above or below the lyrics
 - **Show/hide chords**: slider control to show the full song, one chord pattern per verse only, or no chords at all
@@ -139,7 +151,80 @@ In summary: `Avvio SONGPRESS2.vbs` is the development/debug version, `Avvio SONG
 
 ![Songpress++ menu contestuale](src/songpressPlusPlus/img/GUIDE/Menu_contestuale_en.png)
 
-## Known Issues
+## Adding a new ChordPro directive (developer guide)
+
+Adding a new directive (e.g. `{mycommand: value}`) requires touching up to **six files**, depending on whether the directive is purely a metadata field, renders something visually, or has a dedicated UI action.
+
+### 1. `Renderer.py` — parsing and execution *(always required)*
+
+This is the core file. Inside the `Render()` method, locate the large `elif cmd == ...` chain and add a new branch:
+
+```python
+elif cmd == 'mycommand':
+    a = self.GetAttribute()
+    if a is not None and a.strip():
+        # do something with a.strip()
+```
+
+**Metadata-only directives** (not displayed in the preview) go into the existing silent-consume tuple instead:
+
+```python
+elif cmd in ('sorttitle', 'keywords', ..., 'duration', 'mycommand'):
+    self.GetAttribute()   # consume the value token without using it
+```
+
+### 2. `SyntaxChecker.py` — validation *(always required)*
+
+Add `"mycommand"` to **two** sets inside `_validate_command()`:
+
+- **`_KNOWN_COMMANDS`** — marks the directive as recognised (prevents "unknown command" errors).
+- **`_REQUIRES_VALUE`** — if the directive must have a non-empty value; or **`_OPTIONAL_VALUE`** — if it can be used without a value to reset a default.
+
+Optionally add a dedicated `_validate_mycommand()` function for format-level validation (see `_validate_beats_time()` as a reference), and call it at the bottom of `_validate_command()`.
+
+### 3. `SongpressFrame.py` — IntelliSense and optional UI action *(always required)*
+
+- Add `'mycommand'` to `_CHORDPRO_DIRECTIVES` — this makes it appear in the **Ctrl+Space** autocomplete popup.
+- If the directive has no value (closes immediately with `}`), add it to `_DIRECTIVES_NO_VALUE`.
+- If you want a **menu item** that inserts the directive, add an `OnInsertMycommand()` handler method and bind it with `Bind(self.OnInsertMycommand, 'insertMycommand')`.
+
+### 4. `songpress.xrc` + `songpress_it.xrc` — menu items *(only if adding a menu entry)*
+
+Add a `wxMenuItem` block in the appropriate `<object class="wxMenu">` section:
+
+```xml
+<object class="wxMenuItem" name="insertMycommand">
+  <label>_My command {mycommand:}...</label>
+  <accel></accel>
+  <help>Insert ChordPro directive for ...</help>
+</object>
+```
+
+Add the same block with the Italian label to `songpress_it.xrc`.
+
+### 5. `gui.fbp` — wxFormBuilder source *(only if adding a menu entry)*
+
+Add the corresponding `wxMenuItem` object in the wxFormBuilder project file, mirroring the XRC entry. This keeps the visual designer in sync with the XRC files.
+
+### 6. `PreferencesDialog.po` + translation files *(only if adding UI strings)*
+
+If the new directive introduces new translatable strings (labels, tooltips, error messages), add the corresponding `msgid` / `msgstr` pairs to the `.po` file.
+
+---
+
+### Quick reference — file checklist
+
+| File | When to edit |
+|---|---|
+| `Renderer.py` | Always — add the `elif cmd == 'mycommand':` branch |
+| `SyntaxChecker.py` | Always — add to `_KNOWN_COMMANDS` and `_REQUIRES_VALUE` / `_OPTIONAL_VALUE` |
+| `SongpressFrame.py` | Always — add to `_CHORDPRO_DIRECTIVES`; optionally add menu handler |
+| `songpress.xrc` | Only if adding a menu item (English UI) |
+| `songpress_it.xrc` | Only if adding a menu item (Italian UI) |
+| `gui.fbp` | Only if adding a menu item (wxFormBuilder source) |
+| `PreferencesDialog.po` | Only if adding new translatable strings |
+
+
 
 ### Linux: SVG export and display scaling
 

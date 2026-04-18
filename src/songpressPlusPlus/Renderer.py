@@ -295,7 +295,7 @@ class Renderer(object):
         t = SongText(text, format.wxFont, type, format.color)
         if type == SongText.chord and self._pending_duration:
             # Associa la durata in battiti all'accordo corrispondente per posizione
-            # nella sequenza della direttiva {duration: ...}
+            # nella sequenza della direttiva {beats_time: ...}
             if self._duration_chord_idx < len(self._pending_duration):
                 t.duration_beats = self._pending_duration[self._duration_chord_idx][1]
                 self._duration_chord_idx += 1
@@ -367,7 +367,7 @@ class Renderer(object):
         self.song.chordsBelow = self.chordsBelow
         self.song.klavier_list = []  # accordi da mostrare come tastiere
         self.song.define_list  = []  # diagrammi chitarra da mostrare
-        # Dizionario durate accordi dalla direttiva {duration: ACCORDO=battiti ...}
+        # Dizionario durate accordi dalla direttiva {beats_time: ACCORDO=battiti ...}
         # Attivo per la riga immediatamente successiva alla direttiva.
         self._pending_duration = []   # lista di (accordo, battiti) in ordine
         self._duration_chord_idx = 0  # indice accordo corrente nella riga
@@ -503,7 +503,7 @@ class Renderer(object):
                     # non visualizzati nell'anteprima, ignorati silenziosamente.
                     elif cmd in ('sorttitle', 'keywords', 'topic', 'collection',
                                  'language', 'pagetype', 'columns', 'meta',
-                                 'transpose'):
+                                 'transpose', 'duration'):
                         self.GetAttribute()   # consuma il token `:valore` senza usarlo
                     elif cmd == 'new_song':
                         # Inizio nuovo brano nello stesso documento:
@@ -845,8 +845,8 @@ class Renderer(object):
                             if box is not None:
                                 self.EndBlock()
                                 self.song.AddBox(box)
-                    elif cmd == 'duration':
-                        # Direttiva custom: {duration: DO=4 SOL=2 LA-=2 ...}
+                    elif cmd == 'beats_time':
+                        # Direttiva custom: {beats_time: DO=4 SOL=2 LA-=2 ...}
                         # Associa il numero di battiti a ciascun accordo della riga successiva.
                         a = self.GetAttribute()
                         if a is not None and a.strip():

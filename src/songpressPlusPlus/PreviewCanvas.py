@@ -759,7 +759,7 @@ class PreviewCanvas(object):
         self.renderer.sd.showColumnBreakLines = show
 
     def SetShowDurationBeats(self, show):
-        """Mostra o nasconde il numero di battiti sopra gli accordi ({duration})."""
+        """Mostra o nasconde il numero di battiti sopra gli accordi ({beats_time})."""
         self._showDurationBeats = show
         self.renderer.sd.showDurationBeats = show
 

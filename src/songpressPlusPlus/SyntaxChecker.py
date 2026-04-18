@@ -63,7 +63,8 @@ _KNOWN_COMMANDS = {
     "artist", "composer", "lyricist", "arranger",
     "album", "year", "copyright",
     "key", "capo",
-    "duration", "ccli",
+    "beats_time", "ccli",
+    "duration",
     # Metadata — extended (ChordPro 6, metadata-only, not rendered)
     "sorttitle", "keywords", "topic", "collection", "language",
     "pagetype", "columns", "meta",
@@ -466,10 +467,10 @@ def _validate_image_options(opts_str: str, line_num: int, col: int,
                 ))
 
 
-def _validate_duration(cmd_value: str, line_num: int, col: int,
+def _validate_beats_time(cmd_value: str, line_num: int, col: int,
                        result: SyntaxCheckResult):
     """
-    Valida il valore di {duration: ...}.
+    Valida il valore di {beats_time: ...}.
 
     Formato atteso: uno o più token nella forma  NomeAccordo=N
       - NomeAccordo  deve essere un nome accordo riconoscibile (IT o EN)
@@ -485,7 +486,7 @@ def _validate_duration(cmd_value: str, line_num: int, col: int,
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
                 message=_(
-                    "{{duration}}: invalid token '{tok}' — expected format: chord=beats (e.g. Sol=2)"
+                    "{{beats_time}}: invalid token '{tok}' — expected format: chord=beats (e.g. Sol=2)"
                 ).format(tok=token)
             ))
             continue
@@ -500,7 +501,7 @@ def _validate_duration(cmd_value: str, line_num: int, col: int,
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
                 message=_(
-                    "{{duration}}: unrecognized chord '{chord}'"
+                    "{{beats_time}}: unrecognized chord '{chord}'"
                 ).format(chord=chord_part)
             ))
 
@@ -509,7 +510,7 @@ def _validate_duration(cmd_value: str, line_num: int, col: int,
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
                 message=_(
-                    "{{duration}}: missing beat count for chord '{chord}'"
+                    "{{beats_time}}: missing beat count for chord '{chord}'"
                 ).format(chord=chord_part)
             ))
             continue
@@ -522,7 +523,7 @@ def _validate_duration(cmd_value: str, line_num: int, col: int,
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
                 message=_(
-                    "{{duration}}: beat count for '{chord}' must be a positive integer, got '{val}'"
+                    "{{beats_time}}: beat count for '{chord}' must be a positive integer, got '{val}'"
                 ).format(chord=chord_part, val=beats_part)
             ))
 
@@ -551,7 +552,8 @@ def _validate_command(content: str, line_num: int, col: int,
         "artist", "composer", "lyricist", "arranger",
         "album", "year", "copyright",
         "key", "capo",
-        "duration", "ccli",
+        "beats_time", "ccli",
+        "duration",
         "tempo", "tempo_m", "tempo_s", "tempo_sp", "tempo_c", "tempo_cp",
         "time",
         "define", "taste", "fingering",
@@ -690,9 +692,9 @@ def _validate_command(content: str, line_num: int, col: int,
     if cmd_name == "fingering" and cmd_value:
         _validate_fingering(cmd_value, line_num, col, result)
 
-    # ── Validazione specifica per {duration:} ────────────────────
-    if cmd_name == "duration" and cmd_value:
-        _validate_duration(cmd_value, line_num, col, result)
+    # ── Validazione specifica per {beats_time:} ─────────────────
+    if cmd_name == "beats_time" and cmd_value:
+        _validate_beats_time(cmd_value, line_num, col, result)
 
     # ── Validazione specifica per {meta:} ─────────────────────────
     # Il formato atteso è:  {meta: chiave valore}  (almeno due token)

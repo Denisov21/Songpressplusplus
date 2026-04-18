@@ -518,9 +518,9 @@ class PreferencesDialog(wx.Dialog):
         grpSymbol.Add(self.symbolInsertVerseCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
         bSizerFormat.Add(grpSymbol, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
-        # ── Gruppo: Beat count ({duration}) ─────────────────────────
+        # ── Gruppo: Beat count ({beats_time}) ───────────────────────
         grpDuration = wx.StaticBoxSizer(
-            wx.StaticBox(self.formatPanel, wx.ID_ANY, _(u"Beat count ({duration})")),
+            wx.StaticBox(self.formatPanel, wx.ID_ANY, _(u"Beat count ({beats_time})")),
             wx.VERTICAL
         )
 

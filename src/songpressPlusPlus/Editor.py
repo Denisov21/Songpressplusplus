@@ -260,7 +260,7 @@ class Editor(StyledTextCtrl):
     # -----------------------------------------------------------------------
 
     # --- Duration dots (indicatore STC n. 9) --------------------------------
-    # Mostra puntini nell'editor tra accordi con {duration} quando la modalità
+    # Mostra puntini nell'editor tra accordi con {beats_time} quando la modalità
     # è 'dots' o 'both'. I puntini sono applicati sul testo normale tra ] e [.
 
     DOTS_INDICATOR = 9
@@ -279,15 +279,15 @@ class Editor(StyledTextCtrl):
         self.IndicatorSetUnder(self.DOTS_INDICATOR, True)
         self.SetIndicatorCurrent(self.DOTS_INDICATOR)
         import re as _re
-        # Cerca righe con accordi precedute da {duration: ...}
+        # Cerca righe con accordi precedute da {beats_time: ...}
         lines = text.splitlines(keepends=True)
         byte_offset = 0
         duration_pending = False
         duration_map = {}   # accordo_idx -> battiti sulla prossima riga
         for line in lines:
             stripped = line.strip()
-            # Direttiva {duration: ...}
-            if stripped.lower().startswith('{duration:') and stripped.endswith('}'):
+            # Direttiva {beats_time: ...}
+            if stripped.lower().startswith('{beats_time:') and stripped.endswith('}'):
                 duration_pending = True
                 byte_offset += len(line.encode('utf-8'))
                 continue

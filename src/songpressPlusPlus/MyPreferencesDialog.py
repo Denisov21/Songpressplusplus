@@ -224,7 +224,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.gridSizeDirH.SetValue(_sd == 'horizontal')
         self.gridSizeDirV.SetValue(_sd == 'vertical')
 
-        # Beat count ({duration})
+        # Beat count ({beats_time})
         dur_hex = getattr(self.pref, 'durationBeatsColourHex', '#6464C8')
         self.durationBeatsHexCtrl.SetValue(dur_hex)
         self.durationBeatsColourSwatch.SetBackgroundColour(self._hex_to_colour(dur_hex))
@@ -1349,7 +1349,7 @@ class MyPreferencesDialog(PreferencesDialog):
             self.pref.gridSizeDir = 'vertical'
         else:
             self.pref.gridSizeDir = 'both'
-        # Beat count ({duration})
+        # Beat count ({beats_time})
         self.pref.durationBeatsColourHex = self.durationBeatsHexCtrl.GetValue().strip()
         self.pref.durationBeatsSizePct   = self.durationBeatsSizeSpin.GetValue()
         self.pref.durationBeatsBold      = self.durationBeatsBoldCB.GetValue()
