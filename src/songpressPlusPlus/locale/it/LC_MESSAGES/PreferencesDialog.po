@@ -409,9 +409,13 @@ msgstr "Canzone"
 msgid "Title and structure"
 msgstr "Titolo e struttura"
 
-#: PreferencesDialog.py format tab — chords and tempo group
-msgid "Chords and tempo"
-msgstr "Accordi e tempo"
+#: PreferencesDialog.py format tab — chords and keyboard group
+msgid "Chords and keyboard"
+msgstr "Accordi e tastiera"
+
+#: PreferencesDialog.py format tab — tempo group
+msgid "Tempo"
+msgstr "Tempo"
 
 #: PreferencesDialog.py format tab — chord grid group title
 msgid "Chord grid ({start_of_grid}.{end_of_grid})"

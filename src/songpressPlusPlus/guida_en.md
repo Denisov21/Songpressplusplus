@@ -53,7 +53,7 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | `{tempo_c:BPM}`     |              | 🔧  | 🖊    | Tempo with **eighth note** icon                                                          |
 | `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo with **dotted eighth note** icon                                                   |
 | `{time:N/M}`        |              | ✅  | ⌨️   | Time signature (e.g. `{time:4/4}`, `{time:3/4}`); rendered with a graphical time symbol  |
-| `{duration: Ch=N …}` |             | ✅  | ⌨️   | Beat duration of chords (e.g. `{duration: C=2 G=1}`); used to display beat numbers above chords |
+| `{duration: Ch=N …}` |             | ✅  | ⌨️   | Beat duration of chords (e.g. `{duration: C=2 G=1}`); displays a number, dots, or both above chords (configurable in preferences) |
 | `{sorttitle:Text}`  |              | ✅  | 🖊    | Alternative title used for alphabetical sorting (metadata only, not displayed)           |
 | `{keywords:...}`    |              | ✅  | 🖊    | Search keywords (metadata only, not displayed)                                           |
 | `{topic:...}`       |              | ✅  | 🖊    | Topic / category (metadata only, not displayed)                                          |
@@ -511,7 +511,7 @@ The keyboard (klavier) displays the keys corresponding to the specified chord, h
 
 ### First Chord Fingering — `{fingering:}`
 
-The `{fingering:}` directive is a variant of the klavier keyboard designed to show **how to position the hand on the first chord** of the song. In addition to highlighting the chord keys, it can display a finger number on each key.
+The `{fingering:}` directive is a variant of the klavier keyboard designed to show **how to position the hand on the first chord** of the song. In addition to highlighting the chord keys, it can display a finger number on each key and a label indicating which hand to use.
 
 **Format:**
 
@@ -519,9 +519,11 @@ The `{fingering:}` directive is a variant of the klavier keyboard designed to sh
 {fingering: Am}
 {fingering: Am 3=La 1=Mi 2=Do}
 {fingering: G 2=G 1=B 3=D}
+{fingering: Am hand=R 3=La 1=Mi 2=Do}
+{fingering: Am hand=L}
 ```
 
-The `finger=note` part is optional. Numbers correspond to the fingers of the hand:
+The `finger=note` part is optional. The `hand=` token is also optional and can appear anywhere after the chord name. Numbers correspond to the fingers of the hand:
 
 | Number | Finger |
 | ------ | ------ |
@@ -531,15 +533,33 @@ The `finger=note` part is optional. Numbers correspond to the fingers of the han
 | 4      | Ring   |
 | 5      | Little |
 
+**Hand indication (`hand=`):**
+
+| Value    | Meaning    | Label displayed |
+| -------- | ---------- | --------------- |
+| `hand=R` | Right hand | *Right hand*    |
+| `hand=L` | Left hand  | *Left hand*     |
+
+The label appears centered below the keyboard in grey italics. If the `hand=` token is absent, no label is shown. The value is case-insensitive (`hand=r` and `hand=R` are equivalent).
+
 Notes can be written in Italian notation (`Do`, `Re`, `Mi`, `Fa`, `Sol`, `La`, `Si`, with `#` for sharps) or English notation (`C`, `D`, `E`, `F`, `G`, `A`, `B`).
 
 > **Note on notation** — The insertion dialog and the finger grid follow the **default notation** set in Songpress++ preferences (*Options → Default notation*). Note names shown in the grid and written into the generated directive change automatically according to the selected notation: with American notation you will see `A, C#, E`; with Italian `La, Do#, Mi`; with German `A, Cis, E`, and so on. Chord recognition in the *Chord* field also respects the current notation. Nashville and Roman notations are not supported for fingering.
 
 **Inserting from the menu:** *Insert → Other → First chord fingering {fingering:}*
-A dialog opens that automatically shows the notes of the chord and lets you assign a finger to each one using a drop-down menu.
+A dialog opens that automatically shows the notes of the chord and lets you assign a finger to each one using a drop-down menu, as well as select the hand (Right / Left / None).
 
 **Finger number color:**
 The color of the numbers displayed on the keys is set in *Options → Format → Chords and tempo → Finger number colour*. The default is near-black (`#1A1A1A`); on black keys the number appears in white to ensure contrast.
+
+**Syntax checking for `hand=`:**
+
+The built-in syntax checker (*Tools → Check Syntax*) validates the `hand=` token and reports the following errors:
+
+| Error | Example | Message |
+| ----- | ------- | ------- |
+| Invalid value | `{fingering: Am hand=X}` | `hand` must be R or L |
+| Duplicate `hand=` token | `{fingering: Am hand=R hand=L}` | `hand` specified more than once |
 
 ### Chord Beat Duration — `{duration:}`
 
@@ -586,7 +606,25 @@ The command *Insert → Chord duration {duration:}…* automatically detects the
 
 **Preview display:**
 
-The menu item **View → Show chord beats** enables or disables the display of beat numbers in the preview. Color, size, bold, and alignment of the numbers are configured in *Options → Format → Chords and tempo*.
+The menu item **View → Show chord beats** enables or disables the display of beat numbers in the preview. When enabled, a beat indicator appears above each chord according to the mode set in preferences.
+
+**Preferences — *Options → Format → Beat count ({duration})*:**
+
+| Option | Values | Default | Description |
+| ------ | ------ | ------- | ----------- |
+| **Colour** | `#RRGGBB` | `#6464C8` (blue-violet) | Colour of the number/dot displayed above the chord. Set via the *Pick…* button or by typing the hex code directly. |
+| **Size** | 30 % – 150 % | 60 % | Size of the beat number as a percentage of the chord font size. |
+| **Bold** | ☐ / ☑ | ☐ (off) | When checked, the beat number is drawn in bold. |
+| **Alignment** | Left / Centre / Right | Right | Position of the beat number relative to the chord name. |
+| **Mode** | Number / Dots / Both | Number | Controls *what* is displayed above the chord (see detail below). |
+
+**Display modes:**
+
+| Mode | Appearance | Description |
+| ---- | ---------- | ----------- |
+| **Number** | `4` above the chord | Shows the beat count as a digit. |
+| **Dots** | `· · · ·` between chords | Shows one dot per beat in the space between consecutive chords. |
+| **Both** | number + dots | Combines both representations. |
 
 **Syntax checking:**
 

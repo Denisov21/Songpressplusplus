@@ -15,9 +15,9 @@ class PreferencesDialog(wx.Dialog):
 
     def __init__(self, parent):
         wx.Dialog.__init__(self, parent, id=wx.ID_ANY, title=_(u"Songpress++ options"), pos=wx.DefaultPosition,
-                                             size=wx.Size(730, 780), style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+                                             size=wx.Size(730, 800), style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
 
-        self.SetSizeHints(wx.Size(730, 780), wx.DefaultSize)
+        self.SetSizeHints(wx.Size(730, 800), wx.DefaultSize)
 
         bSizer10 = wx.BoxSizer(wx.VERTICAL)
 
@@ -319,9 +319,9 @@ class PreferencesDialog(wx.Dialog):
 
         bSizerFormat.Add(grpTitleStruct, 0, wx.EXPAND | wx.ALL, 8)
 
-        # ── Gruppo: Accordi e tempo ──────────────────────────────────
-        grpChordsTime = wx.StaticBoxSizer(
-            wx.StaticBox(self.formatPanel, wx.ID_ANY, _(u"Chords and tempo")),
+        # ── Gruppo: Accordi e tastiera ───────────────────────────────
+        grpChords = wx.StaticBoxSizer(
+            wx.StaticBox(self.formatPanel, wx.ID_ANY, _(u"Chords and keyboard")),
             wx.VERTICAL
         )
 
@@ -335,7 +335,7 @@ class PreferencesDialog(wx.Dialog):
         bSizerKlavier.Add(self.klavierColourBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         self.klavierColourSwatch = wx.Panel(self.formatPanel, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
         bSizerKlavier.Add(self.klavierColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
-        grpChordsTime.Add(bSizerKlavier, 0, wx.EXPAND | wx.ALL, 5)
+        grpChords.Add(bSizerKlavier, 0, wx.EXPAND | wx.ALL, 5)
 
         bSizerFingerNum = wx.BoxSizer(wx.HORIZONTAL)
         self.labelFingerNumColour = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Finger number colour"), wx.DefaultPosition, wx.DefaultSize, 0)
@@ -347,7 +347,15 @@ class PreferencesDialog(wx.Dialog):
         bSizerFingerNum.Add(self.fingerNumColourBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         self.fingerNumColourSwatch = wx.Panel(self.formatPanel, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
         bSizerFingerNum.Add(self.fingerNumColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
-        grpChordsTime.Add(bSizerFingerNum, 0, wx.EXPAND | wx.ALL, 5)
+        grpChords.Add(bSizerFingerNum, 0, wx.EXPAND | wx.ALL, 5)
+
+        bSizerFormat.Add(grpChords, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
+        # ── Gruppo: Tempo ────────────────────────────────────────────
+        grpTempo = wx.StaticBoxSizer(
+            wx.StaticBox(self.formatPanel, wx.ID_ANY, _(u"Tempo")),
+            wx.VERTICAL
+        )
 
         # Dimensione icone tempo ({tempo_*})
         bSizerTempoIcon = wx.BoxSizer(wx.HORIZONTAL)
@@ -360,9 +368,9 @@ class PreferencesDialog(wx.Dialog):
         bSizerTempoIcon.Add(self.tempoIconSize16, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         bSizerTempoIcon.Add(self.tempoIconSize24, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         bSizerTempoIcon.Add(self.tempoIconSize32, 0, wx.ALIGN_CENTER_VERTICAL)
-        grpChordsTime.Add(bSizerTempoIcon, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpTempo.Add(bSizerTempoIcon, 0, wx.EXPAND | wx.ALL, 5)
 
-        bSizerFormat.Add(grpChordsTime, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        bSizerFormat.Add(grpTempo, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
         # ── Gruppo: Griglia accordi ──────────────────────────────────
         grpGrid = wx.StaticBoxSizer(

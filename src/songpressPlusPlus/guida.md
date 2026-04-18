@@ -53,7 +53,7 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 | `{tempo_c:BPM}`     |              | 🔧  | 🖊    | Tempo con icona **croma**                                                                 |
 | `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo con icona **croma puntata**                                                         |
 | `{time:N/M}`        |              | ✅  | ⌨️   | Indicazione di tempo (es. `{time:4/4}`, `{time:3/4}`); visualizzata con simbolo grafico   |
-| `{duration: Acc=N …}` |            | ✅  | ⌨️   | Durata in battiti degli accordi (es. `{duration: Do=2 Sol=1}`); usata per calcolare i numeri di battito visualizzati sopra gli accordi |
+| `{duration: Acc=N …}` |            | ✅  | ⌨️   | Durata in battiti degli accordi (es. `{duration: Do=2 Sol=1}`); visualizza numero, punti o entrambi sopra gli accordi (configurabile nelle preferenze) |
 | `{sorttitle:Testo}` |              | ✅  | 🖊    | Titolo alternativo usato per l'ordinamento alfabetico (metadato, non visualizzato)        |
 | `{keywords:...}`    |              | ✅  | 🖊    | Parole chiave per la ricerca (metadato, non visualizzato)                                 |
 | `{topic:...}`       |              | ✅  | 🖊    | Argomento / categoria (metadato, non visualizzato)                                        |
@@ -511,7 +511,7 @@ La tastiera (klavier) visualizza i tasti corrispondenti all'accordo specificato,
 
 ### Diteggiatura del primo accordo — `{fingering:}`
 
-La direttiva `{fingering:}` è una variante della tastiera klavier pensata per indicare **come posizionare la mano sul primo accordo** della canzone. Oltre a evidenziare i tasti dell'accordo, può mostrare il numero del dito su ogni tasto.
+La direttiva `{fingering:}` è una variante della tastiera klavier pensata per indicare **come posizionare la mano sul primo accordo** della canzone. Oltre a evidenziare i tasti dell'accordo, può mostrare il numero del dito su ogni tasto e un'etichetta che indica quale mano utilizzare.
 
 **Formato:**
 
@@ -519,9 +519,11 @@ La direttiva `{fingering:}` è una variante della tastiera klavier pensata per i
 {fingering: Am}
 {fingering: Am 3=Do 1=Mi 2=La}
 {fingering: G 2=Sol 1=Si 3=Re}
+{fingering: Am hand=R 3=Do 1=Mi 2=La}
+{fingering: Am hand=L}
 ```
 
-La parte `dito=nota` è opzionale. I numeri corrispondono alle dita della mano destra (o sinistra, secondo convenzione):
+La parte `dito=nota` è opzionale. Il token `hand=` è anch'esso opzionale e può comparire in qualsiasi posizione dopo il nome dell'accordo. I numeri corrispondono alle dita:
 
 | Numero | Dito    |
 | ------ | ------- |
@@ -531,15 +533,33 @@ La parte `dito=nota` è opzionale. I numeri corrispondono alle dita della mano d
 | 4      | Anulare |
 | 5      | Mignolo |
 
+**Indicazione della mano (`hand=`):**
+
+| Valore   | Significato   | Etichetta visualizzata |
+| -------- | ------------- | ---------------------- |
+| `hand=R` | Mano destra   | *Right hand*           |
+| `hand=L` | Mano sinistra | *Left hand*            |
+
+L'etichetta compare centrata sotto la tastiera, in corsivo grigio. Se il token `hand=` è assente, non viene visualizzata alcuna etichetta. Il valore è case-insensitive (`hand=r` equivale a `hand=R`).
+
 Le note si scrivono in notazione italiana (`Do`, `Re`, `Mi`, `Fa`, `Sol`, `La`, `Si`, con `#` per i diesis) o inglese (`C`, `D`, `E`, `F`, `G`, `A`, `B`).
 
 > **Nota sulla notazione** — Il dialogo di inserimento e la griglia delle dita rispettano la **notazione predefinita** impostata nelle preferenze di Songpress++ (*Opzioni → Notazione predefinita*). I nomi delle note mostrati nella griglia e scritti nella direttiva generata cambiano automaticamente in base alla notazione scelta: con notazione Americana si vedrà `A, C#, E`; con Italiana `La, Do#, Mi`; con Tedesca `A, Cis, E`, e così via. Anche il riconoscimento degli accordi digitati nel campo *Accordo* segue la notazione corrente. Le notazioni Nashville e Romana non sono supportate per la diteggiatura.
 
 **Inserimento dal menu:** *Inserisci → Altro → Diteggiatura primo accordo {fingering:}*
-Si apre una finestra che mostra automaticamente le note dell'accordo e permette di assegnare un dito a ciascuna con un menu a tendina.
+Si apre una finestra che mostra automaticamente le note dell'accordo e permette di assegnare un dito a ciascuna con un menu a tendina, nonché di selezionare la mano (Destra / Sinistra / Nessuna indicazione).
 
 **Colore dei numeri delle dita:**
 Il colore dei numeri visualizzati sui tasti si imposta in *Opzioni → Formattazione → Accordi e tempo → Colore numeri diteggiatura*. Per impostazione predefinita è quasi nero (`#1A1A1A`); su tasti neri il numero appare in bianco per garantire il contrasto.
+
+**Controllo sintassi per `hand=`:**
+
+Il controllo sintassi integrato (`Strumenti → Controlla sintassi`) valida il token `hand=` e segnala i seguenti errori:
+
+| Errore | Esempio | Segnalazione |
+| ------ | ------- | ------------ |
+| Valore non valido | `{fingering: Am hand=X}` | `hand` deve essere R o L |
+| Token `hand=` duplicato | `{fingering: Am hand=R hand=L}` | `hand` specificato più di una volta |
 
 ### Durata degli accordi — `{duration:}`
 
@@ -586,7 +606,25 @@ Il comando *Inserisci → Durata accordo {duration:}…* riconosce automaticamen
 
 **Visualizzazione nell'anteprima:**
 
-La voce **Visualizza → Mostra battiti accordi** abilita o disabilita la visualizzazione dei numeri di battito nell'anteprima. Colore, dimensione, grassetto e allineamento dei numeri si configurano in *Opzioni → Formattazione → Accordi e tempo*.
+La voce **Visualizza → Mostra battiti accordi** abilita o disabilita la visualizzazione dei numeri di battito nell'anteprima. Quando abilitata, sopra ogni accordo compare un'indicazione del battito secondo la modalità impostata nelle preferenze.
+
+**Preferenze — *Opzioni → Formattazione → Conteggio battiti ({duration})*:**
+
+| Opzione | Valori | Default | Descrizione |
+| ------- | ------ | ------- | ----------- |
+| **Colore** | `#RRGGBB` | `#6464C8` (blu-viola) | Colore del numero/punto visualizzato sopra l'accordo. Si imposta tramite il pulsante *Scegli…* o digitando il codice esadecimale. |
+| **Dimensione** | 30 % – 150 % | 60 % | Dimensione del numero di battito come percentuale della dimensione del font degli accordi. |
+| **Grassetto** | ☐ / ☑ | ☐ (disabilitato) | Se spuntato, il numero viene disegnato in grassetto. |
+| **Allineamento** | Sinistra / Centro / Destra | Destra | Posizione del numero rispetto al nome dell'accordo. |
+| **Modalità** | Numero / Punti / Entrambi | Numero | Controlla *cosa* viene visualizzato sopra l'accordo (vedi dettaglio sotto). |
+
+**Modalità di visualizzazione:**
+
+| Modalità | Aspetto | Descrizione |
+| -------- | ------- | ----------- |
+| **Numero** | `4` sopra l'accordo | Mostra il numero di battiti come cifra. |
+| **Punti** | `· · · ·` tra gli accordi | Mostra un punto per ogni battito nello spazio tra un accordo e il successivo. |
+| **Entrambi** | numero + punti | Combina le due rappresentazioni. |
 
 **Controllo sintassi:**
 
