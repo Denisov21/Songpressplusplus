@@ -76,7 +76,9 @@ In summary: `Avvio SONGPRESS2.vbs` is the development/debug version, `Avvio SONG
 - **ChordPro autocomplete (IntelliSense)**: directives are suggested and completed automatically as you type, with smart bracket and colon insertion
 - **Multi-Cursor Support**: create and edit with multiple simultaneous cursors
 - **Find & Replace**: unified dialog with two tabs (Find / Replace), support for whole-word search, case sensitivity, and **regular expressions**, with configurable highlight colour and search history
+### Tools
 - **Syntax check**: validates ChordPro syntax and jumps directly to any error found in the document
+- **Song Statistics** (`F8`): analyzes the open song and shows a summary dialog with difficulty rating (1–5 stars), structure breakdown (verses, choruses, bridges, pages), lyrics word count, chord complexity, and duration — either declared via `{duration:MM:SS}` or automatically estimated from `{tempo:}` and `{time:}`
 - **New from template**: start a new song from a pre-built ChordPro template
 
 ### Chords

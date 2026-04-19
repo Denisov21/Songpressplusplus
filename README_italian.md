@@ -76,7 +76,9 @@ In sintesi: `Avvio SONGPRESS2.vbs` è la versione di sviluppo/debug, `Avvio SONG
 - **Autocomplete ChordPro (IntelliSense)**: le direttive vengono suggerite e completate automaticamente durante la digitazione, con inserimento intelligente delle parentesi e dei due punti
 - **Supporto per multicursore**: possibilità di creare e lavorare con più cursori simultaneamente
 - **Trova e Sostituisci**: dialogo unificato con due tab (Trova / Sostituisci), ricerca per parola intera, distinzione maiuscole/minuscole e **espressioni regolari**, con colore di evidenziazione configurabile e cronologia delle ricerche
+### Strumenti
 - **Verifica sintattica**: controlla la sintassi ChordPro e salta direttamente a ogni errore trovato nel documento
+- **Statistiche brano** (`F8`): analizza il brano aperto e mostra un dialogo riepilogativo con valutazione della difficoltà (1–5 stelle), struttura (strofe, ritornelli, bridge, pagine stimate), conteggio parole, complessità degli accordi e durata — dichiarata tramite `{duration:MM:SS}` o stimata automaticamente da `{tempo:}` e `{time:}`
 - **Nuovo da template**: crea un nuovo brano a partire da un template ChordPro preconfezionato
 
 ### Accordi

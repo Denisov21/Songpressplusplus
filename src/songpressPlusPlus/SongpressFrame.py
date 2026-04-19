@@ -1993,18 +1993,20 @@ class SongpressFrame(SDIMainFrame):
             title=_('Song Statistics'),
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         )
-        dlg.SetMinSize(wx.Size(400, 650))
+        dlg.SetMinSize(wx.Size(400, 300))
 
-        BG    = wx.Colour(250, 250, 252)
-        HDR   = wx.Colour(52, 101, 164)
-        STAR_ON  = wx.Colour(255, 180, 0)
+        BG      = wx.Colour(250, 250, 252)
+        HDR     = wx.Colour(52, 101, 164)
+        STAR_ON = wx.Colour(255, 180, 0)
 
-        panel = wx.Panel(dlg)
-        panel.SetBackgroundColour(BG)
-        root = wx.BoxSizer(wx.VERTICAL)
+        # ── Contenitore esterno (dialogo) ─────────────────────────────
+        # Layout: intestazione fissa in cima + area scorrevole + OK fisso in fondo
+        outer_panel = wx.Panel(dlg)
+        outer_panel.SetBackgroundColour(BG)
+        outer_sz = wx.BoxSizer(wx.VERTICAL)
 
-        # ── Intestazione ──────────────────────────────────────────────
-        hdr_panel = wx.Panel(panel)
+        # ── Intestazione (fissa, non scorre) ──────────────────────────
+        hdr_panel = wx.Panel(outer_panel)
         hdr_panel.SetBackgroundColour(HDR)
         hdr_sz = wx.BoxSizer(wx.VERTICAL)
 
@@ -2024,12 +2026,21 @@ class SongpressFrame(SDIMainFrame):
         if song_artist:
             hdr_sz.Add(lbl_artist, 0, wx.LEFT | wx.BOTTOM, 10)
         hdr_panel.SetSizer(hdr_sz)
-        root.Add(hdr_panel, 0, wx.EXPAND)
+        outer_sz.Add(hdr_panel, 0, wx.EXPAND)
+
+        # ── Area scorrevole ───────────────────────────────────────────
+        # wx.VSCROLL: barra verticale automatica quando il contenuto supera l'altezza
+        scroll = wx.ScrolledWindow(
+            outer_panel,
+            style=wx.VSCROLL | wx.BORDER_NONE,
+        )
+        scroll.SetScrollRate(0, 12)          # scorrimento verticale a passi di 12 px
+        scroll.SetBackgroundColour(BG)
 
         body = wx.BoxSizer(wx.VERTICAL)
 
         # ── Valutazione con stelle ────────────────────────────────────
-        eval_panel = wx.Panel(panel)
+        eval_panel = wx.Panel(scroll)
         eval_panel.SetBackgroundColour(wx.Colour(240, 245, 255))
         eval_sz = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -2044,13 +2055,13 @@ class SongpressFrame(SDIMainFrame):
         f_v.SetWeight(wx.FONTWEIGHT_BOLD)
         lbl_verdict.SetFont(f_v)
 
-        eval_sz.Add(lbl_stars,  0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)
+        eval_sz.Add(lbl_stars,   0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)
         eval_sz.Add(lbl_verdict, 0, wx.ALIGN_CENTER_VERTICAL)
         eval_panel.SetSizer(eval_sz)
         body.Add(eval_panel, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 6)
 
         # ── Barra punteggio ───────────────────────────────────────────
-        gauge = wx.Gauge(panel, range=100, size=(-1, 8))
+        gauge = wx.Gauge(scroll, range=100, size=(-1, 8))
         gauge.SetValue(score)
         body.Add(gauge, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 12)
 
@@ -2058,19 +2069,19 @@ class SongpressFrame(SDIMainFrame):
 
         # ── Griglia statistiche ───────────────────────────────────────
         def _section(label):
-            lbl = wx.StaticText(panel, label=label)
+            lbl = wx.StaticText(scroll, label=label)
             f2 = lbl.GetFont()
             f2.SetWeight(wx.FONTWEIGHT_BOLD)
             f2.SetPointSize(f2.GetPointSize() + 1)
             lbl.SetFont(f2)
             lbl.SetForegroundColour(HDR)
             body.Add(lbl, 0, wx.LEFT | wx.TOP, 12)
-            body.Add(wx.StaticLine(panel), 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+            body.Add(wx.StaticLine(scroll), 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
 
         def _row(key, value):
             hz = wx.BoxSizer(wx.HORIZONTAL)
-            k_lbl = wx.StaticText(panel, label=key)
-            v_lbl = wx.StaticText(panel, label=str(value))
+            k_lbl = wx.StaticText(scroll, label=key)
+            v_lbl = wx.StaticText(scroll, label=str(value))
             fv = v_lbl.GetFont()
             fv.SetWeight(wx.FONTWEIGHT_BOLD)
             v_lbl.SetFont(fv)
@@ -2080,51 +2091,114 @@ class SongpressFrame(SDIMainFrame):
             body.AddSpacer(3)
 
         _section(_('Structure'))
-        _row(_('Verses'),         n_verses if n_verses else '—')
-        _row(_('Choruses'),     n_chorus if n_chorus else '—')
+        _row(_('Verses'),          n_verses if n_verses else '—')
+        _row(_('Choruses'),        n_chorus if n_chorus else '—')
         _row(_('Bridges'),         n_bridge if n_bridge else '—')
         _row(_('Estimated pages'), n_pages)
 
         _section(_('Lyrics'))
         _row(_('Lyrics lines'), n_lines)
-        _row(_('Words'),         n_words)
+        _row(_('Words'),        n_words)
 
         _section(_('Chords'))
-        _row(_('Total chords'),       n_chords_total)
-        _row(_('Unique chords'),        n_chords_unique)
+        _row(_('Total chords'),   n_chords_total)
+        _row(_('Unique chords'),  n_chords_unique)
         _row(_('Of which complex'),
              '%d  (%.0f%%)' % (n_hard, pct_hard) if n_chords_unique else '—')
 
         _section(_('Metadata'))
-        if song_key:   _row(_('Key'),  song_key)
-        if song_tempo: _row(_('Tempo'),     song_tempo + ' BPM')
+        if song_key:   _row(_('Key'),              song_key)
+        if song_tempo: _row(_('Tempo'),             song_tempo + ' BPM')
         if song_time:  _row(_('Time signature'),    song_time)
-        if song_capo:  _row(_('Capo'),      song_capo)
+        if song_capo:  _row(_('Capo'),              song_capo)
         if duration_str:
             if duration_is_explicit:
-                _row(_('Duration'), duration_str)
+                _row(_('Duration'),           duration_str)
             else:
                 _row(_('Estimated duration'), duration_str)
 
         if not any([song_key, song_tempo, song_time, song_capo]):
-            body.Add(wx.StaticText(panel,
+            body.Add(wx.StaticText(scroll,
                 label=_('  (no musical metadata found)')),
                 0, wx.LEFT | wx.BOTTOM, 16)
 
-        # ── Pulsante OK ───────────────────────────────────────────────
         body.AddSpacer(10)
-        btn = wx.Button(panel, wx.ID_OK, 'OK')
-        btn.SetDefault()
-        body.Add(btn, 0, wx.ALIGN_CENTER | wx.BOTTOM, 12)
 
-        root.Add(body, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 0)
-        panel.SetSizer(root)
-        root.Fit(panel)
+        scroll.SetSizer(body)
+        body.FitInside(scroll)          # comunica a ScrolledWindow le dimensioni virtuali
+
+        outer_sz.Add(scroll, 1, wx.EXPAND)
+
+        # ── Fondo: pulsante OK centrato + grip nell'angolo in basso a destra ──
+        btn = wx.Button(outer_panel, wx.ID_OK, 'OK')
+        btn.SetDefault()
+
+        # Grip triangolare stile "Opzioni Songpress++" (immagine di riferimento)
+        # Parametri misurati sul grip nativo wxPython di quella finestra:
+        #   pannello 22×22 px, puntini 4×4, passo 7, colori sistema
+        GRIP_SZ = 22
+        grip = wx.Panel(outer_panel, size=(GRIP_SZ, GRIP_SZ))
+        grip.SetBackgroundColour(outer_panel.GetBackgroundColour())
+
+        def _on_grip_paint(evt, _g=grip, _sz=GRIP_SZ):
+            dc = wx.PaintDC(_g)
+            dc.SetBackground(wx.Brush(_g.GetBackgroundColour()))
+            dc.Clear()
+            dc.SetPen(wx.TRANSPARENT_PEN)
+            # Colori identici al grip nativo wxPython/Windows:
+            #   hi   = bianco puro       → bordo in alto-sinistra (rilievo)
+            #   mid  = grigio medio A0   → corpo del quadratino
+            #   sh   = grigio scuro 60   → bordo in basso-destra (ombra)
+            col_hi  = wx.Colour(255, 255, 255)   # highlight bianco
+            col_mid = wx.Colour(160, 160, 160)   # grigio medio (corpo)
+            col_sh  = wx.Colour(96,  96,  96)    # grigio scuro (ombra)
+            CELL = 7   # passo tra quadratini (uguale al grip nativo osservato)
+            DOT  = 4   # lato totale del quadratino (hi 1px + corpo 2px + ombra 1px)
+            # Griglia 3×3 ancorata in basso a destra, forma triangolare
+            ox = _sz - 3 * CELL
+            oy = _sz - 3 * CELL
+            for row in range(3):
+                for col in range(3):
+                    if col + row < 2:
+                        continue          # triangolo: salta metà alta-sinistra
+                    x = ox + col * CELL
+                    y = oy + row * CELL
+                    # corpo grigio medio
+                    dc.SetBrush(wx.Brush(col_mid))
+                    dc.DrawRectangle(x, y, DOT, DOT)
+                    # highlight: 1 px sopra e a sinistra
+                    dc.SetBrush(wx.Brush(col_hi))
+                    dc.DrawRectangle(x, y, DOT - 1, 1)       # bordo top
+                    dc.DrawRectangle(x, y, 1, DOT - 1)       # bordo left
+                    # ombra: 1 px sotto e a destra
+                    dc.SetBrush(wx.Brush(col_sh))
+                    dc.DrawRectangle(x + DOT - 1, y, 1, DOT) # bordo right
+                    dc.DrawRectangle(x, y + DOT - 1, DOT, 1) # bordo bottom
+
+        grip.Bind(wx.EVT_PAINT, _on_grip_paint)
+
+        # riga inferiore: spazio sx | pulsante centrato | grip a destra
+        bottom_sz = wx.BoxSizer(wx.HORIZONTAL)
+        bottom_sz.AddStretchSpacer(1)
+        bottom_sz.Add(btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.TOP | wx.BOTTOM, 12)
+        bottom_sz.AddStretchSpacer(1)
+        bottom_sz.Add(grip, 0, wx.ALIGN_BOTTOM | wx.RIGHT | wx.BOTTOM, 1)
+        outer_sz.Add(bottom_sz, 0, wx.EXPAND)
+
+        outer_panel.SetSizer(outer_sz)
 
         dlg_sz = wx.BoxSizer(wx.VERTICAL)
-        dlg_sz.Add(panel, 1, wx.EXPAND)
+        dlg_sz.Add(outer_panel, 1, wx.EXPAND)
         dlg.SetSizer(dlg_sz)
-        dlg_sz.Fit(dlg)
+
+        # Calcola l'altezza ideale (contenuto completo) e limita al 90% dello schermo
+        dlg.Fit()
+        ideal_h = dlg.GetBestSize().GetHeight()
+        screen_h = wx.Display().GetClientArea().GetHeight()
+        max_h    = int(screen_h * 0.90)
+        final_h  = min(ideal_h, max_h)
+        dlg.SetSize(wx.Size(dlg.GetSize().GetWidth(), final_h))
+        dlg.SetMinSize(wx.Size(400, 300))
 
         dlg.ShowModal()
         dlg.Destroy()
