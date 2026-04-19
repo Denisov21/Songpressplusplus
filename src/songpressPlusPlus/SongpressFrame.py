@@ -1927,18 +1927,37 @@ class SongpressFrame(SDIMainFrame):
         n_hard = sum(1 for c in unique_chords if hard_pat.search(c))
         pct_hard = (n_hard / n_chords_unique * 100) if n_chords_unique else 0
 
-        # ── 7. Stima durata (se {tempo} e {time} presenti) ────────────
+        # ── 7. Durata: esplicita {duration:MM:SS} oppure stima automatica ──
         duration_str = ''
-        try:
-            bpm   = int(re.search(r'\d+', song_tempo).group()) if song_tempo else 0
-            num_m = int(re.search(r'(\d+)/', song_time).group(1)) if song_time else 0
-            # conta i cambi accordo come battute approssimate
-            if bpm > 0 and num_m > 0 and n_chords_total > 0:
-                beats_total = n_chords_total * num_m  # stima grossolana
-                secs = beats_total / bpm * 60
-                duration_str = '%d:%02d' % (int(secs) // 60, int(secs) % 60)
-        except Exception:
-            pass
+        duration_is_explicit = False
+
+        # Cerca {duration:MM:SS} non commentato (la riga non deve iniziare con #)
+        _dur_explicit = None
+        for _line in lines_all:
+            _ls = _line.strip()
+            if _ls.startswith('#'):
+                continue  # riga commentata → ignora
+            _m = re.search(r'\{\s*duration\s*:\s*(\d{1,2}:\d{2})\s*\}', _ls, re.IGNORECASE)
+            if _m:
+                _dur_explicit = _m.group(1)
+                break
+
+        if _dur_explicit:
+            # Durata dichiarata esplicitamente nel brano
+            duration_str = _dur_explicit
+            duration_is_explicit = True
+        else:
+            # Nessuna {duration:} attiva → calcolo automatico
+            try:
+                bpm   = int(re.search(r'\d+', song_tempo).group()) if song_tempo else 0
+                num_m = int(re.search(r'(\d+)/', song_time).group(1)) if song_time else 0
+                # conta i cambi accordo come battute approssimate
+                if bpm > 0 and num_m > 0 and n_chords_total > 0:
+                    beats_total = n_chords_total * num_m  # stima grossolana
+                    secs = beats_total / bpm * 60
+                    duration_str = '%d:%02d' % (int(secs) // 60, int(secs) % 60)
+            except Exception:
+                pass
 
         # ── 8. Valutazione complessiva ────────────────────────────────
         # Punteggio 0-100, poi mappiamo su stelle e giudizio
@@ -2081,7 +2100,11 @@ class SongpressFrame(SDIMainFrame):
         if song_tempo: _row(_('Tempo'),     song_tempo + ' BPM')
         if song_time:  _row(_('Time signature'),    song_time)
         if song_capo:  _row(_('Capo'),      song_capo)
-        if duration_str: _row(_('Estimated duration'), duration_str)
+        if duration_str:
+            if duration_is_explicit:
+                _row(_('Duration'), duration_str)
+            else:
+                _row(_('Estimated duration'), duration_str)
 
         if not any([song_key, song_tempo, song_time, song_capo]):
             body.Add(wx.StaticText(panel,

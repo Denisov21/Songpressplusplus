@@ -57,7 +57,7 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo with **dotted eighth note** icon                                                   |
 | `{time:N/M}`        |              | ✅  | ⌨️   | Time signature (e.g. `{time:4/4}`, `{time:3/4}`); rendered with a graphical time symbol  |
 | `{beats_time: Ch=N …}` |           | 🔧  | ⌨️   | Beat duration of chords (e.g. `{beats_time: C=2 G=1}`); displays a number, dots, or both above chords (configurable in preferences) |
-| `{duration:mm:ss}`  |              | ✅  | 🖊    | Total song duration (pure metadata, not shown in preview; e.g. `{duration: 3:45}`) |
+| `{duration:mm:ss}`  |              | ✅  | 🖊    | Total song duration (e.g. `{duration:12:45}`); not shown in preview or print, but displayed in **Song Statistics** as the actual «Duration» instead of the automatic estimate. Commenting out the line with `#` restores automatic duration calculation. |
 | `{sorttitle:Text}`  |              | ✅  | 🖊    | Alternative title used for alphabetical sorting (metadata only, not displayed)           |
 | `{keywords:...}`    |              | ✅  | 🖊    | Search keywords (metadata only, not displayed)                                           |
 | `{topic:...}`       |              | ✅  | 🖊    | Topic / category (metadata only, not displayed)                                          |
@@ -65,7 +65,7 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | `{language:...}`    |              | ✅  | 🖊    | Language of the lyrics (metadata only, not displayed)                                    |
 | `{meta:key value}`  |              | ✅  | 🖊    | Generic free-form metadata (not displayed)                                               |
 
-> **Note on extended metadata** — The directives `{sorttitle}`, `{keywords}`, `{topic}`, `{collection}`, `{language}`, `{meta}`, and `{duration}` are recognised and accepted by the parser for compatibility with ChordPro 6 files, but their value is not shown in the preview or in print: they are treated as pure metadata and consumed silently.
+> **Note on extended metadata** — The directives `{sorttitle}`, `{keywords}`, `{topic}`, `{collection}`, `{language}`, and `{meta}` are recognised and accepted by the parser for compatibility with ChordPro 6 files, but their value is not shown in the preview or in print: they are treated as pure metadata and consumed silently. The `{duration}` directive has a special behaviour: its value is used by the **Song Statistics** feature (see below).
 
 > **Note on tempo** — The `{tempo*}` directives have four display modes, configurable in preferences: note icon + value (e.g. `♩ = 120`), text `BPM: 120`, plain text `Tempo: 120`, or no display at all. Checking the *Metadata* option treats the value as pure metadata — it does not appear in the preview or in print.
 
@@ -812,7 +812,7 @@ All main directives are accessible via the **Insert** menu, which opens support 
 | **Structure** | Number of verses, choruses, bridges and estimated pages |
 | **Lyrics** | Active lyrics lines and word count (chords and directives excluded) |
 | **Chords** | Total chords, unique chords and percentage of complex chords (7th, dim, aug, sus, add…) |
-| **Metadata** | Key, tempo BPM, time signature, capo and estimated duration (if present in the file) |
+| **Metadata** | Key, tempo BPM, time signature, capo and duration (if present in the file) |
 
 #### Difficulty Rating
 
@@ -828,11 +828,14 @@ The dialog shows a **1-to-5-star** rating based on a 0–100 score calculated au
 
 The bar below the stars displays the raw score (0–100).
 
-#### Estimated Duration
+#### Duration
 
-If the file contains the `{tempo:}` and `{time:}` directives, the dialog calculates an approximate duration estimate by multiplying the number of chord changes by the duration of each beat.
+The dialog shows the song duration in the **Metadata** section with two distinct modes:
 
-> **Note** — The estimate is indicative: it does not account for repeats, multiple choruses or pauses.
+- **Declared duration** — if the file contains a `{duration:MM:SS}` directive on an active line (not commented out with `#`), that value is used and the statistics row is labelled **«Duration»**.
+- **Estimated duration** — if `{duration:}` is absent or commented out (`#{duration:12:45}`), the dialog calculates an approximate estimate from the `{tempo:}` and `{time:}` directives, by multiplying the number of chord changes by the duration of each beat. The row is labelled **«Estimated duration»**.
+
+> **Note** — The automatic estimate is indicative: it does not account for repeats, multiple choruses or pauses. Adding `{duration:MM:SS}` with the actual playing time of the song displays a precise value in the statistics.
 
 ### Directive Intellisense (`Ctrl+Space`)
 

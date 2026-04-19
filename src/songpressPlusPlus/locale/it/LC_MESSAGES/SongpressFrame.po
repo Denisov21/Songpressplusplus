@@ -1280,6 +1280,10 @@ msgstr "Di cui complessi"
 msgid "Estimated duration"
 msgstr "Durata stimata"
 
+#: SongpressFrame.py OnSongStatistics row label (explicit duration)
+msgid "Duration"
+msgstr "Durata"
+
 #: SongpressFrame.py OnSongStatistics no metadata note
 msgid "  (no musical metadata found)"
 msgstr "  (nessun metadato musicale trovato)"

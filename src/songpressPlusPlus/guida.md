@@ -57,7 +57,7 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 | `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo con icona **croma puntata**                                                         |
 | `{time:N/M}`        |              | ✅  | ⌨️   | Indicazione di tempo (es. `{time:4/4}`, `{time:3/4}`); visualizzata con simbolo grafico   |
 | `{beats_time: Acc=N …}` |            | 🔧  | ⌨️   | Durata in battiti degli accordi (es. `{beats_time: Do=2 Sol=1}`); visualizza numero, punti o entrambi sopra gli accordi (configurabile nelle preferenze) |
-| `{duration:mm:ss}`  |              | ✅  | 🖊    | Durata totale della canzone (metadato puro, non visualizzato nell'anteprima; es. `{duration: 3:45}`) |
+| `{duration:mm:ss}`  |              | ✅  | 🖊    | Durata totale della canzone (es. `{duration:12:45}`); non visualizzata nell'anteprima né in stampa, ma riportata nelle **Statistiche brano** come «Durata» effettiva al posto della stima automatica. Commentando la riga con `#` la durata torna ad essere calcolata automaticamente. |
 | `{sorttitle:Testo}` |              | ✅  | 🖊    | Titolo alternativo usato per l'ordinamento alfabetico (metadato, non visualizzato)        |
 | `{keywords:...}`    |              | ✅  | 🖊    | Parole chiave per la ricerca (metadato, non visualizzato)                                 |
 | `{topic:...}`       |              | ✅  | 🖊    | Argomento / categoria (metadato, non visualizzato)                                        |
@@ -65,7 +65,7 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 | `{language:...}`    |              | ✅  | 🖊    | Lingua del testo (metadato, non visualizzato)                                             |
 | `{meta:chiave valore}` |           | ✅  | 🖊    | Metadato generico in forma libera (non visualizzato)                                      |
 
-> **Nota sui metadati estesi** — Le direttive `{sorttitle}`, `{keywords}`, `{topic}`, `{collection}`, `{language}`, `{meta}`, `{duration}` vengono riconosciute e accettate dal parser per garantire la compatibilità con file ChordPro 6, ma il loro valore non viene visualizzato nell'anteprima né in stampa: sono trattate come puri metadati. Il token `:valore` viene consumato silenziosamente.
+> **Nota sui metadati estesi** — Le direttive `{sorttitle}`, `{keywords}`, `{topic}`, `{collection}`, `{language}`, `{meta}` vengono riconosciute e accettate dal parser per garantire la compatibilità con file ChordPro 6, ma il loro valore non viene visualizzato nell'anteprima né in stampa: sono trattate come puri metadati. Il token `:valore` viene consumato silenziosamente. La direttiva `{duration}` ha invece un comportamento speciale: il suo valore viene usato dalla funzione **Statistiche brano** (vedi sotto).
 
 > **Nota sul tempo** — Le direttive `{tempo*}` hanno quattro modalità di visualizzazione, configurabili nelle preferenze: icona nota + valore (es. `♩ = 120`), testo `BPM: 120`, testo semplice `Tempo: 120`, oppure nessuna visualizzazione. Spuntando l'opzione *Metadato*, il valore viene trattato come puro metadato — non appare nell'anteprima né in stampa.
 
@@ -812,7 +812,7 @@ Tutte le principali direttive sono accessibili tramite il menu **Inserisci**, ch
 | **Struttura** | Numero di strofe, ritornelli, bridge e pagine stimate |
 | **Testo** | Righe di testo attive e conteggio parole (esclusi accordi e direttive) |
 | **Accordi** | Totale accordi, accordi unici e percentuale di accordi complessi (7ª, dim, aug, sus, add…) |
-| **Metadati** | Tonalità, tempo BPM, indicazione di tempo, capo e durata stimata (se presenti nel file) |
+| **Metadati** | Tonalità, tempo BPM, indicazione di tempo, capo e durata (se presenti nel file) |
 
 #### Valutazione difficoltà
 
@@ -828,11 +828,14 @@ La finestra mostra una valutazione da **1 a 5 stelle** basata su un punteggio 0�
 
 La barra sotto le stelle visualizza il punteggio grezzo (0–100).
 
-#### Durata stimata
+#### Durata
 
-Se il file contiene le direttive `{tempo:}` e `{time:}`, il dialogo calcola una stima approssimativa della durata moltiplicando il numero di cambi accordo per la durata di ogni battuta.
+Il dialogo mostra la durata del brano nella sezione **Metadati** con due modalità distinte:
 
-> **Nota** — La stima è orientativa: non tiene conto di ripetizioni, ritornelli multipli o pause.
+- **Durata dichiarata** — se il file contiene la direttiva `{duration:MM:SS}` su una riga attiva (non commentata con `#`), viene usato quel valore e la riga nelle statistiche viene etichettata **«Durata»**.
+- **Durata stimata** — se `{duration:}` è assente o commentata (`#{duration:12:45}`), il dialogo calcola una stima approssimativa a partire dalle direttive `{tempo:}` e `{time:}`, moltiplicando il numero di cambi accordo per la durata di ogni battuta. La riga viene etichettata **«Durata stimata»**.
+
+> **Nota** — La stima automatica è orientativa: non tiene conto di ripetizioni, ritornelli multipli o pause. Inserire `{duration:MM:SS}` con la durata reale del brano permette di visualizzare un valore preciso nelle statistiche.
 
 ### Intellisense direttive (`Ctrl+Spazio`)
 
