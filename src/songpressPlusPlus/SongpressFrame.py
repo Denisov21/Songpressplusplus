@@ -2129,60 +2129,15 @@ class SongpressFrame(SDIMainFrame):
 
         outer_sz.Add(scroll, 1, wx.EXPAND)
 
-        # ── Fondo: pulsante OK centrato + grip nell'angolo in basso a destra ──
+        # ── Fondo: pulsante OK centrato ──
         btn = wx.Button(outer_panel, wx.ID_OK, 'OK')
         btn.SetDefault()
 
-        # Grip triangolare stile "Opzioni Songpress++" (immagine di riferimento)
-        # Parametri misurati sul grip nativo wxPython di quella finestra:
-        #   pannello 22×22 px, puntini 4×4, passo 7, colori sistema
-        GRIP_SZ = 22
-        grip = wx.Panel(outer_panel, size=(GRIP_SZ, GRIP_SZ))
-        grip.SetBackgroundColour(outer_panel.GetBackgroundColour())
-
-        def _on_grip_paint(evt, _g=grip, _sz=GRIP_SZ):
-            dc = wx.PaintDC(_g)
-            dc.SetBackground(wx.Brush(_g.GetBackgroundColour()))
-            dc.Clear()
-            dc.SetPen(wx.TRANSPARENT_PEN)
-            # Colori identici al grip nativo wxPython/Windows:
-            #   hi   = bianco puro       → bordo in alto-sinistra (rilievo)
-            #   mid  = grigio medio A0   → corpo del quadratino
-            #   sh   = grigio scuro 60   → bordo in basso-destra (ombra)
-            col_hi  = wx.Colour(255, 255, 255)   # highlight bianco
-            col_mid = wx.Colour(160, 160, 160)   # grigio medio (corpo)
-            col_sh  = wx.Colour(96,  96,  96)    # grigio scuro (ombra)
-            CELL = 7   # passo tra quadratini (uguale al grip nativo osservato)
-            DOT  = 4   # lato totale del quadratino (hi 1px + corpo 2px + ombra 1px)
-            # Griglia 3×3 ancorata in basso a destra, forma triangolare
-            ox = _sz - 3 * CELL
-            oy = _sz - 3 * CELL
-            for row in range(3):
-                for col in range(3):
-                    if col + row < 2:
-                        continue          # triangolo: salta metà alta-sinistra
-                    x = ox + col * CELL
-                    y = oy + row * CELL
-                    # corpo grigio medio
-                    dc.SetBrush(wx.Brush(col_mid))
-                    dc.DrawRectangle(x, y, DOT, DOT)
-                    # highlight: 1 px sopra e a sinistra
-                    dc.SetBrush(wx.Brush(col_hi))
-                    dc.DrawRectangle(x, y, DOT - 1, 1)       # bordo top
-                    dc.DrawRectangle(x, y, 1, DOT - 1)       # bordo left
-                    # ombra: 1 px sotto e a destra
-                    dc.SetBrush(wx.Brush(col_sh))
-                    dc.DrawRectangle(x + DOT - 1, y, 1, DOT) # bordo right
-                    dc.DrawRectangle(x, y + DOT - 1, DOT, 1) # bordo bottom
-
-        grip.Bind(wx.EVT_PAINT, _on_grip_paint)
-
-        # riga inferiore: spazio sx | pulsante centrato | grip a destra
+        # riga inferiore: pulsante OK centrato
         bottom_sz = wx.BoxSizer(wx.HORIZONTAL)
         bottom_sz.AddStretchSpacer(1)
         bottom_sz.Add(btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.TOP | wx.BOTTOM, 12)
         bottom_sz.AddStretchSpacer(1)
-        bottom_sz.Add(grip, 0, wx.ALIGN_BOTTOM | wx.RIGHT | wx.BOTTOM, 1)
         outer_sz.Add(bottom_sz, 0, wx.EXPAND)
 
         outer_panel.SetSizer(outer_sz)
