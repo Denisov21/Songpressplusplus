@@ -929,7 +929,7 @@
             <property name="help">Insert ChordPro directive to set beat duration of chords (e.g. 1, 2, 4)</property>
             <property name="id">ID_INSERT_DURATION</property>
             <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">&amp;Duration {beats__time:}...</property>
+            <property name="label">&amp;Duration {beats_time:}...</property>
             <property name="name">insertDuration</property>
             <property name="permission">none</property>
             <property name="shortcut"></property>
@@ -1301,7 +1301,7 @@
             <property name="help">Replace sequences of multiple spaces with a single space</property>
             <property name="id">ID_NORMALIZE_SPACES</property>
             <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">&amp;Normalize multiple spaces</property>
+            <property name="label">&amp;Normalize multiple spaces...</property>
             <property name="name">normalizeSpaces</property>
             <property name="permission">none</property>
             <property name="shortcut"></property>

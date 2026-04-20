@@ -528,7 +528,7 @@
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="normalizeSpaces">
-          <label>_Normalize multiple spaces</label>
+          <label>_Normalize multiple spaces...</label>
           <accel></accel>
           <help>Replace sequences of multiple spaces with a single space</help>
         </object>

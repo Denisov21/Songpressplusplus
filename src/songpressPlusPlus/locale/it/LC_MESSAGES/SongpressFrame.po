@@ -1287,3 +1287,19 @@ msgstr "Durata"
 #: SongpressFrame.py OnSongStatistics no metadata note
 msgid "  (no musical metadata found)"
 msgstr "  (nessun metadato musicale trovato)"
+
+#: SongpressFrame.py OnNormalizeSpaces dialog title
+msgid "Normalize multiple spaces"
+msgstr "Normalizza spazi multipli"
+
+#: SongpressFrame.py OnNormalizeSpaces static box label
+msgid "Operations to perform"
+msgstr "Operazioni da eseguire"
+
+#: SongpressFrame.py OnNormalizeSpaces checkbox spaces
+msgid "Normalize multiple spaces (replace 2+ spaces with one)"
+msgstr "Normalizza spazi multipli (sostituisce 2+ spazi con uno solo)"
+
+#: SongpressFrame.py OnNormalizeSpaces checkbox underscore
+msgid "Remove '_' characters from text"
+msgstr "Elimina i caratteri '_' dal testo"

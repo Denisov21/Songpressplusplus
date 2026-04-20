@@ -1842,19 +1842,71 @@ class SongpressFrame(SDIMainFrame):
 
     def OnNormalizeSpaces(self, evt):
         """
-        Replace multiple consecutive spaces with a single space
-        in the selected text or the whole text if nothing is selected.
+        Mostra un dialogo con opzioni di normalizzazione, poi applica
+        le operazioni selezionate al testo corrente o alla selezione.
         """
         import re
+
+        # ── Dialogo opzioni ──────────────────────────────────────────────
+        dlg = wx.Dialog(
+            self.frame,
+            title=_(u"Normalize multiple spaces"),
+            style=wx.DEFAULT_DIALOG_STYLE,
+        )
+
+        outer = wx.BoxSizer(wx.VERTICAL)
+
+        # Checkbox opzioni
+        opts_box = wx.StaticBoxSizer(
+            wx.StaticBox(dlg, label=_(u"Operations to perform")), wx.VERTICAL
+        )
+        cb_spaces = wx.CheckBox(dlg, label=_(u"Normalize multiple spaces (replace 2+ spaces with one)"))
+        cb_spaces.SetValue(True)
+
+        cb_underscore = wx.CheckBox(dlg, label=_(u"Remove '_' characters from text"))
+        cb_underscore.SetValue(False)
+
+        opts_box.Add(cb_spaces,     0, wx.ALL, 6)
+        opts_box.Add(cb_underscore, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
+
+        outer.Add(opts_box, 0, wx.EXPAND | wx.ALL, 10)
+
+        # Bottoni OK / Annulla
+        btn_sizer = dlg.CreateButtonSizer(wx.OK | wx.CANCEL)
+        outer.Add(btn_sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        dlg.SetSizerAndFit(outer)
+        dlg.CentreOnParent()
+
+        if dlg.ShowModal() != wx.ID_OK:
+            dlg.Destroy()
+            return
+
+        do_spaces     = cb_spaces.GetValue()
+        do_underscore = cb_underscore.GetValue()
+        dlg.Destroy()
+
+        if not do_spaces and not do_underscore:
+            return  # nulla da fare
+
+        # ── Applica le operazioni ────────────────────────────────────────
         s, e = self.text.GetSelection()
-        if s == e:  # niente selezione: usa tutto il testo
-            text = self.text.GetText()
-            new_text = re.sub(r' {2,}', ' ', text)
-            self.text.SetText(new_text)
-        else:  # usa solo la selezione
-            text = self.text.GetTextRange(s, e)
-            new_text = re.sub(r' {2,}', ' ', text)
+        use_selection = (s != e)
+        text = self.text.GetTextRange(s, e) if use_selection else self.text.GetText()
+
+        new_text = text
+        if do_spaces:
+            new_text = re.sub(r' {2,}', ' ', new_text)
+        if do_underscore:
+            new_text = new_text.replace('_', '')
+
+        if new_text == text:
+            return  # nessuna modifica, evita undo inutile
+
+        if use_selection:
             self.text.ReplaceSelection(new_text)
+        else:
+            self.text.SetText(new_text)
 
     def OnSyntaxCheck(self, evt):
         """Esegue la verifica sintattica ChordPro e mostra il dialogo con i risultati."""
