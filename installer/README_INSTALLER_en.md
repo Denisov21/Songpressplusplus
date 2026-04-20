@@ -108,8 +108,10 @@ compiling the NSIS installer, so that the final `.exe` already has the correct i
 > To unblock it: Windows Security → Virus & threat protection → Protection history
 > → select the detection → Actions → **Allow on device**.
 
-The `installer\` folder must be placed directly inside the project root
-(the one containing `pyproject.toml`), because the script uses `SRCDIR = ".."`.
+The `installer\` folder can be placed anywhere inside the project tree.
+The script uses `SRCDIR = "${__FILEDIR__}\.."`, so `pyproject.toml` is always
+resolved relative to the `.nsi` file itself, regardless of the working directory
+from which NSIS is launched.
 
 ## ⚠️ Do not install in Program Files
 

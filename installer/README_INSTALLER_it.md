@@ -109,8 +109,10 @@ di compilare l'installer NSIS, in modo che il `.exe` finale abbia già l'icona c
 > Per sbloccarlo: Sicurezza di Windows → Protezione da virus e minacce → Cronologia protezione
 > → seleziona il rilevamento → Azioni → **Consenti nel dispositivo**.
 
-La cartella `installer\` deve trovarsi direttamente dentro la radice del progetto
-(quella che contiene `pyproject.toml`), perché lo script usa `SRCDIR = ".."`.
+La cartella `installer\` può essere posizionata ovunque all'interno dell'albero
+del progetto. Lo script usa `SRCDIR = "${__FILEDIR__}\.."`, quindi `pyproject.toml`
+viene sempre risolto in modo relativo al file `.nsi` stesso, indipendentemente
+dalla directory di lavoro da cui viene lanciato NSIS.
 
 ## ⚠️ Non installare in Programmi
 
