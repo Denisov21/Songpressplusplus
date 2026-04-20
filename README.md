@@ -15,6 +15,8 @@ Songpress++ is focused on song formatting. Once the song is ready, you can copy/
 
 > **Note:** An internet connection is required during the first installation.
 
+> **Note — `uv.exe` is not a virus:** The installer includes `uv.exe`, an open-source Python package manager ([astral-sh/uv](https://github.com/astral-sh/uv)). Some antivirus software may flag it as suspicious due to heuristic detection on next-generation executables. This is a **false positive**: `uv.exe` is a legitimate, safe, and widely adopted tool in the Python ecosystem. If your antivirus blocks it, add an exception for the Songpress++ installation folder.
+
 All files are installed in a single folder within the current user's _User_ directory, allowing a clean uninstallation through its own uninstaller.
 
 ### Development

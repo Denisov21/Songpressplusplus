@@ -15,6 +15,8 @@ Songpress++ è incentrato sulla formattazione delle canzoni. Una volta che la ca
 
 > **Nota:** È necessaria una connessione internet durante la prima installazione.
 
+> **Nota — `uv.exe` non è un virus:** L'installer include il file `uv.exe`, uno strumento open source per la gestione dei pacchetti Python ([astral-sh/uv](https://github.com/astral-sh/uv)). Alcuni antivirus potrebbero segnalarlo come sospetto a causa dell'euristica sui file eseguibili di nuova generazione. Si tratta di un **falso positivo**: `uv.exe` è un programma legittimo, sicuro e ampiamente diffuso nella comunità Python. Se il tuo antivirus lo blocca, aggiungi un'eccezione per la cartella di installazione di Songpress++.
+
 Tutti i file vengono installati in un'unica cartella all'interno della directory _User_ dell'utente corrente, consentendo una disinstallazione pulita tramite il proprio programma di disinstallazione.
 
 ### Sviluppo
