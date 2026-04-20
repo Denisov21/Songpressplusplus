@@ -2181,15 +2181,16 @@ class SongpressFrame(SDIMainFrame):
 
         outer_sz.Add(scroll, 1, wx.EXPAND)
 
-        # ── Fondo: pulsante OK centrato ──
+        # ── Fondo: pulsante Espandi + OK ──────────────────────────────
+        btn_expand = wx.Button(outer_panel, label=_('Show all ▼'))
         btn = wx.Button(outer_panel, wx.ID_OK, 'OK')
         btn.SetDefault()
 
-        # riga inferiore: pulsante OK centrato
+        # riga inferiore: [Espandi]  spazio  [OK]
         bottom_sz = wx.BoxSizer(wx.HORIZONTAL)
+        bottom_sz.Add(btn_expand, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.TOP | wx.BOTTOM, 12)
         bottom_sz.AddStretchSpacer(1)
-        bottom_sz.Add(btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.TOP | wx.BOTTOM, 12)
-        bottom_sz.AddStretchSpacer(1)
+        bottom_sz.Add(btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.TOP | wx.BOTTOM, 12)
         outer_sz.Add(bottom_sz, 0, wx.EXPAND)
 
         outer_panel.SetSizer(outer_sz)
@@ -2198,14 +2199,54 @@ class SongpressFrame(SDIMainFrame):
         dlg_sz.Add(outer_panel, 1, wx.EXPAND)
         dlg.SetSizer(dlg_sz)
 
-        # Calcola l'altezza ideale (contenuto completo) e limita al 90% dello schermo
+        # ── Calcolo altezza ideale ────────────────────────────────────
+        # GetBestSize() su un dialogo con ScrolledWindow NON restituisce
+        # l'altezza del contenuto virtuale. Bisogna ricavarla dal sizer body
+        # più le parti fisse (intestazione + barra pulsanti).
         dlg.Fit()
-        ideal_h = dlg.GetBestSize().GetHeight()
+        dlg.Layout()
         screen_h = wx.Display().GetClientArea().GetHeight()
         max_h    = int(screen_h * 0.90)
-        final_h  = min(ideal_h, max_h)
+
+        # Altezza del contenuto scorrevole: dimensione minima richiesta dal sizer body
+        body_min_h   = body.GetMinSize().GetHeight()
+        # Altezza delle parti fisse (intestazione + barra pulsanti + bordi dialogo)
+        fixed_h      = (dlg.GetSize().GetHeight()
+                        - scroll.GetSize().GetHeight()
+                        + body_min_h)
+        ideal_h      = fixed_h
+        final_h      = min(ideal_h, max_h)
         dlg.SetSize(wx.Size(dlg.GetSize().GetWidth(), final_h))
         dlg.SetMinSize(wx.Size(400, 300))
+
+        # Mostra "Show all" solo se il contenuto è stato davvero troncato
+        _needs_expand = (ideal_h > max_h)
+        if not _needs_expand:
+            btn_expand.Hide()
+
+        # Stato espansione
+        _expanded = [False]
+
+        def _on_expand(evt):
+            if not _expanded[0]:
+                # Espandi: porta il dialogo all'altezza ideale completa (fino al 95% schermo)
+                max_full = int(screen_h * 0.95)
+                full_h   = min(ideal_h, max_full)
+                dlg.SetSize(wx.Size(dlg.GetSize().GetWidth(), full_h))
+                scroll.SetScrollRate(0, 0)
+                scroll.FitInside()
+                btn_expand.SetLabel(_('Collapse ▲'))
+                _expanded[0] = True
+            else:
+                # Comprimi: ripristina l'altezza limitata e riattiva lo scroll
+                dlg.SetSize(wx.Size(dlg.GetSize().GetWidth(), final_h))
+                scroll.SetScrollRate(0, 12)
+                body.FitInside(scroll)
+                btn_expand.SetLabel(_('Show all ▼'))
+                _expanded[0] = False
+            dlg.Layout()
+
+        btn_expand.Bind(wx.EVT_BUTTON, _on_expand)
 
         dlg.ShowModal()
         dlg.Destroy()
