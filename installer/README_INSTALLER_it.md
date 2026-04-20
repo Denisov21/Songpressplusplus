@@ -6,6 +6,14 @@ Per compilare il programma di installazione Windows è necessario scaricare:
 - Il [compilatore NSIS](https://nsis.sourceforge.io/Download)
 
 Estrarre `uv.exe` dallo zip in questa cartella.
+
+> **Nota antivirus — `uv.exe` non è un virus:** Alcuni antivirus potrebbero segnalare
+> `uv.exe` come sospetto a causa dell'euristica sui file eseguibili di nuova generazione.
+> Si tratta di un **falso positivo**: `uv.exe` è uno strumento open source legittimo,
+> sicuro e ampiamente diffuso nella comunità Python
+> ([astral-sh/uv](https://github.com/astral-sh/uv)). Se il tuo antivirus lo blocca,
+> aggiungi un'eccezione per la cartella `installer/`.
+
 Avviare poi il compilatore NSIS e compilare lo script `.nsi` appropriato:
 
 - **Installer a 64 bit**: compilare `songpress++64bit.nsi`

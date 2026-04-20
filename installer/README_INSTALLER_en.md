@@ -6,6 +6,13 @@ In order to build the Windows installer you need to download:
 - The [NSIS compiler](https://nsis.sourceforge.io/Download)
 
 Extract `uv.exe` from the zip into this folder.
+
+> **Antivirus note — `uv.exe` is not a virus:** Some antivirus software may flag `uv.exe`
+> as suspicious due to heuristic detection on next-generation executables. This is a
+> **false positive**: `uv.exe` is a legitimate, safe, and widely adopted open-source tool
+> in the Python ecosystem ([astral-sh/uv](https://github.com/astral-sh/uv)). If your
+> antivirus blocks it, add an exception for the `installer/` folder.
+
 Then launch the NSIS compiler and compile the appropriate `.nsi` script:
 
 - **64-bit installer**: compile `songpress++64bit.nsi`
