@@ -2665,7 +2665,8 @@ class SongpressFrame(SDIMainFrame):
 
         for root in all_roots:
             grid.Add(wx.StaticText(grid_parent, label=root), 0, wx.ALIGN_CENTER_VERTICAL)
-            spin = wx.SpinCtrl(grid_parent, value=u"1", min=0, max=32, initial=1, size=(70, -1))
+            spin = wx.SpinCtrl(grid_parent, min=0, max=32, size=(70, -1))
+            spin.SetValue(1)
             spin.SetToolTip(_(u"0 = omit this chord"))
             grid.Add(spin, 0, wx.EXPAND)
             spin_list.append((root, spin))
@@ -2681,7 +2682,8 @@ class SongpressFrame(SDIMainFrame):
         # ── Riga "Tutti" — allineata a destra ──────────────────────────
         all_row = wx.BoxSizer(wx.HORIZONTAL)
         lbl_all = wx.StaticText(dlg, label=_(u"All:"))
-        spin_all = wx.SpinCtrl(dlg, value=u"1", min=0, max=32, initial=1, size=(70, -1))
+        spin_all = wx.SpinCtrl(dlg, min=0, max=32, size=(70, -1))
+        spin_all.SetValue(1)
         spin_all.SetToolTip(_(u"Set this value on all chords"))
         btn_apply_all = wx.Button(dlg, label=_(u"Apply to all"), size=(-1, -1))
         all_row.AddStretchSpacer()
@@ -2779,6 +2781,11 @@ class SongpressFrame(SDIMainFrame):
 
             # Mappa nome accordo → valore spin (per righe con accordi diversi)
             spin_val = {root: sp.GetValue() for root, sp in spin_list}
+            # Default per accordi non presenti nel dialogo:
+            # se tutti i valori sono 0 (utente ha azzerato tutto) usa 0,
+            # altrimenti usa 1 (comportamento normale)
+            _all_zero = all(v == 0 for v in spin_val.values()) if spin_val else False
+            _default_val = 0 if _all_zero else 1
 
             chord_pat    = re.compile(r'\[([^\]]+)\]')
             bt_pat       = re.compile(r'\{\s*beats_time[^}]*\}', re.IGNORECASE)
@@ -2811,7 +2818,7 @@ class SongpressFrame(SDIMainFrame):
                              if c.split('/')[0].strip()]
                 row_parts = []
                 for r in row_roots:
-                    v = spin_val.get(r, 1)   # default 1 se accordo non nel dialogo
+                    v = spin_val.get(r, _default_val)   # default 0 se tutto azzerato, altrimenti 1
                     if v > 0:
                         row_parts.append(u"%s=%d" % (r, v))
                 directive = (u"{beats_time: %s}" % u" ".join(row_parts)

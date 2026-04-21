@@ -609,7 +609,7 @@ Il comando *Inserisci → Durata accordo {beats_time:}…* riconosce automaticam
 Il dialogo offre due controlli aggiuntivi:
 
 - **Tutti: [N] [Applica a tutti]** — imposta in un solo clic lo stesso numero di battiti su tutti gli accordi presenti nel dialogo.
-- **[Applica al brano]** — inserisce automaticamente una direttiva `{beats_time:}` prima di ogni riga con accordi nell'intero brano, usando i valori impostati nel dialogo. Le righe già precedute da una `{beats_time:}` vengono saltate. L'operazione è annullabile con un singolo `Ctrl+Z`.
+- **[Applica al brano]** — inserisce automaticamente una direttiva `{beats_time:}` prima di ogni riga con accordi nell'intero brano, usando i valori impostati nel dialogo. Le righe già precedute da una `{beats_time:}` vengono saltate. L'operazione è annullabile con un singolo `Ctrl+Z`. Per gli accordi che appaiono nel brano ma **non sono presenti nel dialogo** (perché la riga di riferimento del cursore era diversa), il numero di battiti predefinito è **1** — a meno che tutti gli spin del dialogo siano impostati a **0**, nel qual caso anche questi accordi vengono omessi dalla direttiva, producendo `{beats_time: }` vuota.
 
 > **Nota** — La direttiva viene inserita nella posizione del cursore: posiziona il cursore sulla riga **sopra** la riga con gli accordi, poi seleziona il comando dal menu.
 

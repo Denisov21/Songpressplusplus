@@ -642,7 +642,6 @@ def _validate_command(content: str, line_num: int, col: int,
         "tempo", "tempo_m", "tempo_s", "tempo_sp", "tempo_c", "tempo_cp",
         "time",
         "define", "taste", "fingering",
-        "start_chord",
         "image",
         # Metadati estesi: richiedono un valore (non ha senso scriverli vuoti)
         "sorttitle", "keywords", "topic", "collection", "language",

@@ -609,7 +609,7 @@ The command *Insert → Chord duration {beats_time:}…* automatically detects t
 The dialog provides two additional controls:
 
 - **All: [N] [Apply to all]** — sets the same number of beats on all chords in the dialog in one click.
-- **[Apply to song]** — automatically inserts a `{beats_time:}` directive before every chord line in the entire song, using the values set in the dialog. Lines already preceded by a `{beats_time:}` are skipped. The whole operation is undoable with a single `Ctrl+Z`.
+- **[Apply to song]** — automatically inserts a `{beats_time:}` directive before every chord line in the entire song, using the values set in the dialog. Lines already preceded by a `{beats_time:}` are skipped. The whole operation is undoable with a single `Ctrl+Z`. For chords that appear in the song but are **not present in the dialog** (because the cursor's reference line had different chords), the default beat count is **1** — unless all the dialog's spin fields are set to **0**, in which case those chords are also omitted from the directive, producing an empty `{beats_time: }`.
 
 > **Note** — The directive is inserted at the cursor position: place the cursor on the line **above** the chord line, then select the command from the menu.
 
