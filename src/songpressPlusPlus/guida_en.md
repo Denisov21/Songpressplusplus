@@ -604,9 +604,16 @@ Each `{beats_time:}` directive applies to the **line of text/chords immediately 
 The command *Insert → Chord duration {beats_time:}…* automatically detects the context:
 
 - **If the line below the cursor contains no `[…]` chords** — inserts `{beats_time: }` directly without opening any dialog.
-- **If the line below the cursor contains `[…]` chords** — opens a dialog with a numeric field (`SpinCtrl`) for each unique chord found, preset to 1 beat. As you change the values, the **Preview** field updates in real time showing the directive that will be inserted (e.g. `{beats_time: C=4 G=2 Am=2 F=1}`). Setting a chord to **0** excludes it from the directive.
+- **If the line below the cursor contains `[…]` chords** — opens a dialog with a numeric field (`SpinCtrl`) for each unique chord found, preset to 1 beat. As you change the values, the **Preview** field updates in real time showing the directive that will be inserted (e.g. `{beats_time: C=4 G=2 Am=2 F=1}`). Setting a chord to **0** excludes it from the directive. If the line contains more than **8** chords, the list becomes scrollable.
+
+The dialog provides two additional controls:
+
+- **All: [N] [Apply to all]** — sets the same number of beats on all chords in the dialog in one click.
+- **[Apply to song]** — automatically inserts a `{beats_time:}` directive before every chord line in the entire song, using the values set in the dialog. Lines already preceded by a `{beats_time:}` are skipped. The whole operation is undoable with a single `Ctrl+Z`.
 
 > **Note** — The directive is inserted at the cursor position: place the cursor on the line **above** the chord line, then select the command from the menu.
+
+> **Note — Multi-cursor** — The command is compatible with multi-cursor mode (Alt+Click, Ctrl+D). If multiple cursors are active over the same chord sequence, the dialog is shown once and the directive is inserted at all positions. If the sequences differ, the dialog uses the chords of the main cursor (the one highest in the text).
 
 **Preview display:**
 

@@ -1142,23 +1142,19 @@ msgstr "%d di %d"
 msgid "Find in guide..."
 msgstr "Cerca nella guida..."
 
-#: SongpressFrame.py OnInsertDuration dialog title
+#: SongpressFrame.py OnInsertDuration OnInsertBeatsTime dialog title
 msgid "Beats_time — beats per chord"
 msgstr "Beats_time — battiti per accordo"
 
-#: SongpressFrame.py OnInsertDuration dialog intro
-msgid ""
-"Assign the number of beats to each chord.\n"
-"Leave blank to omit a chord from the directive."
-msgstr ""
-"Assegna il numero di battiti a ciascun accordo.\n"
-"Metti 0 per omettere un accordo dalla direttiva."
+#: SongpressFrame.py OnInsertDuration OnInsertBeatsTime dialog intro
+msgid "Assign the number of beats to each chord.\nPut 0 to omit a chord from the directive."
+msgstr "Assegna il numero di battiti a ciascun accordo.\nMetti 0 per omettere un accordo dalla direttiva."
 
-#: SongpressFrame.py OnInsertDuration SpinCtrl tooltip
+#: SongpressFrame.py OnInsertDuration OnInsertBeatsTime spin tooltip
 msgid "0 = omit this chord"
 msgstr "0 = ometti questo accordo"
 
-#: SongpressFrame.py OnInsertDuration preview label
+#: SongpressFrame.py OnInsertDuration OnInsertBeatsTime preview label
 msgid "Preview:"
 msgstr "Anteprima:"
 
@@ -1303,3 +1299,35 @@ msgstr "Normalizza spazi multipli (sostituisce 2+ spazi con uno solo)"
 #: SongpressFrame.py OnNormalizeSpaces checkbox underscore
 msgid "Remove '_' characters from text"
 msgstr "Elimina i caratteri '_' dal testo"
+
+#: SongpressFrame.py OnInsertBeatsTime multicursor notice
+msgid "Multi-cursor active: %d positions."
+msgstr "Multicursore attivo: %d posizioni."
+
+#: SongpressFrame.py OnInsertBeatsTime all-label
+msgid "All:"
+msgstr "Tutti:"
+
+#: SongpressFrame.py OnInsertBeatsTime all-spin tooltip
+msgid "Set this value on all chords"
+msgstr "Imposta questo valore su tutti gli accordi"
+
+#: SongpressFrame.py OnInsertBeatsTime apply-all button
+msgid "Apply to all"
+msgstr "Applica a tutti"
+
+#: SongpressFrame.py OnInsertBeatsTime apply-to-song button
+msgid "Apply to song"
+msgstr "Applica al brano"
+
+#: SongpressFrame.py OnInsertBeatsTime apply-to-song button tooltip
+msgid "Insert {beats_time} before every chord line in the whole song"
+msgstr "Inserisce {beats_time} prima di ogni riga con accordi nel brano intero"
+
+#: SongpressFrame.py OnInsertBeatsTime apply-to-song no results message
+msgid "No chord lines found without {beats_time} already set."
+msgstr "Nessuna riga con accordi trovata senza {beats_time} già impostato."
+
+#: SongpressFrame.py OnInsertBeatsTime apply-to-song success message
+msgid "%d {beats_time} directives inserted."
+msgstr "%d direttive {beats_time} inserite."

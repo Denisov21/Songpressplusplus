@@ -2575,35 +2575,62 @@ class SongpressFrame(SDIMainFrame):
 
     def OnInsertBeatsTime(self, evt):
         """Inserisce la direttiva {beats_time: }.
-        
-        Se nella riga immediatamente successiva al cursore sono presenti accordi
-        nella forma [Accordo], propone un dialogo per assegnare il numero di battiti
-        a ciascun accordo, producendo {beats_time: DO=2 SOL=1 ...}.
-        In caso contrario inserisce semplicemente {beats_time: }.
+
+        Supporta cursore singolo e multicursore (Alt+Clic, Ctrl+D).
+
+        Per ogni cursore attivo cerca la riga con accordi [Accordo] nelle
+        vicinanze (riga successiva → corrente → precedente).
+        Se tutti i cursori puntano alla stessa sequenza di accordi (caso
+        tipico del multicursore su righe identiche), mostra il dialogo una
+        sola volta e inserisce la direttiva su ogni posizione.
+        Se le sequenze differiscono, usa quella del primo cursore principale.
+        In mancanza di accordi inserisce semplicemente {beats_time: }.
         """
         import re
 
-        # ── 1. Leggi la riga successiva a quella corrente ────────────────
-        stc       = self.text
-        cur_pos   = stc.GetCurrentPos()
-        cur_line  = stc.LineFromPosition(cur_pos)
-        next_line = cur_line + 1
-        next_text = stc.GetLine(next_line) if next_line < stc.GetLineCount() else u""
+        stc         = self.text
+        total_lines = stc.GetLineCount()
+        n_sel       = stc.GetSelections()   # numero di cursori/selezioni attivi
 
-        # ── 2. Estrai accordi unici mantenendo l'ordine di comparsa ──────
-        raw_chords = re.findall(r'\[([^\]]+)\]', next_text)
-        # rimuovi suffissi di basso (tutto dopo '/') e tieni unici in ordine
-        seen   = {}
-        chords = []
-        for c in raw_chords:
-            root = c.split('/')[0].strip()
-            if root and root not in seen:
-                seen[root] = True
-                chords.append(root)
+        # ── Helper: data una riga del cursore, trova la riga con accordi ──
+        def _find_chord_line(cur_line):
+            candidates = []
+            if cur_line + 1 < total_lines:
+                candidates.append(stc.GetLine(cur_line + 1))
+            candidates.append(stc.GetLine(cur_line))
+            if cur_line - 1 >= 0:
+                candidates.append(stc.GetLine(cur_line - 1))
+            for ln in candidates:
+                if re.search(r'\[([^\]]+)\]', ln):
+                    return ln
+            return u""
 
-        # ── 3a. Nessun accordo trovato: inserimento semplice ─────────────
-        if not chords:
-            self.InsertWithCaret(u"{beats_time: }")
+        def _extract_roots(line_text):
+            raw = re.findall(r'\[([^\]]+)\]', line_text)
+            return [c.split('/')[0].strip() for c in raw if c.split('/')[0].strip()]
+
+        # ── 1. Raccogli le posizioni di tutti i cursori (ordine inverso) ──
+        if n_sel > 1:
+            cursor_positions = sorted(
+                [stc.GetSelectionNStart(i) for i in range(n_sel)],
+                reverse=True
+            )
+        else:
+            cursor_positions = [stc.GetCurrentPos()]
+
+        # ── 2. Determina all_roots dalla riga del cursore principale ──────
+        main_line  = stc.LineFromPosition(cursor_positions[-1])  # cursore più in alto
+        chord_line = _find_chord_line(main_line)
+        all_roots  = _extract_roots(chord_line)
+
+        # ── 3a. Nessun accordo: inserimento semplice su tutti i cursori ───
+        if not all_roots:
+            if n_sel > 1:
+                for pos in cursor_positions:
+                    stc.SetSelection(pos, pos)
+                    stc.ReplaceSelection(u"{beats_time: }")
+            else:
+                self.InsertWithCaret(u"{beats_time: }")
             return
 
         # ── 3b. Accordi trovati: dialogo per i battiti ───────────────────
@@ -2615,73 +2642,219 @@ class SongpressFrame(SDIMainFrame):
 
         outer = wx.BoxSizer(wx.VERTICAL)
 
-        # Istruzione
-        lbl_intro = wx.StaticText(
-            dlg,
-            label=_(u"Assign the number of beats to each chord.\n"
-                    u"Leave blank to omit a chord from the directive.")
-        )
+        # Intestazione — se multicursore avvisa quanti cursori sono attivi
+        intro_text = _(u"Assign the number of beats to each chord.\n"
+                       u"Put 0 to omit a chord from the directive.")
+        if n_sel > 1:
+            intro_text += u"\n" + _(u"Multi-cursor active: %d positions.") % n_sel
+        lbl_intro = wx.StaticText(dlg, label=intro_text)
         outer.Add(lbl_intro, 0, wx.ALL, 10)
 
-        # Griglia accordo → SpinCtrl
+        # Griglia: una riga per OGNI occorrenza posizionale
+        if len(all_roots) > 8:
+            scroll = wx.ScrolledWindow(dlg, style=wx.VSCROLL)
+            scroll.SetScrollRate(0, 12)
+            grid_parent = scroll
+        else:
+            scroll = None
+            grid_parent = dlg
+
         grid = wx.FlexGridSizer(cols=2, hgap=8, vgap=6)
         grid.AddGrowableCol(1)
-        spin_map = {}   # root → SpinCtrl
+        spin_list = []   # [(root, SpinCtrl), ...]
 
-        for chord in chords:
-            grid.Add(
-                wx.StaticText(dlg, label=chord),
-                0, wx.ALIGN_CENTER_VERTICAL
-            )
-            spin = wx.SpinCtrl(dlg, value=u"1", min=0, max=32, initial=1, size=(70, -1))
-            # 0 = ometti
+        for root in all_roots:
+            grid.Add(wx.StaticText(grid_parent, label=root), 0, wx.ALIGN_CENTER_VERTICAL)
+            spin = wx.SpinCtrl(grid_parent, value=u"1", min=0, max=32, initial=1, size=(70, -1))
             spin.SetToolTip(_(u"0 = omit this chord"))
             grid.Add(spin, 0, wx.EXPAND)
-            spin_map[chord] = spin
+            spin_list.append((root, spin))
 
-        outer.Add(grid, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        if scroll is not None:
+            scroll.SetSizer(grid)
+            grid.Fit(scroll)
+            scroll.SetMinSize((-1, min(grid.GetMinSize().height, 8 * 30)))
+            outer.Add(scroll, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        else:
+            outer.Add(grid, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
-        # Anteprima della direttiva generata
+        # ── Riga "Tutti" — allineata a destra ──────────────────────────
+        all_row = wx.BoxSizer(wx.HORIZONTAL)
+        lbl_all = wx.StaticText(dlg, label=_(u"All:"))
+        spin_all = wx.SpinCtrl(dlg, value=u"1", min=0, max=32, initial=1, size=(70, -1))
+        spin_all.SetToolTip(_(u"Set this value on all chords"))
+        btn_apply_all = wx.Button(dlg, label=_(u"Apply to all"), size=(-1, -1))
+        all_row.AddStretchSpacer()
+        all_row.Add(lbl_all,       0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        all_row.Add(spin_all,      0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        all_row.Add(btn_apply_all, 0, wx.ALIGN_CENTER_VERTICAL)
+        outer.Add(all_row, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        # Separatore visivo
+        outer.Add(wx.StaticLine(dlg), 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
+
+        # ── Anteprima — StaticText multiriga, larghezza minima garantita ──
         lbl_preview_title = wx.StaticText(dlg, label=_(u"Preview:"))
         outer.Add(lbl_preview_title, 0, wx.LEFT | wx.RIGHT, 10)
-        lbl_preview = wx.StaticText(dlg, label=u"")
-        lbl_preview.SetForegroundColour(wx.Colour(0, 100, 0))
+
+        lbl_preview = wx.StaticText(dlg, label=u"",
+                                    style=wx.ST_NO_AUTORESIZE | wx.ST_ELLIPSIZE_END)
+        lbl_preview.SetForegroundColour(wx.Colour(0, 110, 0))
         font_preview = lbl_preview.GetFont()
         font_preview.SetFamily(wx.FONTFAMILY_TELETYPE)
         lbl_preview.SetFont(font_preview)
-        outer.Add(lbl_preview, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        char_w = lbl_preview.GetCharWidth()
+        lbl_preview.SetMinSize((char_w * 60, -1))
+        outer.Add(lbl_preview, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
-        btn_sizer = dlg.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
-        outer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 8)
+        # ── Bottoni: [Apply to song] [OK] [Annulla] ─────────────────────
+        btn_row    = wx.BoxSizer(wx.HORIZONTAL)
+        btn_song   = wx.Button(dlg, wx.ID_ANY, _(u"Apply to song"))
+        btn_song.SetToolTip(_(u"Insert {beats_time} before every chord line in the whole song"))
+        btn_ok     = wx.Button(dlg, wx.ID_OK,     _(u"OK"))
+        btn_cancel = wx.Button(dlg, wx.ID_CANCEL, _(u"Cancel"))
+        btn_ok.SetDefault()
+        btn_row.Add(btn_song,   0, wx.RIGHT, 4)
+        btn_row.AddStretchSpacer()
+        btn_row.Add(btn_ok,     0, wx.RIGHT, 4)
+        btn_row.Add(btn_cancel, 0)
+        outer.Add(btn_row, 0, wx.EXPAND | wx.ALL, 8)
 
         dlg.SetSizerAndFit(outer)
         dlg.CentreOnParent()
 
-        def _update_preview(_evt=None):
+        def _build_parts():
             parts = []
-            for ch in chords:
-                v = spin_map[ch].GetValue()
+            for root, sp in spin_list:
+                v = sp.GetValue()
                 if v > 0:
-                    parts.append(u"%s=%d" % (ch, v))
+                    parts.append(u"%s=%d" % (root, v))
+            return parts
+
+        def _update_preview(_evt=None):
+            parts = _build_parts()
             directive = u"{beats_time: %s}" % u" ".join(parts) if parts else u"{beats_time: }"
             lbl_preview.SetLabel(directive)
             dlg.Layout()
 
-        for sp in spin_map.values():
+        def _apply_all(_evt=None):
+            v = spin_all.GetValue()
+            for _r, sp in spin_list:
+                sp.SetValue(v)
+            _update_preview()
+
+        def _do_insert():
+            """Inserisce la direttiva alla posizione CORRENTE del cursore nell'editor."""
+            parts = _build_parts()
+            directive = u"{beats_time: %s}" % u" ".join(parts) if parts else u"{beats_time: }"
+            # Rileggi la posizione corrente del cursore al momento del click su OK
+
+            cur_n_sel = stc.GetSelections()
+            if cur_n_sel > 1:
+                cur_positions = sorted(
+                    [stc.GetSelectionNStart(i) for i in range(cur_n_sel)],
+                    reverse=True
+                )
+                for pos in cur_positions:
+                    stc.SetSelection(pos, pos)
+                    stc.ReplaceSelection(directive)
+            else:
+                self.InsertWithCaret(directive)
+
+        def _do_insert_song(_evt=None):
+            """Inserisce {beats_time: ...} prima di ogni riga con accordi nel brano intero.
+
+            Regole:
+            - Agisce solo sulle righe che contengono almeno un accordo [...]
+            - Salta le righe già precedute da una direttiva {beats_time ...}
+            - Usa un unico blocco undo per tutta l'operazione
+            - Usa il valore degli SpinCtrl per ogni accordo come nella direttiva locale,
+              ma mappa accordo→battiti per nome (non posizionale): ogni accordo della riga
+              ottiene il numero di battiti corrispondente nella spin_map locale, oppure 1
+              se non presente nel dialogo corrente.
+            """
+            parts_default = _build_parts()
+            directive_default = (u"{beats_time: %s}" % u" ".join(parts_default)
+                                 if parts_default else u"{beats_time: }")
+
+            # Mappa nome accordo → valore spin (per righe con accordi diversi)
+            spin_val = {root: sp.GetValue() for root, sp in spin_list}
+
+            chord_pat    = re.compile(r'\[([^\]]+)\]')
+            bt_pat       = re.compile(r'\{\s*beats_time[^}]*\}', re.IGNORECASE)
+            directive_pat= re.compile(r'\{[^}]+\}')   # qualsiasi direttiva
+
+            full_text = stc.GetText()
+            lines     = full_text.splitlines(keepends=True)
+            n_lines   = len(lines)
+
+            # Costruisce il nuovo testo scorrendo le righe dal basso verso l'alto
+            # per non invalidare gli offset — oppure ricostruisce l'intero testo.
+            new_lines = []
+            inserted  = 0
+            for i, line in enumerate(lines):
+                # La riga ha accordi?
+                chords_in_line = chord_pat.findall(line)
+                if not chords_in_line:
+                    new_lines.append(line)
+                    continue
+
+                # La riga precedente (già processata) è già un {beats_time}?
+                prev = new_lines[-1] if new_lines else u""
+                if bt_pat.search(prev):
+                    new_lines.append(line)
+                    continue
+
+                # Costruisce la direttiva per questa riga specifica
+                # usando i valori dello spin per ogni accordo trovato
+                row_roots = [c.split('/')[0].strip() for c in chords_in_line
+                             if c.split('/')[0].strip()]
+                row_parts = []
+                for r in row_roots:
+                    v = spin_val.get(r, 1)   # default 1 se accordo non nel dialogo
+                    if v > 0:
+                        row_parts.append(u"%s=%d" % (r, v))
+                directive = (u"{beats_time: %s}" % u" ".join(row_parts)
+                             if row_parts else u"{beats_time: }")
+
+                # Inserisce la direttiva nella riga precedente a quella degli accordi,
+                # preservando l'indentazione della riga degli accordi
+                indent = u""
+                new_lines.append(indent + directive + u"\n")
+                new_lines.append(line)
+                inserted += 1
+
+            if inserted == 0:
+                wx.MessageBox(
+                    _(u"No chord lines found without {beats_time} already set."),
+                    _(u"Beats_time — beats per chord"),
+                    wx.OK | wx.ICON_INFORMATION,
+                    dlg
+                )
+                return
+
+            new_text = u"".join(new_lines)
+            with undo_action(stc):
+                stc.SetText(new_text)
+
+            wx.MessageBox(
+                _(u"%d {beats_time} directives inserted.") % inserted,
+                _(u"Beats_time — beats per chord"),
+                wx.OK | wx.ICON_INFORMATION,
+                dlg
+            )
+
+        btn_song.Bind(wx.EVT_BUTTON,   _do_insert_song)
+        btn_apply_all.Bind(wx.EVT_BUTTON, _apply_all)
+        spin_all.Bind(wx.EVT_TEXT_ENTER,  _apply_all)
+
+        for _root, sp in spin_list:
             sp.Bind(wx.EVT_SPINCTRL, _update_preview)
             sp.Bind(wx.EVT_TEXT,     _update_preview)
 
-        _update_preview()   # mostra anteprima iniziale
-
+        _update_preview()
         if dlg.ShowModal() == wx.ID_OK:
-            parts = []
-            for ch in chords:
-                v = spin_map[ch].GetValue()
-                if v > 0:
-                    parts.append(u"%s=%d" % (ch, v))
-            directive = u"{beats_time: %s}" % u" ".join(parts) if parts else u"{beats_time: }"
-            self.InsertWithCaret(directive)
-
+            _do_insert()
         dlg.Destroy()
 
     def OnInsertMusicalSymbol(self, evt):

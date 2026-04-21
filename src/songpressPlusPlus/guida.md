@@ -604,9 +604,16 @@ Ogni direttiva `{beats_time:}` si applica **alla riga di testo/accordi immediata
 Il comando *Inserisci → Durata accordo {beats_time:}…* riconosce automaticamente la situazione:
 
 - **Se la riga sotto il cursore non contiene accordi `[…]`** — inserisce direttamente `{beats_time: }` senza aprire nessuna finestra.
-- **Se la riga sotto il cursore contiene accordi `[…]`** — apre un dialogo con un campo numerico (`SpinCtrl`) per ogni accordo unico trovato, preimpostato su 1 battito. Mentre si modificano i valori, il campo **Anteprima** mostra in tempo reale la direttiva che verrà inserita (es. `{beats_time: Do=4 Sol=2 La-=2 Fa=1}`). Impostando un accordo a **0** viene escluso dalla direttiva.
+- **Se la riga sotto il cursore contiene accordi `[…]`** — apre un dialogo con un campo numerico (`SpinCtrl`) per ogni accordo unico trovato, preimpostato su 1 battito. Mentre si modificano i valori, il campo **Anteprima** mostra in tempo reale la direttiva che verrà inserita (es. `{beats_time: Do=4 Sol=2 La-=2 Fa=1}`). Impostando un accordo a **0** viene escluso dalla direttiva. Se la riga contiene più di **8** accordi, l'elenco diventa scorrevole.
+
+Il dialogo offre due controlli aggiuntivi:
+
+- **Tutti: [N] [Applica a tutti]** — imposta in un solo clic lo stesso numero di battiti su tutti gli accordi presenti nel dialogo.
+- **[Applica al brano]** — inserisce automaticamente una direttiva `{beats_time:}` prima di ogni riga con accordi nell'intero brano, usando i valori impostati nel dialogo. Le righe già precedute da una `{beats_time:}` vengono saltate. L'operazione è annullabile con un singolo `Ctrl+Z`.
 
 > **Nota** — La direttiva viene inserita nella posizione del cursore: posiziona il cursore sulla riga **sopra** la riga con gli accordi, poi seleziona il comando dal menu.
+
+> **Nota — Multicursore** — Il comando è compatibile con il multicursore (Alt+Clic, Ctrl+D). Se sono attivi più cursori sulla stessa sequenza di accordi, il dialogo viene mostrato una sola volta e la direttiva viene inserita in tutte le posizioni. Se le sequenze differiscono, il dialogo usa gli accordi del cursore principale (quello più in alto nel testo).
 
 **Visualizzazione nell'anteprima:**
 
