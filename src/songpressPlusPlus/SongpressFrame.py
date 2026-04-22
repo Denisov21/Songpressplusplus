@@ -193,10 +193,10 @@ class SongpressFindReplaceDialog(object):
         hl_scope_box = wx.StaticBoxSizer(
             wx.StaticBox(self.dialog, label=_(u"Highlight")), wx.HORIZONTAL)
         self.rbHlEditor  = wx.RadioButton(self.dialog,
-                                          label=_(u"Editor only"),
+                                          label=_(u"'Editor' only"),
                                           style=wx.RB_GROUP)
         self.rbHlBoth    = wx.RadioButton(self.dialog,
-                                          label=_(u"Editor + Preview"))
+                                          label=_(u"'Editor' + 'Songpress++ Preview'"))
         self.rbHlBoth.SetValue(True)
         hl_scope_box.Add(self.rbHlEditor, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4)
         hl_scope_box.Add(self.rbHlBoth,   0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4)
@@ -2019,9 +2019,31 @@ class SongpressFrame(SDIMainFrame):
                         and not re.match(r'\s*\{[^}]+\}\s*$', l)]
 
         # ── 3. Conteggio accordi unici e totali ────────────────────────
-        all_chords_raw = re.findall(r'\[([A-Ga-g][^\]]*?)\]', text)
-        all_chords = [c.strip() for c in all_chords_raw if c.strip()]
-        unique_chords = set(re.sub(r'/[A-G][#b]?$', '', c) for c in all_chords)
+        # Usa la notazione preferita (notations[0]) per validare e separare
+        # radice da suffisso, così funziona con DO/RE/MI, C/D/E, ecc.
+        _notation = self.pref.notations[0] if self.pref.notations else None
+
+        def _is_valid_chord(raw):
+            """Ritorna True se raw è un accordo valido nella notazione corrente."""
+            if not raw.strip():
+                return False
+            if _notation is None:
+                return True
+            root, _ = splitChord(raw.strip(), _notation)
+            return bool(root)
+
+        def _chord_root(raw):
+            """Radice dell'accordo senza basso (es. 'LA-/RE' → 'LA-')."""
+            c = raw.strip().split('/')[0].strip()
+            if _notation is None:
+                return c
+            root, suffix = splitChord(c, _notation)
+            return (root + suffix) if root else c
+
+        all_chords_raw = re.findall(r'\[([^\]]+)\]', text)
+        all_chords = [c.strip() for c in all_chords_raw
+                      if c.strip() and _is_valid_chord(c)]
+        unique_chords = set(_chord_root(c) for c in all_chords)
         n_chords_total  = len(all_chords)
         n_chords_unique = len(unique_chords)
 
@@ -2047,7 +2069,8 @@ class SongpressFrame(SDIMainFrame):
         n_lines = len(lines_active)
 
         # ── 6. Complessità accordi (semplice euristica) ───────────────
-        # Accordi "difficili": con 7, 9, 11, 13, dim, aug, sus, add, maj, m7, °
+        # Accordi "difficili": con 7, 9, 11, 13, dim, aug, sus, add, maj, °
+        # Il minore semplice (m o -) NON conta come difficile.
         hard_pat = re.compile(
             r'(?:7|9|11|13|dim|aug|sus|add|maj|°|\+)', re.IGNORECASE)
         n_hard = sum(1 for c in unique_chords if hard_pat.search(c))
@@ -2697,14 +2720,27 @@ class SongpressFrame(SDIMainFrame):
         chord_line = _find_chord_line(main_line)
         all_roots  = _extract_roots(chord_line)
 
-        # ── 3a. Nessun accordo: inserimento semplice su tutti i cursori ───
+        # ── 2b. Raccoglie roots per ogni cursore (per multicursore eterogeneo) ──
+        if n_sel > 1:
+            per_cursor_roots = []
+            for pos in reversed(cursor_positions):   # ordine top→bottom
+                cl = stc.LineFromPosition(pos)
+                per_cursor_roots.append(_extract_roots(_find_chord_line(cl)))
+            # Verifica se tutte le sequenze sono identiche
+            _all_same = all(r == per_cursor_roots[0] for r in per_cursor_roots)
+        else:
+            per_cursor_roots = [all_roots]
+            _all_same = True
+
+        # ── 3a. Nessun accordo: avvisa e non inserisce nulla ────────────
         if not all_roots:
-            if n_sel > 1:
-                for pos in cursor_positions:
-                    stc.SetSelection(pos, pos)
-                    stc.ReplaceSelection(u"{beats_time: }")
-            else:
-                self.InsertWithCaret(u"{beats_time: }")
+            wx.MessageBox(
+                _(u"No chord line found near the cursor.\n"
+                  u"Place the cursor on or next to a line containing chords."),
+                _(u"Beats_time — beats per chord"),
+                wx.OK | wx.ICON_INFORMATION,
+                self.frame
+            )
             return
 
         # ── 3b. Accordi trovati: dialogo per i battiti ───────────────────
@@ -2716,42 +2752,126 @@ class SongpressFrame(SDIMainFrame):
 
         outer = wx.BoxSizer(wx.VERTICAL)
 
-        # Intestazione — se multicursore avvisa quanti cursori sono attivi
+        # Intestazione
         intro_text = _(u"Assign the number of beats to each chord.\n"
                        u"Put 0 to omit a chord from the directive.")
-        if n_sel > 1:
-            intro_text += u"\n" + _(u"Multi-cursor active: %d positions.") % n_sel
         lbl_intro = wx.StaticText(dlg, label=intro_text)
         outer.Add(lbl_intro, 0, wx.ALL, 10)
 
-        # Griglia: una riga per OGNI occorrenza posizionale
-        if len(all_roots) > 8:
-            scroll = wx.ScrolledWindow(dlg, style=wx.VSCROLL)
-            scroll.SetScrollRate(0, 12)
-            grid_parent = scroll
+        # Hint: icona informazione + suggerimento posizionamento cursore
+        hint_row = wx.BoxSizer(wx.HORIZONTAL)
+        lbl_hint_icon = wx.StaticText(dlg, label=u"\u2139")   # ℹ
+        _icon_font = lbl_hint_icon.GetFont()
+        _icon_font.SetPointSize(_icon_font.GetPointSize() + 1)
+        _icon_font.SetWeight(wx.FONTWEIGHT_BOLD)
+        lbl_hint_icon.SetFont(_icon_font)
+        lbl_hint_icon.SetForegroundColour(wx.Colour(0, 100, 180))
+        lbl_hint_text = wx.StaticText(
+            dlg,
+            label=_(u"Place the cursor on the line with chords to insert the directive.")
+        )
+        _hint_font = lbl_hint_text.GetFont()
+        _hint_font.SetPointSize(max(_hint_font.GetPointSize() - 1, 7))
+        _hint_font.SetStyle(wx.FONTSTYLE_ITALIC)
+        lbl_hint_text.SetFont(_hint_font)
+        lbl_hint_text.SetForegroundColour(wx.Colour(90, 90, 90))
+        hint_row.Add(lbl_hint_icon,  0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 10)
+        hint_row.Add(lbl_hint_text,  0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 5)
+        outer.Add(hint_row, 0, wx.BOTTOM, 8)
+
+        # Badge multicursore — visibile solo se n_sel > 1
+        if n_sel > 1:
+            badge_panel = wx.Panel(dlg, style=wx.BORDER_NONE)
+            badge_panel.SetBackgroundColour(wx.Colour(0, 130, 60))
+            badge_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            badge_lbl = wx.StaticText(
+                badge_panel,
+                label=u"  \u25cf  " + _(u"Multi-cursor active: %d positions") % n_sel + u"  "
+            )
+            badge_lbl.SetForegroundColour(wx.Colour(255, 255, 255))
+            f = badge_lbl.GetFont()
+            f.SetWeight(wx.FONTWEIGHT_BOLD)
+            badge_lbl.SetFont(f)
+            badge_sizer.Add(badge_lbl, 0, wx.TOP | wx.BOTTOM, 4)
+            badge_panel.SetSizer(badge_sizer)
+            badge_panel.Fit()
+            outer.Add(badge_panel, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        # ── Helper: costruisce una griglia SpinCtrl per una lista di roots ──
+        def _make_grid(parent, roots):
+            """Ritorna (sizer_or_scroll, spin_list) per i roots dati."""
+            _spin_list = []
+            use_scroll = len(roots) > 8
+            if use_scroll:
+                sw = wx.ScrolledWindow(parent, style=wx.VSCROLL)
+                sw.SetScrollRate(0, 12)
+                gp = sw
+            else:
+                sw = None
+                gp = parent
+            g = wx.FlexGridSizer(cols=2, hgap=8, vgap=6)
+            g.AddGrowableCol(1)
+            for root in roots:
+                g.Add(wx.StaticText(gp, label=root), 0, wx.ALIGN_CENTER_VERTICAL)
+                sp = wx.SpinCtrl(gp, min=0, max=32, size=(70, -1))
+                sp.SetValue(1)
+                sp.SetToolTip(_(u"0 = omit this chord"))
+                g.Add(sp, 0, wx.EXPAND)
+                _spin_list.append((root, sp))
+            if use_scroll:
+                sw.SetSizer(g)
+                g.Fit(sw)
+                sw.SetMinSize((-1, min(g.GetMinSize().height, 8 * 30)))
+                return sw, _spin_list
+            return g, _spin_list
+
+        # ── Griglia: singola se sequenze identiche, Notebook se eterogenee ──
+        # spin_lists è una lista di liste: una per ogni "tab" (o una sola se uniforme)
+        # spin_list (compatibilità con il resto del codice) = prima tab
+        MAX_CURSOR_TABS = 5
+
+        if n_sel <= 1 or _all_same:
+            # Caso semplice: un'unica griglia
+            grid_widget, spin_list = _make_grid(dlg, all_roots)
+            if isinstance(grid_widget, wx.ScrolledWindow):
+                outer.Add(grid_widget, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+            else:
+                outer.Add(grid_widget, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+            spin_lists = [spin_list]
+            _notebook_grids = None
         else:
-            scroll = None
-            grid_parent = dlg
-
-        grid = wx.FlexGridSizer(cols=2, hgap=8, vgap=6)
-        grid.AddGrowableCol(1)
-        spin_list = []   # [(root, SpinCtrl), ...]
-
-        for root in all_roots:
-            grid.Add(wx.StaticText(grid_parent, label=root), 0, wx.ALIGN_CENTER_VERTICAL)
-            spin = wx.SpinCtrl(grid_parent, min=0, max=32, size=(70, -1))
-            spin.SetValue(1)
-            spin.SetToolTip(_(u"0 = omit this chord"))
-            grid.Add(spin, 0, wx.EXPAND)
-            spin_list.append((root, spin))
-
-        if scroll is not None:
-            scroll.SetSizer(grid)
-            grid.Fit(scroll)
-            scroll.SetMinSize((-1, min(grid.GetMinSize().height, 8 * 30)))
-            outer.Add(scroll, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-        else:
-            outer.Add(grid, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+            # Multicursore eterogeneo: Notebook con una tab per cursore (max 5)
+            tabs_roots = per_cursor_roots[:MAX_CURSOR_TABS]
+            nb = wx.Notebook(dlg)
+            spin_lists = []
+            for idx, roots in enumerate(tabs_roots):
+                page = wx.Panel(nb)
+                page_sizer = wx.BoxSizer(wx.VERTICAL)
+                if roots:
+                    gw, sl = _make_grid(page, roots)
+                    if isinstance(gw, wx.ScrolledWindow):
+                        page_sizer.Add(gw, 1, wx.EXPAND | wx.ALL, 6)
+                    else:
+                        page_sizer.Add(gw, 0, wx.ALL, 6)
+                else:
+                    page_sizer.Add(
+                        wx.StaticText(page, label=_(u"(no chords found)")),
+                        0, wx.ALL, 10
+                    )
+                    sl = []
+                page.SetSizer(page_sizer)
+                nb.AddPage(page, _(u"Cursor %d") % (idx + 1))
+                spin_lists.append(sl)
+            if len(per_cursor_roots) > MAX_CURSOR_TABS:
+                lbl_trunc = wx.StaticText(
+                    dlg,
+                    label=u"⚠ " + (_(u"Showing first %d cursors of %d") % (MAX_CURSOR_TABS, n_sel))
+                )
+                lbl_trunc.SetForegroundColour(wx.Colour(160, 100, 0))
+                outer.Add(lbl_trunc, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 4)
+            outer.Add(nb, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+            _notebook_grids = nb
+            spin_list = spin_lists[0]  # compatibilità
 
         # ── Riga "Tutti" — allineata a destra ──────────────────────────
         all_row = wx.BoxSizer(wx.HORIZONTAL)
@@ -2769,28 +2889,76 @@ class SongpressFrame(SDIMainFrame):
         # Separatore visivo
         outer.Add(wx.StaticLine(dlg), 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
 
-        # ── Anteprima — StaticText multiriga, larghezza minima garantita ──
-        lbl_preview_title = wx.StaticText(dlg, label=_(u"Preview:"))
-        outer.Add(lbl_preview_title, 0, wx.LEFT | wx.RIGHT, 10)
+        # ── Anteprima: una per tab (Notebook eterogeneo) o unica ────────────
+        if _notebook_grids is not None:
+            # Inserisce un'etichetta anteprima in ogni tab del notebook
+            _preview_labels = []
+            for idx, page in enumerate([nb.GetPage(i) for i in range(nb.GetPageCount())]):
+                sep = wx.StaticLine(page)
+                page.GetSizer().Add(sep, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
+                lp_title = wx.StaticText(page, label=_(u"Preview:"))
+                page.GetSizer().Add(lp_title, 0, wx.LEFT | wx.RIGHT, 6)
+                lp = wx.StaticText(page, label=u"",
+                                   style=wx.ST_NO_AUTORESIZE | wx.ST_ELLIPSIZE_END)
+                lp.SetForegroundColour(wx.Colour(0, 110, 0))
+                fp = lp.GetFont()
+                fp.SetFamily(wx.FONTFAMILY_TELETYPE)
+                lp.SetFont(fp)
+                lp.SetMinSize((lp.GetCharWidth() * 50, -1))
+                page.GetSizer().Add(lp, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
+                page.Layout()
+                _preview_labels.append(lp)
+            # Separatore e anteprima globale (cursore 1) sotto il notebook
+            outer.Add(wx.StaticLine(dlg), 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
+            lbl_preview_title = wx.StaticText(dlg, label=_(u"Preview (cursor 1):"))
+            outer.Add(lbl_preview_title, 0, wx.LEFT | wx.RIGHT, 10)
+            lbl_preview = wx.StaticText(dlg, label=u"",
+                                        style=wx.ST_NO_AUTORESIZE | wx.ST_ELLIPSIZE_END)
+            lbl_preview.SetForegroundColour(wx.Colour(0, 110, 0))
+            font_preview = lbl_preview.GetFont()
+            font_preview.SetFamily(wx.FONTFAMILY_TELETYPE)
+            lbl_preview.SetFont(font_preview)
+            lbl_preview.SetMinSize((lbl_preview.GetCharWidth() * 60, -1))
+            outer.Add(lbl_preview, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        else:
+            _preview_labels = None
+            # Separatore visivo
+            outer.Add(wx.StaticLine(dlg), 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
+            lbl_preview_title = wx.StaticText(dlg, label=_(u"Preview:"))
+            outer.Add(lbl_preview_title, 0, wx.LEFT | wx.RIGHT, 10)
+            lbl_preview = wx.StaticText(dlg, label=u"",
+                                        style=wx.ST_NO_AUTORESIZE | wx.ST_ELLIPSIZE_END)
+            lbl_preview.SetForegroundColour(wx.Colour(0, 110, 0))
+            font_preview = lbl_preview.GetFont()
+            font_preview.SetFamily(wx.FONTFAMILY_TELETYPE)
+            lbl_preview.SetFont(font_preview)
+            char_w = lbl_preview.GetCharWidth()
+            lbl_preview.SetMinSize((char_w * 60, -1))
+            outer.Add(lbl_preview, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
-        lbl_preview = wx.StaticText(dlg, label=u"",
-                                    style=wx.ST_NO_AUTORESIZE | wx.ST_ELLIPSIZE_END)
-        lbl_preview.SetForegroundColour(wx.Colour(0, 110, 0))
-        font_preview = lbl_preview.GetFont()
-        font_preview.SetFamily(wx.FONTFAMILY_TELETYPE)
-        lbl_preview.SetFont(font_preview)
-        char_w = lbl_preview.GetCharWidth()
-        lbl_preview.SetMinSize((char_w * 60, -1))
-        outer.Add(lbl_preview, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-
-        # ── Bottoni: [Apply to song] [OK] [Annulla] ─────────────────────
-        btn_row    = wx.BoxSizer(wx.HORIZONTAL)
-        btn_song   = wx.Button(dlg, wx.ID_ANY, _(u"Apply to song"))
+        # ── Sezione "Apply to whole song" — separata visivamente dai bottoni modali ──
+        outer.Add(wx.StaticLine(dlg), 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 8)
+        song_row = wx.BoxSizer(wx.HORIZONTAL)
+        lbl_song_hint = wx.StaticText(
+            dlg,
+            label=_(u"Batch mode: inserts the directive before every chord line in the file.")
+        )
+        _hint_font = lbl_song_hint.GetFont()
+        _hint_font.SetPointSize(max(_hint_font.GetPointSize() - 1, 7))
+        _hint_font.SetStyle(wx.FONTSTYLE_ITALIC)
+        lbl_song_hint.SetFont(_hint_font)
+        lbl_song_hint.SetForegroundColour(wx.Colour(100, 100, 100))
+        btn_song = wx.Button(dlg, wx.ID_ANY, _(u"Apply to whole song\u2026"))
         btn_song.SetToolTip(_(u"Insert {beats_time} before every chord line in the whole song"))
+        song_row.Add(lbl_song_hint, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 8)
+        song_row.Add(btn_song,      0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, 8)
+        outer.Add(song_row, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 6)
+
+        # ── Bottoni modali: [OK] [Cancel] ────────────────────────────────
+        btn_row    = wx.BoxSizer(wx.HORIZONTAL)
         btn_ok     = wx.Button(dlg, wx.ID_OK,     _(u"OK"))
         btn_cancel = wx.Button(dlg, wx.ID_CANCEL, _(u"Cancel"))
         btn_ok.SetDefault()
-        btn_row.Add(btn_song,   0, wx.RIGHT, 4)
         btn_row.AddStretchSpacer()
         btn_row.Add(btn_ok,     0, wx.RIGHT, 4)
         btn_row.Add(btn_cancel, 0)
@@ -2799,43 +2967,100 @@ class SongpressFrame(SDIMainFrame):
         dlg.SetSizerAndFit(outer)
         dlg.CentreOnParent()
 
-        def _build_parts():
+        def _build_parts(sl=None):
+            """Costruisce la lista 'ROOT=N' dalla spin_list indicata (default: prima tab)."""
+            if sl is None:
+                sl = spin_lists[0]
             parts = []
-            for root, sp in spin_list:
+            for root, sp in sl:
                 v = sp.GetValue()
                 if v > 0:
                     parts.append(u"%s=%d" % (root, v))
             return parts
 
         def _update_preview(_evt=None):
-            parts = _build_parts()
+            # Aggiorna l'anteprima nella/e tab
+            if _preview_labels is not None:
+                for idx, (lp, sl) in enumerate(zip(_preview_labels, spin_lists)):
+                    parts = _build_parts(sl)
+                    directive = u"{beats_time: %s}" % u" ".join(parts) if parts else u"{beats_time: }"
+                    lp.SetLabel(directive)
+                    lp.GetParent().Layout()
+            # Anteprima principale (sempre aggiornata con la prima tab / tab unica)
+            parts = _build_parts(spin_lists[0])
             directive = u"{beats_time: %s}" % u" ".join(parts) if parts else u"{beats_time: }"
             lbl_preview.SetLabel(directive)
             dlg.Layout()
 
         def _apply_all(_evt=None):
             v = spin_all.GetValue()
-            for _r, sp in spin_list:
-                sp.SetValue(v)
+            # Applica a tutte le tab
+            for sl in spin_lists:
+                for _r, sp in sl:
+                    sp.SetValue(v)
             _update_preview()
 
         def _do_insert():
-            """Inserisce la direttiva alla posizione CORRENTE del cursore nell'editor."""
-            parts = _build_parts()
-            directive = u"{beats_time: %s}" % u" ".join(parts) if parts else u"{beats_time: }"
-            # Rileggi la posizione corrente del cursore al momento del click su OK
+            """Inserisce {beats_time} PRIMA della riga degli accordi relativa a ogni cursore.
+
+            Regole per ogni cursore:
+            - Cerca la riga degli accordi: prima la riga corrente, poi precedente, poi successiva.
+            - Se la riga PRECEDENTE alla riga accordi è già un {beats_time}, la sostituisce.
+            - Altrimenti inserisce una nuova riga PRIMA della riga degli accordi.
+            - Agisce bottom→top per non invalidare gli offset.
+            - Tutto in un unico blocco undo.
+            """
+            bt_pat = re.compile(r'^\s*\{beats_time[^}]*\}', re.IGNORECASE)
+
+            def _find_chord_line_idx(cur_line):
+                """Ritorna l'indice della riga degli accordi vicina a cur_line, o -1.
+                Priorità: riga corrente → precedente → successiva."""
+                for candidate in [cur_line, cur_line - 1, cur_line + 1]:
+                    if 0 <= candidate < stc.GetLineCount():
+                        if re.search(r'\[([^\]]+)\]', stc.GetLine(candidate)):
+                            return candidate
+                return -1
 
             cur_n_sel = stc.GetSelections()
             if cur_n_sel > 1:
                 cur_positions = sorted(
                     [stc.GetSelectionNStart(i) for i in range(cur_n_sel)],
-                    reverse=True
+                    reverse=True   # bottom→top per non invalidare gli offset
                 )
-                for pos in cur_positions:
-                    stc.SetSelection(pos, pos)
-                    stc.ReplaceSelection(directive)
             else:
-                self.InsertWithCaret(directive)
+                cur_positions = [stc.GetCurrentPos()]
+
+            with undo_action(stc):
+                for idx, pos in enumerate(cur_positions):
+                    real_idx = (len(cur_positions) - 1 - idx) if cur_n_sel > 1 else 0
+                    sl = spin_lists[real_idx] if real_idx < len(spin_lists) else spin_lists[0]
+                    parts = _build_parts(sl)
+                    directive = u"{beats_time: %s}" % u" ".join(parts) if parts else u"{beats_time: }"
+
+                    chord_idx = _find_chord_line_idx(stc.LineFromPosition(pos))
+
+                    if chord_idx < 0:
+                        # Nessuna riga di accordi trovata: fallback al cursore
+                        stc.SetSelection(pos, pos)
+                        stc.ReplaceSelection(directive)
+                        continue
+
+                    prev_idx = chord_idx - 1
+                    if prev_idx >= 0 and bt_pat.match(stc.GetLine(prev_idx).rstrip(u"\r\n")):
+                        # La riga precedente è già un {beats_time}: sostituiscila in-place
+                        line_start = stc.PositionFromLine(prev_idx)
+                        line_end   = stc.GetLineEndPosition(prev_idx)
+                        stc.SetSelection(line_start, line_end)
+                        stc.ReplaceSelection(directive)
+                    else:
+                        # Risale sopra eventuali righe vuote che precedono gli accordi,
+                        # così la direttiva viene inserita senza creare riga vuota visiva.
+                        target_idx = chord_idx
+                        while target_idx > 0 and stc.GetLine(target_idx - 1).strip() == u"":
+                            target_idx -= 1
+                        insert_pos = stc.PositionFromLine(target_idx)
+                        stc.SetSelection(insert_pos, insert_pos)
+                        stc.ReplaceSelection(directive + u"\n")
 
         def _do_insert_song(_evt=None):
             """Inserisce {beats_time: ...} prima di ogni riga con accordi nel brano intero.
@@ -2849,12 +3074,12 @@ class SongpressFrame(SDIMainFrame):
               ottiene il numero di battiti corrispondente nella spin_map locale, oppure 1
               se non presente nel dialogo corrente.
             """
-            parts_default = _build_parts()
+            parts_default = _build_parts(spin_lists[0])
             directive_default = (u"{beats_time: %s}" % u" ".join(parts_default)
                                  if parts_default else u"{beats_time: }")
 
             # Mappa nome accordo → valore spin (per righe con accordi diversi)
-            spin_val = {root: sp.GetValue() for root, sp in spin_list}
+            spin_val = {root: sp.GetValue() for root, sp in spin_lists[0]}
             # Default per accordi non presenti nel dialogo:
             # se tutti i valori sono 0 (utente ha azzerato tutto) usa 0,
             # altrimenti usa 1 (comportamento normale)
@@ -2925,13 +3150,15 @@ class SongpressFrame(SDIMainFrame):
                 dlg
             )
 
-        btn_song.Bind(wx.EVT_BUTTON,   _do_insert_song)
+        btn_song.Bind(wx.EVT_BUTTON,      _do_insert_song)
         btn_apply_all.Bind(wx.EVT_BUTTON, _apply_all)
-        spin_all.Bind(wx.EVT_TEXT_ENTER,  _apply_all)
+        spin_all.Bind(wx.EVT_SPINCTRL,    _apply_all)   # frecce aggiornano subito
+        spin_all.Bind(wx.EVT_TEXT_ENTER,  _apply_all)   # Invio da tastiera
 
-        for _root, sp in spin_list:
-            sp.Bind(wx.EVT_SPINCTRL, _update_preview)
-            sp.Bind(wx.EVT_TEXT,     _update_preview)
+        for sl in spin_lists:
+            for _root, sp in sl:
+                sp.Bind(wx.EVT_SPINCTRL, _update_preview)
+                sp.Bind(wx.EVT_TEXT,     _update_preview)
 
         _update_preview()
         if dlg.ShowModal() == wx.ID_OK:
@@ -3363,8 +3590,8 @@ class SongpressFrame(SDIMainFrame):
             from pypdf import PdfReader
         except ImportError:
             wx.MessageBox(
-                _("La libreria pypdf non è installata.\nInstalla con:  pip install pypdf"),
-                _("pypdf non trovato"),
+                _("The pypdf library is not installed.\nInstall with:  pip install pypdf"),
+                _("pypdf not found"),
                 wx.OK | wx.ICON_ERROR,
                 self.frame,
             )

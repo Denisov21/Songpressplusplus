@@ -649,21 +649,22 @@ class MusicalSymbolDialog(wx.Dialog):
 
         # ── Nota informativa dimensione ────────────────────────────────────
         note_row = wx.BoxSizer(wx.HORIZONTAL)
-        _info_path = glb.AddPath("img/info.png")
-        try:
-            _info_bmp = wx.Bitmap(_info_path, wx.BITMAP_TYPE_PNG)
-            if _info_bmp.IsOk():
-                _info_icon = wx.StaticBitmap(self, bitmap=_info_bmp)
-                note_row.Add(_info_icon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
-        except Exception:
-            pass
+        _info_icon = wx.StaticText(self, label=u"\u2139")   # ℹ
+        _icon_font = _info_icon.GetFont()
+        _icon_font.SetPointSize(_icon_font.GetPointSize() + 1)
+        _icon_font.SetWeight(wx.FONTWEIGHT_BOLD)
+        _info_icon.SetFont(_icon_font)
+        _info_icon.SetForegroundColour(wx.Colour(0, 100, 180))
+        note_row.Add(_info_icon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         _note_lbl = wx.StaticText(
             self,
             label=_("Note: not all symbols can be resized!")
         )
         _note_font = _note_lbl.GetFont()
+        _note_font.SetPointSize(max(_note_font.GetPointSize() - 1, 7))
         _note_font.SetStyle(wx.FONTSTYLE_ITALIC)
         _note_lbl.SetFont(_note_font)
+        _note_lbl.SetForegroundColour(wx.Colour(90, 90, 90))
         note_row.Add(_note_lbl, 0, wx.ALIGN_CENTER_VERTICAL)
         outer.Add(note_row, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
         # ──────────────────────────────────────────────────────────────────
