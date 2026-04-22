@@ -609,11 +609,11 @@ The command *Insert → Chord duration {beats_time:}…* automatically detects t
 The dialog provides two additional controls:
 
 - **All: [N] [Apply to all]** — sets the same number of beats on all chords in the dialog in one click.
-- **[Apply to song]** — automatically inserts a `{beats_time:}` directive before every chord line in the entire song, using the values set in the dialog. Lines already preceded by a `{beats_time:}` are skipped. The whole operation is undoable with a single `Ctrl+Z`. For chords that appear in the song but are **not present in the dialog** (because the cursor's reference line had different chords), the default beat count is **1** — unless all the dialog's spin fields are set to **0**, in which case those chords are also omitted from the directive, producing an empty `{beats_time: }`.
+- **[Apply to whole song…]** — automatically inserts a `{beats_time:}` directive before every chord line in the entire song, using the values set in the dialog. Lines already preceded by a `{beats_time:}` are skipped. The whole operation is undoable with a single `Ctrl+Z`. For chords that appear in the song but are **not present in the dialog** (because the cursor's reference line had different chords), the default beat count is **1** — unless all the dialog's spin fields are set to **0**, in which case those chords are also omitted from the directive, producing an empty `{beats_time: }`.
 
 > **Note** — The directive is inserted at the cursor position: place the cursor on the line **above** the chord line, then select the command from the menu.
 
-> **Note — Multi-cursor** — The command is compatible with multi-cursor mode (Alt+Click, Ctrl+D). If multiple cursors are active over the same chord sequence, the dialog is shown once and the directive is inserted at all positions. If the sequences differ, the dialog uses the chords of the main cursor (the one highest in the text).
+> **Note — Multi-cursor** — The command is compatible with multi-cursor mode (Alt+Click, Ctrl+D). If multiple cursors are active over the same chord sequence, the dialog displays a **green badge** ("● Multi-cursor active: N positions") and inserts the directive at all positions in a single `Ctrl+Z`. If the cursors point to **different chord sequences** (heterogeneous multi-cursor), the dialog opens a **Notebook** with one tab per cursor (up to a maximum of 5): each tab shows the SpinCtrl fields specific to that position and its own real-time preview. A **Preview (cursor 1)** summary field is always visible below the Notebook. If the active cursors exceed 5, a warning is shown: «⚠ Showing first 5 cursors of N».
 
 **Preview display:**
 
