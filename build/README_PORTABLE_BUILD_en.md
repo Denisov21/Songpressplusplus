@@ -47,7 +47,7 @@ Songpressplusplus/
 Replace the path below with the full path to your Songpress++ project:
 
 ```powershell
-cd "E:\Users\Utente\Downloads\SongpressV30_OK\Songpressplusplus"
+cd "E:\Users\Utente\Downloads\Songpress\Songpressplusplus"
 ```
 
 > **Note:** The path shown above is an example. Replace it with the actual path where you cloned or extracted the project on your system.
@@ -171,15 +171,15 @@ pip is functional but outdated inside `.venv-build`. To upgrade it, use `&` and
 quotes because the project path may contain spaces:
 
 ```powershell
-& "E:\Users\Utente\Downloads\SongpressV30_OK\Songpressplusplus\.venv-build\Scripts\python.exe" -m pip install --upgrade pip
+& "E:\Users\Utente\Downloads\Songpress\Songpressplusplus\.venv-build\Scripts\python.exe" -m pip install --upgrade pip
 ```
 
-> **Note:** Replace `E:\Users\Utente\Downloads\SongpressV30_OK\Songpressplusplus` with the actual path to your project.
+> **Note:** Replace `E:\Users\Utente\Downloads\Songpress\Songpressplusplus` with the actual path to your project.
 
 Or activate the venv first and then run the shorter form:
 
 ```powershell
-& "E:\Users\Utente\Downloads\SongpressV30_OK\Songpressplusplus\.venv-build\Scripts\Activate.ps1"
+& "E:\Users\Utente\Downloads\Songpress\Songpressplusplus\.venv-build\Scripts\Activate.ps1"
 python -m pip install --upgrade pip
 ```
 
