@@ -88,8 +88,7 @@ msgstr "Visualizza come:"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Enter a label for the chorus, or press Cancel to omit the label."
-msgstr ""
-"Inserisci un'etichetta per il ritornello, o premi Annulla per ometterla."
+msgstr "Inserisci un'etichetta per il ritornello, o premi Annulla per ometterla."
 
 #: SongpressFrame.py — OnInsertGrid dialog title
 msgid "Grid label"
@@ -147,12 +146,9 @@ msgstr ""
 "(https://github.com/Denisov21/Songpressplusplus)"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:205
-msgid ""
-"Licensed under the terms and conditions of the GNU General Public License, "
-"version 2"
+msgid "Licensed under the terms and conditions of the GNU General Public License, version 2"
 msgstr ""
-"Concesso in licenza secondo i termini e le condizioni della GNU General "
-"Public License, versione 2"
+"Concesso in licenza secondo i termini e le condizioni della GNU General Public License, versione 2"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:207
 msgid ""
@@ -160,16 +156,15 @@ msgid ""
 "  * The Python programming language (http://www.python.org)\n"
 "  * wxWidgets (http://www.wxwidgets.org)\n"
 "  * wxPython (http://www.wxpython.org)\n"
-"  * Editra (http://editra.org/) (for the error reporting dialog and... the "
-"editor itself!)\n"
+"  * Editra (http://editra.org/) (for the error reporting dialog and... the editor itself!)\n"
 "  * python-pptx (for PowerPoint export)"
 msgstr ""
 "Un sentito ringraziamento a:\n"
 "  * Il linguaggio di programmazione Python (http://www.python.org)\n"
 "  * wxWidgets (http://www.wxwidgets.org)\n"
 "  * wxPython (http://www.wxpython.org)\n"
-"  * Editra (http://editra.org/) (per la finestra di segnalazione errori e... "
-"per l'editor in quanto tale!)\n"
+"  * Editra (http://editra.org/) (per la finestra di segnalazione errori e... per l'editor in quanto "
+"tale!)\n"
 "  * python-pptx (per l'esportazione in PowerPoint)"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:224
@@ -234,8 +229,7 @@ msgstr "Copia come immagine"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:239
 msgid "Copy the entire FORMATTED song (or selected verses) to the clipboard"
-msgstr ""
-"Copia la canzone FORMATTATA (tutta o le strofe selezionate) negli appunti"
+msgstr "Copia la canzone FORMATTATA (tutta o le strofe selezionate) negli appunti"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:240
 msgid "Paste"
@@ -243,8 +237,7 @@ msgstr "Incolla"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:241
 msgid "Read text from the clipboard and insert it at the cursor position"
-msgstr ""
-"Legge il testo dagli appunti e lo inserisce nella posizione del cursore"
+msgstr "Legge il testo dagli appunti e lo inserisce nella posizione del cursore"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:242
 msgid "Paste chords"
@@ -284,9 +277,7 @@ msgstr "Inserisci una strofa con un'etichetta personalizzata o senza etichetta"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:269
 msgid "Insert a verse with a custom label or without label"
-msgstr ""
-"Inserisce un comando per mostrare una strofa con un'etichetta "
-"personalizzabile"
+msgstr "Inserisce un comando per mostrare una strofa con un'etichetta personalizzabile"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:277
 msgid "Show verse labels"
@@ -303,17 +294,15 @@ msgstr "Mostra o nasconde gli accordi nella canzone formattata"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:325
 msgid ""
-"You are not a skilled guitarist? Songpress++ can help you: when you open a "
-"song, it can detect if chords are difficult. If this is the case, Songpress+"
-"+ will alert you, and offer to transpose your song to the easiest key, "
-"automatically.\n"
+"You are not a skilled guitarist? Songpress++ can help you: when you open a song, it can detect if "
+"chords are difficult. If this is the case, Songpress++ will alert you, and offer to transpose your song "
+"to the easiest key, automatically.\n"
 "\n"
 "Do you want to turn this option on?"
 msgstr ""
-"Non sei un chitarrista esperto? Songpress++ ti può aiutare: quando apri una "
-"canzone, può determinare se gli accordi sono difficili. In tal caso "
-"Songpress++ ti avvertirà e si offrirà di trasporre la canzone nella tonalità "
-"più facile, automaticamente.\n"
+"Non sei un chitarrista esperto? Songpress++ ti può aiutare: quando apri una canzone, può determinare se "
+"gli accordi sono difficili. In tal caso Songpress++ ti avvertirà e si offrirà di trasporre la canzone "
+"nella tonalità più facile, automaticamente.\n"
 "\n"
 "Vuoi attivare questa funzionalità?"
 
@@ -326,12 +315,11 @@ msgstr "Songpress++"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:330
 msgid ""
-"Please take a minute to set up your skill as a guitarist. For each group of "
-"chords, tell Songpress++ how much you like them."
+"Please take a minute to set up your skill as a guitarist. For each group of chords, tell Songpress++ "
+"how much you like them."
 msgstr ""
-"Ora dedica un minuto ad impostare il tuo livello di abilità come "
-"chitarrista. Esprimi il tuo grado di preferenza per ciascuno dei gruppi di "
-"accordi che ti verranno presentati."
+"Ora dedica un minuto ad impostare il tuo livello di abilità come chitarrista. Esprimi il tuo grado di "
+"preferenza per ciascuno dei gruppi di accordi che ti verranno presentati."
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:548
 msgid "PNG image"
@@ -389,30 +377,19 @@ msgstr "Semplifica gli accordi"
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:889
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1047
 #, python-format
-msgid ""
-"The key of your song, %s, is not the easiest to play (difficulty: %.1f/"
-"5.0).\n"
-msgstr ""
-"La canzone è in %s. Questa non è la tonalità più facile da suonare "
-"(difficoltà %.1f/5.0).\n"
+msgid "The key of your song, %s, is not the easiest to play (difficulty: %.1f/5.0).\n"
+msgstr "La canzone è in %s. Questa non è la tonalità più facile da suonare (difficoltà %.1f/5.0).\n"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:890
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1048
 #, python-format
-msgid ""
-"Do you want to transpose the key %s, which is the easiest one (difficulty: "
-"%.1f/5.0)?"
-msgstr ""
-"Vuoi trasporla in %s, che è la tonalità più semplice (difficoltà: %.1f/5.0)?"
+msgid "Do you want to transpose the key %s, which is the easiest one (difficulty: %.1f/5.0)?"
+msgstr "Vuoi trasporla in %s, che è la tonalità più semplice (difficoltà: %.1f/5.0)?"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:897
 #, python-format
-msgid ""
-"The key of your song, %s, is already the easiest to play (difficulty: %.1f/"
-"5.0).\n"
-msgstr ""
-"La canzone è già nella tonalità più facile da suonare, il %s (difficoltà "
-"%.1f/5.0).\n"
+msgid "The key of your song, %s, is already the easiest to play (difficulty: %.1f/5.0).\n"
+msgstr "La canzone è già nella tonalità più facile da suonare, il %s (difficoltà %.1f/5.0).\n"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:899
 msgid "Your song or current selection does not contain any chords."
@@ -420,9 +397,7 @@ msgstr "La canzone o la selezione corrente non contiene accordi."
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:967
 msgid "Insert a label for verse, or press Cancel if you want to omit label."
-msgstr ""
-"Inserisci un'etichetta per la strofa, o premi Annulla per omettere "
-"l'etichetta."
+msgstr "Inserisci un'etichetta per la strofa, o premi Annulla per omettere l'etichetta."
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:968
 msgid "Verse label"
@@ -430,9 +405,7 @@ msgstr "Etichetta della strofa"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:977
 msgid "Insert a label for chorus, or press Cancel if you want to omit label."
-msgstr ""
-"Inserisci un'etichetta per il ritornello, o premi Annulla per omettere "
-"l'etichetta."
+msgstr "Inserisci un'etichetta per il ritornello, o premi Annulla per omettere l'etichetta."
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:978
 msgid "Chorus label"
@@ -455,11 +428,8 @@ msgid "Remove spurious blank lines"
 msgstr "Rimuovi le linee vuote di troppo"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1035
-msgid ""
-"It looks like your song is in tab format (i.e., chords are above the text).\n"
-msgstr ""
-"A quanto pare la canzone è nel formato tab (cioè gli accordi si trovano "
-"sopra il testo).\n"
+msgid "It looks like your song is in tab format (i.e., chords are above the text).\n"
+msgstr "A quanto pare la canzone è nel formato tab (cioè gli accordi si trovano sopra il testo).\n"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1036
 msgid "Do you want to convert it to ChordPro automatically?"
@@ -511,8 +481,7 @@ msgstr "Interlinea"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Enter the line spacing value (e.g. 0 to remove extra space):"
-msgstr ""
-"Inserisci il valore dell'interlinea (es. 0 per rimuovere lo spazio extra):"
+msgstr "Inserisci il valore dell'interlinea (es. 0 per rimuovere lo spazio extra):"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Space above chords"
@@ -520,9 +489,7 @@ msgstr "Spazio sopra accordi"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Enter the space above chords value (e.g. 0 to remove extra space):"
-msgstr ""
-"Inserisci il valore dello spazio sopra gli accordi (es. 0 per rimuovere lo "
-"spazio extra):"
+msgstr "Inserisci il valore dello spazio sopra gli accordi (es. 0 per rimuovere lo spazio extra):"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Intro"
@@ -531,9 +498,7 @@ msgstr "Intro"
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 #, python-format
 msgid "Enter a label for the intro chords, or press Cancel to use '%s'."
-msgstr ""
-"Inserisci un'etichetta per gli accordi di introduzione, o premi Annulla per "
-"usare '%s'."
+msgstr "Inserisci un'etichetta per gli accordi di introduzione, o premi Annulla per usare '%s'."
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Intro chords label"
@@ -635,12 +600,9 @@ msgstr "Rileva automaticamente dagli accordi"
 #. Tooltip shown when hovering the auto-detect checkbox in the Key dialog.
 #. "[ ]" refers to the square brackets used to mark chords in ChordPro format.
 #: SongpressFrame.py — OnInsertKey auto-detect checkbox tooltip
-msgid ""
-"Analyses the chords in the song (text between [ ]) and fills in the most "
-"likely key automatically."
+msgid "Analyses the chords in the song (text between [ ]) and fills in the most likely key automatically."
 msgstr ""
-"Analizza gli accordi del brano (testo tra [ ]) e compila automaticamente la "
-"tonalità più probabile."
+"Analizza gli accordi del brano (testo tra [ ]) e compila automaticamente la tonalità più probabile."
 
 #. Label shown when key detection succeeds.
 #. %s = detected key name (e.g. "Am"); %d = number of chords analysed.
@@ -698,8 +660,7 @@ msgstr "Mostra anteprima tastiera"
 
 #: SongpressFrame.py
 msgid "Enter chord definition (e.g. C base-fret 1 frets X 3 2 0 1 0):"
-msgstr ""
-"Inserisci la definizione dell'accordo (es. DO base-fret 1 frets X 3 2 0 1 0):"
+msgstr "Inserisci la definizione dell'accordo (es. DO base-fret 1 frets X 3 2 0 1 0):"
 
 #: SongpressFrame.py
 msgid "Song font - Songpress++"
@@ -805,8 +766,7 @@ msgid ""
 "Make sure the song has at least two verses with the same number of lines."
 msgstr ""
 "Nessuna strofa compatibile trovata.\n"
-"Assicurarsi che il brano abbia almeno due strofe con lo stesso numero di "
-"righe."
+"Assicurarsi che il brano abbia almeno due strofe con lo stesso numero di righe."
 
 msgid "Propagate verse chords"
 msgstr "Propaga accordi strofa"
@@ -817,8 +777,7 @@ msgid ""
 "Make sure the song has at least two choruses with the same number of lines."
 msgstr ""
 "Nessun ritornello compatibile trovato.\n"
-"Assicurarsi che il brano abbia almeno due ritornelli con lo stesso numero di "
-"righe."
+"Assicurarsi che il brano abbia almeno due ritornelli con lo stesso numero di righe."
 
 msgid "Propagate chorus chords"
 msgstr "Propaga accordi ritornello"
@@ -875,14 +834,12 @@ msgstr "Incorpora immagine nel file (base64, senza dipendenza esterna)"
 #. The three sentences explain what happens when the option is on vs off.
 #: SongpressFrame.py insert image embed checkbox tooltip
 msgid ""
-"If checked, the image data is encoded in base64 and stored directly inside "
-"the .crd file. The song becomes self-contained but the file size grows. If "
-"unchecked, only the file path is stored (link)."
+"If checked, the image data is encoded in base64 and stored directly inside the .crd file. The song "
+"becomes self-contained but the file size grows. If unchecked, only the file path is stored (link)."
 msgstr ""
-"Se attivata, i dati dell'immagine vengono codificati in base64 e salvati "
-"direttamente nel file .crd. La canzone diventa autosufficiente ma le "
-"dimensioni del file aumentano. Se disattivata, viene salvato solo il "
-"percorso del file (collegamento)."
+"Se attivata, i dati dell'immagine vengono codificati in base64 e salvati direttamente nel file .crd. La "
+"canzone diventa autosufficiente ma le dimensioni del file aumentano. Se disattivata, viene salvato solo "
+"il percorso del file (collegamento)."
 
 #. Warning label shown below the embed checkbox when the estimated size is < 1 MB.
 #. %.0f is replaced at runtime with the estimated KB to be added.
@@ -906,11 +863,11 @@ msgstr "Seleziona immagine"
 
 #: SongpressFrame.py insert image file dialog filter
 msgid ""
-"Image files (*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif)|"
-"*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif|All files (*.*)|*.*"
+"Image files (*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif)|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif|"
+"All files (*.*)|*.*"
 msgstr ""
-"File immagine (*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif)|"
-"*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif|Tutti i file (*.*)|*.*"
+"File immagine (*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif)|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif|"
+"Tutti i file (*.*)|*.*"
 
 #: SongpressFrame.py check syntax toolbar label
 msgid "Check syntax"
@@ -1147,8 +1104,12 @@ msgid "Beats_time — beats per chord"
 msgstr "Beats_time — battiti per accordo"
 
 #: SongpressFrame.py OnInsertDuration OnInsertBeatsTime dialog intro
-msgid "Assign the number of beats to each chord.\nPut 0 to omit a chord from the directive."
-msgstr "Assegna il numero di battiti a ciascun accordo.\nMetti 0 per omettere un accordo dalla direttiva."
+msgid ""
+"Assign the number of beats to each chord.\n"
+"Put 0 to omit a chord from the directive."
+msgstr ""
+"Assegna il numero di battiti a ciascun accordo.\n"
+"Metti 0 per omettere un accordo dalla direttiva."
 
 #: SongpressFrame.py OnInsertDuration OnInsertBeatsTime spin tooltip
 msgid "0 = omit this chord"
@@ -1163,12 +1124,12 @@ msgid "Highlight"
 msgstr "Evidenzia"
 
 #: SongpressFrame.py find dialog — highlight scope radio: editor only
-msgid "Editor only"
-msgstr "Solo editor"
+msgid "'Editor' only"
+msgstr "Solo 'Editor'"
 
 #: SongpressFrame.py find dialog — highlight scope radio: editor + preview
-msgid "Editor + Preview"
-msgstr "Editor + Anteprima"
+msgid "'Editor' + 'Songpress++ Preview'"
+msgstr "'Editor' + 'Anteprima Songpress++'"
 
 #: SongpressFrame.py find dialog — highlight colour box label
 msgid "Highlight colour"
@@ -1186,13 +1147,13 @@ msgstr "Predefinito"
 msgid "Hand:"
 msgstr "Mano:"
 
-#: SongpressFrame.py fingering dialog — right hand radio button
-#: KlavierRenderer.py — hand label drawn below keyboard
+#: SongpressFrame.py fingering dialog — right hand radio button KlavierRenderer.py label drawn below
+#: keyboard
 msgid "Right hand"
 msgstr "Mano destra"
 
-#: SongpressFrame.py fingering dialog — left hand radio button
-#: KlavierRenderer.py — hand label drawn below keyboard
+#: SongpressFrame.py fingering dialog — left hand radio button KlavierRenderer.py label drawn below
+#: keyboard
 msgid "Left hand"
 msgstr "Mano sinistra"
 
