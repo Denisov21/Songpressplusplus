@@ -90,12 +90,14 @@ class SongpressFindReplaceDialog(object):
 
         mid_f = wx.BoxSizer(wx.HORIZONTAL)
         opts_f = wx.BoxSizer(wx.VERTICAL)
-        self.cbWholeWord = wx.CheckBox(pg_find, label=_(u"Whole words only"))
-        self.cbMatchCase = wx.CheckBox(pg_find, label=_(u"Match case"))
-        self.cbRegex     = wx.CheckBox(pg_find, label=_(u"Regular expressions"))
-        opts_f.Add(self.cbWholeWord, 0, wx.BOTTOM, 4)
-        opts_f.Add(self.cbMatchCase, 0, wx.BOTTOM, 4)
-        opts_f.Add(self.cbRegex,    0)
+        self.cbWholeWord  = wx.CheckBox(pg_find, label=_(u"Whole words only"))
+        self.cbMatchCase  = wx.CheckBox(pg_find, label=_(u"Match case"))
+        self.cbRegex      = wx.CheckBox(pg_find, label=_(u"Regular expressions"))
+        self.cbWrapAroundF = wx.CheckBox(pg_find, label=_(u"Silent wrap-around"))
+        opts_f.Add(self.cbWholeWord,   0, wx.BOTTOM, 4)
+        opts_f.Add(self.cbMatchCase,   0, wx.BOTTOM, 4)
+        opts_f.Add(self.cbRegex,       0, wx.BOTTOM, 4)
+        opts_f.Add(self.cbWrapAroundF, 0)
         mid_f.Add(opts_f, 0, wx.RIGHT, 20)
         dir_box = wx.StaticBoxSizer(
             wx.StaticBox(pg_find, label=_(u"Direction")), wx.HORIZONTAL)
@@ -242,6 +244,8 @@ class SongpressFindReplaceDialog(object):
         self.cbWholeWordR.Bind(wx.EVT_CHECKBOX, self._SyncCheckboxes)
         self.cbMatchCaseR.Bind(wx.EVT_CHECKBOX, self._SyncCheckboxes)
         self.cbRegexR.Bind(wx.EVT_CHECKBOX,     self._SyncCheckboxes)
+        self.cbWrapAroundF.Bind(wx.EVT_CHECKBOX, self._SyncCheckboxes)
+        self.cbWrapAround.Bind(wx.EVT_CHECKBOX,  self._SyncCheckboxes)
         self.notebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self._OnTabChanged)
         self.dialog.Bind(wx.EVT_CLOSE,      self._OnClose)
         self.dialog.Bind(wx.EVT_CHAR_HOOK,  self._OnCharHook)
@@ -250,6 +254,15 @@ class SongpressFindReplaceDialog(object):
 
         # Applica il colore caricato subito all'apertura
         self._apply_hl_colour(self._hl_colour)
+
+        # Carica la history persistente nei ComboBox
+        self._load_history(self.txtFind,    self._CFG_FIND_PATH)
+        self._load_history(self.txtFindR,   self._CFG_FIND_PATH)
+        self._load_history(self.txtReplace, self._CFG_REPLACE_PATH)
+        # Ripristina il testo iniziale (selezione corrente o vuoto) sopra la history
+        if init_find:
+            self.txtFind.SetValue(init_find)
+            self.txtFindR.SetValue(init_find)
 
         self.dialog.Show()
         self._FocusFindField()
@@ -293,6 +306,9 @@ class SongpressFindReplaceDialog(object):
             elif src in (self.cbRegex, self.cbRegexR):
                 self.cbRegex.SetValue(v)
                 self.cbRegexR.SetValue(v)
+            elif src in (self.cbWrapAroundF, self.cbWrapAround):
+                self.cbWrapAroundF.SetValue(v)
+                self.cbWrapAround.SetValue(v)
         finally:
             self._syncing = False
         evt.Skip()
@@ -338,6 +354,12 @@ class SongpressFindReplaceDialog(object):
         if self._IsReplaceTab():
             return self.rbDownR.GetValue()
         return self.rbDown.GetValue()
+
+    def _get_wrap_around(self):
+        """Restituisce True se 'Silent wrap-around' è attivo nella tab corrente."""
+        if self._IsReplaceTab():
+            return self.cbWrapAround.GetValue()
+        return self.cbWrapAroundF.GetValue()
 
     _MAX_HISTORY = 10
 
@@ -398,7 +420,7 @@ class SongpressFindReplaceDialog(object):
                 else:
                     wherefrom, where, newStart = _(u"Reached the beginning"), _(u"end"), text.GetLength()
                 wrap_msg = _(u"%s of the song, restarting search from the %s") % (wherefrom, where)
-                do_wrap = silent_wrap or self.cbWrapAround.GetValue()
+                do_wrap = silent_wrap or self._get_wrap_around()
                 if do_wrap:
                     text.SetSelection(newStart, newStart)
                     self._OnFindNext(evt, silent_wrap=True)
@@ -487,12 +509,20 @@ class SongpressFindReplaceDialog(object):
         ).ShowModal()
 
     def _OnCancel(self, evt):
+        self._save_history(self.txtFind,    self._CFG_FIND_PATH)
+        self._save_history(self.txtReplace, self._CFG_REPLACE_PATH)
         if self.dialog is not None:
             self.dialog.Destroy()
             self.dialog = None
         self.owner.findReplaceDialog = None
 
     def _OnClose(self, evt):
+        # Salva la history prima di distruggere il dialogo
+        try:
+            self._save_history(self.txtFind,    self._CFG_FIND_PATH)
+            self._save_history(self.txtReplace, self._CFG_REPLACE_PATH)
+        except Exception:
+            pass
         # Rimuove le evidenziazioni da editor e preview alla chiusura del dialogo
         try:
             self.owner.text.ClearFindHighlight()
@@ -502,6 +532,50 @@ class SongpressFindReplaceDialog(object):
         self.dialog = None
         self.owner.findReplaceDialog = None
         evt.Skip()
+
+    # --- History persistente (ricerca e sostituzione) ----------------------
+
+    _CFG_FIND_PATH    = '/FindHistory/Find'
+    _CFG_REPLACE_PATH = '/FindHistory/Replace'
+
+    def _load_history(self, combo, cfg_path):
+        """Carica la history da wx.Config e la popola nel ComboBox."""
+        try:
+            cfg = wx.Config.Get()
+            cfg.SetPath(cfg_path)
+            items = []
+            i = 0
+            while True:
+                ok, val = cfg.Read(f'item{i}', ''), True
+                # wx.Config.Read restituisce il default se la chiave non esiste
+                val = cfg.Read(f'item{i}', '\x00')
+                if val == '\x00':
+                    break
+                items.append(val)
+                i += 1
+                if i >= self._MAX_HISTORY:
+                    break
+            cfg.SetPath('/')
+            if items:
+                combo.SetItems(items)
+        except Exception:
+            pass
+
+    def _save_history(self, combo, cfg_path):
+        """Salva la history del ComboBox in wx.Config."""
+        try:
+            cfg = wx.Config.Get()
+            cfg.SetPath(cfg_path)
+            # Pulisce le chiavi precedenti
+            cfg.DeleteGroup(cfg_path)
+            cfg.SetPath(cfg_path)
+            items = list(combo.GetItems())[:self._MAX_HISTORY]
+            for i, val in enumerate(items):
+                cfg.Write(f'item{i}', val)
+            cfg.SetPath('/')
+            cfg.Flush()
+        except Exception:
+            pass
 
     # --- Colore evidenziazione: load / save / pick -------------------------
 

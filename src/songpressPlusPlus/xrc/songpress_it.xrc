@@ -186,18 +186,18 @@
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="find">
-          <label>_Cerca...</label>
+          <label>Trova...</label>
           <accel>CTRL+F</accel>
           <help>Cerca del testo</help>
           <bitmap>../img/search.png</bitmap>
         </object>
         <object class="wxMenuItem" name="findNext">
-          <label>Cerca _successivo</label>
+          <label>Trova _successivo</label>
           <accel>F3</accel>
           <help>Cerca l'occorrenza successiva del testo</help>
         </object>
         <object class="wxMenuItem" name="findPrevious">
-          <label>Cerca _precedente</label>
+          <label>Trova _precedente</label>
           <accel>SHIFT+F3</accel>
           <help>Cerca l'occorrenza precedente del testo</help>
         </object>
