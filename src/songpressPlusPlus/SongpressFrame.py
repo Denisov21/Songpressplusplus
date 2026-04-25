@@ -1149,7 +1149,7 @@ class SongpressFrame(SDIMainFrame):
             ),
             _("Licensed under the terms and conditions of the GNU General Public License, version 2"),
             _(
-                "Special thanks to:\n  * The Pyhton programming language (http://www.python.org)\n  * wxWidgets (http://www.wxwidgets.org)\n  * wxPython (http://www.wxpython.org)\n  * Editra (http://editra.org/) (for the error reporting dialog and... the editor itself!)\n  * python-pptx (for PowerPoint export)"),
+                "Special thanks to:\n  * The Python programming language (http://www.python.org)\n  * wxWidgets (http://www.wxwidgets.org)\n  * wxPython (http://www.wxpython.org)\n  * python-pptx (for PowerPoint export)"),
             _import_formats,
         )
         self.pref = Preferences()
@@ -2485,32 +2485,56 @@ class SongpressFrame(SDIMainFrame):
         vbox.Add(txt, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 8)
 
         vbox.Add(wx.StaticText(d, -1, _("Display as:")), 0, wx.LEFT | wx.TOP, 8)
-        hbox_rb = wx.BoxSizer(wx.HORIZONTAL)
-        rb_none = wx.RadioButton(d, -1, _("Tempo:  "), style=wx.RB_GROUP)
-        rb_note = wx.RadioButton(d, -1, "")
+
         _icon_sz = getattr(self.pref, 'tempoIconSize', 24)
         _note_img = wx.Image(glb.AddPath("img/tempo_note.png"))
         _note_img = _note_img.Scale(_icon_sz, _icon_sz, wx.IMAGE_QUALITY_HIGH)
         note_bmp = wx.Bitmap(_note_img)
-        note_icon = wx.StaticBitmap(d, -1, note_bmp)
-        note_icon.Bind(wx.EVT_LEFT_DOWN, lambda e: rb_note.SetValue(True))
-        rb_bpm  = wx.RadioButton(d, -1, "BPM")
         _metro_img = wx.Image(glb.AddPath("img/metronomeWindows.png"))
         _metro_img = _metro_img.Scale(_icon_sz, _icon_sz, wx.IMAGE_QUALITY_HIGH)
         metro_bmp = wx.Bitmap(_metro_img)
-        metro_icon = wx.StaticBitmap(d, -1, metro_bmp)
+
+        # ── Griglia 2×2 dentro un StaticBox ────────────────────────────
+        rb_box = wx.StaticBoxSizer(wx.StaticBox(d), wx.VERTICAL)
+        grid = wx.FlexGridSizer(rows=2, cols=2, vgap=6, hgap=20)
+        grid.AddGrowableCol(0, 1)
+        grid.AddGrowableCol(1, 1)
+
+        # Cella (0,0): Testo "Tempo: "
+        rb_none = wx.RadioButton(d, -1, _("Tempo:"), style=wx.RB_GROUP)
+        cell_none = wx.BoxSizer(wx.HORIZONTAL)
+        cell_none.Add(rb_none, 0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(cell_none, 0, wx.ALIGN_CENTER_VERTICAL)
+
+        # Cella (0,1): BPM
+        rb_bpm = wx.RadioButton(d, -1, "BPM")
+        cell_bpm = wx.BoxSizer(wx.HORIZONTAL)
+        cell_bpm.Add(rb_bpm, 0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(cell_bpm, 0, wx.ALIGN_CENTER_VERTICAL)
+
+        # Cella (1,0): Nota musicale (♩)
+        rb_note = wx.RadioButton(d, -1, "")
+        note_icon = wx.StaticBitmap(d, -1, note_bmp)
+        note_icon.Bind(wx.EVT_LEFT_DOWN, lambda e: rb_note.SetValue(True))
+        cell_note = wx.BoxSizer(wx.HORIZONTAL)
+        cell_note.Add(rb_note,   0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        cell_note.Add(note_icon, 0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(cell_note, 0, wx.ALIGN_CENTER_VERTICAL)
+
+        # Cella (1,1): Metronomo
         rb_metro = wx.RadioButton(d, -1, "")
+        metro_icon = wx.StaticBitmap(d, -1, metro_bmp)
         metro_icon.Bind(wx.EVT_LEFT_DOWN, lambda e: rb_metro.SetValue(True))
-        hbox_rb.Add(rb_none, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 8)
-        hbox_rb.Add(rb_note, 0, wx.ALIGN_CENTER_VERTICAL)
-        hbox_rb.Add(note_icon, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 8)
-        hbox_rb.Add(rb_bpm,  0, wx.ALIGN_CENTER_VERTICAL)
-        hbox_rb.Add(rb_metro, 0, wx.ALIGN_CENTER_VERTICAL)
-        hbox_rb.Add(metro_icon, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 8)
-        vbox.Add(hbox_rb, 0, wx.LEFT | wx.TOP | wx.BOTTOM, 8)
+        cell_metro = wx.BoxSizer(wx.HORIZONTAL)
+        cell_metro.Add(rb_metro,   0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        cell_metro.Add(metro_icon, 0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(cell_metro, 0, wx.ALIGN_CENTER_VERTICAL)
+
+        rb_box.Add(grid, 0, wx.ALL, 8)
+        vbox.Add(rb_box, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 8)
 
         cb_meta = wx.CheckBox(d, -1, _("Metadata"))
-        vbox.Add(cb_meta, 0, wx.LEFT | wx.BOTTOM, 8)
+        vbox.Add(cb_meta, 0, wx.LEFT | wx.TOP | wx.BOTTOM, 8)
 
         td = getattr(self.pref, 'tempoDisplay', 0)
         is_meta = (td == -1)
@@ -2690,11 +2714,12 @@ class SongpressFrame(SDIMainFrame):
         n_sel       = stc.GetSelections()   # numero di cursori/selezioni attivi
 
         # ── Helper: data una riga del cursore, trova la riga con accordi ──
+        # Priorità: riga corrente → successiva → precedente
         def _find_chord_line(cur_line):
             candidates = []
+            candidates.append(stc.GetLine(cur_line))
             if cur_line + 1 < total_lines:
                 candidates.append(stc.GetLine(cur_line + 1))
-            candidates.append(stc.GetLine(cur_line))
             if cur_line - 1 >= 0:
                 candidates.append(stc.GetLine(cur_line - 1))
             for ln in candidates:
@@ -2954,15 +2979,22 @@ class SongpressFrame(SDIMainFrame):
         song_row.Add(btn_song,      0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, 8)
         outer.Add(song_row, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 6)
 
-        # ── Bottoni modali: [OK] [Cancel] ────────────────────────────────
-        btn_row    = wx.BoxSizer(wx.HORIZONTAL)
-        btn_ok     = wx.Button(dlg, wx.ID_OK,     _(u"OK"))
-        btn_cancel = wx.Button(dlg, wx.ID_CANCEL, _(u"Cancel"))
+        # ── Bottoni modali: [OK] [OK + Riapri] [Cancel] ─────────────────
+        ID_OK_REOPEN = wx.NewIdRef()
+        btn_row      = wx.BoxSizer(wx.HORIZONTAL)
+        btn_ok       = wx.Button(dlg, wx.ID_OK,     _(u"OK"))
+        btn_reopen   = wx.Button(dlg, ID_OK_REOPEN, _(u"OK + \u21ba 5s"))
+        btn_cancel   = wx.Button(dlg, wx.ID_CANCEL, _(u"Cancel"))
         btn_ok.SetDefault()
+        btn_reopen.SetToolTip(_(u"Insert directive and reopen dialog automatically after 5 seconds"))
         btn_row.AddStretchSpacer()
         btn_row.Add(btn_ok,     0, wx.RIGHT, 4)
+        btn_row.Add(btn_reopen, 0, wx.RIGHT, 4)
         btn_row.Add(btn_cancel, 0)
         outer.Add(btn_row, 0, wx.EXPAND | wx.ALL, 8)
+
+        def _on_ok_reopen(_evt):
+            dlg.EndModal(ID_OK_REOPEN)
 
         dlg.SetSizerAndFit(outer)
         dlg.CentreOnParent()
@@ -3154,6 +3186,7 @@ class SongpressFrame(SDIMainFrame):
         btn_apply_all.Bind(wx.EVT_BUTTON, _apply_all)
         spin_all.Bind(wx.EVT_SPINCTRL,    _apply_all)   # frecce aggiornano subito
         spin_all.Bind(wx.EVT_TEXT_ENTER,  _apply_all)   # Invio da tastiera
+        btn_reopen.Bind(wx.EVT_BUTTON,    _on_ok_reopen)
 
         for sl in spin_lists:
             for _root, sp in sl:
@@ -3161,9 +3194,12 @@ class SongpressFrame(SDIMainFrame):
                 sp.Bind(wx.EVT_TEXT,     _update_preview)
 
         _update_preview()
-        if dlg.ShowModal() == wx.ID_OK:
+        result = dlg.ShowModal()
+        if result in (wx.ID_OK, ID_OK_REOPEN):
             _do_insert()
         dlg.Destroy()
+        if result == ID_OK_REOPEN:
+            wx.CallLater(5000, self.OnInsertBeatsTime, None)
 
     def OnInsertMusicalSymbol(self, evt):
         """Apre la Symbol Map musicale e inserisce il carattere scelto nel cursore."""
@@ -3240,7 +3276,6 @@ class SongpressFrame(SDIMainFrame):
             u"  * The Python programming language (http://www.python.org)\n"
             u"  * wxWidgets (http://www.wxwidgets.org)\n"
             u"  * wxPython (http://www.wxpython.org)\n"
-            u"  * Editra (http://editra.org/) (for the error reporting dialog and... the editor itself!)\n"
             u"  * python-pptx (for PowerPoint export)"
         ))
         vbox.AddSpacer(10)

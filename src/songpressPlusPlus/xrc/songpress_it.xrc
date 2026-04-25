@@ -289,7 +289,7 @@
         <object class="wxMenuItem" name="showDurationBeats">
           <label>Mostra numero di battiti</label>
           <accel></accel>
-          <help>Mostra o nascondi il numero di battiti sopra gli accordi (direttiva {duration})</help>
+          <help>Mostra o nascondi il numero di battiti sopra gli accordi (direttiva {beats_time:})</help>
           <checkable>1</checkable>
           <checked>1</checked>
         </object>
@@ -375,7 +375,7 @@
         </object>
         <object class="wxMenuItem" name="insertDuration">
           <label>_Durata accordo {beats__time:}...</label>
-          <accel></accel>
+          <accel>Ctrl+Shift+D</accel>
           <help>Inserisci la direttiva ChordPro per impostare la durata in battute degli accordi (es. 1, 2, 4)</help>
         </object>
         <object class="wxMenuItem" name="insertTaste">

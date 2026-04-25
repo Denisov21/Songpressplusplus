@@ -49,12 +49,12 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 | `{copyright:Testo}` |              | ✅  | 🖊    | Nota di copyright (visualizzata come «© …»)                                               |
 | `{key:Tonalità}`    |              | ✅  | ⌨️   | Tonalità (es. `Am`, `C`, `G`, `F#m`); visualizzata come «Key: …» se abilitata             |
 | `{capo:N}`          |              | ✅  | 🖊    | Capotasto al tasto N (es. `{capo:2}`); visualizzato come «Capo: N»                        |
-| `{tempo:BPM}`       |              | ✅  | ⌨️   | Tempo in BPM con icona **semiminima** (es. `{tempo:120}`)                                 |
-| `{tempo_m:BPM}`     |              | 🔧  | 🖊    | Tempo con icona **minima**                                                                |
-| `{tempo_s:BPM}`     |              | 🔧  | 🖊    | Tempo con icona **semiminima**                                                            |
-| `{tempo_sp:BPM}`    |              | 🔧  | 🖊    | Tempo con icona **semiminima puntata**                                                    |
-| `{tempo_c:BPM}`     |              | 🔧  | 🖊    | Tempo con icona **croma**                                                                 |
-| `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo con icona **croma puntata**                                                         |
+| `{tempo:BPM}`       |              | ✅  | ⌨️   | Tempo in BPM; icona e formato configurabili dal dialogo *Inserisci → Tempo* (es. `{tempo:120}`) |
+| `{tempo_m:BPM}`     |              | 🔧  | 🖊    | Tempo con icona **minima** fissa — indipendente dalla modalità di visualizzazione globale  |
+| `{tempo_s:BPM}`     |              | 🔧  | 🖊    | Tempo con icona **semiminima** fissa                                                      |
+| `{tempo_sp:BPM}`    |              | 🔧  | 🖊    | Tempo con icona **semiminima puntata** fissa                                              |
+| `{tempo_c:BPM}`     |              | 🔧  | 🖊    | Tempo con icona **croma** fissa                                                           |
+| `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo con icona **croma puntata** fissa                                                   |
 | `{time:N/M}`        |              | ✅  | ⌨️   | Indicazione di tempo (es. `{time:4/4}`, `{time:3/4}`); visualizzata con simbolo grafico   |
 | `{beats_time: Acc=N …}` |            | 🔧  | ⌨️   | Durata in battiti degli accordi (es. `{beats_time: Do=2 Sol=1}`); visualizza numero, punti o entrambi sopra gli accordi (configurabile nelle preferenze) |
 | `{duration:mm:ss}`  |              | ✅  | 🖊    | Durata totale della canzone (es. `{duration:12:45}`); non visualizzata nell'anteprima né in stampa, ma riportata nelle **Statistiche brano** come «Durata» effettiva al posto della stima automatica. Commentando la riga con `#` la durata torna ad essere calcolata automaticamente. |
@@ -67,7 +67,7 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 
 > **Nota sui metadati estesi** — Le direttive `{sorttitle}`, `{keywords}`, `{topic}`, `{collection}`, `{language}`, `{meta}` vengono riconosciute e accettate dal parser per garantire la compatibilità con file ChordPro 6, ma il loro valore non viene visualizzato nell'anteprima né in stampa: sono trattate come puri metadati. Il token `:valore` viene consumato silenziosamente. La direttiva `{duration}` ha invece un comportamento speciale: il suo valore viene usato dalla funzione **Statistiche brano** (vedi sotto).
 
-> **Nota sul tempo** — Le direttive `{tempo*}` hanno quattro modalità di visualizzazione, configurabili nelle preferenze: icona nota + valore (es. `♩ = 120`), testo `BPM: 120`, testo semplice `Tempo: 120`, oppure nessuna visualizzazione. Spuntando l'opzione *Metadato*, il valore viene trattato come puro metadato — non appare nell'anteprima né in stampa.
+> **Nota sul tempo** — `{tempo:}` ha quattro modalità di visualizzazione selezionabili nel dialogo di inserimento: **Tempo:** (testo semplice), **♩** (nota musicale con valore `♩ = 120`), **BPM** (testo `BPM: 120`), **🎼** (metronomo con valore `♩ = 120`). Spuntando *Metadati*, il valore viene trattato come puro metadato e non appare nell'anteprima né in stampa. Le varianti `{tempo_m:}`, `{tempo_s:}` ecc. mostrano sempre la propria icona fissa indipendentemente da questa impostazione.
 
 ---
 
@@ -565,6 +565,44 @@ Il controllo sintassi integrato (`Strumenti → Controlla sintassi`) valida il t
 | Valore non valido | `{fingering: Am hand=X}` | `hand` deve essere R o L |
 | Token `hand=` duplicato | `{fingering: Am hand=R hand=L}` | `hand` specificato più di una volta |
 
+### Tempo — `{tempo:}` e varianti
+
+![Songpress++ Finestra Tempo](./img/GUIDE/tempo_it.png)
+
+La direttiva `{tempo:BPM}` indica la velocità della canzone in battiti per minuto. Songpress++ la visualizza nell'anteprima e in stampa con un'icona e un formato scelti dall'utente.
+
+**Inserimento dal menu:**
+
+Il comando *Inserisci → Tempo {tempo:}…* apre un dialogo con due campi:
+
+- **Campo testo** — inserisci il valore BPM (es. `120`). Se lasciato vuoto, viene inserito un segnaposto `{tempo:|}` con il cursore posizionato pronto per la digitazione.
+- **Visualizza come** — quattro opzioni disposte in griglia 2×2:
+
+| Opzione | Icona/Testo | Aspetto nell'anteprima |
+| ------- | ----------- | ---------------------- |
+| **Tempo:** | testo semplice | `Tempo: 120` |
+| **BPM** | testo semplice | `BPM: 120` |
+| **♩** (nota musicale) | icona nota | `♩ = 120` |
+| **🎼** (metronomo) | icona metronomo | `🎼 = 120` |
+
+- **Metadati** — se spuntato, la direttiva viene accettata dal parser ma non visualizzata nell'anteprima né in stampa. Tutte le opzioni di visualizzazione vengono disabilitate automaticamente.
+
+La scelta fatta nel dialogo viene **salvata come preferenza globale** e si applica a tutte le successive visualizzazioni di `{tempo:}` nell'anteprima e in stampa, finché non viene modificata di nuovo.
+
+**Dimensione dell'icona:**
+
+La dimensione dell'icona nota (o metronomo) si imposta in *Opzioni → Formato → Tempo → Dimensione icona tempo*, con tre valori disponibili:
+
+| Valore | Uso consigliato |
+| ------ | --------------- |
+| **16×16** | Documenti con font piccoli o layout compatti |
+| **24×24** | Dimensione predefinita, adatta alla maggior parte dei casi |
+| **32×32** | Documenti con font grandi o per maggiore leggibilità |
+
+La preferenza si applica a tutte le direttive `{tempo:}` e varianti (`{tempo_m:}`, `{tempo_s:}` ecc.) nell'anteprima e in stampa.
+
+> **Nota — Varianti con icona fissa** — Le direttive `{tempo_m:}`, `{tempo_s:}`, `{tempo_sp:}`, `{tempo_c:}`, `{tempo_cp:}` mostrano sempre la propria icona nota specifica (rispettivamente minima, semiminima, semiminima puntata, croma, croma puntata) **indipendentemente** dalla modalità di visualizzazione globale impostata per `{tempo:}`. L'unica cosa influenzata dalla preferenza globale è il formato del numero: `= 120` oppure `BPM: 120`. Queste varianti non hanno una voce di menu dedicata e vanno digitate manualmente nell'editor.
+
 ### Durata degli accordi — `{beats_time:}`
 
 La direttiva `{beats_time:}` specifica la **durata in battiti** di ciascun accordo della riga successiva. Songpress++ usa queste informazioni per calcolare e visualizzare i **numeri di battito** sopra gli accordi nell'anteprima, aiutando l'esecutore a capire il ritmo senza leggere la partitura.
@@ -601,17 +639,20 @@ Ogni direttiva `{beats_time:}` si applica **alla riga di testo/accordi immediata
 
 **Inserimento dal menu — dialogo guidato:**
 
-Il comando *Inserisci → Durata accordo {beats_time:}…* riconosce automaticamente la situazione:
+Il comando *Inserisci → Durata accordo {beats_time:}…* è accessibile anche tramite la scorciatoia da tastiera <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd>.
+
+Il comando riconosce automaticamente la situazione:
 
 - **Se la riga sotto il cursore non contiene accordi `[…]`** — inserisce direttamente `{beats_time: }` senza aprire nessuna finestra.
 - **Se la riga sotto il cursore contiene accordi `[…]`** — apre un dialogo con un campo numerico (`SpinCtrl`) per ogni accordo unico trovato, preimpostato su 1 battito. Mentre si modificano i valori, il campo **Anteprima** mostra in tempo reale la direttiva che verrà inserita (es. `{beats_time: Do=4 Sol=2 La-=2 Fa=1}`). Impostando un accordo a **0** viene escluso dalla direttiva. Se la riga contiene più di **8** accordi, l'elenco diventa scorrevole.
 
-Il dialogo offre due controlli aggiuntivi:
+> **Nota — Posizionamento cursore** — Il comando cerca gli accordi prima sulla **riga corrente** del cursore, poi su quella successiva, poi su quella precedente. Il modo più diretto è posizionare il cursore direttamente sulla riga con gli accordi oppure sulla riga appena sopra di essa.
+
+Il dialogo offre tre controlli aggiuntivi:
 
 - **Tutti: [N] [Applica a tutti]** — imposta in un solo clic lo stesso numero di battiti su tutti gli accordi presenti nel dialogo.
 - **[Applica all'intero brano…]** — inserisce automaticamente una direttiva `{beats_time:}` prima di ogni riga con accordi nell'intero brano, usando i valori impostati nel dialogo. Le righe già precedute da una `{beats_time:}` vengono saltate. L'operazione è annullabile con un singolo `Ctrl+Z`. Per gli accordi che appaiono nel brano ma **non sono presenti nel dialogo** (perché la riga di riferimento del cursore era diversa), il numero di battiti predefinito è **1** — a meno che tutti gli spin del dialogo siano impostati a **0**, nel qual caso anche questi accordi vengono omessi dalla direttiva, producendo `{beats_time: }` vuota.
-
-> **Nota** — La direttiva viene inserita nella posizione del cursore: posiziona il cursore sulla riga **sopra** la riga con gli accordi, poi seleziona il comando dal menu.
+- **[OK + ↺ 5s]** — conferma e inserisce la direttiva esattamente come il pulsante **OK**, ma riapre automaticamente il dialogo dopo **5 secondi**. Utile quando si lavora su un brano lungo e si vuole assegnare la durata accordo riga per riga: nei 5 secondi di pausa è possibile spostare il cursore sulla riga successiva nell'editor, dopodiché il dialogo si riapre già aggiornato con i nuovi accordi.
 
 > **Nota — Multicursore** — Il comando è compatibile con il multicursore (Alt+Clic, Ctrl+D). Se sono attivi più cursori sulla stessa sequenza di accordi, il dialogo mostra un **badge verde** («● Multicursore attivo: N posizioni») e la direttiva viene inserita in tutte le posizioni in un solo `Ctrl+Z`. Se invece i cursori puntano a **sequenze di accordi diverse** (multicursore eterogeneo), il dialogo apre un **Notebook** con una tab per ogni cursore (fino a un massimo di 5): ogni tab mostra gli SpinCtrl specifici per quella posizione e la propria anteprima in tempo reale. Sotto il Notebook è sempre visibile un campo **Anteprima (cursore 1)** riepilogativo. Se i cursori attivi superano 5, viene mostrato un avviso «⚠ Visualizzati i primi 5 cursori su N».
 
@@ -1474,6 +1515,5 @@ Songpress (e di conseguenza Songpress++) utilizza i seguenti componenti software
 | --------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------- |
 | Python e libreria standard Python       | Python Software Foundation License                               | <https://www.python.org>                       |
 | wxPython                                | wxWindows Library Licence                                        | <https://wxpython.org>                         |
-| Editra (finestra segnalazione errori)   | wxWindows Library Licence v3.1                                   | <https://github.com/cjprecord/editra>          |
 | uv (solo installatore Windows)          | MIT License — copyright © 2025 Astral Software Inc.              | <https://github.com/astral-sh/uv>              |
 | INetC (plugin NSIS, solo installatore)  | zlib/libpng License — copyright © 2004–2015 Takhir Bedertdinov   | <https://nsis.sourceforge.io/Inetc_plug-in>    |

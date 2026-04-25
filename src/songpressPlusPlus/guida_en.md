@@ -49,12 +49,12 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | `{copyright:Text}`  |              | ✅  | 🖊    | Copyright notice (rendered as «© …»)                                                     |
 | `{key:Key}`         |              | ✅  | ⌨️   | Key (e.g. `Am`, `C`, `G`, `F#m`); rendered as «Key: …» if display is enabled             |
 | `{capo:N}`          |              | ✅  | 🖊    | Capo at fret N (e.g. `{capo:2}`); rendered as «Capo: N»                                  |
-| `{tempo:BPM}`       |              | ✅  | ⌨️   | Tempo in BPM with **quarter note** icon (e.g. `{tempo:120}`)                             |
-| `{tempo_m:BPM}`     |              | 🔧  | 🖊    | Tempo with **half note** icon                                                            |
-| `{tempo_s:BPM}`     |              | 🔧  | 🖊    | Tempo with **quarter note** icon                                                         |
-| `{tempo_sp:BPM}`    |              | 🔧  | 🖊    | Tempo with **dotted quarter note** icon                                                  |
-| `{tempo_c:BPM}`     |              | 🔧  | 🖊    | Tempo with **eighth note** icon                                                          |
-| `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo with **dotted eighth note** icon                                                   |
+| `{tempo:BPM}`       |              | ✅  | ⌨️   | Tempo in BPM; icon and format configurable via *Insert → Tempo* dialog (e.g. `{tempo:120}`) |
+| `{tempo_m:BPM}`     |              | 🔧  | 🖊    | Tempo with fixed **half note** icon — independent of the global display mode             |
+| `{tempo_s:BPM}`     |              | 🔧  | 🖊    | Tempo with fixed **quarter note** icon                                                   |
+| `{tempo_sp:BPM}`    |              | 🔧  | 🖊    | Tempo with fixed **dotted quarter note** icon                                            |
+| `{tempo_c:BPM}`     |              | 🔧  | 🖊    | Tempo with fixed **eighth note** icon                                                    |
+| `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo with fixed **dotted eighth note** icon                                             |
 | `{time:N/M}`        |              | ✅  | ⌨️   | Time signature (e.g. `{time:4/4}`, `{time:3/4}`); rendered with a graphical time symbol  |
 | `{beats_time: Ch=N …}` |           | 🔧  | ⌨️   | Beat duration of chords (e.g. `{beats_time: C=2 G=1}`); displays a number, dots, or both above chords (configurable in preferences) |
 | `{duration:mm:ss}`  |              | ✅  | 🖊    | Total song duration (e.g. `{duration:12:45}`); not shown in preview or print, but displayed in **Song Statistics** as the actual «Duration» instead of the automatic estimate. Commenting out the line with `#` restores automatic duration calculation. |
@@ -67,7 +67,7 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 
 > **Note on extended metadata** — The directives `{sorttitle}`, `{keywords}`, `{topic}`, `{collection}`, `{language}`, and `{meta}` are recognised and accepted by the parser for compatibility with ChordPro 6 files, but their value is not shown in the preview or in print: they are treated as pure metadata and consumed silently. The `{duration}` directive has a special behaviour: its value is used by the **Song Statistics** feature (see below).
 
-> **Note on tempo** — The `{tempo*}` directives have four display modes, configurable in preferences: note icon + value (e.g. `♩ = 120`), text `BPM: 120`, plain text `Tempo: 120`, or no display at all. Checking the *Metadata* option treats the value as pure metadata — it does not appear in the preview or in print.
+> **Note on tempo** — `{tempo:}` has four display modes selectable in the insert dialog: **Tempo:** (plain text), **♩** (note icon with value `♩ = 120`), **BPM** (text `BPM: 120`), **🎼** (metronome icon with value `🎼 = 120`). Checking *Metadata* treats the value as pure metadata with no visual output. The `{tempo_m:}`, `{tempo_s:}` etc. variants always display their own fixed icon regardless of this setting.
 
 ---
 
@@ -565,6 +565,44 @@ The built-in syntax checker (*Tools → Check Syntax*) validates the `hand=` tok
 | Invalid value | `{fingering: Am hand=X}` | `hand` must be R or L |
 | Duplicate `hand=` token | `{fingering: Am hand=R hand=L}` | `hand` specified more than once |
 
+### Tempo — `{tempo:}` and variants
+
+![Songpress++ Tempo](./img/GUIDE/tempo_en.png)
+
+The `{tempo:BPM}` directive sets the song's speed in beats per minute. Songpress++ displays it in the preview and in print using an icon and format chosen by the user.
+
+**Inserting from the menu:**
+
+The command *Insert → Tempo {tempo:}…* opens a dialog with two areas:
+
+- **Text field** — enter the BPM value (e.g. `120`). If left empty, a placeholder `{tempo:|}` is inserted with the cursor ready for typing.
+- **Display as** — four options arranged in a 2×2 grid:
+
+| Option | Icon / Text | Appearance in preview |
+| ------ | ----------- | --------------------- |
+| **Tempo:** | plain text | `Tempo: 120` |
+| **BPM** | plain text | `BPM: 120` |
+| **♩** (note icon) | musical note | `♩ = 120` |
+| **🎼** (metronome) | metronome icon | `🎼 = 120` |
+
+- **Metadata** — when checked, the directive is accepted by the parser but not shown in the preview or in print. All display options are disabled automatically.
+
+The choice made in the dialog is **saved as a global preference** and applies to all subsequent renderings of `{tempo:}` in preview and print, until changed again.
+
+**Icon size:**
+
+The size of the note (or metronome) icon is set in *Options → Format → Tempo → Tempo icon size*, with three values available:
+
+| Value | Recommended use |
+| ----- | --------------- |
+| **16×16** | Documents with small fonts or compact layouts |
+| **24×24** | Default size, suitable for most cases |
+| **32×32** | Documents with large fonts or for greater readability |
+
+The preference applies to all `{tempo:}` directives and their variants (`{tempo_m:}`, `{tempo_s:}` etc.) in both preview and print.
+
+> **Note — Fixed-icon variants** — The directives `{tempo_m:}`, `{tempo_s:}`, `{tempo_sp:}`, `{tempo_c:}`, `{tempo_cp:}` always display their own specific note icon (half note, quarter note, dotted quarter, eighth note, dotted eighth respectively) **regardless** of the global display mode set for `{tempo:}`. The only thing affected by the global preference is the number format: `= 120` or `BPM: 120`. These variants have no dedicated menu entry and must be typed directly in the editor.
+
 ### Chord Beat Duration — `{beats_time:}`
 
 The `{beats_time:}` directive specifies the **beat duration** of each chord on the following line. Songpress++ uses this information to calculate and display **beat numbers** above the chords in the preview, helping the performer understand the rhythm without reading sheet music.
@@ -601,17 +639,20 @@ Each `{beats_time:}` directive applies to the **line of text/chords immediately 
 
 **Inserting from the menu — guided dialog:**
 
-The command *Insert → Chord duration {beats_time:}…* automatically detects the context:
+The command *Insert → Chord duration {beats_time:}…* is also accessible via the keyboard shortcut <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd>.
+
+The command automatically detects the context:
 
 - **If the line below the cursor contains no `[…]` chords** — inserts `{beats_time: }` directly without opening any dialog.
 - **If the line below the cursor contains `[…]` chords** — opens a dialog with a numeric field (`SpinCtrl`) for each unique chord found, preset to 1 beat. As you change the values, the **Preview** field updates in real time showing the directive that will be inserted (e.g. `{beats_time: C=4 G=2 Am=2 F=1}`). Setting a chord to **0** excludes it from the directive. If the line contains more than **8** chords, the list becomes scrollable.
 
-The dialog provides two additional controls:
+> **Note — Cursor placement** — The command searches for chords first on the **current line** of the cursor, then on the line below, then on the line above. The simplest approach is to place the cursor directly on the chord line or on the line immediately above it.
+
+The dialog provides three additional controls:
 
 - **All: [N] [Apply to all]** — sets the same number of beats on all chords in the dialog in one click.
 - **[Apply to whole song…]** — automatically inserts a `{beats_time:}` directive before every chord line in the entire song, using the values set in the dialog. Lines already preceded by a `{beats_time:}` are skipped. The whole operation is undoable with a single `Ctrl+Z`. For chords that appear in the song but are **not present in the dialog** (because the cursor's reference line had different chords), the default beat count is **1** — unless all the dialog's spin fields are set to **0**, in which case those chords are also omitted from the directive, producing an empty `{beats_time: }`.
-
-> **Note** — The directive is inserted at the cursor position: place the cursor on the line **above** the chord line, then select the command from the menu.
+- **[OK + ↺ 5s]** — confirms and inserts the directive exactly like the **OK** button, but automatically reopens the dialog after **5 seconds**. This is useful when working through a long song and assigning beat durations line by line: during the 5-second pause you can move the cursor to the next chord line in the editor, and the dialog will reopen already loaded with the new chords.
 
 > **Note — Multi-cursor** — The command is compatible with multi-cursor mode (Alt+Click, Ctrl+D). If multiple cursors are active over the same chord sequence, the dialog displays a **green badge** ("● Multi-cursor active: N positions") and inserts the directive at all positions in a single `Ctrl+Z`. If the cursors point to **different chord sequences** (heterogeneous multi-cursor), the dialog opens a **Notebook** with one tab per cursor (up to a maximum of 5): each tab shows the SpinCtrl fields specific to that position and its own real-time preview. A **Preview (cursor 1)** summary field is always visible below the Notebook. If the active cursors exceed 5, a warning is shown: «⚠ Showing first 5 cursors of N».
 
@@ -1474,6 +1515,5 @@ Songpress (and consequently Songpress++) makes use of the following third-party 
 | --------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------- |
 | Python and Python standard library      | Python Software Foundation License                              | <https://www.python.org>                       |
 | wxPython                                | wxWindows Library Licence                                       | <https://wxpython.org>                         |
-| Editra (error reporting dialog)         | wxWindows Library Licence v3.1                                  | <https://github.com/cjprecord/editra>          |
 | uv (Windows installer only)             | MIT License — copyright © 2025 Astral Software Inc.             | <https://github.com/astral-sh/uv>              |
 | INetC (NSIS plugin, installer only)     | zlib/libpng License — copyright © 2004–2015 Takhir Bedertdinov  | <https://nsis.sourceforge.io/Inetc_plug-in>    |

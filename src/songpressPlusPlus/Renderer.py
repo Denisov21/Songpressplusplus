@@ -557,85 +557,55 @@ class Renderer(object):
                                     self.currentLine.boxes[-1].is_tempo_metro = True
                             # tempoDisplay == -1 → metadato, non visualizzato
                     elif cmd == 'tempo_m':
-                        # Minima (nota da mezzo) — img/minima_32x32.png
+                        # Minima (nota da mezzo) — img/minima_32x32.png — icona FISSA
                         a = self.GetAttribute()
                         if a is not None and a.strip() != '':
-                            if self.tempoDisplay == 0:
-                                self.AddSubTitle('Tempo: %s' % a.strip())
-                            elif self.tempoDisplay == 1:
-                                self.AddSubTitle(u' = %s' % a.strip())
-                                if self.currentLine is not None and self.currentLine.boxes:
-                                    self.currentLine.boxes[-1].is_tempo_half_note = True
-                            elif self.tempoDisplay == 2:
+                            if self.tempoDisplay == 2:
                                 self.AddSubTitle('BPM: %s' % a.strip())
-                            elif self.tempoDisplay == 3:
+                            else:
                                 self.AddSubTitle(u' = %s' % a.strip())
-                                if self.currentLine is not None and self.currentLine.boxes:
-                                    self.currentLine.boxes[-1].is_tempo_metro = True
+                            if self.currentLine is not None and self.currentLine.boxes:
+                                self.currentLine.boxes[-1].is_tempo_half_note = True
                     elif cmd == 'tempo_s':
-                        # Semiminima (nota da un quarto) — img/semiminima_32x32.png
+                        # Semiminima (nota da un quarto) — img/semiminima_32x32.png — icona FISSA
                         a = self.GetAttribute()
                         if a is not None and a.strip() != '':
-                            if self.tempoDisplay == 0:
-                                self.AddSubTitle('Tempo: %s' % a.strip())
-                            elif self.tempoDisplay == 1:
-                                self.AddSubTitle(u' = %s' % a.strip())
-                                if self.currentLine is not None and self.currentLine.boxes:
-                                    self.currentLine.boxes[-1].is_tempo_quarter_note = True
-                            elif self.tempoDisplay == 2:
+                            if self.tempoDisplay == 2:
                                 self.AddSubTitle('BPM: %s' % a.strip())
-                            elif self.tempoDisplay == 3:
+                            else:
                                 self.AddSubTitle(u' = %s' % a.strip())
-                                if self.currentLine is not None and self.currentLine.boxes:
-                                    self.currentLine.boxes[-1].is_tempo_metro = True
+                            if self.currentLine is not None and self.currentLine.boxes:
+                                self.currentLine.boxes[-1].is_tempo_quarter_note = True
                     elif cmd == 'tempo_c':
-                        # Croma (nota da un ottavo) — img/croma_32x32.png
+                        # Croma (nota da un ottavo) — img/croma_32x32.png — icona FISSA
                         a = self.GetAttribute()
                         if a is not None and a.strip() != '':
-                            if self.tempoDisplay == 0:
-                                self.AddSubTitle('Tempo: %s' % a.strip())
-                            elif self.tempoDisplay == 1:
-                                self.AddSubTitle(u' = %s' % a.strip())
-                                if self.currentLine is not None and self.currentLine.boxes:
-                                    self.currentLine.boxes[-1].is_tempo_eighth_note = True
-                            elif self.tempoDisplay == 2:
+                            if self.tempoDisplay == 2:
                                 self.AddSubTitle('BPM: %s' % a.strip())
-                            elif self.tempoDisplay == 3:
+                            else:
                                 self.AddSubTitle(u' = %s' % a.strip())
-                                if self.currentLine is not None and self.currentLine.boxes:
-                                    self.currentLine.boxes[-1].is_tempo_metro = True
+                            if self.currentLine is not None and self.currentLine.boxes:
+                                self.currentLine.boxes[-1].is_tempo_eighth_note = True
                     elif cmd == 'tempo_sp':
-                        # Semiminima puntata — img/semiminima_punto_32x32.png
+                        # Semiminima puntata — img/semiminima_punto_32x32.png — icona FISSA
                         a = self.GetAttribute()
                         if a is not None and a.strip() != '':
-                            if self.tempoDisplay == 0:
-                                self.AddSubTitle('Tempo: %s' % a.strip())
-                            elif self.tempoDisplay == 1:
-                                self.AddSubTitle(u' = %s' % a.strip())
-                                if self.currentLine is not None and self.currentLine.boxes:
-                                    self.currentLine.boxes[-1].is_tempo_dotted_quarter = True
-                            elif self.tempoDisplay == 2:
+                            if self.tempoDisplay == 2:
                                 self.AddSubTitle('BPM: %s' % a.strip())
-                            elif self.tempoDisplay == 3:
+                            else:
                                 self.AddSubTitle(u' = %s' % a.strip())
-                                if self.currentLine is not None and self.currentLine.boxes:
-                                    self.currentLine.boxes[-1].is_tempo_metro = True
+                            if self.currentLine is not None and self.currentLine.boxes:
+                                self.currentLine.boxes[-1].is_tempo_dotted_quarter = True
                     elif cmd == 'tempo_cp':
-                        # Croma puntata — img/croma_punto_32x32.png
+                        # Croma puntata — img/croma_punto_32x32.png — icona FISSA
                         a = self.GetAttribute()
                         if a is not None and a.strip() != '':
-                            if self.tempoDisplay == 0:
-                                self.AddSubTitle('Tempo: %s' % a.strip())
-                            elif self.tempoDisplay == 1:
-                                self.AddSubTitle(u' = %s' % a.strip())
-                                if self.currentLine is not None and self.currentLine.boxes:
-                                    self.currentLine.boxes[-1].is_tempo_dotted_eighth = True
-                            elif self.tempoDisplay == 2:
+                            if self.tempoDisplay == 2:
                                 self.AddSubTitle('BPM: %s' % a.strip())
-                            elif self.tempoDisplay == 3:
+                            else:
                                 self.AddSubTitle(u' = %s' % a.strip())
-                                if self.currentLine is not None and self.currentLine.boxes:
-                                    self.currentLine.boxes[-1].is_tempo_metro = True
+                            if self.currentLine is not None and self.currentLine.boxes:
+                                self.currentLine.boxes[-1].is_tempo_dotted_eighth = True
                     elif cmd == 'time':
                         a = self.GetAttribute()
                         if a is not None and a.strip() != '' and self.timeDisplay:

@@ -1,17 +1,17 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
+# Songpress++ — Error Dialog translations
+# Copyright (C) 2026 Denisov21
+# License: GNU GPL v2
 #
 # Translators:
+# Denisov21, 2026
 msgid ""
 msgstr ""
 "Project-Id-Version: songpress\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-08-20 11:13+0200\n"
-"PO-Revision-Date: 2016-03-06 21:26+0000\n"
-"Last-Translator: l.allulli <l.allulli@gmail.com>\n"
-"Language-Team: Italian (http://www.transifex.com/skeed/songpress-2/language/"
-"it/)\n"
+"POT-Creation-Date: 2026-04-25 00:00+0200\n"
+"PO-Revision-Date: 2026-04-25 00:00+0200\n"
+"Last-Translator: Denisov21\n"
+"Language-Team: Italian\n"
 "Language: it\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -19,28 +19,42 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: errdlg.py
-msgid "Error Traceback:"
+msgid "Unexpected error"
+msgstr "Errore imprevisto"
+
+#: errdlg.py
+msgid ""
+"An unexpected error occurred in {prog}.\n"
+"Click \"Send error report\" to notify the developer,\n"
+"or \"Close\" to continue (the program may be unstable)."
+msgstr ""
+"Si è verificato un errore imprevisto in {prog}.\n"
+"Clicca su «Invia rapporto d'errore» per notificare lo sviluppatore,\n"
+"oppure su «Chiudi» per continuare (il programma potrebbe essere instabile)."
+
+#: errdlg.py
+msgid "Error traceback:"
 msgstr "Traceback dell'errore:"
 
 #: errdlg.py
-msgid "Forza chiusura"
+msgid "Force close"
 msgstr "Forza chiusura"
 
 #: errdlg.py
-msgid "Forza la chiusura immediata dell'applicazione"
+msgid "Force immediate application shutdown"
 msgstr "Forza la chiusura immediata dell'applicazione"
-
-#: errdlg.py
-msgid "Report Error"
-msgstr "Invia rapporto d'errore"
 
 #: errdlg.py
 msgid "Copy"
 msgstr "Copia"
 
 #: errdlg.py
-msgid "Copy the error message to the clipboard"
+msgid "Copy error message to clipboard"
 msgstr "Copia il messaggio di errore negli appunti"
+
+#: errdlg.py
+msgid "Send error report"
+msgstr "Invia rapporto d'errore"
 
 #: errdlg.py
 msgid "Close"

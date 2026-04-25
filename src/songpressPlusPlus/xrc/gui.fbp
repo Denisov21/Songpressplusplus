@@ -735,7 +735,7 @@
             <property name="bitmap"></property>
             <property name="checked">1</property>
             <property name="enabled">1</property>
-            <property name="help">Show or hide the beat count above chords ({duration} directive)</property>
+            <property name="help">Show or hide the beat count above chords ({beats_time:} directive)</property>
             <property name="id">ID_SHOW_DURATION_BEATS</property>
             <property name="kind">wxITEM_CHECK</property>
             <property name="label">Show beat count</property>
@@ -932,7 +932,7 @@
             <property name="label">&amp;Duration {beats_time:}...</property>
             <property name="name">insertDuration</property>
             <property name="permission">none</property>
-            <property name="shortcut"></property>
+            <property name="shortcut">CTRL+SHIFT+D</property>
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">

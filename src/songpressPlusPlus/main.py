@@ -28,6 +28,7 @@ class SongpressApp(wx.App):
         super().__init__(redirect=False)
 
     def OnInit(self):
+        errdlg.install_wx_exception_handler(self)
         self.SetAppName(glb.PROG_NAME)
         self.VERSION = glb.VERSION
         glb.InitDataPath()

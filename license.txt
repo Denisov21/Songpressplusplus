@@ -18,7 +18,6 @@ Modifications copyright Denisov21
     
      * Python and the Python Library
      * wxPython
-     * Editra
 
 
 		    GNU GENERAL PUBLIC LICENSE
@@ -304,16 +303,6 @@ POSSIBILITY OF SUCH DAMAGES.
 		     
 		     
 --------
- EDITRA
---------
-
-The error reporting dialog used in Songpress is taken from the Editra
-project. Editra is licensed under the terms and conditions of the
-wxWindows Library Licence, Version 3.1.
-
-https://github.com/cjprecord/editra
-
-
 ----
  uv
 ----

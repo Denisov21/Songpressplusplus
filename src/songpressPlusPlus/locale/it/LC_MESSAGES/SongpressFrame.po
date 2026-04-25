@@ -95,14 +95,12 @@ msgid ""
 "  * The Python programming language (http://www.python.org)\n"
 "  * wxWidgets (http://www.wxwidgets.org)\n"
 "  * wxPython (http://www.wxpython.org)\n"
-"  * Editra (http://editra.org/) (for the error reporting dialog and... the editor itself!)\n"
 "  * python-pptx (for PowerPoint export)"
 msgstr ""
 "Un sentito ringraziamento a:\n"
 "  * Il linguaggio di programmazione Python (http://www.python.org)\n"
 "  * wxWidgets (http://www.wxwidgets.org)\n"
 "  * wxPython (http://www.wxpython.org)\n"
-"  * Editra (http://editra.org/) (per la finestra di segnalazione errori e... per l'editor in quanto tale!)\n"
 "  * python-pptx (per l'esportazione in PowerPoint)"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:224
@@ -1359,3 +1357,7 @@ msgstr ""
 #: SongpressFrame.py — value label in dialogs
 msgid "Value:"
 msgstr "Valore:"
+
+#: SongpressFrame.py — beats_time dialog OK+reopen button tooltip
+msgid "Insert directive and reopen dialog automatically after 5 seconds"
+msgstr "Inserisce la direttiva e riapre il dialogo automaticamente dopo 5 secondi"

@@ -289,7 +289,7 @@
         <object class="wxMenuItem" name="showDurationBeats">
           <label>Show beat count</label>
           <accel></accel>
-          <help>Show or hide the beat count above chords ({duration} directive)</help>
+          <help>Show or hide the beat count above chords ({beats_time:} directive)</help>
           <checkable>1</checkable>
           <checked>1</checked>
         </object>
@@ -375,7 +375,7 @@
         </object>
         <object class="wxMenuItem" name="insertDuration">
           <label>_Duration {beats__time:}...</label>
-          <accel></accel>
+          <accel>Ctrl+Shift+D</accel>
           <help>Insert ChordPro directive to set beat duration of chords (e.g. 1, 2, 4)</help>
         </object>
         <object class="wxMenuItem" name="insertTaste">
