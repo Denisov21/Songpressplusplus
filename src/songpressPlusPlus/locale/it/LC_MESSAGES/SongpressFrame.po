@@ -1361,3 +1361,8 @@ msgstr "Valore:"
 #: SongpressFrame.py — beats_time dialog OK+reopen button tooltip
 msgid "Insert directive and reopen dialog automatically after 5 seconds"
 msgstr "Inserisce la direttiva e riapre il dialogo automaticamente dopo 5 secondi"
+
+#: SongpressFrame.py OnInsertBeatsTime selection mode badge
+#, python-format
+msgid "Selection mode: %d chord lines selected"
+msgstr "Modalità selezione: %d righe di accordi selezionate"

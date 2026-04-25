@@ -2697,15 +2697,18 @@ class SongpressFrame(SDIMainFrame):
     def OnInsertBeatsTime(self, evt):
         """Inserisce la direttiva {beats_time: }.
 
-        Supporta cursore singolo e multicursore (Alt+Clic, Ctrl+D).
+        Supporta cursore singolo, multicursore (Alt+Clic, Ctrl+D) e
+        selezione di testo su una o più righe.
 
-        Per ogni cursore attivo cerca la riga con accordi [Accordo] nelle
-        vicinanze (riga successiva → corrente → precedente).
-        Se tutti i cursori puntano alla stessa sequenza di accordi (caso
-        tipico del multicursore su righe identiche), mostra il dialogo una
-        sola volta e inserisce la direttiva su ogni posizione.
-        Se le sequenze differiscono, usa quella del primo cursore principale.
-        In mancanza di accordi inserisce semplicemente {beats_time: }.
+        Modalità selezione (start != end su almeno una selezione):
+          - Raccoglie tutti gli accordi unici dalle righe coperte dalla selezione
+            (ordine di prima apparizione nel testo).
+          - Al click OK inserisce {beats_time} prima di OGNI riga con accordi
+            nell'intervallo selezionato (come _do_insert_song ma limitato alla
+            selezione), usando i valori degli SpinCtrl.
+
+        Modalità cursore (selezioni puntiformi):
+          - Comportamento originale: cerca la riga accordi vicina a ogni cursore.
         """
         import re
 
@@ -2713,49 +2716,100 @@ class SongpressFrame(SDIMainFrame):
         total_lines = stc.GetLineCount()
         n_sel       = stc.GetSelections()   # numero di cursori/selezioni attivi
 
-        # ── Helper: data una riga del cursore, trova la riga con accordi ──
-        # Priorità: riga corrente → successiva → precedente
-        def _find_chord_line(cur_line):
-            candidates = []
-            candidates.append(stc.GetLine(cur_line))
-            if cur_line + 1 < total_lines:
-                candidates.append(stc.GetLine(cur_line + 1))
-            if cur_line - 1 >= 0:
-                candidates.append(stc.GetLine(cur_line - 1))
-            for ln in candidates:
-                if re.search(r'\[([^\]]+)\]', ln):
-                    return ln
-            return u""
-
         def _extract_roots(line_text):
             raw = re.findall(r'\[([^\]]+)\]', line_text)
             return [c.split('/')[0].strip() for c in raw if c.split('/')[0].strip()]
 
-        # ── 1. Raccogli le posizioni di tutti i cursori (ordine inverso) ──
-        if n_sel > 1:
-            cursor_positions = sorted(
-                [stc.GetSelectionNStart(i) for i in range(n_sel)],
-                reverse=True
-            )
-        else:
-            cursor_positions = [stc.GetCurrentPos()]
+        # ── Rileva se almeno una selezione è estesa (non puntiforme) ──────
+        _sel_ranges = [(stc.GetSelectionNStart(i), stc.GetSelectionNEnd(i))
+                       for i in range(n_sel)]
+        _has_range_sel = any(s != e for s, e in _sel_ranges)
 
-        # ── 2. Determina all_roots dalla riga del cursore principale ──────
-        main_line  = stc.LineFromPosition(cursor_positions[-1])  # cursore più in alto
-        chord_line = _find_chord_line(main_line)
-        all_roots  = _extract_roots(chord_line)
+        # ════════════════════════════════════════════════════════════════
+        # MODALITÀ SELEZIONE: raccoglie tutti gli accordi nelle righe
+        # coperte dalle selezioni estese
+        # ════════════════════════════════════════════════════════════════
+        if _has_range_sel:
+            # Raccoglie gli indici di riga coperti da ogni selezione estesa
+            _selected_line_indices = []
+            for s, e in _sel_ranges:
+                if s == e:
+                    continue
+                l_start = stc.LineFromPosition(s)
+                l_end   = stc.LineFromPosition(e)
+                # Se la fine della selezione è esattamente all'inizio di una riga,
+                # non include quella riga (il cursore è fermo all'inizio)
+                if stc.PositionFromLine(l_end) == e and l_end > l_start:
+                    l_end -= 1
+                for ln in range(l_start, l_end + 1):
+                    if ln not in _selected_line_indices:
+                        _selected_line_indices.append(ln)
+            _selected_line_indices.sort()
 
-        # ── 2b. Raccoglie roots per ogni cursore (per multicursore eterogeneo) ──
-        if n_sel > 1:
-            per_cursor_roots = []
-            for pos in reversed(cursor_positions):   # ordine top→bottom
-                cl = stc.LineFromPosition(pos)
-                per_cursor_roots.append(_extract_roots(_find_chord_line(cl)))
-            # Verifica se tutte le sequenze sono identiche
-            _all_same = all(r == per_cursor_roots[0] for r in per_cursor_roots)
-        else:
+            # Raccoglie accordi unici (ordine di prima apparizione) dalle righe selezionate
+            _seen_roots = []
+            for ln in _selected_line_indices:
+                for r in _extract_roots(stc.GetLine(ln)):
+                    if r not in _seen_roots:
+                        _seen_roots.append(r)
+            all_roots = _seen_roots
+
+            # Costruisce per ogni riga selezionata la lista di roots propria
+            # (usata da _do_insert per applicare per-riga nella modalità selezione)
+            _sel_line_roots = {}
+            for ln in _selected_line_indices:
+                roots = _extract_roots(stc.GetLine(ln))
+                if roots:
+                    _sel_line_roots[ln] = roots
+
             per_cursor_roots = [all_roots]
-            _all_same = True
+            _all_same        = True
+            cursor_positions = []   # non usato in modalità selezione
+
+        # ════════════════════════════════════════════════════════════════
+        # MODALITÀ CURSORE: comportamento originale
+        # ════════════════════════════════════════════════════════════════
+        else:
+            _sel_line_roots = None   # non in modalità selezione
+
+            # Helper: data una riga del cursore, trova la riga con accordi
+            # Priorità: riga corrente → successiva → precedente
+            def _find_chord_line(cur_line):
+                candidates = []
+                candidates.append(stc.GetLine(cur_line))
+                if cur_line + 1 < total_lines:
+                    candidates.append(stc.GetLine(cur_line + 1))
+                if cur_line - 1 >= 0:
+                    candidates.append(stc.GetLine(cur_line - 1))
+                for ln in candidates:
+                    if re.search(r'\[([^\]]+)\]', ln):
+                        return ln
+                return u""
+
+            # 1. Raccogli le posizioni di tutti i cursori (ordine inverso)
+            if n_sel > 1:
+                cursor_positions = sorted(
+                    [stc.GetSelectionNStart(i) for i in range(n_sel)],
+                    reverse=True
+                )
+            else:
+                cursor_positions = [stc.GetCurrentPos()]
+
+            # 2. Determina all_roots dalla riga del cursore principale
+            main_line  = stc.LineFromPosition(cursor_positions[-1])  # cursore più in alto
+            chord_line = _find_chord_line(main_line)
+            all_roots  = _extract_roots(chord_line)
+
+            # 2b. Raccoglie roots per ogni cursore (per multicursore eterogeneo)
+            if n_sel > 1:
+                per_cursor_roots = []
+                for pos in reversed(cursor_positions):   # ordine top→bottom
+                    cl = stc.LineFromPosition(pos)
+                    per_cursor_roots.append(_extract_roots(_find_chord_line(cl)))
+                _all_same = all(r == per_cursor_roots[0] for r in per_cursor_roots)
+            else:
+                per_cursor_roots = [all_roots]
+                _all_same = True
 
         # ── 3a. Nessun accordo: avvisa e non inserisce nulla ────────────
         if not all_roots:
@@ -2804,8 +2858,25 @@ class SongpressFrame(SDIMainFrame):
         hint_row.Add(lbl_hint_text,  0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 5)
         outer.Add(hint_row, 0, wx.BOTTOM, 8)
 
-        # Badge multicursore — visibile solo se n_sel > 1
-        if n_sel > 1:
+        # Badge modalità: selezione estesa o multicursore
+        if _has_range_sel:
+            _n_chord_lines = len(_sel_line_roots) if _sel_line_roots else 0
+            badge_panel = wx.Panel(dlg, style=wx.BORDER_NONE)
+            badge_panel.SetBackgroundColour(wx.Colour(0, 100, 180))
+            badge_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            badge_lbl = wx.StaticText(
+                badge_panel,
+                label=u"  \u25cf  " + _(u"Selection mode: %d chord lines selected") % _n_chord_lines + u"  "
+            )
+            badge_lbl.SetForegroundColour(wx.Colour(255, 255, 255))
+            f = badge_lbl.GetFont()
+            f.SetWeight(wx.FONTWEIGHT_BOLD)
+            badge_lbl.SetFont(f)
+            badge_sizer.Add(badge_lbl, 0, wx.TOP | wx.BOTTOM, 4)
+            badge_panel.SetSizer(badge_sizer)
+            badge_panel.Fit()
+            outer.Add(badge_panel, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        elif n_sel > 1:
             badge_panel = wx.Panel(dlg, style=wx.BORDER_NONE)
             badge_panel.SetBackgroundColour(wx.Colour(0, 130, 60))
             badge_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -3035,15 +3106,52 @@ class SongpressFrame(SDIMainFrame):
         def _do_insert():
             """Inserisce {beats_time} PRIMA della riga degli accordi relativa a ogni cursore.
 
-            Regole per ogni cursore:
-            - Cerca la riga degli accordi: prima la riga corrente, poi precedente, poi successiva.
-            - Se la riga PRECEDENTE alla riga accordi è già un {beats_time}, la sostituisce.
-            - Altrimenti inserisce una nuova riga PRIMA della riga degli accordi.
-            - Agisce bottom→top per non invalidare gli offset.
-            - Tutto in un unico blocco undo.
+            In modalità selezione: agisce su tutte le righe con accordi coperte dalla
+            selezione (bottom→top). Se la riga precedente ha già {beats_time}, la sostituisce.
+            In modalità cursore: comportamento originale per cursore singolo/multicursore.
+            Tutto in un unico blocco undo.
             """
             bt_pat = re.compile(r'^\s*\{beats_time[^}]*\}', re.IGNORECASE)
 
+            # ── Costruisce la mappa accordo→valore dallo SpinList ──────────
+            spin_val = {root: sp.GetValue() for root, sp in spin_lists[0]}
+            _all_zero = all(v == 0 for v in spin_val.values()) if spin_val else False
+            _default_val = 0 if _all_zero else 1
+
+            def _build_directive_for_roots(roots):
+                """Costruisce {beats_time: X=N Y=N} per una lista di roots."""
+                parts = []
+                for r in roots:
+                    v = spin_val.get(r, _default_val)
+                    if v > 0:
+                        parts.append(u"%s=%d" % (r, v))
+                return u"{beats_time: %s}" % u" ".join(parts) if parts else u"{beats_time: }"
+
+            # ── MODALITÀ SELEZIONE ──────────────────────────────────────
+            if _has_range_sel and _sel_line_roots:
+                # Agisce bottom→top per non invalidare gli offset delle righe superiori
+                sorted_lines = sorted(_sel_line_roots.keys(), reverse=True)
+                with undo_action(stc):
+                    for chord_idx in sorted_lines:
+                        roots = _sel_line_roots[chord_idx]
+                        directive = _build_directive_for_roots(roots)
+                        prev_idx = chord_idx - 1
+                        if prev_idx >= 0 and bt_pat.match(stc.GetLine(prev_idx).rstrip(u"\r\n")):
+                            # Sostituisce la direttiva esistente
+                            line_start = stc.PositionFromLine(prev_idx)
+                            line_end   = stc.GetLineEndPosition(prev_idx)
+                            stc.SetSelection(line_start, line_end)
+                            stc.ReplaceSelection(directive)
+                        else:
+                            target_idx = chord_idx
+                            while target_idx > 0 and stc.GetLine(target_idx - 1).strip() == u"":
+                                target_idx -= 1
+                            insert_pos = stc.PositionFromLine(target_idx)
+                            stc.SetSelection(insert_pos, insert_pos)
+                            stc.ReplaceSelection(directive + u"\n")
+                return
+
+            # ── MODALITÀ CURSORE (comportamento originale) ──────────────
             def _find_chord_line_idx(cur_line):
                 """Ritorna l'indice della riga degli accordi vicina a cur_line, o -1.
                 Priorità: riga corrente → precedente → successiva."""
@@ -3814,11 +3922,18 @@ class SongpressFrame(SDIMainFrame):
 
             embed = cb_embed.GetValue()
 
-            if for_insert and embed and os.path.isfile(path):
+            # Risolve il path relativo rispetto alla cartella del documento,
+            # così os.path.isfile() funziona anche quando path è solo il basename
+            # (es. 'intro.png') e la working dir del processo è diversa.
+            abs_path = (path if os.path.isabs(path)
+                        else os.path.join(default_dir, path) if default_dir
+                        else path)
+
+            if for_insert and embed and os.path.isfile(abs_path):
                 # ── Incorpora come data: URI base64 ──────────────────────
                 import base64, mimetypes
-                mime = mimetypes.guess_type(path)[0] or "image/png"
-                with open(path, "rb") as _f:
+                mime = mimetypes.guess_type(abs_path)[0] or "image/png"
+                with open(abs_path, "rb") as _f:
                     b64 = base64.b64encode(_f.read()).decode("ascii")
                 path_token = "data:%s;base64,%s" % (mime, b64)
             else:
@@ -3843,8 +3958,11 @@ class SongpressFrame(SDIMainFrame):
                 lbl_embed_warn.GetParent().Layout()
                 return
             path = txt_path.GetValue().strip()
-            if path and os.path.isfile(path):
-                size_kb = os.path.getsize(path) / 1024
+            abs_path = (path if os.path.isabs(path)
+                        else os.path.join(default_dir, path) if default_dir
+                        else path)
+            if path and os.path.isfile(abs_path):
+                size_kb = os.path.getsize(abs_path) / 1024
                 est_kb  = size_kb * 1.34   # base64 aumenta di ~33%
                 if est_kb >= 1024:
                     lbl_embed_warn.SetLabel(
@@ -3861,7 +3979,10 @@ class SongpressFrame(SDIMainFrame):
         def _update_preview(e=None):
             embed = cb_embed.GetValue()
             path  = txt_path.GetValue().strip()
-            if embed and path and os.path.isfile(path):
+            abs_path = (path if os.path.isabs(path)
+                        else os.path.join(default_dir, path) if default_dir
+                        else path)
+            if embed and path and os.path.isfile(abs_path):
                 # Il dato base64 è illeggibile nell'anteprima: mostra
                 # "<embedded>" al posto del token, ma include tutte le
                 # opzioni reali (width, height, scale, align, border)
@@ -3987,10 +4108,16 @@ class SongpressFrame(SDIMainFrame):
 
     def _get_display_text(self):
         """Restituisce il testo del documento con i comandi # {...} rimossi.
+        Se è attiva una selezione (non vuota e non multiriga singola-selezione
+        col cursore), restituisce solo il testo selezionato, così l'anteprima
+        mostra esattamente ciò che verrà stampato.
         Aggiorna anche la directory del documento nel renderer, in modo che
         i percorsi relativi di {image: ...} vengano risolti correttamente.
         """
         self.previewCanvas.SetDocumentDir(self.document)
+        start, end = self.text.GetSelection()
+        if start != end:
+            return self._strip_hash_commands(self.text.GetTextRange(start, end))
         return self._strip_hash_commands(self.text.GetText())
 
     def UpdateEverything(self):
@@ -6311,6 +6438,10 @@ class SongpressFrame(SDIMainFrame):
 
     def OnPrintPreview(self, evt):
         """Show a print preview of the song."""
+        # Aggiorna il canvas con il testo correntemente selezionato (o intero se
+        # non c'è selezione), in modo che l'anteprima nel pannello laterale
+        # rispecchi ciò che verrà stampato prima ancora di aprire wx.PreviewFrame.
+        self.previewCanvas.Refresh(self._get_display_text())
         title = os.path.splitext(os.path.basename(self.document))[0] if self.document else _("Print")
         printout1 = SongpressPrintout(self, title, two_pages_per_sheet=self._two_pages_per_sheet)
         printout2 = SongpressPrintout(self, title, two_pages_per_sheet=self._two_pages_per_sheet)
@@ -6510,6 +6641,16 @@ class SongpressFrame(SDIMainFrame):
             wx.CallAfter(_equalize_heights)
 
         pf.Show()
+
+        # Quando la preview viene chiusa, ripristina il canvas al testo intero
+        # (senza selezione), così il pannello laterale torna normale.
+        def _on_preview_close(e):
+            e.Skip()
+            wx.CallAfter(
+                self.previewCanvas.Refresh,
+                self._strip_hash_commands(self.text.GetText())
+            )
+        pf.Bind(wx.EVT_CLOSE, _on_preview_close)
 
         # Resize the preview window safely:
         # if the main frame is maximized GetSize() returns

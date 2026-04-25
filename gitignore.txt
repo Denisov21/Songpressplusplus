@@ -1,16 +1,16 @@
 # Ambienti virtuali
-/.venv-build/
+.venv-build/
 
 # IDE
-/.idea/
+.idea/
 
 # Egg info (setuptools)
-/*.egg-info/
+*.egg-info/
 
 # Build e distribuzione
 # Esclude le sottocartelle di build, non i file
-/build/*/
-/dist/
+build/*/
+dist/
 
 # Cache Python
 __pycache__/
@@ -28,4 +28,4 @@ Thumbs.db
 Desktop.ini
 
 # VS Code
-/.vscode/
+.vscode/
