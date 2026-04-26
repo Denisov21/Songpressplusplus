@@ -3100,6 +3100,7 @@ class SongpressFrame(SDIMainFrame):
             def _cleanup_markers(_evt):
                 stc.MarkerDeleteAll(_MARKER_NUM)
                 stc.MarkerDeleteAll(_MARKER_ALL)
+                _evt.Skip()
             dlg.Bind(wx.EVT_CLOSE,          _cleanup_markers)
             dlg.Bind(wx.EVT_WINDOW_DESTROY, _cleanup_markers)
 
