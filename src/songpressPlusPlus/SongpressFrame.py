@@ -1009,6 +1009,23 @@ class SongpressPrintout(wx.Printout):
         if not self._page_offsets:
             self._page_offsets = [(0, 0.0)]
 
+        # Rimuovi l'ultima pagina logica se quasi vuota e _remove_blank_pages è attivo.
+        # La condizione sh <= 2 (sopra) intercetta solo segmenti completamente vuoti;
+        # questo blocco gestisce il caso in cui l'ultimo segmento sfora di pochi pixel
+        # nella pagina successiva, generando un foglio fisico aggiuntivo quasi bianco.
+        if getattr(self.frame_obj, '_remove_blank_pages', False) and len(self._page_offsets) > 1:
+            last_seg_idx, last_y = self._page_offsets[-1]
+            r_check = self._make_renderer()
+            vc, lc, cc = self._seg_verse_start.get(last_seg_idx, (0, 0, 0))
+            r_check.initialVerseCount = vc
+            r_check.initialLabelCount = lc
+            r_check.initialChorusCount = cc
+            _, sh_last = r_check.Render(self._segments[last_seg_idx], mdc)
+            remaining = sh_last - last_y
+            threshold = getattr(self.frame_obj, '_blank_page_threshold', 5) / 100.0
+            if remaining < px_per_page * threshold:
+                self._page_offsets.pop()
+
     # ------------------------------------------------------------------
     # wx.Printout interface
     # ------------------------------------------------------------------
@@ -1392,6 +1409,7 @@ class SongpressFrame(SDIMainFrame):
         self._fit_to_page = False   # True = riduci e adatta alla pagina
         self._no_mirror_right = False  # True = non replicare il brano sulla metà destra
         self._remove_blank_pages = False  # True = skip blank/empty logical pages
+        self._blank_page_threshold = 5    # soglia (% di pagina) sotto cui la pagina è considerata bianca
         self._shrink_to_fit = False  # True = auto-shrink to avoid bottom clipping
         self._min_margin_shrink = 5   # margine minimo (mm) usato dallo shrink automatico
         self._print_options_pinned = False  # True = keep print options dialog open after OK
@@ -2988,9 +3006,6 @@ class SongpressFrame(SDIMainFrame):
         all_row.Add(spin_all,      0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
         all_row.Add(btn_apply_all, 0, wx.ALIGN_CENTER_VERTICAL)
         outer.Add(all_row, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
-
-        # Separatore visivo
-        outer.Add(wx.StaticLine(dlg), 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
 
         # ── Anteprima: una per tab (Notebook eterogeneo) o unica ────────────
         if _notebook_grids is not None:
@@ -6359,6 +6374,27 @@ class SongpressFrame(SDIMainFrame):
         cb_remove_blank.SetValue(self._remove_blank_pages)
         sizer.Add(cb_remove_blank, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
 
+        # SpinCtrl: soglia (%) sotto cui la pagina è considerata bianca
+        blank_threshold_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        lbl_blank_threshold = wx.StaticText(dlg, label=_("Blank page threshold (%):"))
+        spin_blank_threshold = wx.SpinCtrl(
+            dlg, min=1, max=95,
+            value=str(getattr(self, '_blank_page_threshold', 5)),
+            size=(60, -1)
+        )
+        blank_threshold_sizer.Add(lbl_blank_threshold, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        blank_threshold_sizer.Add(spin_blank_threshold, 0, wx.ALIGN_CENTER_VERTICAL)
+        sizer.Add(blank_threshold_sizer, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+        # Abilita/disabilita lo spin in base allo stato di cb_remove_blank
+        lbl_blank_threshold.Enable(self._remove_blank_pages)
+        spin_blank_threshold.Enable(self._remove_blank_pages)
+        def on_remove_blank_changed(evt):
+            enabled = cb_remove_blank.GetValue()
+            lbl_blank_threshold.Enable(enabled)
+            spin_blank_threshold.Enable(enabled)
+            evt.Skip()
+        cb_remove_blank.Bind(wx.EVT_CHECKBOX, on_remove_blank_changed)
+
         # Abilita/disabilita cb_no_mirror al variare di cb (2 pagine per foglio)
         def on_cb_changed(evt):
             cb_no_mirror.Enable(cb.GetValue())
@@ -6395,6 +6431,7 @@ class SongpressFrame(SDIMainFrame):
             self._min_margin_shrink   = spin_min_margin.GetValue()
             self._no_mirror_right     = cb_no_mirror.GetValue()
             self._remove_blank_pages  = cb_remove_blank.GetValue()
+            self._blank_page_threshold = spin_blank_threshold.GetValue()
             if on_apply is not None:
                 on_apply()
 

@@ -1061,7 +1061,8 @@ I seguenti controlli si trovano nella scheda **Formattazione** delle preferenze 
 | Comprimi e adatta alla pagina                        | Riduce il contenuto per farlo rientrare in una sola pagina               |
 | Comprimi per adattare alla pagina corrente           | Riduce ulteriormente per evitare che il contenuto venga tagliato in basso|
 | Non replicare (lascia metà destra vuota)             | Con 2 pagine/foglio: lascia la seconda metà vuota invece di copiare      |
-| Rimuovi pagine vuote                                 | Rimuove le pagine vuote dall'output di stampa                            |
+| Rimuovi pagine vuote                                 | Rimuove le pagine logiche quasi vuote dall'output di stampa              |
+| Soglia pagina vuota (%)                              | Percentuale massima di pagina occupata sotto cui la pagina viene rimossa |
 
 La direttiva `{new_page}` nel testo forza una nuova pagina logica durante la stampa. Con il layout a 2 colonne, `{column_break}` forza il salto alla colonna successiva.
 
@@ -1081,6 +1082,22 @@ Come funziona la logica: quando il contenuto della canzone rischia di essere tag
 **Secondo passo** — scala il contenuto (rimpicciolisce testo/accordi), solo se la riduzione dei margini da sola non è sufficiente.
 
 In pratica: il valore (predefinito 5 mm) rappresenta il limite inferiore al di sotto del quale i margini non scendono mai durante la riduzione automatica. Maggiore è il valore, meno aggressiva è la compressione dei margini (e prima inizia la scalatura del testo). Il controllo è disabilitato quando la checkbox Comprimi per adattare è disattivata, e si riabilita automaticamente quando viene attivata (`on_shrink_changed`).
+
+**Cosa significa «Soglia pagina vuota (%)»?**
+
+È il parametro di controllo per la funzione **«Rimuovi pagine vuote»**, che si attiva quando la relativa checkbox è spuntata.
+
+In stampa può accadere che l'ultimo elemento di una canzone (ad esempio la tastiera degli accordi) sfori di pochissimo oltre il limite della pagina, generando un foglio fisico aggiuntivo quasi completamente bianco. La funzione «Rimuovi pagine vuote» intercetta questo caso ed elimina automaticamente quella pagina residua.
+
+La soglia (predefinita **5%**) rappresenta la percentuale massima di altezza pagina che il contenuto residuo può occupare perché la pagina venga considerata «vuota» e rimossa. Se il contenuto sfora di una quantità inferiore o uguale a questa soglia, la pagina viene soppressa; se sfora di più, la pagina viene mantenuta perché considerata effettivamente necessaria.
+
+Esempi pratici:
+
+- **5%** (predefinito) — rimuove la pagina solo se lo sforamento è minimo (pochi pixel, tipicamente la tastiera DO o un simbolo finale).
+- **20%** — rimuove la pagina anche se il contenuto residuo occupa fino a un quinto della pagina.
+- **50%** — rimuove la pagina se è meno di metà piena (uso sconsigliato: rischia di tagliare contenuto visibile).
+
+Il controllo è disabilitato quando la checkbox «Rimuovi pagine vuote» è disattivata, e si riabilita automaticamente quando viene attivata.
 
 ---
 

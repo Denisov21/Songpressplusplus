@@ -1061,7 +1061,8 @@ The following controls are found in the **Formatting** tab of preferences and af
 | Shrink and fit to page                         | Reduces content to fit on a single page                             |
 | Shrink to fit current page                     | Further reduces to avoid content being cut at the bottom            |
 | Don't replicate (leave right half blank)       | With 2 pages/sheet: leaves the second half blank instead of copying |
-| Remove blank pages                             | Removes empty pages from the print output                           |
+| Remove blank pages                             | Removes nearly-empty logical pages from the print output            |
+| Blank page threshold (%)                       | Maximum page fill percentage below which a page is considered blank |
 
 The `{new_page}` directive in the text forces a new logical page during printing. With the 2-column layout, `{column_break}` forces a jump to the next column.
 
@@ -1081,6 +1082,22 @@ How the logic works: when the song content risks being cut at the bottom of the 
 **Second step** — scales the content (shrinks text/chords), only if margin reduction alone was not sufficient.
 
 In practice: the value (default 5 mm) represents the floor below which margins never drop during auto-reduction. The higher the value, the less aggressive the margin compression (and the sooner text scaling begins). The control is disabled when the Shrink to fit checkbox is off, and re-enables automatically when it is turned on (`on_shrink_changed`).
+
+**What is "Blank page threshold (%)"?**
+
+This is the control parameter for the **"Remove blank pages"** function, which activates when the corresponding checkbox is checked.
+
+During printing it can happen that the last element of a song (for example the chord keyboard diagram) overflows slightly beyond the page boundary, generating an additional physical sheet that is almost entirely blank. The "Remove blank pages" function detects this situation and automatically suppresses that residual page.
+
+The threshold (default **5%**) represents the maximum percentage of page height that the remaining content may occupy for the page to be considered "blank" and removed. If the overflow is less than or equal to this threshold, the page is suppressed; if it is greater, the page is kept because it is considered genuinely necessary.
+
+Practical examples:
+
+- **5%** (default) — removes the page only for minimal overflows (a few pixels, typically a chord keyboard or a final symbol).
+- **20%** — also removes the page when the remaining content occupies up to one fifth of the page.
+- **50%** — removes the page if it is less than half full (not recommended: risks cutting visible content).
+
+The control is disabled when the "Remove blank pages" checkbox is off, and re-enables automatically when it is turned on.
 
 ---
 

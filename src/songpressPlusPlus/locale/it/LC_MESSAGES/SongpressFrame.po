@@ -831,6 +831,10 @@ msgstr "Margine minimo per riduzione automatica (mm):"
 msgid "Remove blank pages"
 msgstr "Rimuovi pagine bianche"
 
+#: SongpressFrame.py print options blank page threshold
+msgid "Blank page threshold (%):"
+msgstr "Soglia pagina vuota (%):"
+
 #: SongpressFrame.py print options pin tooltip
 msgid "Keep this dialog open after applying"
 msgstr "Mantieni questa finestra aperta dopo aver applicato"
