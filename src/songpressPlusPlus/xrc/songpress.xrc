@@ -566,6 +566,12 @@
           <help>Open ChordPro and Songpress command reference</help>
           <bitmap>../img/help.png</bitmap>
         </object>
+        <object class="wxMenuItem" name="guideCommandsMarkdown">
+          <label>_Songpress++ Commands Guide...</label>
+          <accel></accel>
+          <help>Open Songpress++ command reference guide</help>
+          <bitmap>../img/livesafer.png</bitmap>
+        </object>
         <object class="wxMenuItem" name="about">
           <label>_About...</label>
           <accel></accel>

@@ -10,7 +10,8 @@ msgstr ""
 "Project-Id-Version: songpress\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-05 16:22+0200\n"
-"PO-Revision-Date: \n"
+"PO-Revision-Date: 2026-04-26 20:00+0200
+"
 "Last-Translator: Denisov21\n"
 "Language-Team: \n"
 "Language: it\n"
@@ -1367,8 +1368,8 @@ msgid "Value:"
 msgstr "Valore:"
 
 #: SongpressFrame.py — beats_time dialog OK+reopen button tooltip
-msgid "Insert directive and reopen dialog automatically after 5 seconds"
-msgstr "Inserisce la direttiva e riapre il dialogo automaticamente dopo 5 secondi"
+msgid "Insert directive and reopen dialog after the chosen delay"
+msgstr "Inserisce la direttiva e riapre il dialogo dopo il ritardo scelto"
 
 #: SongpressFrame.py OnInsertBeatsTime selection mode badge
 #, python-format
@@ -1382,3 +1383,27 @@ msgstr "Trasponi anche gli accordi in {beats_time:}"
 #: TransposeDialog.py — selectionOnly checkbox label
 msgid "Apply to selection only"
 msgstr "Applica solo alla selezione"
+
+#: SongpressFrame.py — beats_time dialog highlight checkbox label
+msgid "Highlight chord rows in editor"
+msgstr "Evidenzia le righe degli accordi nell'editor"
+
+#: SongpressFrame.py — beats_time dialog highlight checkbox tooltip (multiline)
+msgid ""
+"Highlight in the editor the chord line each cursor refers to.\n"
+"Active cursor: chosen colour  |  Other cursors: lighter tint"
+msgstr ""
+"Evidenzia nell'editor la riga degli accordi a cui si riferisce ogni cursore.\n"
+"Cursore attivo: colore scelto  |  Altri cursori: tinta più chiara"
+
+#: SongpressFrame.py — beats_time dialog colour picker tooltip
+msgid "Choose the highlight colour for the active cursor"
+msgstr "Scegli il colore di evidenziazione per il cursore attivo"
+
+#: SongpressFrame.py — beats_time dialog reopen delay spinctrl tooltip
+msgid "Delay in seconds before the dialog reopens (1-60)"
+msgstr "Ritardo in secondi prima della riapertura del dialogo (1-60)"
+
+#: SongpressFrame.py — beats_time dialog reopen delay seconds label
+msgid "s"
+msgstr "s"

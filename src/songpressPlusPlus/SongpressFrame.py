@@ -1780,6 +1780,7 @@ class SongpressFrame(SDIMainFrame):
         Bind(self.OnOptions, 'options')
         Bind(self.OnGuide, 'guide')
         Bind(self.OnGuideMarkdown, 'guideMarkdown')
+        Bind(self.OnGuideCommandsMarkdown, 'guideCommandsMarkdown')
         # --- NUOVO: Normalizza spazi multipli ---
         Bind(self.OnNormalizeSpaces, 'normalizeSpaces')
         # --- NUOVO: Formato => Altro ---
@@ -2787,9 +2788,10 @@ class SongpressFrame(SDIMainFrame):
                 if roots:
                     _sel_line_roots[ln] = roots
 
-            per_cursor_roots = [all_roots]
-            _all_same        = True
-            cursor_positions = []   # non usato in modalità selezione
+            per_cursor_roots       = [all_roots]
+            _all_same              = True
+            cursor_positions       = []   # non usato in modalità selezione
+            per_cursor_chord_lines = []   # non usato in modalità selezione
 
         # ════════════════════════════════════════════════════════════════
         # MODALITÀ CURSORE: comportamento originale
@@ -2797,7 +2799,7 @@ class SongpressFrame(SDIMainFrame):
         else:
             _sel_line_roots = None   # non in modalità selezione
 
-            # Helper: data una riga del cursore, trova la riga con accordi
+            # Helper: data una riga del cursore, trova il TESTO della riga con accordi
             # Priorità: riga corrente → successiva → precedente
             def _find_chord_line(cur_line):
                 candidates = []
@@ -2810,6 +2812,14 @@ class SongpressFrame(SDIMainFrame):
                     if re.search(r'\[([^\]]+)\]', ln):
                         return ln
                 return u""
+
+            # Helper: ritorna l'INDICE della riga accordi vicina a cur_line, o -1
+            def _find_chord_line_idx(cur_line):
+                for candidate in [cur_line, cur_line + 1, cur_line - 1]:
+                    if 0 <= candidate < total_lines:
+                        if re.search(r'\[([^\]]+)\]', stc.GetLine(candidate)):
+                            return candidate
+                return -1
 
             # 1. Raccogli le posizioni di tutti i cursori (ordine inverso)
             if n_sel > 1:
@@ -2825,15 +2835,18 @@ class SongpressFrame(SDIMainFrame):
             chord_line = _find_chord_line(main_line)
             all_roots  = _extract_roots(chord_line)
 
-            # 2b. Raccoglie roots per ogni cursore (per multicursore eterogeneo)
+            # 2b. Raccoglie roots e indici riga per ogni cursore (top→bottom)
             if n_sel > 1:
                 per_cursor_roots = []
+                per_cursor_chord_lines = []
                 for pos in reversed(cursor_positions):   # ordine top→bottom
                     cl = stc.LineFromPosition(pos)
                     per_cursor_roots.append(_extract_roots(_find_chord_line(cl)))
+                    per_cursor_chord_lines.append(_find_chord_line_idx(cl))
                 _all_same = all(r == per_cursor_roots[0] for r in per_cursor_roots)
             else:
                 per_cursor_roots = [all_roots]
+                per_cursor_chord_lines = [_find_chord_line_idx(main_line)]
                 _all_same = True
 
         # ── 3a. Nessun accordo: avvisa e non inserisce nulla ────────────
@@ -2960,6 +2973,7 @@ class SongpressFrame(SDIMainFrame):
                 outer.Add(grid_widget, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
             spin_lists = [spin_list]
             _notebook_grids = None
+            cb_highlight = None   # non in modalità notebook
         else:
             # Multicursore eterogeneo: Notebook con una tab per cursore (max 5)
             tabs_roots = per_cursor_roots[:MAX_CURSOR_TABS]
@@ -2993,6 +3007,101 @@ class SongpressFrame(SDIMainFrame):
             outer.Add(nb, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
             _notebook_grids = nb
             spin_list = spin_lists[0]  # compatibilità
+
+            # ── Checkbox + ColourPicker "Evidenzia riga nell'editor" ────
+            # Usa i marker STC per evidenziare nel testo le righe degli accordi
+            # a cui si riferisce ciascun cursore, sincronizzato con la tab attiva.
+            # Il colore attivo è scelto dall'utente; le righe secondarie usano
+            # la stessa tinta schiarita automaticamente verso il bianco (blend 30%).
+            _hl_key     = 'beatsTimeHighlightRow'
+            _hl_col_key = 'beatsTimeHighlightColour'
+            _hl_init    = self.config.ReadBool(_hl_key, True)
+            _hl_col_str = self.config.Read(_hl_col_key, u'#00C850')
+            _MARKER_NUM = 8   # marker STC: riga cursore attivo
+            _MARKER_ALL = 9   # marker STC: righe altri cursori
+
+            def _parse_colour(hex_str):
+                """Converte '#RRGGBB' in wx.Colour; fallback verde se invalido."""
+                try:
+                    c = wx.Colour(hex_str)
+                    return c if c.IsOk() else wx.Colour(0, 200, 80)
+                except Exception:
+                    return wx.Colour(0, 200, 80)
+
+            def _dim_colour(c, factor=0.30):
+                """Schiarisce wx.Colour verso il bianco con il fattore dato (0–1)."""
+                r = int(c.Red()   + (255 - c.Red())   * (1 - factor))
+                g = int(c.Green() + (255 - c.Green()) * (1 - factor))
+                b = int(c.Blue()  + (255 - c.Blue())  * (1 - factor))
+                return wx.Colour(r, g, b)
+
+            def _redefine_markers(active_colour):
+                """(Re)definisce entrambi i marker STC con il colore corrente."""
+                dim = _dim_colour(active_colour)
+                stc.MarkerDefine(_MARKER_NUM, wx.stc.STC_MARK_BACKGROUND,
+                                 background=active_colour)
+                stc.MarkerDefine(_MARKER_ALL, wx.stc.STC_MARK_BACKGROUND,
+                                 background=dim)
+
+            _current_colour = _parse_colour(_hl_col_str)
+            _redefine_markers(_current_colour)
+
+            # Riga: [✓ Highlight chord rows in editor]  [■ colore]
+            hl_row = wx.BoxSizer(wx.HORIZONTAL)
+            cb_highlight = wx.CheckBox(
+                dlg, label=_(u"Highlight chord rows in editor"))
+            cb_highlight.SetValue(_hl_init)
+            cb_highlight.SetToolTip(
+                _(u"Highlight in the editor the chord line each cursor refers to.\n"
+                  u"Active cursor: chosen colour  |  Other cursors: lighter tint"))
+            colour_picker = wx.ColourPickerCtrl(dlg, colour=_current_colour)
+            colour_picker.SetToolTip(_(u"Choose the highlight colour for the active cursor"))
+            colour_picker.Enable(_hl_init)
+            hl_row.Add(cb_highlight,   0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+            hl_row.Add(colour_picker,  0, wx.ALIGN_CENTER_VERTICAL)
+            outer.Add(hl_row, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+            def _apply_editor_highlight():
+                """Aggiorna i marker STC sull'editor in base allo stato checkbox."""
+                stc.MarkerDeleteAll(_MARKER_NUM)
+                stc.MarkerDeleteAll(_MARKER_ALL)
+                if not cb_highlight.GetValue():
+                    return
+                active_tab = nb.GetSelection()
+                for idx, line_idx in enumerate(per_cursor_chord_lines):
+                    if line_idx < 0:
+                        continue
+                    marker = _MARKER_NUM if idx == active_tab else _MARKER_ALL
+                    stc.MarkerAdd(line_idx, marker)
+
+            def _on_nb_page_changed(_evt):
+                _apply_editor_highlight()
+                _evt.Skip()
+
+            def _on_highlight_toggle(_evt):
+                self.config.WriteBool(_hl_key, cb_highlight.GetValue())
+                colour_picker.Enable(cb_highlight.GetValue())
+                _apply_editor_highlight()
+
+            def _on_colour_changed(_evt):
+                nonlocal _current_colour
+                _current_colour = colour_picker.GetColour()
+                self.config.Write(_hl_col_key,
+                                  _current_colour.GetAsString(wx.C2S_HTML_SYNTAX))
+                _redefine_markers(_current_colour)
+                _apply_editor_highlight()
+
+            nb.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, _on_nb_page_changed)
+            cb_highlight.Bind(wx.EVT_CHECKBOX,            _on_highlight_toggle)
+            colour_picker.Bind(wx.EVT_COLOURPICKER_CHANGED, _on_colour_changed)
+            _apply_editor_highlight()   # stato iniziale
+
+            # Rimuove i marker quando il dialogo viene chiuso
+            def _cleanup_markers(_evt):
+                stc.MarkerDeleteAll(_MARKER_NUM)
+                stc.MarkerDeleteAll(_MARKER_ALL)
+            dlg.Bind(wx.EVT_CLOSE,          _cleanup_markers)
+            dlg.Bind(wx.EVT_WINDOW_DESTROY, _cleanup_markers)
 
         # ── Riga "Tutti" — allineata a destra ──────────────────────────
         all_row = wx.BoxSizer(wx.HORIZONTAL)
@@ -3072,27 +3181,52 @@ class SongpressFrame(SDIMainFrame):
         song_row.Add(btn_song,      0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, 8)
         outer.Add(song_row, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 6)
 
-        # ── Bottoni modali: [OK] [OK + Riapri] [Cancel] ─────────────────
+        # ── Bottoni modali: [OK] [OK + Ns ↕] [Cancel] ───────────────────
+        _delay_key   = 'beatsTimeReopenDelay'
+        _delay_saved = self.config.Read(_delay_key, u'5')
+        try:
+            _delay_init = max(1, min(60, int(_delay_saved)))
+        except ValueError:
+            _delay_init = 5
+
         ID_OK_REOPEN = wx.NewIdRef()
         btn_row      = wx.BoxSizer(wx.HORIZONTAL)
         btn_ok       = wx.Button(dlg, wx.ID_OK,     _(u"OK"))
-        btn_reopen   = wx.Button(dlg, ID_OK_REOPEN, _(u"OK + 5s"))
+
+        # Contenitore [OK +] [↕ spin] [s] affiancati
+        reopen_box = wx.BoxSizer(wx.HORIZONTAL)
+        btn_reopen = wx.Button(dlg, ID_OK_REOPEN, _(u"OK +"))
         _sw_path = glb.AddPath('img/stopwatch.png')
         if os.path.isfile(_sw_path):
             _sw_img = wx.Image(_sw_path, wx.BITMAP_TYPE_PNG)
             _sw_img = _sw_img.Scale(16, 16, wx.IMAGE_QUALITY_HIGH)
             btn_reopen.SetBitmap(wx.Bitmap(_sw_img))
             btn_reopen.SetBitmapMargins(2, 0)
-        btn_cancel   = wx.Button(dlg, wx.ID_CANCEL, _(u"Cancel"))
+        spin_delay = wx.SpinCtrl(dlg, min=1, max=60,
+                                 size=(52, -1), style=wx.SP_ARROW_KEYS)
+        spin_delay.SetValue(_delay_init)
+        lbl_sec = wx.StaticText(dlg, label=_(u"s"))
+        spin_delay.SetToolTip(_(u"Delay in seconds before the dialog reopens (1-60)"))
+        reopen_box.Add(btn_reopen, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
+        reopen_box.Add(spin_delay, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 1)
+        reopen_box.Add(lbl_sec,    0, wx.ALIGN_CENTER_VERTICAL)
+
+        btn_cancel = wx.Button(dlg, wx.ID_CANCEL, _(u"Cancel"))
         btn_ok.SetDefault()
-        btn_reopen.SetToolTip(_(u"Insert directive and reopen dialog automatically after 5 seconds"))
+        btn_reopen.SetToolTip(_(u"Insert directive and reopen dialog after the chosen delay"))
         btn_row.AddStretchSpacer()
-        btn_row.Add(btn_ok,     0, wx.RIGHT, 4)
-        btn_row.Add(btn_reopen, 0, wx.RIGHT, 4)
-        btn_row.Add(btn_cancel, 0)
+        btn_row.Add(btn_ok,      0, wx.RIGHT, 4)
+        btn_row.Add(reopen_box,  0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        btn_row.Add(btn_cancel,  0)
         outer.Add(btn_row, 0, wx.EXPAND | wx.ALL, 8)
 
+        def _on_delay_changed(_evt=None):
+            self.config.Write(_delay_key, str(spin_delay.GetValue()))
+        spin_delay.Bind(wx.EVT_SPINCTRL,   _on_delay_changed)
+        spin_delay.Bind(wx.EVT_TEXT_ENTER, _on_delay_changed)
+
         def _on_ok_reopen(_evt):
+            _on_delay_changed()   # salva il valore corrente prima di chiudere
             dlg.EndModal(ID_OK_REOPEN)
 
         dlg.SetSizerAndFit(outer)
@@ -3330,11 +3464,28 @@ class SongpressFrame(SDIMainFrame):
 
         _update_preview()
         result = dlg.ShowModal()
+        # Rimuove sempre i marker di evidenziazione dall'editor (OK, Cancel, X)
+        stc.MarkerDeleteAll(8)
+        stc.MarkerDeleteAll(9)
+        # ── Salvataggio garantito alla chiusura del dialogo ──────────────
+        # config.Write scrive solo in memoria; config.Flush() porta su disco.
+        # Lo facciamo qui indipendentemente dal risultato (OK / Cancel / X)
+        # perché i singoli handler (toggle, colour_changed, delay_changed)
+        # potrebbero non essere stati chiamati se l'utente ha chiuso il picker
+        # senza confermare o ha premuto Annulla senza toccare nulla.
+        if _notebook_grids is not None and cb_highlight is not None:
+            self.config.WriteBool('beatsTimeHighlightRow', cb_highlight.GetValue())
+            self.config.Write('beatsTimeHighlightColour',
+                              colour_picker.GetColour().GetAsString(wx.C2S_HTML_SYNTAX))
+        self.config.Write('beatsTimeReopenDelay', str(spin_delay.GetValue()))
+        self.config.Flush()
         if result in (wx.ID_OK, ID_OK_REOPEN):
             _do_insert()
         dlg.Destroy()
         if result == ID_OK_REOPEN:
-            wx.CallLater(5000, self.OnInsertBeatsTime, None)
+            _reopen_ms = int(self.config.Read('beatsTimeReopenDelay', u'5'))
+            _reopen_ms = max(1, min(60, _reopen_ms)) * 1000
+            wx.CallLater(_reopen_ms, self.OnInsertBeatsTime, None)
 
     def OnInsertMusicalSymbol(self, evt):
         """Apre la Symbol Map musicale e inserisce il carattere scelto nel cursore."""
@@ -5453,6 +5604,12 @@ class SongpressFrame(SDIMainFrame):
             # App: percorso relativo al file .md in src/songpress/
             md_text = _guide_pat.sub(r'\1img/GUIDE/', md_text)
 
+        # Rimuove i link interni #anchor dal markdown prima della conversione:
+        # wx.html.HtmlWindow non supporta la navigazione via ScrollToAnchor
+        # in modo affidabile con tutti i layout; il file .md rimane invariato.
+        import re as _re_toc
+        md_text = _re_toc.sub(r'\[([^\]]+)\]\(#[^)]+\)', r'\1', md_text)
+
         html = self._md_to_html(md_text)
 
         dlg = wx.Dialog(
@@ -5468,7 +5625,7 @@ class SongpressFrame(SDIMainFrame):
         hw = wx.html.HtmlWindow(dlg, style=wx.html.HW_SCROLLBAR_AUTO)
 
         # ── Stato ricerca nella guida ─────────────────────────────────
-        _search_state = {'term': '', 'matches': [], 'idx': -1, 'html_orig': ''}
+        _search_state = {'term': '', 'matches': [], 'idx': -1, 'html_orig': '', 'html_themed': ''}
 
         def _guide_search_open():
             """Apre un mini-dialogo di ricerca testuale nella guida."""
@@ -5547,8 +5704,9 @@ class SongpressFrame(SDIMainFrame):
                 orig = _search_state.get('html_orig', '')
                 if not orig:
                     return
+                themed = _search_state.get('html_themed', '') or orig
                 if not term:
-                    hw.SetPage(orig)
+                    hw.SetPage(themed)
                     _search_state['matches'] = []
                     _search_state['idx'] = -1
                     lbl_count.SetLabel('')
@@ -5560,7 +5718,7 @@ class SongpressFrame(SDIMainFrame):
                     escaped, plain, _re2.IGNORECASE)]
                 n = len(matches)
                 if n == 0:
-                    hw.SetPage(orig)
+                    hw.SetPage(themed)
                     lbl_count.SetLabel(_("Not found"))
                     lbl_count.SetForegroundColour(wx.Colour(180, 0, 0))
                     _search_state['matches'] = matches
@@ -5584,7 +5742,7 @@ class SongpressFrame(SDIMainFrame):
                         return ('<a name="__active__"></a>'
                                 '<font bgcolor="#9ACD32" color="#000000"><b>' + text + '</b></font>')
                     return '<font bgcolor="#FFFF99" color="#000000">' + text + '</font>'
-                highlighted = _re2.sub(r'(?i)(%s)' % escaped, _replace_match, orig)
+                highlighted = _re2.sub(r'(?i)(%s)' % escaped, _replace_match, themed)
                 hw.SetPage(highlighted)
                 # Scorre fino al match attivo tramite l'ancora __active__
                 hw.ScrollToAnchor("__active__")
@@ -5606,9 +5764,9 @@ class SongpressFrame(SDIMainFrame):
                 _do_search(term, (idx - 1) % n if n else 0)
 
             def _on_close_search(e):
-                orig = _search_state.get('html_orig', '')
-                if orig:
-                    hw.SetPage(orig)
+                # Ripristina la pagina con il tema corrente (non l'HTML grezzo)
+                _rebuild_page(_dark_mode[0])
+                _apply_zoom(_zoom_pct[0])
                 _search_state['matches'] = []
                 _search_state['idx'] = -1
                 sdlg.EndModal(wx.ID_CANCEL)
@@ -5772,8 +5930,18 @@ class SongpressFrame(SDIMainFrame):
                 int(p['bg'][5:7], 16),
             ))
             hw.SetPage(styled)
-            hw.Bind(wx.html.EVT_HTML_LINK_CLICKED,
-                    lambda e: wx.LaunchDefaultBrowser(e.GetLinkInfo().GetHref()))
+            _search_state['html_themed'] = styled
+            def _on_link_clicked(e):
+                href = e.GetLinkInfo().GetHref()
+                if href.startswith('#'):
+                    import re as _re_anchor
+                    # Normalizza lo slug: collassa trattini multipli (--→-)
+                    # per allinearsi all'algoritmo usato in _md_to_html
+                    anchor = _re_anchor.sub(r'-+', '-', href[1:])
+                    hw.ScrollToAnchor(anchor)
+                else:
+                    wx.LaunchDefaultBrowser(href)
+            hw.Bind(wx.html.EVT_HTML_LINK_CLICKED, _on_link_clicked)
 
         # Estraiamo il body dall'HTML già generato per poterlo riciclare
         _body_m = _re.search(r'<body>(.*)</body>', html, _re.DOTALL | _re.IGNORECASE)
@@ -5965,6 +6133,14 @@ class SongpressFrame(SDIMainFrame):
 
         def inline(s):
             """Applica le sostituzioni inline (grassetto, corsivo, code, link, img)."""
+            # Codice inline PRIMA di corsivo/grassetto, per proteggere _underscore_
+            # dentro i backtick (es. `start_of_chorus` non deve diventare <i>of</i>)
+            # Sostituisce temporaneamente i segmenti `...` con placeholder, poi li ripristina
+            codes = []
+            def _save_code(m):
+                codes.append('<code>' + m.group(1) + '</code>')
+                return '\x00CODE%d\x00' % (len(codes) - 1)
+            s = re.sub(r'`(.+?)`', _save_code, s)
             # Grassetto+corsivo combinati: ***testo***
             s = re.sub(r'\*\*\*(.+?)\*\*\*', r'<b><i>\1</i></b>', s)
             # Grassetto: **testo** o __testo__
@@ -5973,8 +6149,9 @@ class SongpressFrame(SDIMainFrame):
             # Corsivo: *testo* o _testo_
             s = re.sub(r'\*(.+?)\*', r'<i>\1</i>', s)
             s = re.sub(r'_(.+?)_',   r'<i>\1</i>', s)
-            # Codice inline
-            s = re.sub(r'`(.+?)`', r'<code>\1</code>', s)
+            # Ripristina i segmenti codice
+            for i, code in enumerate(codes):
+                s = s.replace('\x00CODE%d\x00' % i, code)
             # Immagini cliccabili: [![alt](src)](href) — deve precedere link e img
             s = re.sub(r'\[(<img [^>]+>)\]\(([^)]+)\)', r'<a href="\2">\1</a>', s)
             # Immagini: ![alt](src)
@@ -6087,7 +6264,20 @@ class SongpressFrame(SDIMainFrame):
             if h_match:
                 close_lists(html_lines, list_stack)
                 level = len(h_match.group(1))
-                html_lines.append(f'<h{level}>{inline(esc(h_match.group(2)))}</h{level}>')
+                text  = h_match.group(2)
+                # Genera slug anchor compatibile GitHub:
+                # lowercase, spazi→'-', rimuove tutto tranne [a-z0-9_-]
+                slug = re.sub(r'[^\w\s-]', '', text.lower())
+                slug = re.sub(r'[\s]+', '-', slug.strip())
+                slug = re.sub(r'-+', '-', slug)
+                # L'anchor va FUORI dall'heading e PRIMA di esso,
+                # racchiuso in un <p> a margine zero per non creare spazio visivo.
+                # NON va dentro <h> perché _colorize_body aggiunge <font> dentro <h>
+                # producendo <h><font><a name> che wx.html.HtmlWindow non naviga.
+                html_lines.append(
+                    f'<p style="margin:0;padding:0"><a name="{slug}"></a></p>'
+                    f'<h{level}>{inline(esc(text))}</h{level}>'
+                )
                 continue
 
             # ── Separatore orizzontale ────────────────────────────────
@@ -6148,6 +6338,457 @@ class SongpressFrame(SDIMainFrame):
 
         body = '\n'.join(html_lines)
         return self._md_wrap_html(body)
+
+    def OnGuideCommandsMarkdown(self, evt):
+        """Apre la guida comandi di Songpress++ (guida_comandi_songpress[_lang].md).
+        Interfaccia identica a OnGuideMarkdown: ricerca avanzata, zoom, tema chiaro/scuro,
+        menu contestuale, schermo intero.
+        """
+        import os
+        import wx.html
+
+        locale = wx.GetLocale()
+        lang_code = ''
+        if locale:
+            canonical = locale.GetCanonicalName()
+            if canonical:
+                lang_code = canonical.split('_')[0].lower()
+
+        base_dir = os.path.dirname(__file__)
+
+        # Priorità: guida_comandi_songpress_<lang>.md → guida_comandi_songpress.md → errore
+        candidates = []
+        if lang_code:
+            candidates.append(
+                os.path.join(base_dir, 'guida_comandi_songpress_%s.md' % lang_code))
+        candidates.append(os.path.join(base_dir, 'guida_comandi_songpress.md'))
+
+        guide_path = None
+        for path in candidates:
+            if os.path.exists(path):
+                guide_path = path
+                break
+
+        if guide_path is None:
+            wx.MessageBox(
+                _("Commands guide file not found in the program folder."),
+                _("Help"),
+                wx.ICON_ERROR,
+            )
+            return
+
+        try:
+            with open(guide_path, 'r', encoding='utf-8') as f:
+                md_text = f.read()
+        except Exception as e:
+            wx.MessageBox(str(e), _("Error"), wx.ICON_ERROR)
+            return
+
+        import re
+        _guide_pat = re.compile(
+            r'(!\[[^\]]*\]\()(?:\.\.\/src\/songpressPlusPlus\/|\.\/)?img\/GUIDE\/'
+        )
+        if getattr(self.pref, 'guideMarkdownImgPath', False):
+            md_text = _guide_pat.sub(r'\1../src/songpressPlusPlus/img/GUIDE/', md_text)
+        else:
+            md_text = _guide_pat.sub(r'\1img/GUIDE/', md_text)
+
+        # Rimuove i link interni #anchor dal markdown prima della conversione:
+        # wx.html.HtmlWindow non supporta la navigazione via ScrollToAnchor
+        # in modo affidabile con tutti i layout; il file .md rimane invariato.
+        import re as _re_toc
+        md_text = _re_toc.sub(r'\[([^\]]+)\]\(#[^)]+\)', r'\1', md_text)
+
+        html = self._md_to_html(md_text)
+
+        dlg = wx.Dialog(
+            self.frame,
+            title=_(u"Songpress++ Commands Guide"),
+            size=(760, 620),
+            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.MAXIMIZE_BOX,
+        )
+        dlg.SetMinSize(wx.Size(550, 400))
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        hw = wx.html.HtmlWindow(dlg, style=wx.html.HW_SCROLLBAR_AUTO)
+
+        # ── Stato ricerca nella guida ─────────────────────────────────
+        _search_state = {'term': '', 'matches': [], 'idx': -1, 'html_orig': '', 'html_themed': ''}
+
+        def _guide_search_open():
+            """Apre un mini-dialogo di ricerca testuale nella guida."""
+            import re as _re2
+
+            sdlg = wx.Dialog(
+                dlg, title=_("Find in guide"),
+                style=wx.DEFAULT_DIALOG_STYLE | wx.STAY_ON_TOP,
+            )
+            vsz = wx.BoxSizer(wx.VERTICAL)
+
+            row_find = wx.BoxSizer(wx.HORIZONTAL)
+            row_find.Add(
+                wx.StaticText(sdlg, label=_("Find:")),
+                0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6,
+            )
+            txt = wx.TextCtrl(
+                sdlg, value=_search_state['term'],
+                size=(260, -1), style=wx.TE_PROCESS_ENTER,
+            )
+            row_find.Add(txt, 1, wx.EXPAND)
+            vsz.Add(row_find, 0, wx.EXPAND | wx.ALL, 10)
+
+            row_btns = wx.BoxSizer(wx.HORIZONTAL)
+
+            def _make_arrow_btn(parent, art_id, img_name, label_fallback):
+                bmp = wx.ArtProvider.GetBitmap(art_id, wx.ART_BUTTON, (24, 24))
+                if not bmp.IsOk():
+                    img = wx.Image(glb.AddPath('img/' + img_name))
+                    bmp = wx.Bitmap(img) if img.IsOk() else wx.NullBitmap
+                if bmp.IsOk():
+                    btn = wx.BitmapButton(parent, bitmap=bmp, style=wx.BU_AUTODRAW)
+                    btn.SetToolTip(label_fallback)
+                else:
+                    btn = wx.Button(parent, label=label_fallback)
+                return btn
+
+            btn_prev = _make_arrow_btn(sdlg, wx.ART_GO_BACK,    'arrow_left.png',  _("Previous"))
+            btn_next = _make_arrow_btn(sdlg, wx.ART_GO_FORWARD, 'arrow_right.png', _("Next"))
+            btn_next.SetDefault()
+
+            lbl_count = wx.StaticText(sdlg, label='', size=(90, -1))
+            lbl_count.SetForegroundColour(wx.Colour(80, 80, 80))
+
+            btn_close = wx.Button(sdlg, wx.ID_CANCEL, _("Close"))
+
+            row_btns.Add(btn_prev,  0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+            row_btns.Add(btn_next,  0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 12)
+            row_btns.Add(lbl_count, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+            row_btns.AddStretchSpacer()
+            row_btns.Add(btn_close, 0, wx.ALIGN_CENTER_VERTICAL)
+            vsz.Add(row_btns, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+            sdlg.SetSizer(vsz)
+            vsz.Fit(sdlg)
+            cur_w, cur_h = sdlg.GetSize()
+            sdlg.SetMinSize(wx.Size(max(cur_w, 440), cur_h))
+            sdlg.SetSize(wx.Size(max(cur_w, 440), cur_h))
+
+            def _do_search(term, goto_idx=0):
+                _search_state['term'] = term
+                orig = _search_state.get('html_orig', '')
+                if not orig:
+                    return
+                themed = _search_state.get('html_themed', '') or orig
+                if not term:
+                    hw.SetPage(themed)
+                    _search_state['matches'] = []
+                    _search_state['idx'] = -1
+                    lbl_count.SetLabel('')
+                    return
+                escaped = _re2.escape(term)
+                plain = _re2.sub(r'<[^>]+>', '', orig)
+                matches = [m.start() for m in _re2.finditer(escaped, plain, _re2.IGNORECASE)]
+                n = len(matches)
+                if n == 0:
+                    hw.SetPage(themed)
+                    lbl_count.SetLabel(_("Not found"))
+                    lbl_count.SetForegroundColour(wx.Colour(180, 0, 0))
+                    _search_state['matches'] = matches
+                    _search_state['idx'] = -1
+                    lbl_count.GetParent().Layout()
+                    return
+                idx = max(0, min(goto_idx, n - 1))
+                _search_state['matches'] = matches
+                _search_state['idx'] = idx
+                lbl_count.SetLabel(_("%d of %d") % (idx + 1, n))
+                lbl_count.SetForegroundColour(wx.Colour(80, 80, 80))
+                lbl_count.GetParent().Layout()
+                counter = [0]
+                def _replace_match(m):
+                    i = counter[0]
+                    counter[0] += 1
+                    text = m.group(1)
+                    if i == idx:
+                        return ('<a name="__active__"></a>'
+                                '<font bgcolor="#9ACD32" color="#000000"><b>' + text + '</b></font>')
+                    return '<font bgcolor="#FFFF99" color="#000000">' + text + '</font>'
+                highlighted = _re2.sub(r'(?i)(%s)' % escaped, _replace_match, themed)
+                hw.SetPage(highlighted)
+                hw.ScrollToAnchor("__active__")
+
+            def _on_next(e):
+                term = txt.GetValue().strip()
+                if not term:
+                    return
+                idx = _search_state['idx']
+                n   = len(_search_state['matches'])
+                _do_search(term, (idx + 1) % n if n else 0)
+
+            def _on_prev(e):
+                term = txt.GetValue().strip()
+                if not term:
+                    return
+                idx = _search_state['idx']
+                n   = len(_search_state['matches'])
+                _do_search(term, (idx - 1) % n if n else 0)
+
+            def _on_close_search(e):
+                # Ripristina la pagina con il tema corrente (non l'HTML grezzo)
+                _rebuild_page(_dark_mode[0])
+                _apply_zoom(_zoom_pct[0])
+                _search_state['matches'] = []
+                _search_state['idx'] = -1
+                sdlg.EndModal(wx.ID_CANCEL)
+
+            btn_next.Bind(wx.EVT_BUTTON, _on_next)
+            btn_prev.Bind(wx.EVT_BUTTON, _on_prev)
+            btn_close.Bind(wx.EVT_BUTTON, _on_close_search)
+            txt.Bind(wx.EVT_TEXT_ENTER, _on_next)
+            sdlg.Bind(wx.EVT_CLOSE, _on_close_search)
+
+            txt.SetFocus()
+            txt.SetSelection(-1, -1)
+            if _search_state['term']:
+                _do_search(_search_state['term'])
+
+            sdlg.ShowModal()
+            sdlg.Destroy()
+
+        # ── Menu contestuale tasto destro ──────────────────────────────
+        def _on_hw_right_click(evt):
+            menu = wx.Menu()
+
+            _copy_img = wx.Image(glb.AddPath('img/copy.png'))
+            bmp_copy = wx.Bitmap(_copy_img) if _copy_img.IsOk() else wx.NullBitmap
+
+            item_copy = wx.MenuItem(menu, wx.ID_COPY, _("Copy"))
+            if bmp_copy.IsOk():
+                item_copy.SetBitmap(bmp_copy)
+            menu.Append(item_copy)
+
+            sel = hw.SelectionToText()
+            menu.Enable(wx.ID_COPY, bool(sel))
+
+            def _copy(e):
+                text = hw.SelectionToText()
+                if text and wx.TheClipboard.Open():
+                    wx.TheClipboard.SetData(wx.TextDataObject(text))
+                    wx.TheClipboard.Close()
+
+            menu.Bind(wx.EVT_MENU, _copy, id=wx.ID_COPY)
+            menu.AppendSeparator()
+
+            _id_search = wx.NewIdRef()
+            _search_img = wx.Image(glb.AddPath('img/search.png'))
+            _bmp_search = wx.Bitmap(_search_img) if _search_img.IsOk() \
+                else wx.ArtProvider.GetBitmap(wx.ART_FIND, wx.ART_MENU, (16, 16))
+            item_search = wx.MenuItem(menu, _id_search, _("Find in guide..."))
+            if _bmp_search.IsOk():
+                item_search.SetBitmap(_bmp_search)
+            menu.Append(item_search)
+
+            def _on_search(e):
+                if not _search_state.get('html_orig'):
+                    _search_state['html_orig'] = hw.GetParser().GetSource() \
+                        if hw.GetParser() else ''
+                _guide_search_open()
+
+            menu.Bind(wx.EVT_MENU, _on_search, id=_id_search)
+            hw.PopupMenu(menu)
+            menu.Destroy()
+
+        hw.Bind(wx.EVT_RIGHT_DOWN, _on_hw_right_click)
+
+        sizer.Add(hw, 1, wx.EXPAND | wx.ALL, 4)
+
+        # ── Stato zoom e tema — condivisi con OnGuideMarkdown ────────
+        _zoom_pct  = [max(50, min(200, getattr(self.pref, 'guideZoom', 100)))]
+        _dark_mode = [bool(getattr(self.pref, 'guideDarkMode', False))]
+
+        _THEME = {
+            False: {
+                'bg':       '#ffffff', 'text':     '#000000', 'link':     '#0066cc',
+                'pre_bg':   '#f4f4f4', 'pre_fg':   '#000000', 'th_bg':    '#e8e8e8',
+                'td_border':'#cccccc', 'bq_fg':    '#555555', 'h_fg':     '#000000',
+            },
+            True: {
+                'bg':       '#1e1e1e', 'text':     '#d4d4d4', 'link':     '#4fc1ff',
+                'pre_bg':   '#2d2d2d', 'pre_fg':   '#ce9178', 'th_bg':    '#3a3a3a',
+                'td_border':'#555555', 'bq_fg':    '#999999', 'h_fg':     '#9cdcfe',
+            },
+        }
+
+        import re as _re
+
+        def _colorize_body(body_html, dark):
+            p = _THEME[dark]
+            body_html = _re.sub(
+                r'<pre(\s[^>]*)?>',
+                lambda m: '<pre bgcolor="%s"><font color="%s">' % (p['pre_bg'], p['pre_fg']),
+                body_html, flags=_re.IGNORECASE,
+            )
+            body_html = _re.sub(r'</pre>', '</font></pre>', body_html, flags=_re.IGNORECASE)
+            body_html = _re.sub(
+                r'<th(\s[^>]*)?>',
+                lambda m: '<th bgcolor="%s">' % p['th_bg'],
+                body_html, flags=_re.IGNORECASE,
+            )
+            for hn in ('h1', 'h2', 'h3', 'h4'):
+                body_html = _re.sub(
+                    r'<' + hn + r'(\s[^>]*)?>',
+                    lambda m, _hn=hn: '<%s><font color="%s">' % (_hn, p['h_fg']),
+                    body_html, flags=_re.IGNORECASE,
+                )
+                body_html = _re.sub(
+                    r'</' + hn + r'>',
+                    '</font></%s>' % hn,
+                    body_html, flags=_re.IGNORECASE,
+                )
+            return body_html
+
+        def _rebuild_page(dark):
+            p = _THEME[dark]
+            body_colored = _colorize_body(html_body, dark)
+            styled = (
+                '<html><head></head>'
+                '<body bgcolor="%s" text="%s" link="%s">'
+                '%s'
+                '</body></html>'
+            ) % (p['bg'], p['text'], p['link'], body_colored)
+            hw.SetBackgroundColour(wx.Colour(
+                int(p['bg'][1:3], 16),
+                int(p['bg'][3:5], 16),
+                int(p['bg'][5:7], 16),
+            ))
+            hw.SetPage(styled)
+            _search_state['html_themed'] = styled
+            def _on_link_clicked(e):
+                href = e.GetLinkInfo().GetHref()
+                if href.startswith('#'):
+                    import re as _re_anchor
+                    # Normalizza lo slug: collassa trattini multipli (--→-)
+                    # per allinearsi all'algoritmo usato in _md_to_html
+                    anchor = _re_anchor.sub(r'-+', '-', href[1:])
+                    hw.ScrollToAnchor(anchor)
+                else:
+                    wx.LaunchDefaultBrowser(href)
+            hw.Bind(wx.html.EVT_HTML_LINK_CLICKED, _on_link_clicked)
+
+        _body_m = _re.search(r'<body>(.*)</body>', html, _re.DOTALL | _re.IGNORECASE)
+        html_body = _body_m.group(1) if _body_m else html
+        _search_state['html_orig'] = html
+
+        _rebuild_page(_dark_mode[0])
+
+        # ── Barra inferiore: identica a OnGuideMarkdown ───────────────
+        btn_row = wx.BoxSizer(wx.HORIZONTAL)
+
+        btn_max = wx.Button(dlg, wx.ID_ANY, _("Full screen"))
+        btn_max.SetToolTip(_("Toggle full screen"))
+
+        def _on_toggle_max(e):
+            if dlg.IsMaximized():
+                dlg.Restore()
+                btn_max.SetLabel(_("Full screen"))
+            else:
+                dlg.Maximize()
+                btn_max.SetLabel(_("Restore"))
+
+        btn_max.Bind(wx.EVT_BUTTON, _on_toggle_max)
+
+        def _fix_btn_max_size():
+            dc = wx.ClientDC(btn_max)
+            dc.SetFont(btn_max.GetFont())
+            w1 = dc.GetTextExtent(_("Full screen"))[0]
+            w2 = dc.GetTextExtent(_("Restore"))[0]
+            best = btn_max.GetBestSize()
+            cur_tw = dc.GetTextExtent(btn_max.GetLabel())[0]
+            padding = best.width - cur_tw
+            min_w = max(w1, w2) + max(padding, 20)
+            btn_max.SetMinSize(wx.Size(min_w, best.height))
+            btn_max.GetContainingSizer().Layout()
+        wx.CallAfter(_fix_btn_max_size)
+
+        btn_zoom_out = wx.Button(dlg, wx.ID_ANY, u"−", size=(28, -1))
+        btn_zoom_out.SetToolTip(_("Zoom out"))
+
+        zoom_slider = wx.Slider(
+            dlg, value=_zoom_pct[0], minValue=50, maxValue=200,
+            size=(160, -1), style=wx.SL_HORIZONTAL,
+        )
+        zoom_slider.SetToolTip(_("Zoom (50% – 200%)"))
+
+        btn_zoom_in = wx.Button(dlg, wx.ID_ANY, u"+", size=(28, -1))
+        btn_zoom_in.SetToolTip(_("Zoom in"))
+
+        lbl_zoom = wx.StaticText(dlg, label=u"%d%%" % _zoom_pct[0], size=(40, -1))
+
+        def _apply_zoom(pct):
+            _zoom_pct[0] = max(50, min(200, pct))
+            zoom_slider.SetValue(_zoom_pct[0])
+            lbl_zoom.SetLabel(u"%d%%" % _zoom_pct[0])
+            base  = _zoom_pct[0] // 10
+            sizes = [base - 2, base - 1, base, base + 1, base + 2, base + 4, base + 6]
+            hw.SetFonts("", "", sizes)
+            hw.Refresh()
+
+        btn_zoom_out.Bind(wx.EVT_BUTTON, lambda e: _apply_zoom(_zoom_pct[0] - 10))
+        btn_zoom_in.Bind(wx.EVT_BUTTON,  lambda e: _apply_zoom(_zoom_pct[0] + 10))
+        zoom_slider.Bind(wx.EVT_SLIDER,  lambda e: _apply_zoom(zoom_slider.GetValue()))
+
+        rb_light = wx.RadioButton(dlg, label=_(u"Chiaro"), style=wx.RB_GROUP)
+        rb_dark  = wx.RadioButton(dlg, label=_(u"Scuro"))
+        _sun_bmp  = wx.Bitmap(wx.Image(glb.AddPath('img/sun.png')))
+        _moon_bmp = wx.Bitmap(wx.Image(glb.AddPath('img/moon.png')))
+        icon_light = wx.StaticBitmap(dlg, -1, _sun_bmp)
+        icon_dark  = wx.StaticBitmap(dlg, -1, _moon_bmp)
+        rb_dark.SetValue(_dark_mode[0])
+        rb_light.SetValue(not _dark_mode[0])
+
+        def _on_theme(e):
+            dark = rb_dark.GetValue()
+            _dark_mode[0] = dark
+            _rebuild_page(dark)
+            _apply_zoom(_zoom_pct[0])
+
+        rb_light.Bind(wx.EVT_RADIOBUTTON, _on_theme)
+        rb_dark.Bind(wx.EVT_RADIOBUTTON,  _on_theme)
+
+        btn_close = wx.Button(dlg, wx.ID_OK, _("Close"))
+
+        btn_row.Add(btn_max,      0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        btn_row.AddStretchSpacer()
+        btn_row.Add(btn_zoom_out, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
+        btn_row.Add(zoom_slider,  0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
+        btn_row.Add(btn_zoom_in,  0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        btn_row.Add(lbl_zoom,     0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 16)
+        btn_row.Add(icon_light,   0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
+        btn_row.Add(rb_light,     0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        btn_row.Add(icon_dark,    0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
+        btn_row.Add(rb_dark,      0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 16)
+        btn_row.Add(btn_close,    0, wx.ALIGN_CENTER_VERTICAL)
+
+        sizer.Add(btn_row, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
+        # ── Tasto destro apre la ricerca, Ctrl+F anche ────────────────
+        def _on_key(event):
+            if event.GetKeyCode() == ord('F') and event.ControlDown():
+                _guide_search_open()
+            event.Skip()
+        hw.Bind(wx.EVT_KEY_DOWN, _on_key)
+        dlg.Bind(wx.EVT_KEY_DOWN, _on_key)
+
+        dlg.SetSizer(sizer)
+        dlg.Layout()
+        _apply_zoom(_zoom_pct[0])
+
+        dlg.ShowModal()
+
+        # Salva zoom e tema nelle preferenze (condivise con OnGuideMarkdown)
+        self.pref.guideZoom     = _zoom_pct[0]
+        self.pref.guideDarkMode = _dark_mode[0]
+
+        dlg.Destroy()
 
     def OnIdle(self, evt):
         try:
