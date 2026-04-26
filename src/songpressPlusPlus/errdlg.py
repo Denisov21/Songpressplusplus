@@ -9,6 +9,12 @@
 """
 Error reporter dialog per Songpress++.
 
+Grafica uniforme al dialog di errore immagine:
+  - Intestazione: icona ART_ERROR + messaggio breve
+  - Sezione collassabile «Dettagli» con wx.CollapsiblePane
+  - Lista errori con colonna icona, messaggio e timestamp (wx.ListCtrl)
+  - Bottoni: «Forza chiusura» (sinistra) | «Copia» «Invia rapporto d'errore» «Chiudi» (destra)
+
 Collegare in main.py:
     from songpress.errdlg import ExceptionHook
     sys.excepthook = ExceptionHook
@@ -74,7 +80,14 @@ def _get_glb():
 # ---------------------------------------------------------------------------
 
 class SongpressErrorDialog(wx.Dialog):
-    """Dialog per errori imprevisti in Songpress++."""
+    """
+    Dialog per errori imprevisti in Songpress++.
+
+    Grafica identica al dialog di errore immagine:
+      - Riga superiore: icona ART_ERROR + testo breve
+      - CollapsiblePane «Dettagli» con ListCtrl (icona | messaggio | ora)
+      - Bottoni: Forza chiusura  ·  Copia  Invia rapporto  Chiudi
+    """
 
     ABORT           = False
     REPORTER_ACTIVE = False
@@ -87,43 +100,88 @@ class SongpressErrorDialog(wx.Dialog):
 
         super().__init__(
             None,
-            title=_("Unexpected error").format(prog=prog),
+            title=_("Errore imprevisto"),
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         )
         SongpressErrorDialog.REPORTER_ACTIVE = True
 
-        err_text = self._build_report(message)
+        self._report_text = self._build_report(message)
 
-        # ── Layout ──────────────────────────────────────────────────────────
-        icon = wx.StaticBitmap(self, bitmap=wx.ArtProvider.GetBitmap(wx.ART_ERROR))
-        desc = wx.StaticText(
+        # Messaggio breve: ultima riga non vuota del traceback
+        lines = [l.strip() for l in message.strip().splitlines() if l.strip()]
+        self._short_msg = lines[-1] if lines else message
+
+        self._build_ui(prog)
+        self.SetMinSize(wx.Size(540, 200))
+        self.Fit()
+        # Espandi il CollapsiblePane come il dialog immagine
+        self._pane.Expand()
+        self._on_pane_changed(None)
+        self.SetSize(wx.Size(650, 480))
+        self.CentreOnScreen()
+
+        self.Bind(wx.EVT_BUTTON, self._on_button)
+        self.Bind(wx.EVT_CLOSE,  self._on_close)
+
+    # ── Costruzione UI ───────────────────────────────────────────────────────
+
+    def _build_ui(self, prog: str):
+        # ── Riga intestazione: icona + messaggio breve ──────────────────────
+        bmp_err = wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_MESSAGE_BOX, (32, 32))
+        icon    = wx.StaticBitmap(self, bitmap=bmp_err)
+        lbl     = wx.StaticText(
             self,
-            label=_("An unexpected error occurred in {prog}.\n"
-                    "Click \"Send error report\" to notify the developer,\n"
-                    "or \"Close\" to continue (the program may be unstable)."
-                    ).format(prog=prog),
+            label=_(
+                "Si è verificato un errore imprevisto in {prog}.\n"
+                "Clicca su «Invia rapporto d'errore» per notificare lo sviluppatore,\n"
+                "oppure su «Chiudi» per continuare (il programma potrebbe essere instabile)."
+            ).format(prog=prog),
         )
+        lbl.Wrap(520)
 
-        lbl_trace = wx.StaticText(self, label=_("Error traceback:"))
-        self._trace = wx.TextCtrl(
-            self, value=err_text,
-            style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL,
+        hdr = wx.BoxSizer(wx.HORIZONTAL)
+        hdr.Add(icon, 0, wx.ALIGN_TOP | wx.RIGHT, 12)
+        hdr.Add(lbl,  1, wx.EXPAND)
+
+        # ── CollapsiblePane «Dettagli» ──────────────────────────────────────
+        self._pane = wx.CollapsiblePane(
+            self,
+            label=_("Traceback dell'errore:"),
+            style=wx.CP_DEFAULT_STYLE | wx.CP_NO_TLW_RESIZE,
         )
-        self._trace.SetFont(wx.Font(
-            wx.FontInfo(9).FaceName("Consolas").Family(wx.FONTFAMILY_TELETYPE)
-        ))
+        self._pane.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED, self._on_pane_changed)
 
-        btn_abort = wx.Button(self, wx.ID_ABORT,           _("Force close"))
-        btn_copy  = wx.Button(self, wx.ID_COPY,            _("Copy"))
-        btn_send  = wx.Button(self, self._ID_SEND.GetId(), _("Send error report"))
-        btn_close = wx.Button(self, wx.ID_CLOSE,           _("Close"))
-        btn_abort.SetToolTip(_("Force immediate application shutdown"))
-        btn_copy.SetToolTip(_("Copy error message to clipboard"))
+        win = self._pane.GetPane()
+
+        # ListCtrl — colonna unica: messaggio
+        self._list = wx.ListCtrl(
+            win,
+            style=wx.LC_REPORT | wx.BORDER_SUNKEN | wx.LC_NO_HEADER,
+        )
+        self._list.InsertColumn(0, _("Messaggio"), width=600)
+
+        mono = wx.Font(wx.FontInfo(8).FaceName("Consolas").Family(wx.FONTFAMILY_TELETYPE))
+        self._list.SetFont(mono)
+
+        self._populate_list()
+
+        pane_sizer = wx.BoxSizer(wx.VERTICAL)
+        pane_sizer.Add(self._list, 1, wx.EXPAND | wx.ALL, 4)
+        win.SetSizer(pane_sizer)
+
+        # ── Separatore ─────────────────────────────────────────────────────
+        sep = wx.StaticLine(self)
+
+        # ── Bottoni ────────────────────────────────────────────────────────
+        btn_abort = wx.Button(self, wx.ID_ABORT,             _("Forza chiusura"))
+        btn_copy  = wx.Button(self, wx.ID_COPY,              _("Copia"))
+        btn_send  = wx.Button(self, self._ID_SEND.GetId(),   _("Invia rapporto d'errore"))
+        btn_close = wx.Button(self, wx.ID_CLOSE,             _("Chiudi"))
+
+        btn_abort.SetToolTip(_("Forza la chiusura immediata dell'applicazione"))
+        btn_copy.SetToolTip(_("Copia il testo dell'errore negli appunti"))
+        btn_send.SetToolTip(_("Invia il rapporto d'errore allo sviluppatore via e-mail"))
         btn_send.SetDefault()
-
-        top = wx.BoxSizer(wx.HORIZONTAL)
-        top.Add(icon, 0, wx.ALIGN_TOP | wx.RIGHT, 12)
-        top.Add(desc, 1, wx.EXPAND)
 
         btns = wx.BoxSizer(wx.HORIZONTAL)
         btns.Add(btn_abort, 0)
@@ -132,21 +190,24 @@ class SongpressErrorDialog(wx.Dialog):
         btns.Add(btn_send,  0, wx.RIGHT, 6)
         btns.Add(btn_close, 0)
 
+        # ── Layout radice ───────────────────────────────────────────────────
         root = wx.BoxSizer(wx.VERTICAL)
-        root.Add(top,         0, wx.EXPAND | wx.ALL, 10)
-        root.Add(lbl_trace,   0, wx.LEFT,             10)
-        root.Add(self._trace, 1, wx.EXPAND | wx.ALL,   8)
-        root.Add(btns,        0, wx.EXPAND | wx.ALL,   8)
+        root.Add(hdr,        0, wx.EXPAND | wx.ALL,              12)
+        root.Add(self._pane, 1, wx.EXPAND | wx.LEFT | wx.RIGHT,   8)
+        root.Add(sep,        0, wx.EXPAND | wx.TOP,               6)
+        root.Add(btns,       0, wx.EXPAND | wx.ALL,               8)
         self.SetSizer(root)
 
-        self.SetMinSize(wx.Size(520, 360))
-        self.SetSize(wx.Size(620, 430))
-        self.CentreOnScreen()
+    def _populate_list(self):
+        """Inserisce nella ListCtrl ogni riga significativa del report."""
+        for raw in self._report_text.splitlines():
+            line = raw.rstrip()
+            if not line:
+                continue
+            idx = self._list.InsertItem(self._list.GetItemCount(), line)
+            self._list.SetItem(idx, 0, line)
 
-        self.Bind(wx.EVT_BUTTON, self._on_button)
-        self.Bind(wx.EVT_CLOSE,  self._on_close)
-
-    # ── Internals ───────────────────────────────────────────────────────────
+    # ── Helpers ──────────────────────────────────────────────────────────────
 
     def _build_report(self, traceback_text: str) -> str:
         glb = _get_glb()
@@ -174,6 +235,15 @@ class SongpressErrorDialog(wx.Dialog):
         ]
         return os.linesep.join(lines)
 
+    def _on_pane_changed(self, evt):
+        """Ridimensiona il dialog quando il CollapsiblePane si espande/chiude."""
+        self.Layout()
+        self.Fit()
+        if evt is not None:
+            evt.Skip()
+
+    # ── Handler bottoni ──────────────────────────────────────────────────────
+
     def _on_button(self, evt):
         eid = evt.GetId()
         if eid == wx.ID_CLOSE:
@@ -195,17 +265,17 @@ class SongpressErrorDialog(wx.Dialog):
 
     def _copy(self):
         if wx.TheClipboard.Open():
-            wx.TheClipboard.SetData(wx.TextDataObject(self._trace.GetValue()))
+            wx.TheClipboard.SetData(wx.TextDataObject(self._report_text))
             wx.TheClipboard.Close()
 
     def _send(self):
         from urllib.parse import quote
         import webbrowser
-        glb  = _get_glb()
-        prog = f"{glb.PROG_NAME} {glb.VERSION}" if glb else f"{_PROG_NAME} {_PROG_VERSION}".strip()
-        addr = (glb.BUG_REPORT_ADDRESS if glb else "") or ""
+        glb     = _get_glb()
+        prog    = f"{glb.PROG_NAME} {glb.VERSION}" if glb else f"{_PROG_NAME} {_PROG_VERSION}".strip()
+        addr    = (glb.BUG_REPORT_ADDRESS if glb else "") or ""
         subject = quote(f"Error report - {prog}")
-        body    = quote(self._trace.GetValue()[:1800])
+        body    = quote(self._report_text[:1800])
         webbrowser.open(f"mailto:{addr}?subject={subject}&body={body}")
 
 
@@ -230,7 +300,7 @@ def _show_error(ftrace: str) -> None:
         dlg.ShowModal()
         dlg.Destroy()
     except Exception:
-        wx.MessageBox(ftrace[:2000], _("Unexpected error"), wx.OK | wx.ICON_ERROR)
+        wx.MessageBox(ftrace[:2000], _("Errore imprevisto"), wx.OK | wx.ICON_ERROR)
     finally:
         if _owned_app is not None:
             _owned_app.Destroy()

@@ -6687,11 +6687,31 @@ class SongpressFrame(SDIMainFrame):
         if t.ShowModal() == wx.ID_OK:
             transposed = t.GetTransposed()
             if t.SelectionOnly():
-                # Build the complete final document in one shot:
-                # splice the transposed selection back and (if checked)
-                # update all {beats_time:} directives — then write once.
-                final = t.GetTransposedFullText(transposed)
-                self.text.SetText(final)
+                # Replace the selected text with the transposed version.
+                self.text.ReplaceSelection(transposed)
+                # If the user also asked to update {beats_time} directives,
+                # apply that pass over the whole (now-updated) document.
+                if t.transposeBeatTime.IsChecked():
+                    new_full = t.GetTransposedFullText()
+                    # Rebuild: replace only the beats_time directives by
+                    # setting the entire text (undo-safe via SetText).
+                    # We obtain the current text (with the selection already
+                    # replaced above) and re-apply beats_time transposition.
+                    current = self.text.GetText()
+                    import re as _re
+                    bt_pat = _re.compile(r'\{beats_time:[^}]*\}', _re.IGNORECASE)
+                    # Collect transposed beats_time blocks from new_full in order
+                    replacements = bt_pat.findall(new_full)
+                    idx = [0]
+                    def _sub(m):
+                        if idx[0] < len(replacements):
+                            r = replacements[idx[0]]
+                            idx[0] += 1
+                            return r
+                        return m.group(0)
+                    updated = bt_pat.sub(_sub, current)
+                    if updated != current:
+                        self.text.SetText(updated)
             else:
                 self.text.SetText(transposed)
 

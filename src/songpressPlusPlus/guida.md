@@ -613,7 +613,7 @@ La direttiva `{beats_time:}` specifica la **durata in battiti** di ciascun accor
 {beats_time: NomeAccordo=N NomeAccordo=N …}
 ```
 
-- `NomeAccordo` — nome dell'accordo in notazione italiana (`Do`, `Sol`, `La-`, `Re7`…) o inglese (`C`, `G`, `Am`, `D7`…)
+- `NomeAccordo` — nome dell'accordo in notazione italiana (`Do`, `Sol`, `La-`, `Re7`…) o inglese (`C`, `G`, `Am`, `D7`…); gli accordi con basso esplicito (`Re-/Fa#`, `C/E`) vengono usati nella forma **completa** come chiave, inclusa la parte dopo `/`
 - `N` — numero intero di battiti ≥ 1
 - Gli accordi sono separati da spazi
 - Solo gli accordi elencati ricevono un'indicazione di battito; gli altri vengono ignorati
@@ -635,6 +635,11 @@ La direttiva `{beats_time:}` specifica la **durata in battiti** di ciascun accor
 [Am]Tanti [F]au[C]guri a [G]te
 ```
 
+```chordpro
+{beats_time: La-=2 Re-/Fa#=2 LA-=2}
+[LA-]Par[RE-/FA#]late ed an[LA-]nunciate
+```
+
 Ogni direttiva `{beats_time:}` si applica **alla riga di testo/accordi immediatamente successiva**. Per assegnare durate a più righe, inserisci una `{beats_time:}` prima di ognuna.
 
 **Inserimento dal menu — dialogo guidato:**
@@ -643,16 +648,20 @@ Il comando *Inserisci → Durata accordo {beats_time:}…* è accessibile anche 
 
 Il comando riconosce automaticamente la situazione:
 
-- **Se la riga sotto il cursore non contiene accordi `[…]`** — inserisce direttamente `{beats_time: }` senza aprire nessuna finestra.
-- **Se la riga sotto il cursore contiene accordi `[…]`** — apre un dialogo con un campo numerico (`SpinCtrl`) per ogni accordo unico trovato, preimpostato su 1 battito. Mentre si modificano i valori, il campo **Anteprima** mostra in tempo reale la direttiva che verrà inserita (es. `{beats_time: Do=4 Sol=2 La-=2 Fa=1}`). Impostando un accordo a **0** viene escluso dalla direttiva. Se la riga contiene più di **8** accordi, l'elenco diventa scorrevole.
+- **Se nessuna riga vicina al cursore contiene accordi `[…]`** — inserisce direttamente `{beats_time: }` senza aprire nessuna finestra.
+- **Se la riga corrente (o quella precedente o successiva) contiene accordi `[…]`** — apre un dialogo con un campo numerico (`SpinCtrl`) per ogni accordo unico trovato, preimpostato su 1 battito. Mentre si modificano i valori, il campo **Anteprima** mostra in tempo reale la direttiva che verrà inserita (es. `{beats_time: Do=4 Sol=2 La-=2 Fa=1}`). Impostando un accordo a **0** viene escluso dalla direttiva. Se la riga contiene più di **8** accordi, l'elenco diventa scorrevole. Gli accordi con basso esplicito (es. `Re-/Fa#`) sono mostrati nella loro forma completa — sia come etichetta che come chiave nella direttiva generata.
 
-> **Nota — Posizionamento cursore** — Il comando cerca gli accordi prima sulla **riga corrente** del cursore, poi su quella successiva, poi su quella precedente. Il modo più diretto è posizionare il cursore direttamente sulla riga con gli accordi oppure sulla riga appena sopra di essa.
+> **Nota — Posizionamento cursore** — Per aprire il dialogo, il comando cerca gli accordi nell'ordine: **riga corrente** → **successiva** → **precedente**. Una volta confermato, l'inserimento cerca nell'ordine: **riga corrente** → **precedente** → **successiva**. Il modo più diretto è posizionare il cursore direttamente sulla riga con gli accordi.
+
+> **Nota — Sostituzione in-place** — Se la riga che precede immediatamente la riga degli accordi è già una direttiva `{beats_time:}`, al click **OK** essa viene **sostituita** anziché duplicata. Se invece tra la `{beats_time:}` esistente e la riga degli accordi ci sono righe vuote, l'inserimento avviene in cima alla riga degli accordi, scavalcando le righe vuote per evitare interruzioni visive indesiderate.
 
 Il dialogo offre tre controlli aggiuntivi:
 
 - **Tutti: [N] [Applica a tutti]** — imposta in un solo clic lo stesso numero di battiti su tutti gli accordi presenti nel dialogo.
 - **[Applica all'intero brano…]** — inserisce automaticamente una direttiva `{beats_time:}` prima di ogni riga con accordi nell'intero brano, usando i valori impostati nel dialogo. Le righe già precedute da una `{beats_time:}` vengono saltate. L'operazione è annullabile con un singolo `Ctrl+Z`. Per gli accordi che appaiono nel brano ma **non sono presenti nel dialogo** (perché la riga di riferimento del cursore era diversa), il numero di battiti predefinito è **1** — a meno che tutti gli spin del dialogo siano impostati a **0**, nel qual caso anche questi accordi vengono omessi dalla direttiva, producendo `{beats_time: }` vuota.
 - **[OK + ↺ 5s]** — conferma e inserisce la direttiva esattamente come il pulsante **OK**, ma riapre automaticamente il dialogo dopo **5 secondi**. Utile quando si lavora su un brano lungo e si vuole assegnare la durata accordo riga per riga: nei 5 secondi di pausa è possibile spostare il cursore sulla riga successiva nell'editor, dopodiché il dialogo si riapre già aggiornato con i nuovi accordi.
+
+> **Nota — Modalità selezione** — Se si seleziona un intervallo di testo prima di aprire il dialogo, il dialogo mostra un **badge blu** («● Modalità selezione: N righe con accordi selezionate») e raccoglie in un unico elenco tutti gli accordi unici presenti nelle righe selezionate. Al click **OK**, la direttiva viene inserita (o sostituita in-place) prima di **ogni riga con accordi** nell'intervallo, in un solo `Ctrl+Z`. Ogni riga riceve una direttiva personalizzata con i propri accordi, usando i valori impostati nel dialogo.
 
 > **Nota — Multicursore** — Il comando è compatibile con il multicursore (Alt+Clic, Ctrl+D). Se sono attivi più cursori sulla stessa sequenza di accordi, il dialogo mostra un **badge verde** («● Multicursore attivo: N posizioni») e la direttiva viene inserita in tutte le posizioni in un solo `Ctrl+Z`. Se invece i cursori puntano a **sequenze di accordi diverse** (multicursore eterogeneo), il dialogo apre un **Notebook** con una tab per ogni cursore (fino a un massimo di 5): ogni tab mostra gli SpinCtrl specifici per quella posizione e la propria anteprima in tempo reale. Sotto il Notebook è sempre visibile un campo **Anteprima (cursore 1)** riepilogativo. Se i cursori attivi superano 5, viene mostrato un avviso «⚠ Visualizzati i primi 5 cursori su N».
 
@@ -817,7 +826,17 @@ Tutte le principali direttive sono accessibili tramite il menu **Inserisci**, ch
 
 ### Trasposizione e notazione
 
-- **Trasponi** — apre la finestra di dialogo per trasporre tutti gli accordi. La trasposizione viene applicata a **tutte le notazioni assolute** presenti nel testo (Americana, Italiana, Italiana maiuscola, Tedesca, Tedesca tradizionale, Francese, Portoghese): anche un file con accordi scritti in notazioni miste (es. `[Sol]` e `[G]` nello stesso file) viene trasposto correttamente nella sua interezza.
+- **Trasponi** — apre la finestra di dialogo per trasporre gli accordi. Il dialogo offre le seguenti opzioni:
+
+  | Opzione | Descrizione |
+  |---|---|
+  | **Notazione degli accordi** | Notazione rilevata automaticamente; può essere cambiata manualmente |
+  | **Dalla tonalità** | Tonalità di partenza, rilevata automaticamente dal testo |
+  | **Semitoni** | Numero di semitoni di trasposizione (da −11 a +12) |
+  | **Alla tonalità** | Tonalità di destinazione; si aggiorna automaticamente al variare dei semitoni |
+  | **Alterazioni** | Scelta tra automatico, diesis (#) o bemolle (b) per le note cromatiche |
+  | **Applica solo alla selezione** | Se attiva (e solo se c'è testo selezionato), traspone esclusivamente gli accordi `[...]` e le direttive `{beats_time:}` contenuti nella selezione, lasciando invariato il resto del brano |
+  | **Trasponi anche gli accordi in {beats_time:}** | Estende la trasposizione anche ai nomi degli accordi nelle direttive `{beats_time: DO=4 SOL=2 …}`, rispettando lo stesso ambito (selezione o intero brano) scelto con l'opzione precedente |
 
   > **Nota — Notazioni relative (Nashville e Romana):** le notazioni **Nashville** (1, 2, 3… 7) e **Romana** (I, II, III… VII) rappresentano *gradi della scala* e non altezze assolute. Per questo motivo vengono escluse dalla trasposizione: spostare il grado `[1]` da Do a Re non avrebbe alcun senso musicale, poiché il grado rimane invariato indipendentemente dalla tonalità. Se il testo contiene accordi in notazione Nashville o Romana, questi restano inalterati dopo la trasposizione.
 

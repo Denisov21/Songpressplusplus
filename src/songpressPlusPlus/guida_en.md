@@ -613,7 +613,7 @@ The `{beats_time:}` directive specifies the **beat duration** of each chord on t
 {beats_time: ChordName=N ChordName=N …}
 ```
 
-- `ChordName` — chord name in Italian notation (`Do`, `Sol`, `La-`, `Re7`…) or English (`C`, `G`, `Am`, `D7`…)
+- `ChordName` — chord name in Italian notation (`Do`, `Sol`, `La-`, `Re7`…) or English (`C`, `G`, `Am`, `D7`…); chords with an explicit bass note (`Re-/Fa#`, `C/E`) are used in their **full form** as the key, including the part after `/`
 - `N` — positive integer number of beats (≥ 1)
 - Chords are separated by spaces
 - Only the listed chords receive a beat indicator; others are ignored
@@ -635,6 +635,11 @@ The `{beats_time:}` directive specifies the **beat duration** of each chord on t
 [Am]Tanti [F]au[C]guri a [G]te
 ```
 
+```chordpro
+{beats_time: Am=2 Dm/F#=2 Am=2}
+[Am]Par[Dm/F#]late ed an[Am]nunciate
+```
+
 Each `{beats_time:}` directive applies to the **line of text/chords immediately below it**. To assign durations to multiple lines, place a `{beats_time:}` before each one.
 
 **Inserting from the menu — guided dialog:**
@@ -643,16 +648,20 @@ The command *Insert → Chord duration {beats_time:}…* is also accessible via 
 
 The command automatically detects the context:
 
-- **If the line below the cursor contains no `[…]` chords** — inserts `{beats_time: }` directly without opening any dialog.
-- **If the line below the cursor contains `[…]` chords** — opens a dialog with a numeric field (`SpinCtrl`) for each unique chord found, preset to 1 beat. As you change the values, the **Preview** field updates in real time showing the directive that will be inserted (e.g. `{beats_time: C=4 G=2 Am=2 F=1}`). Setting a chord to **0** excludes it from the directive. If the line contains more than **8** chords, the list becomes scrollable.
+- **If no line near the cursor contains `[…]` chords** — inserts `{beats_time: }` directly without opening any dialog.
+- **If the current line (or the line above or below) contains `[…]` chords** — opens a dialog with a numeric field (`SpinCtrl`) for each unique chord found, preset to 1 beat. As you change the values, the **Preview** field updates in real time showing the directive that will be inserted (e.g. `{beats_time: C=4 G=2 Am=2 F=1}`). Setting a chord to **0** excludes it from the directive. If the line contains more than **8** chords, the list becomes scrollable. Chords with an explicit bass note (e.g. `Dm/F#`) are shown in their full form — both as a label and as the key in the generated directive.
 
-> **Note — Cursor placement** — The command searches for chords first on the **current line** of the cursor, then on the line below, then on the line above. The simplest approach is to place the cursor directly on the chord line or on the line immediately above it.
+> **Note — Cursor placement** — To open the dialog, the command searches for chords in this order: **current line** → **next line** → **previous line**. Once confirmed, insertion searches in this order: **current line** → **previous line** → **next line**. The simplest approach is to place the cursor directly on the chord line.
+
+> **Note — In-place replacement** — If the line immediately preceding the chord line is already a `{beats_time:}` directive, clicking **OK** **replaces** it rather than inserting a duplicate. If there are blank lines between an existing `{beats_time:}` and the chord line, the insertion jumps over the blank lines to place the directive as close as possible to the chord line, avoiding unwanted visual gaps.
 
 The dialog provides three additional controls:
 
 - **All: [N] [Apply to all]** — sets the same number of beats on all chords in the dialog in one click.
 - **[Apply to whole song…]** — automatically inserts a `{beats_time:}` directive before every chord line in the entire song, using the values set in the dialog. Lines already preceded by a `{beats_time:}` are skipped. The whole operation is undoable with a single `Ctrl+Z`. For chords that appear in the song but are **not present in the dialog** (because the cursor's reference line had different chords), the default beat count is **1** — unless all the dialog's spin fields are set to **0**, in which case those chords are also omitted from the directive, producing an empty `{beats_time: }`.
 - **[OK + ↺ 5s]** — confirms and inserts the directive exactly like the **OK** button, but automatically reopens the dialog after **5 seconds**. This is useful when working through a long song and assigning beat durations line by line: during the 5-second pause you can move the cursor to the next chord line in the editor, and the dialog will reopen already loaded with the new chords.
+
+> **Note — Selection mode** — If a text range is selected before opening the dialog, the dialog displays a **blue badge** ("● Selection mode: N chord lines selected") and collects all unique chords from the selected lines into a single list. Clicking **OK** inserts (or replaces in-place) a directive before **every chord line** in the selection in a single `Ctrl+Z`. Each line receives its own directive containing only its own chords, using the values set in the dialog.
 
 > **Note — Multi-cursor** — The command is compatible with multi-cursor mode (Alt+Click, Ctrl+D). If multiple cursors are active over the same chord sequence, the dialog displays a **green badge** ("● Multi-cursor active: N positions") and inserts the directive at all positions in a single `Ctrl+Z`. If the cursors point to **different chord sequences** (heterogeneous multi-cursor), the dialog opens a **Notebook** with one tab per cursor (up to a maximum of 5): each tab shows the SpinCtrl fields specific to that position and its own real-time preview. A **Preview (cursor 1)** summary field is always visible below the Notebook. If the active cursors exceed 5, a warning is shown: «⚠ Showing first 5 cursors of N».
 
@@ -817,7 +826,17 @@ All main directives are accessible via the **Insert** menu, which opens support 
 
 ### Transposition and Notation
 
-- **Transpose** — opens the dialog to transpose all chords. Transposition is applied to **all absolute-pitch notations** present in the text (American, Italian, Uppercase Italian, German, Traditional German, French, Portuguese): even a file containing chords written in mixed notations (e.g. `[Sol]` and `[G]` in the same file) is transposed correctly in its entirety.
+- **Transpose** — opens the dialog to transpose chords. The dialog provides the following options:
+
+  | Option | Description |
+  |---|---|
+  | **Chord notation** | Auto-detected notation; can be changed manually |
+  | **From key** | Source key, auto-detected from the text |
+  | **Semitones** | Number of semitones to transpose (from −11 to +12) |
+  | **To key** | Target key; updates automatically when semitones change |
+  | **Accidentals** | Choose between automatic, sharps (#) or flats (b) for chromatic notes |
+  | **Apply to selection only** | If enabled (and only when text is selected), transposes exclusively the `[...]` chords and `{beats_time:}` directives within the selection, leaving the rest of the song unchanged |
+  | **Also transpose {beats_time:} chords** | Extends transposition to chord names inside `{beats_time: C=4 G=2 …}` directives, respecting the same scope (selection or whole song) chosen with the option above |
 
   > **Note — Relative notations (Nashville and Roman):** **Nashville** (1, 2, 3… 7) and **Roman** (I, II, III… VII) notations represent *scale degrees*, not absolute pitches. For this reason they are intentionally excluded from transposition: shifting degree `[1]` from C to D would make no musical sense, since the degree remains the same regardless of key. If the text contains chords in Nashville or Roman notation, they are left unchanged after transposition.
 

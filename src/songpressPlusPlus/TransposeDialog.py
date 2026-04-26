@@ -89,6 +89,18 @@ class TransposeDialog ( wx.Dialog ):
 
         bSizer1.Add( bSizerAlt, 1, wx.EXPAND, 5 )
 
+        bSizerSel = wx.BoxSizer( wx.HORIZONTAL )
+        self.selectionOnly = wx.CheckBox( self, wx.ID_ANY, _(u"Apply to selection only"), wx.DefaultPosition, wx.DefaultSize, 0 )
+        bSizerSel.Add( self.selectionOnly, 0, wx.ALL, 5 )
+        bSizer1.Add( bSizerSel, 0, wx.EXPAND, 5 )
+
+        bSizerBt = wx.BoxSizer( wx.HORIZONTAL )
+        self.transposeBeatTime = wx.CheckBox( self, wx.ID_ANY, _(u"Also transpose {beats_time:} chords"), wx.DefaultPosition, wx.DefaultSize, 0 )
+        self.transposeBeatTime.SetValue( True )
+        bSizerBt.Add( self.transposeBeatTime, 0, wx.ALL, 5 )
+        bSizer1.Add( bSizerBt, 0, wx.EXPAND, 5 )
+
+
         m_sdbSizer1 = wx.StdDialogButtonSizer()
         self.m_sdbSizer1OK = wx.Button( self, wx.ID_OK )
         m_sdbSizer1.AddButton( self.m_sdbSizer1OK )
@@ -107,6 +119,7 @@ class TransposeDialog ( wx.Dialog ):
         self.semitones.Bind( wx.EVT_SPINCTRL, self.OnSemitones )
         self.toKey.Bind( wx.EVT_CHOICE, self.OnToKey )
         self.accidentals.Bind( wx.EVT_CHOICE, self.OnAccidentals )
+        self.transposeBeatTime.Bind( wx.EVT_CHECKBOX, self.OnTransposeBeatTime )
     
     def __del__( self ):
         pass
@@ -126,4 +139,7 @@ class TransposeDialog ( wx.Dialog ):
         event.Skip()
 
     def OnAccidentals( self, event ):
+        event.Skip()
+
+    def OnTransposeBeatTime( self, event ):
         event.Skip()

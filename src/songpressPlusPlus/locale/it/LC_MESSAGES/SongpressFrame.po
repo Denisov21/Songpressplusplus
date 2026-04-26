@@ -1158,6 +1158,10 @@ msgstr "Normalizza spazi multipli (sostituisce 2+ spazi con uno solo)"
 msgid "Remove '_' characters from text"
 msgstr "Elimina i caratteri '_' dal testo"
 
+#: SongpressFrame.py OnNormalizeSpaces checkbox dash
+msgid "Remove '-' characters from text"
+msgstr "Elimina i caratteri '-' dal testo"
+
 #: SongpressFrame.py OnInsertBeatsTime multicursor notice
 msgid "Multi-cursor active: %d positions."
 msgstr "Multicursore attivo: %d posizioni."
@@ -1366,3 +1370,11 @@ msgstr "Inserisce la direttiva e riapre il dialogo automaticamente dopo 5 second
 #, python-format
 msgid "Selection mode: %d chord lines selected"
 msgstr "Modalità selezione: %d righe di accordi selezionate"
+
+#: TransposeDialog.py — transposeBeatTime checkbox label
+msgid "Also transpose {beats_time:} chords"
+msgstr "Trasponi anche gli accordi in {beats_time:}"
+
+#: TransposeDialog.py — selectionOnly checkbox label
+msgid "Apply to selection only"
+msgstr "Applica solo alla selezione"
