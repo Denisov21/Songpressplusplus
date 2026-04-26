@@ -5605,12 +5605,6 @@ class SongpressFrame(SDIMainFrame):
             # App: percorso relativo al file .md in src/songpress/
             md_text = _guide_pat.sub(r'\1img/GUIDE/', md_text)
 
-        # Rimuove i link interni #anchor dal markdown prima della conversione:
-        # wx.html.HtmlWindow non supporta la navigazione via ScrollToAnchor
-        # in modo affidabile con tutti i layout; il file .md rimane invariato.
-        import re as _re_toc
-        md_text = _re_toc.sub(r'\[([^\]]+)\]\(#[^)]+\)', r'\1', md_text)
-
         html = self._md_to_html(md_text)
 
         dlg = wx.Dialog(
@@ -5746,7 +5740,11 @@ class SongpressFrame(SDIMainFrame):
                 highlighted = _re2.sub(r'(?i)(%s)' % escaped, _replace_match, themed)
                 hw.SetPage(highlighted)
                 # Scorre fino al match attivo tramite l'ancora __active__
+                # wx.LogNull sopprime il warning "Ancora HTML __active__ non esistente"
+                # che wx emette se SetPage non ha ancora completato il parsing
+                _log_null = wx.LogNull()
                 hw.ScrollToAnchor("__active__")
+                del _log_null
 
             def _on_next(e):
                 term = txt.GetValue().strip()
@@ -5828,6 +5826,10 @@ class SongpressFrame(SDIMainFrame):
                 if not _search_state.get('html_orig'):
                     _search_state['html_orig'] = hw.GetParser().GetSource() \
                         if hw.GetParser() else ''
+                # Se c'è testo selezionato nella guida, lo usa come termine di ricerca
+                sel = hw.SelectionToText().strip()
+                if sel:
+                    _search_state['term'] = sel
                 _guide_search_open()
 
             menu.Bind(wx.EVT_MENU, _on_search, id=_id_search)
@@ -5932,21 +5934,62 @@ class SongpressFrame(SDIMainFrame):
             ))
             hw.SetPage(styled)
             _search_state['html_themed'] = styled
-            def _on_link_clicked(e):
-                href = e.GetLinkInfo().GetHref()
-                if href.startswith('#'):
-                    import re as _re_anchor
-                    # Normalizza lo slug: collassa trattini multipli (--→-)
-                    # per allinearsi all'algoritmo usato in _md_to_html
-                    anchor = _re_anchor.sub(r'-+', '-', href[1:])
-                    hw.ScrollToAnchor(anchor)
-                else:
-                    wx.LaunchDefaultBrowser(href)
-            hw.Bind(wx.html.EVT_HTML_LINK_CLICKED, _on_link_clicked)
 
         # Estraiamo il body dall'HTML già generato per poterlo riciclare
         _body_m = _re.search(r'<body>(.*)</body>', html, _re.DOTALL | _re.IGNORECASE)
         html_body = _body_m.group(1) if _body_m else html
+
+        # ── Inietta anchor <a name="..."> prima di ogni intestazione ──────
+        # Necessario quando il parser esterno (python-markdown / mistune) non
+        # genera anchor navigabili compatibili con wx.html.HtmlWindow.
+        # Se il parser builtin li ha già inseriti, il controllo look-behind li salta.
+        def _make_slug(text):
+            import re as _rs
+            slug = _rs.sub(r'[^\w\s-]', '', text.lower())
+            slug = _rs.sub(r'[\s]+', '-', slug.strip())
+            slug = _rs.sub(r'-+', '-', slug)
+            return slug
+
+        def _inject_anchors(body_html):
+            import re as _ri
+            def _add_anchor(m):
+                level  = m.group(1)
+                attrs  = m.group(2) or ''
+                content = m.group(3)
+                plain  = _ri.sub(r'<[^>]+>', '', content)
+                slug   = _make_slug(plain)
+                anchor = '<p style="margin:0;padding:0"><a name="%s"></a></p>' % slug
+                return '%s<%s%s>%s</%s>' % (anchor, level, attrs, content, level)
+            result = _ri.sub(
+                r'<(h[1-4])(\s[^>]*)?>(.+?)</\1>',
+                lambda m: (
+                    m.group(0) if _ri.search(
+                        r'<a\s+name=',
+                        body_html[max(0, m.start() - 120):m.start()]
+                    ) else _add_anchor(m)
+                ),
+                body_html,
+                flags=_ri.DOTALL | _ri.IGNORECASE,
+            )
+            return result
+
+        html_body = _inject_anchors(html_body)
+
+        # ── Handler link: bindato UNA VOLTA SOLA (fuori da _rebuild_page) ─
+        # _rebuild_page viene richiamato ad ogni cambio tema: definire e bindare
+        # _on_link_clicked al suo interno accumulerebbe handler multipli.
+        def _on_link_clicked(e):
+            href = e.GetLinkInfo().GetHref()
+            if href.startswith('#'):
+                # Normalizza lo slug: collassa trattini multipli (--→-)
+                # per allinearsi all'algoritmo di _make_slug
+                anchor = _re.sub(r'-+', '-', href[1:])
+                _log_null = wx.LogNull()
+                hw.ScrollToAnchor(anchor)
+                del _log_null
+            else:
+                wx.LaunchDefaultBrowser(href)
+        hw.Bind(wx.html.EVT_HTML_LINK_CLICKED, _on_link_clicked)
 
         # Carichiamo la pagina iniziale con il tema salvato
         _rebuild_page(_dark_mode[0])
@@ -6133,34 +6176,46 @@ class SongpressFrame(SDIMainFrame):
             return s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
         def inline(s):
-            """Applica le sostituzioni inline (grassetto, corsivo, code, link, img)."""
-            # Codice inline PRIMA di corsivo/grassetto, per proteggere _underscore_
-            # dentro i backtick (es. `start_of_chorus` non deve diventare <i>of</i>)
-            # Sostituisce temporaneamente i segmenti `...` con placeholder, poi li ripristina
-            codes = []
-            def _save_code(m):
-                codes.append('<code>' + m.group(1) + '</code>')
-                return '\x00CODE%d\x00' % (len(codes) - 1)
-            s = re.sub(r'`(.+?)`', _save_code, s)
-            # Grassetto+corsivo combinati: ***testo***
+            """Applica le sostituzioni inline (grassetto, corsivo, code, link, img).
+
+            Ordine di protezione: prima salva come placeholder codice inline,
+            immagini e link (che possono contenere underscore), poi applica
+            grassetto e corsivo, infine ripristina i placeholder.
+            """
+            placeholders = []
+
+            def _save(text):
+                placeholders.append(text)
+                return '\x00PH%d\x00' % (len(placeholders) - 1)
+
+            def _restore(s):
+                for i, ph in enumerate(placeholders):
+                    s = s.replace('\x00PH%d\x00' % i, ph)
+                return s
+
+            # 1. Codice inline `...`
+            s = re.sub(r'`(.+?)`',
+                       lambda m: _save('<code>' + m.group(1) + '</code>'), s)
+            # 2. Immagini cliccabili [![alt](src)](href)
+            s = re.sub(r'!\[([^\]]*)\]\(([^)]+)\)',
+                       lambda m: _save(
+                           '<img src="%s" alt="%s" style="max-width:100%%;">' % (m.group(2), m.group(1))
+                       ), s)
+            # 3. Link [testo](url) — protegge underscore nel testo e nell'href
+            s = re.sub(r'\[([^\]]+)\]\(([^)]+)\)',
+                       lambda m: _save('<a href="%s">%s</a>' % (m.group(2), m.group(1))), s)
+            # 4. Grassetto+corsivo: ***testo***
             s = re.sub(r'\*\*\*(.+?)\*\*\*', r'<b><i>\1</i></b>', s)
-            # Grassetto: **testo** o __testo__
+            # 5. Grassetto: **testo** o __testo__
             s = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', s)
             s = re.sub(r'__(.+?)__',     r'<b>\1</b>', s)
-            # Corsivo: *testo* o _testo_
+            # 6. Corsivo: *testo* o _testo_
+            #    Link, immagini e codice sono già nei placeholder: gli underscore
+            #    al loro interno non vengono intaccati dalla regex seguente.
             s = re.sub(r'\*(.+?)\*', r'<i>\1</i>', s)
             s = re.sub(r'_(.+?)_',   r'<i>\1</i>', s)
-            # Ripristina i segmenti codice
-            for i, code in enumerate(codes):
-                s = s.replace('\x00CODE%d\x00' % i, code)
-            # Immagini cliccabili: [![alt](src)](href) — deve precedere link e img
-            s = re.sub(r'\[(<img [^>]+>)\]\(([^)]+)\)', r'<a href="\2">\1</a>', s)
-            # Immagini: ![alt](src)
-            s = re.sub(r'!\[([^\]]*)\]\(([^)]+)\)',
-                       r'<img src="\2" alt="\1" style="max-width:100%;">', s)
-            # Link: [testo](url)
-            s = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'<a href="\2">\1</a>', s)
-            return s
+            # 7. Ripristina tutti i placeholder
+            return _restore(s)
 
         def close_lists(html_lines, list_stack):
             """Chiude tutti i livelli di lista aperti."""
@@ -6394,12 +6449,6 @@ class SongpressFrame(SDIMainFrame):
         else:
             md_text = _guide_pat.sub(r'\1img/GUIDE/', md_text)
 
-        # Rimuove i link interni #anchor dal markdown prima della conversione:
-        # wx.html.HtmlWindow non supporta la navigazione via ScrollToAnchor
-        # in modo affidabile con tutti i layout; il file .md rimane invariato.
-        import re as _re_toc
-        md_text = _re_toc.sub(r'\[([^\]]+)\]\(#[^)]+\)', r'\1', md_text)
-
         html = self._md_to_html(md_text)
 
         dlg = wx.Dialog(
@@ -6515,7 +6564,9 @@ class SongpressFrame(SDIMainFrame):
                     return '<font bgcolor="#FFFF99" color="#000000">' + text + '</font>'
                 highlighted = _re2.sub(r'(?i)(%s)' % escaped, _replace_match, themed)
                 hw.SetPage(highlighted)
+                _log_null = wx.LogNull()
                 hw.ScrollToAnchor("__active__")
+                del _log_null
 
             def _on_next(e):
                 term = txt.GetValue().strip()
@@ -6592,6 +6643,10 @@ class SongpressFrame(SDIMainFrame):
                 if not _search_state.get('html_orig'):
                     _search_state['html_orig'] = hw.GetParser().GetSource() \
                         if hw.GetParser() else ''
+                # Se c'è testo selezionato nella guida, lo usa come termine di ricerca
+                sel = hw.SelectionToText().strip()
+                if sel:
+                    _search_state['term'] = sel
                 _guide_search_open()
 
             menu.Bind(wx.EVT_MENU, _on_search, id=_id_search)
@@ -6663,21 +6718,50 @@ class SongpressFrame(SDIMainFrame):
             ))
             hw.SetPage(styled)
             _search_state['html_themed'] = styled
-            def _on_link_clicked(e):
-                href = e.GetLinkInfo().GetHref()
-                if href.startswith('#'):
-                    import re as _re_anchor
-                    # Normalizza lo slug: collassa trattini multipli (--→-)
-                    # per allinearsi all'algoritmo usato in _md_to_html
-                    anchor = _re_anchor.sub(r'-+', '-', href[1:])
-                    hw.ScrollToAnchor(anchor)
-                else:
-                    wx.LaunchDefaultBrowser(href)
-            hw.Bind(wx.html.EVT_HTML_LINK_CLICKED, _on_link_clicked)
 
         _body_m = _re.search(r'<body>(.*)</body>', html, _re.DOTALL | _re.IGNORECASE)
         html_body = _body_m.group(1) if _body_m else html
         _search_state['html_orig'] = html
+
+        # ── Inietta anchor prima di ogni intestazione (parser esterni non li aggiungono) ─
+        def _make_slug(text):
+            slug = _re.sub(r'[^\w\s-]', '', text.lower())
+            slug = _re.sub(r'[\s]+', '-', slug.strip())
+            slug = _re.sub(r'-+', '-', slug)
+            return slug
+
+        def _inject_anchors(body_html):
+            def _add_anchor(m):
+                level   = m.group(1)
+                attrs   = m.group(2) or ''
+                content = m.group(3)
+                plain   = _re.sub(r'<[^>]+>', '', content)
+                slug    = _make_slug(plain)
+                anchor  = '<p style="margin:0;padding:0"><a name="%s"></a></p>' % slug
+                return '%s<%s%s>%s</%s>' % (anchor, level, attrs, content, level)
+            return _re.sub(
+                r'<(h[1-4])(\s[^>]*)?>(.+?)</\1>',
+                lambda m: (
+                    m.group(0) if _re.search(r'<a\s+name=', body_html[max(0, m.start()-120):m.start()])
+                    else _add_anchor(m)
+                ),
+                body_html,
+                flags=_re.DOTALL | _re.IGNORECASE,
+            )
+
+        html_body = _inject_anchors(html_body)
+
+        # ── Handler link: bindato UNA VOLTA SOLA (fuori da _rebuild_page) ─
+        def _on_link_clicked(e):
+            href = e.GetLinkInfo().GetHref()
+            if href.startswith('#'):
+                anchor = _re.sub(r'-+', '-', href[1:])
+                _log_null = wx.LogNull()
+                hw.ScrollToAnchor(anchor)
+                del _log_null
+            else:
+                wx.LaunchDefaultBrowser(href)
+        hw.Bind(wx.html.EVT_HTML_LINK_CLICKED, _on_link_clicked)
 
         _rebuild_page(_dark_mode[0])
 
