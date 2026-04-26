@@ -1407,3 +1407,7 @@ msgstr "Ritardo in secondi prima della riapertura del dialogo (1-60)"
 #: SongpressFrame.py — beats_time dialog reopen delay seconds label
 msgid "s"
 msgstr "s"
+
+#: SongpressFrame.py — Commands Guide dialog title
+msgid "Songpress++ Commands Guide"
+msgstr "Guida ai comandi di Songpress++"
