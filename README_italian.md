@@ -228,7 +228,24 @@ Se la nuova direttiva introduce nuove stringhe traducibili (etichette, tooltip, 
 | `gui.fbp` | Solo se si aggiunge una voce di menu (sorgente wxFormBuilder) |
 | `PreferencesDialog.po` | Solo se si aggiungono nuove stringhe traducibili |
 
+---
 
+### FAQ per sviluppatori
+
+**Due file `.po` possono contenere le stesse stringhe senza entrare in conflitto?**
+
+Sì, senza alcun problema. I file `.po` in gettext sono **indipendenti** l'uno dall'altro — ogni file è il catalogo di un singolo modulo/dominio, e wxPython carica ciascun dominio separatamente con il suo nome.
+
+Quindi se `SongbookExporter.po` e `SongpressFrame.po` contengono entrambi:
+
+```po
+msgid "Browse..."
+msgstr "Sfoglia..."
+```
+
+non c'è nessun conflitto, perché al momento del caricamento ogni modulo chiama `wx.GetTranslation()` nel contesto del proprio dominio. La stringa viene risolta nel catalogo corretto in base a quale `.mo` è stato caricato per quel modulo.
+
+L'unico caso in cui può sorgere un problema è se si usa un singolo dominio condiviso per tutto il progetto (come fa Django con `django.po`): lì stringhe identiche con traduzioni diverse nelle due lingue si sovrascriverebbero. Ma con la struttura di Songpress++ — un `.po`/`.mo` per file — ogni catalogo è isolato e le stringhe duplicate sono semplicemente ridondanti, non conflittuali.
 
 ### Linux: esportazione SVG e scaling del display
 

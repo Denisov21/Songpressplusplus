@@ -1,32 +1,29 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
+# Italian translations for SongbookExporter.py
+# Traduzioni italiane per SongbookExporter.py
+# Copyright (C) 2026 Denisov21
+# License: GNU GPL v2
 #
-# Translators:
-# Denisov21, 2026
 msgid ""
 msgstr ""
-"Project-Id-Version: songpress\n"
+"Project-Id-Version: Songpress++\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-05 16:22+0200\n"
-"PO-Revision-Date: 2026-03-12 00:00+0000\n"
+"POT-Creation-Date: 2026-04-27\n"
+"PO-Revision-Date: 2026-04-27\n"
 "Last-Translator: Denisov21\n"
-"Language-Team: Italian\n"
 "Language: it\n"
+"Language-Team: Italian\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-# --- SongbookDialog ---
-
+# ── Titolo dialogo ──────────────────────────────────────────────────────────
 msgid "Create Songbook"
 msgstr "Crea Songbook"
 
+# ── Etichette griglia ───────────────────────────────────────────────────────
 msgid "Songs folder:"
 msgstr "Cartella brani:"
-
-msgid "Browse..."
-msgstr "Sfoglia..."
 
 msgid "Save PDF as:"
 msgstr "Salva PDF come:"
@@ -43,6 +40,10 @@ msgstr "Anno:"
 msgid "Extensions:"
 msgstr "Estensioni:"
 
+# ── Pulsanti ────────────────────────────────────────────────────────────────
+msgid "Browse..."
+msgstr "Sfoglia..."
+
 msgid "Page settings:"
 msgstr "Impostazioni pagina:"
 
@@ -52,8 +53,16 @@ msgstr "Imposta pagina..."
 msgid "Print options..."
 msgstr "Opzioni di stampa..."
 
+# ── Checkbox ────────────────────────────────────────────────────────────────
+msgid "Clickable index entries (PDF links)"
+msgstr "Voci indice cliccabili (link PDF)"
+
+msgid "Print 2 pages per sheet"
+msgstr "Stampa 2 pagine per foglio"
+
+# ── Dialoghi file ───────────────────────────────────────────────────────────
 msgid "Choose the songs folder"
-msgstr "Scegli la cartella con i brani"
+msgstr "Scegli la cartella dei brani"
 
 msgid "Save Songbook PDF"
 msgstr "Salva Songbook PDF"
@@ -61,54 +70,205 @@ msgstr "Salva Songbook PDF"
 msgid "PDF files (*.pdf)|*.pdf|All files (*.*)|*.*"
 msgstr "File PDF (*.pdf)|*.pdf|Tutti i file (*.*)|*.*"
 
+# ── Dialogo opzioni di stampa ───────────────────────────────────────────────
 msgid "Print options"
 msgstr "Opzioni di stampa"
 
-msgid "Print 2 pages per sheet"
-msgstr "Stampa 2 pagine per foglio"
-
-# --- _build_pdf ---
-
-msgid "The 'reportlab' library is not installed.\nRun: pip install reportlab"
-msgstr "La libreria 'reportlab' non è installata.\nEseguire: pip install reportlab"
-
-msgid "Missing library"
-msgstr "Libreria mancante"
-
-msgid "Processing: %s"
-msgstr "Elaborazione: %s"
-
+# ── Testo generato nel PDF ──────────────────────────────────────────────────
 msgid "Index"
 msgstr "Indice"
 
+#. Numero di brani in copertina, es. "14 songs"
 msgid "%d songs"
 msgstr "%d brani"
 
-# --- create_songbook ---
-
-msgid "Please select a valid folder."
-msgstr "Seleziona una cartella valida."
-
-msgid "Error"
-msgstr "Errore"
-
-msgid "Please select the output PDF file."
-msgstr "Seleziona il file PDF di output."
-
-msgid "No songs found in the folder.\nCheck the selected extensions."
-msgstr "Nessun brano trovato nella cartella.\nControlla le estensioni selezionate."
-
-msgid "Empty folder"
-msgstr "Cartella vuota"
-
+# ── Barra di avanzamento ────────────────────────────────────────────────────
 msgid "Creating Songbook"
-msgstr "Creazione Songbook"
+msgstr "Creazione Songbook in corso"
 
 msgid "Initializing..."
 msgstr "Inizializzazione..."
 
-msgid "Songbook exported successfully!\n\n%d songs included.\n\n%s"
-msgstr "Songbook esportato con successo!\n\n%d brani inclusi.\n\n%s"
+#. Messaggio mostrato durante l'elaborazione di ogni brano
+msgid "Processing: %s"
+msgstr "Elaborazione: %s"
+
+# ── Messaggi di errore ──────────────────────────────────────────────────────
+msgid ""
+"The 'reportlab' library is not installed.\n"
+"Run: pip install reportlab"
+msgstr ""
+"La libreria 'reportlab' non è installata.\n"
+"Eseguire: pip install reportlab"
+
+msgid "Missing library"
+msgstr "Libreria mancante"
+
+msgid "Please select a valid folder."
+msgstr "Selezionare una cartella valida."
+
+msgid "Please select the output PDF file."
+msgstr "Selezionare il file PDF di destinazione."
+
+msgid ""
+"No songs found in the folder.\n"
+"Check the selected extensions."
+msgstr ""
+"Nessun brano trovato nella cartella.\n"
+"Verificare le estensioni selezionate."
+
+msgid "Empty folder"
+msgstr "Cartella vuota"
+
+msgid "Error"
+msgstr "Errore"
+
+# ── Messaggio di completamento ──────────────────────────────────────────────
+#. %d = numero brani inclusi, %s = percorso file PDF
+msgid ""
+"Songbook exported successfully!\n"
+"\n"
+"%d songs included.\n"
+"\n"
+"%s"
+msgstr ""
+"Songbook esportato con successo!\n"
+"\n"
+"%d brani inclusi.\n"
+"\n"
+"%s"
 
 msgid "Songbook created"
 msgstr "Songbook creato"
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# CanzonatorDialog.py
+# ════════════════════════════════════════════════════════════════════════════
+
+# ── Titoli dialogo ──────────────────────────────────────────────────────────
+msgid "Canzonatore — Merge songs"
+msgstr "Canzonatore — Unisci brani"
+
+msgid "Canzonatore — Merge completed"
+msgstr "Canzonatore — Unione completata"
+
+# ── Titolo app (usato nei MessageBox) ──────────────────────────────────────
+msgid "Canzonatore"
+msgstr "Canzonatore"
+
+# ── Etichette finestra principale ───────────────────────────────────────────
+msgid "Files to merge (order = order in output) — double-click to open:"
+msgstr "File da unire (ordine = ordine nel file finale) — doppio clic per aprire:"
+
+# ── Colonne lista ───────────────────────────────────────────────────────────
+msgid "File"
+msgstr "File"
+
+msgid "Folder"
+msgstr "Cartella"
+
+# ── Pulsanti gestione lista ─────────────────────────────────────────────────
+msgid "Add files…"
+msgstr "Aggiungi file…"
+
+msgid "Add folder…"
+msgstr "Aggiungi cartella…"
+
+msgid "Remove"
+msgstr "Rimuovi"
+
+msgid "▲ Up"
+msgstr "▲ Su"
+
+msgid "▼ Down"
+msgstr "▼ Giù"
+
+msgid "Clear all"
+msgstr "Cancella tutto"
+
+# ── Gruppo opzioni ──────────────────────────────────────────────────────────
+msgid "Options"
+msgstr "Opzioni"
+
+msgid "Song separator:"
+msgstr "Separatore brani:"
+
+msgid "{new_page}  (page break)"
+msgstr "{new_page}  (interruzione pagina)"
+
+msgid "Blank line"
+msgstr "Riga vuota"
+
+msgid "Output encoding:"
+msgstr "Codifica output:"
+
+msgid "Open the merged file in the editor"
+msgstr "Apri il file unito nell'editor"
+
+# ── Pulsanti principali ─────────────────────────────────────────────────────
+msgid "Merge…"
+msgstr "Unisci…"
+
+msgid "Close"
+msgstr "Chiudi"
+
+msgid "OK"
+msgstr "OK"
+
+# ── Filtri file ─────────────────────────────────────────────────────────────
+msgid "All supported files"
+msgstr "Tutti i file supportati"
+
+msgid "All files"
+msgstr "Tutti i file"
+
+msgid "ChordPro files"
+msgstr "File ChordPro"
+
+msgid "Select files to add"
+msgstr "Seleziona file da aggiungere"
+
+msgid "Select folder"
+msgstr "Seleziona cartella"
+
+msgid "Save merged file as…"
+msgstr "Salva file unito come…"
+
+# ── Dialogo completamento merge ─────────────────────────────────────────────
+#. %d = numero brani uniti
+msgid "Merge completed: %d songs merged."
+msgstr "Unione completata: %d brani uniti."
+
+#. %d = numero file saltati per errore
+msgid "(%d file(s) skipped due to read errors)"
+msgstr "(%d file saltati per errori di lettura)"
+
+msgid "Output file:"
+msgstr "File di output:"
+
+msgid "Open the file with the default application"
+msgstr "Apri il file con l'applicazione predefinita"
+
+msgid "Open the containing folder"
+msgstr "Apri la cartella contenente il file"
+
+# ── Messaggi di errore / avviso ─────────────────────────────────────────────
+msgid "Add at least one file to merge."
+msgstr "Aggiungere almeno un file da unire."
+
+msgid "Remove all files from the list?"
+msgstr "Rimuovere tutti i file dall'elenco?"
+
+#. %d = numero file saltati
+msgid "%d file(s) skipped (unsupported format or already in list)."
+msgstr "%d file saltati (formato non supportato o già presenti nell'elenco)."
+
+msgid "No supported files found in the selected folder."
+msgstr "Nessun file supportato trovato nella cartella selezionata."
+
+msgid "Errors reading the following files:\n\n"
+msgstr "Errori nella lettura dei seguenti file:\n\n"
+
+msgid "Error writing the merged file:\n\n"
+msgstr "Errore nella scrittura del file unito:\n\n"

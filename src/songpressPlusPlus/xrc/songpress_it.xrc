@@ -86,6 +86,18 @@
           </object>
         </object>
         <object class="separator"/>
+        <object class="wxMenuItem" name="songbook">
+          <label>Crea _Songbook PDF...</label>
+          <accel></accel>
+          <help>Crea un songbook PDF da una cartella di brani</help>
+          <bitmap>../img/songbook.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="canzonatore">
+          <label>_Canzonatore (unisci brani)...</label>
+          <accel></accel>
+          <help>Unisce più file ChordPro in un unico file</help>
+        </object>
+        <object class="separator"/>
         <object class="wxMenuItem" name="print">
           <label>_Stampa...</label>
           <accel>CTRL+P</accel>

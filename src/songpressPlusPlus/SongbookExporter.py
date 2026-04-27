@@ -48,6 +48,7 @@ class SongbookDialog(wx.Dialog):
         self._page_setup_data.SetMarginTopLeft(wx.Point(15, 15))
         self._page_setup_data.SetMarginBottomRight(wx.Point(15, 15))
         self._two_pages_per_sheet = False
+        self._clickable_index = True   # voci indice cliccabili (default: sì)
         self._build_ui()
 
     def _build_ui(self):
@@ -115,6 +116,11 @@ class SongbookDialog(wx.Dialog):
 
         sizer.Add(grid, 1, wx.EXPAND | wx.ALL, 12)
 
+        # --- Checkbox indice cliccabile ---
+        self._cb_clickable_index = wx.CheckBox(self, label=_("Clickable index entries (PDF links)"))
+        self._cb_clickable_index.SetValue(self._clickable_index)
+        sizer.Add(self._cb_clickable_index, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+
         # --- Riga pulsanti impostazioni pagina ---
         page_row = wx.BoxSizer(wx.HORIZONTAL)
         page_row.Add(wx.StaticText(self, label=_("Page settings:")), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
@@ -129,7 +135,7 @@ class SongbookDialog(wx.Dialog):
         btn_sizer = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
         sizer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 8)
         self.SetSizer(sizer)
-        self.SetMinSize((480, 340))
+        self.SetMinSize((480, 360))
         self.Fit()
 
     def _on_browse_folder(self, evt):
@@ -196,6 +202,7 @@ class SongbookDialog(wx.Dialog):
             'margin_bottom': br.y,
             'margin_right':  br.x,
             'two_pages_per_sheet': self._two_pages_per_sheet,
+            'clickable_index':     self._cb_clickable_index.GetValue(),
         }
 
 
@@ -234,9 +241,13 @@ def _collect_songs(folder, exts=None):
 #  Generazione PDF con reportlab                                       #
 # ------------------------------------------------------------------ #
 
-def _render_song_to_png(frame_obj, song_text, scale=2):
+def _render_song_to_png(frame_obj, song_text, scale=2, song_dir=None):
     """Renderizza un testo ChordPro su bitmap PNG temporanea.
-    Restituisce (tmp_path, width_px, height_px) oppure None in caso di errore."""
+    Restituisce (tmp_path, width_px, height_px) oppure None in caso di errore.
+
+    song_dir: cartella del file sorgente, usata per risolvere i percorsi
+              relativi delle immagini ({image: nome.png}).
+    """
     import wx
     from .Renderer import Renderer
     from .SongDecorator import SongDecorator
@@ -250,6 +261,9 @@ def _render_song_to_png(frame_obj, song_text, scale=2):
             decorator = SongDecorator()
         decorator.showKlavier = False
         r = Renderer(frame_obj.pref.format, decorator, frame_obj.pref.notations)
+        # Imposta la directory del documento per risolvere {image: percorso_relativo}
+        if song_dir:
+            r._document_dir = song_dir
         w, h = r.Render(song_text, dc_measure)
         w, h = max(1, int(w)), max(1, int(h))
 
@@ -265,6 +279,8 @@ def _render_song_to_png(frame_obj, song_text, scale=2):
             decorator2 = SongDecorator()
         decorator2.showKlavier = False
         r2 = Renderer(frame_obj.pref.format, decorator2, frame_obj.pref.notations)
+        if song_dir:
+            r2._document_dir = song_dir
         r2.Render(song_text, dc)
         del dc
 
@@ -279,7 +295,7 @@ def _render_song_to_png(frame_obj, song_text, scale=2):
 
 def _build_pdf(frame_obj, songs, output_path, sb_title, sb_author, sb_year, progress_cb=None,
                print_data=None, margin_top=15, margin_left=15, margin_bottom=15, margin_right=15,
-               two_pages_per_sheet=False):
+               two_pages_per_sheet=False, clickable_index=True):
     """
     Costruisce il PDF completo.
     songs: list of (title, filepath)
@@ -448,7 +464,10 @@ def _build_pdf(frame_obj, songs, output_path, sb_title, sb_author, sb_year, prog
         except Exception:
             continue
 
-        result = _render_song_to_png(frame_obj, song_text, scale=SCALE)
+        result = _render_song_to_png(
+            frame_obj, song_text, scale=SCALE,
+            song_dir=os.path.dirname(os.path.abspath(filepath)),
+        )
         if result is None:
             continue
         tmp_path, song_w_px, song_h_px = result
@@ -456,6 +475,10 @@ def _build_pdf(frame_obj, songs, output_path, sb_title, sb_author, sb_year, prog
 
         first_song_page = page_num[0]
         index_entries.append((title, first_song_page))
+
+        # Bookmark PDF per il link dall'indice (solo se clickable_index)
+        if clickable_index:
+            c.bookmarkPage('song_%d' % i)
 
         _draw_song_in_slot(tmp_path, song_w_px, song_h_px)
         _finish_slot()
@@ -514,6 +537,26 @@ def _build_pdf(frame_obj, songs, output_path, sb_title, sb_author, sb_year, prog
             c.setFillColor(HexColor("#bbbbbb"))
             dots = ". " * int((dots_x2 - dots_x1) / c.stringWidth(". ", "Helvetica", 8))
             c.drawString(dots_x1, y_row + 1.5 * mm, dots)
+
+        # Link cliccabile sull'intera riga → porta alla pagina del brano
+        if clickable_index:
+            link_y1 = y_row - 1 * mm
+            link_y2 = y_row - 1 * mm + row_h
+            c.linkAbsolute(
+                '',                          # testo (vuoto = solo rettangolo invisibile)
+                'song_%d' % idx,             # nome del bookmark sulla pagina del brano
+                Rect=(ml, link_y1, ml + avail_w, link_y2),
+            )
+            # Sottolinea il titolo in blu per segnalare il link
+            c.setStrokeColor(HexColor("#1a3a5c"))
+            c.setLineWidth(0.4)
+            title_w = c.stringWidth(title, "Helvetica", 10)
+            c.line(ml + 8 * mm, y_row + 1.0 * mm,
+                   ml + 8 * mm + title_w, y_row + 1.0 * mm)
+            c.setFillColor(HexColor("#1a3a5c"))
+            c.setFont("Helvetica", 10)
+            c.drawString(ml + 8 * mm, y_row + 1.5 * mm, title)
+
         row += 1
 
     draw_page_number(page_num[0])
@@ -600,6 +643,7 @@ def create_songbook(frame_obj, parent_window):
             margin_bottom=vals.get('margin_bottom', 15),
             margin_right=vals.get('margin_right', 15),
             two_pages_per_sheet=vals.get('two_pages_per_sheet', False),
+            clickable_index=vals.get('clickable_index', True),
         )
     finally:
         progress.Destroy()

@@ -1105,20 +1105,103 @@ The control is disabled when the "Remove blank pages" checkbox is off, and re-en
 
 ## Export
 
-| Format              | Notes                                 |
-| ------------------- | ------------------------------------- |
-| SVG                 | Vector, scalable                      |
-| EMF                 | Windows vector format                 |
-| PNG                 | Raster image                          |
-| HTML                | Web page with colored chords          |
-| Tab                 | Text format with chords above         |
-| PDF                 | PDF document                          |
-| PowerPoint (.pptx)  | Presentation                          |
-| Songbook            | Song collection                       |
-| Copy as image       | Copies to clipboard as vector image   |
-| Copy text only      | Copies text without chords            |
+| Format              | Notes                                         |
+| ------------------- | --------------------------------------------- |
+| SVG                 | Vector, scalable                              |
+| EMF                 | Windows vector format                         |
+| PNG                 | Raster image                                  |
+| HTML                | Web page with colored chords                  |
+| Tab                 | Text format with chords above                 |
+| PDF                 | PDF document                                  |
+| PowerPoint (.pptx)  | Presentation                                  |
+| Create Songbook PDF | PDF song collection with clickable index      |
+| Canzonatore         | Merges multiple ChordPro files into one       |
+| Copy as image       | Copies to clipboard as vector image           |
+| Copy text only      | Copies text without chords                    |
 
 ---
+
+## Create Songbook PDF
+
+The **Create Songbook PDF** function (*File → Create Songbook PDF…*) generates a complete PDF document from all ChordPro songs in a selected folder.
+
+### How to use
+
+1. Choose the **songs folder** using the *Browse…* button
+2. Specify the **output PDF file**
+3. Fill in the optional fields: **Songbook title**, **Author / Group**, **Year**
+4. Select the **extensions** to include (`.crd`, `.cho`, `.chordpro`, `.chopro`, `.pro`, `.tab`, `.sng`, `.txt`)
+5. Choose whether to make **index entries clickable**
+6. Adjust page setup and print options
+7. Click **OK** to start generation
+
+### Structure of the generated PDF
+
+| Section   | Description |
+| --------- | ----------- |
+| Cover     | Title, author and year on a dark-blue background with an orange band |
+| Songs     | One song per page (or more if the text is long); songs are sorted alphabetically by the title extracted from `{t:}` or `{title:}`, falling back to the filename |
+| Index     | Numbered list of all songs with dot leaders and page numbers |
+
+### Options
+
+| Option | Description |
+| ------ | ----------- |
+| Extensions | Select which file types to include in the collection |
+| Clickable index entries (PDF links) | When enabled, each index entry is an internal PDF link that jumps directly to the song's page; the title appears in blue with an underline |
+| Print 2 pages per sheet | Places two songs side by side on one physical sheet |
+| Page setup | Paper size, orientation and margins |
+| Print options | 2-pages-per-sheet mode |
+
+### Notes
+
+- Images inserted with `{image: filename.png}` are looked up **in the same folder as the source file** and included in the PDF automatically.
+- Songs are always sorted alphabetically, regardless of the file order in the folder.
+- To include `.txt` files (which usually contain no ChordPro directives), tick the corresponding extension in the list.
+
+---
+
+## Canzonatore — Merge Songs
+
+The **Canzonatore** function (*File → Canzonatore (unisci brani)…* / *Merge songs…*) merges multiple ChordPro files into a single text file, inserting a separator between songs.
+
+### How to use
+
+1. Open the dialog from *File → Merge songs (Canzonatore)…*
+2. Add files using **Add files…** (multi-selection) or **Add folder…** (imports all supported files in the folder in alphabetical order)
+3. Reorder songs using the **▲ Up** and **▼ Down** buttons
+4. Choose the **separator** between songs and the **output encoding**
+5. Click **Merge…**, choose where to save the output file, and confirm
+
+### Options
+
+| Option | Values | Description |
+| ------ | ------ | ----------- |
+| Song separator | `{new_page}` (default) | Inserts an explicit page break between songs |
+| | Blank line | Separates songs with a blank line |
+| Output encoding | UTF-8 (default) | Recommended for maximum compatibility |
+| | Latin-1 (ISO-8859-1) | For compatibility with older software |
+| Open merged file in editor | ✅ on by default | Automatically opens the resulting file in the Songpress++ editor when merging is complete |
+
+### Supported extensions
+
+`.crd` `.cho` `.chordpro` `.chopro` `.pro` `.tab` `.cpm`
+
+### Double-click in the list
+
+Double-clicking (or pressing Enter) on a file in the list opens it in the Songpress++ editor. You can review a file before merging without leaving the dialog.
+
+### Completion dialog
+
+When merging is complete, a dialog appears with:
+- **File link** — click to open the file with the system's default application
+- **Folder link** — click to open the file manager at the folder containing the file (with file selection on Windows and macOS)
+
+### Notes
+
+- Files already in the list are not added a second time (automatic deduplication).
+- The encoding of source files is detected automatically (UTF-8-BOM → UTF-8 → Latin-1).
+- If a file cannot be read, it is skipped and reported in the completion dialog; merging continues with the remaining files.
 
 ## Supported Import File Formats
 

@@ -36,6 +36,7 @@ from .MyPreferencesDialog import MyPreferencesDialog
 from .HTML import HtmlExporter, TabExporter
 from . import PdfExporter
 from . import SongbookExporter
+from . import CanzonatorDialog
 from .MyTransposeDialog import *
 from .MyNotationDialog import *
 from .MyNormalizeDialog import *
@@ -1728,6 +1729,7 @@ class SongpressFrame(SDIMainFrame):
         Bind(self.OnExportAsPptx, 'exportAsPptx')
         Bind(self.OnExportAsPdf, 'exportAsPdf')
         Bind(self.OnSongbook, 'songbook')
+        Bind(self.OnCanzonatore, 'canzonatore')
         Bind(self.OnPrint, 'print')
         Bind(self.OnPrintPreview, 'printPreview')
         Bind(self.OnPageSetup, 'pageSetup')
@@ -4520,6 +4522,10 @@ class SongpressFrame(SDIMainFrame):
     def OnSongbook(self, evt):
         """Crea un Songbook PDF da una cartella di brani."""
         SongbookExporter.create_songbook(self, self.frame)
+
+    def OnCanzonatore(self, evt):
+        """Unisce più file ChordPro in un unico file (Canzonatore)."""
+        CanzonatorDialog.open_canzonatore(self, self.frame)
 
     def OnExportAsPptx(self, evt):
         try:

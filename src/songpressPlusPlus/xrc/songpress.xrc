@@ -86,6 +86,18 @@
           </object>
         </object>
         <object class="separator"/>
+        <object class="wxMenuItem" name="songbook">
+          <label>Create _Songbook PDF...</label>
+          <accel></accel>
+          <help>Create a PDF songbook from a folder of songs</help>
+          <bitmap>../img/songbook.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="canzonatore">
+          <label>_Merge songs (Canzonatore)...</label>
+          <accel></accel>
+          <help>Merge multiple ChordPro files into a single file</help>
+        </object>
+        <object class="separator"/>
         <object class="wxMenuItem" name="print">
           <label>_Print...</label>
           <accel>CTRL+P</accel>

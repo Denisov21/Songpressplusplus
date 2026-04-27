@@ -1114,11 +1114,94 @@ Il controllo è disabilitato quando la checkbox «Rimuovi pagine vuote» è disa
 | Tab                  | Formato testo con accordi sopra              |
 | PDF                  | Documento PDF                                |
 | PowerPoint (.pptx)   | Presentazione                                |
-| Canzoniere           | Raccolta di canzoni                          |
+| Crea Songbook PDF    | Raccolta PDF di canzoni con indice cliccabile |
+| Canzonatore          | Unisce più file ChordPro in un unico file    |
 | Copia come immagine  | Copia negli appunti come immagine vettoriale |
 | Copia solo testo     | Copia il testo senza accordi                 |
 
 ---
+
+## Crea Songbook PDF
+
+La funzione **Crea Songbook PDF** (menu *File → Crea Songbook PDF…*) genera un documento PDF completo da tutti i brani ChordPro presenti in una cartella selezionata.
+
+### Come si usa
+
+1. Scegliere la **cartella dei brani** tramite il pulsante *Sfoglia…*
+2. Indicare il **file PDF di output**
+3. Compilare i campi facoltativi: **Titolo Songbook**, **Autore / Gruppo**, **Anno**
+4. Selezionare le **estensioni** da includere (`.crd`, `.cho`, `.chordpro`, `.chopro`, `.pro`, `.tab`, `.sng`, `.txt`)
+5. Scegliere se rendere le **voci dell'indice cliccabili**
+6. Regolare le impostazioni di pagina e le opzioni di stampa
+7. Premere **OK** per avviare la generazione
+
+### Struttura del PDF generato
+
+| Sezione   | Descrizione |
+| --------- | ----------- |
+| Copertina | Titolo, autore e anno su sfondo blu scuro con banda arancione |
+| Brani     | Un brano per pagina (o più se il testo è lungo); i brani sono ordinati alfabeticamente per titolo estratto da `{t:}` o `{title:}`, con fallback al nome del file |
+| Indice    | Elenco numerato di tutti i brani con puntini di connessione e numero di pagina |
+
+### Opzioni
+
+| Opzione | Descrizione |
+| ------- | ----------- |
+| Estensioni | Selezionare quali tipi di file includere nella raccolta |
+| Voci indice cliccabili (link PDF) | Se attivo, ogni voce dell'indice è un link interno che porta direttamente alla pagina del brano nel PDF; il titolo appare in blu con sottolineatura |
+| Stampa 2 pagine per foglio | Affianca due brani sullo stesso foglio fisico |
+| Imposta pagina | Formato carta, orientamento e margini |
+| Opzioni di stampa | Modalità 2 pagine per foglio |
+
+### Note
+
+- Le immagini `{image: nomefile.png}` inserite nei brani vengono cercate **nella stessa cartella del file sorgente** e incluse automaticamente nel PDF.
+- I brani sono sempre ordinati alfabeticamente, indipendentemente dall'ordine dei file nella cartella.
+- Per includere file `.txt` (che di norma non contengono direttive ChordPro), spuntare l'apposita estensione nell'elenco.
+
+---
+
+## Canzonatore — Unisci brani
+
+La funzione **Canzonatore** (menu *File → Canzonatore (unisci brani)…*) unisce più file ChordPro in un unico file di testo, inserendo un separatore tra un brano e l'altro.
+
+### Come si usa
+
+1. Aprire il dialogo dal menu *File → Canzonatore (unisci brani)…*
+2. Aggiungere i file tramite **Aggiungi file…** (selezione multipla) o **Aggiungi cartella…** (importa tutti i file supportati nella cartella in ordine alfabetico)
+3. Riordinare i brani con i pulsanti **▲ Su** e **▼ Giù**
+4. Scegliere il **separatore** tra i brani e la **codifica di output**
+5. Premere **Unisci…**, scegliere dove salvare il file risultante e confermare
+
+### Opzioni
+
+| Opzione | Valori | Descrizione |
+| ------- | ------ | ----------- |
+| Separatore brani | `{new_page}` (predefinito) | Inserisce un'interruzione di pagina esplicita tra i brani |
+| | Riga vuota | Separa i brani con una riga vuota |
+| Codifica output | UTF-8 (predefinito) | Raccomandato per la massima compatibilità |
+| | Latin-1 (ISO-8859-1) | Per compatibilità con software più datati |
+| Apri file unito nell'editor | ✅ attivo per default | Apre automaticamente il file risultante nell'editor di Songpress++ al termine dell'unione |
+
+### Estensioni supportate
+
+`.crd` `.cho` `.chordpro` `.chopro` `.pro` `.tab` `.cpm`
+
+### Doppio clic nella lista
+
+Fare doppio clic (o premere Invio) su un file nell'elenco apre quel file nell'editor di Songpress++. Se nell'elenco è presente un file da rivedere prima di unire, non è necessario uscire dal dialogo.
+
+### Dialogo di completamento
+
+Al termine dell'unione appare un dialogo con:
+- **Link al file** — clic apre il file con l'applicazione predefinita del sistema operativo
+- **Link alla cartella** — clic apre il file manager sulla cartella contenente il file (con selezione del file su Windows e macOS)
+
+### Note
+
+- I file già presenti nell'elenco non vengono aggiunti una seconda volta (deduplicazione automatica).
+- La codifica dei file sorgente viene rilevata automaticamente (UTF-8-BOM → UTF-8 → Latin-1).
+- Se un file non può essere letto, viene saltato e segnalato nel dialogo di completamento; l'unione prosegue con gli altri file.
 
 ## Formati di importazione supportati
 

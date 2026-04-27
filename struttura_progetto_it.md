@@ -109,7 +109,8 @@ Descrizione di ogni file e cartella presente nel progetto.
 
 | File | Descrizione |
 | ---- | ----------- |
-| `SongbookExporter.py` | Esporta una raccolta di canzoni come songbook (canzoniere) in un unico documento. |
+| `SongbookExporter.py` | Esporta una raccolta di canzoni come songbook PDF. Genera copertina, un brano per pagina (o più se lungo), indice finale con numero di pagina. Supporta: modalità 2 pagine per foglio, impostazione margini e formato carta, voci dell'indice cliccabili (link PDF interni), risoluzione automatica delle immagini `{image:}` relative alla cartella del file sorgente. |
+| `CanzonatorDialog.py` | Dialogo "Canzonatore": unisce più file ChordPro (`.crd`, `.cho`, `.chordpro`, `.chopro`, `.pro`, `.tab`, `.cpm`) in un unico file, con separatore `{new_page}` o riga vuota. Supporta riordino della lista, doppio clic per aprire i file nell'editor, scelta encoding output (UTF-8 / Latin-1) e dialogo di completamento con link cliccabili al file e alla cartella di destinazione. |
 | `PdfExporter.py` | Esporta la canzone (o il canzoniere) in formato PDF. |
 
 ### Preferenze e impostazioni
@@ -194,6 +195,7 @@ I file `.mo` sono le versioni **compilate** dei `.po`, lette a runtime da wxPyth
 | File `.po` / `.mo` | Modulo di riferimento |
 | ------------------- | --------------------- |
 | `CompositePropertyPanel.po` / `.mo` | `CompositePropertyPanel.py` |
+| `CanzonatorDialog.po` / `.mo` | `CanzonatorDialog.py` |
 | `Editor.po` / `.mo` | `Editor.py` |
 | `errdlg.po` / `.mo` | `errdlg.py` |
 | `FontFaceDialog.po` / `.mo` | `FontFaceDialog.py` |
@@ -206,7 +208,7 @@ I file `.mo` sono le versioni **compilate** dei `.po`, lette a runtime da wxPyth
 | `PreviewCanvas.po` / `.mo` | `PreviewCanvas.py` |
 | `SDIMainFrame.po` / `.mo` | `SDIMainFrame.py` |
 | `SimplePropertyPanel.po` / `.mo` | `SimplePropertyPanel.py` |
-| `SongbookExporter.po` / `.mo` | `SongbookExporter.py` |
+| `SongbookExporter.po` / `.mo` | `SongbookExporter.py`, `CanzonatorDialog.py` |
 | `SongpressFrame.po` / `.mo` | `SongpressFrame.py` |
 | `SyntaxCheckerDialog.po` / `.mo` | `SyntaxCheckerDialog.py` |
 | `Transpose.po` / `.mo` | `Transpose.py` |
