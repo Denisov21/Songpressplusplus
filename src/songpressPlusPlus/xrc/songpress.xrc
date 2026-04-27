@@ -108,7 +108,7 @@
           <label>Print pre_view...</label>
           <accel></accel>
           <help>Show print preview of the song</help>
-          <bitmap>../img/preview.png</bitmap>
+          <bitmap>../img/printPreview.png</bitmap>
         </object>
         <object class="wxMenuItem" name="pageSetup">
           <label>Pa_ge setup...</label>

@@ -108,7 +108,7 @@
           <label>Ante_prima di stampa...</label>
           <accel></accel>
           <help>Mostra l'anteprima di stampa della canzone</help>
-          <bitmap>../img/preview.png</bitmap>
+          <bitmap>../img/printPreview.png</bitmap>
         </object>
         <object class="wxMenuItem" name="pageSetup">
           <label>Imposta_zione pagina...</label>
