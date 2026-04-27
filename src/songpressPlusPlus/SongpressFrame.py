@@ -1183,6 +1183,9 @@ class SongpressFrame(SDIMainFrame):
             self.pref.klavierHighlightHex = '#D23C3C'
         self.SetDefaultExtension(self.pref.defaultExtension)
         self.statusBar = self.frame.GetStatusBar()
+        if self.statusBar:
+            self.statusBar.SetFieldsCount(2)
+            self.statusBar.SetStatusWidths([-1, 160])
         self._statusTimer = wx.Timer(self.frame)
         self.frame.Bind(wx.EVT_TIMER, self._OnStatusTimerExpired, self._statusTimer)
         # Workaround: wx.lib.agw.aui framemanager crashes with a wxAssertionError
@@ -1439,6 +1442,7 @@ class SongpressFrame(SDIMainFrame):
             if _k in _sc:
                 self.text.SetSyntaxColour(_sid, _sc[_k])
         self.text.ApplyMultiCursor(getattr(self.pref, 'multiCursor', False))
+        self._UpdateStatusIndicators()
         # Se la perspective è stata salvata prima dell'introduzione della barra
         # "Editor" sul pannello centrale, va resettata una volta sola.
         self.config.SetPath('/SDIMainFrame')
@@ -5536,6 +5540,17 @@ class SongpressFrame(SDIMainFrame):
         if self.statusBar:
             self.statusBar.SetStatusText("")
 
+    def _UpdateStatusIndicators(self):
+        """Aggiorna il campo 1 della status bar con gli indicatori Intellisense/Multicursore."""
+        if not self.statusBar:
+            return
+        parts = []
+        if getattr(self.pref, 'intellisense', True):
+            parts.append(_(u"Intellisense"))
+        if getattr(self.pref, 'multiCursor', False):
+            parts.append(_(u"Multicursore"))
+        self.statusBar.SetStatusText(u"  ● " + u"  ● ".join(parts) if parts else u"", 1)
+
     def OnIntegrateChords(self, evt):
         ln = self.text.GetCurrentLine()
         if ln < self.text.GetLineCount() - 1:
@@ -7522,6 +7537,7 @@ class SongpressFrame(SDIMainFrame):
                 if _k in _sc:
                     self.text.SetSyntaxColour(_sid, _sc[_k])
             self.text.ApplyMultiCursor(getattr(self.pref, 'multiCursor', False))
+            self._UpdateStatusIndicators()
             self._SaveCustomColours()
             self.previewCanvas.SetTempoDisplay(getattr(self.pref, 'tempoDisplay', 0))
             self.previewCanvas.SetTempoIconSize(getattr(self.pref, 'tempoIconSize', 24))

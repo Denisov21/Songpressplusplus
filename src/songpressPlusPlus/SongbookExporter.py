@@ -1,5 +1,5 @@
 ###############################################################
-# Name:         GuitarDiagramRenderer.py
+# Name:         SongbookExporter.py
 # Purpose:      Esportazione Songbook in PDF per Songpress
 # Author:       Denisov21
 # Created:      2026-03-12
@@ -19,7 +19,6 @@
 ###############################################################
 
 import os
-import sys
 import re
 import tempfile
 
@@ -34,7 +33,11 @@ _ = wx.GetTranslation
 
 class SongbookDialog(wx.Dialog):
     def __init__(self, parent):
-        super().__init__(parent, title=_("Create Songbook"), style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+        super().__init__(
+            parent,
+            title=_("Create Songbook"),
+            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
+        )
         self.folder = None
         self.title_val = "Songbook"
         self.author_val = ""
@@ -52,13 +55,15 @@ class SongbookDialog(wx.Dialog):
         self._build_ui()
 
     def _build_ui(self):
-        sizer = wx.BoxSizer(wx.VERTICAL)
+        outer = wx.BoxSizer(wx.VERTICAL)
+
+        # ── Griglia campi testo (3 colonne) ───────────────────────────
         grid = wx.FlexGridSizer(cols=3, hgap=8, vgap=8)
         grid.AddGrowableCol(1)
 
         # Cartella sorgente
         grid.Add(wx.StaticText(self, label=_("Songs folder:")), 0, wx.ALIGN_CENTER_VERTICAL)
-        self._folder_ctrl = wx.TextCtrl(self, style=wx.TE_READONLY)
+        self._folder_ctrl = wx.TextCtrl(self)
         grid.Add(self._folder_ctrl, 1, wx.EXPAND)
         btn_folder = wx.Button(self, label=_("Browse..."))
         btn_folder.Bind(wx.EVT_BUTTON, self._on_browse_folder)
@@ -66,13 +71,13 @@ class SongbookDialog(wx.Dialog):
 
         # File PDF di output
         grid.Add(wx.StaticText(self, label=_("Save PDF as:")), 0, wx.ALIGN_CENTER_VERTICAL)
-        self._output_ctrl = wx.TextCtrl(self, style=wx.TE_READONLY)
+        self._output_ctrl = wx.TextCtrl(self)
         grid.Add(self._output_ctrl, 1, wx.EXPAND)
         btn_output = wx.Button(self, label=_("Browse..."))
         btn_output.Bind(wx.EVT_BUTTON, self._on_browse_output)
         grid.Add(btn_output)
 
-        # Titolo
+        # Titolo songbook
         grid.Add(wx.StaticText(self, label=_("Songbook title:")), 0, wx.ALIGN_CENTER_VERTICAL)
         self._title_ctrl = wx.TextCtrl(self, value="Songbook")
         grid.Add(self._title_ctrl, 1, wx.EXPAND)
@@ -90,69 +95,92 @@ class SongbookDialog(wx.Dialog):
         grid.Add(self._year_ctrl, 1, wx.EXPAND)
         grid.Add((0, 0))
 
-        # Estensioni da includere
-        grid.Add(wx.StaticText(self, label=_("Extensions:")), 0, wx.ALIGN_CENTER_VERTICAL)
-        ext_panel = wx.Panel(self)
-        ext_sizer = wx.WrapSizer(wx.HORIZONTAL)
+        outer.Add(grid, 0, wx.EXPAND | wx.ALL, 12)
+
+        # ── Estensioni — StaticBox separata con WrapSizer ─────────────
+        ext_box = wx.StaticBoxSizer(
+            wx.StaticBox(self, label=_("Extensions:")), wx.VERTICAL
+        )
+        ext_wrap = wx.WrapSizer(wx.HORIZONTAL)
         self._ext_checks = {}
         _all_exts = [
-            ("crd", True),
-            ("cho", True),
+            ("crd",      True),
+            ("cho",      True),
             ("chordpro", True),
-            ("chopro", True),
-            ("pro", True),
-            ("tab", True),
-            ("sng", True),
-            ("txt", False),
+            ("chopro",   True),
+            ("pro",      True),
+            ("tab",      True),
+            ("sng",      True),
+            ("txt",      False),
         ]
         for ext, default in _all_exts:
-            cb = wx.CheckBox(ext_panel, label="." + ext)
+            cb = wx.CheckBox(self, label="." + ext)
             cb.SetValue(default)
             self._ext_checks[ext] = cb
-            ext_sizer.Add(cb, 0, wx.RIGHT, 8)
-        ext_panel.SetSizer(ext_sizer)
-        grid.Add(ext_panel, 1, wx.EXPAND)
-        grid.Add((0, 0))
+            ext_wrap.Add(cb, 0, wx.RIGHT | wx.BOTTOM, 6)
+        ext_box.Add(ext_wrap, 0, wx.EXPAND | wx.ALL, 4)
+        outer.Add(ext_box, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
 
-        sizer.Add(grid, 1, wx.EXPAND | wx.ALL, 12)
-
-        # --- Checkbox indice cliccabile ---
-        self._cb_clickable_index = wx.CheckBox(self, label=_("Clickable index entries (PDF links)"))
+        # ── Checkbox indice cliccabile ─────────────────────────────────
+        self._cb_clickable_index = wx.CheckBox(
+            self, label=_("Clickable index entries (PDF links)")
+        )
         self._cb_clickable_index.SetValue(self._clickable_index)
-        sizer.Add(self._cb_clickable_index, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+        outer.Add(self._cb_clickable_index, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
 
-        # --- Riga pulsanti impostazioni pagina ---
+        # ── Riga pulsanti impostazioni pagina ──────────────────────────
         page_row = wx.BoxSizer(wx.HORIZONTAL)
-        page_row.Add(wx.StaticText(self, label=_("Page settings:")), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        page_row.Add(
+            wx.StaticText(self, label=_("Page settings:")),
+            0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8,
+        )
         btn_page_setup = wx.Button(self, label=_("Page setup..."))
         btn_page_setup.Bind(wx.EVT_BUTTON, self._on_page_setup)
         page_row.Add(btn_page_setup, 0, wx.RIGHT, 8)
         btn_print_opts = wx.Button(self, label=_("Print options..."))
         btn_print_opts.Bind(wx.EVT_BUTTON, self._on_print_options)
         page_row.Add(btn_print_opts, 0)
-        sizer.Add(page_row, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+        outer.Add(page_row, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
 
+        # ── Pulsanti OK / Annulla ──────────────────────────────────────
         btn_sizer = self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
-        sizer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 8)
-        self.SetSizer(sizer)
-        self.SetMinSize((480, 360))
+        outer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 8)
+
+        self.SetSizer(outer)
+        # Calcola le dimensioni minime dal contenuto, poi imposta
+        # un'altezza iniziale maggiore per non tagliare i pulsanti OK/Annulla.
         self.Fit()
+        fit_sz = self.GetSize()
+        self.SetMinSize(wx.Size(fit_sz.width, fit_sz.height + 25))
+        self.SetSize(wx.Size(fit_sz.width, fit_sz.height + 60))
+        self.Centre()
+
+        # Intercetta OK per validare prima di chiudere
+        self.Bind(wx.EVT_BUTTON, self._on_ok, id=wx.ID_OK)
+
+    # ── Browse ────────────────────────────────────────────────────────
 
     def _on_browse_folder(self, evt):
-        dlg = wx.DirDialog(self, _("Choose the songs folder"),
-                           style=wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST)
+        dlg = wx.DirDialog(
+            self, _("Choose the songs folder"),
+            style=wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST,
+        )
         if dlg.ShowModal() == wx.ID_OK:
             self.folder = dlg.GetPath()
             self._folder_ctrl.SetValue(self.folder)
-            # Suggerisci output nella stessa cartella
+            # Suggerisci output nella stessa cartella se non già impostato
             if not self._output_ctrl.GetValue():
-                self._output_ctrl.SetValue(os.path.join(self.folder, "songbook.pdf"))
+                self._output_ctrl.SetValue(
+                    os.path.join(self.folder, "songbook.pdf")
+                )
         dlg.Destroy()
 
     def _on_browse_output(self, evt):
-        dlg = wx.FileDialog(self, _("Save Songbook PDF"),
-                            wildcard=_("PDF files (*.pdf)|*.pdf|All files (*.*)|*.*"),
-                            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+        dlg = wx.FileDialog(
+            self, _("Save Songbook PDF"),
+            wildcard=_("PDF files (*.pdf)|*.pdf|All files (*.*)|*.*"),
+            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+        )
         if dlg.ShowModal() == wx.ID_OK:
             path = dlg.GetPath()
             if not path.lower().endswith('.pdf'):
@@ -160,17 +188,25 @@ class SongbookDialog(wx.Dialog):
             self._output_ctrl.SetValue(path)
         dlg.Destroy()
 
+    # ── Impostazioni pagina ───────────────────────────────────────────
+
     def _on_page_setup(self, evt):
         self._page_setup_data.SetPrintData(self._print_data)
         dlg = wx.PageSetupDialog(self, self._page_setup_data)
         if dlg.ShowModal() == wx.ID_OK:
-            self._page_setup_data = wx.PageSetupDialogData(dlg.GetPageSetupData())
-            self._print_data = wx.PrintData(self._page_setup_data.GetPrintData())
+            self._page_setup_data = wx.PageSetupDialogData(
+                dlg.GetPageSetupData()
+            )
+            self._print_data = wx.PrintData(
+                self._page_setup_data.GetPrintData()
+            )
         dlg.Destroy()
 
     def _on_print_options(self, evt):
-        dlg = wx.Dialog(self, title=_("Print options"),
-                        style=wx.DEFAULT_DIALOG_STYLE)
+        dlg = wx.Dialog(
+            self, title=_("Print options"),
+            style=wx.DEFAULT_DIALOG_STYLE,
+        )
         vsizer = wx.BoxSizer(wx.VERTICAL)
         cb = wx.CheckBox(dlg, label=_("Print 2 pages per sheet"))
         cb.SetValue(self._two_pages_per_sheet)
@@ -179,9 +215,51 @@ class SongbookDialog(wx.Dialog):
         vsizer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 8)
         dlg.SetSizer(vsizer)
         vsizer.Fit(dlg)
+        dlg.SetMinSize(dlg.GetSize())
+        dlg.Centre()
         if dlg.ShowModal() == wx.ID_OK:
             self._two_pages_per_sheet = cb.GetValue()
         dlg.Destroy()
+
+    # ── Validazione prima di accettare OK ─────────────────────────────
+
+    def _on_ok(self, evt):
+        folder = self._folder_ctrl.GetValue().strip()
+        output = self._output_ctrl.GetValue().strip()
+
+        if not folder or not os.path.isdir(folder):
+            wx.MessageBox(
+                _("Please select a valid songs folder."),
+                _("Create Songbook"),
+                wx.OK | wx.ICON_WARNING,
+                self,
+            )
+            self._folder_ctrl.SetFocus()
+            return
+
+        if not output:
+            wx.MessageBox(
+                _("Please select the output PDF file."),
+                _("Create Songbook"),
+                wx.OK | wx.ICON_WARNING,
+                self,
+            )
+            self._output_ctrl.SetFocus()
+            return
+
+        if not any(cb.GetValue() for cb in self._ext_checks.values()):
+            wx.MessageBox(
+                _("Select at least one file extension."),
+                _("Create Songbook"),
+                wx.OK | wx.ICON_WARNING,
+                self,
+            )
+            return
+
+        # Tutto ok: chiude il dialogo con ID_OK
+        self.EndModal(wx.ID_OK)
+
+    # ── Raccolta valori ───────────────────────────────────────────────
 
     def GetValues(self):
         selected_exts = {
@@ -190,19 +268,19 @@ class SongbookDialog(wx.Dialog):
         tl = self._page_setup_data.GetMarginTopLeft()
         br = self._page_setup_data.GetMarginBottomRight()
         return {
-            'folder':      self._folder_ctrl.GetValue().strip(),
-            'output':      self._output_ctrl.GetValue().strip(),
-            'title':       self._title_ctrl.GetValue().strip() or "Songbook",
-            'author':      self._author_ctrl.GetValue().strip(),
-            'year':        self._year_ctrl.GetValue().strip(),
-            'exts':        selected_exts,
-            'print_data':  self._print_data,
-            'margin_top':    tl.y,
-            'margin_left':   tl.x,
-            'margin_bottom': br.y,
-            'margin_right':  br.x,
+            'folder':            self._folder_ctrl.GetValue().strip(),
+            'output':            self._output_ctrl.GetValue().strip(),
+            'title':             self._title_ctrl.GetValue().strip() or "Songbook",
+            'author':            self._author_ctrl.GetValue().strip(),
+            'year':              self._year_ctrl.GetValue().strip(),
+            'exts':              selected_exts,
+            'print_data':        self._print_data,
+            'margin_top':        tl.y,
+            'margin_left':       tl.x,
+            'margin_bottom':     br.y,
+            'margin_right':      br.x,
             'two_pages_per_sheet': self._two_pages_per_sheet,
-            'clickable_index':     self._cb_clickable_index.GetValue(),
+            'clickable_index':   self._cb_clickable_index.GetValue(),
         }
 
 
@@ -261,7 +339,6 @@ def _render_song_to_png(frame_obj, song_text, scale=2, song_dir=None):
             decorator = SongDecorator()
         decorator.showKlavier = False
         r = Renderer(frame_obj.pref.format, decorator, frame_obj.pref.notations)
-        # Imposta la directory del documento per risolvere {image: percorso_relativo}
         if song_dir:
             r._document_dir = song_dir
         w, h = r.Render(song_text, dc_measure)
@@ -289,17 +366,24 @@ def _render_song_to_png(frame_obj, song_text, scale=2, song_dir=None):
         tmp.close()
         img.SaveFile(tmp.name, wx.BITMAP_TYPE_PNG)
         return tmp.name, w, h
-    except Exception as e:
+    except Exception:
         return None
 
 
-def _build_pdf(frame_obj, songs, output_path, sb_title, sb_author, sb_year, progress_cb=None,
-               print_data=None, margin_top=15, margin_left=15, margin_bottom=15, margin_right=15,
-               two_pages_per_sheet=False, clickable_index=True):
+def _build_pdf(
+    frame_obj, songs, output_path, sb_title, sb_author, sb_year,
+    progress_cb=None,
+    print_data=None,
+    margin_top=15, margin_left=15, margin_bottom=15, margin_right=15,
+    two_pages_per_sheet=False,
+    clickable_index=True,
+    parent_window=None,
+):
     """
     Costruisce il PDF completo.
     songs: list of (title, filepath)
     progress_cb: callable(current, total, message) oppure None
+    parent_window: wx.Window usata come parent per eventuali MessageBox
     """
     try:
         from reportlab.pdfgen import canvas as rl_canvas
@@ -309,9 +393,10 @@ def _build_pdf(frame_obj, songs, output_path, sb_title, sb_author, sb_year, prog
     except ImportError:
         wx.MessageBox(
             _("The 'reportlab' library is not installed.\n"
-            "Run: pip install reportlab"),
+              "Run: pip install reportlab"),
             _("Missing library"),
             wx.OK | wx.ICON_ERROR,
+            parent_window,
         )
         return False
 
@@ -328,9 +413,10 @@ def _build_pdf(frame_obj, songs, output_path, sb_title, sb_author, sb_year, prog
         if print_data.GetOrientation() == wx.LANDSCAPE:
             page_size = landscape(page_size)
     else:
-        from reportlab.lib.pagesizes import A4
         page_size = A4
+
     page_w, page_h = page_size
+
     # Margini in mm (dal PageSetupDialog)
     ml = margin_left   * mm
     mr = margin_right  * mm
@@ -341,19 +427,18 @@ def _build_pdf(frame_obj, songs, output_path, sb_title, sb_author, sb_year, prog
 
     # In modalità 2 pagine per foglio ogni "slot" è metà larghezza del foglio
     if two_pages_per_sheet:
-        gap = 5 * mm          # separazione centrale
+        gap    = 5 * mm
         slot_w = (avail_w - gap) / 2.0
         slot_h = avail_h
     else:
         slot_w = avail_w
         slot_h = avail_h
 
-    tmp_files = []
-    # (title, [page_numbers]) per l'indice
-    index_entries = []  # list of (title, first_page)
+    tmp_files    = []
+    index_entries = []   # list of (title, first_page)
 
-    c = rl_canvas.Canvas(output_path, pagesize=page_size)
-    page_num = [0]  # mutabile in closure
+    c        = rl_canvas.Canvas(output_path, pagesize=page_size)
+    page_num = [0]   # mutabile in closure
 
     def next_page():
         c.showPage()
@@ -367,60 +452,44 @@ def _build_pdf(frame_obj, songs, output_path, sb_title, sb_author, sb_year, prog
 
     # ---- COPERTINA ----
     page_num[0] = 1
-    # Sfondo colorato
     c.setFillColor(HexColor("#1a3a5c"))
     c.rect(0, 0, page_w, page_h, fill=1, stroke=0)
-    # Banda decorativa
     c.setFillColor(HexColor("#e8a020"))
     c.rect(0, page_h * 0.38, page_w, 6 * mm, fill=1, stroke=0)
     c.rect(0, page_h * 0.38 - 2 * mm, page_w, 1.5 * mm, fill=1, stroke=0)
-    # Titolo
     c.setFillColor(white)
     c.setFont("Helvetica-Bold", 36)
     c.drawCentredString(page_w / 2, page_h * 0.52, sb_title)
-    # Autore
     if sb_author:
         c.setFont("Helvetica", 18)
         c.setFillColor(HexColor("#e8a020"))
         c.drawCentredString(page_w / 2, page_h * 0.45, sb_author)
-    # Anno
     if sb_year:
         c.setFont("Helvetica", 14)
         c.setFillColor(HexColor("#aaaaaa"))
         c.drawCentredString(page_w / 2, page_h * 0.40, sb_year)
-    # Numero brani
     c.setFont("Helvetica-Oblique", 11)
     c.setFillColor(HexColor("#aaaaaa"))
     c.drawCentredString(page_w / 2, mb, _("%d songs") % len(songs))
 
-    next_page()  # pagina 2
+    next_page()   # pagina 2
 
     # ---- BRANI ----
-    SCALE = 2  # ~192 dpi
-
-    # In modalità 2 pagine per foglio teniamo traccia dello slot corrente
-    # (0 = sinistra, 1 = destra). Passiamo alla pagina successiva solo dopo
-    # aver riempito entrambi gli slot.
-    _slot = [0]   # 0=sinistra/unica, 1=destra
+    SCALE  = 2   # ~192 dpi
+    _slot  = [0] # 0 = sinistra/unica, 1 = destra
 
     def _slot_origin():
-        """Restituisce (x0, y0) dell'angolo inferiore sinistro dello slot corrente."""
         if two_pages_per_sheet:
-            if _slot[0] == 0:
-                x0 = ml
-            else:
-                x0 = ml + slot_w + gap
+            x0 = ml if _slot[0] == 0 else ml + slot_w + gap
             y0 = mb
         else:
-            x0 = ml
-            y0 = mb
+            x0, y0 = ml, mb
         return x0, y0
 
     def _finish_slot():
-        """Chiude lo slot corrente; in modalità 2pp cambia slot o va alla pagina successiva."""
         if two_pages_per_sheet:
             if _slot[0] == 0:
-                _slot[0] = 1   # prossimo brano va a destra
+                _slot[0] = 1
             else:
                 _slot[0] = 0
                 draw_page_number(page_num[0])
@@ -430,25 +499,24 @@ def _build_pdf(frame_obj, songs, output_path, sb_title, sb_author, sb_year, prog
             next_page()
 
     def _flush_slot():
-        """Se rimane uno slot sinistro aperto (ultimo foglio dispari), chiude il foglio."""
         if two_pages_per_sheet and _slot[0] == 1:
             draw_page_number(page_num[0])
             next_page()
             _slot[0] = 0
 
     def _draw_song_in_slot(tmp_path, song_w_px, song_h_px):
-        """Disegna il brano nello slot corrente, scalato per stare nello slot."""
-        song_w_pt = song_w_px / 96.0 * 72.0
-        song_h_pt = song_h_px / 96.0 * 72.0
-        scale_fit = min(slot_w / song_w_pt, slot_h / song_h_pt, 1.0)
-        draw_w = song_w_pt * scale_fit
-        draw_h = song_h_pt * scale_fit
-        x0, y0 = _slot_origin()
-        x = x0 + (slot_w - draw_w) / 2.0
-        y = y0 + (slot_h - draw_h)   # allineato in alto nello slot
-        c.drawImage(tmp_path, x, y, width=draw_w, height=draw_h,
-                    preserveAspectRatio=True)
-        # Linea divisoria verticale in modalità 2pp
+        song_w_pt  = song_w_px / 96.0 * 72.0
+        song_h_pt  = song_h_px / 96.0 * 72.0
+        scale_fit  = min(slot_w / song_w_pt, slot_h / song_h_pt, 1.0)
+        draw_w     = song_w_pt * scale_fit
+        draw_h     = song_h_pt * scale_fit
+        x0, y0     = _slot_origin()
+        x          = x0 + (slot_w - draw_w) / 2.0
+        y          = y0 + (slot_h - draw_h)
+        c.drawImage(
+            tmp_path, x, y, width=draw_w, height=draw_h,
+            preserveAspectRatio=True,
+        )
         if two_pages_per_sheet and _slot[0] == 0:
             cx = ml + slot_w + gap / 2.0
             c.setStrokeColor(HexColor("#cccccc"))
@@ -476,18 +544,15 @@ def _build_pdf(frame_obj, songs, output_path, sb_title, sb_author, sb_year, prog
         first_song_page = page_num[0]
         index_entries.append((title, first_song_page))
 
-        # Bookmark PDF per il link dall'indice (solo se clickable_index)
         if clickable_index:
             c.bookmarkPage('song_%d' % i)
 
         _draw_song_in_slot(tmp_path, song_w_px, song_h_px)
         _finish_slot()
 
-    # Chiudi eventuale foglio rimasto a metà
     _flush_slot()
 
     # ---- INDICE ----
-    index_start_page = page_num[0]
     ROWS_PER_PAGE = 35
     row = 0
 
@@ -510,59 +575,58 @@ def _build_pdf(frame_obj, songs, output_path, sb_title, sb_author, sb_year, prog
             start_index_page()
 
         y_row = top_y - (row % ROWS_PER_PAGE) * row_h
-        # Riga alternata leggera
         if (row % 2) == 0:
             c.setFillColor(HexColor("#f4f4f4"))
             c.rect(ml, y_row - 1 * mm, avail_w, row_h, fill=1, stroke=0)
         c.setFillColor(black)
+
         # Numero d'ordine
         c.setFont("Helvetica", 9)
         c.setFillColor(HexColor("#888888"))
         c.drawString(ml + 1 * mm, y_row + 1.5 * mm, "%d." % (idx + 1))
+
         # Titolo
         c.setFont("Helvetica", 10)
-        c.setFillColor(black)
+        c.setFillColor(black if not clickable_index else HexColor("#1a3a5c"))
         c.drawString(ml + 8 * mm, y_row + 1.5 * mm, title)
+
         # Puntini e numero pagina
+        pg_str = str(pg)
         c.setFont("Helvetica", 9)
         c.setFillColor(HexColor("#444444"))
-        pg_str = str(pg)
         pg_w = c.stringWidth(pg_str, "Helvetica", 9)
         c.drawString(ml + avail_w - pg_w, y_row + 1.5 * mm, pg_str)
-        # Puntini di connessione
+
         dots_x1 = ml + 8 * mm + c.stringWidth(title, "Helvetica", 10) + 3 * mm
         dots_x2 = ml + avail_w - pg_w - 3 * mm
         if dots_x2 > dots_x1:
             c.setFont("Helvetica", 8)
             c.setFillColor(HexColor("#bbbbbb"))
-            dots = ". " * int((dots_x2 - dots_x1) / c.stringWidth(". ", "Helvetica", 8))
+            dots = ". " * int(
+                (dots_x2 - dots_x1) / c.stringWidth(". ", "Helvetica", 8)
+            )
             c.drawString(dots_x1, y_row + 1.5 * mm, dots)
 
-        # Link cliccabile sull'intera riga → porta alla pagina del brano
         if clickable_index:
             link_y1 = y_row - 1 * mm
             link_y2 = y_row - 1 * mm + row_h
             c.linkAbsolute(
-                '',                          # testo (vuoto = solo rettangolo invisibile)
-                'song_%d' % idx,             # nome del bookmark sulla pagina del brano
+                '', 'song_%d' % idx,
                 Rect=(ml, link_y1, ml + avail_w, link_y2),
             )
-            # Sottolinea il titolo in blu per segnalare il link
             c.setStrokeColor(HexColor("#1a3a5c"))
             c.setLineWidth(0.4)
             title_w = c.stringWidth(title, "Helvetica", 10)
-            c.line(ml + 8 * mm, y_row + 1.0 * mm,
-                   ml + 8 * mm + title_w, y_row + 1.0 * mm)
-            c.setFillColor(HexColor("#1a3a5c"))
-            c.setFont("Helvetica", 10)
-            c.drawString(ml + 8 * mm, y_row + 1.5 * mm, title)
+            c.line(
+                ml + 8 * mm, y_row + 1.0 * mm,
+                ml + 8 * mm + title_w, y_row + 1.0 * mm,
+            )
 
         row += 1
 
     draw_page_number(page_num[0])
     c.save()
 
-    # Pulizia file temporanei
     for tp in tmp_files:
         try:
             os.unlink(tp)
@@ -579,13 +643,12 @@ def _build_pdf(frame_obj, songs, output_path, sb_title, sb_author, sb_year, prog
 def create_songbook(frame_obj, parent_window):
     """Mostra la dialog, raccoglie i brani ed esporta il PDF."""
 
-    # Verifica reportlab disponibile subito
     try:
-        import reportlab
+        import reportlab  # noqa: F401
     except ImportError:
         wx.MessageBox(
             _("The 'reportlab' library is not installed.\n"
-            "Run: pip install reportlab"),
+              "Run: pip install reportlab"),
             _("Missing library"),
             wx.OK | wx.ICON_ERROR,
             parent_window,
@@ -599,28 +662,35 @@ def create_songbook(frame_obj, parent_window):
     vals = dlg.GetValues()
     dlg.Destroy()
 
+    # La validazione base è già avvenuta in SongbookDialog._on_ok,
+    # ma ripetiamo i controlli critici per sicurezza.
     folder = vals['folder']
     output = vals['output']
 
     if not folder or not os.path.isdir(folder):
-        wx.MessageBox(_("Please select a valid folder."), _("Error"), wx.OK | wx.ICON_ERROR, parent_window)
+        wx.MessageBox(
+            _("Please select a valid folder."),
+            _("Error"), wx.OK | wx.ICON_ERROR, parent_window,
+        )
         return
     if not output:
-        wx.MessageBox(_("Please select the output PDF file."), _("Error"), wx.OK | wx.ICON_ERROR, parent_window)
+        wx.MessageBox(
+            _("Please select the output PDF file."),
+            _("Error"), wx.OK | wx.ICON_ERROR, parent_window,
+        )
         return
 
     songs = _collect_songs(folder, vals.get('exts'))
     if not songs:
         wx.MessageBox(
             _("No songs found in the folder.\n"
-            "Check the selected extensions."),
+              "Check the selected extensions."),
             _("Empty folder"),
             wx.OK | wx.ICON_INFORMATION,
             parent_window,
         )
         return
 
-    # Barra di avanzamento
     progress = wx.ProgressDialog(
         _("Creating Songbook"),
         _("Initializing..."),
@@ -644,6 +714,7 @@ def create_songbook(frame_obj, parent_window):
             margin_right=vals.get('margin_right', 15),
             two_pages_per_sheet=vals.get('two_pages_per_sheet', False),
             clickable_index=vals.get('clickable_index', True),
+            parent_window=parent_window,
         )
     finally:
         progress.Destroy()
@@ -651,7 +722,7 @@ def create_songbook(frame_obj, parent_window):
     if ok:
         wx.MessageBox(
             _("Songbook exported successfully!\n\n"
-            "%d songs included.\n\n%s") % (len(songs), output),
+              "%d songs included.\n\n%s") % (len(songs), output),
             _("Songbook created"),
             wx.OK | wx.ICON_INFORMATION,
             parent_window,
