@@ -93,7 +93,7 @@
           <bitmap>../img/songbook.png</bitmap>
         </object>
         <object class="wxMenuItem" name="canzonatore">
-          <label>_Merge songs (Canzonatore)...</label>
+          <label>_Mocker (combine songs)...</label>
           <accel></accel>
           <help>Merge multiple ChordPro files into a single file</help>
         </object>

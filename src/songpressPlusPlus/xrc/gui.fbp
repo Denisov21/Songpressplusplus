@@ -291,7 +291,7 @@
             <property name="help">Merge multiple ChordPro files into a single file</property>
             <property name="id">ID_CANZONATORE</property>
             <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">&amp;Merge songs (Canzonatore)...</property>
+            <property name="label">&amp;Mocker (combine songs)...</property>
             <property name="name">canzonatore</property>
             <property name="permission">none</property>
             <property name="shortcut"></property>
