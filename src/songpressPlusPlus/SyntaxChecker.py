@@ -678,6 +678,11 @@ def _validate_command(content: str, line_num: int, col: int,
 
     _REQUIRES_TIME_SIGNATURE = {"time"}
 
+    # Comandi che richiedono obbligatoriamente i due punti (con o senza valore).
+    # Scrivere {verse} senza ':' è un errore; le forme corrette sono
+    # {verse:} oppure {verse: etichetta}.
+    _REQUIRES_COLON = {"verse"}
+
     if cmd_name not in _KNOWN_COMMANDS:
         result.errors.append(SyntaxError(
             line=line_num, column=col,
@@ -686,7 +691,17 @@ def _validate_command(content: str, line_num: int, col: int,
         ))
         return
 
-    if cmd_value is not None and cmd_value == "" and cmd_name in _OPTIONAL_VALUE:
+    if cmd_name in _REQUIRES_COLON and cmd_value is None:
+        result.errors.append(SyntaxError(
+            line=line_num, column=col,
+            message=_(
+                "Command '{{cmd}}' requires ':'; use '{{{cmd}:}}' or"
+                " '{{{cmd}: label}}'"
+            ).format(cmd=cmd_name)
+        ))
+        return
+
+    if cmd_value is not None and cmd_value == "" and cmd_name not in _OPTIONAL_VALUE:
         result.errors.append(SyntaxError(
             line=line_num, column=col,
             message=_("Command '{cmd}' has ':' but no value; use '{reset}' to reset").format(

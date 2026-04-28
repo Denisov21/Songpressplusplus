@@ -1408,6 +1408,28 @@ msgstr "Ritardo in secondi prima della riapertura del dialogo (1-60)"
 msgid "s"
 msgstr "s"
 
+#: SongpressFrame.py — status bar indicator: intellisense active
+msgid "Intellisense"
+msgstr "Intellisense"
+
+#: SongpressFrame.py — status bar indicator: multicursor active
+msgid "Multicursor"
+msgstr "Multicursore"
+
+#: SongpressFrame.py — OnSongStatistics multi-song header
+#, python-format
+msgid "%d songs in this file"
+msgstr "%d brani in questo file"
+
+#: SongpressFrame.py — OnSongStatistics total tab label
+msgid "Total"
+msgstr "Totale"
+
+#: SongpressFrame.py — OnSongStatistics total tab title row
+#, python-format
+msgid "Total (%d songs)"
+msgstr "Totale (%d brani)"
+
 #: SongpressFrame.py — Commands Guide dialog title
 msgid "Songpress++ Commands Guide"
 msgstr "Guida ai comandi di Songpress++"

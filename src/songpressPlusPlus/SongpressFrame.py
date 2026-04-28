@@ -2030,36 +2030,18 @@ class SongpressFrame(SDIMainFrame):
     # ------------------------------------------------------------------
 
     def OnSongStatistics(self, evt):
-        """Analizza il brano e mostra un dialogo con statistiche e valutazione."""
+        """Analizza il brano (o i brani separati da {title:}) e mostra un dialogo con
+        statistiche e valutazione. Se il file contiene più direttive {title:}, le
+        statistiche vengono calcolate per ogni sezione e mostrate in tab separate;
+        la prima tab riporta i totali aggregati dell'intero file."""
         import re, math
 
-        text = self.text.GetText()
+        full_text = self.text.GetText()
 
-        # ── 1. Estrai metadati dalla direttive ─────────────────────────
-        def _meta(key):
-            m = re.search(r'\{\s*' + key + r'\s*:\s*([^}]+)\}', text, re.IGNORECASE)
-            return m.group(1).strip() if m else ''
-
-        song_title  = _meta('title') or _meta('t')
-        song_key    = _meta('key')
-        song_tempo  = _meta('tempo') or _meta('tempo_s') or _meta('tempo_m')
-        song_time   = _meta('time')
-        song_capo   = _meta('capo')
-        song_artist = _meta('artist')
-
-        # ── 2. Righe attive (escludi commenti e direttive pure) ────────
-        lines_all = text.splitlines()
-        lines_active = [l for l in lines_all
-                        if l.strip() and not l.strip().startswith('#')
-                        and not re.match(r'\s*\{[^}]+\}\s*$', l)]
-
-        # ── 3. Conteggio accordi unici e totali ────────────────────────
-        # Usa la notazione preferita (notations[0]) per validare e separare
-        # radice da suffisso, così funziona con DO/RE/MI, C/D/E, ecc.
+        # ── Notazione accordi ─────────────────────────────────────────
         _notation = self.pref.notations[0] if self.pref.notations else None
 
         def _is_valid_chord(raw):
-            """Ritorna True se raw è un accordo valido nella notazione corrente."""
             if not raw.strip():
                 return False
             if _notation is None:
@@ -2068,317 +2050,522 @@ class SongpressFrame(SDIMainFrame):
             return bool(root)
 
         def _chord_root(raw):
-            """Radice dell'accordo senza basso (es. 'LA-/RE' → 'LA-')."""
             c = raw.strip().split('/')[0].strip()
             if _notation is None:
                 return c
             root, suffix = splitChord(c, _notation)
             return (root + suffix) if root else c
 
-        all_chords_raw = re.findall(r'\[([^\]]+)\]', text)
-        all_chords = [c.strip() for c in all_chords_raw
-                      if c.strip() and _is_valid_chord(c)]
-        unique_chords = set(_chord_root(c) for c in all_chords)
-        n_chords_total  = len(all_chords)
-        n_chords_unique = len(unique_chords)
-
-        # ── 4. Conteggio strofe e ritornelli ──────────────────────────
-        n_verses  = len(re.findall(
-            r'\{\s*(?:start_of_verse|start_verse(?:_num)?|sov)\b[^}]*\}',
-            text, re.IGNORECASE))
-        n_chorus  = len(re.findall(
-            r'\{\s*(?:start_of_chorus|start_chorus|soc)\b[^}]*\}',
-            text, re.IGNORECASE))
-        n_bridge  = len(re.findall(
-            r'\{\s*(?:start_of_bridge|start_bridge|sob)\b[^}]*\}',
-            text, re.IGNORECASE))
-        n_pages   = len(re.findall(
-            r'\{\s*(?:new_page|np)\s*\}', text, re.IGNORECASE)) + 1
-
-        # ── 5. Parole del testo (escludi accordi e direttive) ─────────
-        text_no_chords = re.sub(r'\[[^\]]*\]', '', text)
-        text_no_dir    = re.sub(r'\{[^}]*\}', '', text_no_chords)
-        text_no_comm   = re.sub(r'^#.*$', '', text_no_dir, flags=re.MULTILINE)
-        words = re.findall(r"[\w'\u00C0-\u024F]+", text_no_comm)
-        n_words = len(words)
-        n_lines = len(lines_active)
-
-        # ── 6. Complessità accordi (semplice euristica) ───────────────
-        # Accordi "difficili": con 7, 9, 11, 13, dim, aug, sus, add, maj, °
-        # Il minore semplice (m o -) NON conta come difficile.
         hard_pat = re.compile(
             r'(?:7|9|11|13|dim|aug|sus|add|maj|°|\+)', re.IGNORECASE)
-        n_hard = sum(1 for c in unique_chords if hard_pat.search(c))
-        pct_hard = (n_hard / n_chords_unique * 100) if n_chords_unique else 0
 
-        # ── 7. Durata: esplicita {duration:MM:SS} oppure stima automatica ──
-        duration_str = ''
-        duration_is_explicit = False
+        # ── Funzione che calcola le statistiche di un blocco di testo ─
+        def _compute_stats(text):
+            """Restituisce un dizionario con tutte le statistiche del blocco."""
 
-        # Cerca {duration:MM:SS} non commentato (la riga non deve iniziare con #)
-        _dur_explicit = None
-        for _line in lines_all:
-            _ls = _line.strip()
-            if _ls.startswith('#'):
-                continue  # riga commentata → ignora
-            _m = re.search(r'\{\s*duration\s*:\s*(\d{1,2}:\d{2})\s*\}', _ls, re.IGNORECASE)
-            if _m:
-                _dur_explicit = _m.group(1)
-                break
+            def _meta(key):
+                m = re.search(r'\{\s*' + key + r'\s*:\s*([^}]+)\}', text, re.IGNORECASE)
+                return m.group(1).strip() if m else ''
 
-        if _dur_explicit:
-            # Durata dichiarata esplicitamente nel brano
-            duration_str = _dur_explicit
-            duration_is_explicit = True
+            title   = _meta('title') or _meta('t')
+            key     = _meta('key')
+            tempo   = _meta('tempo') or _meta('tempo_s') or _meta('tempo_m')
+            time_   = _meta('time')
+            capo    = _meta('capo')
+            artist  = _meta('artist')
+
+            lines_all    = text.splitlines()
+            lines_active = [l for l in lines_all
+                            if l.strip() and not l.strip().startswith('#')
+                            and not re.match(r'\s*\{[^}]+\}\s*$', l)]
+
+            all_chords_raw = re.findall(r'\[([^\]]+)\]', text)
+            all_chords     = [c.strip() for c in all_chords_raw
+                              if c.strip() and _is_valid_chord(c)]
+            unique_chords  = set(_chord_root(c) for c in all_chords)
+            n_chords_total  = len(all_chords)
+            n_chords_unique = len(unique_chords)
+
+            n_verses = len(re.findall(
+                r'\{\s*(?:start_of_verse|start_verse(?:_num)?|sov|verse)\b[^}]*\}',
+                text, re.IGNORECASE))
+            n_chorus = len(re.findall(
+                r'\{\s*(?:start_of_chorus|start_chorus|soc|chorus)\b[^}]*\}',
+                text, re.IGNORECASE))
+            n_bridge = len(re.findall(
+                r'\{\s*(?:start_of_bridge|start_bridge|sob|bridge)\b[^}]*\}',
+                text, re.IGNORECASE))
+
+            # Fallback: se non ci sono direttive {verse} esplicite, conta le strofe
+            # implicite come blocchi di righe liriche separati da righe vuote,
+            # escludendo le righe dentro blocchi chorus/bridge già riconosciuti.
+            if n_verses == 0:
+                _lyric_line = re.compile(r'(?:\[[^\]]*\]|[\w\u00C0-\u024F])')
+                _sec_open  = re.compile(
+                    r'\{\s*(?:start_of_chorus|start_chorus|soc|chorus'
+                    r'|start_of_bridge|start_bridge|sob|bridge)\b[^}]*\}',
+                    re.IGNORECASE)
+                _sec_close = re.compile(
+                    r'\{\s*(?:end_of_chorus|end_chorus|eoc'
+                    r'|end_of_bridge|end_bridge|eob)\b[^}]*\}',
+                    re.IGNORECASE)
+                _implicit_blocks = 0
+                _in_block   = False
+                _in_section = False
+                for _ln in lines_all:
+                    _ls = _ln.strip()
+                    if _sec_open.search(_ls):
+                        _in_section = True
+                        _in_block   = False
+                        continue
+                    if _sec_close.search(_ls):
+                        _in_section = False
+                        _in_block   = False
+                        continue
+                    if _in_section:
+                        continue
+                    if not _ls or _ls.startswith('#') or re.match(r'^\{[^}]+\}\s*$', _ls):
+                        _in_block = False
+                    elif _lyric_line.search(_ls):
+                        if not _in_block:
+                            _implicit_blocks += 1
+                            _in_block = True
+                n_verses = _implicit_blocks
+            n_pages  = len(re.findall(
+                r'\{\s*(?:new_page|np)\s*\}', text, re.IGNORECASE)) + 1
+
+            text_no_chords = re.sub(r'\[[^\]]*\]', '', text)
+            text_no_dir    = re.sub(r'\{[^}]*\}', '', text_no_chords)
+            text_no_comm   = re.sub(r'^#.*$', '', text_no_dir, flags=re.MULTILINE)
+            words  = re.findall(r"[\w'\u00C0-\u024F]+", text_no_comm)
+            n_words = len(words)
+            n_lines = len(lines_active)
+
+            n_hard   = sum(1 for c in unique_chords if hard_pat.search(c))
+            pct_hard = (n_hard / n_chords_unique * 100) if n_chords_unique else 0
+
+            # Durata: esplicita {duration:} oppure stima automatica
+            duration_str        = ''
+            duration_is_explicit = False
+            _dur_explicit = None
+            for _line in lines_all:
+                _ls = _line.strip()
+                if _ls.startswith('#'):
+                    continue
+                _m = re.search(r'\{\s*duration\s*:\s*(\d{1,2}:\d{2})\s*\}',
+                               _ls, re.IGNORECASE)
+                if _m:
+                    _dur_explicit = _m.group(1)
+                    break
+            if _dur_explicit:
+                duration_str        = _dur_explicit
+                duration_is_explicit = True
+            else:
+                try:
+                    bpm   = int(re.search(r'\d+', tempo).group()) if tempo else 0
+                    num_m = int(re.search(r'(\d+)/', time_).group(1)) if time_ else 0
+                    if bpm > 0 and num_m > 0 and n_chords_total > 0:
+                        secs = n_chords_total * num_m / bpm * 60
+                        duration_str = '%d:%02d' % (int(secs) // 60, int(secs) % 60)
+                except Exception:
+                    pass
+
+            # Valutazione
+            score = 100
+            if n_chords_unique > 12:
+                score -= min(30, (n_chords_unique - 12) * 3)
+            score -= int(pct_hard * 0.4)
+            if n_verses + n_chorus > 8:
+                score -= 10
+            if n_chords_total == 0:
+                score = 0
+            score = max(0, min(100, score))
+
+            if score >= 85:
+                stars, verdict = '★★★★★', _('Excellent for beginners')
+            elif score >= 70:
+                stars, verdict = '★★★★☆', _('Accessible')
+            elif score >= 50:
+                stars, verdict = '★★★☆☆', _('Intermediate')
+            elif score >= 30:
+                stars, verdict = '★★☆☆☆', _('Advanced')
+            else:
+                stars, verdict = '★☆☆☆☆', _('Very difficult')
+
+            return dict(
+                title=title, key=key, tempo=tempo, time_=time_, capo=capo,
+                artist=artist, n_verses=n_verses, n_chorus=n_chorus,
+                n_bridge=n_bridge, n_pages=n_pages, n_lines=n_lines,
+                n_words=n_words, n_chords_total=n_chords_total,
+                n_chords_unique=n_chords_unique, n_hard=n_hard, pct_hard=pct_hard,
+                duration_str=duration_str, duration_is_explicit=duration_is_explicit,
+                score=score, stars=stars, verdict=verdict,
+            )
+
+        # ── Suddividi il file in blocchi per {title:} ─────────────────
+        # Trova le posizioni di ogni direttiva {title:} o {t:} nel testo
+        title_positions = [m.start() for m in re.finditer(
+            r'\{\s*(?:title|t)\s*:[^}]*\}', full_text, re.IGNORECASE)]
+
+        if len(title_positions) <= 1:
+            # Nessuna suddivisione: comportamento originale (un solo blocco)
+            sections = [_compute_stats(full_text)]
+            multi = False
         else:
-            # Nessuna {duration:} attiva → calcolo automatico
-            try:
-                bpm   = int(re.search(r'\d+', song_tempo).group()) if song_tempo else 0
-                num_m = int(re.search(r'(\d+)/', song_time).group(1)) if song_time else 0
-                # conta i cambi accordo come battute approssimate
-                if bpm > 0 and num_m > 0 and n_chords_total > 0:
-                    beats_total = n_chords_total * num_m  # stima grossolana
-                    secs = beats_total / bpm * 60
-                    duration_str = '%d:%02d' % (int(secs) // 60, int(secs) % 60)
-            except Exception:
-                pass
+            # Più titoli: ogni sezione va dalla sua {title:} alla prossima
+            blocks = []
+            for i, pos in enumerate(title_positions):
+                end = title_positions[i + 1] if i + 1 < len(title_positions) else len(full_text)
+                blocks.append(full_text[pos:end])
+            sections = [_compute_stats(b) for b in blocks]
+            multi = True
 
-        # ── 8. Valutazione complessiva ────────────────────────────────
-        # Punteggio 0-100, poi mappiamo su stelle e giudizio
-        score = 100
+        # ── Costanti colori ───────────────────────────────────────────
+        BG      = wx.Colour(250, 250, 252)
+        HDR     = wx.Colour(52, 101, 164)
+        STAR_ON = wx.Colour(255, 180, 0)
 
-        # Troppi accordi unici = difficile
-        if n_chords_unique > 12:
-            score -= min(30, (n_chords_unique - 12) * 3)
-        # Accordi difficili
-        score -= int(pct_hard * 0.4)
-        # Struttura complessa
-        if n_verses + n_chorus > 8:
-            score -= 10
-        # Brano vuoto o quasi
-        if n_chords_total == 0:
-            score = 0
-        score = max(0, min(100, score))
-
-        if score >= 85:
-            stars, verdict = '★★★★★', _('Excellent for beginners')
-        elif score >= 70:
-            stars, verdict = '★★★★☆', _('Accessible')
-        elif score >= 50:
-            stars, verdict = '★★★☆☆', _('Intermediate')
-        elif score >= 30:
-            stars, verdict = '★★☆☆☆', _('Advanced')
-        else:
-            stars, verdict = '★☆☆☆☆', _('Very difficult')
-
-        # ── 9. Costruzione dialogo ────────────────────────────────────
+        # ── Costruzione dialogo ───────────────────────────────────────
         dlg = wx.Dialog(
             self.frame,
             title=_('Song Statistics'),
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         )
-        dlg.SetMinSize(wx.Size(400, 300))
+        dlg.SetMinSize(wx.Size(420, 320))
 
-        BG      = wx.Colour(250, 250, 252)
-        HDR     = wx.Colour(52, 101, 164)
-        STAR_ON = wx.Colour(255, 180, 0)
-
-        # ── Contenitore esterno (dialogo) ─────────────────────────────
-        # Layout: intestazione fissa in cima + area scorrevole + OK fisso in fondo
         outer_panel = wx.Panel(dlg)
         outer_panel.SetBackgroundColour(BG)
         outer_sz = wx.BoxSizer(wx.VERTICAL)
 
-        # ── Intestazione (fissa, non scorre) ──────────────────────────
+        # ── Intestazione ──────────────────────────────────────────────
         hdr_panel = wx.Panel(outer_panel)
         hdr_panel.SetBackgroundColour(HDR)
         hdr_sz = wx.BoxSizer(wx.VERTICAL)
 
-        lbl_name = wx.StaticText(hdr_panel,
-            label=song_title if song_title else _('(untitled)'))
+        if multi:
+            # Mostra il numero di brani nel file
+            header_title = _('%d songs in this file') % len(sections)
+        else:
+            s0 = sections[0]
+            header_title = s0['title'] if s0['title'] else _('(untitled)')
+
+        lbl_name = wx.StaticText(hdr_panel, label=header_title)
         f = lbl_name.GetFont()
         f.SetWeight(wx.FONTWEIGHT_BOLD)
         f.SetPointSize(f.GetPointSize() + 3)
         lbl_name.SetFont(f)
         lbl_name.SetForegroundColour(wx.WHITE)
-
-        if song_artist:
-            lbl_artist = wx.StaticText(hdr_panel, label=song_artist)
-            lbl_artist.SetForegroundColour(wx.Colour(200, 220, 255))
-
         hdr_sz.Add(lbl_name, 0, wx.ALL, 10)
-        if song_artist:
+
+        if not multi and sections[0]['artist']:
+            lbl_artist = wx.StaticText(hdr_panel, label=sections[0]['artist'])
+            lbl_artist.SetForegroundColour(wx.Colour(200, 220, 255))
             hdr_sz.Add(lbl_artist, 0, wx.LEFT | wx.BOTTOM, 10)
+
         hdr_panel.SetSizer(hdr_sz)
         outer_sz.Add(hdr_panel, 0, wx.EXPAND)
 
-        # ── Area scorrevole ───────────────────────────────────────────
-        # wx.VSCROLL: barra verticale automatica quando il contenuto supera l'altezza
-        scroll = wx.ScrolledWindow(
-            outer_panel,
-            style=wx.VSCROLL | wx.BORDER_NONE,
-        )
-        scroll.SetScrollRate(0, 12)          # scorrimento verticale a passi di 12 px
-        scroll.SetBackgroundColour(BG)
+        # ── Corpo: Notebook se multi, singolo scroll altrimenti ───────
+        if multi:
+            # Calcola i totali aggregati per la prima tab "Totale"
+            def _aggregate(sections):
+                agg = dict(
+                    title=_('Total (%d songs)') % len(sections),
+                    key='', tempo='', time_='', capo='', artist='',
+                    n_verses  = sum(s['n_verses']        for s in sections),
+                    n_chorus  = sum(s['n_chorus']        for s in sections),
+                    n_bridge  = sum(s['n_bridge']        for s in sections),
+                    n_pages   = sum(s['n_pages']         for s in sections),
+                    n_lines   = sum(s['n_lines']         for s in sections),
+                    n_words   = sum(s['n_words']         for s in sections),
+                    n_chords_total  = sum(s['n_chords_total']  for s in sections),
+                    n_chords_unique = 0,   # non aggregabile con semplice somma
+                    n_hard   = 0,
+                    pct_hard = 0.0,
+                    duration_str='', duration_is_explicit=False,
+                    score=0, stars='', verdict='',
+                )
+                # Accordi unici del file intero (unione)
+                return agg
 
-        body = wx.BoxSizer(wx.VERTICAL)
+            agg = _aggregate(sections)
+            all_tabs = [agg] + sections  # tab 0 = totale, tab 1..N = brani
 
-        # ── Valutazione con stelle ────────────────────────────────────
-        eval_panel = wx.Panel(scroll)
-        eval_panel.SetBackgroundColour(wx.Colour(240, 245, 255))
-        eval_sz = wx.BoxSizer(wx.HORIZONTAL)
+            notebook = wx.Notebook(outer_panel)
+            notebook.SetBackgroundColour(BG)
 
-        lbl_stars = wx.StaticText(eval_panel, label=stars)
-        f_stars = lbl_stars.GetFont()
-        f_stars.SetPointSize(f_stars.GetPointSize() + 6)
-        lbl_stars.SetFont(f_stars)
-        lbl_stars.SetForegroundColour(STAR_ON)
+            for tab_idx, st in enumerate(all_tabs):
+                page = wx.ScrolledWindow(notebook, style=wx.VSCROLL | wx.BORDER_NONE)
+                page.SetScrollRate(0, 12)
+                page.SetBackgroundColour(BG)
+                body = wx.BoxSizer(wx.VERTICAL)
 
-        lbl_verdict = wx.StaticText(eval_panel, label='  ' + verdict)
-        f_v = lbl_verdict.GetFont()
-        f_v.SetWeight(wx.FONTWEIGHT_BOLD)
-        lbl_verdict.SetFont(f_v)
+                def _section(label, _body=body, _page=page):
+                    lbl = wx.StaticText(_page, label=label)
+                    f2 = lbl.GetFont()
+                    f2.SetWeight(wx.FONTWEIGHT_BOLD)
+                    f2.SetPointSize(f2.GetPointSize() + 1)
+                    lbl.SetFont(f2)
+                    lbl.SetForegroundColour(HDR)
+                    _body.Add(lbl, 0, wx.LEFT | wx.TOP, 12)
+                    _body.Add(wx.StaticLine(_page), 0,
+                              wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
 
-        eval_sz.Add(lbl_stars,   0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)
-        eval_sz.Add(lbl_verdict, 0, wx.ALIGN_CENTER_VERTICAL)
-        eval_panel.SetSizer(eval_sz)
-        body.Add(eval_panel, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 6)
+                def _row(key, value, _body=body, _page=page):
+                    hz = wx.BoxSizer(wx.HORIZONTAL)
+                    k_lbl = wx.StaticText(_page, label=key)
+                    v_lbl = wx.StaticText(_page, label=str(value))
+                    fv = v_lbl.GetFont()
+                    fv.SetWeight(wx.FONTWEIGHT_BOLD)
+                    v_lbl.SetFont(fv)
+                    hz.Add(k_lbl, 1, wx.ALIGN_CENTER_VERTICAL)
+                    hz.Add(v_lbl, 0, wx.ALIGN_CENTER_VERTICAL)
+                    _body.Add(hz, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 16)
+                    _body.AddSpacer(3)
 
-        # ── Barra punteggio ───────────────────────────────────────────
-        gauge = wx.Gauge(scroll, range=100, size=(-1, 8))
-        gauge.SetValue(score)
-        body.Add(gauge, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 12)
+                is_total_tab = (tab_idx == 0)
 
-        body.AddSpacer(10)
+                # Valutazione stelle (solo per i brani singoli, non il totale)
+                if not is_total_tab and st['stars']:
+                    eval_panel = wx.Panel(page)
+                    eval_panel.SetBackgroundColour(wx.Colour(240, 245, 255))
+                    eval_sz = wx.BoxSizer(wx.HORIZONTAL)
+                    lbl_stars = wx.StaticText(eval_panel, label=st['stars'])
+                    f_s = lbl_stars.GetFont()
+                    f_s.SetPointSize(f_s.GetPointSize() + 6)
+                    lbl_stars.SetFont(f_s)
+                    lbl_stars.SetForegroundColour(STAR_ON)
+                    lbl_verdict = wx.StaticText(eval_panel, label='  ' + st['verdict'])
+                    f_v = lbl_verdict.GetFont()
+                    f_v.SetWeight(wx.FONTWEIGHT_BOLD)
+                    lbl_verdict.SetFont(f_v)
+                    eval_sz.Add(lbl_stars,   0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)
+                    eval_sz.Add(lbl_verdict, 0, wx.ALIGN_CENTER_VERTICAL)
+                    eval_panel.SetSizer(eval_sz)
+                    body.Add(eval_panel, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 6)
+                    gauge = wx.Gauge(page, range=100, size=(-1, 8))
+                    gauge.SetValue(st['score'])
+                    body.Add(gauge, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 12)
+                    body.AddSpacer(10)
 
-        # ── Griglia statistiche ───────────────────────────────────────
-        def _section(label):
-            lbl = wx.StaticText(scroll, label=label)
-            f2 = lbl.GetFont()
-            f2.SetWeight(wx.FONTWEIGHT_BOLD)
-            f2.SetPointSize(f2.GetPointSize() + 1)
-            lbl.SetFont(f2)
-            lbl.SetForegroundColour(HDR)
-            body.Add(lbl, 0, wx.LEFT | wx.TOP, 12)
-            body.Add(wx.StaticLine(scroll), 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+                # Titolo del singolo brano (dentro la tab)
+                if not is_total_tab and st['title']:
+                    lbl_t = wx.StaticText(page, label=st['title'])
+                    f_t = lbl_t.GetFont()
+                    f_t.SetWeight(wx.FONTWEIGHT_BOLD)
+                    lbl_t.SetFont(f_t)
+                    body.Add(lbl_t, 0, wx.LEFT | wx.TOP, 12)
+                    if st['artist']:
+                        lbl_ar = wx.StaticText(page, label=st['artist'])
+                        lbl_ar.SetForegroundColour(wx.Colour(100, 100, 160))
+                        body.Add(lbl_ar, 0, wx.LEFT | wx.BOTTOM, 4)
+                    body.AddSpacer(4)
 
-        def _row(key, value):
-            hz = wx.BoxSizer(wx.HORIZONTAL)
-            k_lbl = wx.StaticText(scroll, label=key)
-            v_lbl = wx.StaticText(scroll, label=str(value))
-            fv = v_lbl.GetFont()
-            fv.SetWeight(wx.FONTWEIGHT_BOLD)
-            v_lbl.SetFont(fv)
-            hz.Add(k_lbl, 1, wx.ALIGN_CENTER_VERTICAL)
-            hz.Add(v_lbl, 0, wx.ALIGN_CENTER_VERTICAL)
-            body.Add(hz, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 16)
-            body.AddSpacer(3)
+                _section(_('Structure'))
+                _row(_('Verses'),          st['n_verses'] if st['n_verses'] else '—')
+                _row(_('Choruses'),        st['n_chorus'] if st['n_chorus'] else '—')
+                _row(_('Bridges'),         st['n_bridge'] if st['n_bridge'] else '—')
+                if not is_total_tab:
+                    _row(_('Estimated pages'), st['n_pages'])
 
-        _section(_('Structure'))
-        _row(_('Verses'),          n_verses if n_verses else '—')
-        _row(_('Choruses'),        n_chorus if n_chorus else '—')
-        _row(_('Bridges'),         n_bridge if n_bridge else '—')
-        _row(_('Estimated pages'), n_pages)
+                _section(_('Lyrics'))
+                _row(_('Lyrics lines'), st['n_lines'])
+                _row(_('Words'),        st['n_words'])
 
-        _section(_('Lyrics'))
-        _row(_('Lyrics lines'), n_lines)
-        _row(_('Words'),        n_words)
+                _section(_('Chords'))
+                _row(_('Total chords'), st['n_chords_total'])
+                if not is_total_tab:
+                    _row(_('Unique chords'), st['n_chords_unique'])
+                    _row(_('Of which complex'),
+                         '%d  (%.0f%%)' % (st['n_hard'], st['pct_hard'])
+                         if st['n_chords_unique'] else '—')
 
-        _section(_('Chords'))
-        _row(_('Total chords'),   n_chords_total)
-        _row(_('Unique chords'),  n_chords_unique)
-        _row(_('Of which complex'),
-             '%d  (%.0f%%)' % (n_hard, pct_hard) if n_chords_unique else '—')
+                if not is_total_tab:
+                    _section(_('Metadata'))
+                    if st['key']:    _row(_('Key'),           st['key'])
+                    if st['tempo']:  _row(_('Tempo'),         st['tempo'] + ' BPM')
+                    if st['time_']:  _row(_('Time signature'), st['time_'])
+                    if st['capo']:   _row(_('Capo'),          st['capo'])
+                    if st['duration_str']:
+                        label = _('Duration') if st['duration_is_explicit'] \
+                                else _('Estimated duration')
+                        _row(label, st['duration_str'])
+                    if not any([st['key'], st['tempo'], st['time_'], st['capo']]):
+                        body.Add(wx.StaticText(page,
+                            label=_('  (no musical metadata found)')),
+                            0, wx.LEFT | wx.BOTTOM, 16)
 
-        _section(_('Metadata'))
-        if song_key:   _row(_('Key'),              song_key)
-        if song_tempo: _row(_('Tempo'),             song_tempo + ' BPM')
-        if song_time:  _row(_('Time signature'),    song_time)
-        if song_capo:  _row(_('Capo'),              song_capo)
-        if duration_str:
-            if duration_is_explicit:
-                _row(_('Duration'),           duration_str)
-            else:
-                _row(_('Estimated duration'), duration_str)
+                body.AddSpacer(10)
+                page.SetSizer(body)
+                body.FitInside(page)
 
-        if not any([song_key, song_tempo, song_time, song_capo]):
-            body.Add(wx.StaticText(scroll,
-                label=_('  (no musical metadata found)')),
-                0, wx.LEFT | wx.BOTTOM, 16)
+                # Etichetta della tab: "Totale" oppure numero + titolo troncato
+                if is_total_tab:
+                    tab_label = _('Total')
+                else:
+                    short = st['title'] if st['title'] else _('(untitled)')
+                    if len(short) > 18:
+                        short = short[:16] + '…'
+                    tab_label = '%d. %s' % (tab_idx, short)
 
-        body.AddSpacer(10)
+                notebook.AddPage(page, tab_label)
 
-        scroll.SetSizer(body)
-        body.FitInside(scroll)          # comunica a ScrolledWindow le dimensioni virtuali
+            outer_sz.Add(notebook, 1, wx.EXPAND | wx.ALL, 4)
 
-        outer_sz.Add(scroll, 1, wx.EXPAND)
+        else:
+            # ── Singolo brano: layout originale con ScrolledWindow ────
+            st = sections[0]
+            scroll = wx.ScrolledWindow(outer_panel, style=wx.VSCROLL | wx.BORDER_NONE)
+            scroll.SetScrollRate(0, 12)
+            scroll.SetBackgroundColour(BG)
+            body = wx.BoxSizer(wx.VERTICAL)
 
-        # ── Fondo: pulsante Espandi + OK ──────────────────────────────
-        btn_expand = wx.Button(outer_panel, label=_('Show all ▼'))
+            def _section(label):
+                lbl = wx.StaticText(scroll, label=label)
+                f2 = lbl.GetFont()
+                f2.SetWeight(wx.FONTWEIGHT_BOLD)
+                f2.SetPointSize(f2.GetPointSize() + 1)
+                lbl.SetFont(f2)
+                lbl.SetForegroundColour(HDR)
+                body.Add(lbl, 0, wx.LEFT | wx.TOP, 12)
+                body.Add(wx.StaticLine(scroll), 0,
+                         wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+
+            def _row(key, value):
+                hz = wx.BoxSizer(wx.HORIZONTAL)
+                k_lbl = wx.StaticText(scroll, label=key)
+                v_lbl = wx.StaticText(scroll, label=str(value))
+                fv = v_lbl.GetFont()
+                fv.SetWeight(wx.FONTWEIGHT_BOLD)
+                v_lbl.SetFont(fv)
+                hz.Add(k_lbl, 1, wx.ALIGN_CENTER_VERTICAL)
+                hz.Add(v_lbl, 0, wx.ALIGN_CENTER_VERTICAL)
+                body.Add(hz, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 16)
+                body.AddSpacer(3)
+
+            # Valutazione
+            eval_panel = wx.Panel(scroll)
+            eval_panel.SetBackgroundColour(wx.Colour(240, 245, 255))
+            eval_sz = wx.BoxSizer(wx.HORIZONTAL)
+            lbl_stars = wx.StaticText(eval_panel, label=st['stars'])
+            f_s = lbl_stars.GetFont()
+            f_s.SetPointSize(f_s.GetPointSize() + 6)
+            lbl_stars.SetFont(f_s)
+            lbl_stars.SetForegroundColour(STAR_ON)
+            lbl_verdict = wx.StaticText(eval_panel, label='  ' + st['verdict'])
+            f_v = lbl_verdict.GetFont()
+            f_v.SetWeight(wx.FONTWEIGHT_BOLD)
+            lbl_verdict.SetFont(f_v)
+            eval_sz.Add(lbl_stars,   0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)
+            eval_sz.Add(lbl_verdict, 0, wx.ALIGN_CENTER_VERTICAL)
+            eval_panel.SetSizer(eval_sz)
+            body.Add(eval_panel, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 6)
+
+            gauge = wx.Gauge(scroll, range=100, size=(-1, 8))
+            gauge.SetValue(st['score'])
+            body.Add(gauge, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 12)
+            body.AddSpacer(10)
+
+            _section(_('Structure'))
+            _row(_('Verses'),          st['n_verses'] if st['n_verses'] else '—')
+            _row(_('Choruses'),        st['n_chorus'] if st['n_chorus'] else '—')
+            _row(_('Bridges'),         st['n_bridge'] if st['n_bridge'] else '—')
+            _row(_('Estimated pages'), st['n_pages'])
+
+            _section(_('Lyrics'))
+            _row(_('Lyrics lines'), st['n_lines'])
+            _row(_('Words'),        st['n_words'])
+
+            _section(_('Chords'))
+            _row(_('Total chords'),   st['n_chords_total'])
+            _row(_('Unique chords'),  st['n_chords_unique'])
+            _row(_('Of which complex'),
+                 '%d  (%.0f%%)' % (st['n_hard'], st['pct_hard'])
+                 if st['n_chords_unique'] else '—')
+
+            _section(_('Metadata'))
+            if st['key']:    _row(_('Key'),            st['key'])
+            if st['tempo']:  _row(_('Tempo'),          st['tempo'] + ' BPM')
+            if st['time_']:  _row(_('Time signature'), st['time_'])
+            if st['capo']:   _row(_('Capo'),           st['capo'])
+            if st['duration_str']:
+                label = _('Duration') if st['duration_is_explicit'] \
+                        else _('Estimated duration')
+                _row(label, st['duration_str'])
+            if not any([st['key'], st['tempo'], st['time_'], st['capo']]):
+                body.Add(wx.StaticText(scroll,
+                    label=_('  (no musical metadata found)')),
+                    0, wx.LEFT | wx.BOTTOM, 16)
+
+            body.AddSpacer(10)
+            scroll.SetSizer(body)
+            body.FitInside(scroll)
+            outer_sz.Add(scroll, 1, wx.EXPAND)
+
+        # ── Fondo: pulsante Espandi + OK (solo per singolo brano) ─────
+        btn_expand = wx.Button(outer_panel, label=_('Show all ▼')) if not multi else None
         btn = wx.Button(outer_panel, wx.ID_OK, 'OK')
         btn.SetDefault()
 
-        # riga inferiore: [Espandi]  spazio  [OK]
         bottom_sz = wx.BoxSizer(wx.HORIZONTAL)
-        bottom_sz.Add(btn_expand, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.TOP | wx.BOTTOM, 12)
+        if btn_expand:
+            bottom_sz.Add(btn_expand, 0,
+                          wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.TOP | wx.BOTTOM, 12)
         bottom_sz.AddStretchSpacer(1)
-        bottom_sz.Add(btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.TOP | wx.BOTTOM, 12)
+        bottom_sz.Add(btn, 0,
+                      wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.TOP | wx.BOTTOM, 12)
         outer_sz.Add(bottom_sz, 0, wx.EXPAND)
 
         outer_panel.SetSizer(outer_sz)
-
         dlg_sz = wx.BoxSizer(wx.VERTICAL)
         dlg_sz.Add(outer_panel, 1, wx.EXPAND)
         dlg.SetSizer(dlg_sz)
 
-        # ── Calcolo altezza ideale ────────────────────────────────────
-        # GetBestSize() su un dialogo con ScrolledWindow NON restituisce
-        # l'altezza del contenuto virtuale. Bisogna ricavarla dal sizer body
-        # più le parti fisse (intestazione + barra pulsanti).
+        # ── Altezza ideale ────────────────────────────────────────────
         dlg.Fit()
         dlg.Layout()
         screen_h = wx.Display().GetClientArea().GetHeight()
         max_h    = int(screen_h * 0.90)
 
-        # Altezza del contenuto scorrevole: dimensione minima richiesta dal sizer body
-        body_min_h   = body.GetMinSize().GetHeight()
-        # Altezza delle parti fisse (intestazione + barra pulsanti + bordi dialogo)
-        fixed_h      = (dlg.GetSize().GetHeight()
-                        - scroll.GetSize().GetHeight()
-                        + body_min_h)
-        ideal_h      = fixed_h
-        final_h      = min(ideal_h, max_h)
-        dlg.SetSize(wx.Size(dlg.GetSize().GetWidth(), final_h))
-        dlg.SetMinSize(wx.Size(400, 300))
+        if not multi:
+            body_min_h = body.GetMinSize().GetHeight()
+            fixed_h    = (dlg.GetSize().GetHeight()
+                          - scroll.GetSize().GetHeight()
+                          + body_min_h)
+            ideal_h  = fixed_h
+            final_h  = min(ideal_h, max_h)
+            dlg.SetSize(wx.Size(dlg.GetSize().GetWidth(), final_h))
+            dlg.SetMinSize(wx.Size(400, 300))
 
-        # Mostra "Show all" solo se il contenuto è stato davvero troncato
-        _needs_expand = (ideal_h > max_h)
-        if not _needs_expand:
-            btn_expand.Hide()
+            _needs_expand = (ideal_h > max_h)
+            if not _needs_expand:
+                btn_expand.Hide()
 
-        # Stato espansione
-        _expanded = [False]
+            _expanded = [False]
 
-        def _on_expand(evt):
-            if not _expanded[0]:
-                # Espandi: porta il dialogo all'altezza ideale completa (fino al 95% schermo)
-                max_full = int(screen_h * 0.95)
-                full_h   = min(ideal_h, max_full)
-                dlg.SetSize(wx.Size(dlg.GetSize().GetWidth(), full_h))
-                scroll.SetScrollRate(0, 0)
-                scroll.FitInside()
-                btn_expand.SetLabel(_('Collapse ▲'))
-                _expanded[0] = True
-            else:
-                # Comprimi: ripristina l'altezza limitata e riattiva lo scroll
-                dlg.SetSize(wx.Size(dlg.GetSize().GetWidth(), final_h))
-                scroll.SetScrollRate(0, 12)
-                body.FitInside(scroll)
-                btn_expand.SetLabel(_('Show all ▼'))
-                _expanded[0] = False
-            dlg.Layout()
+            def _on_expand(evt):
+                if not _expanded[0]:
+                    max_full = int(screen_h * 0.95)
+                    full_h   = min(ideal_h, max_full)
+                    dlg.SetSize(wx.Size(dlg.GetSize().GetWidth(), full_h))
+                    scroll.SetScrollRate(0, 0)
+                    scroll.FitInside()
+                    btn_expand.SetLabel(_('Collapse ▲'))
+                    _expanded[0] = True
+                else:
+                    dlg.SetSize(wx.Size(dlg.GetSize().GetWidth(), final_h))
+                    scroll.SetScrollRate(0, 12)
+                    body.FitInside(scroll)
+                    btn_expand.SetLabel(_('Show all ▼'))
+                    _expanded[0] = False
+                dlg.Layout()
 
-        btn_expand.Bind(wx.EVT_BUTTON, _on_expand)
+            btn_expand.Bind(wx.EVT_BUTTON, _on_expand)
+        else:
+            # Per il notebook multi-brano usa un'altezza fissa ragionevole
+            ideal_h = min(int(screen_h * 0.80), 600)
+            dlg.SetSize(wx.Size(460, ideal_h))
+            dlg.SetMinSize(wx.Size(420, 320))
 
         dlg.ShowModal()
         dlg.Destroy()
@@ -5548,7 +5735,7 @@ class SongpressFrame(SDIMainFrame):
         if getattr(self.pref, 'intellisense', True):
             parts.append(_(u"Intellisense"))
         if getattr(self.pref, 'multiCursor', False):
-            parts.append(_(u"Multicursore"))
+            parts.append(_(u"Multicursor"))
         self.statusBar.SetStatusText(u"  ● " + u"  ● ".join(parts) if parts else u"", 1)
 
     def OnIntegrateChords(self, evt):
