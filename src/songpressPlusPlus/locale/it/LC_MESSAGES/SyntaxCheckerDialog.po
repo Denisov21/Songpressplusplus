@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: Songpress++ 1.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-04-02 00:00+0000\n"
-"PO-Revision-Date: 2026-04-12 16:00+0200\n"
+"PO-Revision-Date: 2026-04-28 00:00+0200\n"
 "Last-Translator: Denisov21\n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -103,6 +103,12 @@ msgstr "Comando vuoto '{}'"
 #: SyntaxChecker.py
 msgid "Unknown command: '{cmd}'"
 msgstr "Comando sconosciuto: '{cmd}'"
+
+#. Command that requires ':' used without it (e.g. {verse} instead of {verse:} or {verse: label})
+#. {cmd} is replaced at runtime with the command name, e.g. verse
+#: SyntaxChecker.py
+msgid "Command '{{cmd}}' requires ':'; use '{{{cmd}:}}' or '{{{cmd}: label}}'"
+msgstr "Il comando '{{cmd}}' richiede ':'; usa '{{{cmd}:}}' oppure '{{{cmd}: etichetta}}'"
 
 #. Known command used without a required value (e.g. {title:} with no text)
 #. {cmd} is replaced at runtime with the actual command+colon, e.g. {title:}

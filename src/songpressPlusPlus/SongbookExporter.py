@@ -52,6 +52,7 @@ class SongbookDialog(wx.Dialog):
         self._page_setup_data.SetMarginBottomRight(wx.Point(15, 15))
         self._two_pages_per_sheet = False
         self._clickable_index = True   # voci indice cliccabili (default: sì)
+        self._show_page_numbers = True  # numera le pagine (default: sì)
         self._build_ui()
 
     def _build_ui(self):
@@ -126,7 +127,14 @@ class SongbookDialog(wx.Dialog):
             self, label=_("Clickable index entries (PDF links)")
         )
         self._cb_clickable_index.SetValue(self._clickable_index)
-        outer.Add(self._cb_clickable_index, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+        outer.Add(self._cb_clickable_index, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
+
+        # ── Checkbox numerazione pagine ────────────────────────────────
+        self._cb_show_page_numbers = wx.CheckBox(
+            self, label=_("Show page numbers")
+        )
+        self._cb_show_page_numbers.SetValue(self._show_page_numbers)
+        outer.Add(self._cb_show_page_numbers, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
 
         # ── Riga pulsanti impostazioni pagina ──────────────────────────
         page_row = wx.BoxSizer(wx.HORIZONTAL)
@@ -281,6 +289,7 @@ class SongbookDialog(wx.Dialog):
             'margin_right':      br.x,
             'two_pages_per_sheet': self._two_pages_per_sheet,
             'clickable_index':   self._cb_clickable_index.GetValue(),
+            'show_page_numbers': self._cb_show_page_numbers.GetValue(),
         }
 
 
@@ -377,6 +386,7 @@ def _build_pdf(
     margin_top=15, margin_left=15, margin_bottom=15, margin_right=15,
     two_pages_per_sheet=False,
     clickable_index=True,
+    show_page_numbers=True,
     parent_window=None,
 ):
     """
@@ -492,15 +502,18 @@ def _build_pdf(
                 _slot[0] = 1
             else:
                 _slot[0] = 0
-                draw_page_number(page_num[0])
+                if show_page_numbers:
+                    draw_page_number(page_num[0])
                 next_page()
         else:
-            draw_page_number(page_num[0])
+            if show_page_numbers:
+                draw_page_number(page_num[0])
             next_page()
 
     def _flush_slot():
         if two_pages_per_sheet and _slot[0] == 1:
-            draw_page_number(page_num[0])
+            if show_page_numbers:
+                draw_page_number(page_num[0])
             next_page()
             _slot[0] = 0
 
@@ -570,7 +583,8 @@ def _build_pdf(
 
     for idx, (title, pg) in enumerate(index_entries):
         if row > 0 and row % ROWS_PER_PAGE == 0:
-            draw_page_number(page_num[0])
+            if show_page_numbers:
+                draw_page_number(page_num[0])
             next_page()
             start_index_page()
 
@@ -624,7 +638,8 @@ def _build_pdf(
 
         row += 1
 
-    draw_page_number(page_num[0])
+    if show_page_numbers:
+        draw_page_number(page_num[0])
     c.save()
 
     for tp in tmp_files:
@@ -714,6 +729,7 @@ def create_songbook(frame_obj, parent_window):
             margin_right=vals.get('margin_right', 15),
             two_pages_per_sheet=vals.get('two_pages_per_sheet', False),
             clickable_index=vals.get('clickable_index', True),
+            show_page_numbers=vals.get('show_page_numbers', True),
             parent_window=parent_window,
         )
     finally:

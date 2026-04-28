@@ -57,6 +57,9 @@ msgstr "Opzioni di stampa..."
 msgid "Clickable index entries (PDF links)"
 msgstr "Voci indice cliccabili (link PDF)"
 
+msgid "Show page numbers"
+msgstr "Mostra numeri di pagina"
+
 msgid "Print 2 pages per sheet"
 msgstr "Stampa 2 pagine per foglio"
 
@@ -106,6 +109,9 @@ msgstr "Libreria mancante"
 
 msgid "Please select a valid folder."
 msgstr "Selezionare una cartella valida."
+
+msgid "Please select a valid songs folder."
+msgstr "Selezionare una cartella brani valida."
 
 msgid "Please select the output PDF file."
 msgstr "Selezionare il file PDF di destinazione."

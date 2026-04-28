@@ -46,6 +46,10 @@ msgstr "File ChordPro (*.crd, *.cho, *.chordpro, *.chopro, *.pro)"
 msgid "Tab files (*.tab)"
 msgstr "File in formato tab (*.tab)"
 
+#: SongpressFrame.py — import format filter
+msgid "Songpress files (*.sng)"
+msgstr "File Songpress (*.sng)"
+
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:195
 msgid "song"
 msgstr "canzone"

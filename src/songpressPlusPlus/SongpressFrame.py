@@ -674,7 +674,7 @@ if platform.system() == 'Linux':
     # Apparently there is a problem with linux FileOpen dialog box in wxPython:
     # it does not support multiple extensions in a filter.
     _import_formats = [
-        (_("All supported files"), ["crd", "cho", "chordpro", "chopro", "tab", "cpm"]),
+        (_("All supported files"), ["crd", "cho", "chordpro", "chopro", "tab", "cpm", "sng"]),
         #(_("Chordpro files (*.crd)"), ["crd"]),
         #(_("Tab files (*.tab)"), ["tab"]),
         #(_("Chordpro files (*.cho)"), ["cho"]),
@@ -684,9 +684,10 @@ if platform.system() == 'Linux':
     ]
 else:
     _import_formats = [
-        (_("All supported files"), ["crd", "cho", "chordpro", "chopro", "pro", "tab"]),
+        (_("All supported files"), ["crd", "cho", "chordpro", "chopro", "pro", "tab", "sng"]),
         (_("Chordpro files (*.crd, *.cho, *.chordpro, *.chopro, *.pro)"), ["crd", "cho", "chordpro", "chopro", "pro"]),
         (_("Tab files (*.tab)"), ["tab"]),
+        (_("Songpress files (*.sng)"), ["sng"]),
     ]
 
 

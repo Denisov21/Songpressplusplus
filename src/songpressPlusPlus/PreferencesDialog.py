@@ -787,7 +787,7 @@ class PreferencesDialog(wx.Dialog):
             bSizerFA.Add(headerFA, 0, wx.ALL, 8)
             bSizerFA.Add(wx.StaticLine(self.fileAssocPanel), 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
 
-            self._fileAssocExts = ["crd", "cho", "chordpro", "chopro", "pro", "tab"]
+            self._fileAssocExts = ["crd", "cho", "chordpro", "chopro", "pro", "tab", "sng"]
             self._fileAssocCBs  = {}
             for ext in self._fileAssocExts:
                 cb = wx.CheckBox(self.fileAssocPanel, wx.ID_ANY, u"." + ext)

@@ -67,7 +67,7 @@ class MyPreferencesDialog(PreferencesDialog):
             self.langCh.SetClientData(i, l)
             if lang == l:
                 self.langCh.SetSelection(i)
-        exts = ["crd", "pro", "chopro", "chordpro", "cho"]
+        exts = ["crd", "pro", "chopro", "chordpro", "cho", "sng"]
         i = 0
         for e in exts:
             self.extension.Append(e)
@@ -941,7 +941,7 @@ class MyPreferencesDialog(PreferencesDialog):
             winreg.SetValue(k, '', winreg.REG_SZ, app_cmd)
         with winreg.CreateKey(winreg.HKEY_CURRENT_USER,
                               r'{}\SupportedTypes'.format(app_key)) as k:
-            for s_ext in ["crd", "cho", "chordpro", "chopro", "pro", "tab"]:
+            for s_ext in ["crd", "cho", "chordpro", "chopro", "pro", "tab", "sng"]:
                 winreg.SetValueEx(k, '.{}'.format(s_ext), 0, winreg.REG_SZ, '')
 
         # 3. OpenWithList: collega l'app_name all'estensione
@@ -1021,7 +1021,7 @@ class MyPreferencesDialog(PreferencesDialog):
 
         # 3. Elimina il ProgID e Applications\<app_name> solo se nessuna altra ext lo usa ancora.
         #    Il ProgID è condiviso: non va rimosso finché almeno un'altra estensione è associata.
-        other_exts = [e for e in ["crd", "cho", "chordpro", "chopro", "pro", "tab"] if e != ext]
+        other_exts = [e for e in ["crd", "cho", "chordpro", "chopro", "pro", "tab", "sng"] if e != ext]
         if not any(self._IsExtAssociatedWin(e) for e in other_exts):
             try:
                 self._DeleteRegKeyRecursive(
@@ -1058,7 +1058,7 @@ class MyPreferencesDialog(PreferencesDialog):
     # MIME type usato per tutti i file ChordPro/CRD
     _LINUX_MIME_TYPE = 'text/x-chordpro'
     # Tutte le estensioni condividono lo stesso MIME type
-    _LINUX_MIME_EXTS = ["crd", "cho", "chordpro", "chopro", "pro", "tab"]
+    _LINUX_MIME_EXTS = ["crd", "cho", "chordpro", "chopro", "pro", "tab", "sng"]
 
     def _GetLinuxLaunchCmd(self, exe):
         """Restituisce il comando Exec per il file .desktop (Linux)."""
