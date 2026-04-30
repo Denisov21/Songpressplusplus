@@ -1,0 +1,48 @@
+# CanzonatorDialog — Italian translations
+# Copyright (C) 2026 Denisov21
+# This file is distributed under the same license as the songpress package.
+#
+# Translators:
+# Denisov21, 2026
+msgid ""
+msgstr ""
+"Project-Id-Version: songpress\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-30 18:00+0200\n"
+"PO-Revision-Date: 2026-04-30 18:00+0200\n"
+"Last-Translator: Denisov21\n"
+"Language-Team: \n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.9\n"
+
+#: CanzonatorDialog.py — merge result dialog title
+msgid "Canzonatore — Merge completed"
+msgstr "Canzonatore — Unione completata"
+
+#: CanzonatorDialog.py — merge result message
+#, python-format
+msgid "Merge completed: %d songs joined."
+msgstr "Unione completata: %d brani uniti."
+
+#: CanzonatorDialog.py — merge result output file label
+msgid "Output file:"
+msgstr "File di output:"
+
+#: CanzonatorDialog.py — merge result folder label
+msgid "Folder"
+msgstr "Cartella"
+
+#: CanzonatorDialog.py — merge result open file link tooltip
+msgid "Open the file with the default application"
+msgstr "Apri il file con l'applicazione predefinita"
+
+#: CanzonatorDialog.py — new_song checkbox label
+msgid "Insert {new_song} between songs"
+msgstr "Inserisci {new_song} tra i brani"
+
+#: CanzonatorDialog.py — new_song checkbox tooltip
+msgid "Adds {new_song} at the end of each song, before the separator"
+msgstr "Aggiunge {new_song} alla fine di ogni brano, prima del separatore"

@@ -2292,12 +2292,12 @@ class SongpressFrame(SDIMainFrame):
             agg = _aggregate(sections)
             all_tabs = [agg] + sections  # tab 0 = totale, tab 1..N = brani
 
-            notebook = wx.Notebook(outer_panel)
+            notebook = wx.Notebook(outer_panel, style=wx.NB_MULTILINE)
             notebook.SetBackgroundColour(BG)
 
             for tab_idx, st in enumerate(all_tabs):
-                page = wx.ScrolledWindow(notebook, style=wx.VSCROLL | wx.BORDER_NONE)
-                page.SetScrollRate(0, 12)
+                page = wx.ScrolledWindow(notebook, style=wx.VSCROLL | wx.HSCROLL | wx.BORDER_NONE)
+                page.SetScrollRate(12, 12)
                 page.SetBackgroundColour(BG)
                 body = wx.BoxSizer(wx.VERTICAL)
 

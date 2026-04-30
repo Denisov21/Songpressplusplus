@@ -421,6 +421,13 @@ class CanzonatorDialog(wx.Dialog):
         self.cb_open.SetValue(True)
         opt_box.Add(self.cb_open, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
 
+        self.cb_new_song = wx.CheckBox(self, label=_("Insert {new_song} between songs"))
+        self.cb_new_song.SetValue(False)
+        self.cb_new_song.SetToolTip(
+            _("Adds {new_song} at the end of each song, before the separator")
+        )
+        opt_box.Add(self.cb_new_song, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
+
         outer.Add(opt_box, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
         # ── Bottoni ────────────────────────────────────────────────────
@@ -483,6 +490,7 @@ class CanzonatorDialog(wx.Dialog):
 
         encoding  = 'utf-8' if self.rb_utf8.GetValue() else 'latin-1'
         separator = _SONG_SEPARATOR if self.rb_newpage.GetValue() else '\n\n'
+        add_new_song = self.cb_new_song.GetValue()
 
         parts  = []
         errors = []
@@ -512,8 +520,12 @@ class CanzonatorDialog(wx.Dialog):
                 return
 
         try:
+            if add_new_song:
+                tagged = [p + '\n{new_song}' for p in parts]
+            else:
+                tagged = parts
             with open(out_path, 'w', encoding=encoding, errors='replace') as f:
-                f.write(separator.join(parts) + '\n')
+                f.write(separator.join(tagged) + '\n')
         except Exception as e:
             wx.MessageBox(
                 _("Error writing the merged file:\n\n") + str(e),
@@ -524,13 +536,24 @@ class CanzonatorDialog(wx.Dialog):
             return
 
         # ── Dialogo di completamento con link cliccabili ───────────────
-        result_dlg = _MergeResultDialog(self, out_path, len(parts), len(errors))
+        # Parent = None: evita che wx tenti di ripristinare il focus
+        # sul dialogo Canzonatore dopo Destroy(), causando "Handle non valido"
+        open_after = self.cb_open.GetValue() and bool(self._open_callback)
+        _cb         = self._open_callback
+
+        self.Hide()   # nasconde subito, handle ancora valido per wx
+
+        result_dlg = _MergeResultDialog(None, out_path, len(parts), len(errors))
         result_dlg.ShowModal()
         result_dlg.Destroy()
 
-        # Apri nell'editor se richiesto
-        if self.cb_open.GetValue() and self._open_callback:
-            self._open_callback(out_path)
+        # Ora siamo fuori da qualsiasi evento wx attivo sul dialogo:
+        # possiamo distruggere e aprire nell'editor in modo sicuro.
+        def _finish():
+            self.Destroy()
+            if open_after:
+                _cb(out_path)
+        wx.CallAfter(_finish)
 
     def _OnClose(self, evt):
         self.Destroy()
@@ -553,7 +576,25 @@ def open_canzonatore(owner, parent_frame):
         try:
             if not owner.AskSaveModified():
                 return
-            owner.Open(path)
+            for enc in ('utf-8-sig', 'utf-8', 'latin-1'):
+                try:
+                    with open(path, 'r', encoding=enc) as f:
+                        content = f.read()
+                    break
+                except UnicodeDecodeError:
+                    continue
+            else:
+                raise UnicodeDecodeError('all', b'', 0, 1, 'Unable to decode file')
+            owner.document = path
+            owner.text.AutoChangeMode(True)
+            owner.text.New()
+            owner.text.SetText(content)
+            owner.text.AutoChangeMode(False)
+            owner.modified = False
+            owner.UpdateTitle()
+            owner.UpdateEverything()
+            owner.AutoAdjust(0, owner.text.GetLength())
+            owner.previewCanvas.Refresh(owner._get_display_text())
         except Exception as e:
             wx.MessageBox(str(e), _("Canzonatore"), wx.OK | wx.ICON_ERROR, parent_frame)
 
