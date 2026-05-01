@@ -10,8 +10,7 @@ msgstr ""
 "Project-Id-Version: songpress\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-05 16:22+0200\n"
-"PO-Revision-Date: 2026-04-26 20:00+0200
-"
+"PO-Revision-Date: \n"
 "Last-Translator: Denisov21\n"
 "Language-Team: \n"
 "Language: it\n"
@@ -604,7 +603,7 @@ msgstr "Carattere: Editor - Songpress++"
 
 #: SongpressFrame.py
 msgid "Chord font - Songpress++"
-msgstr "Carattere accordo - Songpress++"
+msgstr "Carattere: Accordo - Songpress++"
 
 #: SongpressFrame.py app title
 msgid "Songpress++ - The Song Editor"
@@ -1392,7 +1391,8 @@ msgstr "Applica solo alla selezione"
 msgid "Highlight chord rows in editor"
 msgstr "Evidenzia le righe degli accordi nell'editor"
 
-#: SongpressFrame.py — beats_time dialog highlight checkbox tooltip (multiline)
+#: SongpressFrame.py — beats_time dialog highlight checkbox tooltip
+#: (multiline)
 msgid ""
 "Highlight in the editor the chord line each cursor refers to.\n"
 "Active cursor: chosen colour  |  Other cursors: lighter tint"
