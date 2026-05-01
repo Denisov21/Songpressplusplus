@@ -216,6 +216,7 @@
         <object class="wxMenuItem" name="replace">
           <label>R_eplace...</label>
           <accel>CTRL+R</accel>
+          <bitmap>../img/replace.png</bitmap>
           <help>Replace some text with some other text</help>
         </object>
         <object class="separator"/>
@@ -238,11 +239,13 @@
         <object class="wxMenuItem" name="moveChordRight">
           <label>_Move chord right</label>
           <accel>SHIFT+ALT+RIGHT</accel>
+           <bitmap>../img/right.png</bitmap>
           <help>Move chord under cursor one position rightwards</help>
         </object>
         <object class="wxMenuItem" name="moveChordLeft">
           <label>Move chord _left</label>
           <accel>SHIFT+ALT+LEFT</accel>
+           <bitmap>../img/left.png</bitmap>
           <help>Move chord under cursor one position leftwards</help>
         </object>
         <object class="separator"/>
@@ -284,14 +287,14 @@
           <checked>1</checked>
         </object>
         <object class="wxMenuItem" name="showPageBreakLines">
-          <label>Show page break lines</label>
+          <label>Show: "Page break lines"</label>
           <accel></accel>
           <help>Show or hide the blue page break line in the preview</help>
           <checkable>1</checkable>
           <checked>1</checked>
         </object>
         <object class="wxMenuItem" name="showColumnBreakLines">
-          <label>Show column break lines</label>
+          <label>Show: "Column break lines"</label>
           <accel></accel>
           <help>Show or hide the blue column break line in the preview</help>
           <checkable>1</checkable>
@@ -299,9 +302,17 @@
           <bitmap>../img/column.png</bitmap>
         </object>
         <object class="wxMenuItem" name="showDurationBeats">
-          <label>Show beat count</label>
+          <label>Show: "duration {beats__time}"</label>
           <accel></accel>
           <help>Show or hide the beat count above chords ({beats_time:} directive)</help>
+          <checkable>1</checkable>
+          <checked>1</checked>
+        </object>
+        <object class="wxMenuItem" name="labelVerses">
+          <label>_Label verses</label>
+          <accel></accel>
+          <help>Show/hide labels at the beginning of verses and chorus</help>
+          <bitmap>../img/labelVerses.png</bitmap>
           <checkable>1</checkable>
           <checked>1</checked>
         </object>
@@ -429,27 +440,22 @@
       <object class="wxMenu" name="formatMenu">
         <label>F_ormat</label>
         <object class="wxMenuItem" name="songFont">
-          <label>Song _font...</label>
+          <label>_Songpress++ Preview Text...</label>
           <accel></accel>
-          <help>Select song font</help>
+          <bitmap>../img/font1.png</bitmap>
+          <help>Select Songpress++ Preview Text font</help>
         </object>
         <object class="wxMenuItem" name="textFont">
-          <label>_Text font...</label>
+          <label>_Songpress++ Editor Font...</label>
           <accel></accel>
+          <bitmap>../img/font2.png</bitmap>
           <help>Modify text font and color from cursor position or in selection</help>
         </object>
         <object class="wxMenuItem" name="chordFont">
           <label>C_hord font...</label>
           <accel></accel>
+          <bitmap>../img/font3.png</bitmap>
           <help>Modify chord font and color from cursor position or in selection</help>
-        </object>
-        <object class="wxMenuItem" name="labelVerses">
-          <label>_Label verses</label>
-          <accel></accel>
-          <help>Show/hide labels at the beginning of verses and chorus</help>
-          <bitmap>../img/labelVerses.png</bitmap>
-          <checkable>1</checkable>
-          <checked>1</checked>
         </object>
         <object class="wxMenuItem" name="chorusLabel">
           <label>_Chorus label...</label>

@@ -18,8 +18,8 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 # ── Titolo dialogo ──────────────────────────────────────────────────────────
-msgid "Create Songbook"
-msgstr "Crea Songbook"
+msgid "Create Songbook PDF"
+msgstr "Crea Songbook PDF"
 
 # ── Etichette griglia ───────────────────────────────────────────────────────
 msgid "Songs folder:"

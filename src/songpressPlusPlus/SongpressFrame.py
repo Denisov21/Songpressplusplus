@@ -7104,7 +7104,7 @@ class SongpressFrame(SDIMainFrame):
         f = FontFaceDialog(
             self.frame,
             wx.ID_ANY,
-            _("Song font - Songpress++"),
+            _("Songpress++ Preview Text"),
             self.pref.format,
             self.pref.decorator,
             self.pref.decoratorFormat,
@@ -7120,7 +7120,7 @@ class SongpressFrame(SDIMainFrame):
         data.SetColour(self.pref.format.color)
 
         dialog = wx.FontDialog(self.frame, data)
-        dialog.SetTitle(_("Text font - Songpress++"))
+        dialog.SetTitle(_("Songpress++ Editor Font"))
         if dialog.ShowModal() == wx.ID_OK:
             retData = dialog.GetFontData()
             font = retData.GetChosenFont()

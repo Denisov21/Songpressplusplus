@@ -35,7 +35,7 @@ class SongbookDialog(wx.Dialog):
     def __init__(self, parent):
         super().__init__(
             parent,
-            title=_("Create Songbook"),
+            title=_("Create Songbook PDF"),
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         )
         self.folder = None
@@ -155,12 +155,10 @@ class SongbookDialog(wx.Dialog):
         outer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 8)
 
         self.SetSizer(outer)
-        # Calcola le dimensioni minime dal contenuto, poi imposta
-        # un'altezza iniziale maggiore per non tagliare i pulsanti OK/Annulla.
         self.Fit()
         fit_sz = self.GetSize()
-        self.SetMinSize(wx.Size(fit_sz.width, fit_sz.height + 25))
-        self.SetSize(wx.Size(fit_sz.width, fit_sz.height + 60))
+        self.SetMinSize(wx.Size(fit_sz.width, fit_sz.height + 20))
+        self.SetSize(wx.Size(fit_sz.width, fit_sz.height + 20))
         self.Centre()
 
         # Intercetta OK per validare prima di chiudere
@@ -238,7 +236,7 @@ class SongbookDialog(wx.Dialog):
         if not folder or not os.path.isdir(folder):
             wx.MessageBox(
                 _("Please select a valid songs folder."),
-                _("Create Songbook"),
+                _("Create Songbook PDF"),
                 wx.OK | wx.ICON_WARNING,
                 self,
             )
@@ -248,7 +246,7 @@ class SongbookDialog(wx.Dialog):
         if not output:
             wx.MessageBox(
                 _("Please select the output PDF file."),
-                _("Create Songbook"),
+                _("Create Songbook PDF"),
                 wx.OK | wx.ICON_WARNING,
                 self,
             )
@@ -258,7 +256,7 @@ class SongbookDialog(wx.Dialog):
         if not any(cb.GetValue() for cb in self._ext_checks.values()):
             wx.MessageBox(
                 _("Select at least one file extension."),
-                _("Create Songbook"),
+                _("Create Songbook PDF"),
                 wx.OK | wx.ICON_WARNING,
                 self,
             )

@@ -272,7 +272,7 @@
             <property name="permission">none</property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap">Load From File; SongpressV48 OK - Copia - Copia/Songpressplusplus/src/songpressPlusPlus/img/songbook.png</property>
+            <property name="bitmap">Load From File; ../img/songbook.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Create a PDF songbook from a folder of songs</property>
@@ -574,7 +574,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/replace.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Replace some text with some other text</property>
@@ -630,7 +630,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/right.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Move chord under cursor one position rightwards</property>
@@ -643,7 +643,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/left.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Move chord under cursor one position leftwards</property>
@@ -770,6 +770,19 @@
             <property name="kind">wxITEM_CHECK</property>
             <property name="label">Show beat count</property>
             <property name="name">showDurationBeats</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap">Load From File; ../img/labelVerses.png</property>
+            <property name="checked">1</property>
+            <property name="enabled">1</property>
+            <property name="help">Show/hide labels at the beginning of verses and chorus</property>
+            <property name="id">ID_LABEL_VERSES</property>
+            <property name="kind">wxITEM_CHECK</property>
+            <property name="label">&amp;Label verses</property>
+            <property name="name">labelVerses</property>
             <property name="permission">none</property>
             <property name="shortcut"></property>
             <property name="unchecked_bitmap"></property>
@@ -1057,12 +1070,12 @@
             <property name="unchecked_bitmap"></property>
           </object>
         </object>
-        <object class="wxMenu" expanded="false">
+        <object class="wxMenu" expanded="true">
           <property name="label">F&amp;ormat</property>
           <property name="name">formatMenu</property>
           <property name="permission">protected</property>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/font1.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Select song font</property>
@@ -1075,7 +1088,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/font2.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Modify text font and color from cursor position or in selection</property>
@@ -1088,7 +1101,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/font3.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Modify chord font and color from cursor position or in selection</property>
@@ -1096,19 +1109,6 @@
             <property name="kind">wxITEM_NORMAL</property>
             <property name="label">C&amp;hord font...</property>
             <property name="name">chordFont</property>
-            <property name="permission">none</property>
-            <property name="shortcut"></property>
-            <property name="unchecked_bitmap"></property>
-          </object>
-          <object class="wxMenuItem" expanded="false">
-            <property name="bitmap">Load From File; ../img/labelVerses.png</property>
-            <property name="checked">1</property>
-            <property name="enabled">1</property>
-            <property name="help">Show/hide labels at the beginning of verses and chorus</property>
-            <property name="id">ID_LABEL_VERSES</property>
-            <property name="kind">wxITEM_CHECK</property>
-            <property name="label">&amp;Label verses</property>
-            <property name="name">labelVerses</property>
             <property name="permission">none</property>
             <property name="shortcut"></property>
             <property name="unchecked_bitmap"></property>
@@ -1403,7 +1403,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap">Load From File; E:\Users\Utente\Downloads\SongpressV44 OK - Copia\Songpressplusplus\src\songpressPlusPlus\img\livesafer.png</property>
+            <property name="bitmap">Load From File; ../img/livesafer.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Open Songpress++ command reference guide</property>

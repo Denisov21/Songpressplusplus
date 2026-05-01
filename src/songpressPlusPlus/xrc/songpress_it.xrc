@@ -216,6 +216,7 @@
         <object class="wxMenuItem" name="replace">
           <label>S_ostituisci...</label>
           <accel>CTRL+R</accel>
+          <bitmap>../img/replace.png</bitmap>
           <help>Sostituisci del testo con altro testo</help>
         </object>
         <object class="separator"/>
@@ -238,11 +239,13 @@
         <object class="wxMenuItem" name="moveChordRight">
           <label>Sposta accordo a _destra</label>
           <accel>SHIFT+ALT+RIGHT</accel>
+          <bitmap>../img/right.png</bitmap>
           <help>Sposta l'accordo sotto il cursore di una posizione a destra</help>
         </object>
         <object class="wxMenuItem" name="moveChordLeft">
           <label>Sposta accordo a _sinistra</label>
           <accel>SHIFT+ALT+LEFT</accel>
+          <bitmap>../img/left.png</bitmap>
           <help>Sposta l'accordo sotto il cursore di una posizione a sinistra</help>
         </object>
         <object class="separator"/>
@@ -284,14 +287,14 @@
           <checked>1</checked>
         </object>
         <object class="wxMenuItem" name="showPageBreakLines">
-          <label>Mostra linee di interruzione pagina</label>
+          <label>Mostra: "Linee di interruzione pagina"</label>
           <accel></accel>
           <help>Mostra o nascondi la linea blu di interruzione pagina nell'anteprima</help>
           <checkable>1</checkable>
           <checked>1</checked>
         </object>
         <object class="wxMenuItem" name="showColumnBreakLines">
-          <label>Mostra linee di interruzione colonna</label>
+          <label>Mostra: "Linee di interruzione colonna"</label>
           <accel></accel>
           <help>Mostra o nascondi la linea blu di interruzione colonna nell'anteprima</help>
           <checkable>1</checkable>
@@ -299,9 +302,17 @@
           <bitmap>../img/column.png</bitmap>
         </object>
         <object class="wxMenuItem" name="showDurationBeats">
-          <label>Mostra numero di battiti</label>
+          <label>Mostra: "Durata accordo {beats__time}"</label>
           <accel></accel>
           <help>Mostra o nascondi il numero di battiti sopra gli accordi (direttiva {beats_time:})</help>
+          <checkable>1</checkable>
+          <checked>1</checked>
+        </object>
+        <object class="wxMenuItem" name="labelVerses">
+          <label>_Etichetta strofe</label>
+          <accel></accel>
+          <help>Mostra/nascondi le etichette all'inizio delle strofe e del ritornello</help>
+          <bitmap>../img/labelVerses.png</bitmap>
           <checkable>1</checkable>
           <checked>1</checked>
         </object>
@@ -429,27 +440,22 @@
       <object class="wxMenu" name="formatMenu">
         <label>F_ormato</label>
         <object class="wxMenuItem" name="songFont">
-          <label>Carattere canzone...</label>
+          <label>Carattere: Anteprima Songpress++...</label>
           <accel></accel>
+          <bitmap>../img/font1.png</bitmap>
           <help>Seleziona il carattere della canzone</help>
         </object>
         <object class="wxMenuItem" name="textFont">
-          <label>Carattere _testo...</label>
+          <label>Carattere: Editor...</label>
           <accel></accel>
+          <bitmap>../img/font2.png</bitmap>
           <help>Modifica il carattere e il colore del testo dalla posizione del cursore o nella selezione</help>
         </object>
         <object class="wxMenuItem" name="chordFont">
-          <label>Carattere a_ccordo...</label>
+          <label>Carattere: a_ccordo...</label>
           <accel></accel>
+          <bitmap>../img/font3.png</bitmap>
           <help>Modifica il carattere e il colore degli accordi dalla posizione del cursore o nella selezione</help>
-        </object>
-        <object class="wxMenuItem" name="labelVerses">
-          <label>_Etichetta strofe</label>
-          <accel></accel>
-          <help>Mostra/nascondi le etichette all'inizio delle strofe e del ritornello</help>
-          <bitmap>../img/labelVerses.png</bitmap>
-          <checkable>1</checkable>
-          <checked>1</checked>
         </object>
         <object class="wxMenuItem" name="chorusLabel">
           <label>Etichetta _ritornello...</label>

@@ -595,12 +595,12 @@ msgid "Enter chord definition (e.g. C base-fret 1 frets X 3 2 0 1 0):"
 msgstr "Inserisci la definizione dell'accordo (es. DO base-fret 1 frets X 3 2 0 1 0):"
 
 #: SongpressFrame.py
-msgid "Song font - Songpress++"
-msgstr "Carattere canzone - Songpress++"
+msgid "Songpress++ Preview Text"
+msgstr "Carattere: Anteprima Songpress++"
 
 #: SongpressFrame.py
-msgid "Text font - Songpress++"
-msgstr "Carattere testo - Songpress++"
+msgid "Songpress++ Editor Font"
+msgstr "Carattere: Editor - Songpress++"
 
 #: SongpressFrame.py
 msgid "Chord font - Songpress++"
@@ -1437,3 +1437,7 @@ msgstr "Totale (%d brani)"
 #: SongpressFrame.py — Commands Guide dialog title
 msgid "Songpress++ Commands Guide"
 msgstr "Guida ai comandi di Songpress++"
+
+#: SongpressFrame.py — output file save dialog title
+msgid "Choose a name for the output file"
+msgstr "Scegli un nome per il file di output"
