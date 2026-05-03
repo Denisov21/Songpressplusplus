@@ -194,6 +194,11 @@ class MyPreferencesDialog(PreferencesDialog):
         self.dblClickFocusCB.SetValue(getattr(self.pref, 'dblClickFocus', True))
         self.previewMinSizeCB.SetValue(getattr(self.pref, 'previewMinSize', True))
 
+        # Nessun accordo: blocchi da nascondere
+        self.hideIntroChordCB.SetValue(getattr(self.pref, 'hideIntroChord', False))
+        self.hideBridgeCB.SetValue(getattr(self.pref, 'hideBridge', False))
+        self.hideGridCB.SetValue(getattr(self.pref, 'hideGrid', False))
+
         # Viewer guida rapida
         viewer = getattr(self.pref, 'guideViewer', 'markdown')
         _viewer_map = {'markdown': 0, 'mistune': 2, 'builtin': 3}
@@ -1312,6 +1317,10 @@ class MyPreferencesDialog(PreferencesDialog):
         sel = self.guideViewerCh.GetSelection()
         self.pref.guideViewer = _viewer_keys[sel] if 0 <= sel < len(_viewer_keys) else 'markdown'
         self.pref.guideMarkdownImgPath = self.guideMarkdownImgPathCb.GetValue()
+        # Nessun accordo: blocchi da nascondere
+        self.pref.hideIntroChord = self.hideIntroChordCB.GetValue()
+        self.pref.hideBridge     = self.hideBridgeCB.GetValue()
+        self.pref.hideGrid        = self.hideGridCB.GetValue()
         # Applica subito sul previewCanvas se disponibile
         if self._previewCanvas is not None:
             self._previewCanvas.SetShowPageIndicator(self.pref.showPageIndicator)

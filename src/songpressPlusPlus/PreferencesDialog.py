@@ -656,6 +656,51 @@ class PreferencesDialog(wx.Dialog):
 
         bSizerSongpress.Add(grpPreview, 0, wx.EXPAND | wx.ALL, 8)
 
+        # Gruppo: Nessun accordo — blocchi da nascondere
+        grpNoChords = wx.StaticBoxSizer(
+            wx.StaticBox(self.songpressPanel, wx.ID_ANY,
+                         _(u"No chords: blocks to hide")),
+            wx.VERTICAL
+        )
+        _noChordsTip = _(
+            u"Active only when 'Show chords' is set to 'No chords'.\n"
+            u"Check each block type you want to hide from the preview and print."
+        )
+        _noChordHdr = wx.StaticText(
+            self.songpressPanel, wx.ID_ANY,
+            _(u"When 'No chords' is selected, also hide:")
+        )
+        _noChordHdr.SetToolTip(_noChordsTip)
+        grpNoChords.Add(_noChordHdr, 0, wx.ALL, 5)
+
+        self.hideIntroChordCB = wx.CheckBox(
+            self.songpressPanel, wx.ID_ANY,
+            _(u"Intro chords  {start_chord}\\{end_chord}")
+        )
+        self.hideIntroChordCB.SetToolTip(
+            _(u"Hide {start_chord}…{end_chord} blocks when no chords are shown.")
+        )
+        grpNoChords.Add(self.hideIntroChordCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
+        self.hideBridgeCB = wx.CheckBox(
+            self.songpressPanel, wx.ID_ANY,
+            _(u"Bridge  {start_bridge}\\{end_bridge}")
+        )
+        self.hideBridgeCB.SetToolTip(
+            _(u"Hide {start_bridge}…{end_bridge} blocks when no chords are shown.")
+        )
+        grpNoChords.Add(self.hideBridgeCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
+        self.hideGridCB = wx.CheckBox(
+            self.songpressPanel, wx.ID_ANY,
+            _(u"Grid  {start_of_grid}\\{end_of_grid}")
+        )
+        self.hideGridCB.SetToolTip(
+            _(u"Hide {start_of_grid}…{end_of_grid} blocks when no chords are shown.")
+        )
+        grpNoChords.Add(self.hideGridCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
+        bSizerSongpress.Add(grpNoChords, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
         self.songpressPanel.SetSizer(bSizerSongpress)
         self.songpressPanel.Layout()

@@ -226,6 +226,7 @@ class Preferences(object):
         self._LoadDebugOptions()
         self._LoadIntellisense()
         self._LoadDecoSliderColour()
+        self._LoadNoChordHide()
 
     def _LoadKlavierColour(self):
         self.config.SetPath('/KlavierColour')
@@ -390,6 +391,7 @@ class Preferences(object):
         self._SaveDebugOptions()
         self._SaveIntellisense()
         self._SaveDecoSliderColour()
+        self._SaveNoChordHide()
         self.config.Flush()
 
     def _SaveKlavierColour(self):
@@ -583,6 +585,23 @@ class Preferences(object):
     def _SaveDecoSliderColour(self):
         self.config.SetPath('/DecoSlider')
         self.config.Write('barColourHex', getattr(self, 'decoSliderBarColourHex', '#2980B9'))
+        self.config.SetPath('/')
+
+    def _LoadNoChordHide(self):
+        self.config.SetPath('/Format')
+        def _rb(key, default):
+            v = self.config.Read(key)
+            return bool(int(v)) if v != '' else default
+        self.hideIntroChord = _rb('hideIntroChord', False)
+        self.hideBridge     = _rb('hideBridge',     False)
+        self.hideGrid       = _rb('hideGrid',        False)
+        self.config.SetPath('/')
+
+    def _SaveNoChordHide(self):
+        self.config.SetPath('/Format')
+        self.config.Write('hideIntroChord', '1' if getattr(self, 'hideIntroChord', False) else '0')
+        self.config.Write('hideBridge',     '1' if getattr(self, 'hideBridge',     False) else '0')
+        self.config.Write('hideGrid',        '1' if getattr(self, 'hideGrid',        False) else '0')
         self.config.SetPath('/')
 
     def SetChorusLabel(self, c):

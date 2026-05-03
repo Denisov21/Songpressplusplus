@@ -681,3 +681,43 @@ msgstr "Entrambi"
 #: PreferencesDialog.py format tab — beat count display mode: both tooltip
 msgid "Show both number and dots"
 msgstr "Mostra sia il numero che i puntini"
+
+#: PreferencesDialog.py songpress tab — no chords blocks group title
+msgid "No chords: blocks to hide"
+msgstr "Nessun accordo: blocchi da nascondere"
+
+#: PreferencesDialog.py songpress tab — no chords blocks header
+msgid "When 'No chords' is selected, also hide:"
+msgstr "Quando è selezionato 'Nessun accordo', nascondi anche:"
+
+#: PreferencesDialog.py songpress tab — no chords blocks header tooltip
+msgid ""
+"Active only when 'Show chords' is set to 'No chords'.\n"
+"Check each block type you want to hide from the preview and print."
+msgstr ""
+"Attivo solo quando 'Mostra accordi' è impostato su 'Nessun accordo'.\n"
+"Seleziona i tipi di blocco da nascondere nell'anteprima e in stampa."
+
+#: PreferencesDialog.py songpress tab — hide intro chord checkbox
+msgid "Intro chords  {start_chord}\\{end_chord}"
+msgstr "Accordi di intro  {start_chord}\\{end_chord}"
+
+#: PreferencesDialog.py songpress tab — hide intro chord tooltip
+msgid "Hide {start_chord}…{end_chord} blocks when no chords are shown."
+msgstr "Nasconde i blocchi {start_chord}…{end_chord} quando gli accordi sono disabilitati."
+
+#: PreferencesDialog.py songpress tab — hide bridge checkbox
+msgid "Bridge  {start_bridge}\\{end_bridge}"
+msgstr "Bridge  {start_bridge}\\{end_bridge}"
+
+#: PreferencesDialog.py songpress tab — hide bridge tooltip
+msgid "Hide {start_bridge}…{end_bridge} blocks when no chords are shown."
+msgstr "Nasconde i blocchi {start_bridge}…{end_bridge} quando gli accordi sono disabilitati."
+
+#: PreferencesDialog.py songpress tab — hide grid checkbox
+msgid "Grid  {start_of_grid}\\{end_of_grid}"
+msgstr "Griglia  {start_of_grid}\\{end_of_grid}"
+
+#: PreferencesDialog.py songpress tab — hide grid tooltip
+msgid "Hide {start_of_grid}…{end_of_grid} blocks when no chords are shown."
+msgstr "Nasconde i blocchi {start_of_grid}…{end_of_grid} quando gli accordi sono disabilitati."

@@ -4495,13 +4495,79 @@ class SongpressFrame(SDIMainFrame):
         col cursore), restituisce solo il testo selezionato, così l'anteprima
         mostra esattamente ciò che verrà stampato.
         Aggiorna anche la directory del documento nel renderer, in modo che
-        i percorsi relativi di {image: ...} vengano risolti correttamente.
+        i percorsi relativi di {image: ...} vengono risolti correttamente.
+        Quando showChords == 0 (Nessun accordo) e le relative preferenze sono
+        attive, rimuove anche i blocchi {start_chord}, {start_bridge},
+        {start_of_grid} con il loro contenuto.
         """
         self.previewCanvas.SetDocumentDir(self.document)
         start, end = self.text.GetSelection()
         if start != end:
-            return self._strip_hash_commands(self.text.GetTextRange(start, end))
-        return self._strip_hash_commands(self.text.GetText())
+            raw = self.text.GetTextRange(start, end)
+        else:
+            raw = self.text.GetText()
+        text = self._strip_hash_commands(raw)
+        if getattr(self.pref.format, 'showChords', 2) == 0:
+            text = self._strip_nochords_blocks(text)
+        return text
+
+    def _strip_nochords_blocks(self, text):
+        """Rimuove dal testo i blocchi paired la cui checkbox e' attiva
+        nelle preferenze 'Nessun accordo'.
+        Usa un approccio linea-per-linea per evitare backtracking catastrofico.
+
+        Blocchi gestiti:
+            hideIntroChord : {start_chord}  ... {end_chord}
+            hideBridge     : {start_bridge} / {start_of_bridge} ... {end_bridge}
+            hideGrid       : {start_of_grid} / {sog} / {grid} ... {end_of_grid}
+        """
+        import re
+
+        # Costruisce i set di tag di apertura e chiusura da rimuovere
+        open_tags  = set()
+        close_tags = set()
+
+        if getattr(self.pref, 'hideIntroChord', False):
+            open_tags.add('start_chord')
+            close_tags.add('end_chord')
+        if getattr(self.pref, 'hideBridge', False):
+            open_tags.update(('start_bridge', 'start_of_bridge', 'sob'))
+            close_tags.update(('end_bridge', 'end_of_bridge'))
+        if getattr(self.pref, 'hideGrid', False):
+            open_tags.update(('start_of_grid', 'sog', 'grid'))
+            close_tags.add('end_of_grid')
+
+        if not open_tags:
+            return text
+
+        # Regex che riconosce qualsiasi direttiva ChordPro: {tag} o {tag:label}
+        _tag_re = re.compile(r'\{(\w+)(?:[:/][^}]*)?\}', re.IGNORECASE)
+
+        result = []
+        inside = False  # True quando siamo dentro un blocco da rimuovere
+        depth  = 0      # conta aperture annidate dello stesso tipo (raro ma sicuro)
+
+        for line in text.splitlines(keepends=True):
+            m = _tag_re.search(line)
+            tag = m.group(1).lower() if m else None
+
+            if not inside:
+                if tag in open_tags:
+                    inside = True
+                    depth = 1
+                    # la riga di apertura viene scartata
+                else:
+                    result.append(line)
+            else:
+                if tag in open_tags:
+                    depth += 1          # apertura annidata (ignorata)
+                elif tag in close_tags:
+                    depth -= 1
+                    if depth <= 0:
+                        inside = False  # riga di chiusura viene scartata
+                # tutte le righe interne al blocco vengono scartate
+
+        return ''.join(result)
 
     def UpdateEverything(self):
         self.UpdateUndoRedo()
