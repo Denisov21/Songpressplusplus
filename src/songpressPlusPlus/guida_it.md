@@ -1369,6 +1369,24 @@ Tutte le modifiche vengono applicate **immediatamente** al pannello aperto, senz
 
 ---
 
+## Nessun accordo: blocchi da nascondere
+
+Quando lo slider **Mostra accordi** (barra degli strumenti Formato) è impostato su **Nessuno**, l'anteprima e la stampa omettono tutti gli accordi inline `[…]`. Con questa impostazione attiva è possibile nascondere anche i blocchi di struttura che contengono solo accordi e che diventerebbero privi di significato senza di essi.
+
+Le opzioni si trovano in **Strumenti → Opzioni... → scheda Anteprima Songpress++ → Nessun accordo: blocchi da nascondere**.
+
+| Opzione | Predefinito | Descrizione |
+| ------- | :---------: | ----------- |
+| **Accordi di intro `{start_chord}`\`{end_chord}`** | ☐ | Nasconde l'intero blocco intro accordi (compreso il suo contenuto) quando gli accordi sono disabilitati |
+| **Bridge `{start_bridge}`\`{end_bridge}`** | ☐ | Nasconde i blocchi bridge quando gli accordi sono disabilitati (copre anche le forme `{start_of_bridge}`/`{sob}`) |
+| **Griglia `{start_of_grid}`\`{end_of_grid}`** | ☐ | Nasconde i blocchi griglia accordi quando gli accordi sono disabilitati (copre anche le forme `{sog}`, `{grid}`) |
+
+> **Nota:** le checkbox agiscono **esclusivamente** quando lo slider Mostra accordi è su *Nessuno* (valore 0). Con le altre modalità (*Solo prima strofa*, *Intera canzone*) i blocchi vengono sempre visualizzati normalmente, indipendentemente da queste impostazioni.
+
+> **Nota:** il filtro agisce sul testo passato al renderer prima del ridisegno. Il documento sorgente nell'editor non viene mai modificato.
+
+---
+
 ## Scorciatoie — Riepilogo
 
 | Scorciatoia             | Funzione                                      |

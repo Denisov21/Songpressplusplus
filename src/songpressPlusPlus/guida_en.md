@@ -1369,6 +1369,24 @@ All changes are applied **immediately** to the open panel, without needing to re
 
 ---
 
+## No Chords: Blocks to Hide
+
+When the **Show chords** slider (Format toolbar) is set to **None**, the preview and print output omit all inline `[…]` chords. With this setting active, you can also hide structural blocks that contain only chords and would be meaningless without them.
+
+Options are found in **Tools → Options... → Songpress++ Preview tab → No chords: blocks to hide**.
+
+| Option | Default | Description |
+| ------ | :-----: | ----------- |
+| **Intro chords `{start_chord}`\`{end_chord}`** | ☐ | Hides the entire intro chord block (including its content) when chords are disabled |
+| **Bridge `{start_bridge}`\`{end_bridge}`** | ☐ | Hides bridge blocks when chords are disabled (also covers `{start_of_bridge}`/`{sob}`) |
+| **Grid `{start_of_grid}`\`{end_of_grid}`** | ☐ | Hides chord grid blocks when chords are disabled (also covers `{sog}`, `{grid}`) |
+
+> **Note:** the checkboxes take effect **only** when the Show chords slider is set to *None* (value 0). With the other modes (*First verse only*, *Entire song*) blocks are always rendered normally, regardless of these settings.
+
+> **Note:** the filter acts on the text passed to the renderer before each redraw. The source document in the editor is never modified.
+
+---
+
 ## Shortcuts — Summary
 
 | Shortcut                | Function                                  |
