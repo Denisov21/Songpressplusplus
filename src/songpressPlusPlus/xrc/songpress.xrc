@@ -309,7 +309,7 @@
           <checked>1</checked>
         </object>
         <object class="wxMenuItem" name="labelVerses">
-          <label>_Label verses</label>
+          <label>_Label verses and chord</label>
           <accel></accel>
           <help>Show/hide labels at the beginning of verses and chorus</help>
           <bitmap>../img/labelVerses.png</bitmap>

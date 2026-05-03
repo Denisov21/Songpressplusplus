@@ -781,7 +781,7 @@
             <property name="help">Show/hide labels at the beginning of verses and chorus</property>
             <property name="id">ID_LABEL_VERSES</property>
             <property name="kind">wxITEM_CHECK</property>
-            <property name="label">&amp;Label verses</property>
+            <property name="label">&amp;Label verses and chord</property>
             <property name="name">labelVerses</property>
             <property name="permission">none</property>
             <property name="shortcut"></property>

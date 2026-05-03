@@ -309,7 +309,7 @@
           <checked>1</checked>
         </object>
         <object class="wxMenuItem" name="labelVerses">
-          <label>_Etichetta strofe</label>
+          <label>_Etichetta strofe e ritornelli</label>
           <accel></accel>
           <help>Mostra/nascondi le etichette all'inizio delle strofe e del ritornello</help>
           <bitmap>../img/labelVerses.png</bitmap>

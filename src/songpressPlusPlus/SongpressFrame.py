@@ -1353,7 +1353,7 @@ class SongpressFrame(SDIMainFrame):
             wx.NullBitmap,
             True,
             None,
-            _("Show verse labels"),
+            _("Show verse and chorus labels"),
             _("Show or hide verse and chorus labels"),
         )
         self.labelVersesToolId = labelVersesTool.GetId()
@@ -1972,9 +1972,13 @@ class SongpressFrame(SDIMainFrame):
         cb_dash = wx.CheckBox(dlg, label=_(u"Remove '-' characters from text"))
         cb_dash.SetValue(False)
 
+        cb_leading = wx.CheckBox(dlg, label=_(u"Remove leading whitespace from each line"))
+        cb_leading.SetValue(False)
+
         opts_box.Add(cb_spaces,     0, wx.ALL, 6)
         opts_box.Add(cb_underscore, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
         opts_box.Add(cb_dash,       0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
+        opts_box.Add(cb_leading,    0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
 
         outer.Add(opts_box, 0, wx.EXPAND | wx.ALL, 10)
 
@@ -1992,9 +1996,10 @@ class SongpressFrame(SDIMainFrame):
         do_spaces     = cb_spaces.GetValue()
         do_underscore = cb_underscore.GetValue()
         do_dash       = cb_dash.GetValue()
+        do_leading    = cb_leading.GetValue()
         dlg.Destroy()
 
-        if not do_spaces and not do_underscore and not do_dash:
+        if not do_spaces and not do_underscore and not do_dash and not do_leading:
             return  # nulla da fare
 
         # ── Applica le operazioni ────────────────────────────────────────
@@ -2009,6 +2014,8 @@ class SongpressFrame(SDIMainFrame):
             new_text = new_text.replace('_', '')
         if do_dash:
             new_text = new_text.replace('-', '')
+        if do_leading:
+            new_text = '\n'.join(line.lstrip() for line in new_text.split('\n'))
 
         if new_text == text:
             return  # nessuna modifica, evita undo inutile

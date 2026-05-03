@@ -220,8 +220,8 @@ msgid "Insert a verse with a custom label or without label"
 msgstr "Inserisce un comando per mostrare una strofa con un'etichetta personalizzabile"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:277
-msgid "Show verse labels"
-msgstr "Mostra le etichette delle strofe"
+msgid "Show verse and chorus labels"
+msgstr "Mostra le etichette delle strofe e ritornelli"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:278
 msgid "Show or hide verse and chorus labels"
@@ -1169,6 +1169,10 @@ msgstr "Elimina i caratteri '_' dal testo"
 #: SongpressFrame.py OnNormalizeSpaces checkbox dash
 msgid "Remove '-' characters from text"
 msgstr "Elimina i caratteri '-' dal testo"
+
+#: SongpressFrame.py OnNormalizeSpaces checkbox leading
+msgid "Remove leading whitespace from each line"
+msgstr "Elimina gli spazi iniziali da ogni riga"
 
 #: SongpressFrame.py OnInsertBeatsTime multicursor notice
 msgid "Multi-cursor active: %d positions."
