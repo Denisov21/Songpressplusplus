@@ -552,7 +552,7 @@
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="syntaxCheck">
-          <label>_Syntax check</label>
+          <label>_Syntax check...</label>
           <accel>F7</accel>
           <help>Check ChordPro syntax of the document (brackets, commands)</help>
           <bitmap>../img/syntaxCheck.png</bitmap>

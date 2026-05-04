@@ -376,38 +376,6 @@ msgid "Song"
 msgstr "Canzone"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
-msgid "Print preview error"
-msgstr "Errore nell'anteprima di stampa"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
-msgid "Print..."
-msgstr "Stampa..."
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
-msgid "Next page"
-msgstr "Pagina successiva"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
-msgid "Previous page"
-msgstr "Pagina precedente"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
-msgid "First page"
-msgstr "Prima pagina"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
-msgid "Last page"
-msgstr "Ultima pagina"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
-msgid "Close"
-msgstr "Chiudi"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
-msgid "Page setup..."
-msgstr "Imposta pagina..."
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Line spacing"
 msgstr "Interlinea"
 
@@ -454,18 +422,6 @@ msgid "Command 'Paste chords': Select 1st chord line, 2nd text line"
 msgstr "Comando 'Integra accordi': Seleziona 1° linea accordi,  2° linea testo"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
-msgid "Print options..."
-msgstr "Opzioni di stampa..."
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
-msgid "Print"
-msgstr "Stampa"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
-msgid "Print 2 pages per sheet"
-msgstr "Stampa 2 pagine per foglio"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Time signature"
 msgstr "Indicazione di tempo"
 
@@ -488,18 +444,6 @@ msgstr "Tasti accordo"
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Enter the chord name (e.g. C, G, Am, D7):"
 msgstr "Inserisci il nome dell'accordo (es. C, G, Am, D7):"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
-msgid "Print options"
-msgstr "Opzioni di stampa"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
-msgid "Print error"
-msgstr "Errore di stampa"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
-msgid "Print preview"
-msgstr "Anteprima di stampa"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Key"
@@ -633,18 +577,6 @@ msgstr "Errore apertura template"
 msgid "Columns per page:"
 msgstr "Colonne per pagina:"
 
-#: SongpressFrame.py print options 1 column
-msgid "1 column"
-msgstr "1 colonna"
-
-#: SongpressFrame.py print options 2 columns
-msgid "2 columns"
-msgstr "2 colonne"
-
-#: SongpressFrame.py print options fit to page
-msgid "Fit to page"
-msgstr "Riduci e adatta alla pagina"
-
 #: SongpressFrame.py tempo dialog radio no-tempo
 msgid "Tempo:  "
 msgstr "Tempo:  "
@@ -686,10 +618,6 @@ msgstr "Sei sicuro di voler riavviare Songpress++?"
 
 msgid "Restart"
 msgstr "Riavvia"
-
-#: SongpressFrame.py print options no mirror right
-msgid "Do not replicate (leave right half blank)"
-msgstr "Non replicare (lascia bianca la metà destra)"
 
 #: SongpressFrame.py propagate verse chords
 msgid ""
@@ -826,22 +754,6 @@ msgstr "Repository fork: https://github.com/Denisov21/Songpressplusplus"
 #: SongpressFrame.py print options shrink to fit
 msgid "Shrink to fit current page (prevent bottom clipping)"
 msgstr "Riduci per adattare alla pagina corrente (evita il taglio in fondo)"
-
-#: SongpressFrame.py print options min margin auto-shrink
-msgid "Min margin for auto-shrink (mm):"
-msgstr "Margine minimo per riduzione automatica (mm):"
-
-#: SongpressFrame.py print options remove blank pages
-msgid "Remove blank pages"
-msgstr "Rimuovi pagine bianche"
-
-#: SongpressFrame.py print options blank page threshold
-msgid "Blank page threshold (%):"
-msgstr "Soglia pagina vuota (%):"
-
-#: SongpressFrame.py print options pin tooltip
-msgid "Keep this dialog open after applying"
-msgstr "Mantieni questa finestra aperta dopo aver applicato"
 
 #: SongpressFrame.py find/replace dialog
 msgid "Find:"
@@ -1234,10 +1146,6 @@ msgstr "Assegna il numero di battiti a ciascun accordo.\n"
 msgid "Batch mode: inserts the directive before every chord line in the file."
 msgstr "Modalità batch: inserisce la direttiva prima di ogni riga con accordi nel file."
 
-#: SongpressFrame.py — Cancel button
-msgid "Cancel"
-msgstr "Annulla"
-
 #: SongpressFrame.py — light theme label (Italian string used as source)
 msgid "Chiaro"
 msgstr "Chiaro"
@@ -1327,10 +1235,6 @@ msgstr "Nessun ritornello compatibile trovato.\n"
 #: SongpressFrame.py — no compatible verse found error
 msgid "No compatible verse found.\n"
 msgstr "Nessuna strofa compatibile trovata.\n"
-
-#: SongpressFrame.py — OK button
-msgid "OK"
-msgstr "OK"
 
 #: SongpressFrame.py OnInsertBeatsTime info label when cursor is on chord line
 msgid "Place the cursor on the line with chords to insert the directive."

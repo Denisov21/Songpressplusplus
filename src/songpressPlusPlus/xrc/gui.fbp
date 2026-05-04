@@ -1348,7 +1348,7 @@
             <property name="help">Check ChordPro syntax of the document (brackets, commands)</property>
             <property name="id">ID_SYNTAX_CHECK</property>
             <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">&amp;Syntax check</property>
+            <property name="label">&amp;Syntax check...</property>
             <property name="name">syntaxCheck</property>
             <property name="permission">none</property>
             <property name="shortcut">F7</property>

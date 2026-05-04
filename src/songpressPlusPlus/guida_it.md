@@ -69,6 +69,16 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 
 > **Nota sul tempo** — `{tempo:}` ha quattro modalità di visualizzazione selezionabili nel dialogo di inserimento: **Tempo:** (testo semplice), **♩** (nota musicale con valore `♩ = 120`), **BPM** (testo `BPM: 120`), **🎼** (metronomo con valore `♩ = 120`). Spuntando *Metadati*, il valore viene trattato come puro metadato e non appare nell'anteprima né in stampa. Le varianti `{tempo_m:}`, `{tempo_s:}` ecc. mostrano sempre la propria icona fissa indipendentemente da questa impostazione.
 
+> **Nota sulla tonalità (`{key}`)** — Il dialogo *Inserisci → Tonalità* permette di inserire la direttiva `{key:tonalità}` con tre modalità:
+>
+> - **Manuale** — digitare direttamente la tonalità nel campo di testo (es. `Do`, `La-`, `Sol#m`, `C`, `Am`, `F#m`). La notazione può essere italiana o inglese a seconda della notazione attiva nel documento.
+> - **Rilevamento automatico** — spuntando *Rileva automaticamente dagli accordi*, Songpress++ analizza gli accordi presenti nel brano corrente e calcola la tonalità più probabile, mostrandola immediatamente nel campo di testo con il conteggio degli accordi esaminati (es. «✔ Rilevata: Do (da 326 accordi)»). Il campo diventa di sola lettura finché l'opzione è attiva.
+> - **Metadati** — spuntando *Metadati*, la tonalità viene inserita come metadato nascosto: non appare nell'anteprima né in stampa, ma è disponibile per la funzione di trasposizione.
+>
+> **Rilevamento in file multi-brano** — Quando il file contiene più canzoni separate da `{new_song}`, il rilevamento automatico considera **solo il testo del brano corrente**: parte dalla posizione del cursore fino al prossimo `{new_song}` (o alla fine del documento se il brano è l'ultimo). Questo garantisce che gli accordi dei brani precedenti e successivi non alterino il risultato.
+>
+> La visualizzazione della tonalità nell'anteprima è abilitabile/disabilitabile in *Opzioni → Formato → Mostra tonalità*.
+
 ---
 
 ## Struttura della canzone

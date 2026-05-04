@@ -552,7 +552,7 @@
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="syntaxCheck">
-          <label>Controllo _sintassi</label>
+          <label>Controllo _sintassi...</label>
           <accel>F7</accel>
           <help>Controlla la sintassi ChordPro del documento (parentesi, comandi)</help>
           <bitmap>../img/syntaxCheck.png</bitmap>

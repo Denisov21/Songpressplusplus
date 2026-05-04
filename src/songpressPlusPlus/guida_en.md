@@ -69,6 +69,16 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 
 > **Note on tempo** — `{tempo:}` has four display modes selectable in the insert dialog: **Tempo:** (plain text), **♩** (note icon with value `♩ = 120`), **BPM** (text `BPM: 120`), **🎼** (metronome icon with value `🎼 = 120`). Checking *Metadata* treats the value as pure metadata with no visual output. The `{tempo_m:}`, `{tempo_s:}` etc. variants always display their own fixed icon regardless of this setting.
 
+> **Note on key (`{key}`)** — The *Insert → Key* dialog lets you insert the `{key:key}` directive in three ways:
+>
+> - **Manual** — type the key directly in the text field (e.g. `C`, `Am`, `F#m`, `G`). The notation can be English or Italian depending on the notation active in the document.
+> - **Auto-detect** — checking *Detect automatically from chords* makes Songpress++ analyse the chords in the current song and calculate the most likely key, showing it immediately in the text field with the number of chords examined (e.g. «✔ Detected: C (from 326 chords)»). The field becomes read-only while this option is active.
+> - **Metadata** — checking *Metadata* inserts the key as a hidden metadata value: it does not appear in the preview or in print, but remains available for the transpose function.
+>
+> **Detection in multi-song files** — When the file contains multiple songs separated by `{new_song}`, the auto-detect analyses **only the current song**: it starts from the cursor position and reads up to the next `{new_song}` (or to the end of the document if the song is the last one). This ensures that chords from other songs do not affect the result.
+>
+> Key display in the preview can be toggled in *Options → Format → Show key*.
+
 ---
 
 ## Song Structure

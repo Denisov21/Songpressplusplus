@@ -1011,8 +1011,10 @@ class SongDecorator(object):
         old_font = self.dc.GetFont()
 
         # ── Etichetta stile identico a StandardVerseNumbers (verse) ──
-        # Posizione, colori e dimensioni identici a PreDrawBlock per i verse
-        if self.drawLabels and gridbox.label:
+        # Posizione, colori e dimensioni identici a PreDrawBlock per i verse.
+        # L'etichetta del grid è sempre visibile, indipendentemente da drawLabels
+        # (che controlla solo i numeri di strofa, non le etichette dei blocchi grid).
+        if gridbox.label:
             self.dc.SetFont(font)
             baseW, baseH = self.dc.GetTextExtent("0")
             lw, lh = self.dc.GetTextExtent(gridbox.label)
