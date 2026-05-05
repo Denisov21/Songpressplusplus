@@ -1061,7 +1061,7 @@ I seguenti controlli si trovano nella scheda **Formattazione** delle preferenze 
 ## Stampa e anteprima
 
 - **Anteprima di stampa** — mostra l'anteprima con i pulsanti «Opzioni di stampa» e «Impostazione pagina»
-- **Stampa** — stampa direttamente (senza anteprima se l'opzione è disabilitata nelle preferenze)
+- **Stampa** — stampa direttamente; se la preferenza **Mostra anteprima di stampa prima di stampare** (scheda *Generale* delle opzioni) è attiva, viene mostrata prima l'anteprima di stampa; se è disattivata, la stampa parte immediatamente senza dialogo intermedio
 - **Impostazione pagina** — carta, orientamento e margini (in mm)
 
 ### Opzioni di stampa
@@ -1122,12 +1122,14 @@ Il controllo è disabilitato quando la checkbox «Rimuovi pagine vuote» è disa
 | PNG                  | Immagine raster                              |
 | HTML                 | Pagina web con accordi colorati              |
 | Tab                  | Formato testo con accordi sopra              |
-| PDF                  | Documento PDF                                |
+| PDF                  | Documento PDF (chiede prima l'impostazione pagina, poi il nome file) |
 | PowerPoint (.pptx)   | Presentazione                                |
 | Crea Songbook PDF    | Raccolta PDF di canzoni con indice cliccabile |
 | Canzonatore          | Unisce più file ChordPro in un unico file    |
 | Copia come immagine  | Copia negli appunti come immagine vettoriale |
 | Copia solo testo     | Copia il testo senza accordi                 |
+
+> **Nota — Esporta PDF:** il flusso di esportazione apre prima il dialogo **Impostazione pagina** (formato carta, orientamento, margini in mm); solo dopo la conferma viene chiesto il nome del file di output. I margini impostati vengono memorizzati e riutilizzati nelle successive esportazioni.
 
 ---
 
@@ -1390,10 +1392,14 @@ Le opzioni si trovano in **Strumenti → Opzioni... → scheda Anteprima Songpre
 | **Accordi di intro `{start_chord}`\`{end_chord}`** | ☐ | Nasconde l'intero blocco intro accordi (compreso il suo contenuto) quando gli accordi sono disabilitati |
 | **Bridge `{start_bridge}`\`{end_bridge}`** | ☐ | Nasconde i blocchi bridge quando gli accordi sono disabilitati (copre anche le forme `{start_of_bridge}`/`{sob}`) |
 | **Griglia `{start_of_grid}`\`{end_of_grid}`** | ☐ | Nasconde i blocchi griglia accordi quando gli accordi sono disabilitati (copre anche le forme `{sog}`, `{grid}`) |
+| **Tempo `{tempo_m}`\`{tempo_s}`\`{tempo_sp}`\`{tempo_c}`\`{tempo_cp}`** | ☐ | Nasconde tutte le direttive di indicazione del tempo quando gli accordi sono disabilitati |
+| **Indicazione di tempo `{time}`** | ☐ | Nasconde le direttive `{time:…}` (indicazione metrica, es. `4/4`) quando gli accordi sono disabilitati |
 
 > **Nota:** le checkbox agiscono **esclusivamente** quando lo slider Mostra accordi è su *Nessuno* (valore 0). Con le altre modalità (*Solo prima strofa*, *Intera canzone*) i blocchi vengono sempre visualizzati normalmente, indipendentemente da queste impostazioni.
 
 > **Nota:** il filtro agisce sul testo passato al renderer prima del ridisegno. Il documento sorgente nell'editor non viene mai modificato.
+
+> **Nota tecnica:** `{start_chord}`, `{start_bridge}`, `{start_of_grid}` sono **blocchi paired** (apertura + contenuto + chiusura): l'intera sezione viene soppressa. `{tempo_m}`, `{tempo_s}`, `{tempo_sp}`, `{tempo_c}`, `{tempo_cp}` e `{time}` sono invece **direttive singole**: viene rimossa soltanto la riga che le contiene.
 
 ---
 

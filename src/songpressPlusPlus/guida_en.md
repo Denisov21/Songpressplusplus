@@ -1061,7 +1061,7 @@ The following controls are found in the **Formatting** tab of preferences and af
 ## Printing and Preview
 
 - **Print preview** — shows the preview with "Print options" and "Page setup" buttons
-- **Print** — prints directly (without preview if the option is disabled in preferences)
+- **Print** — prints directly; if the preference **Show print preview before printing** (the *General* tab in options) is enabled, the print preview is shown first; if disabled, printing starts immediately with no intermediate dialog
 - **Page setup** — paper, orientation and margins (in mm)
 
 ### Print Options
@@ -1122,12 +1122,14 @@ The control is disabled when the "Remove blank pages" checkbox is off, and re-en
 | PNG                 | Raster image                                  |
 | HTML                | Web page with colored chords                  |
 | Tab                 | Text format with chords above                 |
-| PDF                 | PDF document                                  |
+| PDF                 | PDF document (page setup dialog shown first, then file name) |
 | PowerPoint (.pptx)  | Presentation                                  |
 | Create Songbook PDF | PDF song collection with clickable index      |
 | Canzonatore         | Merges multiple ChordPro files into one       |
 | Copy as image       | Copies to clipboard as vector image           |
 | Copy text only      | Copies text without chords                    |
+
+> **Note — Export PDF:** the export flow opens the **Page setup** dialog first (paper size, orientation, margins in mm); only after confirmation is the output filename requested. The margin settings are stored and reused in subsequent exports.
 
 ---
 
@@ -1390,10 +1392,14 @@ Options are found in **Tools → Options... → Songpress++ Preview tab → No c
 | **Intro chords `{start_chord}`\`{end_chord}`** | ☐ | Hides the entire intro chord block (including its content) when chords are disabled |
 | **Bridge `{start_bridge}`\`{end_bridge}`** | ☐ | Hides bridge blocks when chords are disabled (also covers `{start_of_bridge}`/`{sob}`) |
 | **Grid `{start_of_grid}`\`{end_of_grid}`** | ☐ | Hides chord grid blocks when chords are disabled (also covers `{sog}`, `{grid}`) |
+| **Tempo `{tempo_m}`\`{tempo_s}`\`{tempo_sp}`\`{tempo_c}`\`{tempo_cp}`** | ☐ | Hides all tempo directives when chords are disabled |
+| **Time signature `{time}`** | ☐ | Hides `{time:…}` directives (e.g. `4/4`) when chords are disabled |
 
 > **Note:** the checkboxes take effect **only** when the Show chords slider is set to *None* (value 0). With the other modes (*First verse only*, *Entire song*) blocks are always rendered normally, regardless of these settings.
 
 > **Note:** the filter acts on the text passed to the renderer before each redraw. The source document in the editor is never modified.
+
+> **Technical note:** `{start_chord}`, `{start_bridge}`, `{start_of_grid}` are **paired blocks** (open tag + content + close tag): the entire section is suppressed. `{tempo_m}`, `{tempo_s}`, `{tempo_sp}`, `{tempo_c}`, `{tempo_cp}` and `{time}` are **single directives**: only the line containing them is removed.
 
 ---
 
