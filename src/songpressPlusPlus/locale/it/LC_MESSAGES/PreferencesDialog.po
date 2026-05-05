@@ -721,3 +721,19 @@ msgstr "Griglia  {start_of_grid}\\{end_of_grid}"
 #: PreferencesDialog.py songpress tab — hide grid tooltip
 msgid "Hide {start_of_grid}…{end_of_grid} blocks when no chords are shown."
 msgstr "Nasconde i blocchi {start_of_grid}…{end_of_grid} quando gli accordi sono disabilitati."
+
+#: PreferencesDialog.py songpress tab — hide tempo checkbox
+msgid "Tempo  {tempo_m}\\{tempo_s}\\{tempo_sp}\\{tempo_c}\\{tempo_cp}"
+msgstr "Tempo  {tempo_m}\\{tempo_s}\\{tempo_sp}\\{tempo_c}\\{tempo_cp}"
+
+#: PreferencesDialog.py songpress tab — hide tempo tooltip
+msgid "Hide {tempo_m}, {tempo_s}, {tempo_sp}, {tempo_c}, {tempo_cp} directives when no chords are shown."
+msgstr "Nasconde le direttive {tempo_m}, {tempo_s}, {tempo_sp}, {tempo_c}, {tempo_cp} quando gli accordi sono disabilitati."
+
+#: PreferencesDialog.py songpress tab — hide time checkbox
+msgid "Time signature  {time}"
+msgstr "Indicazione di tempo  {time}"
+
+#: PreferencesDialog.py songpress tab — hide time tooltip
+msgid "Hide {time:...} directives when no chords are shown."
+msgstr "Nasconde le direttive {time:...} quando gli accordi sono disabilitati."

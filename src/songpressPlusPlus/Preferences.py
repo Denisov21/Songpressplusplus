@@ -595,6 +595,8 @@ class Preferences(object):
         self.hideIntroChord = _rb('hideIntroChord', False)
         self.hideBridge     = _rb('hideBridge',     False)
         self.hideGrid       = _rb('hideGrid',        False)
+        self.hideTempo      = _rb('hideTempo',       False)
+        self.hideTime       = _rb('hideTime',        False)
         self.config.SetPath('/')
 
     def _SaveNoChordHide(self):
@@ -602,6 +604,8 @@ class Preferences(object):
         self.config.Write('hideIntroChord', '1' if getattr(self, 'hideIntroChord', False) else '0')
         self.config.Write('hideBridge',     '1' if getattr(self, 'hideBridge',     False) else '0')
         self.config.Write('hideGrid',        '1' if getattr(self, 'hideGrid',        False) else '0')
+        self.config.Write('hideTempo',       '1' if getattr(self, 'hideTempo',       False) else '0')
+        self.config.Write('hideTime',        '1' if getattr(self, 'hideTime',        False) else '0')
         self.config.SetPath('/')
 
     def SetChorusLabel(self, c):

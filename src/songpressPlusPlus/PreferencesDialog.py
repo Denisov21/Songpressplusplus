@@ -700,6 +700,24 @@ class PreferencesDialog(wx.Dialog):
         )
         grpNoChords.Add(self.hideGridCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
 
+        self.hideTempoCB = wx.CheckBox(
+            self.songpressPanel, wx.ID_ANY,
+            _(u"Tempo  {tempo_m}\\{tempo_s}\\{tempo_sp}\\{tempo_c}\\{tempo_cp}")
+        )
+        self.hideTempoCB.SetToolTip(
+            _(u"Hide {tempo_m}, {tempo_s}, {tempo_sp}, {tempo_c}, {tempo_cp} directives when no chords are shown.")
+        )
+        grpNoChords.Add(self.hideTempoCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
+        self.hideTimeCB = wx.CheckBox(
+            self.songpressPanel, wx.ID_ANY,
+            _(u"Time signature  {time}")
+        )
+        self.hideTimeCB.SetToolTip(
+            _(u"Hide {time:...} directives when no chords are shown.")
+        )
+        grpNoChords.Add(self.hideTimeCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
         bSizerSongpress.Add(grpNoChords, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
         self.songpressPanel.SetSizer(bSizerSongpress)

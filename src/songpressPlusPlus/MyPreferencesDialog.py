@@ -198,6 +198,8 @@ class MyPreferencesDialog(PreferencesDialog):
         self.hideIntroChordCB.SetValue(getattr(self.pref, 'hideIntroChord', False))
         self.hideBridgeCB.SetValue(getattr(self.pref, 'hideBridge', False))
         self.hideGridCB.SetValue(getattr(self.pref, 'hideGrid', False))
+        self.hideTempoCB.SetValue(getattr(self.pref, 'hideTempo', False))
+        self.hideTimeCB.SetValue(getattr(self.pref, 'hideTime', False))
 
         # Viewer guida rapida
         viewer = getattr(self.pref, 'guideViewer', 'markdown')
@@ -1321,6 +1323,8 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.hideIntroChord = self.hideIntroChordCB.GetValue()
         self.pref.hideBridge     = self.hideBridgeCB.GetValue()
         self.pref.hideGrid        = self.hideGridCB.GetValue()
+        self.pref.hideTempo       = self.hideTempoCB.GetValue()
+        self.pref.hideTime        = self.hideTimeCB.GetValue()
         # Applica subito sul previewCanvas se disponibile
         if self._previewCanvas is not None:
             self._previewCanvas.SetShowPageIndicator(self.pref.showPageIndicator)

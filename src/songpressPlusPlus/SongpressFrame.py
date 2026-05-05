@@ -4009,6 +4009,8 @@ class SongpressFrame(SDIMainFrame, PrintManager):
             hideIntroChord : {start_chord}  ... {end_chord}
             hideBridge     : {start_bridge} / {start_of_bridge} ... {end_bridge}
             hideGrid       : {start_of_grid} / {sog} / {grid} ... {end_of_grid}
+            hideTempo      : {tempo_m} / {tempo_s} / {tempo_sp} / {tempo_c} / {tempo_cp}
+            hideTime       : {time}
         """
         import re
 
@@ -4026,7 +4028,14 @@ class SongpressFrame(SDIMainFrame, PrintManager):
             open_tags.update(('start_of_grid', 'sog', 'grid'))
             close_tags.add('end_of_grid')
 
-        if not open_tags:
+        # Tag singoli (direttive non-paired) da rimuovere riga per riga
+        single_tags = set()
+        if getattr(self.pref, 'hideTempo', False):
+            single_tags.update(('tempo_m', 'tempo_s', 'tempo_sp', 'tempo_c', 'tempo_cp'))
+        if getattr(self.pref, 'hideTime', False):
+            single_tags.add('time')
+
+        if not open_tags and not single_tags:
             return text
 
         # Regex che riconosce qualsiasi direttiva ChordPro: {tag} o {tag:label}
@@ -4045,6 +4054,8 @@ class SongpressFrame(SDIMainFrame, PrintManager):
                     inside = True
                     depth = 1
                     # la riga di apertura viene scartata
+                elif tag in single_tags:
+                    pass  # riga con direttiva singola viene scartata
                 else:
                     result.append(line)
             else:
