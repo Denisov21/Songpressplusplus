@@ -3939,6 +3939,19 @@ class SongpressFrame(SDIMainFrame, PrintManager):
         # Selezione corrente (indice in BULLET_OPTIONS) — mutabile tramite _refs
         _refs = {'bullet_idx': 0}   # default: • U+2022
 
+        # ── Carica preferenze salvate ─────────────────────────────────
+        _cfg = wx.Config.Get()
+        _cfg.SetPath('/Transposer')
+        _saved_note  = int(_cfg.Read('noteIndex',  '3'))   # default: A (indice 3)
+        _saved_pos   = int(_cfg.Read('posIndex',   '2'))   # default: cursor (indice 2)
+        _saved_sym   = int(_cfg.Read('symIndex',   '0'))   # default: bullet (indice 0)
+        _cfg.SetPath('/')
+        # Clamp ai range validi
+        _saved_note = max(0, min(_saved_note, len(NOTES) - 1))
+        _saved_pos  = max(0, min(_saved_pos,  3))
+        _saved_sym  = max(0, min(_saved_sym,  len(BULLET_OPTIONS) - 1))
+        _refs['bullet_idx'] = _saved_sym
+
         # ── Callback aggiornamento anteprima (definita prima del Panel) ──
         # _refs già inizializzato sopra con bullet_idx; altri widget aggiunti dopo.
 
@@ -3988,7 +4001,7 @@ class SongpressFrame(SDIMainFrame, PrintManager):
 
             def __init__(self, parent):
                 super().__init__(parent, size=(420, 155))
-                self.selected = 3   # default: A
+                self.selected = _saved_note
                 self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
                 self.Bind(wx.EVT_PAINT, self.OnPaint)
                 self.Bind(wx.EVT_LEFT_DOWN, self.OnClick)
@@ -4272,7 +4285,7 @@ class SongpressFrame(SDIMainFrame, PrintManager):
         tp = TransposerPanel(d)
         preview_box.Add(tp, 0, wx.ALL | wx.EXPAND, 6)
 
-        lbl_note = wx.StaticText(d, label=_(u"Selected note:  A"))
+        lbl_note = wx.StaticText(d, label=_(u"Selected note:  ") + NOTES_DISP[_saved_note])
         lbl_note.SetForegroundColour(wx.Colour(0, 80, 160))
         preview_box.Add(lbl_note, 0, wx.LEFT | wx.BOTTOM, 8)
         vbox.Add(preview_box, 0, wx.EXPAND | wx.ALL, 8)
@@ -4335,7 +4348,7 @@ class SongpressFrame(SDIMainFrame, PrintManager):
                     break
         for rb in rb_group:
             rb.Bind(wx.EVT_RADIOBUTTON, _update_schema)
-        rb_group[2].SetValue(True)
+        rb_group[_saved_pos].SetValue(True)
         _update_schema()
 
         # ── Selezione simbolo tasto premuto ──────────────────────────
@@ -4352,7 +4365,7 @@ class SongpressFrame(SDIMainFrame, PrintManager):
                                  wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
             sym_rbs.append(rb_s)
             sym_grid.Add(rb_s, 0, wx.ALIGN_CENTER_VERTICAL)
-        sym_rbs[0].SetValue(True)
+        sym_rbs[_saved_sym].SetValue(True)
         sym_box.Add(sym_grid, 0, wx.ALL, 4)
         vbox.Add(sym_box, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
@@ -4401,6 +4414,18 @@ class SongpressFrame(SDIMainFrame, PrintManager):
             return
 
         text_to_insert = _build_text(tp.GetIndex())
+
+        # ── Salva preferenze in wx.Config ────────────────────────────
+        _pos_idx = next((i for i, rb in enumerate(rb_group) if rb.GetValue()), 2)
+        _sym_idx = _refs.get('bullet_idx', 0)
+        _cfg2 = wx.Config.Get()
+        _cfg2.SetPath('/Transposer')
+        _cfg2.Write('noteIndex', str(tp.GetIndex()))
+        _cfg2.Write('posIndex',  str(_pos_idx))
+        _cfg2.Write('symIndex',  str(_sym_idx))
+        _cfg2.SetPath('/')
+        _cfg2.Flush()
+
         d.Destroy()
 
         # ── Inserimento nella posizione scelta ────────────────────────
