@@ -237,6 +237,7 @@ class SongpressPrintout(wx.Printout):
         # ── fit_to_page / shrink_to_fit ───────────────────────────────
         mdc2 = wx.MemoryDC(wx.Bitmap(1, 1))
 
+        total_h_px = 0  # accumula su tutti i segmenti
         for seg_idx, seg_text in enumerate(self._segments):
             r = self._make_renderer()
             vc, lc, cc = self._seg_verse_start.get(seg_idx, (0, 0, 0))
@@ -247,9 +248,7 @@ class SongpressPrintout(wx.Printout):
                 sw, sh = r.Render(seg_text, mdc2)
             else:
                 sw, sh = r.Render(full_text, mdc2, line_start, line_end)
-
-        # Usa sh / scale_y come altezza totale del testo in device units
-        total_h_px = sh
+            total_h_px += sh  # somma l'altezza di ciascun segmento
 
         if getattr(self.frame_obj, '_fit_to_page', False):
             if total_h_px * self._scale_y > usable_h:
@@ -260,7 +259,10 @@ class SongpressPrintout(wx.Printout):
         if getattr(self.frame_obj, '_shrink_to_fit', False):
             min_margin_mm  = float(getattr(self.frame_obj, '_min_margin_shrink', 5))
             min_margin_du  = self._mm_to_du(min_margin_mm, ppi_y)
-            reducible_du   = min(mt, mb) - min_margin_du
+            # Clamp a 0: se il margine corrente è già sotto il minimo,
+            # non c'è margine riducibile (evita valori negativi che farebbero
+            # saltare il branch sbagliato o scalare il font inutilmente).
+            reducible_du   = max(0, min(mt, mb) - min_margin_du)
 
             r_check = self._make_renderer()
             vc, lc, cc = self._seg_verse_start.get(0, (0, 0, 0))
@@ -288,13 +290,17 @@ class SongpressPrintout(wx.Printout):
             ideal_ppp = _best_ppp(px_per_page)
             gap       = px_per_page - ideal_ppp
 
+            margin_reduced_du = 0  # quanti du sono stati sottratti ai margini
+
             if gap > 0:
                 gap_du = gap * self._scale_y
                 if gap_du <= reducible_du:
+                    margin_reduced_du = gap_du
                     usable_h, px_per_page = _apply_margins(gap_du)
                     px_per_page = _best_ppp(px_per_page)
                 else:
                     if reducible_du > 0:
+                        margin_reduced_du = reducible_du
                         usable_h, px_per_page = _apply_margins(reducible_du)
                         ideal_ppp = _best_ppp(px_per_page)
                         gap       = px_per_page - ideal_ppp
@@ -309,6 +315,18 @@ class SongpressPrintout(wx.Printout):
                             self._scale_y  *= f
                             px_per_page     = usable_h / self._scale_y
                             px_per_page     = _best_ppp(px_per_page)
+
+            # Se i margini sono stati ridotti virtualmente, aggiorna _margin_du
+            # in modo che il clipping in _render_logical_page usi la stessa
+            # altezza utile calcolata qui (altrimenti SetClippingRegion taglia
+            # il testo che l'algoritmo ha legittimamente incluso nell'area).
+            if margin_reduced_du > 0:
+                half = margin_reduced_du / 2.0
+                new_mt = max(0, mt - int(math.ceil(half)))
+                new_mb = max(0, mb - int(math.floor(half)))
+                mt = new_mt
+                mb = new_mb
+                self._margin_du = (ml, mt, mr, mb)
 
         # ── calcolo definitivo degli offsets di pagina ─────────────────
         px_per_page = usable_h / self._scale_y
@@ -354,10 +372,9 @@ class SongpressPrintout(wx.Printout):
     # ── wx.Printout interface ─────────────────────────────────────────────────
 
     def _n_sheets(self):
-        if self._page_offsets is None:
-            dc = self.GetDC()
-            if dc and dc.IsOk():
-                self._ensure_layout(dc)
+        # Il layout deve essere già stato fatto da OnPreparePrinting (che ha un DC
+        # garantito). Se per qualsiasi motivo non è ancora pronto, restituiamo 1
+        # come fallback sicuro anziché tentare di ottenere un DC fuori contesto.
         n_logical = len(self._page_offsets) if self._page_offsets else 1
         if self.two_pages_per_sheet:
             return max(1, math.ceil(n_logical / 2))
@@ -389,7 +406,11 @@ class SongpressPrintout(wx.Printout):
         else:
             seg_text = self.frame_obj._strip_hash_commands(self.frame_obj.text.GetText())
 
-        dc.SetClippingRegion(origin_x, origin_y, self._usable_w_du, usable_h_du)
+        dc.SetClippingRegion(
+            origin_x, origin_y,
+            self._col_w_du if self.two_pages_per_sheet else self._usable_w_du,
+            usable_h_du,
+        )
         dc.SetDeviceOrigin(origin_x, origin_y - int(y_offset_px * self._scale_y))
         dc.SetUserScale(self._scale_x, self._scale_y)
 
@@ -739,7 +760,7 @@ class PrintOptionsDialog:
         if self._has_selection and self.rb_scope_sel.GetValue():
             o._print_scope = 'selection'
         else:
-            o._print_scope = 'full'
+            o._print_scope = 'auto'
         if self.on_apply is not None:
             self.on_apply()
 
@@ -964,14 +985,17 @@ class PrintManager:
                   if self.document else _("Print")
         printout = self._make_printout(title)
         success  = printer.Print(self.frame, printout, False)
-        if not success and printer.GetLastError() == wx.PRINTER_ERROR:
-            wx.MessageBox(
-                _("An error occurred while printing.\nPlease check your printer settings."),
-                _("Print error"),
-                wx.OK | wx.ICON_ERROR,
-                self.frame,
-            )
-        printout.Destroy()
+        if not success:
+            if printer.GetLastError() == wx.PRINTER_ERROR:
+                wx.MessageBox(
+                    _("An error occurred while printing.\nPlease check your printer settings."),
+                    _("Print error"),
+                    wx.OK | wx.ICON_ERROR,
+                    self.frame,
+                )
+            # In caso di fallimento wx non prende ownership: distruggiamo noi
+            printout.Destroy()
+        # In caso di successo wx prende ownership del printout: non chiamare Destroy()
 
     def OnPrintPreview(self, evt):
         """Mostra l'anteprima di stampa del brano."""

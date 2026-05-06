@@ -382,6 +382,9 @@ class Renderer(object):
             self.notation = autodetectNotation(text, self.notations)
             self.chordPatterns = []
 
+        import re as _re_grid
+        _EOG_RE = _re_grid.compile(r'\{(?:end_of_grid|eog)\s*\}', _re_grid.IGNORECASE)
+
         for l in self.text.splitlines():
             self.lineCount += 1
             state = self.GetState()
@@ -389,12 +392,18 @@ class Renderer(object):
             # ── Blocco grid: raccoglie le righe in _grid_rows ─────────
             if getattr(self, '_grid_rows', None) is not None:
                 stripped_l = l.strip()
-                # {row} / {r} dentro il grid → riga vuota separatrice
+                # {row} / {r} da solo sulla riga → riga vuota separatrice
                 if stripped_l in ('{row}', '{r}'):
                     self._grid_rows.append([])   # lista vuota = riga vuota
                     continue
-                # Le direttive {end_of_grid}, {eog} ecc. passano alla tokenizzazione normale
-                if not (stripped_l.startswith('{') and stripped_l.endswith('}')):
+                # Se la riga contiene {end_of_grid} o {eog} la passiamo alla
+                # tokenizzazione normale (che chiuderà il blocco via EndGrid).
+                # Nota: non basta controllare startswith/endswith perché una riga
+                # come "{end_of_grid}{row}" inizia con '{' e finisce con '}' ma
+                # contiene il tag di chiusura e deve uscire dal ramo grid.
+                if _EOG_RE.search(stripped_l):
+                    pass   # esce dall'if, va alla tokenizzazione normale sotto
+                else:
                     cells = self._ParseGridLine(l)
                     if cells:
                         self._grid_rows.append(cells)
