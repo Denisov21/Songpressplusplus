@@ -784,6 +784,66 @@ La checkbox **Incorpora immagine nel file (base64, senza dipendenza esterna)** s
 
 ---
 
+### Indicatore Transposer 🖊
+
+L'**indicatore Transposer** è una rappresentazione testuale a pallini che mostra quale tasto premere sul dispositivo Transposer fisico dell'organo. Viene inserito direttamente nel testo della canzone come blocco `{start_of_tab: TRANSPOSER}` in modo che sia visibile nell'anteprima e in stampa con font monospace (Courier New), garantendo l'allineamento perfetto tra i simboli e le note.
+
+#### Accesso
+
+**Inserisci → Altro → Immagine Transposer {image:}...**
+
+#### Struttura dell'indicatore
+
+Il blocco inserito è composto da due righe in font monospace:
+
+- **Riga 1** — i simboli dei tasti: un pallino pieno per il tasto selezionato, pallini vuoti per gli altri
+- **Riga 2** — le etichette delle note: `Gb  G   Ab  A   A#  B`
+
+```
+{start_of_tab: TRANSPOSER}
+ ·   ·   ·   •   ·   ·
+ Gb  G   Ab  A   A#  B
+{end_of_tab}
+```
+
+#### Anteprima pallini
+
+| Tasto | Riga simboli                   | Nota premuta |
+|-------|-------------------------------|--------------|
+| G♭    | `•   ·   ·   ·   ·   ·`      | G♭           |
+| G     | `·   •   ·   ·   ·   ·`      | G            |
+| A♭    | `·   ·   •   ·   ·   ·`      | A♭           |
+| **A** | `·   ·   ·   •   ·   ·`      | **A** *(default)* |
+| A♯    | `·   ·   ·   ·   •   ·`      | A♯           |
+| B     | `·   ·   ·   ·   ·   •`      | B            |
+
+> Il tasto **A** ha sempre un bordo rosso nel pannello grafico del dialog: indica la tonalità di riferimento del Transposer fisico.
+
+#### Scelta del simbolo
+
+Il dialog permette di scegliere il simbolo per il tasto premuto tra quattro opzioni:
+
+| Simbolo | Codice Unicode | Descrizione        | Spazio colonna |
+|---------|----------------|--------------------|----------------|
+| `•`     | U+2022         | Bullet             | 4              |
+| `●`     | U+25CF         | Black circle       | 4              |
+| `◉`     | U+25C9         | Fisheye            | 4              |
+| `⬤`     | U+2B24         | Large black circle | 5              |
+
+Il simbolo per i tasti **non premuti** è sempre `·` (U+00B7) oppure `○` (U+25CB) in funzione della scelta.
+
+#### Posizione nel documento
+
+| Opzione                  | Descrizione                                                                 |
+|--------------------------|-----------------------------------------------------------------------------|
+| Prima del titolo         | Inserisce il blocco all'inizio del file, prima di qualsiasi contenuto       |
+| Dopo il titolo           | Cerca `{title:}` o `{t:}` e inserisce subito dopo                          |
+| Alla posizione del cursore | Inserisce nel punto corrente del cursore *(predefinito)*                  |
+| Fine della canzone       | Inserisce in fondo al testo, prima delle righe vuote finali                 |
+
+---
+
+
 ## Struttura del file — Esempio completo
 
 ```chordpro

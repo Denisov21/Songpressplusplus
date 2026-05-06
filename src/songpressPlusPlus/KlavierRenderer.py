@@ -304,15 +304,21 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
 
 def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
                          pen_scale=1.0, notations=None, highlight_color=None,
-                         finger_num_color=None):
+                         finger_num_color=None, content_w=None):
     """
     Disegna tutte le tastiere in klavier_list in fondo alla canzone.
     Ogni elemento può essere una stringa accordo semplice ("Am")
     oppure una stringa con diteggiatura ("Am 1=Do 2=Mi 3=La").
-    Restituisce l'altezza totale occupata.
+
+    content_w : larghezza utile disponibile (in px logici, senza start_x).
+                Se None usa 560 come fallback per retrocompatibilità.
+
+    Restituisce (total_h, used_w):
+        total_h : altezza totale occupata
+        used_w  : larghezza massima effettivamente disegnata (da start_x)
     """
     if not klavier_list:
-        return 0
+        return 0, 0
 
     white_w  = 16
     kbd_w    = white_w * 7
@@ -321,6 +327,10 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
     padding_y = 14
     label_h   = 18
     row_h     = label_h + kbd_h + padding_y
+
+    # Larghezza massima della riga: usa content_w se fornito, altrimenti 560px
+    row_max_w = int(content_w) if content_w and content_w > kbd_w else 560
+    max_x = start_x + row_max_w
 
     label_font = wx.Font(
         max(7, int(base_font.GetPointSize() * 0.85)),
@@ -331,11 +341,11 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
         base_font.GetFaceName()
     )
 
-    # ── Linea separatrice ─────────────────────────────────────────
+    # ── Linea separatrice (lunga quanto il contenuto effettivo) ───
     sep_y = start_y + 10
     dc.SetPen(wx.Pen(wx.Colour(180, 180, 180),
                      max(1, round(1 / pen_scale)), wx.PENSTYLE_DOT))
-    dc.DrawLine(start_x, sep_y, start_x + 500, sep_y)
+    dc.DrawLine(start_x, sep_y, start_x + row_max_w, sep_y)
 
     # ── Titolo sezione ────────────────────────────────────────────
     title_font = wx.Font(
@@ -354,7 +364,7 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
 
     cur_x = start_x
     cur_y = sep_y + 26
-    max_x = start_x + 560
+    max_drawn_x = start_x  # tiene traccia della x destra massima usata
 
     for entry in klavier_list:
         # Parsa: potrebbe essere "Am" oppure "Am hand=R 1=Do 2=Mi 3=La"
@@ -381,20 +391,27 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
             hand=hand,
         )
         cur_x += kbd_w + padding_x
+        max_drawn_x = max(max_drawn_x, cur_x)
 
     total_h = (cur_y + row_h) - start_y + 10
-    return total_h
+    used_w  = max_drawn_x - start_x
+    return total_h, used_w
 
 
 def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
                            pen_scale=1.0, notations=None, highlight_color=None,
-                           finger_num_color=None):
+                           finger_num_color=None, content_w=None):
     """
     Identico a draw_klavier_section ma destinato alle tastiere {fingering:}.
     Non mostra titolo di sezione.
+
+    content_w : larghezza utile disponibile (in px logici, senza start_x).
+                Se None usa 560 come fallback per retrocompatibilità.
+
+    Restituisce (total_h, used_w).
     """
     if not fingering_list:
-        return 0
+        return 0, 0
 
     white_w   = 16
     kbd_w     = white_w * 7
@@ -403,6 +420,9 @@ def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
     padding_y = 14
     label_h   = 18
     row_h     = label_h + kbd_h + padding_y
+
+    row_max_w = int(content_w) if content_w and content_w > kbd_w else 560
+    max_x = start_x + row_max_w
 
     label_font = wx.Font(
         max(7, int(base_font.GetPointSize() * 0.85)),
@@ -417,11 +437,11 @@ def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
     sep_y = start_y + 10
     dc.SetPen(wx.Pen(wx.Colour(180, 180, 180),
                      max(1, round(1 / pen_scale)), wx.PENSTYLE_DOT))
-    dc.DrawLine(start_x, sep_y, start_x + 500, sep_y)
+    dc.DrawLine(start_x, sep_y, start_x + row_max_w, sep_y)
 
     cur_x = start_x
     cur_y = sep_y + 8
-    max_x = start_x + 560
+    max_drawn_x = start_x
 
     for entry in fingering_list:
         chord_name, finger_map, hand = parse_fingering(entry)
@@ -447,6 +467,8 @@ def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
             hand=hand,
         )
         cur_x += kbd_w + padding_x
+        max_drawn_x = max(max_drawn_x, cur_x)
 
     total_h = (cur_y + row_h) - start_y + 10
-    return total_h
+    used_w  = max_drawn_x - start_x
+    return total_h, used_w

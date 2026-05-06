@@ -285,9 +285,12 @@ class PreviewCanvas(object):
         dc = wx.AutoBufferedPaintDC(self.panel)
         self.panel.PrepareDC(dc)
 
-        # Fix 3: margine orizzontale dinamico (3% della larghezza client, min 8 px)
-        panel_client_w, _ = self.panel.GetClientSize()
-        margin_h = max(8, int(panel_client_w * 0.03))
+        # Fix 3 (rev): margine orizzontale dinamico calcolato sulla larghezza
+        # LORDA del pannello (GetSize, senza scrollbar), non su GetClientSize.
+        # Usando GetClientSize la presenza della scrollbar verticale riduceva
+        # panel_w, causando una vw insufficiente che tagliava il klavier a destra.
+        panel_gross_w, _ = self.panel.GetSize()
+        margin_h = max(8, int(panel_gross_w * 0.03))
 
         # Sfondo: grigio o bianco in base al flag _greyBackground
         bg_colour = wx.Colour(160, 160, 160) if self._greyBackground else wx.WHITE
@@ -298,8 +301,14 @@ class PreviewCanvas(object):
             self._UpdatePageLabel(0, 0)
             return
 
+        # PrepareDC ha già impostato l'origine device in base allo scroll (X e Y).
+        # Aggiungiamo margin_h all'origine X corrente SENZA annullare lo scroll:
+        # GetDeviceOrigin() restituisce l'offset impostato da PrepareDC, a cui
+        # sommiamo il margine sinistro in pixel reali.
+        ox, oy = dc.GetDeviceOrigin()
+        dc.SetDeviceOrigin(ox + margin_h, oy)
 
-        # Applica zoom tramite scala DC
+        # Applica zoom
         dc.SetUserScale(self._zoom_factor, self._zoom_factor)
 
         # Render nella zona virtuale scalata
@@ -307,8 +316,9 @@ class PreviewCanvas(object):
         self._last_w = w
         self._last_h = h
 
-        # Ripristina scala per aggiornare la virtual size in pixel reali
+        # Ripristina scala e origine device originale
         dc.SetUserScale(1.0, 1.0)
+        dc.SetDeviceOrigin(ox, oy)
 
         # Aggiorna dimensione virtuale con margine dinamico
         vw = int(w * self._zoom_factor) + margin_h * 2
@@ -448,10 +458,11 @@ class PreviewCanvas(object):
         evt.Skip()
 
     def _OnPanelSize(self, evt):
-        # Al ridimensionamento, aggiorna la virtual size se c'e' gia' del contenuto
+        # Al ridimensionamento, aggiorna la virtual size se c'e' gia' del contenuto.
+        # Usa GetSize() (larghezza lorda) per coerenza con OnPaint.
         if self._last_w > 0:
-            panel_client_w, _ = self.panel.GetClientSize()
-            margin_h = max(8, int(panel_client_w * 0.03))  # Fix 3: margine dinamico
+            panel_gross_w, _ = self.panel.GetSize()
+            margin_h = max(8, int(panel_gross_w * 0.03))
             vw = int(self._last_w * self._zoom_factor) + margin_h * 2
             vh = int(self._last_h * self._zoom_factor) + _PAGE_GAP_PX * 2
             self.panel.SetVirtualSize(wx.Size(vw, vh))
@@ -681,9 +692,10 @@ class PreviewCanvas(object):
         # 1. Coordinate del click in pixel virtuali (scroll-corrected)
         click_x_sc, click_y_sc = self.panel.CalcUnscrolledPosition(evt.GetPosition())
 
-        # Rimuovi il margine orizzontale dinamico applicato in OnPaint
-        panel_client_w, _ = self.panel.GetClientSize()
-        margin_h = max(8, int(panel_client_w * 0.03))
+        # Rimuovi il margine orizzontale dinamico applicato in OnPaint.
+        # Usa GetSize() (larghezza lorda) per coerenza con il calcolo in OnPaint.
+        panel_gross_w, _ = self.panel.GetSize()
+        margin_h = max(8, int(panel_gross_w * 0.03))
 
         # Converti in coordinate renderer (pre-zoom)
         rx = (click_x_sc - margin_h) / self._zoom_factor

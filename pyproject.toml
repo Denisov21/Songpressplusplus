@@ -1,6 +1,6 @@
 [project]
 name = "SongpressPlusPlus"
-version = "5.0.1"
+version = "5.1.0"
 description = "Songpress++ is a free, easy to use song typeset program for Windows, that generates high-quality songbooks."
 authors = [
     { name = "Denisov21" },

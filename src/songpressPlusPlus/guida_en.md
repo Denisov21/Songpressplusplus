@@ -784,6 +784,66 @@ The **Embed image in file (base64, no external dependency)** checkbox is located
 
 ---
 
+### Transposer Indicator 🖊
+
+The **Transposer indicator** is a text-based dot representation showing which key to press on the physical Transposer device of an organ. It is inserted directly into the song text as a `{start_of_tab: TRANSPOSER}` block, so it appears in the preview and in print using a monospace font (Courier New), guaranteeing perfect alignment between the symbols and the note names.
+
+#### Access
+
+**Insert → Other → Transposer image {image:}...**
+
+#### Indicator structure
+
+The inserted block consists of two monospace lines:
+
+- **Line 1** — key symbols: a filled dot for the selected key, empty dots for the others
+- **Line 2** — note labels: `Gb  G   Ab  A   A#  B`
+
+```
+{start_of_tab: TRANSPOSER}
+ ·   ·   ·   •   ·   ·
+ Gb  G   Ab  A   A#  B
+{end_of_tab}
+```
+
+#### Dot preview
+
+| Key   | Symbol row                      | Pressed note |
+|-------|---------------------------------|--------------|
+| G♭    | `•   ·   ·   ·   ·   ·`        | G♭           |
+| G     | `·   •   ·   ·   ·   ·`        | G            |
+| A♭    | `·   ·   •   ·   ·   ·`        | A♭           |
+| **A** | `·   ·   ·   •   ·   ·`        | **A** *(default)* |
+| A♯    | `·   ·   ·   ·   •   ·`        | A♯           |
+| B     | `·   ·   ·   ·   ·   •`        | B            |
+
+> Key **A** always has a red border in the dialog's graphic panel: it marks the reference pitch of the physical Transposer.
+
+#### Symbol choice
+
+The dialog lets you choose the symbol for the pressed key from four options:
+
+| Symbol | Unicode | Description        | Column width |
+|--------|---------|--------------------|--------------|
+| `•`    | U+2022  | Bullet             | 4            |
+| `●`    | U+25CF  | Black circle       | 4            |
+| `◉`    | U+25C9  | Fisheye            | 4            |
+| `⬤`    | U+2B24  | Large black circle | 5            |
+
+The symbol for **unpressed** keys is always `·` (U+00B7) or `○` (U+25CB) depending on the choice.
+
+#### Position in document
+
+| Option               | Description                                                                    |
+|----------------------|--------------------------------------------------------------------------------|
+| Before title         | Inserts the block at the very beginning of the file, before any content        |
+| After title          | Searches for `{title:}` or `{t:}` and inserts immediately after               |
+| At cursor position   | Inserts at the current cursor position *(default)*                             |
+| End of song          | Inserts at the end of the text, before any trailing blank lines                |
+
+---
+
+
 ## File Structure — Complete Example
 
 ```chordpro

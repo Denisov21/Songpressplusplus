@@ -425,6 +425,12 @@
           <bitmap>../img/picture.png</bitmap>
           <help>Insert an image (PNG, JPG, GIF) into the song</help>
         </object>
+        <object class="wxMenuItem" name="insertTransposerImage">
+          <label>_Transposer image {image:}...</label>
+          <accel></accel>
+          <bitmap>../img/transposer.png</bitmap>
+          <help>Insert the Transposer image and choose its position in the document</help>
+        </object>
         <object class="wxMenuItem" name="insertMusicalSymbol">
           <label>_Musical symbol (Unicode)...</label>
           <accel>Ctrl+Shift+M</accel>

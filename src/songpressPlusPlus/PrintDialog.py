@@ -619,22 +619,31 @@ class PrintOptionsDialog:
         # Disabilita "Selezione" se non c'è testo selezionato
         self.rb_scope_sel.Enable(self._has_selection)
 
-        # Nota descrittiva
+        # Nota descrittiva (pattern identico a MusicalSymbolDialog)
         if self._has_selection:
             scope_note_text = _("A text selection is active in the editor.")
         else:
             scope_note_text = _("No active selection — printing entire document.")
+
+        _scope_note_row = wx.BoxSizer(wx.HORIZONTAL)
+        _scope_info_icon = wx.StaticText(dlg, label=u"\u2139")   # ℹ
+        _icon_font = _scope_info_icon.GetFont()
+        _icon_font.SetPointSize(_icon_font.GetPointSize() + 1)
+        _icon_font.SetWeight(wx.FONTWEIGHT_BOLD)
+        _scope_info_icon.SetFont(_icon_font)
+        _scope_info_icon.SetForegroundColour(wx.Colour(0, 100, 180))
+        _scope_note_row.Add(_scope_info_icon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         self._scope_note = wx.StaticText(dlg, label=scope_note_text)
-        self._scope_note.SetForegroundColour(
-            wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT)
-        )
-        nf = self._scope_note.GetFont()
-        nf.SetPointSize(max(7, nf.GetPointSize() - 1))
-        self._scope_note.SetFont(nf)
+        _note_font = self._scope_note.GetFont()
+        _note_font.SetPointSize(max(_note_font.GetPointSize() - 1, 7))
+        _note_font.SetStyle(wx.FONTSTYLE_ITALIC)
+        self._scope_note.SetFont(_note_font)
+        self._scope_note.SetForegroundColour(wx.Colour(90, 90, 90))
+        _scope_note_row.Add(self._scope_note, 0, wx.ALIGN_CENTER_VERTICAL)
 
         box_scope.Add(self.rb_scope_full, 0, wx.ALL, _GAP)
         box_scope.Add(self.rb_scope_sel,  0, wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
-        box_scope.Add(self._scope_note,   0, wx.LEFT | wx.BOTTOM, _GAP + 2)
+        box_scope.Add(_scope_note_row,    0, wx.LEFT | wx.BOTTOM, _GAP + 2)
         outer.Add(box_scope, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
 
         # ── Bottoni ────────────────────────────────────────────────────

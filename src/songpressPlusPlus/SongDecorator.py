@@ -825,6 +825,9 @@ class SongDecorator(object):
         
     def PostDrawSong(self, song):
         current_extra_h = 0
+        self._klavier_extra_w = 0  # larghezza aggiuntiva oltre il testo (usata da Draw())
+        # Larghezza utile disponibile per il klavier (da marginLeft alla fine del testo)
+        content_w = song.GetTotalWidth() - int(song.marginLeft)
 
         if self.showKlavier:
             klavier_list = getattr(song, 'klavier_list', [])
@@ -832,13 +835,18 @@ class SongDecorator(object):
                 start_x = int(song.marginLeft)
                 start_y = int(song.marginTop + song.h) + 10
                 base_font = song.format.wxFont
-                h = draw_klavier_section(
+                h, used_w = draw_klavier_section(
                     self.dc, klavier_list, start_x, start_y,
                     base_font, self.pen_scale, self.notation,
                     self.klavierHighlightColor,
                     finger_num_color=self.fingerNumColor,
+                    content_w=content_w,
                 )
                 current_extra_h += h + 20
+                # Se il klavier è più largo del testo, memorizza la larghezza extra
+                klavier_total_w = start_x + used_w
+                if klavier_total_w > song.GetTotalWidth():
+                    self._klavier_extra_w = klavier_total_w - song.GetTotalWidth()
 
         if self.showGuitarDiagrams:
             define_list = getattr(song, 'define_list', [])
@@ -1144,4 +1152,7 @@ class SongDecorator(object):
             total_w = self.s.marginLeft + n_cols * self.s._col_w + (n_cols - 1) * self.s._col_gap + self.s.marginLeft
         else:
             total_w = self.s.GetTotalWidth()
+        # Se il klavier è più largo del testo, aumenta total_w di conseguenza
+        # così PreviewCanvas imposterà una virtual size sufficiente a mostrarlo tutto.
+        total_w += getattr(self, '_klavier_extra_w', 0)
         return total_w, h

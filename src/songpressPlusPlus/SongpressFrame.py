@@ -964,6 +964,8 @@ class SongpressFrame(SDIMainFrame, PrintManager):
             if _k in _sc:
                 self.text.SetSyntaxColour(_sid, _sc[_k])
         self.text.ApplyMultiCursor(getattr(self.pref, 'multiCursor', False))
+        self._applyKlavierHighlightColor()
+        self._applyFingerNumColor()
         self._UpdateStatusIndicators()
         # Se la perspective è stata salvata prima dell'introduzione della barra
         # "Editor" sul pannello centrale, va resettata una volta sola.
@@ -1297,6 +1299,7 @@ class SongpressFrame(SDIMainFrame, PrintManager):
         Bind(self.OnInsertDefine, 'insertDefine')
         Bind(self.OnInsertFingering, 'insertFingering')
         Bind(self.OnInsertImage, 'insertImage')
+        Bind(self.OnInsertTransposerImage, 'insertTransposerImage')
         Bind(self.OnInsertMusicalSymbol, 'insertMusicalSymbol')
         # --- File => Importa da PDF ---
         Bind(self.OnImportFromPdf, 'importFromPdf')
@@ -3907,6 +3910,538 @@ class SongpressFrame(SDIMainFrame, PrintManager):
             if directive != "{image: }":
                 self.InsertWithCaret(directive)
         d.Destroy()
+
+    # ------------------------------------------------------------------
+    # Inserisci immagine Transposer con selezione posizione schematica
+    # ------------------------------------------------------------------
+
+    def OnInsertTransposerImage(self, evt):
+        """Dialog per inserire la rappresentazione testuale del Transposer.
+        Produce due {comment:} con pallini ○/● allineati alle note.
+
+        Esempio (Gb selezionata):
+            {comment: ●  ○  ○  ○  ○  ○}
+            {comment: Gb  G Ab  A A#  B}
+        """
+
+        # Note con larghezza fissa 2 caratteri per allineamento colonne
+        # Note per la riga etichette (ASCII, max 2 char)
+        NOTES       = [u"Gb", u"G", u"Ab", u"A", u"A#", u"B"]
+        NOTES_DISP  = [u"G♭", u"G", u"A♭", u"A", u"A♯", u"B"]
+        # Simboli disponibili per il tasto premuto (scelta utente nel dialog)
+        # Ogni voce: (label, char_premuto, char_libero, col_width)
+        BULLET_OPTIONS = [
+            (u"•  (U+2022 bullet)",          u"•", u"·", 4),
+            (u"●  (U+25CF black circle)",     u"●", u"·", 4),
+            (u"◉  (U+25C9 fisheye)",          u"◉", u"○", 4),
+            (u"⬤  (U+2B24 large circle)",     u"⬤", u"○", 5),
+        ]
+        # Selezione corrente (indice in BULLET_OPTIONS) — mutabile tramite _refs
+        _refs = {'bullet_idx': 0}   # default: • U+2022
+
+        # ── Callback aggiornamento anteprima (definita prima del Panel) ──
+        # _refs già inizializzato sopra con bullet_idx; altri widget aggiunti dopo.
+
+        def _build_text(idx):
+            # Legge simbolo e larghezza colonna dalla selezione corrente
+            _, bf, be, cw = BULLET_OPTIONS[_refs.get('bullet_idx', 0)]
+            row_dots = u"".join(
+                (bf if i == idx else be).center(cw)
+                for i in range(len(NOTES))
+            ).rstrip()
+            row_lbls = u"".join(
+                n.center(cw) for n in NOTES
+            ).rstrip()
+            return (
+                u"{start_of_tab: TRANSPOSER}\n"
+                u"%s\n"
+                u"%s\n"
+                u"{end_of_tab}"
+            ) % (row_dots, row_lbls)
+
+        def _refresh(idx):
+            """Aggiorna lbl_note e txt_preview. Chiamata dal Panel via wx.CallAfter."""
+            w = _refs.get('lbl_note')
+            p = _refs.get('txt_preview')
+            if w:
+                w.SetLabel(_(u"Selected note:  ") + NOTES_DISP[idx])
+            if p:
+                p.SetValue(_build_text(idx))
+
+        # ── Dialog principale ─────────────────────────────────────────
+        d = wx.Dialog(
+            self.frame,
+            title=_(u"Insert Transposer indicator"),
+            style=wx.DEFAULT_DIALOG_STYLE,
+        )
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        # ── Pannello grafico: tastiera Transposer cliccabile ──────────
+        preview_box = wx.StaticBoxSizer(
+            wx.StaticBox(d, label=_(u"Click the button to press on the Transposer")),
+            wx.VERTICAL,
+        )
+
+        class TransposerPanel(wx.Panel):
+            _NOTES_DISP = NOTES_DISP
+            _BLACK      = {0, 2, 4}   # G♭, A♭, A♯
+
+            def __init__(self, parent):
+                super().__init__(parent, size=(420, 155))
+                self.selected = 3   # default: A
+                self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
+                self.Bind(wx.EVT_PAINT, self.OnPaint)
+                self.Bind(wx.EVT_LEFT_DOWN, self.OnClick)
+                self.Bind(wx.EVT_MOTION, self.OnMotion)
+                self.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
+                self._hover = -1
+
+            def _gradient_rect(self, dc, x, y, w, h, r, col_top, col_bot, border_col, border_w=1):
+                """Rettangolo arrotondato con gradiente verticale corretto."""
+                # Fill centrale (corpo senza le zone di raggio)
+                inner_y = y + r
+                inner_h = h - 2 * r
+                if inner_h > 0:
+                    for s in range(inner_h):
+                        t = s / max(inner_h - 1, 1)
+                        rc = int(col_top.Red()   + (col_bot.Red()   - col_top.Red())   * t)
+                        gc = int(col_top.Green() + (col_bot.Green() - col_top.Green()) * t)
+                        bc = int(col_top.Blue()  + (col_bot.Blue()  - col_top.Blue())  * t)
+                        dc.SetPen(wx.Pen(wx.Colour(rc, gc, bc), 1))
+                        dc.DrawLine(x + 1, inner_y + s, x + w - 1, inner_y + s)
+                # Zona superiore (arrotondata): fill col_top
+                dc.SetBrush(wx.Brush(col_top))
+                dc.SetPen(wx.TRANSPARENT_PEN)
+                dc.DrawRectangle(x + r, y, w - 2 * r, r + 1)
+                # Zona inferiore: fill col_bot
+                dc.SetBrush(wx.Brush(col_bot))
+                dc.DrawRectangle(x + r, y + h - r - 1, w - 2 * r, r + 1)
+                # Angoli arrotondati superiori
+                dc.SetBrush(wx.Brush(col_top))
+                dc.DrawRoundedRectangle(x, y, w, r * 2, r)
+                # Angoli arrotondati inferiori
+                dc.SetBrush(wx.Brush(col_bot))
+                dc.DrawRoundedRectangle(x, y + h - r * 2, w, r * 2, r)
+                # Bordo esterno sopra tutto
+                dc.SetBrush(wx.TRANSPARENT_BRUSH)
+                dc.SetPen(wx.Pen(border_col, border_w))
+                dc.DrawRoundedRectangle(x, y, w, h, r)
+
+            def _key_layout(self, W):
+                n   = len(self._NOTES_DISP)
+                pad = 14
+                gap = 7
+                kw  = (W - pad * 2 - gap * (n - 1)) // n
+                x0  = (W - (kw * n + gap * (n - 1))) // 2
+                return n, kw, gap, x0
+
+            def OnPaint(self, evt):
+                dc = wx.AutoBufferedPaintDC(self)
+                W, H = self.GetClientSize()
+
+                # ── Sfondo legno: gradiente caldo multi-stop + venature ──
+                # Colori legno noce/mogano: chiaro in alto, medio al centro, scuro in basso
+                wood_stops = [
+                    (0.00, wx.Colour(138,  82,  32)),   # noce dorato in cima
+                    (0.25, wx.Colour(115,  65,  22)),   # mogano medio
+                    (0.55, wx.Colour( 88,  48,  14)),   # scuro caldo
+                    (0.80, wx.Colour( 72,  38,  10)),   # quasi-ebano
+                    (1.00, wx.Colour( 52,  26,   6)),   # base scura
+                ]
+                def _wood_colour(t):
+                    for j in range(len(wood_stops) - 1):
+                        t0, c0 = wood_stops[j]
+                        t1, c1 = wood_stops[j + 1]
+                        if t0 <= t <= t1:
+                            f = (t - t0) / (t1 - t0)
+                            return (
+                                int(c0.Red()   + (c1.Red()   - c0.Red())   * f),
+                                int(c0.Green() + (c1.Green() - c0.Green()) * f),
+                                int(c0.Blue()  + (c1.Blue()  - c0.Blue())  * f),
+                            )
+                    c = wood_stops[-1][1]
+                    return c.Red(), c.Green(), c.Blue()
+
+                for row in range(H):
+                    t = row / max(H - 1, 1)
+                    rc, gc, bc = _wood_colour(t)
+                    dc.SetPen(wx.Pen(wx.Colour(rc, gc, bc), 1))
+                    dc.DrawLine(0, row, W, row)
+
+                # Venature orizzontali sottili (legno)
+                import random as _rnd
+                _rnd.seed(42)   # seed fisso: venature sempre uguali
+                for _ in range(18):
+                    vy = _rnd.randint(2, H - 3)
+                    vx1 = _rnd.randint(0, W // 4)
+                    vx2 = _rnd.randint(W * 3 // 4, W)
+                    t   = vy / max(H - 1, 1)
+                    rc, gc, bc = _wood_colour(t)
+                    alpha = _rnd.choice([18, 22, 28])
+                    # schiarita o scurita aleatoria
+                    if _rnd.random() > 0.5:
+                        vc = wx.Colour(min(255, rc + 22), min(255, gc + 16), min(255, bc + 8))
+                    else:
+                        vc = wx.Colour(max(0, rc - 18), max(0, gc - 12), max(0, bc - 6))
+                    dc.SetPen(wx.Pen(vc, 1))
+                    dc.DrawLine(vx1, vy, vx2, vy)
+
+                # ── Bordo pannello: filo dorato ───────────────────────
+                dc.SetBrush(wx.TRANSPARENT_BRUSH)
+                dc.SetPen(wx.Pen(wx.Colour(160, 108, 42), 1))
+                dc.DrawRoundedRectangle(0, 0, W, H, 4)
+                dc.SetPen(wx.Pen(wx.Colour(60, 32, 8), 1))
+                dc.DrawRoundedRectangle(1, 1, W - 2, H - 2, 4)
+
+                # ── Titolo TRANSPOSER ──────────────────────────────────
+                # Lettera per lettera con spacing manuale per effetto "inciso"
+                title_font = wx.Font(9, wx.FONTFAMILY_DEFAULT,
+                                     wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD,
+                                     faceName="Arial")
+                dc.SetFont(title_font)
+                # Spaziatura tra lettere simulata inserendo spazi sottili
+                lbl_chars = u"T R A N S P O S E R"
+                tw, th = dc.GetTextExtent(lbl_chars)
+                tx0 = (W - tw) // 2
+                ty0 = 5
+
+                # Linee decorative laterali (segmento orizzontale dorato sottile)
+                line_y   = ty0 + th // 2
+                line_col = wx.Colour(100, 72, 28)
+                gap_from_text = 8
+                dc.SetPen(wx.Pen(line_col, 1))
+                dc.DrawLine(8, line_y, tx0 - gap_from_text, line_y)
+                dc.DrawLine(tx0 + tw + gap_from_text, line_y, W - 8, line_y)
+
+                # Ombra testo
+                dc.SetTextForeground(wx.Colour(8, 4, 0))
+                dc.DrawText(lbl_chars, tx0 + 1, ty0 + 1)
+                # Glow morbido (colore intermedio leggermente più largo)
+                dc.SetTextForeground(wx.Colour(80, 155, 195))
+                dc.DrawText(lbl_chars, tx0 - 1, ty0)
+                dc.DrawText(lbl_chars, tx0 + 1, ty0)
+                # Testo principale: bianco-azzurro luminoso
+                dc.SetTextForeground(wx.Colour(195, 228, 252))
+                dc.DrawText(lbl_chars, tx0, ty0)
+
+                n, kw, gap, x0 = self._key_layout(W)
+                y0 = 26
+                kh = H - y0 - 8   # altezza tasto: lascia 8px di padding in basso
+                r  = 10            # raggio angoli tasto
+
+                for i, note in enumerate(self._NOTES_DISP):
+                    x      = x0 + i * (kw + gap)
+                    is_sel = (i == self.selected)
+                    is_blk = i in self._BLACK
+                    is_hov = (i == self._hover and not is_sel)
+                    is_A   = (i == 3)
+
+                    # ── Colori tasto ───────────────────────────────────
+                    if is_sel:
+                        ct = wx.Colour(175, 225, 255)
+                        cb = wx.Colour(80, 160, 235)
+                        bc = wx.Colour(10, 110, 210)
+                        bw = 2
+                    elif is_hov:
+                        if is_blk:
+                            ct = wx.Colour(95, 100, 124)
+                            cb = wx.Colour(62, 65, 85)
+                        else:
+                            # Hover tasto chiaro: legno acero leggermente più chiaro
+                            ct = wx.Colour(232, 210, 168)
+                            cb = wx.Colour(195, 165, 115)
+                        bc = wx.Colour(148, 105, 50)
+                        bw = 1
+                    elif is_blk:
+                        ct = wx.Colour(75, 78, 100)
+                        cb = wx.Colour(38, 40, 56)
+                        bc = wx.Colour(18, 18, 36)
+                        bw = 1
+                    else:
+                        # Legno chiaro: acero/frassino — caldo giallo-avorio in cima,
+                        # ambra dorata in basso
+                        ct = wx.Colour(220, 195, 148)   # acero chiaro
+                        cb = wx.Colour(175, 140,  88)   # ambra dorata
+                        bc = wx.Colour(130,  90,  38)   # bordo noce medio
+                        bw = 1
+
+                    if is_A and not is_sel:
+                        bc = wx.Colour(210, 45, 45)
+                        bw = 2
+
+                    # ── Ombra portante ─────────────────────────────────
+                    dc.SetBrush(wx.Brush(wx.Colour(0, 0, 0)))
+                    dc.SetPen(wx.TRANSPARENT_PEN)
+                    dc.DrawRoundedRectangle(x + 3, y0 + 4, kw, kh, r)
+
+                    # ── Corpo tasto con gradiente ──────────────────────
+                    self._gradient_rect(dc, x, y0, kw, kh, r, ct, cb, bc, bw)
+
+                    # ── Shine: striscia lucida sottile solo in cima ────
+                    shine_h = max(3, kh // 6)
+                    shine_c = wx.Colour(
+                        min(255, ct.Red() + 40),
+                        min(255, ct.Green() + 38),
+                        min(255, ct.Blue() + 30),
+                    )
+                    dc.SetBrush(wx.Brush(shine_c))
+                    dc.SetPen(wx.TRANSPARENT_PEN)
+                    # Solo nei pixel centrali (evita di coprire le curve del bordo)
+                    dc.DrawRectangle(x + r, y0 + 2, kw - 2 * r, shine_h)
+
+                    # ── Indicatore circolare (centro del tasto) ────────
+                    cx = x + kw // 2
+                    # Posizione verticale: zona centrale, sopra all'etichetta
+                    label_reserve = 36   # spazio riservato in basso per il testo grande
+                    cy = y0 + (kh - label_reserve) // 2
+                    if is_sel:
+                        dc.SetBrush(wx.Brush(wx.Colour(15, 70, 160)))
+                        dc.SetPen(wx.Pen(wx.Colour(0, 35, 100), 1))
+                        dc.DrawCircle(cx, cy, 9)
+                        dc.SetBrush(wx.Brush(wx.Colour(55, 135, 235)))
+                        dc.SetPen(wx.TRANSPARENT_PEN)
+                        dc.DrawCircle(cx, cy, 6)
+                        dc.SetBrush(wx.Brush(wx.Colour(190, 225, 255)))
+                        dc.DrawCircle(cx - 2, cy - 2, 2)
+                    else:
+                        ring_c = (wx.Colour(105, 108, 132) if is_blk
+                                  else wx.Colour(155, 158, 178))
+                        if is_hov:
+                            ring_c = wx.Colour(185, 190, 215)
+                        dc.SetBrush(wx.TRANSPARENT_BRUSH)
+                        dc.SetPen(wx.Pen(ring_c, 1))
+                        dc.DrawCircle(cx, cy, 7)
+
+                    # ── Etichetta nota: font grande, alto contrasto ────
+                    # 22pt per note singole (G, A, B), 18pt per doppie (G♭, A♭, A♯)
+                    fs = 22 if len(note) == 1 else 18
+                    note_font = wx.Font(fs, wx.FONTFAMILY_DEFAULT,
+                                        wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD,
+                                        faceName="Arial")
+                    dc.SetFont(note_font)
+                    tw, th = dc.GetTextExtent(note)
+                    tx = x + (kw - tw) // 2
+                    ty = y0 + kh - th - 5
+
+                    if is_sel:
+                        # Ombra scura
+                        dc.SetTextForeground(wx.Colour(0, 25, 70))
+                        dc.DrawText(note, tx + 1, ty + 1)
+                        # Testo blu scuro ben leggibile sul tasto chiaro
+                        dc.SetTextForeground(wx.Colour(0, 50, 130))
+                    elif is_blk:
+                        # Testo bianco su tasto scuro: massimo contrasto
+                        dc.SetTextForeground(wx.Colour(230, 234, 250))
+                    else:
+                        # Testo marrone scuro su tasto legno chiaro: alto contrasto
+                        dc.SetTextForeground(wx.Colour(48, 24, 6))
+                    dc.DrawText(note, tx, ty)
+
+            def _hit_index(self, mx):
+                W, _ = self.GetClientSize()
+                n, kw, gap, x0 = self._key_layout(W)
+                for i in range(n):
+                    xi = x0 + i * (kw + gap)
+                    if xi <= mx < xi + kw:
+                        return i
+                return -1
+
+            def OnMotion(self, evt):
+                idx = self._hit_index(evt.GetX())
+                if idx != self._hover:
+                    self._hover = idx
+                    self.Refresh()
+                evt.Skip()
+
+            def OnLeave(self, evt):
+                if self._hover != -1:
+                    self._hover = -1
+                    self.Refresh()
+                evt.Skip()
+
+            def OnClick(self, evt):
+                idx = self._hit_index(evt.GetX())
+                if 0 <= idx < len(self._NOTES_DISP):
+                    self.selected = idx
+                    self.Refresh()
+                    wx.CallAfter(_refresh, idx)
+
+            def GetIndex(self):
+                return self.selected
+
+        tp = TransposerPanel(d)
+        preview_box.Add(tp, 0, wx.ALL | wx.EXPAND, 6)
+
+        lbl_note = wx.StaticText(d, label=_(u"Selected note:  A"))
+        lbl_note.SetForegroundColour(wx.Colour(0, 80, 160))
+        preview_box.Add(lbl_note, 0, wx.LEFT | wx.BOTTOM, 8)
+        vbox.Add(preview_box, 0, wx.EXPAND | wx.ALL, 8)
+
+        # ── Posizione nel documento ───────────────────────────────────
+        pos_box = wx.StaticBoxSizer(
+            wx.StaticBox(d, label=_(u"Position in document")),
+            wx.VERTICAL,
+        )
+        positions = [
+            ('before_title', _(u"Before title"),
+             u"\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n"
+             u"\u2502  [\u25cb \u25cf \u25cb]       \u2502\n"
+             u"\u2502  Title           \u2502\n"
+             u"\u2502  Verse...        \u2502\n"
+             u"\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518"),
+            ('after_title',  _(u"After title"),
+             u"\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n"
+             u"\u2502  Title           \u2502\n"
+             u"\u2502  [\u25cb \u25cf \u25cb]       \u2502\n"
+             u"\u2502  Verse...        \u2502\n"
+             u"\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518"),
+            ('cursor',       _(u"At cursor position"),
+             u"\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n"
+             u"\u2502  Title           \u2502\n"
+             u"\u2502  Verse...        \u2502\n"
+             u"\u2502\u25ba [\u25cb \u25cf \u25cb]       \u2502\n"
+             u"\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518"),
+            ('end_of_song',  _(u"End of song"),
+             u"\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n"
+             u"\u2502  Title           \u2502\n"
+             u"\u2502  Verse...        \u2502\n"
+             u"\u2502  [\u25cb \u25cf \u25cb]       \u2502\n"
+             u"\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518"),
+        ]
+
+        rb_group = []
+        pos_grid = wx.GridSizer(cols=2, hgap=12, vgap=4)
+        for i, (pos_id, pos_lbl, _schema) in enumerate(positions):
+            style = wx.RB_GROUP if i == 0 else 0
+            rb = wx.RadioButton(d, label=pos_lbl, style=style)
+            rb._pos_id = pos_id
+            rb._schema = _schema
+            rb_group.append(rb)
+            pos_grid.Add(rb, 0, wx.ALIGN_CENTER_VERTICAL)
+        pos_box.Add(pos_grid, 0, wx.ALL, 6)
+
+        lbl_schema = wx.StaticText(d, label="", style=wx.ST_NO_AUTORESIZE)
+        lbl_schema.SetFont(wx.Font(8, wx.FONTFAMILY_TELETYPE,
+                                   wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        lbl_schema.SetForegroundColour(wx.Colour(55, 80, 55))
+        pos_box.Add(lbl_schema, 0, wx.LEFT | wx.BOTTOM, 8)
+        vbox.Add(pos_box, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
+        def _update_schema(e=None):
+            for rb in rb_group:
+                if rb.GetValue():
+                    lbl_schema.SetLabel(rb._schema)
+                    d.Layout()
+                    break
+        for rb in rb_group:
+            rb.Bind(wx.EVT_RADIOBUTTON, _update_schema)
+        rb_group[2].SetValue(True)
+        _update_schema()
+
+        # ── Selezione simbolo tasto premuto ──────────────────────────
+        sym_box = wx.StaticBoxSizer(
+            wx.StaticBox(d, label=_(u"Symbol for pressed key")),
+            wx.VERTICAL,
+        )
+        sym_grid = wx.GridSizer(rows=2, cols=2, hgap=8, vgap=4)
+        sym_rbs = []
+        for i, (lbl, _bf, _be, _cw) in enumerate(BULLET_OPTIONS):
+            style = wx.RB_GROUP if i == 0 else 0
+            rb_s = wx.RadioButton(d, label=lbl, style=style)
+            rb_s.SetFont(wx.Font(9, wx.FONTFAMILY_TELETYPE,
+                                 wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+            sym_rbs.append(rb_s)
+            sym_grid.Add(rb_s, 0, wx.ALIGN_CENTER_VERTICAL)
+        sym_rbs[0].SetValue(True)
+        sym_box.Add(sym_grid, 0, wx.ALL, 4)
+        vbox.Add(sym_box, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
+        def _on_sym(e=None):
+            for i, rb_s in enumerate(sym_rbs):
+                if rb_s.GetValue():
+                    _refs['bullet_idx'] = i
+                    break
+            # aggiorna anteprima
+            p = _refs.get('txt_preview')
+            if p:
+                p.SetValue(_build_text(tp.GetIndex()))
+        for rb_s in sym_rbs:
+            rb_s.Bind(wx.EVT_RADIOBUTTON, _on_sym)
+
+        # ── Anteprima testo che verrà inserito ────────────────────────
+        vbox.Add(wx.StaticLine(d), 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 8)
+        vbox.Add(wx.StaticText(d, label=_(u"Text preview (inserted in document):")),
+                 0, wx.LEFT | wx.TOP, 8)
+        txt_preview = wx.TextCtrl(
+            d, style=wx.TE_READONLY | wx.TE_MULTILINE | wx.TE_NO_VSCROLL,
+            size=(400, 92),
+        )
+        txt_preview.SetFont(wx.Font(9, wx.FONTFAMILY_TELETYPE,
+                                    wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        txt_preview.SetBackgroundColour(
+            wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE))
+        vbox.Add(txt_preview, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
+        btn_sizer = d.CreateButtonSizer(wx.OK | wx.CANCEL)
+        vbox.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 8)
+        d.SetSizer(vbox)
+        vbox.Fit(d)
+        # Forza un'altezza minima totale leggermente maggiore
+        cur_w, cur_h = d.GetSize()
+        d.SetMinSize(wx.Size(cur_w, cur_h))
+        d.SetSize(wx.Size(cur_w, cur_h))
+
+        # Popola _refs ora che tutti i widget esistono, poi inizializza
+        _refs['lbl_note']   = lbl_note
+        _refs['txt_preview'] = txt_preview
+        _refresh(tp.GetIndex())
+
+        if d.ShowModal() != wx.ID_OK:
+            d.Destroy()
+            return
+
+        text_to_insert = _build_text(tp.GetIndex())
+        d.Destroy()
+
+        # ── Inserimento nella posizione scelta ────────────────────────
+        def _get_selected_pos():
+            for rb in rb_group:
+                if rb.GetValue():
+                    return rb._pos_id
+            return 'cursor'
+
+        pos   = _get_selected_pos()
+        stc   = self.text
+        orig  = stc.GetCurrentPos()
+        block = text_to_insert + u"\n"
+
+        if pos == 'cursor':
+            self.InsertWithCaret(block)
+
+        elif pos == 'before_title':
+            stc.InsertText(0, block)
+            stc.GotoPos(orig + len(block.encode('utf-8')))
+
+        elif pos == 'after_title':
+            import re as _re
+            text_all = stc.GetText()
+            m = _re.search(r'\{(?:title|t)\s*:[^}]*\}', text_all, _re.IGNORECASE)
+            if m:
+                insert_at = m.end()
+                if insert_at < len(text_all) and text_all[insert_at] == '\n':
+                    insert_at += 1
+                stc.InsertText(insert_at, block)
+                stc.GotoPos(orig + len(block.encode('utf-8')))
+            else:
+                stc.InsertText(0, block)
+                stc.GotoPos(orig + len(block.encode('utf-8')))
+
+        elif pos == 'end_of_song':
+            text_all     = stc.GetText()
+            stripped_end = len(text_all.rstrip())
+            stc.InsertText(stripped_end, u"\n" + text_to_insert)
+            stc.GotoPos(stripped_end + len((u"\n" + text_to_insert).encode('utf-8')))
+
 
     def AddTool(self, toolbar, resource_string, icon_path, label, help):
         tool = wx.xrc.XRCID(resource_string)
@@ -7272,6 +7807,8 @@ class SongpressFrame(SDIMainFrame, PrintManager):
             self.pref.decorator.drawLabels = True
             self.pref.decorator.showKlavier = True
             self.pref.decorator.showGuitarDiagrams = True
+            self.pref.decorator.klavierHighlightColor = self._getKlavierHighlightColour()
+            self.pref.decorator.fingerNumColor = self._getFingerNumColour()
             self.previewCanvas.SetDecorator(self.pref.decorator)
         else:
             sd = SongDecorator()

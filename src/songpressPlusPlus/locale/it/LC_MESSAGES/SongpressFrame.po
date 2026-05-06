@@ -1349,3 +1349,67 @@ msgstr "Guida ai comandi di Songpress++"
 #: SongpressFrame.py — output file save dialog title
 msgid "Choose a name for the output file"
 msgstr "Scegli un nome per il file di output"
+
+#: SongpressFrame.py — OnInsertTransposerImage dialog title
+msgid "Insert Transposer indicator"
+msgstr "Inserisci indicatore Transposer"
+
+#: SongpressFrame.py — OnInsertTransposerImage panel label
+msgid "Click the button to press on the Transposer"
+msgstr "Clicca il tasto da premere sul Transposer"
+
+#: SongpressFrame.py — OnInsertTransposerImage selected note label
+msgid "Selected note:  A"
+msgstr "Nota selezionata:  A"
+
+#: SongpressFrame.py — OnInsertTransposerImage selected note label (dynamic)
+msgid "Selected note:  "
+msgstr "Nota selezionata:  "
+
+#: SongpressFrame.py — OnInsertTransposerImage position box label
+msgid "Position in document"
+msgstr "Posizione nel documento"
+
+#: SongpressFrame.py — OnInsertTransposerImage position: before title
+msgid "Before title"
+msgstr "Prima del titolo"
+
+#: SongpressFrame.py — OnInsertTransposerImage position: after title
+msgid "After title"
+msgstr "Dopo il titolo"
+
+#: SongpressFrame.py — OnInsertTransposerImage position: at cursor
+msgid "At cursor position"
+msgstr "Alla posizione del cursore"
+
+#: SongpressFrame.py — OnInsertTransposerImage position: end of song
+msgid "End of song"
+msgstr "Fine della canzone"
+
+#: SongpressFrame.py — OnInsertTransposerImage preview label
+msgid "Text preview (inserted in document):"
+msgstr "Anteprima testo (inserito nel documento):"
+
+#: SongpressFrame.py — OnInsertTransposerImage panel tooltip
+msgid "Click a key to select the note"
+msgstr "Clicca un tasto per selezionare la nota"
+
+#: SongpressFrame.py — OnInsertTransposerImage symbol selector box label
+msgid "Symbol for pressed key"
+msgstr "Simbolo per il tasto premuto"
+
+#: SongpressFrame.py — OnInsertTransposerImage symbol option 1
+msgid "•  (U+2022 bullet)"
+msgstr "•  (U+2022 bullet)"
+
+#: SongpressFrame.py — OnInsertTransposerImage symbol option 2
+msgid "●  (U+25CF black circle)"
+msgstr "●  (U+25CF cerchio pieno)"
+
+#: SongpressFrame.py — OnInsertTransposerImage symbol option 3
+msgid "◉  (U+25C9 fisheye)"
+msgstr "◉  (U+25C9 occhio di pesce)"
+
+#: SongpressFrame.py — OnInsertTransposerImage symbol option 4
+msgid "⬤  (U+2B24 large circle)"
+msgstr "⬤  (U+2B24 cerchio grande)"

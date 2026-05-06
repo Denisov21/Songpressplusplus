@@ -1044,6 +1044,19 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
+            <property name="bitmap">Load From File; ../img/picture.png</property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert the Transposer image and choose its position in the document</property>
+            <property name="id">ID_INSERT_TRANSPOSER_IMAGE</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">&amp;Transposer image {image:}...</property>
+            <property name="name">insertTransposerImage</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
             <property name="bitmap">Load From File; ../img/symbol.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
