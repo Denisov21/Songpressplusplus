@@ -3966,7 +3966,7 @@ class SongpressFrame(SDIMainFrame, PrintManager):
                 n.center(cw) for n in NOTES
             ).rstrip()
             return (
-                u"{start_of_tab: TRANSPOSER}\n"
+                u"{start_of_tab: TP}\n"
                 u"%s\n"
                 u"%s\n"
                 u"{end_of_tab}"
