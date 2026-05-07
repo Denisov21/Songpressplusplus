@@ -247,6 +247,28 @@ there is no conflict, because at load time each module calls `wx.GetTranslation(
 
 The only case where a problem can arise is if a single shared domain is used for the entire project (as Django does with `django.po`): there, identical strings with different translations in two languages would overwrite each other. But with Songpress++'s structure — one `.po`/`.mo` per file — each catalog is isolated and duplicate strings are simply redundant, not conflicting.
 
+**How does the built-in guide resolve image paths in `img/GUIDE/`?**
+
+The guide Markdown files (e.g. `guida.md`) may contain image references in various forms depending on the editor used to write them:
+
+```
+![alt](../src/songpressPlusPlus/img/GUIDE/foto.png)   ← Typora / external editor
+![alt](./img/GUIDE/foto.png)                           ← relative form
+![alt](img/GUIDE/foto.png)                             ← minimal form
+```
+
+At runtime, `SongpressFrame.py` normalises all these variants with a single regex that captures any prefix before `img/GUIDE/`:
+
+```python
+# Before — only matched specific known prefixes (broke on capitalisation variants)
+r'(!\[[^\]]*\]\()(?:\.\.\/src\/songpressPlusPlus\/|\.\/)?img\/GUIDE\/'
+
+# After — matches any prefix before img/GUIDE/
+r'(!\[[^\]]*\]\()(?:[^()]*?/)?img/GUIDE/'
+```
+
+The matched prefix is then replaced with an absolute `file:///` URL built from `os.path.dirname(__file__)`, so images load correctly both during development and when the package is installed via `uv tool install`.
+
 ### Linux: SVG export and display scaling
 
 When the system display scale factor is not set to 1, the SVG output produced by the Copy as Image function may be incorrectly formatted. This is a known issue in the current version of wxPython. The underlying problem [has already been fixed upstream in wxWidgets](https://github.com/wxWidgets/wxWidgets/issues/25707) and will be automatically corrected as soon as the next version of wxPython is available.

@@ -205,7 +205,6 @@ class MyPreferencesDialog(PreferencesDialog):
         viewer = getattr(self.pref, 'guideViewer', 'markdown')
         _viewer_map = {'markdown': 0, 'mistune': 2, 'builtin': 3}
         self.guideViewerCh.SetSelection(_viewer_map.get(viewer, 0))
-        self.guideMarkdownImgPathCb.SetValue(getattr(self.pref, 'guideMarkdownImgPath', False))
 
         # Dimensione icone tempo
         sz = getattr(self.pref, 'tempoIconSize', 24)
@@ -1318,7 +1317,6 @@ class MyPreferencesDialog(PreferencesDialog):
         _viewer_keys = ['markdown', 'markdown', 'mistune', 'builtin']
         sel = self.guideViewerCh.GetSelection()
         self.pref.guideViewer = _viewer_keys[sel] if 0 <= sel < len(_viewer_keys) else 'markdown'
-        self.pref.guideMarkdownImgPath = self.guideMarkdownImgPathCb.GetValue()
         # Nessun accordo: blocchi da nascondere
         self.pref.hideIntroChord = self.hideIntroChordCB.GetValue()
         self.pref.hideBridge     = self.hideBridgeCB.GetValue()

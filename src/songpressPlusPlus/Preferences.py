@@ -310,8 +310,6 @@ class Preferences(object):
         self.previewMinSize = bool(int(v)) if v != '' else True
         v = self.config.Read('guideViewer')
         self.guideViewer = v if v in ('builtin', 'markdown', 'mistune') else 'markdown'
-        v = self.config.Read('guideMarkdownImgPath')
-        self.guideMarkdownImgPath = bool(int(v)) if v != '' else False
         self.config.SetPath('/')
 
     def _LoadGridDisplayMode(self):
@@ -519,7 +517,6 @@ class Preferences(object):
         self.config.Write('dblClickFocus',     '1' if getattr(self, 'dblClickFocus',     True) else '0')
         self.config.Write('previewMinSize',    '1' if getattr(self, 'previewMinSize',    True) else '0')
         self.config.Write('guideViewer',           getattr(self, 'guideViewer', 'markdown'))
-        self.config.Write('guideMarkdownImgPath',    '1' if getattr(self, 'guideMarkdownImgPath', False) else '0')
         self.config.SetPath('/')
 
     def _SaveGridDisplayMode(self):

@@ -3921,20 +3921,29 @@ class SongpressFrame(SDIMainFrame, PrintManager):
 
         Esempio (Gb selezionata):
             {comment: ●  ○  ○  ○  ○  ○}
-            {comment: Gb  G Ab  A A#  B}
+            {comment: Gb  G Ab  A A♯  B}
         """
 
         # Note con larghezza fissa 2 caratteri per allineamento colonne
         # Note per la riga etichette (ASCII, max 2 char)
-        NOTES       = [u"Gb", u"G", u"Ab", u"A", u"A#", u"B"]
+        NOTES       = [u"Gb", u"G", u"Ab", u"A", u"A♯", u"B"]
         NOTES_DISP  = [u"G♭", u"G", u"A♭", u"A", u"A♯", u"B"]
         # Simboli disponibili per il tasto premuto (scelta utente nel dialog)
         # Ogni voce: (label, char_premuto, char_libero, col_width)
+        # I simboli Unicode (•, ●, ◉, ⬤, ○, ·) vengono renderizzati come double-width
+        # in Courier New su Windows, ma str.center() li conta come 1 carattere.
+        # Aggiungendo uno spazio dopo ogni simbolo (rendendolo 2 char) e aumentando
+        # cw di 1 rispetto a prima, le due righe (pallini e note) rimangono allineate.
+        # I simboli Unicode (●, ◉, ⬤, ○, •, ·) sono double-width in Courier New su Windows:
+        # occupano 2 colonne tipografiche anche se Python li conta come 1 carattere.
+        # _build_text usa il formato fisso " sym " (spazio + simbolo + spazio) che produce
+        # 4 colonne visive indipendentemente dal conteggio Python, allineandosi a "Gb".center(4).
+        # Per questo cw non è più necessario: ogni voce è solo (label, sym_premuto, sym_libero).
         BULLET_OPTIONS = [
-            (u"•  (U+2022 bullet)",          u"•", u"·", 4),
-            (u"●  (U+25CF black circle)",     u"●", u"·", 4),
-            (u"◉  (U+25C9 fisheye)",          u"◉", u"○", 4),
-            (u"⬤  (U+2B24 large circle)",     u"⬤", u"○", 5),
+            (u"•  (U+2022 bullet)",          u"•", u"·"),
+            (u"●  (U+25CF black circle)",     u"●", u"·"),
+            (u"◉  (U+25C9 fisheye)",          u"◉", u"○"),
+            (u"⬤  (U+2B24 large circle)",     u"⬤", u"○"),
         ]
         # Selezione corrente (indice in BULLET_OPTIONS) — mutabile tramite _refs
         _refs = {'bullet_idx': 0}   # default: • U+2022
@@ -3956,10 +3965,15 @@ class SongpressFrame(SDIMainFrame, PrintManager):
         # _refs già inizializzato sopra con bullet_idx; altri widget aggiunti dopo.
 
         def _build_text(idx):
-            # Legge simbolo e larghezza colonna dalla selezione corrente
-            _, bf, be, cw = BULLET_OPTIONS[_refs.get('bullet_idx', 0)]
+            # I simboli Unicode (•, ●, ◉, ⬤, ○, ·) sono SINGLE-width in Courier New su Windows:
+            # ogni colonna della riga pallini = " sym " = 1+1+1 = 3 caratteri = 3W pixel.
+            # La riga delle note deve usare la stessa larghezza di colonna: cw=3.
+            # Con cw=4 (come prima) la riga note era più larga (6×4=24W vs 6×3=18W),
+            # causando lo spostamento progressivo verso destra delle etichette.
+            _, bf, be = BULLET_OPTIONS[_refs.get('bullet_idx', 0)]
+            cw = 3  # larghezza colonna = uguale alla colonna simbolo " x " (3 chars)
             row_dots = u"".join(
-                (bf if i == idx else be).center(cw)
+                u" " + (bf if i == idx else be) + u" "
                 for i in range(len(NOTES))
             ).rstrip()
             row_lbls = u"".join(
@@ -3997,7 +4011,7 @@ class SongpressFrame(SDIMainFrame, PrintManager):
 
         class TransposerPanel(wx.Panel):
             _NOTES_DISP = NOTES_DISP
-            _BLACK      = {0, 2, 4}   # G♭, A♭, A♯
+            _BLACK      = {0, 2, 4}   # G♭, A♭, A#
 
             def __init__(self, parent):
                 super().__init__(parent, size=(420, 155))
@@ -4358,9 +4372,9 @@ class SongpressFrame(SDIMainFrame, PrintManager):
         )
         sym_grid = wx.GridSizer(rows=2, cols=2, hgap=8, vgap=4)
         sym_rbs = []
-        for i, (lbl, _bf, _be, _cw) in enumerate(BULLET_OPTIONS):
+        for i, (lbl, _bf, _be) in enumerate(BULLET_OPTIONS):
             style = wx.RB_GROUP if i == 0 else 0
-            rb_s = wx.RadioButton(d, label=lbl, style=style)
+            rb_s = wx.RadioButton(d, label=_(lbl), style=style)
             rb_s.SetFont(wx.Font(9, wx.FONTFAMILY_TELETYPE,
                                  wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
             sym_rbs.append(rb_s)
@@ -5909,6 +5923,7 @@ class SongpressFrame(SDIMainFrame, PrintManager):
                 lang_code = canonical.split('_')[0].lower()  # → "it", "en", "fr"
 
         base_dir = os.path.dirname(__file__)
+        _img_guide_url = 'file:///' + os.path.abspath(os.path.join(base_dir, 'img', 'GUIDE')).replace('\\', '/').lstrip('/') + '/'
 
         # Priorità: guida_<lang>.md  →  guida.md  →  errore
         candidates = []
@@ -5941,14 +5956,14 @@ class SongpressFrame(SDIMainFrame, PrintManager):
         import re
         # Pattern che cattura qualsiasi variante del percorso verso img/GUIDE/
         _guide_pat = re.compile(
-            r'(!\[[^\]]*\]\()(?:\.\.\/src\/songpressPlusPlus\/|\.\/)?img\/GUIDE\/'
+            r'(!\[[^\]]*\]\()(?:[^()]*?/)?img/GUIDE/'
         )
         if getattr(self.pref, 'guideMarkdownImgPath', False):
             # Typora: percorso assoluto relativo alla root del progetto
             md_text = _guide_pat.sub(r'\1../src/songpressPlusPlus/img/GUIDE/', md_text)
         else:
             # App: percorso relativo al file .md in src/songpress/
-            md_text = _guide_pat.sub(r'\1img/GUIDE/', md_text)
+            md_text = _guide_pat.sub(lambda m: m.group(1) + _img_guide_url, md_text)
 
         html = self._md_to_html(md_text)
 
@@ -6263,6 +6278,9 @@ class SongpressFrame(SDIMainFrame, PrintManager):
             p = _THEME[dark]
             body_colored = _colorize_body(html_body, dark)
 
+            # base_href consente a wx.html.HtmlWindow di risolvere i percorsi
+            # relativi delle immagini (img/GUIDE/...) sia in sviluppo che
+            # quando il programma è installato.
             # Attributi <body> legacy: bgcolor, text, link
             styled = (
                 '<html><head></head>'
@@ -6756,6 +6774,7 @@ class SongpressFrame(SDIMainFrame, PrintManager):
                 lang_code = canonical.split('_')[0].lower()
 
         base_dir = os.path.dirname(__file__)
+        _img_guide_url = 'file:///' + os.path.abspath(os.path.join(base_dir, 'img', 'GUIDE')).replace('\\', '/').lstrip('/') + '/'
 
         # Priorità: guida_comandi_songpress_<lang>.md → guida_comandi_songpress.md → errore
         candidates = []
@@ -6787,12 +6806,12 @@ class SongpressFrame(SDIMainFrame, PrintManager):
 
         import re
         _guide_pat = re.compile(
-            r'(!\[[^\]]*\]\()(?:\.\.\/src\/songpressPlusPlus\/|\.\/)?img\/GUIDE\/'
+            r'(!\[[^\]]*\]\()(?:[^()]*?/)?img/GUIDE/'
         )
         if getattr(self.pref, 'guideMarkdownImgPath', False):
             md_text = _guide_pat.sub(r'\1../src/songpressPlusPlus/img/GUIDE/', md_text)
         else:
-            md_text = _guide_pat.sub(r'\1img/GUIDE/', md_text)
+            md_text = _guide_pat.sub(lambda m: m.group(1) + _img_guide_url, md_text)
 
         html = self._md_to_html(md_text)
 

@@ -247,6 +247,28 @@ non c'è nessun conflitto, perché al momento del caricamento ogni modulo chiama
 
 L'unico caso in cui può sorgere un problema è se si usa un singolo dominio condiviso per tutto il progetto (come fa Django con `django.po`): lì stringhe identiche con traduzioni diverse nelle due lingue si sovrascriverebbero. Ma con la struttura di Songpress++ — un `.po`/`.mo` per file — ogni catalogo è isolato e le stringhe duplicate sono semplicemente ridondanti, non conflittuali.
 
+**Come vengono risolti i percorsi delle immagini in `img/GUIDE/` nella guida integrata?**
+
+I file Markdown della guida (es. `guida.md`) possono contenere riferimenti alle immagini in forme diverse a seconda dell'editor usato per scriverli:
+
+```
+![alt](../src/songpressPlusPlus/img/GUIDE/foto.png)   ← Typora / editor esterno
+![alt](./img/GUIDE/foto.png)                           ← forma relativa
+![alt](img/GUIDE/foto.png)                             ← forma minimale
+```
+
+A runtime, `SongpressFrame.py` normalizza tutte queste varianti con una singola regex che cattura qualsiasi prefisso prima di `img/GUIDE/`:
+
+```python
+# Prima — riconosceva solo prefissi specifici (si rompeva con varianti di maiuscole)
+r'(!\[[^\]]*\]\()(?:\.\.\/src\/songpressPlusPlus\/|\.\/)?img\/GUIDE\/'
+
+# Dopo — cattura qualsiasi prefisso prima di img/GUIDE/
+r'(!\[[^\]]*\]\()(?:[^()]*?/)?img/GUIDE/'
+```
+
+Il prefisso trovato viene sostituito con un URL assoluto `file:///` costruito da `os.path.dirname(__file__)`, in modo che le immagini si carichino correttamente sia durante lo sviluppo sia dopo l'installazione tramite `uv tool install`.
+
 ### Linux: esportazione SVG e scaling del display
 
 Quando il fattore di scala del display di sistema non è impostato su 1, l'output SVG prodotto dalla funzione Copia come immagine potrebbe essere formattato in modo errato. Si tratta di un problema noto nella versione attuale di wxPython. Il problema sottostante [è già stato risolto a monte in wxWidgets](https://github.com/wxWidgets/wxWidgets/issues/25707) e verrà corretto automaticamente non appena sarà disponibile la prossima versione di wxPython.

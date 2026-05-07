@@ -1400,7 +1400,7 @@ msgstr "Simbolo per il tasto premuto"
 
 #: SongpressFrame.py — OnInsertTransposerImage symbol option 1
 msgid "•  (U+2022 bullet)"
-msgstr "•  (U+2022 bullet)"
+msgstr "•  (U+2022 pallino)"
 
 #: SongpressFrame.py — OnInsertTransposerImage symbol option 2
 msgid "●  (U+25CF black circle)"

@@ -755,22 +755,6 @@ class PreferencesDialog(wx.Dialog):
         grpMdViewer.Add(rowViewer, 0, wx.EXPAND | wx.ALL, 5)
         bSizerGuide.Add(grpMdViewer, 0, wx.EXPAND | wx.ALL, 8)
 
-        # Gruppo: Percorsi immagini
-        grpImgPath = wx.StaticBoxSizer(
-            wx.StaticBox(self.guidePanel, wx.ID_ANY, _(u"Image paths")),
-            wx.VERTICAL
-        )
-        self.guideMarkdownImgPathCb = wx.CheckBox(
-            self.guidePanel, wx.ID_ANY,
-            _(u"Use absolute image paths for Markdown editor (../src/songpressPlusPlus/img/GUIDE/...)")
-        )
-        self.guideMarkdownImgPathCb.SetToolTip(
-            _(u"When enabled, image paths in the guide are rewritten to the full\n"
-              u"../src/songpressPlusPlus/img/GUIDE/ form, for use with Markdown editors.\n"
-              u"Leave enabled for Songpress++ built-in viewer.")
-        )
-        grpImgPath.Add(self.guideMarkdownImgPathCb, 0, wx.ALL, 5)
-        bSizerGuide.Add(grpImgPath, 0, wx.EXPAND | wx.ALL, 8)
 
         self.guidePanel.SetSizer(bSizerGuide)
         self.guidePanel.Layout()
