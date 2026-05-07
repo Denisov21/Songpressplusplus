@@ -426,7 +426,7 @@
 		  <bitmap>../img/picture.png</bitmap>
         </object>
         <object class="wxMenuItem" name="insertTransposerImage">
-          <label>Immagine _Transposer {image:}...</label>
+          <label>Immagine _Transposer {start_of_tab:TP}\{end_of_tab}</label>
           <accel></accel>
           <bitmap>../img/transposer.png</bitmap>
           <help>Inserisci l'immagine del Transposer e scegli la posizione nel documento</help>
