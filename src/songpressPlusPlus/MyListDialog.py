@@ -4,6 +4,7 @@
 # Author:         Luca Allulli (webmaster@roma21.it)
 # Created:     2019-02-02
 # Copyright: Luca Allulli (https://www.skeed.it/songpress)
+#               Modifications copyright © 2026 Denisov21
 # License:     GNU GPL v2
 ##############################################################
 
@@ -31,5 +32,8 @@ class MyListDialog(ListDialog):
         return self.elements.GetSelection()
 
     def GetSelectedString(self):
-        return self.elements_list[self.elements.GetSelection()]
+        idx = self.elements.GetSelection()
+        if idx == wx.NOT_FOUND:
+            return None
+        return self.elements_list[idx]
 

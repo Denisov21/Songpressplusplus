@@ -80,7 +80,7 @@ class ParagraphFormat(FontFormat):
         self.chord = FontFormat(ff.chord) if ff is not None else FontFormat()
         self.comment = FontFormat(ff.comment) if ff is not None else FontFormat()
         if ff is None:
-            self.chord.size = self.size * 0.9
+            self.chord.size = int(round(self.size * 0.9))
             self.chord.italic = True
             self.chord.bold = False
             self.comment.italic = True

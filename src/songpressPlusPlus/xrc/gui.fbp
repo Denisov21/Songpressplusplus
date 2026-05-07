@@ -1050,7 +1050,7 @@
             <property name="help">Insert the Transposer image and choose its position in the document</property>
             <property name="id">ID_INSERT_TRANSPOSER_IMAGE</property>
             <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">&amp;Transposer image {start_of_tab: TP}{end_of_tab}</property>
+            <property name="label">&amp;Transposer image {start__of__tab:TP}{end__of__tab}</property>
             <property name="name">insertTransposerImage</property>
             <property name="permission">none</property>
             <property name="shortcut"></property>

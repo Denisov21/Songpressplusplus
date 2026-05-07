@@ -4,11 +4,13 @@
 # Author:         Luca Allulli (webmaster@roma21.it)
 # Created:     2009-05-01
 # Copyright: Luca Allulli (https://www.skeed.it/songpress)
+#               Modifications copyright © 2026 Denisov21
 # License:     GNU GPL v2
 ##############################################################
 
 import copy
 import string
+from functools import reduce
 from xml.dom import minidom
 
 
@@ -136,7 +138,7 @@ class Preferences(object):
         for n in self.__parentsByName:
             if type(n) == str:
                 del self.__parents[self.__parentsByName[n]]
-                val = reduce(Navigate, string.split(n, '/'), self)
+                val = reduce(Navigate, n.split('/'), self)
                 self.__parentsByName[n] = val
                 self.__parents[val] = n        
         
@@ -204,7 +206,7 @@ class Preferences(object):
             for n in cls.prefDef:
                 yield n, cls.prefDef[n]
         for b in cls.__bases__:
-            if isinstance(b, Preferences):
+            if issubclass(b, Preferences):
                 for n, v in b.__GetAllPrefDef():
                     yield n, v
     
@@ -226,7 +228,7 @@ class Preferences(object):
         c.__owner = owner
         c.__CacheParents()
         for n in p.__prefs:
-            c.__prefs[n] = Preferences.__DeepCopyPrefProp(p.__prefs[n], p)
+            c.__prefs[n] = Preferences.__DeepCopyPrefProp(p.__prefs[n], d, c)
         return c
         
     def XmlSerialize(self, xm):

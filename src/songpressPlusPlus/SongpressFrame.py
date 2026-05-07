@@ -475,10 +475,22 @@ class SongpressFindReplaceDialog(object):
         self._AddToHistory(self.txtReplace, r)
         flags = self._get_flags()
         text  = self.owner.text
-        if text.GetSelectedText() == st or (
-                not (flags & wx.stc.STC_FIND_MATCHCASE) and
-                text.GetSelectedText().lower() == st.lower()):
-            text.ReplaceSelection(r)
+        sel_text = text.GetSelectedText()
+        use_regex = bool(flags & wx.stc.STC_FIND_REGEXP)
+        if use_regex:
+            # In modalità regex confrontiamo solo la lunghezza del match
+            # (il testo selezionato è il risultato del match, non il pattern).
+            # Usiamo SetTarget + ReplaceTarget per essere coerenti con ReplaceAll.
+            s, e = text.GetSelection()
+            if s != e:
+                text.SetTargetStart(s)
+                text.SetTargetEnd(e)
+                text.ReplaceTarget(r)
+        else:
+            if sel_text == st or (
+                    not (flags & wx.stc.STC_FIND_MATCHCASE) and
+                    sel_text.lower() == st.lower()):
+                text.ReplaceSelection(r)
         self._OnFindNext(evt, silent_wrap=True)
 
     def _OnReplaceAll(self, evt):
@@ -500,8 +512,11 @@ class SongpressFindReplaceDialog(object):
                 pos = result[0] if isinstance(result, tuple) else result
                 if pos == -1:
                     break
+                # result[1] contiene la fine del match (fondamentale per regex,
+                # dove la lunghezza del match può differire da len(st)).
+                match_end = result[1] if isinstance(result, tuple) else pos + len(st)
                 text.SetTargetStart(pos)
-                text.SetTargetEnd(pos + len(st))
+                text.SetTargetEnd(match_end)
                 p = pos + text.ReplaceTarget(r)
                 c += 1
         wx.MessageDialog(
@@ -548,7 +563,6 @@ class SongpressFindReplaceDialog(object):
             items = []
             i = 0
             while True:
-                ok, val = cfg.Read(f'item{i}', ''), True
                 # wx.Config.Read restituisce il default se la chiave non esiste
                 val = cfg.Read(f'item{i}', '\x00')
                 if val == '\x00':
@@ -567,9 +581,10 @@ class SongpressFindReplaceDialog(object):
         """Salva la history del ComboBox in wx.Config."""
         try:
             cfg = wx.Config.Get()
-            cfg.SetPath(cfg_path)
-            # Pulisce le chiavi precedenti
-            cfg.DeleteGroup(cfg_path)
+            # Risale al gruppo padre e cancella il sottogruppo per nome relativo
+            parent, _, group_name = cfg_path.rstrip('/').rpartition('/')
+            cfg.SetPath(parent if parent else '/')
+            cfg.DeleteGroup(group_name)
             cfg.SetPath(cfg_path)
             items = list(combo.GetItems())[:self._MAX_HISTORY]
             for i, val in enumerate(items):
@@ -842,7 +857,6 @@ class SongpressFrame(SDIMainFrame, PrintManager):
         self.undoTool = self.AddTool(self.mainToolBar, 'undo', 'img/undo.png', _("Undo"), _("Undo the last change"))
         self.redoTool = self.AddTool(self.mainToolBar, 'redo',
             'img/redo.png', _("Redo"), _("Redo the last undone change"))
-        self.redoTool = wx.xrc.XRCID('redo')
         self.mainToolBar.AddSeparator()
         self.cutTool = self.AddTool(self.mainToolBar, 'cut', 'img/cut.png', _("Cut"),
                                                                 _("Move selected text to the clipboard"))

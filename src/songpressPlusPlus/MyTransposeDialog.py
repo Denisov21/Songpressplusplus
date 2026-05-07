@@ -196,7 +196,7 @@ class MyTransposeDialog(TransposeDialog):
         
     def OnToKey(self, evt):
         g = (self.toKey.GetSelection() - self.fromKey.GetSelection()) % 12
-        if g > 7:
-            g = -12 + g
+        if g > 6:
+            g = g - 12
         self.semitones.SetValue(g)
         evt.Skip()

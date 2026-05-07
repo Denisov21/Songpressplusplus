@@ -48,7 +48,7 @@ def _read_pyproject():
         except ImportError:
             return None, None
     base = os.path.dirname(os.path.abspath(__file__))
-    for _ in range(4):
+    for _i in range(4):
         candidate = os.path.join(base, 'pyproject.toml')
         if os.path.isfile(candidate):
             try:

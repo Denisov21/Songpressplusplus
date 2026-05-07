@@ -37,6 +37,7 @@ def get_text_from_clipboard():
     wx.TheClipboard.Open()
     do = wx.TextDataObject()
     if not wx.TheClipboard.GetData(do):
+        wx.TheClipboard.Close()
         return None
     wx.TheClipboard.Close()
     return do.GetText()
@@ -110,6 +111,8 @@ class Editor(StyledTextCtrl):
         self.chorus = []
         # self.in_tab_grid[i] == True iff, at the end of line i, we are inside a tab/grid block
         self.in_tab_grid = []
+        # Colore evidenziazione trova — attributo di istanza (default giallo)
+        self.find_highlight_colour = wx.Colour(255, 220, 0)
 
     def SetFont(self, face, size):
         font = wx.Font(
@@ -194,8 +197,6 @@ class Editor(StyledTextCtrl):
     # --- Find highlight (indicatore STC n. 8, sfondo giallo) ---------------
 
     FIND_INDICATOR = 8
-    # Colore evidenziazione trova — modificabile dall'utente (default giallo)
-    find_highlight_colour = wx.Colour(255, 220, 0)
 
     def SetFindHighlight(self, word, flags=0):
         """Evidenzia tutte le occorrenze di *word* con il colore scelto dall'utente."""
@@ -243,9 +244,10 @@ class Editor(StyledTextCtrl):
         while pos < total:
             # Salta le posizioni senza indicatore
             if not (self.IndicatorValueAt(self.FIND_INDICATOR, pos)):
-                pos = self.IndicatorEnd(self.FIND_INDICATOR, pos)
-                if pos <= 0:
+                next_pos = self.IndicatorEnd(self.FIND_INDICATOR, pos)
+                if next_pos <= pos:
                     break
+                pos = next_pos
                 continue
             # Trovato inizio di un run con indicatore attivo
             start = pos

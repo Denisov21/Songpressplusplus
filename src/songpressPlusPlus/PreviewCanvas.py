@@ -90,8 +90,10 @@ _PAGE_GAP_PX   = 16      # spazio verticale tra una pagina e l'altra (px)
 
 
 class PreviewCanvas(object):
-    def __init__(self, parent, sf, notations, sd=SongDecorator(), embedded=False, minSizeEnabled=True):
+    def __init__(self, parent, sf, notations, sd=None, embedded=False, minSizeEnabled=True):
         object.__init__(self)
+        if sd is None:
+            sd = SongDecorator()
         self.main_panel = wx.Window(parent)
         if minSizeEnabled:
             self.main_panel.SetMinSize(wx.Size(370, 520))

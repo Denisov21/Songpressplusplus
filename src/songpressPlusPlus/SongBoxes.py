@@ -1,11 +1,11 @@
 ###############################################################
-# Name:                SoongBoxes.py
-# Purpose:      Elements that make up a song
-# Author:           Luca Allulli (webmaster@roma21.it)
+# Name:             SongBoxes.py
+# Purpose:     Elements that make up a song
+# Author:         Luca Allulli (webmaster@roma21.it)
 # Modified by:  Denisov21
 # Created:     2009-02-21
 # Copyright: Luca Allulli (https://www.skeed.it/songpress)
-#               Modifications copyright Denisov21
+#               Modifications copyright © 2026 Denisov21
 # License:     GNU GPL v2
 ###############################################################
 

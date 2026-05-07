@@ -145,6 +145,8 @@ class SyntaxCheckerDialog(wx.Dialog):
 
     def _on_goto(self, event):
         """Posts a custom event to move the cursor to the error line."""
+        if not hasattr(self, "_list"):
+            return
         idx = self._list.GetFirstSelected()
         if idx == -1:
             return

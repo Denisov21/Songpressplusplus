@@ -4,6 +4,7 @@
 # Author:         Luca Allulli (webmaster@roma21.it)
 # Created:     2013-07-14
 # Copyright: Luca Allulli (https://www.skeed.it/songpress)
+#               Modifications copyright © 2026 Denisov21
 # License:     GNU GPL v2
 ##############################################################
 
@@ -31,5 +32,5 @@ class MyNormalizeDialog(NormalizeDialog):
         return translateChordPro(
             self.text,
             self.fromNotation.GetClientData(self.fromNotation.GetSelection()),
-            self.fromNotation.GetClientData(self.fromNotation.GetSelection()),
+            self.toNotation.GetClientData(self.toNotation.GetSelection()),
         )

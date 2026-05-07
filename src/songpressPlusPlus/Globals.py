@@ -72,7 +72,11 @@ class Globals(object):
             old_config = self.data_path + ".orig"
             shutil.move(self.data_path, old_config)
         if not os.path.exists(self.data_path):
-            shutil.copytree(os.path.join(self.path, 'templates', 'local_dir'), self.data_path)
+            local_dir_src = os.path.join(self.path, 'templates', 'local_dir')
+            if os.path.isdir(local_dir_src):
+                shutil.copytree(local_dir_src, self.data_path)
+            else:
+                os.makedirs(self.data_path, exist_ok=True)
         if old_config is not None:
             # Preserve old config file, but don't use it
             shutil.move(old_config, os.path.join(self.data_path, "config.ini.orig"))

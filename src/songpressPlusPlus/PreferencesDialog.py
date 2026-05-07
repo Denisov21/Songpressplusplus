@@ -13,9 +13,11 @@ import wx.adv
 
 class PreferencesDialog(wx.Dialog):
 
-    def __init__(self, parent):
+    def __init__(self, parent, pref=None):
         wx.Dialog.__init__(self, parent, id=wx.ID_ANY, title=_(u"Songpress++ options"), pos=wx.DefaultPosition,
                                              size=wx.Size(730, 800), style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+        if pref is not None:
+            self.pref = pref
 
         self.SetSizeHints(wx.Size(730, 800), wx.DefaultSize)
 
@@ -742,7 +744,7 @@ class PreferencesDialog(wx.Dialog):
             0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8
         )
         self.guideViewerCh = wx.Choice(self.guidePanel, wx.ID_ANY)
-        self.guideViewerCh.Append(_(u"Automatic (python-markdown → mistune → built-in)"), "markdown")
+        self.guideViewerCh.Append(_(u"Automatic (python-markdown → mistune → built-in)"), "auto")
         self.guideViewerCh.Append(_(u"python-markdown"),  "markdown")
         self.guideViewerCh.Append(_(u"mistune"),           "mistune")
         self.guideViewerCh.Append(_(u"Built-in parser"),   "builtin")

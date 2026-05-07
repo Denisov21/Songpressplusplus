@@ -618,7 +618,7 @@ def _validate_command(content: str, line_num: int, col: int,
     if not content:
         result.errors.append(SyntaxError(
             line=line_num, column=col,
-            message=_("Empty command '{}'")
+            message=_("Empty command (write the command name without a colon, e.g. '{soc}')")
         ))
         return
 
@@ -701,7 +701,7 @@ def _validate_command(content: str, line_num: int, col: int,
         ))
         return
 
-    if cmd_value is not None and cmd_value == "" and cmd_name not in _OPTIONAL_VALUE:
+    if cmd_value is not None and cmd_value == "" and cmd_name not in _OPTIONAL_VALUE and cmd_name not in _REQUIRES_VALUE:
         result.errors.append(SyntaxError(
             line=line_num, column=col,
             message=_("Command '{cmd}' has ':' but no value; use '{reset}' to reset").format(

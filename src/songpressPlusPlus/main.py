@@ -46,7 +46,7 @@ class SongpressApp(wx.App):
 
         from . import SongpressFrame
         self.res = wx.xrc.XmlResource(glb.AddPath("xrc/songpress.xrc"))
-        songpressFrame = SongpressFrame.SongpressFrame(self.res)
+        self._songpress_frame = SongpressFrame.SongpressFrame(self.res)
         return True
 
 

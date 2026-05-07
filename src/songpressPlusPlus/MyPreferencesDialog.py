@@ -202,8 +202,8 @@ class MyPreferencesDialog(PreferencesDialog):
         self.hideTimeCB.SetValue(getattr(self.pref, 'hideTime', False))
 
         # Viewer guida rapida
-        viewer = getattr(self.pref, 'guideViewer', 'markdown')
-        _viewer_map = {'markdown': 0, 'mistune': 2, 'builtin': 3}
+        viewer = getattr(self.pref, 'guideViewer', 'auto')
+        _viewer_map = {'auto': 0, 'markdown': 1, 'mistune': 2, 'builtin': 3}
         self.guideViewerCh.SetSelection(_viewer_map.get(viewer, 0))
 
         # Dimensione icone tempo
@@ -343,11 +343,13 @@ class MyPreferencesDialog(PreferencesDialog):
         current = self._hex_to_colour(self.durationBeatsHexCtrl.GetValue())
         data = wx.ColourData()
         data.SetColour(current)
-        self._read_custom_colours(data, 'customColoursDurationBeats')
+        data.SetChooseFull(True)
+        self._apply_custom_colours(data, 'customColoursDurationBeats')
         dlg = wx.ColourDialog(self, data)
         if dlg.ShowModal() == wx.ID_OK:
-            chosen = dlg.GetColourData().GetColour()
-            self._apply_custom_colours(dlg.GetColourData(), 'customColoursDurationBeats')
+            result_data = dlg.GetColourData()
+            chosen = result_data.GetColour()
+            self._read_custom_colours(result_data, 'customColoursDurationBeats')
             self.durationBeatsHexCtrl.SetValue(self._colour_to_hex(chosen))
             self.durationBeatsColourSwatch.SetBackgroundColour(chosen)
             self.durationBeatsColourSwatch.Refresh()
@@ -1314,9 +1316,9 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.dblClickFocus     = self.dblClickFocusCB.GetValue()
         self.pref.previewMinSize    = self.previewMinSizeCB.GetValue()
         # Viewer guida rapida
-        _viewer_keys = ['markdown', 'markdown', 'mistune', 'builtin']
+        _viewer_keys = ['auto', 'markdown', 'mistune', 'builtin']
         sel = self.guideViewerCh.GetSelection()
-        self.pref.guideViewer = _viewer_keys[sel] if 0 <= sel < len(_viewer_keys) else 'markdown'
+        self.pref.guideViewer = _viewer_keys[sel] if 0 <= sel < len(_viewer_keys) else 'auto'
         # Nessun accordo: blocchi da nascondere
         self.pref.hideIntroChord = self.hideIntroChordCB.GetValue()
         self.pref.hideBridge     = self.hideBridgeCB.GetValue()
@@ -1391,6 +1393,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.cmSelectAll    = self.cmSelectAll.GetValue()
         self.pref.Save()
         lang = i18n.getLang()
+        l = self.GetLanguage()
         if l is not None and l != lang:
             msg = _("Language settings will be applied when you restart Songpress.")
             d = wx.MessageDialog(self, msg, _("Songpress"), wx.ICON_INFORMATION | wx.OK)

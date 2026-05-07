@@ -27,8 +27,12 @@ class BreakException(Exception):
 
 
 class Renderer(object):
-    def __init__(self, sf, sd=SongDecorator(), notations=[]):
+    def __init__(self, sf, sd=None, notations=None):
         object.__init__(self)
+        if sd is None:
+            sd = SongDecorator()
+        if notations is None:
+            notations = []
         self.text = ""
         self.sd = sd
         self.dc = None
@@ -294,14 +298,27 @@ class Renderer(object):
             format = self.format
         t = SongText(text, format.wxFont, type, format.color)
         if type == SongText.chord and self._pending_duration:
-            # Associa la durata in battiti all'accordo corrispondente per posizione
-            # nella sequenza della direttiva {beats_time: ...}
-            if self._duration_chord_idx < len(self._pending_duration):
-                t.duration_beats = self._pending_duration[self._duration_chord_idx][1]
-                self._duration_chord_idx += 1
-                # Se abbiamo consumato tutti gli accordi, svuota la lista
-                if self._duration_chord_idx >= len(self._pending_duration):
-                    self._pending_duration = []
+            # Associa la durata in battiti all'accordo corrispondente.
+            # Prima cerca per nome accordo (case-insensitive), poi usa
+            # la posizione sequenziale come fallback per accordi non trovati.
+            matched_beats = None
+            matched_idx   = None
+            chord_upper = text.strip().upper()
+            for idx, (chord_name, beats) in enumerate(self._pending_duration):
+                if chord_name.upper() == chord_upper:
+                    matched_beats = beats
+                    matched_idx   = idx
+                    break
+            if matched_beats is None and self._duration_chord_idx < len(self._pending_duration):
+                # Fallback posizionale
+                matched_beats = self._pending_duration[self._duration_chord_idx][1]
+                matched_idx   = self._duration_chord_idx
+            if matched_beats is not None:
+                t.duration_beats = matched_beats
+                # Rimuove la voce usata per non riassegnarla
+                self._pending_duration.pop(matched_idx)
+                self._duration_chord_idx = 0
+                if not self._pending_duration:
                     self._duration_chord_idx = 0
         if not type == SongText.chord or self.sf.showChords > 0:
             self.currentLine.AddBox(t)

@@ -31,7 +31,6 @@ class SongDecorator(object):
         self.dc = None
         # Current y
         self.y = 0
-        self.dc = None
         self.firstBlockOffsetY = 0
         self.lastBlockOffsetY = 0
         # SongBox
@@ -394,6 +393,8 @@ class SongDecorator(object):
     def LayoutMove(self):
         # Now that sizes are set, we can move elements inside each box if we need to
         for block in self.s.boxes:
+            if isinstance(block, (SongImageBox, SongGridBox)):
+                continue
             # Move block within song
             self.LayoutMoveBlock(block)
             for line in block.boxes:
@@ -778,50 +779,12 @@ class SongDecorator(object):
     def PostDrawBlock(self, block, bx, by):
         # bx, by: coordinates of top-left corner of drawable area
         # ── Tabella griglia accordi (modalità 'table') ────────────────
-        if not getattr(block, 'is_grid', False):
+        # La griglia è già stata disegnata interamente da _DrawGridBox
+        # (chiamato da DrawBoxes per i SongGridBox). PostDrawBlock gestisce
+        # solo i SongBlock ordinari: se is_grid è True usciamo subito per
+        # evitare un secondo rendering sovrapposto.
+        if getattr(block, 'is_grid', False):
             return
-        grid_rows = getattr(block, 'grid_rows', [])
-        if not grid_rows:
-            return
-        # Determina larghezza massima cella misurando il testo
-        self.dc.SetFont(block.format.wxFont)
-        pad_x = 8   # padding orizzontale interno cella (px)
-        pad_y = 4   # padding verticale interno cella (px)
-        _, char_h = self.dc.GetTextExtent('Mg')
-        # Calcola la larghezza massima tra tutte le celle di tutte le righe
-        max_cell_w = 0
-        for row in grid_rows:
-            for cell in row:
-                cw, _ = self.dc.GetTextExtent(cell)
-                max_cell_w = max(max_cell_w, cw)
-        cell_w = max_cell_w + pad_x * 2
-        cell_h = char_h + pad_y * 2
-
-        # Colore bordo tabella
-        border_pen = wx.Pen(wx.Colour(80, 80, 80), max(1, int(1 / self.pen_scale)))
-        fill_brush = wx.Brush(wx.Colour(240, 240, 255))  # sfondo cella: azzurro chiaro
-        self.dc.SetBrush(fill_brush)
-
-        # Posizione di partenza: inizio del contenuto del blocco
-        start_x = int(bx + block.marginLeft)
-        start_y = int(by + block.marginTop)
-
-        # Disegna riga per riga
-        for row_idx, row in enumerate(grid_rows):
-            row_y = start_y + row_idx * (cell_h + 1)
-            for col_idx, cell_text in enumerate(row):
-                cx = start_x + col_idx * (cell_w + 1)
-                cy = row_y
-                # Disegna la cella
-                self.dc.SetPen(border_pen)
-                self.dc.SetBrush(fill_brush)
-                self.dc.DrawRectangle(cx, cy, cell_w, cell_h)
-                # Testo centrato nella cella
-                tw, _ = self.dc.GetTextExtent(cell_text)
-                tx = cx + (cell_w - tw) // 2
-                ty = cy + pad_y
-                self.dc.SetTextForeground(block.format.color)
-                self.dc.DrawText(cell_text, tx, ty)
         
     def PostDrawSong(self, song):
         current_extra_h = 0

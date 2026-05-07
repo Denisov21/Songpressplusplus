@@ -45,7 +45,7 @@ class SDIDropTarget(wx.FileDropTarget):
         return self.sdi.OnDropFiles(arr)
 
 
-class SDIMainFrame(wx.FileDropTarget):
+class SDIMainFrame(object):
     """Abstract class. Override methods New, Open, Save"""
     ###UI generation###
 
@@ -348,7 +348,7 @@ class SDIMainFrame(wx.FileDropTarget):
                     fn = '%s.%s' % (fn, self.docExt)
             self.document = fn
             self.UpdateTitle()
-            return wx.ID_OK
+            return True
         else:
             return False
 

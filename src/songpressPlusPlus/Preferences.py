@@ -309,7 +309,7 @@ class Preferences(object):
         v = self.config.Read('previewMinSize')
         self.previewMinSize = bool(int(v)) if v != '' else True
         v = self.config.Read('guideViewer')
-        self.guideViewer = v if v in ('builtin', 'markdown', 'mistune') else 'markdown'
+        self.guideViewer = v if v in ('auto', 'builtin', 'markdown', 'mistune') else 'auto'
         self.config.SetPath('/')
 
     def _LoadGridDisplayMode(self):
@@ -340,7 +340,7 @@ class Preferences(object):
             self.config.Write('ChorusLabel', self.chorusLabel)
         self.config.Write('ShowChords', str(self.format.showChords))
         self.config.SetPath('/Format/Font')
-        face = self.config.Write('Face', self.fontFace)
+        self.config.Write('Face', self.fontFace)
         self.config.SetPath('/Format/Style')
         self.config.Write('LabelVerses', self.Bool2String(self.labelVerses))
         self.config.SetPath('/Editor')
@@ -516,7 +516,7 @@ class Preferences(object):
         self.config.Write('debounceRefresh',   '1' if getattr(self, 'debounceRefresh',   True) else '0')
         self.config.Write('dblClickFocus',     '1' if getattr(self, 'dblClickFocus',     True) else '0')
         self.config.Write('previewMinSize',    '1' if getattr(self, 'previewMinSize',    True) else '0')
-        self.config.Write('guideViewer',           getattr(self, 'guideViewer', 'markdown'))
+        self.config.Write('guideViewer',           getattr(self, 'guideViewer', 'auto'))
         self.config.SetPath('/')
 
     def _SaveGridDisplayMode(self):

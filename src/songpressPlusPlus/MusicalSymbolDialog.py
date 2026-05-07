@@ -300,10 +300,7 @@ _SYMBOLS = {
     ],
 }
 
-# N_() marks strings for extraction without translating at definition time.
 # _() translates at call time (after wx locale is loaded).
-def N_(s):
-    return s
 
 
 def _tab_order():
@@ -425,120 +422,6 @@ class _SymbolGrid(wx.Panel):
             self.on_dclick(idx)
 
 
-# ---------------------------------------------------------------------------
-# Dialog principale
-# ---------------------------------------------------------------------------
-
-class MusicalSymbolDialog(wx.Dialog):
-    """Dialog modale per scegliere e inserire un simbolo musicale Unicode."""
-
-    def __init__(self, parent):
-        super().__init__(
-            parent,
-            title=_("Musical Symbols"),
-            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
-        )
-
-        self._selected: str | None = None
-        self._font_face = _best_face()
-        self._grids: dict[str, _SymbolGrid] = {}
-
-        self._build_ui()
-        self.SetMinSize(wx.Size(520, 460))
-        self.Fit()
-        self.CentreOnParent()
-
-    # ── costruzione UI ─────────────────────────────────────────────────────
-
-    def _build_ui(self) -> None:
-        outer = wx.BoxSizer(wx.VERTICAL)
-
-        self._nb = wx.Notebook(self)
-
-        for key, label in zip(_TAB_KEYS, _tab_order()):
-            symbols = _SYMBOLS.get(key, [])
-            panel   = wx.Panel(self._nb)
-            sg      = _SymbolGrid(panel, symbols,
-                                  self._font_face, _FONT_SIZE)
-            sg.on_select = self._on_grid_select
-            sg.on_dclick = self._on_grid_dclick
-            self._grids[key] = sg
-
-            sz = wx.BoxSizer(wx.VERTICAL)
-            sz.Add(sg, 1, wx.EXPAND | wx.ALL, 4)
-            panel.SetSizer(sz)
-            self._nb.AddPage(panel, label)
-
-        outer.Add(self._nb, 1, wx.EXPAND | wx.ALL, 6)
-
-        # ── Riga preview + descrizione ─────────────────────────────────────
-        info_row = wx.BoxSizer(wx.HORIZONTAL)
-
-        # STC per la preview grande — stesso approccio di Editor.py
-        self._preview_stc = _make_stc(self, self._font_face, 36, readonly=True)
-        self._preview_stc.SetMinSize(wx.Size(60, 60))
-        info_row.Add(self._preview_stc, 0,
-                     wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 12)
-
-        self._desc = wx.StaticText(self, label="")
-        info_row.Add(self._desc, 1, wx.ALIGN_CENTER_VERTICAL)
-
-        outer.Add(info_row, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
-
-        # ── Pulsanti ───────────────────────────────────────────────────────
-        btn_sizer = wx.StdDialogButtonSizer()
-        self._btn_insert = wx.Button(self, wx.ID_OK, _("Insert"))
-        self._btn_insert.SetDefault()
-        self._btn_insert.Disable()
-        btn_cancel = wx.Button(self, wx.ID_CANCEL, _("Close"))
-        btn_sizer.AddButton(self._btn_insert)
-        btn_sizer.AddButton(btn_cancel)
-        btn_sizer.Realize()
-        outer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 6)
-
-        self.SetSizer(outer)
-
-    # ── eventi dalla griglia ───────────────────────────────────────────────
-
-    def _current_grid(self) -> "_SymbolGrid | None":
-        key = _TAB_KEYS[self._nb.GetSelection()]
-        return self._grids.get(key)
-
-    def _current_symbols(self) -> list:
-        key = _TAB_KEYS[self._nb.GetSelection()]
-        return _SYMBOLS.get(key, [])
-
-    def _on_grid_select(self, idx: int) -> None:
-        symbols = self._current_symbols()
-        if 0 <= idx < len(symbols):
-            char, label = symbols[idx]
-            self._selected = char
-            # Aggiorna preview STC
-            self._preview_stc.SetReadOnly(False)
-            self._preview_stc.SetText(char)
-            self._preview_stc.SetReadOnly(True)
-            cp = ord(char)
-            self._desc.SetLabel(f"{_(label)}  (U+{cp:04X})")
-            self._btn_insert.Enable()
-        else:
-            self._selected = None
-            self._preview_stc.SetReadOnly(False)
-            self._preview_stc.SetText("")
-            self._preview_stc.SetReadOnly(True)
-            self._desc.SetLabel("")
-            self._btn_insert.Disable()
-
-    def _on_grid_dclick(self, idx: int) -> None:
-        symbols = self._current_symbols()
-        if 0 <= idx < len(symbols):
-            self._selected = symbols[idx][0]
-            self.EndModal(wx.ID_OK)
-
-    # ── API pubblica ───────────────────────────────────────────────────────
-
-    def GetSymbol(self) -> str:
-        return self._selected or ""
-
 
 def _make_symbol_font(point_size: int) -> wx.Font:
     """Restituisce un wx.Font adatto a visualizzare simboli musicali SMP.
@@ -557,11 +440,10 @@ def _make_symbol_font(point_size: int) -> wx.Font:
                    wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
 
 
-# Dimensione della griglia
-_COLS = 8
-_CELL_SIZE = 48
-_FONT_SIZE  = 20
 
+# ---------------------------------------------------------------------------
+# Dialog principale (versione completa con parametri di personalizzazione)
+# ---------------------------------------------------------------------------
 
 class MusicalSymbolDialog(wx.Dialog):
     """Dialog modale per scegliere e inserire un simbolo musicale Unicode."""

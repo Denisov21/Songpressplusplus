@@ -77,14 +77,15 @@ def _parse_define(text):
     return name, base_fret, frets
 
 
-def _diagram_size(dc, base_font):
+def _diagram_size(dc, base_font, base_fret=1):
     """Return (diagram_w, diagram_h) for a single chord diagram."""
     dc.SetFont(base_font)
     _, label_h = dc.GetTextExtent("A")
     grid_w = (STRINGS - 1) * CELL_W
     grid_h = FRETS_SHOWN * CELL_H
     total_w = FRET_LABEL_W + grid_w + CELL_W
-    total_h = label_h + LABEL_PAD + MARKER_ROW_H + NUT_H + grid_h
+    nut_h = NUT_H if base_fret == 1 else 0
+    total_h = label_h + LABEL_PAD + MARKER_ROW_H + nut_h + grid_h
     return total_w, total_h, label_h
 
 
@@ -191,7 +192,8 @@ def _draw_one_diagram(dc, name, base_fret, frets, x, y,
         dc.DrawCircle(sx, fy, DOT_R)
 
     total_w = FRET_LABEL_W + grid_w
-    total_h = label_h + LABEL_PAD + MARKER_ROW_H + NUT_H + grid_h
+    nut_h = NUT_H if base_fret == 1 else 0
+    total_h = label_h + LABEL_PAD + MARKER_ROW_H + nut_h + grid_h
     return total_w, total_h
 
 
@@ -215,13 +217,14 @@ def draw_guitar_diagram_section(dc, define_list, x, y,
     if not parsed:
         return 0
 
-    _, total_h, _ = _diagram_size(dc, base_font)
     cx = x
+    max_h = 0
     for name, base_fret, frets in parsed:
         dw, dh = _draw_one_diagram(
             dc, name, base_fret, frets, cx, y,
             pen_scale, base_font, highlight_color
         )
         cx += dw + DIAGRAM_GAP
+        max_h = max(max_h, dh)
 
-    return total_h + LABEL_PAD
+    return max_h + LABEL_PAD

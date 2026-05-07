@@ -52,7 +52,6 @@ class SongTokenizer(Tokenizer):
         attr: (
             (attrToken, attr),
             (closeCurlyToken, normal),
-            (commentToken, normal),
         )
     }
 

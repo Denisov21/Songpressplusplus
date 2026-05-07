@@ -4,6 +4,7 @@
 # Author:         Luca Allulli (webmaster@roma21.it)
 # Created:     2019-02-02
 # Copyright: Luca Allulli (https://www.skeed.it/songpress)
+#               Modifications copyright © 2026 Denisov21
 # License:     GNU GPL v2
 ##############################################################
 
@@ -22,6 +23,8 @@ class SongPresentation:
     def _add_slide(self, cur, next):
         slide = self.pres.slides.add_slide(self.layout)
         ph = list(slide.placeholders)
+        if len(ph) < 3:
+            return   # template has fewer placeholders than expected; skip silently
         t1 = ph[1]
         t2 = ph[2]
         t1.text = cur
@@ -46,11 +49,18 @@ class SongPresentation:
             self._add_slide(self.prev, '')
         self.pres.save(self.out_filename)
 
-    def __enter__(self):
-        return self
-
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is not None:
+            # Exception in progress: save what we have but signal it to the caller
+            try:
+                if self.prev is not None:
+                    self._add_slide(self.prev, '')
+                self.pres.save(self.out_filename)
+            except Exception:
+                pass
+            return False   # re-raise the original exception
         self.close()
+        return False
 
 
 def to_presentation(lines, output_file, template_file):

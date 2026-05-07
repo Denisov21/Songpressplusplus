@@ -94,14 +94,21 @@ def _render_segment_to_png(frame_obj, seg_text, scale, avail_w_px, avail_h_px):
     Renderizza un segmento di testo in un wx.Bitmap temporaneo.
     Ritorna il Bitmap (dimensioni naturali * scale, ma limitato all'area disponibile).
     """
-    from .SongpressFrame import Renderer, SongDecorator
+    from .Renderer import Renderer
+    from .SongDecorator import SongDecorator
 
-    decorator = (
-        frame_obj.pref.decorator
-        if frame_obj.pref.labelVerses
-        else SongDecorator()
-    )
-    r = Renderer(frame_obj.pref.format, decorator, frame_obj.pref.notations)
+    def _make_decorator():
+        """Crea un decorator fresco per ogni pass di rendering."""
+        if frame_obj.pref.labelVerses:
+            # Crea una copia indipendente del decorator per non alterare lo stato globale
+            import copy
+            return copy.copy(frame_obj.pref.decorator)
+        return SongDecorator()
+
+    # Misura
+    dec_measure = _make_decorator()
+    dec_measure.showKlavier = False
+    r = Renderer(frame_obj.pref.format, dec_measure, frame_obj.pref.notations)
 
     # Misura
     mdc = wx.MemoryDC(wx.Bitmap(1, 1))
@@ -121,7 +128,9 @@ def _render_segment_to_png(frame_obj, seg_text, scale, avail_w_px, avail_h_px):
     dc.SetUserScale(fit_scale, fit_scale)
     dc.SetBackground(wx.WHITE_BRUSH)
     dc.Clear()
-    r2 = Renderer(frame_obj.pref.format, decorator, frame_obj.pref.notations)
+    dec_draw = _make_decorator()
+    dec_draw.showKlavier = False
+    r2 = Renderer(frame_obj.pref.format, dec_draw, frame_obj.pref.notations)
     r2.Render(seg_text, dc)
     del dc
     return bmp

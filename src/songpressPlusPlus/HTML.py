@@ -79,9 +79,12 @@ class HtmlExporter(object):
 
         out = ""
         title = "Songpress"
+        _title_accumulated = False  # True once we start reading the title block
 
         for block in song.boxes:
             b = '<div class="%s">' % classes[block.type]
+            if block.type == SongBlock.title:
+                _title_accumulated = False
 
             for line in block.boxes:
                 pairs = []
@@ -91,7 +94,11 @@ class HtmlExporter(object):
                     if t.type == SongText.title:
                         current_pair[1] += '<span class="title">%s</span>' % t.text
                         if block.type == SongBlock.title:
-                            title = t.text
+                            if not _title_accumulated:
+                                title = t.text
+                                _title_accumulated = True
+                            else:
+                                title += t.text
                     elif t.type == SongText.subtitle:
                         current_pair[1] += '<span class="subtitle">%s</span>' % t.text
                     elif t.type == SongText.chord:
@@ -100,7 +107,11 @@ class HtmlExporter(object):
                     else:
                         current_pair[1] += t.text
                         if block.type == SongBlock.title:
-                            title = t.text
+                            if not _title_accumulated:
+                                title = t.text
+                                _title_accumulated = True
+                            else:
+                                title += t.text
 
                 pairs.append(current_pair)
 

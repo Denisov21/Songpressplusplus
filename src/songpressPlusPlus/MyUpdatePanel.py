@@ -1,3 +1,12 @@
+###############################################################
+# Name:             MyUpdatePanel.py
+# Purpose:     Panel for software update notification
+# Author:         Denisov21
+# Created:     2026
+# Copyright: © 2026 Denisov21
+# License:     GNU GPL v2
+##############################################################
+
 #!/usr/bin/env python
 
 import wx
@@ -17,7 +26,7 @@ class MyUpdatePanel(UpdatePanel):
         
     def __Hide(self):
         self.Show(False)
-        self.parent.RemoveChild(self)
+        self.Destroy()
         
     def OnDownload(self, evt):
         wx.LaunchDefaultBrowser(self.downloadUrl)

@@ -372,7 +372,9 @@ def _render_song_to_png(frame_obj, song_text, scale=2, song_dir=None):
         tmp = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
         tmp.close()
         img.SaveFile(tmp.name, wx.BITMAP_TYPE_PNG)
-        return tmp.name, w, h
+        # Restituisce le dimensioni fisiche del PNG (w*scale × h*scale px),
+        # coerenti con la conversione punti PDF in _draw_song_in_slot.
+        return tmp.name, int(w * scale), int(h * scale)
     except Exception:
         return None
 

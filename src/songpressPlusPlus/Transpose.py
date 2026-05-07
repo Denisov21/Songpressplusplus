@@ -217,14 +217,12 @@ tradDeNotation = TraditionalGermanNotation(
     "tradDeNotation",
     _("Traditional German (C Cis/Des D... B H)"),
     ['C', 'D', 'E', 'F', 'G', 'A', 'H'],
-    [
-        ('C#', 'Cis'),
-        ('Db', 'Des'),
-    ],
-    [
-        ('C#', 'Cis'),
-        ('Db', 'Des'),
-    ]
+    # La mappatura C#↔Cis, Db↔Des è gestita interamente da
+    # PreprocessingToStandard e PostprocessingFromStandard.
+    # I pattern repl/replrev vengono lasciati vuoti per evitare
+    # doppie trasformazioni via AlterationFromStandard/AlterationToStandard.
+    [],
+    []
 )
 
 
@@ -545,13 +543,13 @@ def vectorizeChords(text, notation=enNotation):
 def autodetectKey(text, notation=enNotation):
     v = vectorizeChords(text, notation)
     r = referenceVector
-    max = 0
+    best_score = 0
     key = 0
     n = len(vectorModes)
     for k in range(0, 12):
         s = scalarProduct(v, r)
-        if s > max:
-            max = s
+        if s > best_score:
+            best_score = s
             key = k
         r = r[-n:] + r[:-n]
     return orderedKeys[key]
@@ -607,15 +605,15 @@ def testTabFormat(text, notations):
     notations is a list of notations to be tested
     """
     lines = text.splitlines()
-    max = 0
+    best_count = 0
     maxn = None
     for n in notations:
         nc = 0
         for l in lines:
             if testChordLine(l, n):
                 nc += 1
-        if nc > max and nc >= 3:
-            max = nc
+        if nc > best_count and nc >= 3:
+            best_count = nc
             maxn = n
     return maxn
 
@@ -702,11 +700,11 @@ def findEasiestKey(text, fav, notation=enNotation):
             if c in fav:
                 ws[k] += fav[c]
     easiest_key = current_key
-    m = ws[easiest_key]
+    best_w = ws[easiest_key]
     for k in ws:
-        if m is None or ws[k] > m:
+        if ws[k] > best_w:
             easiest_key = k
-            m = ws[k]
+            best_w = ws[k]
     difficulty = lambda x: max(0, min(1, (count - x) / float(count)))
     if count > 0:
         return (
@@ -714,7 +712,7 @@ def findEasiestKey(text, fav, notation=enNotation):
                 translateChord(current_key, enNotation, notation),
                 difficulty(ws[current_key]),
                 translateChord(easiest_key, enNotation, notation),
-                difficulty(m),
+                difficulty(best_w),
             )
     return (0, current_key, 0, current_key, 0)
 

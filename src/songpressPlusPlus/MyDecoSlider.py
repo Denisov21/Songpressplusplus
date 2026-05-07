@@ -16,21 +16,49 @@ from .DecoSlider import *
 _ = wx.GetTranslation
 
 
-# Colori della barra (modificabili)
-BAR_COLOUR_FULL  = wx.Colour(41, 128, 185)   # blu pieno (valore alto)
-BAR_COLOUR_EMPTY = wx.Colour(200, 220, 240)  # azzurro chiaro (valore basso / sfondo barra)
-BAR_COLOUR_BG    = wx.Colour(230, 235, 240)  # sfondo pannello
+# Colori della barra (modificabili).
+# Definiti come tuple RGB per evitare la creazione di wx.Colour prima che
+# wx.App esista (causa crash su macOS e certi Linux).
+# Usare _c() per ottenere il wx.Colour corrispondente al momento del disegno.
+_BAR_COLOUR_FULL_RGB  = (41, 128, 185)    # blu pieno (valore alto)
+_BAR_COLOUR_EMPTY_RGB = (200, 220, 240)   # azzurro chiaro (valore basso / sfondo barra)
+_BAR_COLOUR_BG_RGB    = (230, 235, 240)   # sfondo pannello
+_TICK_COLOUR_RGB      = (150, 170, 190)   # colore dei segni di graduazione
+_LABEL_COLOUR_RGB     = (120, 140, 160)   # colore etichette Facile/Difficile
+
+def _c(rgb):
+    """Restituisce un wx.Colour dalla tripla RGB. Chiamato solo a runtime."""
+    return wx.Colour(*rgb)
+
+# Alias pubblici per compatibilità con codice esterno che modifica BAR_COLOUR_FULL
+# (es. MyPreferencesDialog._apply_deco_bar_colour). Vengono letti come wx.Colour
+# tramite _c() internamente, ma possono essere sovrascritti con wx.Colour direttamente.
+BAR_COLOUR_FULL  = None   # inizializzato a runtime da _get_bar_colour_full()
+BAR_COLOUR_EMPTY = None
+BAR_COLOUR_BG    = None
+TICK_COLOUR      = None
+LABEL_COLOUR     = None
+
+def _ensure_colours():
+    """Inizializza i wx.Colour globali la prima volta che servono (dopo wx.App)."""
+    global BAR_COLOUR_FULL, BAR_COLOUR_EMPTY, BAR_COLOUR_BG, TICK_COLOUR, LABEL_COLOUR
+    if BAR_COLOUR_FULL is None:
+        BAR_COLOUR_FULL  = _c(_BAR_COLOUR_FULL_RGB)
+        BAR_COLOUR_EMPTY = _c(_BAR_COLOUR_EMPTY_RGB)
+        BAR_COLOUR_BG    = _c(_BAR_COLOUR_BG_RGB)
+        TICK_COLOUR      = _c(_TICK_COLOUR_RGB)
+        LABEL_COLOUR     = _c(_LABEL_COLOUR_RGB)
+
 BAR_HEIGHT       = 8    # px – altezza della barra
 BAR_RADIUS       = 4    # px – arrotondamento angoli
-TICK_COLOUR      = wx.Colour(150, 170, 190)  # colore dei segni di graduazione
+LABEL_FONT_SIZE  = 8    # pt
 TICK_HEIGHT      = 4    # px – altezza dei tick
-LABEL_COLOUR     = wx.Colour(120, 140, 160)  # colore etichette Facile/Difficile
-LABEL_FONT_SIZE  = 8                          # pt
 
 
 class MyDecoSlider(DecoSlider):
     def __init__(self, parent):
         DecoSlider.__init__(self, parent)
+        _ensure_colours()
         # Altezza minima aumentata per ospitare le etichette Easy/Difficult
         self.panel.SetMinSize(wx.Size(-1, 36))
         # Adattiamo il colore di sfondo del panel al nuovo stile
@@ -43,6 +71,7 @@ class MyDecoSlider(DecoSlider):
         event.Skip()
 
     def OnPaint(self, event):
+        _ensure_colours()
         dc = wx.PaintDC(self.panel)
         w, h = dc.GetSize()
 
@@ -119,3 +148,4 @@ class MyDecoSlider(DecoSlider):
 
     def OnSize(self, event):
         self.panel.Refresh()
+        event.Skip()

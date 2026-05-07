@@ -100,7 +100,7 @@ def getLang():
 
 def setSystemLang():
     l = locale.getdefaultlocale()
-    if l is not None and l[0][:2] in supportedLangs:
+    if l is not None and l[0] is not None and l[0][:2] in supportedLangs:
         setLang(l[0][:2])
     else:
         setLang(defaultLang)

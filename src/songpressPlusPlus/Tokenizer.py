@@ -4,6 +4,7 @@
 # Author:         Luca Allulli (webmaster@roma21.it)
 # Created:     2009-01-31
 # Copyright: Luca Allulli (https://www.skeed.it/songpress)
+#               Modifications copyright © 2026 Denisov21
 # License:     GNU GPL v2
 ##############################################################
 
@@ -61,7 +62,7 @@ class Tokenizer(object):
                 # print("Matched!")
                 break
         if m == None:
-            return None
+            raise StopIteration
         tok = Token(t[0], self.pos, m.end(0), m.group(0))
         ##print (type(m.group(0)), m.group(0))
         self.state = t[1]

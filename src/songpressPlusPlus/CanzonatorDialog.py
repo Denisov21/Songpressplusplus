@@ -17,7 +17,7 @@ import wx.adv
 _ = wx.GetTranslation
 
 # Estensioni supportate (stessa lista di _import_formats in SongpressFrame)
-_SUPPORTED_EXT = {'.crd', '.cho', '.chordpro', '.chopro', '.pro', '.tab', '.cpm'}
+_SUPPORTED_EXT = {'.crd', '.cho', '.chordpro', '.chopro', '.pro', '.tab', '.cpm', '.sng'}
 
 # Separatore inserito tra i brani
 _SONG_SEPARATOR = '\n{new_page}\n\n'
