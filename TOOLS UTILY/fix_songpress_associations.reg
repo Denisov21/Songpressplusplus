@@ -1,0 +1,80 @@
+Windows Registry Editor Version 5.00
+
+; ============================================================
+;  Songpress++ - Pulizia e reimpostazione associazioni file
+;  Percorso letterale: E:\Users\Utente\AppData\Local\Songpress++
+;
+;  ISTRUZIONI:
+;    1. Chiudi Songpress++ se aperto
+;    2. Doppio clic su questo file -> Si' / Unisci
+;    3. Riavvia Esplora risorse (o disconnettiti e rientra)
+; ============================================================
+
+; -------------------------------------------------------
+;  1. RIMOZIONE ProgID legacy: Songpress.crd
+; -------------------------------------------------------
+[-HKEY_CURRENT_USER\Software\Classes\Songpress.crd]
+
+; -------------------------------------------------------
+;  2. RIMOZIONE ProgID legacy: Songpress.ChordPro
+; -------------------------------------------------------
+[-HKEY_CURRENT_USER\Software\Classes\Songpress.ChordPro]
+
+; -------------------------------------------------------
+;  3. RIMOZIONE ProgID corrente (reimpostazione pulita)
+; -------------------------------------------------------
+[-HKEY_CURRENT_USER\Software\Classes\SongpressPlusPlus.ChordPro]
+
+; -------------------------------------------------------
+;  4. PULIZIA OpenWithProgids sporchi su tutte le estensioni
+; -------------------------------------------------------
+[-HKEY_CURRENT_USER\Software\Classes\.crd\OpenWithProgids]
+[-HKEY_CURRENT_USER\Software\Classes\.pro\OpenWithProgids]
+[-HKEY_CURRENT_USER\Software\Classes\.chopro\OpenWithProgids]
+[-HKEY_CURRENT_USER\Software\Classes\.chordpro\OpenWithProgids]
+[-HKEY_CURRENT_USER\Software\Classes\.cho\OpenWithProgids]
+[-HKEY_CURRENT_USER\Software\Classes\.tab\OpenWithProgids]
+[-HKEY_CURRENT_USER\Software\Classes\.sng\OpenWithProgids]
+
+; -------------------------------------------------------
+;  5. ASSOCIAZIONE estensioni -> SongpressPlusPlus.ChordPro
+; -------------------------------------------------------
+[HKEY_CURRENT_USER\Software\Classes\.crd]
+@="SongpressPlusPlus.ChordPro"
+
+[HKEY_CURRENT_USER\Software\Classes\.pro]
+@="SongpressPlusPlus.ChordPro"
+
+[HKEY_CURRENT_USER\Software\Classes\.chopro]
+@="SongpressPlusPlus.ChordPro"
+
+[HKEY_CURRENT_USER\Software\Classes\.chordpro]
+@="SongpressPlusPlus.ChordPro"
+
+[HKEY_CURRENT_USER\Software\Classes\.cho]
+@="SongpressPlusPlus.ChordPro"
+
+[HKEY_CURRENT_USER\Software\Classes\.tab]
+@="SongpressPlusPlus.ChordPro"
+
+[HKEY_CURRENT_USER\Software\Classes\.sng]
+@="SongpressPlusPlus.ChordPro"
+
+; -------------------------------------------------------
+;  6. REGISTRAZIONE ProgID corretto con percorso letterale
+; -------------------------------------------------------
+[HKEY_CURRENT_USER\Software\Classes\SongpressPlusPlus.ChordPro]
+@="ChordPro"
+
+[HKEY_CURRENT_USER\Software\Classes\SongpressPlusPlus.ChordPro\DefaultIcon]
+@="E:\\Users\\Utente\\AppData\\Local\\Songpress++\\songpressplusplus.ico,0"
+
+[HKEY_CURRENT_USER\Software\Classes\SongpressPlusPlus.ChordPro\shell]
+@="open"
+
+[HKEY_CURRENT_USER\Software\Classes\SongpressPlusPlus.ChordPro\shell\open]
+"MUIVerb"="Songpress++"
+"Icon"="E:\\Users\\Utente\\AppData\\Local\\Songpress++\\songpressplusplus.ico,0"
+
+[HKEY_CURRENT_USER\Software\Classes\SongpressPlusPlus.ChordPro\shell\open\command]
+@="\"E:\\Users\\Utente\\AppData\\Local\\Songpress++\\bin\\SongPressPlusPlus.exe\" \"%1\""

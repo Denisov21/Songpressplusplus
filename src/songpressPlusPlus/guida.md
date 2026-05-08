@@ -786,6 +786,8 @@ La checkbox **Incorpora immagine nel file (base64, senza dipendenza esterna)** s
 
 ### Indicatore Transposer 🖊
 
+![Songpress++ Inserisci indicatore Transposer](./img/GUIDE/transposer_it.png)
+
 L'**indicatore Transposer** è una rappresentazione testuale a pallini che mostra quale tasto premere sul dispositivo Transposer fisico dell'organo. Viene inserito direttamente nel testo della canzone come blocco `{start_of_tab: TRANSPOSER}` in modo che sia visibile nell'anteprima e in stampa con font monospace (Courier New), garantendo l'allineamento perfetto tra i simboli e le note.
 
 #### Accesso

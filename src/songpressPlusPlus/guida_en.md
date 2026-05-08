@@ -786,6 +786,8 @@ The **Embed image in file (base64, no external dependency)** checkbox is located
 
 ### Transposer Indicator 🖊
 
+![Songpress++ Insert Transposer Indicator](./img/GUIDE/transposer_en.png)
+
 The **Transposer indicator** is a text-based dot representation showing which key to press on the physical Transposer device of an organ. It is inserted directly into the song text as a `{start_of_tab: TRANSPOSER}` block, so it appears in the preview and in print using a monospace font (Courier New), guaranteeing perfect alignment between the symbols and the note names.
 
 #### Access

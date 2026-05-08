@@ -196,13 +196,12 @@ class Decorator(SongDecorator):
         lbl_h = self.dc.GetTextExtent(lbls_tokens[0])[1]
 
         col_gap = max(4, self.dc.GetTextExtent(' ')[0])  # gap = 1 space width
-        # Larghezza di colonna UNIFORME = max su tutti i token, senza gap.
-        # Il gap è padding inter-colonna separato, aggiunto durante il layout.
+        # Larghezza di colonna UNIFORME = max su tutti i token + gap.
         # Colonne di larghezza variabile causano drift progressivo se un token
         # (es. "A#") è misurato più largo degli altri (# è leggermente più largo
         # in Courier New), spostando le colonne successive a destra.
-        uniform_cw = max(max(sym_widths), max(lbl_widths))  # BUG 1 FIX: gap separato
-        col_widths = [uniform_cw + col_gap] * n_cols        # gap incluso nel passo di colonna
+        uniform_cw = max(max(sym_widths), max(lbl_widths)) + col_gap
+        col_widths = [uniform_cw] * n_cols
 
         # Block content origin
         content_x = int(bx + block.marginLeft)
@@ -214,17 +213,13 @@ class Decorator(SongDecorator):
 
         # Total width of our pixel-perfect rendering
         total_w = sum(col_widths)
-        # BUG 2+3 FIX: total_h calcolato in coordinate assolute a partire da y0,
-        # così il rettangolo di erase copre sia la riga dei simboli (y0) sia
-        # quella delle etichette (y1 + lbl_h), indipendentemente da line0.y.
-        total_h = (y1 + lbl_h + 4) - y0
+        total_h = int(line1.y) + lbl_h + 4
 
         # Erase original text: cover both lines with the page background color
-        # BUG 1 FIX: rimosso '+ col_gap' ridondante (già incluso in col_widths)
         bg = self.dc.GetBackground().GetColour()
         self.dc.SetBrush(wx.Brush(bg, wx.SOLID))
         self.dc.SetPen(wx.TRANSPARENT_PEN)
-        self.dc.DrawRectangle(content_x, y0, total_w, total_h)
+        self.dc.DrawRectangle(content_x, y0, total_w + col_gap, total_h)
 
         # Draw each column pixel-perfect
         self.dc.SetBackgroundMode(wx.TRANSPARENT)

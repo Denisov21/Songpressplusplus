@@ -2,8 +2,10 @@
 # Name:             SongFormat.py
 # Purpose:     Song format options
 # Author:         Luca Allulli (webmaster@roma21.it)
+# Modified by:  Denisov21
 # Created:     2009-02-24
 # Copyright: Luca Allulli (https://www.skeed.it/songpress)
+# Copyright: Modifications © 2026 Denisov21
 # License:     GNU GPL v2
 ##############################################################
 

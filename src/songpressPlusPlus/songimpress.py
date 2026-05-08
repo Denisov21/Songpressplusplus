@@ -2,6 +2,7 @@
 # Name:             songimpress.py
 # Purpose:     Generate PowerPoint presentation from songs
 # Author:         Luca Allulli (webmaster@roma21.it)
+# Modified by:  Denisov21
 # Created:     2019-02-02
 # Copyright: Luca Allulli (https://www.skeed.it/songpress)
 #               Modifications copyright © 2026 Denisov21

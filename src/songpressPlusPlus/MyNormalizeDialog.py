@@ -2,6 +2,7 @@
 # Name:             MyNormalizeDialog.py
 # Purpose:     Dialog to change notation
 # Author:         Luca Allulli (webmaster@roma21.it)
+# Modified by:  Denisov21
 # Created:     2013-07-14
 # Copyright: Luca Allulli (https://www.skeed.it/songpress)
 #               Modifications copyright © 2026 Denisov21

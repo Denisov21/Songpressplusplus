@@ -2,6 +2,7 @@
 # Name:             Tokenizer.py
 # Purpose:     Abstract tokenizer
 # Author:         Luca Allulli (webmaster@roma21.it)
+# Modified by:  Denisov21
 # Created:     2009-01-31
 # Copyright: Luca Allulli (https://www.skeed.it/songpress)
 #               Modifications copyright © 2026 Denisov21

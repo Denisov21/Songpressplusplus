@@ -2,10 +2,10 @@
 # Name:             MyDecoSlider.py
 # Purpose:     Slider with a decorated range indicator
 # Author:         Luca Allulli (webmaster@roma21.it)
-# Modified by:  Denis
+# Modified by:  Denisov21
 # Created:     2010-06-02
 # Copyright: Luca Allulli (https://www.skeed.it/songpress)
-#               Modifications copyright Denis
+#               Modifications copyright © 2026 Denisov21
 # License:     GNU GPL v2
 ##############################################################
 

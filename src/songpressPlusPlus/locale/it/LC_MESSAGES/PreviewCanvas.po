@@ -10,9 +10,7 @@ msgstr ""
 "Project-Id-Version: songpress\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-03-26 18:00+0100\n"
-"PO-Revision-Date: 2026-03-26 22:00+0100
-
-
+"PO-Revision-Date: 2026-03-26 22:00+0100\n"
 "Last-Translator: Denisov21\n"
 "Language-Team: Italian\n"
 "Language: it\n"

@@ -1,9 +1,9 @@
 ###############################################################
 # Name:         PdfExporter.py
 # Purpose:      Esportazione PDF per Songpress
-# Author:       Luca Allulli (webmaster@roma21.it)
+# Author:       Denisov21
 # Created:      2026
-# Copyright:    Luca Allulli (https://www.skeed.it/songpress)
+# Copyright: © 2026 Denisov21
 # License:      GNU GPL v2
 ###############################################################
 #

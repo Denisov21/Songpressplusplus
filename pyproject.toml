@@ -1,6 +1,6 @@
 [project]
 name = "SongpressPlusPlus"
-version = "5.1.1"
+version = "5.1.3"
 description = "Songpress++ is a free, easy to use song typeset program for Windows, that generates high-quality songbooks."
 authors = [
     { name = "Denisov21" },
@@ -37,6 +37,17 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/songpressplusplus"]
+include = [
+    "src/songpressplusplus/**/*.py",
+    "src/songpressplusplus/img/**",
+    "src/songpressplusplus/locale/**",
+    "src/songpressplusplus/xrc/**",
+]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/songpressplusplus/img"    = "songpressplusplus/img"
+"src/songpressplusplus/locale" = "songpressplusplus/locale"
+"src/songpressplusplus/xrc"    = "songpressplusplus/xrc"
 
 # ── cx_Freeze — build eseguibile ────────────────────────────────────────────
 # Eseguire da venv dedicato per evitare inclusione di pacchetti di sistema:
@@ -75,3 +86,4 @@ include_files = [
     ["src/songpressplusplus/xrc",       "xrc"],
     ["pyproject.toml",                  "pyproject.toml"],
 ]
+
