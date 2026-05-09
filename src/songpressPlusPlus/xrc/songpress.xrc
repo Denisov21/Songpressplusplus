@@ -313,6 +313,7 @@
           <help>Show or hide the beat count above chords ({beats_time:} directive)</help>
           <checkable>1</checkable>
           <checked>1</checked>
+          <bitmap>../img/beats.png</bitmap>
         </object>
         <object class="wxMenuItem" name="labelVerses">
           <label>_Label verses and chord</label>

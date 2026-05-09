@@ -313,6 +313,7 @@
           <help>Mostra o nascondi il numero di battiti sopra gli accordi (direttiva {beats_time:})</help>
           <checkable>1</checkable>
           <checked>1</checked>
+          <bitmap>../img/beats.png</bitmap>
         </object>
         <object class="wxMenuItem" name="labelVerses">
           <label>_Etichetta strofe e ritornelli</label>
