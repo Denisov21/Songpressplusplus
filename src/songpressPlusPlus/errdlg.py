@@ -156,7 +156,7 @@ class SongpressErrorDialog(wx.Dialog):
         # ListCtrl — colonna unica: messaggio
         self._list = wx.ListCtrl(
             win,
-            style=wx.LC_REPORT | wx.BORDER_SUNKEN | wx.LC_NO_HEADER,
+            style=wx.LC_REPORT | wx.BORDER_SUNKEN | wx.LC_NO_HEADER | wx.LC_SINGLE_SEL,
         )
         self._list.InsertColumn(0, _("Messaggio"), width=600)
 
@@ -164,6 +164,9 @@ class SongpressErrorDialog(wx.Dialog):
         self._list.SetFont(mono)
 
         self._populate_list()
+
+        # La colonna occupa sempre tutta la larghezza disponibile
+        self._list.Bind(wx.EVT_SIZE, self._on_list_resize)
 
         pane_sizer = wx.BoxSizer(wx.VERTICAL)
         pane_sizer.Add(self._list, 1, wx.EXPAND | wx.ALL, 4)
@@ -198,6 +201,13 @@ class SongpressErrorDialog(wx.Dialog):
         root.Add(btns,       0, wx.EXPAND | wx.ALL,               8)
         self.SetSizer(root)
 
+    def _on_list_resize(self, evt):
+        """La colonna 0 occupa sempre l'intera larghezza della ListCtrl."""
+        evt.Skip()
+        w = self._list.GetClientSize().width
+        if w > 0:
+            self._list.SetColumnWidth(0, w)
+
     def _populate_list(self):
         """Inserisce nella ListCtrl ogni riga significativa del report."""
         for raw in self._report_text.splitlines():
@@ -206,6 +216,8 @@ class SongpressErrorDialog(wx.Dialog):
                 continue
             idx = self._list.InsertItem(self._list.GetItemCount(), line)
             self._list.SetItem(idx, 0, line)
+        # Nessuna riga selezionata/evidenziata di default
+        self._list.SetItemState(-1, 0, wx.LIST_STATE_SELECTED | wx.LIST_STATE_FOCUSED)
 
     # ── Helpers ──────────────────────────────────────────────────────────────
 

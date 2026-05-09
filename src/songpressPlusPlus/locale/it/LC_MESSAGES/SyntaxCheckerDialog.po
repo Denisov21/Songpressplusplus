@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: Songpress++ 1.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-04-02 00:00+0000\n"
-"PO-Revision-Date: 2026-04-28 00:00+0200\n"
+"PO-Revision-Date: 2026-05-09 00:00+0200\n"
 "Last-Translator: Denisov21\n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -66,7 +66,7 @@ msgid "Description"
 msgstr "Descrizione"
 
 # -----------------------------------------------------------------------
-# SyntaxChecker.py — error messages
+# SyntaxChecker.py — square brackets / curly braces
 # -----------------------------------------------------------------------
 #. Square bracket opened but never closed
 #: SyntaxChecker.py
@@ -98,193 +98,214 @@ msgstr "Parentesi graffa chiusa '}' senza apertura"
 msgid "Empty command '{}'"
 msgstr "Comando vuoto '{}'"
 
-#. Command name not in the list of known ChordPro commands
-#. {cmd} is replaced at runtime with the actual command, e.g. {stat_chorus}
+# -----------------------------------------------------------------------
+# SyntaxChecker.py — generic command errors
+# -----------------------------------------------------------------------
+#. Command name not in the known ChordPro command list
+#. %s = the unrecognised command name (e.g. stat_chorus)
 #: SyntaxChecker.py
-msgid "Unknown command: '{cmd}'"
-msgstr "Comando sconosciuto: '{cmd}'"
+msgid "Unknown command: '{%s}'"
+msgstr "Comando sconosciuto: '{%s}'"
 
-#. Command that requires ':' used without it (e.g. {verse} instead of {verse:} or {verse: label})
-#. {cmd} is replaced at runtime with the command name, e.g. verse
+#. Empty command (just '{:}' or '{}' with only a colon)
 #: SyntaxChecker.py
-msgid "Command '{{cmd}}' requires ':'; use '{{{cmd}:}}' or '{{{cmd}: label}}'"
-msgstr "Il comando '{{cmd}}' richiede ':'; usa '{{{cmd}:}}' oppure '{{{cmd}: etichetta}}'"
+msgid "Empty command (write the command name without a colon, e.g. '{soc}')"
+msgstr "Comando vuoto (scrivi il nome del comando senza i due punti, es. '{soc}')"
+
+#. Command that requires ':' used without it (e.g. {verse} instead of {verse:})
+#. Three %s = command name repeated three times
+#: SyntaxChecker.py
+msgid "Command '{%s}' requires ':'; use '{%s:}' or '{%s: label}'"
+msgstr "Il comando '{%s}' richiede ':'; usa '{%s:}' oppure '{%s: etichetta}'"
+
+#. Optional-value command written with ':' but no value (e.g. {textsize:})
+#. First %s = erroneous form (e.g. textsize:), second %s = correct reset form
+#: SyntaxChecker.py
+msgid "Command '{%s:}' has ':' but no value; use '{%s}' to reset"
+msgstr "Il comando '{%s:}' ha ':' ma nessun valore; usa '{%s}' per ripristinare il default"
 
 #. Known command used without a required value (e.g. {title:} with no text)
-#. {cmd} is replaced at runtime with the actual command+colon, e.g. {title:}
+#. %s = command name
 #: SyntaxChecker.py
-msgid "Command '{cmd}' requires a value"
-msgstr "Il comando '{cmd}' richiede un valore"
+msgid "Command '{%s:}' requires a value"
+msgstr "Il comando '{%s:}' richiede un valore"
 
-#. Optional-value command written with ':' but no value (e.g. {textsize:} instead of {textsize})
-#. {cmd} is replaced with the erroneous form, {reset} with the correct reset form
+#. Numeric command given a non-numeric value
+#. First %s = command name, second %s = invalid value
 #: SyntaxChecker.py
-msgid "Command '{cmd}' has ':' but no value; use '{reset}' to reset"
-msgstr "Il comando '{cmd}' ha ':' ma nessun valore; usa '{reset}' per ripristinare il default"
+msgid "Command '{%s:}' requires a numeric value, got: '%s'"
+msgstr "Il comando '{%s:}' richiede un valore numerico, trovato: '%s'"
 
+#. Time-signature command given a malformed value
+#. First %s = command name, second %s = invalid value
 #: SyntaxChecker.py
-msgid "Command '{cmd}' requires a numeric value, got: '{val}'"
-msgstr "Il comando '{cmd}' richiede un valore numerico, trovato: '{val}'"
+msgid "Command '{%s:}' requires a time signature (e.g. 4/4), got: '%s'"
+msgstr "Il comando '{%s:}' richiede una misura (es. 4/4), trovato: '%s'"
 
+#. {tempo:} BPM part (before comma) is not numeric
+#. First %s = command name (tempo), second %s = invalid BPM string
 #: SyntaxChecker.py
-msgid "Command '{cmd}' requires a time signature (e.g. 4/4), got: '{val}'"
-msgstr "Il comando '{cmd}' richiede una misura (es. 4/4), trovato: '{val}'"
+msgid "Command '{%s:}' requires a numeric BPM value before the comma, got: '%s'"
+msgstr "Il comando '{%s:}' richiede un valore BPM numerico prima della virgola, trovato: '%s'"
 
-# -----------------------------------------------------------------------
-# SyntaxChecker.py — {fingering} validation messages
-# -----------------------------------------------------------------------
-#. {fingering}: chord name not recognised
-#. {chord} is replaced at runtime with the unrecognised chord name
+#. {tempo:} display mode (after comma) is not -1/0/1/2/3
+#. First %s = command name (tempo), second %s = invalid mode value
 #: SyntaxChecker.py
-msgid "{{fingering}}: unrecognized chord '{chord}'"
-msgstr "{{fingering}}: accordo non riconosciuto '{chord}'"
+msgid "Command '{%s:}': display mode must be -1, 0, 1, 2 or 3, got: '%s'"
+msgstr "Il comando '{%s:}': la modalità di visualizzazione deve essere -1, 0, 1, 2 o 3, trovato: '%s'"
 
-#. {fingering}: a token after the chord name is not in the form N=Note
-#. {tok} is replaced at runtime with the malformed token
+#. Command that does not accept any value received one (e.g. {row: 5})
+#. %s = command name
 #: SyntaxChecker.py
-msgid "{{fingering}}: invalid token '{tok}' — expected format: finger=note (e.g. 2=Mi)"
-msgstr "{{fingering}}: token non valido '{tok}' — formato atteso: dito=nota (es. 2=Mi)"
-
-#. {fingering}: finger number is not between 1 and 5
-#. {n} is replaced at runtime with the out-of-range number
-#: SyntaxChecker.py
-msgid "{{fingering}}: finger number {n} is out of range (1–5)"
-msgstr "{{fingering}}: il numero di dito {n} è fuori intervallo (1–5)"
-
-#. {fingering}: note name not recognised (neither Italian nor English notation)
-#. {note} is replaced at runtime with the unrecognised note name
-#: SyntaxChecker.py
-msgid "{{fingering}}: unrecognized note '{note}'"
-msgstr "{{fingering}}: nota non riconosciuta '{note}'"
-
-#. {fingering}: the specified note does not belong to the given chord
-#. {note} = note name; {chord} = chord name; {expected} = comma-separated list of valid notes
-#: SyntaxChecker.py
-msgid "{{fingering}}: note '{note}' does not belong to {chord} ({expected})"
-msgstr "{{fingering}}: la nota '{note}' non appartiene all'accordo {chord} ({expected})"
-
-#. {fingering}: the same finger number appears more than once
-#. {n} = finger number; {a} = first note assigned; {b} = second note assigned
-#: SyntaxChecker.py
-msgid "{{fingering}}: finger {n} assigned twice ({a} and {b})"
-msgstr "{{fingering}}: il dito {n} è assegnato due volte ({a} e {b})"
-
-#. {fingering}: the same note is assigned to two different fingers
-#. {note} = note name; {a} = first finger; {b} = second finger
-#: SyntaxChecker.py
-msgid "{{fingering}}: note '{note}' assigned to both finger {a} and finger {b}"
-msgstr "{{fingering}}: la nota '{note}' è assegnata sia al dito {a} sia al dito {b}"
+msgid "Command '{%s}' does not accept a value"
+msgstr "Il comando '{%s}' non accetta un valore"
 
 # -----------------------------------------------------------------------
-# SyntaxChecker.py — {image} validation messages
+# SyntaxChecker.py — {fingering} validation
 # -----------------------------------------------------------------------
-#. {image}: an option key=value pair has an unknown key name
-#. {opt} is replaced at runtime with the full token, e.g. "pippo=5"
+#. Chord name not recognised
+#. %s = unrecognised chord name
 #: SyntaxChecker.py
-msgid "{{image}}: unknown option '{opt}'"
-msgstr "{{image}}: opzione sconosciuta '{opt}'"
+msgid "{fingering}: unrecognized chord '%s'"
+msgstr "{fingering}: accordo non riconosciuto '%s'"
 
-#. {image}: align= has a value other than left, center or right
-#. {val} is replaced at runtime with the invalid value
+#. hand= value is not R or L
+#. %s = invalid value supplied
 #: SyntaxChecker.py
-msgid "{{image}}: align must be left, center or right, got '{val}'"
-msgstr "{{image}}: align deve essere left, center o right, trovato '{val}'"
+msgid "{fingering}: hand must be R (right) or L (left), got '%s'"
+msgstr "{fingering}: hand deve essere R (destra) o L (sinistra), trovato '%s'"
 
-#. {image}: a numeric option (width, height, scale, border) has a non-numeric value
-#. {key} = option name; {val} = the invalid value
+#. hand= key appears more than once
 #: SyntaxChecker.py
-msgid "{{image}}: option '{key}' requires a numeric value, got '{val}'"
-msgstr "{{image}}: l'opzione '{key}' richiede un valore numerico, trovato '{val}'"
+msgid "{fingering}: 'hand' specified more than once"
+msgstr "{fingering}: 'hand' specificato più di una volta"
 
-#. {image}: the data: URI is missing ';' or 'base64,' — it is structurally invalid
+#. A token is not in the form N=Note
+#. %s = malformed token
 #: SyntaxChecker.py
-msgid "{{image}}: malformed embedded data URI (expected 'data:<mime>;base64,<data>')"
-msgstr "{{image}}: data URI embedded non valido (atteso 'data:<mime>;base64,<dati>')"
+msgid "{fingering}: invalid token '%s' — expected format: finger=note (e.g. 2=Mi)"
+msgstr "{fingering}: token non valido '%s' — formato atteso: dito=nota (es. 2=Mi)"
 
-# -----------------------------------------------------------------------
-# SyntaxChecker.py — {meta} validation messages
-# -----------------------------------------------------------------------
-#. {meta}: the value must contain at least two tokens: a key and a value
-#. {val} is replaced at runtime with the malformed value string
+#. Finger number is not between 1 and 5
+#. %d = out-of-range number
 #: SyntaxChecker.py
-msgid "{{meta}} requires 'key value' format, got: '{val}'"
-msgstr "{{meta}} richiede il formato 'chiave valore', trovato: '{val}'"
+msgid "{fingering}: finger number %d is out of range (1–5)"
+msgstr "{fingering}: il numero di dito %d è fuori intervallo (1–5)"
 
-# -----------------------------------------------------------------------
-# SyntaxChecker.py — {bar} / {row} / {r} validation messages
-# -----------------------------------------------------------------------
-#. {bar}, {row}, {r}: these commands take no value — the user wrote e.g. {row: 5}
-#. {cmd} is replaced at runtime with the command name
+#. Note name not recognised
+#. %s = unrecognised note name
 #: SyntaxChecker.py
-msgid "Command '{{cmd}}' does not accept a value"
-msgstr "Il comando '{{cmd}}' non accetta un valore"
+msgid "{fingering}: unrecognized note '%s'"
+msgstr "{fingering}: nota non riconosciuta '%s'"
 
-# -----------------------------------------------------------------------
-# SyntaxChecker.py — {duration} validation messages
-# -----------------------------------------------------------------------
-#. {beats_time}: a token is not in the form Chord=N
-#. {tok} is replaced at runtime with the malformed token
+#. The specified note does not belong to the given chord
+#. First %s = note, second %s = chord name, third %s = list of valid notes
 #: SyntaxChecker.py
-msgid "{{beats_time}}: invalid token '{tok}' — expected format: chord=beats (e.g. Sol=2)"
-msgstr "{{beats_time}}: token non valido '{tok}' — formato atteso: accordo=battiti (es. Sol=2)"
+msgid "{fingering}: note '%s' does not belong to %s (%s)"
+msgstr "{fingering}: la nota '%s' non appartiene all'accordo %s (%s)"
 
-#. {beats_time}: chord name not recognised (neither Italian nor English notation)
-#. {chord} is replaced at runtime with the unrecognised chord name
+#. The same finger number is assigned twice
+#. %d = finger number, first %s = first note, second %s = second note
 #: SyntaxChecker.py
-msgid "{{beats_time}}: unrecognized chord '{chord}'"
-msgstr "{{beats_time}}: accordo non riconosciuto '{chord}'"
+msgid "{fingering}: finger %d assigned twice (%s and %s)"
+msgstr "{fingering}: il dito %d è assegnato due volte (%s e %s)"
 
-#. {beats_time}: the beat count after '=' is missing entirely
-#. {chord} is replaced at runtime with the chord name
+#. The same note is assigned to two different fingers
+#. %s = note name, first %d = first finger, second %d = second finger
 #: SyntaxChecker.py
-msgid "{{beats_time}}: missing beat count for chord '{chord}'"
-msgstr "{{beats_time}}: numero di battiti mancante per l'accordo '{chord}'"
-
-#. {beats_time}: beat count is not a positive integer (e.g. 0, -1, 1.5, letters)
-#. {chord} = chord name; {val} = the invalid value found
-#: SyntaxChecker.py
-msgid "{{beats_time}}: beat count for '{chord}' must be a positive integer, got '{val}'"
-msgstr "{{beats_time}}: i battiti per '{chord}' devono essere un intero positivo, trovato '{val}'"
+msgid "{fingering}: note '%s' assigned to both finger %d and finger %d"
+msgstr "{fingering}: la nota '%s' è assegnata sia al dito %d sia al dito %d"
 
 # -----------------------------------------------------------------------
-#. {fingering}: 'hand=' key appears more than once in the directive value
+# SyntaxChecker.py — {image} validation
+# -----------------------------------------------------------------------
+#. An option key=value pair has an unknown key name
+#. %s = full token (e.g. "pippo=5")
 #: SyntaxChecker.py
-msgid "{{fingering}}: 'hand' specified more than once"
-msgstr "{{fingering}}: 'hand' specificato più di una volta"
+msgid "{image}: unknown option '%s'"
+msgstr "{image}: opzione sconosciuta '%s'"
 
-#. {fingering}: hand value is not R or L
-#. {val} is replaced at runtime with the invalid value found
+#. align= has a value other than left, center or right
+#. %s = invalid value
 #: SyntaxChecker.py
-msgid "{{fingering}}: hand must be R (right) or L (left), got '{val}'"
-msgstr "{{fingering}}: hand deve essere R (destra) o L (sinistra), trovato '{val}'"
+msgid "{image}: align must be left, center or right, got '%s'"
+msgstr "{image}: align deve essere left, center o right, trovato '%s'"
+
+#. A numeric option has a non-numeric value
+#. First %s = option name, second %s = invalid value
+#: SyntaxChecker.py
+msgid "{image}: option '%s' requires a numeric value, got '%s'"
+msgstr "{image}: l'opzione '%s' richiede un valore numerico, trovato '%s'"
+
+#. The data: URI is missing ';' or 'base64,'
+#: SyntaxChecker.py
+msgid "{image}: malformed embedded data URI (expected 'data:<mime>;base64,<data>')"
+msgstr "{image}: data URI embedded non valido (atteso 'data:<mime>;base64,<dati>')"
 
 # -----------------------------------------------------------------------
-#. {duration}: value looks like CHORD=N tokens — user confused {duration:} with {beats_time:}
+# SyntaxChecker.py — {meta} validation
+# -----------------------------------------------------------------------
+#. Value must contain at least two tokens: a key and a value
+#. %s = malformed value string
 #: SyntaxChecker.py
-msgid "{{duration}}: value looks like chord beats (e.g. 'Do=2 Sol=1') — use {{beats_time:}} for per-chord beat counts; {{duration:}} is for song duration (e.g. '3:45')"
-msgstr "{{duration}}: il valore sembra battiti per accordo (es. 'Do=2 Sol=1') — usa {{beats_time:}} per i battiti per accordo; {{duration:}} serve per la durata della canzone (es. '3:45')"
+msgid "{meta} requires 'key value' format, got: '%s'"
+msgstr "{meta} richiede il formato 'chiave valore', trovato: '%s'"
 
-#. {duration}: value is a literal placeholder like 'mm:ss' or 'hh:mm:ss', not a real time
-#. {val} is replaced at runtime with the placeholder found
+# -----------------------------------------------------------------------
+# SyntaxChecker.py — {beats_time} validation
+# -----------------------------------------------------------------------
+#. A token is not in the form Chord=N
+#. %s = malformed token
 #: SyntaxChecker.py
-msgid "{{duration}}: '{val}' looks like an unfilled placeholder — use a real duration value (e.g. '3:45' or '1:02:30')"
-msgstr "{{duration}}: '{val}' sembra un segnaposto non compilato — inserisci un valore reale (es. '3:45' oppure '1:02:30')"
+msgid "{beats_time}: invalid token '%s' — expected format: chord=beats (e.g. Sol=2)"
+msgstr "{beats_time}: token non valido '%s' — formato atteso: accordo=battiti (es. Sol=2)"
 
-#. {duration}: seconds field (mm:ss) is > 59
-#. {sec} is replaced at runtime with the out-of-range value
+#. Chord name not recognised
+#. %s = unrecognised chord name
 #: SyntaxChecker.py
-msgid "{{duration}}: seconds value '{sec}' is out of range (0-59)"
-msgstr "{{duration}}: il valore dei secondi '{sec}' è fuori intervallo (0-59)"
+msgid "{beats_time}: unrecognized chord '%s'"
+msgstr "{beats_time}: accordo non riconosciuto '%s'"
 
-#. {duration}: minutes field (hh:mm:ss) is > 59
-#. {min} is replaced at runtime with the out-of-range value
+#. The beat count after '=' is missing entirely
+#. %s = chord name
 #: SyntaxChecker.py
-msgid "{{duration}}: minutes value '{min}' is out of range (0-59)"
-msgstr "{{duration}}: il valore dei minuti '{min}' è fuori intervallo (0-59)"
+msgid "{beats_time}: missing beat count for chord '%s'"
+msgstr "{beats_time}: numero di battiti mancante per l'accordo '%s'"
 
-#. {duration}: value does not match any recognised time format
-#. {val} is replaced at runtime with the unrecognised value
+#. Beat count is not a positive integer
+#. First %s = chord name, second %s = invalid value
 #: SyntaxChecker.py
-msgid "{{duration}}: invalid format '{val}' — expected mm:ss or hh:mm:ss (e.g. '3:45' or '1:02:30')"
-msgstr "{{duration}}: formato non valido '{val}' — atteso mm:ss o hh:mm:ss (es. '3:45' oppure '1:02:30')"
+msgid "{beats_time}: beat count for '%s' must be a positive integer, got '%s'"
+msgstr "{beats_time}: i battiti per '%s' devono essere un intero positivo, trovato '%s'"
 
+# -----------------------------------------------------------------------
+# SyntaxChecker.py — {duration} validation
+# -----------------------------------------------------------------------
+#. Value looks like chord=beats tokens — user confused {duration:} with {beats_time:}
+#: SyntaxChecker.py
+msgid "{duration}: value looks like chord beats (e.g. 'Do=2 Sol=1') — use {beats_time:} for per-chord beat counts; {duration:} is for song duration (e.g. '3:45')"
+msgstr "{duration}: il valore sembra battiti per accordo (es. 'Do=2 Sol=1') — usa {beats_time:} per i battiti per accordo; {duration:} serve per la durata della canzone (es. '3:45')"
+
+#. Value is a literal placeholder like 'mm:ss' or 'hh:mm:ss', not a real time
+#. %s = placeholder found
+#: SyntaxChecker.py
+msgid "{duration}: '%s' looks like an unfilled placeholder — use a real duration value (e.g. '3:45' or '1:02:30')"
+msgstr "{duration}: '%s' sembra un segnaposto non compilato — inserisci un valore reale (es. '3:45' oppure '1:02:30')"
+
+#. Seconds field (mm:ss) is > 59
+#. %s = out-of-range seconds value
+#: SyntaxChecker.py
+msgid "{duration}: seconds value '%s' is out of range (0-59)"
+msgstr "{duration}: il valore dei secondi '%s' è fuori intervallo (0-59)"
+
+#. Minutes field (hh:mm:ss) is > 59
+#. %s = out-of-range minutes value
+#: SyntaxChecker.py
+msgid "{duration}: minutes value '%s' is out of range (0-59)"
+msgstr "{duration}: il valore dei minuti '%s' è fuori intervallo (0-59)"
+
+#. Value does not match any recognised time format
+#. %s = unrecognised value
+#: SyntaxChecker.py
+msgid "{duration}: invalid format '%s' — expected mm:ss or hh:mm:ss (e.g. '3:45' or '1:02:30')"
+msgstr "{duration}: formato non valido '%s' — atteso mm:ss o hh:mm:ss (es. '3:45' oppure '1:02:30')"

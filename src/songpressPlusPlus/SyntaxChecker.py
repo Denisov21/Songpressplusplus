@@ -12,7 +12,15 @@ from dataclasses import dataclass, field
 from typing import List
 
 import wx
-_ = wx.GetTranslation
+
+def _(s):
+    """Lazy wrapper for wx.GetTranslation.
+    Chiamare wx.GetTranslation a livello di modulo può fallire se wx non è
+    ancora inizializzato; questo wrapper lo risolve chiamandola a runtime."""
+    try:
+        return wx.GetTranslation(s)
+    except Exception:
+        return s
 
 
 @dataclass
@@ -215,8 +223,7 @@ def _validate_fingering(cmd_value: str, line_num: int, col: int,
     if chord_semitones is None:
         result.errors.append(SyntaxError(
             line=line_num, column=col,
-            message=_("{{fingering}}: unrecognized chord '{chord}'").format(
-                chord=chord_name)
+            message=_("{fingering}: unrecognized chord '%s'") % chord_name
         ))
         return   # senza accordo valido non ha senso continuare
 
@@ -234,13 +241,13 @@ def _validate_fingering(cmd_value: str, line_num: int, col: int,
                 result.errors.append(SyntaxError(
                     line=line_num, column=col,
                     message=_(
-                        "{{fingering}}: hand must be R (right) or L (left), got '{val}'"
-                    ).format(val=m_hand.group(1))
+                        "{fingering}: hand must be R (right) or L (left), got '%s'"
+                    ) % m_hand.group(1)
                 ))
             elif hand_seen:
                 result.errors.append(SyntaxError(
                     line=line_num, column=col,
-                    message=_("{{fingering}}: 'hand' specified more than once")
+                    message=_("{fingering}: 'hand' specified more than once")
                 ))
             hand_seen = True
             continue
@@ -249,8 +256,8 @@ def _validate_fingering(cmd_value: str, line_num: int, col: int,
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
                 message=_(
-                    "{{fingering}}: invalid token '{tok}' — expected format: finger=note (e.g. 2=Mi)"
-                ).format(tok=token)
+                    "{fingering}: invalid token '%s' — expected format: finger=note (e.g. 2=Mi)"
+                ) % token
             ))
             continue
 
@@ -262,8 +269,8 @@ def _validate_fingering(cmd_value: str, line_num: int, col: int,
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
                 message=_(
-                    "{{fingering}}: finger number {n} is out of range (1–5)"
-                ).format(n=finger_num)
+                    "{fingering}: finger number %d is out of range (1–5)"
+                ) % finger_num
             ))
             continue
 
@@ -273,8 +280,8 @@ def _validate_fingering(cmd_value: str, line_num: int, col: int,
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
                 message=_(
-                    "{{fingering}}: unrecognized note '{note}'"
-                ).format(note=note_str)
+                    "{fingering}: unrecognized note '%s'"
+                ) % note_str
             ))
             continue
 
@@ -285,8 +292,8 @@ def _validate_fingering(cmd_value: str, line_num: int, col: int,
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
                 message=_(
-                    "{{fingering}}: note '{note}' does not belong to {chord} ({expected})"
-                ).format(note=note_str, chord=chord_name, expected=expected)
+                    "{fingering}: note '%s' does not belong to %s (%s)"
+                ) % (note_str, chord_name, expected)
             ))
             continue
 
@@ -295,9 +302,8 @@ def _validate_fingering(cmd_value: str, line_num: int, col: int,
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
                 message=_(
-                    "{{fingering}}: finger {n} assigned twice ({a} and {b})"
-                ).format(n=finger_num,
-                         a=used_fingers[finger_num], b=note_str)
+                    "{fingering}: finger %d assigned twice (%s and %s)"
+                ) % (finger_num, used_fingers[finger_num], note_str)
             ))
             continue
 
@@ -306,9 +312,8 @@ def _validate_fingering(cmd_value: str, line_num: int, col: int,
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
                 message=_(
-                    "{{fingering}}: note '{note}' assigned to both finger {a} and finger {b}"
-                ).format(note=note_str,
-                         a=used_semitones[semi], b=finger_num)
+                    "{fingering}: note '%s' assigned to both finger %d and finger %d"
+                ) % (note_str, used_semitones[semi], finger_num)
             ))
             continue
 
@@ -428,15 +433,15 @@ def _validate_image_options(opts_str: str, line_num: int, col: int,
             if key not in _VALID_KEYS:
                 result.errors.append(SyntaxError(
                     line=line_num, column=col,
-                    message=_("{{image}}: unknown option '{opt}'").format(opt=token)
+                    message=_("{image}: unknown option '%s'") % token
                 ))
             elif key == "align":
                 if val.lower() not in _VALID_ALIGN:
                     result.errors.append(SyntaxError(
                         line=line_num, column=col,
                         message=_(
-                            "{{image}}: align must be left, center or right, got '{val}'"
-                        ).format(val=val)
+                            "{image}: align must be left, center or right, got '%s'"
+                        ) % val
                     ))
             elif key in ("width", "height", "scale", "border"):
                 num = val.rstrip("%")
@@ -446,14 +451,14 @@ def _validate_image_options(opts_str: str, line_num: int, col: int,
                     result.errors.append(SyntaxError(
                         line=line_num, column=col,
                         message=_(
-                            "{{image}}: option '{key}' requires a numeric value, got '{val}'"
-                        ).format(key=key, val=val)
+                            "{image}: option '%s' requires a numeric value, got '%s'"
+                        ) % (key, val)
                     ))
         else:
             if token.lower() not in _BARE_OK:
                 result.errors.append(SyntaxError(
                     line=line_num, column=col,
-                    message=_("{{image}}: unknown option '{opt}'").format(opt=token)
+                    message=_("{image}: unknown option '%s'") % token
                 ))
 
 
@@ -481,9 +486,9 @@ def _validate_duration(cmd_value: str, line_num: int, col: int,
         result.errors.append(SyntaxError(
             line=line_num, column=col,
             message=_(
-                "{{duration}}: value looks like chord beats (e.g. 'Do=2 Sol=1') — "
-                "use {{beats_time:}} for per-chord beat counts; "
-                "{{duration:}} is for song duration (e.g. '3:45')"
+                "{duration}: value looks like chord beats (e.g. 'Do=2 Sol=1') — "
+                "use {beats_time:} for per-chord beat counts; "
+                "{duration:} is for song duration (e.g. '3:45')"
             )
         ))
         return
@@ -493,9 +498,9 @@ def _validate_duration(cmd_value: str, line_num: int, col: int,
         result.errors.append(SyntaxError(
             line=line_num, column=col,
             message=_(
-                "{{duration}}: '{val}' looks like an unfilled placeholder — "
+                "{duration}: '%s' looks like an unfilled placeholder — "
                 "use a real duration value (e.g. '3:45' or '1:02:30')"
-            ).format(val=val)
+            ) % val
         ))
         return
 
@@ -509,8 +514,8 @@ def _validate_duration(cmd_value: str, line_num: int, col: int,
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
                 message=_(
-                    "{{duration}}: seconds value '{sec}' is out of range (0-59)"
-                ).format(sec=m.group(2))
+                    "{duration}: seconds value '%s' is out of range (0-59)"
+                ) % m.group(2)
             ))
         return
 
@@ -520,15 +525,15 @@ def _validate_duration(cmd_value: str, line_num: int, col: int,
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
                 message=_(
-                    "{{duration}}: minutes value '{min}' is out of range (0-59)"
-                ).format(min=m.group(2))
+                    "{duration}: minutes value '%s' is out of range (0-59)"
+                ) % m.group(2)
             ))
         elif int(m.group(3)) > 59:
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
                 message=_(
-                    "{{duration}}: seconds value '{sec}' is out of range (0-59)"
-                ).format(sec=m.group(3))
+                    "{duration}: seconds value '%s' is out of range (0-59)"
+                ) % m.group(3)
             ))
         return
 
@@ -536,9 +541,9 @@ def _validate_duration(cmd_value: str, line_num: int, col: int,
     result.errors.append(SyntaxError(
         line=line_num, column=col,
         message=_(
-            "{{duration}}: invalid format '{val}' — "
+            "{duration}: invalid format '%s' — "
             "expected mm:ss or hh:mm:ss (e.g. '3:45' or '1:02:30')"
-        ).format(val=val)
+        ) % val
     ))
 
 
@@ -561,8 +566,8 @@ def _validate_beats_time(cmd_value: str, line_num: int, col: int,
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
                 message=_(
-                    "{{beats_time}}: invalid token '{tok}' — expected format: chord=beats (e.g. Sol=2)"
-                ).format(tok=token)
+                    "{beats_time}: invalid token '%s' — expected format: chord=beats (e.g. Sol=2)"
+                ) % token
             ))
             continue
 
@@ -576,8 +581,8 @@ def _validate_beats_time(cmd_value: str, line_num: int, col: int,
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
                 message=_(
-                    "{{beats_time}}: unrecognized chord '{chord}'"
-                ).format(chord=chord_part)
+                    "{beats_time}: unrecognized chord '%s'"
+                ) % chord_part
             ))
             continue   # non validare i battiti se l'accordo non è riconosciuto
 
@@ -586,8 +591,8 @@ def _validate_beats_time(cmd_value: str, line_num: int, col: int,
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
                 message=_(
-                    "{{beats_time}}: missing beat count for chord '{chord}'"
-                ).format(chord=chord_part)
+                    "{beats_time}: missing beat count for chord '%s'"
+                ) % chord_part
             ))
             continue
 
@@ -599,8 +604,8 @@ def _validate_beats_time(cmd_value: str, line_num: int, col: int,
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
                 message=_(
-                    "{{beats_time}}: beat count for '{chord}' must be a positive integer, got '{val}'"
-                ).format(chord=chord_part, val=beats_part)
+                    "{beats_time}: beat count for '%s' must be a positive integer, got '%s'"
+                ) % (chord_part, beats_part)
             ))
 
 
@@ -677,8 +682,7 @@ def _validate_command(content: str, line_num: int, col: int,
     if cmd_name not in _KNOWN_COMMANDS:
         result.errors.append(SyntaxError(
             line=line_num, column=col,
-            message=_("Unknown command: '{cmd}'").format(
-                cmd="{" + cmd_name + "}")
+            message=_("Unknown command: '{%s}'") % cmd_name
         ))
         return
 
@@ -686,18 +690,17 @@ def _validate_command(content: str, line_num: int, col: int,
         result.errors.append(SyntaxError(
             line=line_num, column=col,
             message=_(
-                "Command '{{cmd}}' requires ':'; use '{{{cmd}:}}' or"
-                " '{{{cmd}: label}}'"
-            ).format(cmd=cmd_name)
+                "Command '{%s}' requires ':'; use '{%s:}' or '{%s: label}'"
+            ) % (cmd_name, cmd_name, cmd_name)
         ))
         return
 
     if cmd_value is not None and cmd_value == "" and cmd_name not in _OPTIONAL_VALUE and cmd_name not in _REQUIRES_VALUE:
         result.errors.append(SyntaxError(
             line=line_num, column=col,
-            message=_("Command '{cmd}' has ':' but no value; use '{reset}' to reset").format(
-                cmd="{" + cmd_name + ":}",
-                reset="{" + cmd_name + "}",
+            message=_("Command '{%s:}' has ':' but no value; use '{%s}' to reset") % (
+                cmd_name,
+                cmd_name,
             )
         ))
         return
@@ -707,58 +710,82 @@ def _validate_command(content: str, line_num: int, col: int,
         if not _re.fullmatch(r'[1-9][0-9]*/[1-9][0-9]*', cmd_value.strip()):
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
-                message=_("Command '{cmd}' requires a time signature (e.g. 4/4), got: '{val}'").format(
-                    cmd="{" + cmd_name + ":}",
-                    val=cmd_value,
+                message=_("Command '{%s:}' requires a time signature (e.g. 4/4), got: '%s'") % (
+                    cmd_name,
+                    cmd_value,
                 )
             ))
             return
 
     if cmd_name in _REQUIRES_NUMERIC_VALUE and cmd_value is not None and cmd_value != "":
-        # {tempo: N,M} — il solo comando "tempo" accetta il formato "N,M"
-        # dove N è il BPM e M è la modalità di visualizzazione locale (0/1/2/3/-1).
+        # {tempo: N,M}
+        # N = BPM
+        # M = display mode (-1, 0, 1, 2, 3)
+
         value_to_check = cmd_value
+
         if cmd_name == "tempo" and ',' in cmd_value:
-            bpm_part, _, mode_part = cmd_value.partition(',')
-            bpm_part  = bpm_part.strip()
+
+            bpm_part, sep, mode_part = cmd_value.partition(',')
+
+            bpm_part = bpm_part.strip()
             mode_part = mode_part.strip()
-            # Valida il BPM
+
+            # ── Validazione BPM ─────────────────────────────
             try:
                 float(bpm_part)
+
             except ValueError:
                 result.errors.append(SyntaxError(
-                    line=line_num, column=col,
-                    message=_("Command '{cmd}' requires a numeric BPM value before the comma, got: '{val}'").format(
-                        cmd="{" + cmd_name + ":}",
-                        val=bpm_part,
+                    line=line_num,
+                    column=col,
+                    message=_(
+                        "Command '{%s:}' requires a numeric BPM value before the comma, got: '%s'"
+                    ) % (
+                        cmd_name,
+                        bpm_part,
                     )
                 ))
                 return
-            # Valida la modalità M ∈ {-1, 0, 1, 2, 3}
+
+            # ── Validazione display mode ───────────────────
             try:
                 mode_int = int(mode_part)
+
                 if mode_int not in (-1, 0, 1, 2, 3):
                     raise ValueError
+
             except ValueError:
                 result.errors.append(SyntaxError(
-                    line=line_num, column=col,
-                    message=_("Command '{cmd}': display mode must be -1, 0, 1, 2 or 3, got: '{val}'").format(
-                        cmd="{" + cmd_name + ":}",
-                        val=mode_part,
+                    line=line_num,
+                    column=col,
+                    message=_(
+                        "Command '{%s:}': display mode must be -1, 0, 1, 2 or 3, got: '%s'"
+                    ) % (
+                        cmd_name,
+                        mode_part,
                     )
                 ))
                 return
-            # Entrambe le parti sono valide: saltiamo il controllo generico
+
+            # tutto valido
             value_to_check = None
+
+        # ── Validazione numerica standard ─────────────────
         if value_to_check is not None:
+
             try:
                 float(value_to_check)
+
             except ValueError:
                 result.errors.append(SyntaxError(
-                    line=line_num, column=col,
-                    message=_("Command '{cmd}' requires a numeric value, got: '{val}'").format(
-                        cmd="{" + cmd_name + ":}",
-                        val=cmd_value,
+                    line=line_num,
+                    column=col,
+                    message=_(
+                        "Command '{%s:}' requires a numeric value, got: '%s'"
+                    ) % (
+                        cmd_name,
+                        cmd_value,
                     )
                 ))
                 return
@@ -767,8 +794,7 @@ def _validate_command(content: str, line_num: int, col: int,
         if cmd_value is None or cmd_value == "":
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
-                message=_("Command '{cmd}' requires a value").format(
-                    cmd="{" + cmd_name + ":}")
+                message=_("Command '{%s:}' requires a value") % cmd_name
             ))
             return
 
@@ -787,7 +813,7 @@ def _validate_command(content: str, line_num: int, col: int,
                 result.errors.append(SyntaxError(
                     line=line_num, column=col,
                     message=_(
-                        "{{image}}: malformed embedded data URI "
+                        "{image}: malformed embedded data URI "
                         "(expected 'data:<mime>;base64,<data>')"
                     )
                 ))
@@ -834,8 +860,8 @@ def _validate_command(content: str, line_num: int, col: int,
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
                 message=_(
-                    "{{meta}} requires 'key value' format, got: '{val}'"
-                ).format(val=cmd_value)
+                    "{meta} requires 'key value' format, got: '%s'"
+                ) % cmd_value
             ))
 
     # ── Controllo: {bar} e {row}/{r} non accettano valori ─────────
@@ -843,6 +869,6 @@ def _validate_command(content: str, line_num: int, col: int,
         result.errors.append(SyntaxError(
             line=line_num, column=col,
             message=_(
-                "Command '{{cmd}}' does not accept a value"
-            ).format(cmd=cmd_name)
+                "Command '{%s}' does not accept a value"
+            ) % cmd_name
         ))

@@ -129,22 +129,5 @@ msgstr "Ultima pagina"
 msgid "Close"
 msgstr "Chiudi"
 
-# ── Print scope ───────────────────────────────────────────────────────────────
-
-msgid "Print scope"
-msgstr "Ambito di stampa"
-
-msgid "Entire document"
-msgstr "Intero documento"
-
-msgid "Selection only"
-msgstr "Solo selezione"
-
-msgid "A text selection is active in the editor."
-msgstr "È presente una selezione attiva nell'editor."
-
-msgid "No active selection — printing entire document."
-msgstr "Nessuna selezione attiva — verrà stampato l'intero documento."
-
 msgid "Selection"
 msgstr "Selezione"

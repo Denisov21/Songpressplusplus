@@ -1142,6 +1142,10 @@ The following controls are found in the **Formatting** tab of preferences and af
 - **Print** — prints directly; if the preference **Show print preview before printing** (the *General* tab in options) is enabled, the print preview is shown first; if disabled, printing starts immediately with no intermediate dialog
 - **Page setup** — paper, orientation and margins (in mm)
 
+> **Always on top** — the print preview window is configured with `wx.STAY_ON_TOP` and always remains visible above the main application window.
+
+> **Automatic selection handling** — the print preview automatically detects whether a text selection is active in the editor (`_print_scope = 'auto'`): if a selection exists, only that portion is printed; otherwise the entire document is printed. No manual configuration is needed.
+
 ### Print Options
 
 | Option                                         | Description                                                         |

@@ -93,7 +93,7 @@ class SongpressPrintout(wx.Printout):
         self._scale_y           = None
         self._margin_du         = None
         self._usable_w_du       = None
-        self._song_info         = None   # (full_song, line_start, line_end)
+        self._song_info         = None   # (full_song, sel_text)
         self._col_h_px          = 0      # altezza colonna testo in px schermo (0 = illimitata)
         self._seg_verse_start   = {}     # seg_idx -> (verseCount, labelCount, chorusCount)
         self._col_w_du          = None
@@ -199,15 +199,23 @@ class SongpressPrintout(wx.Printout):
         start, end  = self.frame_obj.text.GetSelection()
         # Se force_full è attivo, oppure non c'è selezione → stampa intero documento
         full_song   = self._force_full or (start == end)
-        line_start  = self.frame_obj.text.LineFromPosition(start)
-        line_end    = self.frame_obj.text.LineFromPosition(end)
         full_text   = self.frame_obj._strip_hash_commands(self.frame_obj.text.GetText())
-        self._song_info = (full_song, line_start, line_end)
+
+        if full_song:
+            sel_text = full_text
+        else:
+            # Estrae direttamente il testo selezionato (come fa _get_display_text),
+            # così i comandi {start_of_grid}, {start_chorus}, ecc. presenti nella
+            # selezione vengono inclusi senza dipendere dal filtraggio per numero di riga.
+            raw_sel  = self.frame_obj.text.GetTextRange(start, end)
+            sel_text = self.frame_obj._strip_hash_commands(raw_sel)
+
+        self._song_info = (full_song, sel_text)
 
         if full_song:
             self._segments = self._split_on_new_page(full_text)
         else:
-            self._segments = [full_text]
+            self._segments = [sel_text]
 
         mdc = wx.MemoryDC(wx.Bitmap(1, 1))
         self._page_offsets = []
@@ -219,10 +227,7 @@ class SongpressPrintout(wx.Printout):
             r.initialLabelCount  = label_count
             r.initialChorusCount = chorus_count
             self._seg_verse_start[seg_idx] = (verse_count, label_count, chorus_count)
-            if full_song:
-                sw, sh = r.Render(seg_text, mdc)
-            else:
-                sw, sh = r.Render(full_text, mdc, line_start, line_end)
+            sw, sh = r.Render(seg_text, mdc)
             sw, sh = max(1, sw), max(1, sh)
             verse_count  = r.song.verseCount
             label_count  = r.song.labelCount
@@ -244,10 +249,7 @@ class SongpressPrintout(wx.Printout):
             r.initialVerseCount  = vc
             r.initialLabelCount  = lc
             r.initialChorusCount = cc
-            if full_song:
-                sw, sh = r.Render(seg_text, mdc2)
-            else:
-                sw, sh = r.Render(full_text, mdc2, line_start, line_end)
+            sw, sh = r.Render(seg_text, mdc2)
             total_h_px += sh  # somma l'altezza di ciascun segmento
 
         if getattr(self.frame_obj, '_fit_to_page', False):
@@ -270,10 +272,10 @@ class SongpressPrintout(wx.Printout):
             r_check.initialLabelCount  = lc
             r_check.initialChorusCount = cc
             _, sh_check = r_check.Render(
-                self._segments[0] if full_song else full_text, mdc2
+                self._segments[0], mdc2
             )
             row_h = max(1, sh_check // max(1, sum(
-                1 for ln in (self._segments[0] if full_song else full_text).splitlines() if ln.strip()
+                1 for ln in self._segments[0].splitlines() if ln.strip()
             )))
 
             px_per_page = usable_h / self._scale_y
@@ -338,10 +340,7 @@ class SongpressPrintout(wx.Printout):
             r.initialVerseCount  = vc
             r.initialLabelCount  = lc
             r.initialChorusCount = cc
-            if full_song:
-                sw, sh = r.Render(seg_text, mdc3)
-            else:
-                sw, sh = r.Render(full_text, mdc3, line_start, line_end)
+            sw, sh = r.Render(seg_text, mdc3)
             sw, sh = max(1, sw), max(1, sh)
 
             if getattr(self.frame_obj, '_remove_blank_pages', False) and sh <= 2:
@@ -399,12 +398,9 @@ class SongpressPrintout(wx.Printout):
         seg_idx, y_offset_px = self._page_offsets[logical_page_idx]
         ml, mt, mr, mb       = self._margin_du
         usable_h_du          = self.GetPageSizePixels()[1] - mt - mb
-        full_song, line_start, line_end = self._song_info
+        full_song, _ = self._song_info  # sel_text già incluso in self._segments
 
-        if full_song:
-            seg_text = self._segments[seg_idx]
-        else:
-            seg_text = self.frame_obj._strip_hash_commands(self.frame_obj.text.GetText())
+        seg_text = self._segments[seg_idx]
 
         dc.SetClippingRegion(
             origin_x, origin_y,
@@ -419,10 +415,7 @@ class SongpressPrintout(wx.Printout):
         r.initialVerseCount  = vc
         r.initialLabelCount  = lc
         r.initialChorusCount = cc
-        if full_song:
-            r.Render(seg_text, dc)
-        else:
-            r.Render(seg_text, dc, line_start, line_end)
+        r.Render(seg_text, dc)
 
         dc.SetUserScale(1.0, 1.0)
         dc.SetDeviceOrigin(0, 0)
@@ -612,61 +605,6 @@ class PrintOptionsDialog:
         box_scale.Add(self.spin_font_scale, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
         outer.Add(box_scale, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
 
-        # ── Sezione Ambito di stampa ───────────────────────────────────
-        # Rileva se c'è una selezione attiva nell'editor
-        start, end = owner.text.GetSelection()
-        self._has_selection = (start != end)
-
-        box_scope = wx.StaticBoxSizer(
-            wx.StaticBox(dlg, label=_("Print scope")), wx.VERTICAL
-        )
-        current_scope = getattr(owner, '_print_scope', 'auto')
-
-        self.rb_scope_full = wx.RadioButton(
-            dlg, label=_("Entire document"), style=wx.RB_GROUP
-        )
-        self.rb_scope_sel  = wx.RadioButton(
-            dlg, label=_("Selection only")
-        )
-
-        # Stato iniziale
-        if self._has_selection and current_scope == 'selection':
-            self.rb_scope_sel.SetValue(True)
-            self.rb_scope_full.SetValue(False)
-        else:
-            self.rb_scope_full.SetValue(True)
-            self.rb_scope_sel.SetValue(False)
-
-        # Disabilita "Selezione" se non c'è testo selezionato
-        self.rb_scope_sel.Enable(self._has_selection)
-
-        # Nota descrittiva (pattern identico a MusicalSymbolDialog)
-        if self._has_selection:
-            scope_note_text = _("A text selection is active in the editor.")
-        else:
-            scope_note_text = _("No active selection — printing entire document.")
-
-        _scope_note_row = wx.BoxSizer(wx.HORIZONTAL)
-        _scope_info_icon = wx.StaticText(dlg, label=u"\u2139")   # ℹ
-        _icon_font = _scope_info_icon.GetFont()
-        _icon_font.SetPointSize(_icon_font.GetPointSize() + 1)
-        _icon_font.SetWeight(wx.FONTWEIGHT_BOLD)
-        _scope_info_icon.SetFont(_icon_font)
-        _scope_info_icon.SetForegroundColour(wx.Colour(0, 100, 180))
-        _scope_note_row.Add(_scope_info_icon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
-        self._scope_note = wx.StaticText(dlg, label=scope_note_text)
-        _note_font = self._scope_note.GetFont()
-        _note_font.SetPointSize(max(_note_font.GetPointSize() - 1, 7))
-        _note_font.SetStyle(wx.FONTSTYLE_ITALIC)
-        self._scope_note.SetFont(_note_font)
-        self._scope_note.SetForegroundColour(wx.Colour(90, 90, 90))
-        _scope_note_row.Add(self._scope_note, 0, wx.ALIGN_CENTER_VERTICAL)
-
-        box_scope.Add(self.rb_scope_full, 0, wx.ALL, _GAP)
-        box_scope.Add(self.rb_scope_sel,  0, wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
-        box_scope.Add(_scope_note_row,    0, wx.LEFT | wx.BOTTOM, _GAP + 2)
-        outer.Add(box_scope, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
-
         # ── Bottoni ────────────────────────────────────────────────────
         PIN_OFF = u"📌"
         PIN_ON  = u"📍"
@@ -697,8 +635,6 @@ class PrintOptionsDialog:
         self.cb_shrink.Bind(wx.EVT_CHECKBOX, self._on_shrink_changed)
         self.cb_remove_blank.Bind(wx.EVT_CHECKBOX, self._on_remove_blank_changed)
         self.cb.Bind(wx.EVT_CHECKBOX, self._on_two_pages_changed)
-        self.rb_scope_full.Bind(wx.EVT_RADIOBUTTON, self._on_scope_changed)
-        self.rb_scope_sel.Bind(wx.EVT_RADIOBUTTON, self._on_scope_changed)
         self.btn_pin.Bind(wx.EVT_BUTTON, self._on_pin)
         self.btn_ok.Bind(wx.EVT_BUTTON, self._on_ok)
 
@@ -728,9 +664,6 @@ class PrintOptionsDialog:
         self.cb_no_mirror.Enable(self.cb.GetValue())
         evt.Skip()
 
-    def _on_scope_changed(self, evt):
-        evt.Skip()  # aggiornamento in _apply_options al momento dell'OK
-
     def _on_pin(self, evt):
         PIN_OFF = u"📌"
         PIN_ON  = u"📍"
@@ -756,11 +689,6 @@ class PrintOptionsDialog:
         o._remove_blank_pages   = self.cb_remove_blank.GetValue()
         o._blank_page_threshold = self.spin_blank_threshold.GetValue()
         o._print_font_scale     = self.spin_font_scale.GetValue()
-        # Ambito di stampa
-        if self._has_selection and self.rb_scope_sel.GetValue():
-            o._print_scope = 'selection'
-        else:
-            o._print_scope = 'auto'
         if self.on_apply is not None:
             self.on_apply()
 
@@ -811,10 +739,6 @@ class PrintManager:
         self._min_margin_shrink    = 5
         self._print_font_scale     = 100
         self._print_options_pinned = False
-        # 'auto'       = comportamento originale: selezione se attiva, altrimenti tutto
-        # 'selection'  = stampa solo la selezione corrente
-        # 'full'       = stampa sempre l'intero documento
-        self._print_scope          = 'auto'
 
         self._preview_frame = None
 
@@ -875,23 +799,15 @@ class PrintManager:
     def _make_printout(self, title=None):
         """Crea e restituisce un SongpressPrintout configurato.
 
-        Tiene conto di _print_scope:
-          'full'      → forza stampa intero documento (ignora selezione)
-          'selection' → stampa solo la selezione (comportamento naturale se c'è selezione)
-          'auto'      → lascia decidere a SongpressPrintout in base alla selezione attiva
+        Se c'è una selezione attiva nell'editor, stampa solo quella;
+        altrimenti stampa l'intero documento (gestito da _ensure_layout).
         """
         if title is None:
             title = _("Print")
-        scope = getattr(self, '_print_scope', 'auto')
-        # force_full=True solo quando esplicitamente richiesto 'full'
-        # (in 'auto' e 'selection' il comportamento è gestito da _ensure_layout
-        #  tramite GetSelection())
-        force_full = (scope == 'full')
         return SongpressPrintout(
             self, title,
             two_pages_per_sheet=self._two_pages_per_sheet,
             font_scale=getattr(self, '_print_font_scale', 100),
-            force_full=force_full,
         )
 
     # ── Azioni ────────────────────────────────────────────────────────────────
@@ -1002,10 +918,9 @@ class PrintManager:
         self.previewCanvas.Refresh(self._get_display_text())
         base_title = os.path.splitext(os.path.basename(self.document))[0] \
                      if self.document else _("Print")
-        scope = getattr(self, '_print_scope', 'auto')
         start, end = self.text.GetSelection()
         has_sel    = (start != end)
-        if scope == 'selection' and has_sel:
+        if has_sel:
             title = u"{} — {}".format(base_title, _("Selection"))
         else:
             title = base_title
@@ -1023,7 +938,8 @@ class PrintManager:
             )
             return
 
-        pf = wx.PreviewFrame(preview, self.frame, _("Print preview"))
+        pf = wx.PreviewFrame(preview, self.frame, _("Print preview"),
+                             style=wx.DEFAULT_FRAME_STYLE | wx.STAY_ON_TOP)
         pf.Initialize()
         self._preview_frame = pf
 

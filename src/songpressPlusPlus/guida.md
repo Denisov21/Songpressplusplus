@@ -1142,6 +1142,10 @@ I seguenti controlli si trovano nella scheda **Formattazione** delle preferenze 
 - **Stampa** — stampa direttamente; se la preferenza **Mostra anteprima di stampa prima di stampare** (scheda *Generale* delle opzioni) è attiva, viene mostrata prima l'anteprima di stampa; se è disattivata, la stampa parte immediatamente senza dialogo intermedio
 - **Impostazione pagina** — carta, orientamento e margini (in mm)
 
+> **Finestra sempre in primo piano** — la finestra di anteprima di stampa è configurata con `wx.STAY_ON_TOP` e rimane sempre visibile sopra alla finestra principale dell'applicazione.
+
+> **Gestione automatica della selezione** — l'anteprima di stampa rileva automaticamente se è attiva una selezione di testo nell'editor (`_print_scope = 'auto'`): se c'è una selezione, viene stampata solo quella; altrimenti viene stampato l'intero documento. Non è necessaria alcuna impostazione manuale.
+
 ### Opzioni di stampa
 
 | Opzione                                              | Descrizione                                                              |

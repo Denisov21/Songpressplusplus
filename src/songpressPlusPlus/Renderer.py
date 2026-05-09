@@ -571,7 +571,7 @@ class Renderer(object):
                             # self.tempoDisplay per questo comando soltanto).
                             raw = a.strip()
                             if ',' in raw:
-                                bpm_part, _, mode_part = raw.partition(',')
+                                bpm_part, _sep, mode_part = raw.partition(',')
                                 bpm_str = bpm_part.strip()
                                 try:
                                     local_display = int(mode_part.strip())
@@ -953,7 +953,7 @@ class Renderer(object):
 
         for p in parts[1:]:
             if '=' in p:
-                key, _, val = p.partition('=')
+                key, _sep, val = p.partition('=')
                 key = key.strip().lower()
                 has_percent = '%' in val
                 val = val.strip().rstrip('%')
