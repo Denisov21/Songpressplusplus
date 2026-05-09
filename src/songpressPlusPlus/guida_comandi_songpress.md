@@ -607,8 +607,6 @@ Le indicazioni di tempo vengono visualizzate nell'anteprima secondo la modalità
 
 ### `tempo`
 
-![tempo_it](./SongpressV58 OK - BUGFIX/SongpressPlusPlus/src/songpressPlusPlus/img/GUIDE/tempo_it.png)
-
 **Sintassi:** `{tempo: N}` oppure `{tempo: N,M}`
 
 Indica il **tempo** in BPM riferito alla **semiminima** (♩ = N). È il comando di tempo più comune.
@@ -945,6 +943,25 @@ Gli accordi non sono comandi `{...}` ma si inseriscono tra **parentesi quadre** 
 
 Gli accordi vengono visualizzati **sopra** il testo (o sotto, se configurato nelle preferenze). La posizione verticale è definita dall'opzione *Accordi sopra/sotto* nel menu Formato.
 
+### Integra accordi
+
+Il comando **Integra accordi** (menu **Modifica → Integra accordi**) converte automaticamente in sintassi ChordPro il formato "accordi su riga separata + testo sulla riga successiva", tipico dei file `.txt` copiati dal web o da altri software.
+
+**Come funziona:** se la riga corrente contiene solo accordi (senza testo cantato) e la riga successiva contiene solo testo, il comando fonde le due righe producendo la notazione `[Accordo]parola` standard di ChordPro.
+
+**Esempio — prima dell'integrazione:**
+```
+C       G       Am      F
+Testo della canzone qui
+```
+
+**Esempio — dopo l'integrazione:**
+```chordpro
+[C]Testo [G]della [Am]canzone [F]qui
+```
+
+> Posizionare il cursore sulla riga degli accordi prima di eseguire il comando. Utile per convertire rapidamente spartiti copiati da fonti esterne senza dover reinserire manualmente ogni accordo.
+
 ---
 
 ## 11. Commenti di riga
@@ -1074,12 +1091,6 @@ Configura il visualizzatore della guida rapida integrata di Songpress++.
 |---|---|---|---|
 | **Visualizzatore Markdown** | Choice | Automatico | Motore usato per renderizzare la guida in Markdown: **Automatico** (prova python-markdown, poi mistune, poi parser integrato), **python-markdown**, **mistune**, **Parser integrato**. |
 
-#### Gruppo: Percorsi immagini
-
-| Impostazione | Tipo | Default | Descrizione |
-|---|---|---|---|
-| **Usa percorsi assoluti per le immagini nel Markdown** | Checkbox | ✗ disattivo | Se attivo, i percorsi delle immagini nella guida vengono riscritti come percorsi assoluti completi (`../src/songpress/img/GUIDE/...`). Utile per visualizzare la guida in editor Markdown esterni. |
-
 ---
 
 ### Scheda Menu contestuale (Context menu)
@@ -1110,6 +1121,7 @@ Permette di personalizzare quali voci appaiono nel **menu contestuale** (tasto d
 | Propaga accordi strofa | ✔ | Propaga lo schema accordi della strofa corrente a tutte le strofe con lo stesso schema. |
 | Propaga accordi ritornello | ✔ | Come sopra, per il ritornello. |
 | Copia solo testo | ✔ | Copia il testo senza accordi negli appunti. |
+| Integra accordi | ✔ | Fonde la riga corrente (accordi separati) con la riga di testo successiva, producendo la notazione `[Accordo]parola` ChordPro standard. |
 
 #### Gruppo: Selezione
 
@@ -1251,4 +1263,5 @@ Accessibile da **Formato → Indicazione di tempo** (o clic sull'indicazione nel
 | `{fingering: ...}` | — | Diagrammi | Tastiera pianoforte con diteggiatura numerata |
 | `{image: ...}` | — | Immagini | Inserisce un'immagine |
 | `[Accordo]` | — | Accordi inline | Accordo posizionato nel testo |
+| Integra accordi | — | Accordi inline | Fonde riga accordi separati + riga testo nella notazione `[Accordo]parola` |
 | `# testo` | — | Commenti | Riga di commento (ignorata) |

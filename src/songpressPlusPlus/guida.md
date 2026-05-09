@@ -49,7 +49,7 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 | `{copyright:Testo}` |              | ✅  | 🖊    | Nota di copyright (visualizzata come «© …»)                                               |
 | `{key:Tonalità}`    |              | ✅  | ⌨️   | Tonalità (es. `Am`, `C`, `G`, `F#m`); visualizzata come «Key: …» se abilitata             |
 | `{capo:N}`          |              | ✅  | 🖊    | Capotasto al tasto N (es. `{capo:2}`); visualizzato come «Capo: N»                        |
-| `{tempo:BPM}`       |              | ✅  | ⌨️   | Tempo in BPM; icona e formato configurabili dal dialogo *Inserisci → Tempo* (es. `{tempo:120}`) |
+| `{tempo:BPM[,M]}`   |              | ✅  | ⌨️   | Tempo in BPM; icona e formato configurabili dal dialogo *Inserisci → Tempo* (es. `{tempo:120}`). Il parametro opzionale `,M` sovrascrive la modalità per il singolo comando (0=Testo, 1=♩, 2=BPM, 3=metronomo, -1=nascosto) |
 | `{tempo_m:BPM}`     |              | 🔧  | 🖊    | Tempo con icona **minima** fissa — indipendente dalla modalità di visualizzazione globale  |
 | `{tempo_s:BPM}`     |              | 🔧  | 🖊    | Tempo con icona **semiminima** fissa                                                      |
 | `{tempo_sp:BPM}`    |              | 🔧  | 🖊    | Tempo con icona **semiminima puntata** fissa                                              |
@@ -67,7 +67,7 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 
 > **Nota sui metadati estesi** — Le direttive `{sorttitle}`, `{keywords}`, `{topic}`, `{collection}`, `{language}`, `{meta}` vengono riconosciute e accettate dal parser per garantire la compatibilità con file ChordPro 6, ma il loro valore non viene visualizzato nell'anteprima né in stampa: sono trattate come puri metadati. Il token `:valore` viene consumato silenziosamente. La direttiva `{duration}` ha invece un comportamento speciale: il suo valore viene usato dalla funzione **Statistiche brano** (vedi sotto).
 
-> **Nota sul tempo** — `{tempo:}` ha quattro modalità di visualizzazione selezionabili nel dialogo di inserimento: **Tempo:** (testo semplice), **♩** (nota musicale con valore `♩ = 120`), **BPM** (testo `BPM: 120`), **🎼** (metronomo con valore `♩ = 120`). Spuntando *Metadati*, il valore viene trattato come puro metadato e non appare nell'anteprima né in stampa. Le varianti `{tempo_m:}`, `{tempo_s:}` ecc. mostrano sempre la propria icona fissa indipendentemente da questa impostazione.
+> **Nota sul tempo** — `{tempo:}` ha quattro modalità di visualizzazione selezionabili nel dialogo di inserimento: **Tempo:** (testo semplice), **♩** (nota musicale con valore `♩ = 120`), **BPM** (testo `BPM: 120`), **🎼** (metronomo con valore `♩ = 120`). Spuntando *Metadati*, il valore viene trattato come puro metadato e non appare nell'anteprima né in stampa. La scelta nel dialogo imposta la **modalità globale**; per sovrascriverla per un singolo comando usa la forma `{tempo:BPM,M}` (es. `{tempo:120,1}`). Le varianti `{tempo_m:}`, `{tempo_s:}` ecc. mostrano sempre la propria icona fissa indipendentemente da questa impostazione.
 
 > **Nota sulla tonalità (`{key}`)** — Il dialogo *Inserisci → Tonalità* permette di inserire la direttiva `{key:tonalità}` con tre modalità:
 >
@@ -598,6 +598,22 @@ Il comando *Inserisci → Tempo {tempo:}…* apre un dialogo con due campi:
 - **Metadati** — se spuntato, la direttiva viene accettata dal parser ma non visualizzata nell'anteprima né in stampa. Tutte le opzioni di visualizzazione vengono disabilitate automaticamente.
 
 La scelta fatta nel dialogo viene **salvata come preferenza globale** e si applica a tutte le successive visualizzazioni di `{tempo:}` nell'anteprima e in stampa, finché non viene modificata di nuovo.
+
+**Sovrascrittura per singolo comando — parametro `,M`:**
+
+Per forzare una modalità diversa su un singolo comando senza cambiare la preferenza globale, si può usare la forma `{tempo:BPM,M}`, dove `M` è un intero che corrisponde alla voce del dialogo:
+
+| Valore `M` | Voce nel dialogo | Aspetto nell'anteprima |
+| ---------- | ---------------- | ---------------------- |
+| `0` | **Tempo:** | `Tempo: 120` |
+| `1` | **♩** (nota musicale) | `♩ = 120` |
+| `2` | **BPM** | `BPM: 120` |
+| `3` | **🎼** (metronomo) | `🎼 = 120` |
+| `-1` | **Metadati** | *(non visualizzato)* |
+
+Se `,M` è omesso, viene usata la modalità impostata nelle preferenze globali.
+
+> **Nota:** non tutti i simboli si possono dimensionare. Le modalità `1` e `3` usano icone ridimensionabili (16×16 / 24×24 / 32×32); le modalità `0` e `2` mostrano solo testo e non sono influenzate dall'impostazione della dimensione icona.
 
 **Dimensione dell'icona:**
 

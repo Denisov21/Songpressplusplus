@@ -607,8 +607,6 @@ Tempo indications are displayed in the preview according to the mode chosen in p
 
 ### `tempo`
 
-![tempo_en](./SongpressV58 OK - BUGFIX/SongpressPlusPlus/src/songpressPlusPlus/img/GUIDE/tempo_en.png)
-
 **Syntax:** `{tempo: N}` or `{tempo: N,M}`
 
 Indicates the **tempo** in BPM referenced to the **quarter note** (♩ = N). This is the most common tempo command.
@@ -947,6 +945,25 @@ Chords are not `{...}` commands but are inserted in **square brackets** `[...]` 
 
 Chords are displayed **above** the text (or below, if configured in preferences). The vertical position is defined by the *Chords above/below* option in the Format menu.
 
+### Integrate chords
+
+The **Integrate chords** command (**Edit → Integrate chords**) automatically converts the "chords on a separate line + text on the following line" format — typical of `.txt` files copied from the web or other software — into standard ChordPro syntax.
+
+**How it works:** if the current line contains only chords (no sung text) and the following line contains only text, the command merges the two lines producing the standard ChordPro `[Chord]word` notation.
+
+**Example — before integration:**
+```
+C       G       Am      F
+Song text goes here
+```
+
+**Example — after integration:**
+```chordpro
+[C]Song [G]text [Am]goes [F]here
+```
+
+> Place the cursor on the chord line before running the command. Useful for quickly converting lead sheets copied from external sources without having to re-enter every chord manually.
+
 ---
 
 ## 11. Line comments
@@ -1076,12 +1093,6 @@ Configures the built-in Songpress++ quick guide viewer.
 |---|---|---|---|
 | **Markdown viewer** | Choice | Automatic | Engine used to render the Markdown guide: **Automatic** (tries python-markdown, then mistune, then the built-in parser), **python-markdown**, **mistune**, **Built-in parser**. |
 
-#### Group: Image paths
-
-| Setting | Type | Default | Description |
-|---|---|---|---|
-| **Use absolute image paths in Markdown** | Checkbox | ✗ inactive | If active, image paths in the guide are rewritten as full absolute paths (`../src/songpress/img/GUIDE/...`). Useful for viewing the guide in external Markdown editors. |
-
 ---
 
 ### Context menu tab
@@ -1112,6 +1123,7 @@ Allows customising which items appear in the **context menu** (right-click) of t
 | Propagate verse chords | ✔ | Propagates the chord pattern of the current verse to all verses with the same pattern. |
 | Propagate chorus chords | ✔ | Same as above, for the chorus. |
 | Copy text only | ✔ | Copies the text without chords to the clipboard. |
+| Integrate chords | ✔ | Merges the current chord-only line with the following text line, producing the standard `[Chord]word` ChordPro notation. |
 
 #### Group: Selection
 
@@ -1253,4 +1265,5 @@ Accessible from **Format → Tempo indication** (or by clicking the indication i
 | `{fingering: ...}` | — | Diagrams | Piano keyboard with numbered fingering |
 | `{image: ...}` | — | Images | Inserts an image |
 | `[Chord]` | — | Inline chords | Chord positioned in the text |
+| Integrate chords | — | Inline chords | Merges a chord-only line with the following text line into `[Chord]word` notation |
 | `# text` | — | Comments | Comment line (ignored) |

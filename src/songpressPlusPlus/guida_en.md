@@ -49,7 +49,7 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | `{copyright:Text}`  |              | ✅  | 🖊    | Copyright notice (rendered as «© …»)                                                     |
 | `{key:Key}`         |              | ✅  | ⌨️   | Key (e.g. `Am`, `C`, `G`, `F#m`); rendered as «Key: …» if display is enabled             |
 | `{capo:N}`          |              | ✅  | 🖊    | Capo at fret N (e.g. `{capo:2}`); rendered as «Capo: N»                                  |
-| `{tempo:BPM}`       |              | ✅  | ⌨️   | Tempo in BPM; icon and format configurable via *Insert → Tempo* dialog (e.g. `{tempo:120}`) |
+| `{tempo:BPM[,M]}`   |              | ✅  | ⌨️   | Tempo in BPM; icon and format configurable via *Insert → Tempo* dialog (e.g. `{tempo:120}`). The optional `,M` parameter overrides the display mode for that single command (0=Text, 1=♩, 2=BPM, 3=metronome, -1=hidden) |
 | `{tempo_m:BPM}`     |              | 🔧  | 🖊    | Tempo with fixed **half note** icon — independent of the global display mode             |
 | `{tempo_s:BPM}`     |              | 🔧  | 🖊    | Tempo with fixed **quarter note** icon                                                   |
 | `{tempo_sp:BPM}`    |              | 🔧  | 🖊    | Tempo with fixed **dotted quarter note** icon                                            |
@@ -67,7 +67,7 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 
 > **Note on extended metadata** — The directives `{sorttitle}`, `{keywords}`, `{topic}`, `{collection}`, `{language}`, and `{meta}` are recognised and accepted by the parser for compatibility with ChordPro 6 files, but their value is not shown in the preview or in print: they are treated as pure metadata and consumed silently. The `{duration}` directive has a special behaviour: its value is used by the **Song Statistics** feature (see below).
 
-> **Note on tempo** — `{tempo:}` has four display modes selectable in the insert dialog: **Tempo:** (plain text), **♩** (note icon with value `♩ = 120`), **BPM** (text `BPM: 120`), **🎼** (metronome icon with value `🎼 = 120`). Checking *Metadata* treats the value as pure metadata with no visual output. The `{tempo_m:}`, `{tempo_s:}` etc. variants always display their own fixed icon regardless of this setting.
+> **Note on tempo** — `{tempo:}` has four display modes selectable in the insert dialog: **Tempo:** (plain text), **♩** (note icon with value `♩ = 120`), **BPM** (text `BPM: 120`), **🎼** (metronome icon with value `🎼 = 120`). Checking *Metadata* treats the value as pure metadata with no visual output. The dialog choice sets the **global mode**; to override it for a single command use the form `{tempo:BPM,M}` (e.g. `{tempo:120,1}`). The `{tempo_m:}`, `{tempo_s:}` etc. variants always display their own fixed icon regardless of this setting.
 
 > **Note on key (`{key}`)** — The *Insert → Key* dialog lets you insert the `{key:key}` directive in three ways:
 >
@@ -598,6 +598,22 @@ The command *Insert → Tempo {tempo:}…* opens a dialog with two areas:
 - **Metadata** — when checked, the directive is accepted by the parser but not shown in the preview or in print. All display options are disabled automatically.
 
 The choice made in the dialog is **saved as a global preference** and applies to all subsequent renderings of `{tempo:}` in preview and print, until changed again.
+
+**Overriding for a single command — the `,M` parameter:**
+
+To force a different mode on a single command without changing the global preference, use the form `{tempo:BPM,M}`, where `M` is an integer corresponding to the dialog option:
+
+| Value `M` | Dialog option | Appearance in preview |
+| --------- | ------------- | --------------------- |
+| `0` | **Tempo:** | `Tempo: 120` |
+| `1` | **♩** (note icon) | `♩ = 120` |
+| `2` | **BPM** | `BPM: 120` |
+| `3` | **🎼** (metronome) | `🎼 = 120` |
+| `-1` | **Metadata** | *(not displayed)* |
+
+If `,M` is omitted, the mode set in the global preferences is used.
+
+> **Note:** not all symbols can be resized. Modes `1` and `3` use scalable icons (16×16 / 24×24 / 32×32); modes `0` and `2` render as plain text and are not affected by the icon size setting.
 
 **Icon size:**
 
