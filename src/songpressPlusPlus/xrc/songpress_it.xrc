@@ -407,6 +407,7 @@
           <label>_Durata accordo {beats__time:}...</label>
           <accel>Ctrl+Shift+D</accel>
           <help>Inserisci la direttiva ChordPro per impostare la durata in battute degli accordi (es. 1, 2, 4)</help>
+          <bitmap>../img/beats.png</bitmap>
         </object>
         <object class="wxMenuItem" name="insertTaste">
           <label>Tastiera _accordo {taste:}...</label>

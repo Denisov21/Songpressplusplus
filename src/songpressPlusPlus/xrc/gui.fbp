@@ -775,7 +775,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/beats.png</property>
             <property name="checked">1</property>
             <property name="enabled">1</property>
             <property name="help">Show or hide the beat count above chords ({beats_time:} directive)</property>

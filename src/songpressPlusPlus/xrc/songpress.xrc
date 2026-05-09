@@ -407,6 +407,7 @@
           <label>_Duration {beats__time:}...</label>
           <accel>Ctrl+Shift+D</accel>
           <help>Insert ChordPro directive to set beat duration of chords (e.g. 1, 2, 4)</help>
+           <bitmap>../img/beats.png</bitmap>
         </object>
         <object class="wxMenuItem" name="insertTaste">
           <label>Chord _keyboard {taste:}...</label>
