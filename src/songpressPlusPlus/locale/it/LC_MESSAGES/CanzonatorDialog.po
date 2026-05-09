@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: songpress\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-04-30 18:00+0200\n"
-"PO-Revision-Date: 2026-04-30 18:00+0200\n"
+"PO-Revision-Date: 2026-05-09 09:26+0200\n"
 "Last-Translator: Denisov21\n"
 "Language-Team: \n"
 "Language: it\n"
@@ -18,31 +18,147 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 3.9\n"
 
-#: CanzonatorDialog.py — merge result dialog title
-msgid "Canzonatore — Merge completed"
+# ── Titoli dialogo ──────────────────────────────────────────────────────────
+msgid "Canzonator — Merge songs"
+msgstr "Canzonatore — Unisci brani"
+
+msgid "Canzonator — Merge completed"
 msgstr "Canzonatore — Unione completata"
 
-#: CanzonatorDialog.py — merge result message
-#, python-format
-msgid "Merge completed: %d songs joined."
-msgstr "Unione completata: %d brani uniti."
+# ── Titolo app (usato nei MessageBox) ──────────────────────────────────────
+msgid "Canzonator"
+msgstr "Canzonatore"
 
-#: CanzonatorDialog.py — merge result output file label
-msgid "Output file:"
-msgstr "File di output:"
+# ── Etichette finestra principale ───────────────────────────────────────────
+msgid "Files to merge (order = order in output) — double-click to open:"
+msgstr "File da unire (ordine = ordine nel file finale) — doppio clic per aprire:"
 
-#: CanzonatorDialog.py — merge result folder label
+# ── Colonne lista ───────────────────────────────────────────────────────────
+msgid "File"
+msgstr "File"
+
 msgid "Folder"
 msgstr "Cartella"
 
-#: CanzonatorDialog.py — merge result open file link tooltip
-msgid "Open the file with the default application"
-msgstr "Apri il file con l'applicazione predefinita"
+# ── Pulsanti gestione lista ─────────────────────────────────────────────────
+msgid "Add files…"
+msgstr "Aggiungi file…"
 
-#: CanzonatorDialog.py — new_song checkbox label
+msgid "Add folder…"
+msgstr "Aggiungi cartella…"
+
+msgid "Remove"
+msgstr "Rimuovi"
+
+msgid "▲ Up"
+msgstr "▲ Su"
+
+msgid "▼ Down"
+msgstr "▼ Giù"
+
+msgid "Clear all"
+msgstr "Cancella tutto"
+
+# ── Gruppo opzioni ──────────────────────────────────────────────────────────
+msgid "Options"
+msgstr "Opzioni"
+
+msgid "Song separator:"
+msgstr "Separatore brani:"
+
+msgid "{new_page}  (page break)"
+msgstr "{new_page}  (interruzione pagina)"
+
+msgid "Blank line"
+msgstr "Riga vuota"
+
+msgid "Output encoding:"
+msgstr "Codifica output:"
+
+msgid "Open the merged file in the editor"
+msgstr "Apri il file unito nell'editor"
+
+# ── Checkbox {new_song} ──────────────────────────────────────────────────────
 msgid "Insert {new_song} between songs"
 msgstr "Inserisci {new_song} tra i brani"
 
-#: CanzonatorDialog.py — new_song checkbox tooltip
 msgid "Adds {new_song} at the end of each song, before the separator"
 msgstr "Aggiunge {new_song} alla fine di ogni brano, prima del separatore"
+
+# ── Pulsanti principali ─────────────────────────────────────────────────────
+msgid "Merge…"
+msgstr "Unisci…"
+
+msgid "Close"
+msgstr "Chiudi"
+
+msgid "OK"
+msgstr "OK"
+
+# ── Filtri file ─────────────────────────────────────────────────────────────
+msgid "All supported files"
+msgstr "Tutti i file supportati"
+
+msgid "All files"
+msgstr "Tutti i file"
+
+msgid "ChordPro files"
+msgstr "File ChordPro"
+
+msgid "Select files to add"
+msgstr "Seleziona file da aggiungere"
+
+msgid "Select folder"
+msgstr "Seleziona cartella"
+
+msgid "Save merged file as…"
+msgstr "Salva file unito come…"
+
+# ── Dialogo completamento merge ─────────────────────────────────────────────
+#. %d = numero brani uniti
+msgid "Merge completed: %d songs merged."
+msgstr "Unione completata: %d brani uniti."
+
+#. %d = numero file saltati per errore
+msgid "(%d file(s) skipped due to read errors)"
+msgstr "(%d file saltati per errori di lettura)"
+
+msgid "Output file:"
+msgstr "File di output:"
+
+msgid "Folder:"
+msgstr "Cartella:"
+
+msgid "Open the file with the default application"
+msgstr "Apri il file con l'applicazione predefinita"
+
+msgid "Open the containing folder"
+msgstr "Apri la cartella contenente il file"
+
+# ── Messaggi di errore / avviso ─────────────────────────────────────────────
+msgid "Add at least two files to merge."
+msgstr "Aggiungere almeno due file da unire."
+
+msgid "Remove all files from the list?"
+msgstr "Rimuovere tutti i file dall'elenco?"
+
+#. %d = numero file saltati
+msgid "%d file(s) skipped (unsupported format or already in list)."
+msgstr "%d file saltati (formato non supportato o già presenti nell'elenco)."
+
+msgid "No supported files found in the selected folder."
+msgstr "Nessun file supportato trovato nella cartella selezionata."
+
+msgid ""
+"Errors reading the following files:\n"
+"\n"
+msgstr ""
+"Errori nella lettura dei seguenti file:\n"
+"\n"
+
+msgid ""
+"Error writing the merged file:\n"
+"\n"
+msgstr ""
+"Errore nella scrittura del file unito:\n"
+"\n"

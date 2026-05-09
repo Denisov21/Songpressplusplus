@@ -61,7 +61,7 @@ class _MergeResultDialog(wx.Dialog):
     def __init__(self, parent, out_path, n_merged, n_errors):
         super().__init__(
             parent,
-            title=_("Canzonatore — Merge completed"),
+            title=_("Canzonator — Merge completed"),
             style=wx.DEFAULT_DIALOG_STYLE,
         )
 
@@ -154,8 +154,9 @@ class _FileListPanel(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self._paths          = []   # lista ordinata dei percorsi assoluti
-        self._open_callback  = None # callback(path) per aprire nell'editor
+        self._paths              = []   # lista ordinata dei percorsi assoluti
+        self._open_callback      = None # callback(path) per aprire nell'editor
+        self._list_changed_cb    = None # callback() notifica variazione lista
 
         # ── Lista ──────────────────────────────────────────────────────
         self.lc = wx.ListCtrl(
@@ -203,6 +204,10 @@ class _FileListPanel(wx.Panel):
         """Registra la funzione(path) per aprire un file nell'editor."""
         self._open_callback = cb
 
+    def set_list_changed_callback(self, cb):
+        """Registra una funzione() chiamata ogni volta che la lista cambia."""
+        self._list_changed_cb = cb
+
     def GetPaths(self):
         return list(self._paths)
 
@@ -242,6 +247,8 @@ class _FileListPanel(wx.Panel):
         if added:
             self._rebuild_list()
             self._UpdateButtons()
+            if self._list_changed_cb:
+                self._list_changed_cb()
         return added
 
     # ── doppio clic ────────────────────────────────────────────────────
@@ -278,7 +285,7 @@ class _FileListPanel(wx.Panel):
                 if skipped:
                     wx.MessageBox(
                         _("%d file(s) skipped (unsupported format or already in list).") % skipped,
-                        _("Canzonatore"),
+                        _("Canzonator"),
                         wx.OK | wx.ICON_INFORMATION,
                         self,
                     )
@@ -294,7 +301,7 @@ class _FileListPanel(wx.Panel):
                 try:
                     names = sorted(os.listdir(folder))
                 except OSError as e:
-                    wx.MessageBox(str(e), _("Canzonatore"), wx.OK | wx.ICON_ERROR, self)
+                    wx.MessageBox(str(e), _("Canzonator"), wx.OK | wx.ICON_ERROR, self)
                     return
                 paths = [
                     os.path.join(folder, n) for n in names
@@ -303,7 +310,7 @@ class _FileListPanel(wx.Panel):
                 if self._add_paths(paths) == 0:
                     wx.MessageBox(
                         _("No supported files found in the selected folder."),
-                        _("Canzonatore"),
+                        _("Canzonator"),
                         wx.OK | wx.ICON_INFORMATION,
                         self,
                     )
@@ -320,6 +327,8 @@ class _FileListPanel(wx.Panel):
                 min(sel, n - 1), wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED
             )
         self._UpdateButtons()
+        if self._list_changed_cb:
+            self._list_changed_cb()
 
     def _OnUp(self, evt):
         sel = self._selected_index()
@@ -344,13 +353,15 @@ class _FileListPanel(wx.Panel):
             return
         if wx.MessageBox(
             _("Remove all files from the list?"),
-            _("Canzonatore"),
+            _("Canzonator"),
             wx.YES_NO | wx.ICON_QUESTION,
             self,
         ) == wx.YES:
             self._paths.clear()
             self._rebuild_list()
             self._UpdateButtons()
+            if self._list_changed_cb:
+                self._list_changed_cb()
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -369,7 +380,7 @@ class CanzonatorDialog(wx.Dialog):
 
     def __init__(self, parent, title=None):
         if title is None:
-            title = _("Canzonatore — Merge songs")
+            title = _("Canzonator — Merge songs")
         super().__init__(
             parent,
             title=title,
@@ -451,6 +462,13 @@ class CanzonatorDialog(wx.Dialog):
 
         self._open_callback = None
 
+        # Il pulsante Unisci è attivo solo con almeno 2 file in lista
+        self.btn_merge.Enable(False)
+        self.file_panel.set_list_changed_callback(self._UpdateMergeButton)
+
+    def _UpdateMergeButton(self):
+        self.btn_merge.Enable(len(self.file_panel.GetPaths()) >= 2)
+
     def set_open_callback(self, cb):
         """Registra la funzione da chiamare per aprire il file nell'editor."""
         self._open_callback = cb
@@ -461,10 +479,10 @@ class CanzonatorDialog(wx.Dialog):
 
     def _OnMerge(self, evt):
         paths = self.file_panel.GetPaths()
-        if not paths:
+        if len(paths) < 2:
             wx.MessageBox(
-                _("Add at least one file to merge."),
-                _("Canzonatore"),
+                _("Add at least two files to merge."),
+                _("Canzonator"),
                 wx.OK | wx.ICON_INFORMATION,
                 self,
             )
@@ -512,7 +530,7 @@ class CanzonatorDialog(wx.Dialog):
         if errors:
             wx.MessageBox(
                 _("Errors reading the following files:\n\n") + '\n'.join(errors),
-                _("Canzonatore"),
+                _("Canzonator"),
                 wx.OK | wx.ICON_ERROR,
                 self,
             )
@@ -529,7 +547,7 @@ class CanzonatorDialog(wx.Dialog):
         except Exception as e:
             wx.MessageBox(
                 _("Error writing the merged file:\n\n") + str(e),
-                _("Canzonatore"),
+                _("Canzonator"),
                 wx.OK | wx.ICON_ERROR,
                 self,
             )
@@ -596,7 +614,7 @@ def open_canzonatore(owner, parent_frame):
             owner.AutoAdjust(0, owner.text.GetLength())
             owner.previewCanvas.Refresh(owner._get_display_text())
         except Exception as e:
-            wx.MessageBox(str(e), _("Canzonatore"), wx.OK | wx.ICON_ERROR, parent_frame)
+            wx.MessageBox(str(e), _("Canzonator"), wx.OK | wx.ICON_ERROR, parent_frame)
 
     dlg.set_open_callback(_open_in_editor)
     dlg.Show()

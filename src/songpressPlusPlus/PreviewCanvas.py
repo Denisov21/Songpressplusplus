@@ -276,6 +276,7 @@ class PreviewCanvas(object):
 
         # SongFormat
         self.renderer = Renderer(sf, sd, notations)
+        self._SyncBgColourToDecorator()
         self.main_panel.SetSizer(outer)
         self.main_panel.Layout()
 
@@ -754,6 +755,7 @@ class PreviewCanvas(object):
         self.renderer.SetDecorator(sd)
         sd.showPageBreakLines  = self._showPageBreakLines
         sd.showColumnBreakLines = self._showColumnBreakLines
+        self._SyncBgColourToDecorator()
 
     def SetLineWidths(self, titleLineWidth, verseBoxWidth):
         self.renderer.sd.titleLineWidth = titleLineWidth
@@ -881,7 +883,17 @@ class PreviewCanvas(object):
     def SetGreyBackground(self, grey):
         """Imposta sfondo grigio (True) o bianco (False) nel pannello anteprima."""
         self._greyBackground = bool(grey)   # aggiorna il flag letto da OnPaint
+        self._SyncBgColourToDecorator()
         self.panel.Refresh()                # forza ridisegno con il nuovo sfondo
+
+    def _SyncBgColourToDecorator(self):
+        """Propaga il colore di sfondo corrente al SongDecorator.
+        Il decorator lo usa per precomporre l'alpha delle icone tempo (e delle
+        immagini {image:}) invece del bianco fisso, in modo che le icone
+        risultino visivamente integrate con lo sfondo grigio o bianco."""
+        bg = wx.Colour(160, 160, 160) if self._greyBackground else wx.WHITE
+        if hasattr(self, 'renderer') and hasattr(self.renderer, 'sd'):
+            self.renderer.sd.bgColour = bg
 
     def SetDblClickFocus(self, enabled):
         """Abilita (True) o disabilita (False) il focus editor al doppio-click.

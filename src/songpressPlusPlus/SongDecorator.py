@@ -490,16 +490,18 @@ class SongDecorator(object):
                 # non gestisce la trasparenza nativa della PNG (appare come nero).
                 if img.HasAlpha():
                     import array
+                    _bg = getattr(self, "bgColour", None)
+                    _bgr = (_bg.Red(), _bg.Green(), _bg.Blue()) if _bg else (255, 255, 255)
                     a = array.array('B', img.GetAlphaBuffer())
                     rs = array.array('B', img.GetDataBuffer())
                     rb = bytearray(new_w * new_h * 3)
                     for i in range(new_w * new_h):
                         av = a[i] / 255.0
                         for c in range(3):
-                            rb[i * 3 + c] = int(rs[i * 3 + c] * av + 255 * (1 - av))
-                    white_bg = wx.Image(new_w, new_h)
-                    white_bg.SetData(bytes(rb))
-                    bmp = wx.Bitmap(white_bg)
+                            rb[i * 3 + c] = int(rs[i * 3 + c] * av + _bgr[c] * (1 - av))
+                    bg_img = wx.Image(new_w, new_h)
+                    bg_img.SetData(bytes(rb))
+                    bmp = wx.Bitmap(bg_img)
                 else:
                     bmp = wx.Bitmap(img)
                 by = int(ty + text.marginTop)
@@ -521,16 +523,18 @@ class SongDecorator(object):
                 img = img.Scale(new_w, new_h, wx.IMAGE_QUALITY_HIGH)
                 if img.HasAlpha():
                     import array
+                    _bg = getattr(self, 'bgColour', None)
+                    _bgr = (_bg.Red(), _bg.Green(), _bg.Blue()) if _bg else (255, 255, 255)
                     a = array.array('B', img.GetAlphaBuffer())
                     rs = array.array('B', img.GetDataBuffer())
                     rb = bytearray(new_w * new_h * 3)
                     for i in range(new_w * new_h):
                         av = a[i] / 255.0
                         for c in range(3):
-                            rb[i * 3 + c] = int(rs[i * 3 + c] * av + 255 * (1 - av))
-                    white_bg = wx.Image(new_w, new_h)
-                    white_bg.SetData(bytes(rb))
-                    bmp = wx.Bitmap(white_bg)
+                            rb[i * 3 + c] = int(rs[i * 3 + c] * av + _bgr[c] * (1 - av))
+                    bg_img = wx.Image(new_w, new_h)
+                    bg_img.SetData(bytes(rb))
+                    bmp = wx.Bitmap(bg_img)
                 else:
                     bmp = wx.Bitmap(img)
                 by = int(ty + text.marginTop)
@@ -919,16 +923,18 @@ class SongDecorator(object):
             # Precomponi alpha su sfondo bianco (compatibilita' PrinterDC su Windows)
             if img.HasAlpha():
                 import array
+                _bg = getattr(self, 'bgColour', None)
+                _bgr = (_bg.Red(), _bg.Green(), _bg.Blue()) if _bg else (255, 255, 255)
                 a = array.array('B', img.GetAlphaBuffer())
                 rs = array.array('B', img.GetDataBuffer())
                 rb = bytearray(final_w * final_h * 3)
                 for i in range(final_w * final_h):
                     av = a[i] / 255.0
                     for c in range(3):
-                        rb[i * 3 + c] = int(rs[i * 3 + c] * av + 255 * (1 - av))
-                white_bg = wx.Image(final_w, final_h)
-                white_bg.SetData(bytes(rb))
-                bmp = wx.Bitmap(white_bg)
+                        rb[i * 3 + c] = int(rs[i * 3 + c] * av + _bgr[c] * (1 - av))
+                bg_img = wx.Image(final_w, final_h)
+                bg_img.SetData(bytes(rb))
+                bmp = wx.Bitmap(bg_img)
             else:
                 bmp = wx.Bitmap(img)
 
