@@ -301,7 +301,7 @@ class PreviewCanvas(object):
         dc.Clear()
 
         if not self.text.strip():
-            self._UpdatePageLabel(0, 0)
+            self._UpdatePageLabel(0)
             return
 
         # PrepareDC ha già impostato l'origine device in base allo scroll (X e Y).
@@ -329,7 +329,7 @@ class PreviewCanvas(object):
         self.panel.SetVirtualSize(wx.Size(vw, vh))
 
         # Aggiorna label pagina
-        self._UpdatePageLabel(h, vh)
+        self._UpdatePageLabel(h)
 
     # -----------------------------------------------------------------------
     # Zoom
@@ -457,7 +457,7 @@ class PreviewCanvas(object):
             evt.Skip()
 
     def _OnScroll(self, evt):
-        self._UpdatePageLabel(self._last_h, int(self._last_h * self._zoom_factor))
+        self._UpdatePageLabel(self._last_h)
         evt.Skip()
 
     def _OnPanelSize(self, evt):
@@ -475,7 +475,7 @@ class PreviewCanvas(object):
     # Label pagina
     # -----------------------------------------------------------------------
 
-    def _UpdatePageLabel(self, content_h_px, virtual_h_px):
+    def _UpdatePageLabel(self, content_h_px):
         """Aggiorna la label 'Pagina X di Y' in base alla posizione di scroll."""
         if self._page_label is None:
             return
@@ -836,7 +836,7 @@ class PreviewCanvas(object):
         self._page_w_mm = float(w_mm)
         self._page_h_mm = float(h_mm)
         if self._last_h > 0:
-            self._UpdatePageLabel(self._last_h, int(self._last_h * self._zoom_factor))
+            self._UpdatePageLabel(self._last_h)
 
     def SetPageMarginsMm(self, top_mm, bottom_mm):
         """Aggiorna i margini superiore e inferiore (mm) per il calcolo
@@ -844,7 +844,7 @@ class PreviewCanvas(object):
         self._margin_top_mm    = float(top_mm)
         self._margin_bottom_mm = float(bottom_mm)
         if self._last_h > 0:
-            self._UpdatePageLabel(self._last_h, int(self._last_h * self._zoom_factor))
+            self._UpdatePageLabel(self._last_h)
 
     def GetZoom(self):
         """Restituisce il fattore di zoom corrente (1.0 = 100%)."""
@@ -861,7 +861,7 @@ class PreviewCanvas(object):
         self._page_label.Show(show)
         # Aggiorna subito il testo se stiamo mostrando
         if show:
-            self._UpdatePageLabel(self._last_h, int(self._last_h * self._zoom_factor))
+            self._UpdatePageLabel(self._last_h)
         else:
             self._page_label.SetLabel("")
         # Forza ricalcolo layout della toolbar
@@ -1091,6 +1091,8 @@ class _FullscreenPreviewFrame(wx.Frame):
             return
         dc.SetUserScale(self._zoom, self._zoom)
         w, h = self.owner.renderer.Render(text, dc)
+        self.owner._last_w = w    # aggiorna così Fit funziona correttamente
+        self.owner._last_h = h
         dc.SetUserScale(1.0, 1.0)
         pw, _ = self._panel.GetClientSize()
         margin = max(8, int(pw * 0.03))

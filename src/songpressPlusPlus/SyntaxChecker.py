@@ -316,16 +316,6 @@ def _validate_fingering(cmd_value: str, line_num: int, col: int,
         used_semitones[semi]      = finger_num
 
 
-# Pattern per un accordo valido tra parentesi quadre
-_CHORD_PATTERN = re.compile(
-    r'^[A-Ga-g]?(?:Do|Re|Mi|Fa|Sol|La|Si|[A-G])'
-    r'[#b]?'
-    r'(?:m|min|maj|aug|dim|sus)?'
-    r'\d*'
-    r'(?:/[A-G](?:Do|Re|Mi|Fa|Sol|La|Si)?[#b]?)?'
-    r'$'
-)
-
 
 def _strip_inline_comment(line: str) -> str:
     depth_sq = 0
@@ -589,6 +579,7 @@ def _validate_beats_time(cmd_value: str, line_num: int, col: int,
                     "{{beats_time}}: unrecognized chord '{chord}'"
                 ).format(chord=chord_part)
             ))
+            continue   # non validare i battiti se l'accordo non è riconosciuto
 
         # ── Controlla i battiti ──────────────────────────────────
         if not beats_part:

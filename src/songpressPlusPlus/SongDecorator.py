@@ -9,6 +9,7 @@
 # License:     GNU GPL v2
 ##############################################################
 
+import wx
 from .SongFormat import *
 from .SongBoxes import *
 from .KlavierRenderer import draw_klavier_section
@@ -250,7 +251,8 @@ class SongDecorator(object):
 
             b.x = col_x
             b.y = col_y
-            col_y += b.GetTotalHeight() + b.GetLastLineTextHeight() * song.format.blockSpacing
+            last_line_h = b.GetLastLineTextHeight() if hasattr(b, 'GetLastLineTextHeight') else 0
+            col_y += b.GetTotalHeight() + last_line_h * song.format.blockSpacing
             song.RelocateBox(b)
 
         # Memorizza info colonne nel song per DrawBoxes

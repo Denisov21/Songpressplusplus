@@ -108,7 +108,7 @@ class Renderer(object):
             self.currentBlock = None
 
     def BeginVerse(self, label=None):
-        if self.currentBlock == None:
+        if self.currentBlock is None:
             self.BeginBlock(SongBlock.verse, label)
             self.label = label
 
@@ -139,7 +139,7 @@ class Renderer(object):
         saved = getattr(self, '_tab_saved_face', None)
         if saved is not None:
             self.sf.face = saved
-            self.format = ParagraphFormat(self.format)
+            self.format = ParagraphFormat(self.sf)
             self.format.face = saved
             self._tab_saved_face = None
 
@@ -318,8 +318,6 @@ class Renderer(object):
                 # Rimuove la voce usata per non riassegnarla
                 self._pending_duration.pop(matched_idx)
                 self._duration_chord_idx = 0
-                if not self._pending_duration:
-                    self._duration_chord_idx = 0
         if not type == SongText.chord or self.sf.showChords > 0:
             self.currentLine.AddBox(t)
 
@@ -336,7 +334,7 @@ class Renderer(object):
         self.AddText(title, SongText.subtitle)
 
     def BeginLine(self):
-        if self.currentLine == None:
+        if self.currentLine is None:
             if self.song.drawWholeSong or self.fromLine <= self.lineCount <= self.toLine:
                 self.currentBlock.drawBlock = True
             self.currentLine = SongLine()
@@ -363,7 +361,7 @@ class Renderer(object):
         return None
 
     def GetState(self):
-        return None if self.currentBlock == None else self.currentBlock.type
+        return None if self.currentBlock is None else self.currentBlock.type
 
     def Render(self, text, dc, fromLine = -1, toLine = -1):
         self.text = text
@@ -548,7 +546,7 @@ class Renderer(object):
                     elif cmd == 'comment_italic' or cmd == 'ci':
                         a = self.GetAttribute()
                         if a is not None and a.strip() != '':
-                            t = self.AddText(a, SongText.comment)
+                            self.AddText(a, SongText.comment)
                             if self.currentLine is not None and self.currentLine.boxes:
                                 self.currentLine.boxes[-1].is_italic = True
                     elif cmd == 'comment_box' or cmd == 'cb':

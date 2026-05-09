@@ -522,7 +522,7 @@ class CanzonatorDialog(wx.Dialog):
                     except UnicodeDecodeError:
                         continue
                 else:
-                    raise UnicodeDecodeError('all', b'', 0, 1, 'Unable to decode')
+                    raise UnicodeDecodeError('utf-8', b'', 0, 1, 'Unable to decode file')
                 parts.append(content.rstrip())
             except Exception as e:
                 errors.append('%s: %s' % (os.path.basename(p), e))
@@ -602,7 +602,7 @@ def open_canzonatore(owner, parent_frame):
                 except UnicodeDecodeError:
                     continue
             else:
-                raise UnicodeDecodeError('all', b'', 0, 1, 'Unable to decode file')
+                raise UnicodeDecodeError('utf-8', b'', 0, 1, 'Unable to decode file')
             owner.document = path
             owner.text.AutoChangeMode(True)
             owner.text.New()
