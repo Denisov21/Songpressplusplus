@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: Songpress++ 1.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-04-02 00:00+0000\n"
-"PO-Revision-Date: 2026-05-09 00:00+0200\n"
+"PO-Revision-Date: 2026-05-09 12:00+0200\n"
 "Last-Translator: Denisov21\n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -30,13 +30,23 @@ msgstr "Controllo sintassi"
 msgid "No syntax errors found."
 msgstr "Nessun errore sintattico trovato."
 
-#. Button: navigate to the selected error
+#. Button: adapt dialog width to fit the longest description text
 #: SyntaxCheckerDialog.py:56
+msgid "Fit width"
+msgstr "Adatta larghezza"
+
+#. Tooltip for the Fit width button
+#: SyntaxCheckerDialog.py:58
+msgid "Resize the dialog so the Description column fits the longest text"
+msgstr "Ridimensiona il dialog in modo che la colonna Descrizione contenga il testo più lungo"
+
+#. Button: navigate to the selected error
+#: SyntaxCheckerDialog.py:62
 msgid "Go to error"
 msgstr "Vai all'errore"
 
 #. Button: close the dialog
-#: SyntaxCheckerDialog.py:61
+#: SyntaxCheckerDialog.py:68
 msgid "Close"
 msgstr "Chiudi"
 
