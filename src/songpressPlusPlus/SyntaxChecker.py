@@ -724,17 +724,53 @@ def _validate_command(content: str, line_num: int, col: int,
             return
 
     if cmd_name in _REQUIRES_NUMERIC_VALUE and cmd_value is not None and cmd_value != "":
-        try:
-            float(cmd_value)
-        except ValueError:
-            result.errors.append(SyntaxError(
-                line=line_num, column=col,
-                message=_("Command '{cmd}' requires a numeric value, got: '{val}'").format(
-                    cmd="{" + cmd_name + ":}",
-                    val=cmd_value,
-                )
-            ))
-            return
+        # {tempo: N,M} — il solo comando "tempo" accetta il formato "N,M"
+        # dove N è il BPM e M è la modalità di visualizzazione locale (0/1/2/3/-1).
+        value_to_check = cmd_value
+        if cmd_name == "tempo" and ',' in cmd_value:
+            bpm_part, _, mode_part = cmd_value.partition(',')
+            bpm_part  = bpm_part.strip()
+            mode_part = mode_part.strip()
+            # Valida il BPM
+            try:
+                float(bpm_part)
+            except ValueError:
+                result.errors.append(SyntaxError(
+                    line=line_num, column=col,
+                    message=_("Command '{cmd}' requires a numeric BPM value before the comma, got: '{val}'").format(
+                        cmd="{" + cmd_name + ":}",
+                        val=bpm_part,
+                    )
+                ))
+                return
+            # Valida la modalità M ∈ {-1, 0, 1, 2, 3}
+            try:
+                mode_int = int(mode_part)
+                if mode_int not in (-1, 0, 1, 2, 3):
+                    raise ValueError
+            except ValueError:
+                result.errors.append(SyntaxError(
+                    line=line_num, column=col,
+                    message=_("Command '{cmd}': display mode must be -1, 0, 1, 2 or 3, got: '{val}'").format(
+                        cmd="{" + cmd_name + ":}",
+                        val=mode_part,
+                    )
+                ))
+                return
+            # Entrambe le parti sono valide: saltiamo il controllo generico
+            value_to_check = None
+        if value_to_check is not None:
+            try:
+                float(value_to_check)
+            except ValueError:
+                result.errors.append(SyntaxError(
+                    line=line_num, column=col,
+                    message=_("Command '{cmd}' requires a numeric value, got: '{val}'").format(
+                        cmd="{" + cmd_name + ":}",
+                        val=cmd_value,
+                    )
+                ))
+                return
 
     if cmd_name in _REQUIRES_VALUE:
         if cmd_value is None or cmd_value == "":

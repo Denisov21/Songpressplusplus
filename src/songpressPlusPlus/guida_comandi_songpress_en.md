@@ -593,7 +593,7 @@ Forces a **column break** when printing is configured in multi-column mode. The 
 
 ## 6. Musical directives
 
-Tempo indications are displayed in the preview according to the mode chosen in preferences (*Tools → Preferences → Preview → Tempo display*):
+Tempo indications are displayed in the preview according to the mode chosen in preferences (*Tools → Options... → Formatting → Tempo*):
 
 | Mode | Description |
 |---|---|
@@ -607,12 +607,32 @@ Tempo indications are displayed in the preview according to the mode chosen in p
 
 ### `tempo`
 
-**Syntax:** `{tempo: N}`
+![tempo_en](./SongpressV58 OK - BUGFIX/SongpressPlusPlus/src/songpressPlusPlus/img/GUIDE/tempo_en.png)
+
+**Syntax:** `{tempo: N}` or `{tempo: N,M}`
 
 Indicates the **tempo** in BPM referenced to the **quarter note** (♩ = N). This is the most common tempo command.
 
+The optional second parameter `M` specifies the **display mode** for this specific command, overriding the global preference setting:
+
+| Value `M` | Mode | Description |
+|---|---|---|
+| `0` | text | Shows the numeric value as text (e.g. "♩ = 120") |
+| `1` | graphic note | Shows the note icon + numeric value |
+| `2` | text only | Shows only the number without a symbol |
+| `3` | metronome | Shows a metronome icon |
+| `-1` | hidden | The metadata is stored but not displayed |
+
+If `M` is omitted, the mode set in *Insert→ Tempo {tempo:}*... is used.
+
+The **icon size** (graphic note or metronome) can be configured in *Tools → Options... → Formatting → Tempo*: available values are 16×16, 24×24, and 32×32 pixels.
+
 ```chordpro
-{tempo: 120}
+{tempo: 120}        # uses the mode from preferences
+{tempo: 120,1}      # forced: note icon + number
+{tempo: 120,0}      # forced: compact text (♩ = 120)
+{tempo: 120,3}      # forced: metronome icon
+{tempo: 120,-1}     # stored but not displayed
 ```
 
 ---
@@ -621,7 +641,9 @@ Indicates the **tempo** in BPM referenced to the **quarter note** (♩ = N). Thi
 
 **Syntax:** `{tempo_m: N}`
 
-Tempo referenced to the **half note** (𝅗𝅥 = N). Used for pieces in cut time (2/2, alla breve).
+Tempo referenced to the **half note** (![minima](./img/GUIDE/minima.png)= N). Used for pieces in cut time (2/2, alla breve).
+
+The **icon size** can be configured in *Tools → Options... → Formatting → Tempo* (16×16, 24×24, 32×32 pixels).
 
 ```chordpro
 {tempo_m: 60}
@@ -633,7 +655,9 @@ Tempo referenced to the **half note** (𝅗𝅥 = N). Used for pieces in cut tim
 
 **Syntax:** `{tempo_s: N}`
 
-Synonym for `tempo`: tempo referenced to the **quarter note** (♩ = N). Useful to disambiguate when multiple tempo indications are used in the same file.
+Synonym of `tempo`: tempo referenced to the **quarter note** (![semiminima](./img/GUIDE/semiminima.png) = N). Useful to disambiguate when multiple tempo indications are used in the same file.
+
+The **icon size** can be configured in *Tools → Options... → Formatting → Tempo* (16×16, 24×24, 32×32 pixels).
 
 ```chordpro
 {tempo_s: 96}
@@ -645,7 +669,9 @@ Synonym for `tempo`: tempo referenced to the **quarter note** (♩ = N). Useful 
 
 **Syntax:** `{tempo_c: N}`
 
-Tempo referenced to the **eighth note** (♪ = N). Used for pieces in 6/8, 9/8, 12/8.
+Tempo referenced to the **eighth note** (![croma](./img/GUIDE/croma.png)= N). Used for pieces in 6/8, 9/8, 12/8.
+
+The **icon size** can be configured in *Tools → Options... → Formatting → Tempo* (16×16, 24×24, 32×32 pixels).
 
 ```chordpro
 {tempo_c: 176}
@@ -657,7 +683,9 @@ Tempo referenced to the **eighth note** (♪ = N). Used for pieces in 6/8, 9/8, 
 
 **Syntax:** `{tempo_sp: N}`
 
-Tempo referenced to the **dotted quarter note** (♩. = N). Common in simple ternary time signatures.
+Tempo referenced to the **dotted quarter note** (![semiminima_punto](./img/GUIDE/semiminima_punto.png) = N). Common in simple ternary time signatures.
+
+The **icon size** can be configured in *Tools → Options... → Formatting → Tempo* (16×16, 24×24, 32×32 pixels).
 
 ```chordpro
 {tempo_sp: 72}
@@ -669,7 +697,9 @@ Tempo referenced to the **dotted quarter note** (♩. = N). Common in simple ter
 
 **Syntax:** `{tempo_cp: N}`
 
-Tempo referenced to the **dotted eighth note** (♪. = N).
+Tempo referenced to the **dotted eighth note** (![croma_punto](./img/GUIDE/croma_punto.png) = N).
+
+The **icon size** can be configured in *Tools → Options... → Formatting → Tempo* (16×16, 24×24, 32×32 pixels).
 
 ```chordpro
 {tempo_cp: 116}
@@ -1202,7 +1232,7 @@ Accessible from **Format → Tempo indication** (or by clicking the indication i
 | `{capo: N}` | — | Metadata | Capo position |
 | `{new_page}` | `{np}` | Layout | Page break |
 | `{column_break}` | `{colb}` | Layout | Column break |
-| `{tempo: N}` | — | Musical | Tempo in BPM (quarter note) |
+| `{tempo: N[,M]}` | — | Musical | Tempo in BPM (quarter note); M = display mode (0/1/2/3/−1) |
 | `{tempo_m: N}` | — | Musical | Tempo in BPM (half note) |
 | `{tempo_s: N}` | — | Musical | Tempo in BPM (quarter note, synonym) |
 | `{tempo_c: N}` | — | Musical | Tempo in BPM (eighth note) |

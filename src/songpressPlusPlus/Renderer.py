@@ -568,20 +568,34 @@ class Renderer(object):
                     elif cmd == 'tempo':
                         a = self.GetAttribute()
                         if a is not None and a.strip() != '':
-                            if self.tempoDisplay == 0:
-                                self.AddSubTitle('Tempo: %s' % a.strip())
-                            elif self.tempoDisplay == 1:
-                                self.AddSubTitle(u' = %s' % a.strip())
+                            # Supporta il formato {tempo: N,M} dove M è la
+                            # modalità di visualizzazione locale (sovrascrive
+                            # self.tempoDisplay per questo comando soltanto).
+                            raw = a.strip()
+                            if ',' in raw:
+                                bpm_part, _, mode_part = raw.partition(',')
+                                bpm_str = bpm_part.strip()
+                                try:
+                                    local_display = int(mode_part.strip())
+                                except ValueError:
+                                    local_display = self.tempoDisplay
+                            else:
+                                bpm_str = raw
+                                local_display = self.tempoDisplay
+                            if local_display == 0:
+                                self.AddSubTitle('Tempo: %s' % bpm_str)
+                            elif local_display == 1:
+                                self.AddSubTitle(u' = %s' % bpm_str)
                                 # Marca l'ultimo SongText aggiunto per disegnare la bitmap della nota
                                 if self.currentLine is not None and self.currentLine.boxes:
                                     self.currentLine.boxes[-1].is_tempo_note = True
-                            elif self.tempoDisplay == 2:
-                                self.AddSubTitle('BPM: %s' % a.strip())
-                            elif self.tempoDisplay == 3:
-                                self.AddSubTitle(u' = %s' % a.strip())
+                            elif local_display == 2:
+                                self.AddSubTitle('BPM: %s' % bpm_str)
+                            elif local_display == 3:
+                                self.AddSubTitle(u' = %s' % bpm_str)
                                 if self.currentLine is not None and self.currentLine.boxes:
                                     self.currentLine.boxes[-1].is_tempo_metro = True
-                            # tempoDisplay == -1 → metadato, non visualizzato
+                            # local_display == -1 → metadato, non visualizzato
                     elif cmd == 'tempo_m':
                         # Minima (nota da mezzo) — img/minima_32x32.png — icona FISSA
                         a = self.GetAttribute()

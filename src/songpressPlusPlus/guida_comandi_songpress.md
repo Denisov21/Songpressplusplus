@@ -593,7 +593,7 @@ Forza un **salto di colonna** quando la stampa è configurata in modalità multi
 
 ## 6. Indicazioni musicali
 
-Le indicazioni di tempo vengono visualizzate nell'anteprima secondo la modalità scelta nelle preferenze (*Strumenti → Preferenze → Anteprima → Visualizzazione tempo*):
+Le indicazioni di tempo vengono visualizzate nell'anteprima secondo la modalità scelta nelle preferenze (*Strumenti → Opzioni... → Formattazione → Tempo*):
 
 | Modalità | Descrizione |
 |---|---|
@@ -607,12 +607,32 @@ Le indicazioni di tempo vengono visualizzate nell'anteprima secondo la modalità
 
 ### `tempo`
 
-**Sintassi:** `{tempo: N}`
+![tempo_it](./SongpressV58 OK - BUGFIX/SongpressPlusPlus/src/songpressPlusPlus/img/GUIDE/tempo_it.png)
+
+**Sintassi:** `{tempo: N}` oppure `{tempo: N,M}`
 
 Indica il **tempo** in BPM riferito alla **semiminima** (♩ = N). È il comando di tempo più comune.
 
+Il secondo parametro opzionale `M` specifica la **modalità di visualizzazione** per questo specifico comando, sovrascrivendo l'impostazione globale delle preferenze:
+
+| Valore `M` | Modalità | Descrizione |
+|---|---|---|
+| `0` | testo | Mostra il valore numerico come testo (es. "♩ = 120") |
+| `1` | nota grafica | Mostra l'icona della nota + il valore numerico |
+| `2` | solo testo | Mostra solo il numero senza simbolo |
+| `3` | metronomo | Mostra un'icona a forma di metronomo |
+| `-1` | nascosto | Il metadato è memorizzato ma non visualizzato |
+
+Se `M` è omesso, viene usata la modalità impostata in *Inserisci→ Tempo {tempo:}...*.
+
+La **dimensione dell'icona** (nota grafica o metronomo) è configurabile in *Strumenti → Opzioni... → Formattazione → Tempo*: valori disponibili 16×16, 24×24, 32×32 pixel.
+
 ```chordpro
-{tempo: 120}
+{tempo: 120}        # usa la modalità dalle preferenze
+{tempo: 120,1}      # forza: icona nota + numero
+{tempo: 120,0}      # forza: testo compatto (♩ = 120)
+{tempo: 120,3}      # forza: icona metronomo
+{tempo: 120,-1}     # memorizzato ma non visualizzato
 ```
 
 ---
@@ -621,7 +641,9 @@ Indica il **tempo** in BPM riferito alla **semiminima** (♩ = N). È il comando
 
 **Sintassi:** `{tempo_m: N}`
 
-Tempo riferito alla **minima** (𝅗𝅥 = N). Usato per i brani in 2/2 (alla breve).
+Tempo riferito alla **minima** (![minima](./img/GUIDE/minima.png)= N). Usato per i brani in 2/2 (alla breve).
+
+La **dimensione dell'icona** è configurabile in *Strumenti → Opzioni... → Formattazione → Tempo* (16×16, 24×24, 32×32 pixel).
 
 ```chordpro
 {tempo_m: 60}
@@ -633,7 +655,9 @@ Tempo riferito alla **minima** (𝅗𝅥 = N). Usato per i brani in 2/2 (alla br
 
 **Sintassi:** `{tempo_s: N}`
 
-Sinonimo di `tempo`: tempo riferito alla **semiminima** (♩ = N). Utile per disambiguare quando si usano più indicazioni di tempo nello stesso file.
+Sinonimo di `tempo`: tempo riferito alla **semiminima** (![semiminima](./img/GUIDE/semiminima.png) = N). Utile per disambiguare quando si usano più indicazioni di tempo nello stesso file.
+
+La **dimensione dell'icona** è configurabile in *Strumenti → Opzioni... → Formattazione → Tempo* (16×16, 24×24, 32×32 pixel).
 
 ```chordpro
 {tempo_s: 96}
@@ -645,7 +669,9 @@ Sinonimo di `tempo`: tempo riferito alla **semiminima** (♩ = N). Utile per dis
 
 **Sintassi:** `{tempo_c: N}`
 
-Tempo riferito alla **croma** (♪ = N). Usato per brani in 6/8, 9/8, 12/8.
+Tempo riferito alla **croma** (![croma](./img/GUIDE/croma.png)= N). Usato per brani in 6/8, 9/8, 12/8.
+
+La **dimensione dell'icona** è configurabile in *Strumenti → Opzioni... → Formattazione → Tempo* (16×16, 24×24, 32×32 pixel).
 
 ```chordpro
 {tempo_c: 176}
@@ -657,7 +683,9 @@ Tempo riferito alla **croma** (♪ = N). Usato per brani in 6/8, 9/8, 12/8.
 
 **Sintassi:** `{tempo_sp: N}`
 
-Tempo riferito alla **semiminima puntata** (♩. = N). Comune nei brani composti in tempo ternario semplice.
+Tempo riferito alla **semiminima puntata** (![semiminima_punto](./img/GUIDE/semiminima_punto.png) = N). Comune nei brani composti in tempo ternario semplice.
+
+La **dimensione dell'icona** è configurabile in *Strumenti → Opzioni... → Formattazione → Tempo* (16×16, 24×24, 32×32 pixel).
 
 ```chordpro
 {tempo_sp: 72}
@@ -669,7 +697,9 @@ Tempo riferito alla **semiminima puntata** (♩. = N). Comune nei brani composti
 
 **Sintassi:** `{tempo_cp: N}`
 
-Tempo riferito alla **croma puntata** (♪. = N).
+Tempo riferito alla **croma puntata** (![croma_punto](./img/GUIDE/croma_punto.png) = N).
+
+La **dimensione dell'icona** è configurabile in *Strumenti → Opzioni... → Formattazione → Tempo* (16×16, 24×24, 32×32 pixel).
 
 ```chordpro
 {tempo_cp: 116}
@@ -1200,7 +1230,7 @@ Accessibile da **Formato → Indicazione di tempo** (o clic sull'indicazione nel
 | `{capo: N}` | — | Metadati | Posizione del capotasto |
 | `{new_page}` | `{np}` | Impaginazione | Salto di pagina |
 | `{column_break}` | `{colb}` | Impaginazione | Salto di colonna |
-| `{tempo: N}` | — | Musicale | Tempo in BPM (semiminima) |
+| `{tempo: N[,M]}` | — | Musicale | Tempo in BPM (semiminima); M = modalità visualizzazione (0/1/2/3/−1) |
 | `{tempo_m: N}` | — | Musicale | Tempo in BPM (minima) |
 | `{tempo_s: N}` | — | Musicale | Tempo in BPM (semiminima, sinonimo) |
 | `{tempo_c: N}` | — | Musicale | Tempo in BPM (croma) |
