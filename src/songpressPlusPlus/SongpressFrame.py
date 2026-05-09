@@ -3500,7 +3500,7 @@ class SongpressFrame(SDIMainFrame, PrintManager):
         _KBD_WHITE_W = 18
         _KBD_W       = _KBD_WHITE_W * 7   # 126 px
         _KBD_H       = 50
-        _LABEL_H     = 18
+        _LABEL_H     = 34   # spazio per due righe: mano (riga 1) + nome accordo (riga 2)
         _PANEL_W     = _KBD_W + 40
         _PANEL_H     = _LABEL_H + _KBD_H + 10
 
@@ -3534,24 +3534,28 @@ class SongpressFrame(SDIMainFrame, PrintManager):
                 return
 
             ox = 14   # offset x
-            oy = _LABEL_H + 4   # offset y per la tastiera
 
-            # ── Etichetta mano (sinistra/destra) ─────────────────────
+            # ── Etichetta mano (riga 1, in alto) ─────────────────────
             hand_font = wx.Font(
                 8, wx.FONTFAMILY_DEFAULT,
-                wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+                wx.FONTSTYLE_ITALIC, wx.FONTWEIGHT_NORMAL)
             dc.SetFont(hand_font)
             dc.SetTextForeground(wx.Colour(80, 80, 80))
             hand_str = _(u"Right hand") if rb_right.GetValue() else _(u"Left hand")
-            hw, _hh = dc.GetTextExtent(hand_str)
-            dc.DrawText(hand_str, ox + _KBD_W - hw, 2)
+            hw, hh = dc.GetTextExtent(hand_str)
+            dc.DrawText(hand_str, ox + (_KBD_W - hw) // 2, 2)
 
-            # ── Etichetta accordo in grassetto ────────────────────────
+            # ── Etichetta accordo in grassetto (riga 2) ───────────────
             label_font = wx.Font(
                 8, wx.FONTFAMILY_DEFAULT,
                 wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
+            dc.SetFont(label_font)
+            cw, ch = dc.GetTextExtent(chord_name)
+            dc.SetTextForeground(wx.BLACK)
+            dc.DrawText(chord_name, ox + (_KBD_W - cw) // 2, 2 + hh + 2)
 
-            # ── Tastiera (colori dalle preferenze) ────────────────────
+            # ── Tastiera sotto le due etichette ───────────────────────
+            oy = 2 + hh + 2 + ch + 4   # mano + accordo + gap
             highlight_color  = self._getKlavierHighlightColour()
             finger_num_color = self._getFingerNumColour()
             KlavierRenderer.draw_keyboard(
@@ -3559,6 +3563,7 @@ class SongpressFrame(SDIMainFrame, PrintManager):
                 chord_name, keys, label_font,
                 highlight_color, finger_map=finger_map,
                 finger_num_color=finger_num_color,
+                hand=None,
             )
 
         kbd_panel.Bind(wx.EVT_PAINT, _draw_kbd_preview)

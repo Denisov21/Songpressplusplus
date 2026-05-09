@@ -193,6 +193,39 @@ def parse_fingering(fingering_str):
     return chord_name, finger_map, hand
 
 
+def keyboard_header_height(dc, label_font, chord_name, hand=None):
+    """
+    Restituisce l'altezza totale dello spazio necessario sopra la tastiera
+    per le etichette (nome accordo + eventuale etichetta mano).
+
+    Utile per chi chiama draw_keyboard direttamente (es. anteprima dialogo)
+    per calcolare il valore corretto di `y`:
+        header_h = keyboard_header_height(dc, label_font, chord_name, hand)
+        draw_keyboard(dc, x, y + header_h, w, h, ...)
+    """
+    if label_font:
+        dc.SetFont(label_font)
+    _, chord_lh = dc.GetTextExtent(chord_name)
+    total = chord_lh + 2  # spazio nome accordo + gap
+
+    if hand in ('R', 'L'):
+        hand_font = wx.Font(
+            max(5, chord_lh - 3),
+            wx.FONTFAMILY_DEFAULT,
+            wx.FONTSTYLE_ITALIC,
+            wx.FONTWEIGHT_NORMAL,
+        )
+        dc.SetFont(hand_font)
+        try:
+            hand_label = wx.GetTranslation(u"Right hand") if hand == 'R' else wx.GetTranslation(u"Left hand")
+        except Exception:
+            hand_label = u"Right hand" if hand == 'R' else u"Left hand"
+        _, hand_lh = dc.GetTextExtent(hand_label)
+        total += hand_lh + 2
+
+    return total
+
+
 def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
                   label_font=None, highlight_color=None, finger_map=None,
                   finger_num_color=None, hand=None):
@@ -274,19 +307,18 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
 
             dc.DrawText(label, cx - lw // 2, cy)
 
-    # ── Etichetta accordo sopra ───────────────────────────────────
+    # ── Etichette sopra la tastiera: mano (facoltativa) + nome accordo ───
+    # Calcola prima tutte le altezze, poi disegna dall'alto verso il basso.
+
+    # 1) Misura nome accordo con label_font
     if label_font:
         dc.SetFont(label_font)
-    lw, lh = dc.GetTextExtent(chord_name)
-    tx = x + (kbd_w - lw) // 2
-    ty = y - lh - 3
-    dc.SetTextForeground(wx.BLACK)
-    dc.DrawText(chord_name, tx, ty)
+    chord_lw, chord_lh = dc.GetTextExtent(chord_name)
 
-    # ── Etichetta mano — riga sotto la tastiera ──────────────────
     if hand in ('R', 'L'):
+        # 2) Font mano e misura
         hand_font = wx.Font(
-            max(5, lh - 3),
+            max(5, chord_lh - 3),
             wx.FONTFAMILY_DEFAULT,
             wx.FONTSTYLE_ITALIC,
             wx.FONTWEIGHT_NORMAL,
@@ -296,10 +328,22 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
             hand_label = wx.GetTranslation(u"Right hand") if hand == 'R' else wx.GetTranslation(u"Left hand")
         except Exception:
             hand_label = u"Right hand" if hand == 'R' else u"Left hand"
-        hw, hh = dc.GetTextExtent(hand_label)
+        hand_lw, hand_lh = dc.GetTextExtent(hand_label)
+
+        # 3) Nome accordo direttamente sopra la tastiera, mano una riga più su
+        chord_ty = y - chord_lh - 2
+        hand_ty  = chord_ty - hand_lh - 2
+
         dc.SetTextForeground(wx.Colour(90, 90, 90))
-        # Centrata sotto la tastiera
-        dc.DrawText(hand_label, x + (kbd_w - hw) // 2, y + h + 3)
+        dc.DrawText(hand_label, x + (kbd_w - hand_lw) // 2, hand_ty)
+
+        if label_font:
+            dc.SetFont(label_font)
+        dc.SetTextForeground(wx.BLACK)
+        dc.DrawText(chord_name, x + (kbd_w - chord_lw) // 2, chord_ty)
+    else:
+        dc.SetTextForeground(wx.BLACK)
+        dc.DrawText(chord_name, x + (kbd_w - chord_lw) // 2, y - chord_lh - 3)
 
 
 def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
@@ -325,7 +369,8 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
     kbd_h    = 44
     padding_x = 22
     padding_y = 14
-    label_h   = 18
+    # label_h aumentato per ospitare sia il nome accordo sia l'etichetta mano sopra
+    label_h   = 34
     row_h     = label_h + kbd_h + padding_y
 
     # Larghezza massima della riga: usa content_w se fornito, altrimenti 560px
@@ -418,7 +463,8 @@ def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
     kbd_h     = 44
     padding_x = 22
     padding_y = 14
-    label_h   = 18
+    # label_h aumentato per ospitare sia il nome accordo sia l'etichetta mano sopra
+    label_h   = 34
     row_h     = label_h + kbd_h + padding_y
 
     row_max_w = int(content_w) if content_w and content_w > kbd_w else 560
