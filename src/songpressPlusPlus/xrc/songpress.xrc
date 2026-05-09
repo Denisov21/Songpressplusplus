@@ -128,6 +128,12 @@
           <bitmap>../img/column.png</bitmap>
         </object>
         <object class="separator"/>
+        <object class="wxMenuItem" name="restart">
+          <label>_Restart Songpress++</label>
+          <accel></accel>
+          <bitmap>../img/restart.png</bitmap>
+          <help>Close and restart Songpress++</help>
+        </object>
         <object class="wxMenuItem" name="exit">
           <label>_Exit</label>
           <accel></accel>

@@ -1026,6 +1026,45 @@ class SongpressFrame(SDIMainFrame, PrintManager):
         self.config.Flush()
         super().OnClose(evt)
 
+    def OnRestart(self, evt):
+        """Salva le preferenze, chiude la finestra e riavvia Songpress++.
+
+        Strategia di rilevamento del comando di avvio:
+
+        1. Modalita' installata (uv tool install):
+           La struttura su disco e':
+             <INSTDIR>\\bin\\SongPressPlusPlus.exe   <- exe wrapper
+             <INSTDIR>\\Scripts\\python.exe           <- sys.executable
+           Si risale da Scripts\\ al padre (<INSTDIR>) e si cerca
+           bin\\SongPressPlusPlus.exe.
+           Se trovato, si usa quello come comando (nessun argomento extra).
+
+        2. Modalita' sviluppo Thonny / script diretto:
+           sys.argv[0] e' il percorso assoluto del .py
+           -> [sys.executable, sys.argv[0]] + sys.argv[1:]
+
+        3. Modalita' uv run / python -m:
+           sys.argv[0] e' lo script o '-m ...'
+           -> [sys.executable] + sys.argv
+        """
+        # --- 1. Cerca l'exe wrapper installato ---
+        # Struttura uv tool install:
+        #   <INSTDIR>\bin\SongPressPlusPlus.exe
+        #   <INSTDIR>\tools\songpressplusplus\Scripts\python.exe  <- sys.executable
+        # Risale: Scripts -> tools\songpressplusplus -> tools -> <INSTDIR> (3 livelli)
+        exe_name = 'SongPressPlusPlus.exe'
+        scripts_dir = os.path.dirname(os.path.abspath(sys.executable))
+        install_root = os.path.dirname(os.path.dirname(os.path.dirname(scripts_dir)))
+        installed_exe = os.path.join(install_root, 'bin', exe_name)
+        if os.path.isfile(installed_exe):
+            cmd = [installed_exe]
+        else:
+            # --- 2/3. Modalita' sviluppo (Thonny, uv run, python -m) ---
+            cmd = [sys.executable] + sys.argv
+
+        subprocess.Popen(cmd)
+        wx.CallAfter(self.frame.Close)
+
     def _SaveTempoDisplay(self):
         """Salva le modalità di visualizzazione di tempo, misura e tonalità nel config."""
         try:
@@ -1321,6 +1360,8 @@ class SongpressFrame(SDIMainFrame, PrintManager):
         Bind(self.OnSyntaxCheck, 'syntaxCheck')
         Bind(self.OnSongStatistics, 'songStatistics')
         self.frame.Bind(EVT_SYNTAX_GOTO, self.OnSyntaxGoto)
+        # --- Riavvia applicazione ---
+        Bind(self.OnRestart, 'restart')
 
     # ------------------------------------------------------------------
     # Template "Nuovo da template"
