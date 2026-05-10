@@ -227,6 +227,7 @@ class Preferences(object):
         self._LoadIntellisense()
         self._LoadDecoSliderColour()
         self._LoadNoChordHide()
+        self._LoadSingleInstance()
 
     def _LoadKlavierColour(self):
         self.config.SetPath('/KlavierColour')
@@ -390,6 +391,7 @@ class Preferences(object):
         self._SaveIntellisense()
         self._SaveDecoSliderColour()
         self._SaveNoChordHide()
+        self._SaveSingleInstance()
         self.config.Flush()
 
     def _SaveKlavierColour(self):
@@ -638,3 +640,14 @@ class Preferences(object):
                         self.easyChords[c] = l
 
         return self.easyChords
+
+    def _LoadSingleInstance(self):
+        self.config.SetPath('/App')
+        v = self.config.Read('singleInstance')
+        self.singleInstance = bool(int(v)) if v != '' else True
+        self.config.SetPath('/')
+
+    def _SaveSingleInstance(self):
+        self.config.SetPath('/App')
+        self.config.Write('singleInstance', '1' if getattr(self, 'singleInstance', True) else '0')
+        self.config.SetPath('/')

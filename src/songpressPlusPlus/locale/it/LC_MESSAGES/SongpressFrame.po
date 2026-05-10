@@ -1413,3 +1413,11 @@ msgstr "◉  (U+25C9 occhio di pesce)"
 #: SongpressFrame.py — OnInsertTransposerImage symbol option 4
 msgid "⬤  (U+2B24 large circle)"
 msgstr "⬤  (U+2B24 cerchio grande)"
+
+#: SDIMainFrame.py — single instance: warning when port already bound
+msgid "Another instance of Songpress++ is already running."
+msgstr "Un'altra istanza di Songpress++ è già in esecuzione."
+
+#: SDIMainFrame.py — single instance: file forwarded to existing window
+msgid "File opened in the existing Songpress++ window."
+msgstr "Il file è stato aperto nella finestra di Songpress++ già aperta."

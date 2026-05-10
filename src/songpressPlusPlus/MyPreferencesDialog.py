@@ -187,6 +187,9 @@ class MyPreferencesDialog(PreferencesDialog):
         # Intellisense direttive
         self.intellisenseCB.SetValue(getattr(self.pref, 'intellisense', True))
 
+        # Single instance
+        self.singleInstanceCB.SetValue(getattr(self.pref, 'singleInstance', True))
+
         # Opzioni anteprima (tab Songpress)
         self.showPageIndicatorCB.SetValue(getattr(self.pref, 'showPageIndicator', True))
         self.greyBackgroundCB.SetValue(getattr(self.pref, 'greyBackground', True))
@@ -1309,6 +1312,8 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.showDebugMsg = self.showDebugMsgCB.GetValue()
         # Intellisense direttive
         self.pref.intellisense = self.intellisenseCB.GetValue()
+        # Single instance
+        self.pref.singleInstance = self.singleInstanceCB.GetValue()
         # Opzioni anteprima (tab Songpress)
         self.pref.showPageIndicator = self.showPageIndicatorCB.GetValue()
         self.pref.greyBackground    = self.greyBackgroundCB.GetValue()

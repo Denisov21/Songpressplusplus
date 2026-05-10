@@ -18,6 +18,8 @@ from .Globals import glb
 from . import i18n
 from . import errdlg
 
+_ = wx.GetTranslation
+
 
 class SongpressApp(wx.App):
     def __init__(self):
@@ -65,6 +67,53 @@ def _log(msg):
         pass
 
 
+def _get_config_path():
+    """Restituisce il path di config.ini usando la stessa logica di glb.InitDataPath(),
+    ma senza richiedere wx.App già inizializzata."""
+    # 1. Portable mode: config.ini accanto al package sorgente
+    pkg_dir = os.path.dirname(os.path.abspath(__file__))
+    portable = os.path.join(pkg_dir, 'config.ini')
+    if os.path.isfile(portable):
+        return portable
+
+    # 2. Standard user-data dir — replica wx.StandardPaths.GetUserDataDir()
+    #    senza istanza wx.App
+    if platform.system() == 'Windows':
+        # %APPDATA%\<AppName>  oppure  %LOCALAPPDATA%\<AppName>
+        # wx usa APPDATA su Windows per GetUserDataDir
+        base = os.environ.get('APPDATA') or os.path.expanduser('~')
+        data_dir = os.path.join(base, glb.PROG_NAME)
+    elif platform.system() == 'Darwin':
+        data_dir = os.path.join(
+            os.path.expanduser('~'), 'Library', 'Application Support', glb.PROG_NAME
+        )
+    else:
+        data_dir = os.path.join(os.path.expanduser('~'), f'.{glb.PROG_NAME}')
+
+    return os.path.join(data_dir, 'config.ini')
+
+
+def _read_single_instance_pref():
+    """Legge singleInstance da config.ini senza wx. Default True."""
+    try:
+        import configparser as _cp
+        cfg_path = _get_config_path()
+        _log(f"Single-instance: lettura config da {cfg_path!r}")
+        if not os.path.isfile(cfg_path):
+            _log("Single-instance: config non trovato, uso default True")
+            return True
+        cfg = _cp.RawConfigParser()
+        cfg.read(cfg_path, encoding='utf-8')
+        # wx.FileConfig scrive le sezioni in lowercase
+        val = cfg.get('app', 'singleinstance', fallback='1')
+        result = val.strip() == '1'
+        _log(f"Single-instance: singleinstance={val!r} → {result}")
+        return result
+    except Exception as e:
+        _log(f"Single-instance: errore lettura config ({e}), uso default True")
+        return True
+
+
 def main():
     _log(f"main() avviato  argv={sys.argv}")
     sys.excepthook = errdlg.ExceptionHook
@@ -76,6 +125,31 @@ def main():
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
             'Denisov21.SongpressPlusPlus'
         )
+
+    # ── Single-instance check ────────────────────────────────────────────
+    if len(sys.argv) > 1 and _read_single_instance_pref():
+        from .SDIMainFrame import SDIMainFrame
+        _filepath = sys.argv[1]
+        _log(f"Single-instance: tentativo inoltro per {_filepath!r}")
+
+        # Error case: file does not exist
+        if not os.path.isfile(_filepath):
+            _log(f"Single-instance: file non trovato {_filepath!r}")
+            errdlg._show_error(
+                _("Cannot open file:") + f"\n{_filepath}\n\n" +
+                _("The file does not exist or is not accessible.")
+            )
+            sys.exit(1)
+
+        if SDIMainFrame._TrySendToExistingInstance(_filepath):
+            # Normal case: forwarded silently, existing window raises itself
+            _log("File inoltrato all'istanza esistente — uscita.")
+            sys.exit(0)
+
+        # Fallback: no instance listening (first launch or crashed) — start normally
+        _log("Single-instance: nessuna istanza in ascolto, avvio normale.")
+    # ── Fine single-instance check ───────────────────────────────────────
+
     songpressApp = SongpressApp()
     songpressApp.MainLoop()
 

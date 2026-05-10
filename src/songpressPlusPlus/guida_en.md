@@ -1152,6 +1152,48 @@ For each SMP character, Songpress++ walks this list and uses the first font that
 
 ---
 
+
+## Single Instance Mode
+
+**Path:** *Options → General 2 → General → Single instance: open files in the existing window*
+
+When this option is enabled (default: **on**), Songpress++ operates in **single-instance mode**: opening a file from Windows Explorer, from the command line, or by double-clicking a `.crd` / `.cho` / `.chordpro` file always routes the file to the **already-running window** instead of launching a new process.
+
+### How it works
+
+1. When Songpress++ starts, it opens a **local socket** on port 47833 (localhost only, invisible to the network).
+2. If a second invocation is triggered (e.g. double-clicking another file), the new process detects the listening socket, **sends the file path** to the running instance, and exits immediately.
+3. The running window receives the path, **brings itself to the front**, and opens the file as if the user had used *File → Open*.
+
+The entire handshake is silent: no dialogs or notifications appear during normal operation.
+
+### Error cases
+
+| Situation | Behaviour |
+|---|---|
+| File passed on the command line does not exist | An error dialog is shown before the application exits |
+| No instance is listening (first launch, or previous instance crashed) | Songpress++ starts normally and becomes the new single instance |
+
+### Pros and cons
+
+| ✅ Advantages | ⚠️ Disadvantages |
+|---|---|
+| Avoids accidental proliferation of windows when opening multiple files from Explorer | Only one song can be open at a time per window (unless the file contains multiple `{new_song}` blocks) |
+| Preserves layout, zoom level, and editor state of the existing window | If you deliberately want two independent windows (e.g. to compare two songs side by side), you must **disable** this option |
+| Consistent with the behaviour of most professional editors (VS Code, Notepad++, Sublime Text) | Requires TCP port 47833 to be available on localhost; conflicts are extremely unlikely but possible in very restricted environments |
+| Opening a file brings the window to the front automatically, without user intervention | |
+
+### When to disable it
+
+Uncheck *Single instance* if you need to:
+
+- Work on **two or more songs simultaneously** in separate, independent windows.
+- Run Songpress++ in a **multi-user terminal / RDS** environment where each session must be fully isolated.
+- Troubleshoot a port conflict (check `startup.log` in `%LOCALAPPDATA%\Songpress++\` for diagnostics).
+
+> **Note — startup.log** — Every single-instance event is logged in `%LOCALAPPDATA%\Songpress++\startup.log` (Windows) or `~/.Songpress++/startup.log` (Linux/macOS). The log records the config path read, the value of the `singleinstance` key, whether an existing instance was found, and whether the file was forwarded successfully. This is the first place to look when troubleshooting multiple-window behaviour.
+
+---
 ## Display Preferences
 
 The following controls are found in the **Formatting** tab of preferences and affect the preview and print output.

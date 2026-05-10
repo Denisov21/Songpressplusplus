@@ -1152,6 +1152,48 @@ Per ogni carattere SMP, Songpress++ percorre questa lista e usa il primo font ch
 
 ---
 
+
+## Modalità istanza singola
+
+**Percorso:** *Opzioni → Generale 2 → Generale → Istanza singola: apri i file nella finestra esistente*
+
+Quando questa opzione è attiva (predefinito: **sì**), Songpress++ funziona in **modalità istanza singola**: aprire un file da Esplora risorse, dalla riga di comando o con doppio clic su un file `.crd` / `.cho` / `.chordpro` instrada sempre il file nella **finestra già aperta**, invece di avviare un nuovo processo.
+
+### Come funziona
+
+1. All'avvio, Songpress++ apre un **socket locale** sulla porta 47833 (solo localhost, invisibile alla rete).
+2. Se viene avviata una seconda istanza (ad esempio con doppio clic su un altro file), il nuovo processo rileva il socket in ascolto, **invia il percorso del file** all'istanza in esecuzione e termina immediatamente.
+3. La finestra in esecuzione riceve il percorso, **si porta in primo piano** e apre il file come se l'utente avesse usato *File → Apri*.
+
+L'intero scambio è silenzioso: in condizioni normali non compaiono dialoghi né notifiche.
+
+### Casi di errore
+
+| Situazione | Comportamento |
+|---|---|
+| Il file passato dalla riga di comando non esiste | Viene mostrato un dialogo di errore, poi l'applicazione termina |
+| Nessuna istanza in ascolto (primo avvio o istanza precedente terminata in modo anomalo) | Songpress++ si avvia normalmente e diventa la nuova istanza singola |
+
+### Pro e contro
+
+| ✅ Vantaggi | ⚠️ Svantaggi |
+|---|---|
+| Evita la proliferazione accidentale di finestre quando si aprono più file da Esplora risorse | È possibile avere un solo brano aperto per volta per finestra (a meno che il file non contenga più blocchi `{new_song}`) |
+| Preserva il layout, il livello di zoom e lo stato dell'editor della finestra esistente | Se si vuole deliberatamente avere due finestre indipendenti (ad es. per confrontare due brani), occorre **disattivare** questa opzione |
+| Coerente con il comportamento della maggior parte degli editor professionali (VS Code, Notepad++, Sublime Text) | Richiede che la porta TCP 47833 sia disponibile su localhost; i conflitti sono estremamente rari ma possibili in ambienti molto vincolati |
+| Aprire un file porta la finestra in primo piano automaticamente, senza intervento dell'utente | |
+
+### Quando disattivarla
+
+Deseleziona *Istanza singola* se hai bisogno di:
+
+- Lavorare su **due o più brani contemporaneamente** in finestre separate e indipendenti.
+- Eseguire Songpress++ in un ambiente **multi-utente / RDS** dove ogni sessione deve essere completamente isolata.
+- Diagnosticare un conflitto di porta (controlla `startup.log` in `%LOCALAPPDATA%\Songpress++\` per la diagnostica).
+
+> **Nota — startup.log** — Ogni evento legato all'istanza singola viene registrato in `%LOCALAPPDATA%\Songpress++\startup.log` (Windows) oppure `~/.Songpress++/startup.log` (Linux/macOS). Il log registra il percorso del config letto, il valore della chiave `singleinstance`, se è stata trovata un'istanza esistente e se il file è stato inoltrato con successo. È il primo posto dove cercare in caso di comportamento anomalo con più finestre.
+
+---
 ## Preferenze di visualizzazione
 
 I seguenti controlli si trovano nella scheda **Formattazione** delle preferenze e influenzano l'anteprima e la stampa.

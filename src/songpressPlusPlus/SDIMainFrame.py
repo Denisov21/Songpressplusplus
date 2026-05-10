@@ -24,6 +24,8 @@ It expects to find some menu elements, characterized by their XRC name:
 import os
 import sys
 import platform
+import socket
+import threading
 
 import wx
 import wx.adv
@@ -248,6 +250,7 @@ class SDIMainFrame(object):
             except AttributeError:
                 # Handle the case where _mgr has already been deleted
                 pass
+            self._StopSingleInstanceServer()
             self.SavePreferences()
             self.frame.Destroy()
         else:
@@ -504,3 +507,90 @@ class SDIMainFrame(object):
             fn = sys.argv[1]
             _log(f"Scheduled OnDropFiles for: {fn!r}  exists={_os.path.isfile(fn)}")
             wx.CallAfter(self.OnDropFiles, [fn])
+        # Start single-instance listener if the preference is enabled
+        self._singleInstanceServer = None
+        wx.CallAfter(self._StartSingleInstanceServer)
+
+    # ------------------------------------------------------------------ #
+    #  Single-instance support (localhost socket)                          #
+    # ------------------------------------------------------------------ #
+
+    _SINGLE_INSTANCE_PORT = 47833  # arbitrary local port
+
+    @classmethod
+    def _TrySendToExistingInstance(cls, filepath):
+        """Try to forward *filepath* to an already-running instance.
+
+        Returns True if the message was delivered (caller should exit),
+        False if no instance is listening (caller should start normally).
+        """
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(1.0)
+            s.connect(('127.0.0.1', cls._SINGLE_INSTANCE_PORT))
+            s.sendall(filepath.encode('utf-8'))
+            s.close()
+            return True
+        except (ConnectionRefusedError, OSError):
+            return False
+
+    def _StartSingleInstanceServer(self):
+        """Bind to the local port and listen for file-open requests.
+
+        Called via wx.CallAfter after the frame is shown, so it never
+        blocks the main thread.  A daemon thread handles incoming
+        connections, dispatching wx.CallAfter(self.OnDropFiles, …) so
+        the UI update always happens on the main thread.
+        """
+        # Only start if the preference is set (default: True)
+        pref = getattr(self, 'pref', None)
+        if pref is not None and not getattr(pref, 'singleInstance', True):
+            return
+        try:
+            srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            srv.bind(('127.0.0.1', self._SINGLE_INSTANCE_PORT))
+            srv.listen(5)
+            self._singleInstanceServer = srv
+        except OSError:
+            # Port already in use — another instance is running; nothing to do.
+            return
+
+        def _listen():
+            while True:
+                try:
+                    conn, _ = srv.accept()
+                except OSError:
+                    break  # server socket closed on exit
+                try:
+                    data = b''
+                    while True:
+                        chunk = conn.recv(4096)
+                        if not chunk:
+                            break
+                        data += chunk
+                    conn.close()
+                    filepath = data.decode('utf-8').strip()
+                    if filepath:
+                        wx.CallAfter(self._RaiseAndOpen, filepath)
+                except Exception:
+                    pass
+
+        t = threading.Thread(target=_listen, daemon=True)
+        t.start()
+
+    def _RaiseAndOpen(self, filepath):
+        """Bring the window to the front and open *filepath*."""
+        self.frame.Raise()
+        self.frame.RequestUserAttention()
+        if filepath and os.path.isfile(filepath):
+            self.OnDropFiles([filepath])
+
+    def _StopSingleInstanceServer(self):
+        """Close the server socket (called from OnClose)."""
+        if self._singleInstanceServer is not None:
+            try:
+                self._singleInstanceServer.close()
+            except Exception:
+                pass
+            self._singleInstanceServer = None

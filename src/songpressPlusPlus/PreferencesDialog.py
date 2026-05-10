@@ -248,6 +248,10 @@ class PreferencesDialog(wx.Dialog):
         self.intellisenseCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Enable directive intellisense (Ctrl+Space)"), wx.DefaultPosition, wx.DefaultSize, 0)
         grpGeneral.Add(self.intellisenseCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
 
+        self.singleInstanceCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Single instance: open files in the existing window"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.singleInstanceCB.SetToolTip(_(u"When enabled, opening a file from Explorer or the command line will reuse the existing Songpress++ window instead of launching a new instance."))
+        grpGeneral.Add(self.singleInstanceCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
         bSizer11b.Add(grpGeneral, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
         self.general2.SetSizer(bSizer11b)
