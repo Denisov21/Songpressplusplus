@@ -125,13 +125,56 @@ class SongDecorator(object):
                 textMaxH = max(textMaxH, t.h)
                 textMaxTH = max(textMaxTH, t.GetTotalHeight())
 
+        # ── Spazio extra per i numeri/puntini beats sopra gli accordi ──────────
+        # PostDrawLine disegna i battiti a (chord_top - apex_h - 1), cioè sopra
+        # l'area già allocata per gli accordi. Se showDurationBeats è attivo e la
+        # riga contiene almeno un accordo con duration_beats > 0, aggiungiamo
+        # quell'altezza al chord_top effettivo così il layout riserva lo spazio
+        # corretto e la linea di interruzione di pagina viene posizionata bene.
+        beatsExtraH = 0
+        if hasChords and getattr(self, 'showDurationBeats', True):
+            size_pct = getattr(self, 'durationBeatsSizePct', 60)
+            mode     = getattr(self, 'durationBeatsMode', 'number')
+            for t in line.boxes:
+                if t.type != SongText.chord:
+                    continue
+                if getattr(t, 'duration_beats', 0) < 1:
+                    continue
+                base_size = t.font.GetPointSize()
+                apex_size = max(5, int(base_size * size_pct / 100))
+                apex_font = wx.Font(
+                    apex_size,
+                    t.font.GetFamily(),
+                    t.font.GetStyle(),
+                    wx.FONTWEIGHT_BOLD if getattr(self, 'durationBeatsBold', False)
+                    else wx.FONTWEIGHT_NORMAL,
+                    False,
+                    t.font.GetFaceName(),
+                )
+                self.dc.SetFont(apex_font)
+                if mode in ('number', 'both'):
+                    _lw, lh = self.dc.GetTextExtent(str(getattr(t, 'duration_beats', 1)))
+                    dot_extra = 0
+                    if mode == 'both':
+                        dot_r   = max(1, int(apex_size * 0.30))
+                        _mw, mh = self.dc.GetTextExtent('0')
+                        dot_extra = dot_r * 2 + 2
+                    beatsExtraH = max(beatsExtraH, lh + dot_extra + 1)
+                elif mode == 'dots':
+                    dot_r = max(1, int(apex_size * 0.30))
+                    beatsExtraH = max(beatsExtraH, dot_r * 2 + 2)
+            # Ripristina font per il Pass 2
+            if line.boxes:
+                self.dc.SetFont(line.boxes[0].font)
+        # ────────────────────────────────────────────────────────────────────────
+
         chordsBelow = self.s.chordsBelow
 
         if chordsOnly and hasChords:
             textMaxH = 0
             textMaxTH = 0
-            line.textBaseline = chordMaxTH
-            line.chordBaseline = chordMaxTH
+            line.textBaseline = chordMaxTH + beatsExtraH
+            line.chordBaseline = chordMaxTH + beatsExtraH
         elif chordsOnly:  # Block without text or chords
             w, h = self.dc.GetTextExtent(' ')
             textMaxH = h
@@ -139,7 +182,7 @@ class SongDecorator(object):
             line.textBaseline = h
             line.chordBaseline = chordMaxTH
         else:
-            chord_top = line.parent.format.chordTopSpacing
+            chord_top = line.parent.format.chordTopSpacing + beatsExtraH
             if chordsBelow:
                 # Testo sopra, accordi sotto
                 line.textBaseline = textMaxTH
