@@ -50,6 +50,7 @@ from .SyntaxCheckerDialog import SyntaxCheckerDialog, EVT_SYNTAX_GOTO
 from .MusicalSymbolDialog import MusicalSymbolDialog
 from . import KlavierRenderer
 from .PrintDialog import SongpressPrintout, PrintManager
+from .CopyAIBeatsPrompt import CopyAIBeatsPromptMixin
 
 _ = wx.GetTranslation
 
@@ -707,7 +708,7 @@ else:
     ]
 
 
-class SongpressFrame(SDIMainFrame, PrintManager):
+class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
     def __init__(self, res):
         PrintManager.__init__(self)
         SDIMainFrame.__init__(
@@ -1341,6 +1342,7 @@ class SongpressFrame(SDIMainFrame, PrintManager):
         Bind(self.OnInsertTime, 'insertTime')
         Bind(self.OnInsertKey, 'insertKey')
         Bind(self.OnInsertBeatsTime, 'insertDuration')
+        Bind(self.OnCopyAIBeatsPrompt, 'copyAIBeatsPrompt')
         Bind(self.OnInsertCapo, 'insertCapo')
         Bind(self.OnInsertArtist, 'insertArtist')
         Bind(self.OnInsertComposer, 'insertComposer')
@@ -2200,9 +2202,18 @@ class SongpressFrame(SDIMainFrame, PrintManager):
             self.frame,
         )
         if label == default or not label.strip():
-            self.InsertWithCaret("{start_of_grid}\n| | | |\n{end_of_grid}\n")
+            block = "{start_of_grid}\n| | | |\n{end_of_grid}\n"
         else:
-            self.InsertWithCaret("{start_of_grid:%s}\n| | | |\n{end_of_grid}\n" % label)
+            block = "{start_of_grid:%s}\n| | | |\n{end_of_grid}\n" % label
+        # Inserisce il blocco e posiziona il cursore dentro la prima cella (dopo "| ")
+        self.StripSelection()
+        s, _e = self.text.GetSelection()
+        self.text.ReplaceSelection(block)
+        # La prima riga è "{start_of_grid...}\n", la seconda inizia con "| "
+        # Il cursore deve stare dopo "| " (2 caratteri) dentro la prima cella
+        header = block[:block.index('\n') + 1]   # es. "{start_of_grid}\n"
+        caret = s + len(header) + 2              # dopo "| " della riga griglia
+        self.text.SetSelection(caret, caret)
 
     def OnInsertTime(self, evt):
         """Inserisce la direttiva {time: <numeratore>/<denominatore>}."""

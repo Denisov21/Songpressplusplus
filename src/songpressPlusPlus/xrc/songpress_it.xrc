@@ -578,6 +578,13 @@
           <bitmap>../img/statistics.png</bitmap>
         </object>
         <object class="separator"/>
+        <object class="wxMenuItem" name="copyAIBeatsPrompt">
+          <label>Copia prompt IA per {beats__time}</label>
+          <accel>Ctrl+Shift+B</accel>
+          <help>Copia negli appunti il prompt per l'IA per aggiungere i {beats__time} usando uno spartito PDF</help>
+          <bitmap>../img/artificial_intelligent.png</bitmap>
+        </object>
+        <object class="separator"/>
         <object class="wxMenuItem" name="options">
           <label>_Opzioni...</label>
           <accel></accel>

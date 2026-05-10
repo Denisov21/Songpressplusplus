@@ -958,6 +958,33 @@ All main directives are accessible via the **Insert** menu, which opens support 
 
 - **Check syntax** (`Tools › Syntax check`, <kbd>F7</kbd>) — analyzes the text and reports unrecognized or malformed directives, with the ability to navigate directly to the error.
 
+
+### Copy AI beats_time Prompt (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>)
+
+**Tools › Copy AI beats_time prompt**
+
+Copies to the clipboard a **ready-to-paste prompt** for an AI assistant (e.g. Claude), asking it to add `{beats_time:}` directives to the current song file by reading a PDF score.
+
+**How it works:**
+
+1. Open the song file (`.crd`, `.cho`, `.chordpro`, etc.)
+2. Choose **Tools › Copy AI beats_time prompt** or press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>
+3. Paste the copied prompt into the AI terminal
+4. If the PDF score has a different name than the song file, edit it in the prompt before sending
+
+**Prompt structure copied to the clipboard:**
+
+```
+Add beats_time to MySong.crd using the score MySong.pdf.
+The eighth note equals 1 beat. The beats_time must be written before the
+chord line, example:
+`{beats_time: DO=2 SOL=2 RE-=2 LA-=2}` / `[DO]Ecco[SOL]mi, [RE-]ecco[LA-]mi!`
+```
+
+The song filename and the PDF name are filled in automatically from the open document. The PDF name is assumed to be the same as the song file with a `.pdf` extension; edit it manually in the AI terminal if needed.
+
+> **Note** — If no song file is open, a warning dialog is shown. Open the file first, then use the command.
+
 ### Song Statistics (<kbd>F8</kbd>)
 
 **Tools › Song Statistics…** opens a summary dialog that analyzes the open document and provides an instant difficulty rating.

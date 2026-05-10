@@ -958,6 +958,33 @@ Tutte le principali direttive sono accessibili tramite il menu **Inserisci**, ch
 
 - **Controlla sintassi** (`Strumenti › Controllo sintassi`, <kbd>F7</kbd>) — analizza il testo e segnala le direttive non riconosciute o malformate, con la possibilità di navigare direttamente all'errore.
 
+
+### Copia prompt IA per beats_time (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>)
+
+**Strumenti › Copia prompt IA per beats_time**
+
+Copia negli appunti un **prompt pronto da incollare** in un assistente IA (es. Claude), chiedendogli di aggiungere le direttive `{beats_time:}` al file della canzone corrente leggendo uno spartito PDF.
+
+**Come si usa:**
+
+1. Apri il file della canzone (`.crd`, `.cho`, `.chordpro`, ecc.)
+2. Scegli **Strumenti › Copia prompt IA per beats_time** oppure premi <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>
+3. Incolla il prompt copiato nel terminale dell'IA
+4. Se lo spartito PDF ha un nome diverso dal file della canzone, modificalo nel prompt prima di inviarlo
+
+**Struttura del prompt copiato negli appunti:**
+
+```
+Aggiungi beats_time a MiaCanzone.crd usando lo spartito MiaCanzone.pdf.
+La croma vale 1 battito. Il beats_time va scritto prima della riga con gli
+accordi, esempio:
+`{beats_time: DO=2 SOL=2 RE-=2 LA-=2}` / `[DO]Ecco[SOL]mi, [RE-]ecco[LA-]mi!`
+```
+
+Il nome del file della canzone e quello del PDF vengono compilati automaticamente dal documento aperto. Il nome del PDF viene assunto uguale al file della canzone con estensione `.pdf`; se necessario modificalo manualmente nel terminale dell'IA.
+
+> **Nota** — Se nessun file canzone è aperto, viene mostrato un avviso. Apri prima il file, poi usa il comando.
+
 ### Statistiche brano (<kbd>F8</kbd>)
 
 **Strumenti › Statistiche brano…** apre una finestra di riepilogo che analizza il documento aperto e produce una valutazione immediata della difficoltà.
