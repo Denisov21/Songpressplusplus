@@ -1273,12 +1273,19 @@ The print preview toolbar displays two indicators that read the **actual** setti
 
 **How detection works (Windows)**
 
-On Windows, detection reads the `DEVMODE` of the native driver directly via `win32print`, which reflects the settings in the driver's own panel (e.g. the Brother panel shown in the screenshot). On macOS and Linux, the value returned by `wx.PrintData` is used instead.
+On Windows, color detection uses three sources in cascade, each activated only if the previous one produced no result; duplex detection uses only source 1. On macOS and Linux, the value returned by `wx.PrintData` is used instead.
 
-| `DEVMODE` field | Values |
-| --------------- | ------ |
-| `dmDuplex` | `1` = simplex · `2` = duplex long-edge · `3` = duplex short-edge |
-| `dmColor` | `1` = monochrome (`DMCOLOR_MONOCHROME`) · `2` = color (`DMCOLOR_COLOR`) |
+| Source | API | When used |
+| ------ | --- | --------- |
+| **1 — DEVMODE** | `win32print.GetPrinter` level 2 | Always first: reflects the user's choice in the driver panel |
+| **2 — Hardware capability** | `win32print.GetPrinterCaps(DC_COLORDEVICE)` | Only if `dmColor` is absent: indicates whether the printer is physically capable of color |
+| **3 — wx fallback** | `wx.PrintData.GetColour()` | Only if both previous sources fail |
+
+| Field | Values |
+| ----- | ------ |
+| `DEVMODE.dmDuplex` | `1` = simplex · `2` = duplex long-edge · `3` = duplex short-edge |
+| `DEVMODE.dmColor` | `1` = monochrome (`DMCOLOR_MONOCHROME`) · `2` = color (`DMCOLOR_COLOR`) |
+| `DC_COLORDEVICE` | `0` = hardware B/W only (absolute certainty) · `1` = hardware capable of color |
 
 **Reliability by printer type**
 
@@ -1288,10 +1295,10 @@ On Windows, detection reads the `DEVMODE` of the native driver directly via `win
 | Network printer with native driver installed | ✅ yes | ✅ yes |
 | PDF printer (Microsoft Print to PDF, PDFCreator) | ⚠️ depends | ⚠️ depends |
 | Network printer via IPP without native driver (generic TCP/IP port only) | ❌ often no | ❌ often no |
-| B/W-only printer that does not expose `dmColor` in DEVMODE | ✅ yes | ⚠️ wx fallback |
+| B/W-only printer that does not expose `dmColor` in DEVMODE | ✅ yes | ✅ yes (via `DC_COLORDEVICE`) |
 | macOS / Linux | ⚠️ wx value only | ⚠️ wx value only |
 
-> **Note** — If `win32print` is unavailable or an error occurs, both indicators automatically fall back to the value provided by `wx.PrintData`. The `dmColor` field is not always present in monochrome-only printers: in that case `getattr(devmode, 'Color', None)` returns `None` and the wx fallback is used.
+> **Note** — If `win32print` is unavailable or a global error occurs, both indicators automatically fall back to the value provided by `wx.PrintData`. The `DC_COLORDEVICE` source is wrapped in its own `try/except`: if `GetPrinterCaps` is not supported by the driver, the fallback chain continues to wx without interrupting detection.
 
 ---
 

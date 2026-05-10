@@ -1273,12 +1273,19 @@ La barra degli strumenti dell'anteprima di stampa mostra due indicatori che legg
 
 **Come funziona il rilevamento (Windows)**
 
-Su Windows il rilevamento legge direttamente il `DEVMODE` del driver nativo tramite `win32print`, che riflette le impostazioni del pannello del driver (es. il pannello Brother mostrato nella schermata). Su macOS e Linux viene usato il valore restituito da `wx.PrintData`.
+Su Windows il rilevamento del colore usa tre fonti in cascata, ognuna attivata solo se la precedente non ha prodotto un risultato; il duplex usa solo la fonte 1. Su macOS e Linux viene usato il valore restituito da `wx.PrintData`.
 
-| Campo `DEVMODE` | Valori |
-| --------------- | ------ |
-| `dmDuplex` | `1` = solo fronte · `2` = fronte/retro lato lungo · `3` = fronte/retro lato corto |
-| `dmColor` | `1` = bianco e nero (`DMCOLOR_MONOCHROME`) · `2` = colore (`DMCOLOR_COLOR`) |
+| Fonte | API | Quando viene usata |
+| ----- | --- | ------------------ |
+| **1 — DEVMODE** | `win32print.GetPrinter` livello 2 | Sempre per prima: riflette la scelta dell'utente nel pannello del driver |
+| **2 — Capability hardware** | `win32print.GetPrinterCaps(DC_COLORDEVICE)` | Solo se `dmColor` è assente: indica se la stampante è fisicamente capace di colore |
+| **3 — Fallback wx** | `wx.PrintData.GetColour()` | Solo se entrambe le fonti precedenti falliscono |
+
+| Campo | Valori |
+| ----- | ------ |
+| `DEVMODE.dmDuplex` | `1` = solo fronte · `2` = fronte/retro lato lungo · `3` = fronte/retro lato corto |
+| `DEVMODE.dmColor` | `1` = bianco e nero (`DMCOLOR_MONOCHROME`) · `2` = colore (`DMCOLOR_COLOR`) |
+| `DC_COLORDEVICE` | `0` = hardware solo B/N (certezza assoluta) · `1` = hardware capace di colore |
 
 **Affidabilità per tipo di stampante**
 
@@ -1288,10 +1295,10 @@ Su Windows il rilevamento legge direttamente il `DEVMODE` del driver nativo tram
 | Stampante di rete con driver nativo installato | ✅ sì | ✅ sì |
 | Stampante PDF (Microsoft Print to PDF, PDFCreator) | ⚠️ dipende | ⚠️ dipende |
 | Stampante di rete via IPP senza driver nativo (solo porta TCP/IP generica) | ❌ spesso no | ❌ spesso no |
-| Stampante B/N che non espone `dmColor` nel DEVMODE | ✅ sì | ⚠️ fallback wx |
+| Stampante B/N che non espone `dmColor` nel DEVMODE | ✅ sì | ✅ sì (via `DC_COLORDEVICE`) |
 | macOS / Linux | ⚠️ solo valore wx | ⚠️ solo valore wx |
 
-> **Nota** — Se `win32print` non è disponibile o si verifica un errore, entrambi gli indicatori cadono automaticamente sul valore fornito da `wx.PrintData`. Il campo `dmColor` non è sempre presente nelle stampanti solo B/N: in quel caso il campo `getattr(devmode, 'Color', None)` restituisce `None` e viene usato il fallback wx.
+> **Nota** — Se `win32print` non è disponibile o si verifica un errore globale, entrambi gli indicatori cadono automaticamente sul valore fornito da `wx.PrintData`. La fonte `DC_COLORDEVICE` è isolata da un proprio `try/except`: se `GetPrinterCaps` non è supportato dal driver, si passa comunque al fallback wx senza interrompere il rilevamento.
 
 ---
 
