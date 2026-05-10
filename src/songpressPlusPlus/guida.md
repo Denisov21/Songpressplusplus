@@ -1219,11 +1219,11 @@ I seguenti controlli si trovano nella scheda **Formattazione** delle preferenze 
 
 | Opzione                                              | Descrizione                                                              |
 | ---------------------------------------------------- | ------------------------------------------------------------------------ |
-| Stampa 2 pagine per foglio                           | Stampa due pagine logiche affiancate su un foglio fisico                 |
+| Pagine per foglio (1 / 2)                            | Seleziona quante pagine logiche stampare su un foglio fisico             |
 | Colonne per pagina (1 / 2)                           | Distribuisce il testo su una o due colonne                               |
 | Comprimi e adatta alla pagina                        | Riduce il contenuto per farlo rientrare in una sola pagina               |
 | Comprimi per adattare alla pagina corrente           | Riduce ulteriormente per evitare che il contenuto venga tagliato in basso|
-| Non replicare (lascia metà destra vuota)             | Con 2 pagine/foglio: lascia la seconda metà vuota invece di copiare      |
+| Non replicare (lascia metà destra vuota)             | Con 2 pagine/foglio: lascia la seconda metà vuota invece di copiare     |
 | Rimuovi pagine vuote                                 | Rimuove le pagine logiche quasi vuote dall'output di stampa              |
 | Soglia pagina vuota (%)                              | Percentuale massima di pagina occupata sotto cui la pagina viene rimossa |
 
@@ -1238,13 +1238,13 @@ La direttiva `{new_page}` nel testo forza una nuova pagina logica durante la sta
 
 È un parametro di controllo per la funzione Comprimi per adattare, che si attiva quando l'opzione **«Comprimi per adattare alla pagina corrente (evita taglio in basso)»** è spuntata.
 
-Come funziona la logica: quando il contenuto della canzone rischia di essere tagliato in fondo alla pagina, Songpress++ tenta di recuperare spazio in due passi:
+Come funziona la logica: Songpress++ misura per ciascun segmento del brano (separati da `{new_page}`) quanto contenuto sfora oltre il bordo inferiore dell'ultima pagina che occupa, e tenta di recuperare esattamente quello spazio in due passi:
 
-**Primo passo** — riduce i margini (superiore/inferiore in modo simmetrico), ma solo fino al valore minimo configurato da questo SpinCtrl. Se il margine impostato dall'utente è, ad esempio, 20 mm, può essere compresso automaticamente fino a 5 mm (predefinito). Questo impedisce alla riduzione automatica di azzerare completamente i margini.
+**Primo passo** — riduce i margini superiore e inferiore, distribuendo la riduzione in proporzione alla riducibilità di ciascuno (non necessariamente 50/50: se un margine è già vicino al minimo, viene ridotto meno dell'altro). La riduzione si ferma non appena lo sforamento è recuperato, oppure quando entrambi i margini hanno raggiunto il valore minimo configurato da questo SpinCtrl. Se il margine impostato dall'utente è, ad esempio, 20 mm, può essere compresso automaticamente fino a 5 mm (predefinito). Questo impedisce alla riduzione automatica di azzerare completamente i margini.
 
-**Secondo passo** — scala il contenuto (rimpicciolisce testo/accordi), solo se la riduzione dei margini da sola non è sufficiente.
+**Secondo passo** — scala il contenuto (rimpicciolisce testo/accordi), solo se la riduzione dei margini da sola non è stata sufficiente. Il fattore di scala viene calcolato separatamente per ogni segmento e viene applicato il più restrittivo, garantendo che nessun segmento venga tagliato.
 
-In pratica: il valore (predefinito 5 mm) rappresenta il limite inferiore al di sotto del quale i margini non scendono mai durante la riduzione automatica. Maggiore è il valore, meno aggressiva è la compressione dei margini (e prima inizia la scalatura del testo). Il controllo è disabilitato quando la checkbox Comprimi per adattare è disattivata, e si riabilita automaticamente quando viene attivata (`on_shrink_changed`).
+In pratica: il valore (predefinito 5 mm) rappresenta il limite inferiore al di sotto del quale i margini non scendono mai durante la riduzione automatica. Maggiore è il valore, meno aggressiva è la compressione dei margini (e prima inizia la scalatura del testo). Il controllo è disabilitato quando la checkbox Comprimi per adattare è disattivata, e si riabilita automaticamente quando viene attivata.
 
 **Cosa significa «Soglia pagina vuota (%)»?**
 
@@ -1312,7 +1312,7 @@ La funzione **Crea Songbook PDF** (menu *File → Crea Songbook PDF…*) genera 
 | ------- | ----------- |
 | Estensioni | Selezionare quali tipi di file includere nella raccolta |
 | Voci indice cliccabili (link PDF) | Se attivo, ogni voce dell'indice è un link interno che porta direttamente alla pagina del brano nel PDF; il titolo appare in blu con sottolineatura |
-| Stampa 2 pagine per foglio | Affianca due brani sullo stesso foglio fisico |
+| Pagine per foglio (1 / 2) | Affianca due brani sullo stesso foglio fisico |
 | Imposta pagina | Formato carta, orientamento e margini |
 | Opzioni di stampa | Modalità 2 pagine per foglio |
 

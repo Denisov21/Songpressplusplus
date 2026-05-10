@@ -1219,7 +1219,7 @@ The following controls are found in the **Formatting** tab of preferences and af
 
 | Option                                         | Description                                                         |
 | ---------------------------------------------- | ------------------------------------------------------------------- |
-| Print 2 pages per sheet                        | Prints two logical pages side by side on one physical sheet         |
+| Pages per sheet (1 / 2)                        | Selects how many logical pages to print on one physical sheet       |
 | Columns per page (1 / 2)                       | Distributes text across one or two columns                          |
 | Shrink and fit to page                         | Reduces content to fit on a single page                             |
 | Shrink to fit current page                     | Further reduces to avoid content being cut at the bottom            |
@@ -1238,13 +1238,13 @@ The `{new_page}` directive in the text forces a new logical page during printing
 
 This is a control parameter for the Shrink to fit function, which activates when the option **"Shrink to fit current page (avoid bottom cut)"** is checked.
 
-How the logic works: when the song content risks being cut at the bottom of the page, Songpress++ attempts to recover space in two steps:
+How the logic works: Songpress++ measures, for each segment of the song (separated by `{new_page}`), how much content overflows beyond the bottom of its last page, and attempts to recover exactly that space in two steps:
 
-**First step** — reduces margins (top/bottom symmetrically), but only down to the minimum value configured by this SpinCtrl. If the user-set margin is, for example, 20 mm, it can be automatically compressed down to 5 mm (default). This prevents the auto-reduction from completely zeroing out the margins.
+**First step** — reduces the top and bottom margins, distributing the reduction proportionally to the available headroom of each (not necessarily 50/50: if one margin is already close to the minimum, it is reduced less than the other). The reduction stops as soon as the overflow is recovered, or when both margins have reached the minimum value configured by this SpinCtrl. If the user-set margin is, for example, 20 mm, it can be automatically compressed down to 5 mm (default). This prevents the auto-reduction from completely zeroing out the margins.
 
-**Second step** — scales the content (shrinks text/chords), only if margin reduction alone was not sufficient.
+**Second step** — scales the content (shrinks text/chords), only if margin reduction alone was not sufficient. The scale factor is calculated separately for each segment and the most restrictive one is applied, ensuring no segment is clipped.
 
-In practice: the value (default 5 mm) represents the floor below which margins never drop during auto-reduction. The higher the value, the less aggressive the margin compression (and the sooner text scaling begins). The control is disabled when the Shrink to fit checkbox is off, and re-enables automatically when it is turned on (`on_shrink_changed`).
+In practice: the value (default 5 mm) represents the floor below which margins never drop during auto-reduction. The higher the value, the less aggressive the margin compression (and the sooner text scaling begins). The control is disabled when the Shrink to fit checkbox is off, and re-enables automatically when it is turned on.
 
 **What is "Blank page threshold (%)"?**
 
@@ -1312,7 +1312,7 @@ The **Create Songbook PDF** function (*File → Create Songbook PDF…*) generat
 | ------ | ----------- |
 | Extensions | Select which file types to include in the collection |
 | Clickable index entries (PDF links) | When enabled, each index entry is an internal PDF link that jumps directly to the song's page; the title appears in blue with an underline |
-| Print 2 pages per sheet | Places two songs side by side on one physical sheet |
+| Pages per sheet (1 / 2) | Places two songs side by side on one physical sheet |
 | Page setup | Paper size, orientation and margins |
 | Print options | 2-pages-per-sheet mode |
 
