@@ -1262,6 +1262,37 @@ Practical examples:
 
 The control is disabled when the "Remove blank pages" checkbox is off, and re-enables automatically when it is turned on.
 
+### Automatic printer detection in the preview
+
+The print preview toolbar displays two indicators that read the **actual** settings of the selected printer, not just the values set by wx:
+
+| Indicator | Possible values |
+| --------- | --------------- |
+| **Duplex** | `Duplex: off (simplex)` · `Duplex: ON — long-edge binding` · `Duplex: ON — short-edge binding` |
+| **Color** | `Color: color print` · `Color: black & white` |
+
+**How detection works (Windows)**
+
+On Windows, detection reads the `DEVMODE` of the native driver directly via `win32print`, which reflects the settings in the driver's own panel (e.g. the Brother panel shown in the screenshot). On macOS and Linux, the value returned by `wx.PrintData` is used instead.
+
+| `DEVMODE` field | Values |
+| --------------- | ------ |
+| `dmDuplex` | `1` = simplex · `2` = duplex long-edge · `3` = duplex short-edge |
+| `dmColor` | `1` = monochrome (`DMCOLOR_MONOCHROME`) · `2` = color (`DMCOLOR_COLOR`) |
+
+**Reliability by printer type**
+
+| Situation | Duplex detected? | Color detected? |
+| --------- | ---------------- | --------------- |
+| Local printer with native driver (e.g. Brother, HP, Canon) | ✅ yes | ✅ yes |
+| Network printer with native driver installed | ✅ yes | ✅ yes |
+| PDF printer (Microsoft Print to PDF, PDFCreator) | ⚠️ depends | ⚠️ depends |
+| Network printer via IPP without native driver (generic TCP/IP port only) | ❌ often no | ❌ often no |
+| B/W-only printer that does not expose `dmColor` in DEVMODE | ✅ yes | ⚠️ wx fallback |
+| macOS / Linux | ⚠️ wx value only | ⚠️ wx value only |
+
+> **Note** — If `win32print` is unavailable or an error occurs, both indicators automatically fall back to the value provided by `wx.PrintData`. The `dmColor` field is not always present in monochrome-only printers: in that case `getattr(devmode, 'Color', None)` returns `None` and the wx fallback is used.
+
 ---
 
 ## Export

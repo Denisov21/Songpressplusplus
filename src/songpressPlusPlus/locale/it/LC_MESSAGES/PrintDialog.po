@@ -24,8 +24,8 @@ msgstr "Opzioni di stampa"
 
 # ── Section headers ───────────────────────────────────────────────────────────
 
-msgid "Pages"
-msgstr "Pagine"
+msgid "Pages per sheet"
+msgstr "Pagine per foglio"
 
 msgid "Columns per page"
 msgstr "Colonne per pagina"
@@ -41,8 +41,11 @@ msgstr "Scala"
 
 # ── Checkboxes and labels ─────────────────────────────────────────────────────
 
-msgid "Print 2 pages per sheet"
-msgstr "Stampa 2 pagine per foglio"
+msgid "1 page"
+msgstr "1 pagina"
+
+msgid "2 pages"
+msgstr "2 pagine"
 
 msgid "1 column"
 msgstr "1 colonna"
@@ -131,3 +134,29 @@ msgstr "Chiudi"
 
 msgid "Selection"
 msgstr "Selezione"
+
+# ── Duplex status label (toolbar anteprima) ───────────────────────────────────
+
+msgid "Duplex: off (simplex)"
+msgstr "Fronte/retro: disattivato (solo fronte)"
+
+msgid "Duplex: ON — short-edge binding"
+msgstr "Fronte/retro: ATTIVO — rilegatura lato corto"
+
+msgid "Duplex: ON — long-edge binding"
+msgstr "Fronte/retro: ATTIVO — rilegatura lato lungo"
+
+#. Stringa di fallback: {0} viene sostituito con il codice numerico del modo duplex
+msgid "Duplex: unknown (mode {})"
+msgstr "Fronte/retro: modalità sconosciuta (codice {})"
+
+# ── Color mode label (toolbar anteprima) ─────────────────────────────────────
+
+msgid "Color: color print"
+msgstr "Colore: stampa a colori"
+
+msgid "Color: black & white"
+msgstr "Colore: bianco e nero"
+
+msgid "Color: unknown"
+msgstr "Colore: sconosciuto"

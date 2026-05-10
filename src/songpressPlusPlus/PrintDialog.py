@@ -46,6 +46,110 @@ from .Renderer import Renderer, SongDecorator
 
 _ = wx.GetTranslation
 
+# ── Rilevamento duplex dal driver di sistema ───────────────────────────────────
+
+def _get_duplex_mode(print_data):
+    """
+    Restituisce la modalità duplex reale della stampante selezionata.
+
+    Strategia (Windows):
+      1. Prova win32print per leggere il DEVMODE del driver nativo → fonte più
+         affidabile, riflette le impostazioni del pannello del driver (es. Brother).
+      2. Fallback: wx.PrintData.GetDuplex() → utile se wx ha impostato il duplex
+         esplicitamente (es. dall'utente tramite PrintDialog di wx).
+
+    Su macOS / Linux restituisce direttamente il valore wx.
+
+    Valori restituiti (costanti wx):
+      wx.DUPLEX_SIMPLEX     – stampa su un solo lato
+      wx.DUPLEX_HORIZONTAL  – fronte/retro, rilegatura lato corto
+      wx.DUPLEX_VERTICAL    – fronte/retro, rilegatura lato lungo
+    """
+    # ── Tentativo win32print (solo Windows) ───────────────────────────────
+    if wx.Platform == '__WXMSW__':
+        try:
+            import win32print
+
+            # Nome stampante: preferisce quello in print_data, altrimenti default
+            printer_name = print_data.GetPrinterName().strip()
+            if not printer_name:
+                printer_name = win32print.GetDefaultPrinter()
+
+            # Apre la stampante in sola lettura
+            hprinter = win32print.OpenPrinter(printer_name)
+            try:
+                # Livello 2 → struttura PRINTER_INFO_2 con DEVMODE
+                info = win32print.GetPrinter(hprinter, 2)
+            finally:
+                win32print.ClosePrinter(hprinter)
+
+            devmode = info.get('pDevMode')
+            if devmode is not None:
+                # dmDuplex: 1 = simplex, 2 = vertical (long-edge), 3 = horizontal (short-edge)
+                dm_duplex = getattr(devmode, 'Duplex', 1)
+                if dm_duplex == 2:
+                    return wx.DUPLEX_VERTICAL       # rilegatura lato lungo  (caso più comune)
+                elif dm_duplex == 3:
+                    return wx.DUPLEX_HORIZONTAL     # rilegatura lato corto
+                else:
+                    return wx.DUPLEX_SIMPLEX
+        except Exception:
+            pass  # win32print non disponibile o errore → fallback sotto
+
+    # ── Fallback: valore wx.PrintData ─────────────────────────────────────
+    return print_data.GetDuplex()
+
+
+def _get_color_mode(print_data):
+    """
+    Restituisce la modalità colore reale della stampante selezionata.
+
+    Strategia (Windows):
+      1. Prova win32print per leggere il DEVMODE del driver nativo → fonte più
+         affidabile, riflette le impostazioni del pannello del driver (es. Brother).
+      2. Fallback: wx.PrintData.GetColour() → True se colore, False se B/N.
+
+    Su macOS / Linux restituisce direttamente il valore wx.
+
+    Valori restituiti:
+      "color"   – stampa a colori
+      "mono"    – stampa in bianco e nero / scala di grigi
+      "unknown" – impossibile determinare la modalità
+    """
+    # ── Tentativo win32print (solo Windows) ───────────────────────────────
+    if wx.Platform == '__WXMSW__':
+        try:
+            import win32print
+
+            printer_name = print_data.GetPrinterName().strip()
+            if not printer_name:
+                printer_name = win32print.GetDefaultPrinter()
+
+            hprinter = win32print.OpenPrinter(printer_name)
+            try:
+                info = win32print.GetPrinter(hprinter, 2)
+            finally:
+                win32print.ClosePrinter(hprinter)
+
+            devmode = info.get('pDevMode')
+            if devmode is not None:
+                # dmColor: 1 = DMCOLOR_MONOCHROME, 2 = DMCOLOR_COLOR
+                dm_color = getattr(devmode, 'Color', None)
+                if dm_color == 2:
+                    return "color"
+                elif dm_color == 1:
+                    return "mono"
+                # dm_color None o valore imprevisto → fallback wx sotto
+        except Exception:
+            pass
+
+    # ── Fallback: wx.PrintData.GetColour() ────────────────────────────────
+    try:
+        return "color" if print_data.GetColour() else "mono"
+    except Exception:
+        return "unknown"
+
+
 # ── Costanti ──────────────────────────────────────────────────────────────────
 
 _GAP = 8          # margine interno dialogo (px)
@@ -1140,6 +1244,46 @@ class PrintManager:
                         child.Hide()
                         break
 
+            # ── Etichetta stato fronte/retro ──────────────────────────────
+            # _get_duplex_mode() legge il DEVMODE del driver nativo (win32print)
+            # così rileva correttamente il duplex impostato nel pannello del
+            # driver (es. Brother), non solo quello impostato da wx.
+            _DUPLEX_LABELS = {
+                wx.DUPLEX_SIMPLEX:     (_("Duplex: off (simplex)"),                    wx.Colour(160, 160, 160)),
+                wx.DUPLEX_HORIZONTAL:  (_("Duplex: ON — short-edge binding"),          wx.Colour( 20, 140,  60)),
+                wx.DUPLEX_VERTICAL:    (_("Duplex: ON — long-edge binding"),           wx.Colour( 20, 140,  60)),
+            }
+            _duplex_mode  = _get_duplex_mode(self._print_data)
+            _duplex_text, _duplex_colour = _DUPLEX_LABELS.get(
+                _duplex_mode,
+                (_("Duplex: unknown (mode {})".format(_duplex_mode)), wx.Colour(180, 80, 0))
+            )
+            lbl_duplex = wx.StaticText(ctrl_bar, wx.ID_ANY, _duplex_text)
+            lbl_duplex.SetForegroundColour(_duplex_colour)
+            _font = lbl_duplex.GetFont()
+            _font.SetWeight(wx.FONTWEIGHT_BOLD)
+            lbl_duplex.SetFont(_font)
+
+            # ── Etichetta modalità colore ──────────────────────────────────
+            # _get_color_mode() legge dmColor dal DEVMODE del driver nativo
+            # (win32print), così rileva B/N o colore impostato nel pannello
+            # del driver, non solo quello impostato da wx.
+            _COLOR_LABELS = {
+                "color":   (_("Color: color print"),           wx.Colour(  0, 100, 200)),
+                "mono":    (_("Color: black & white"),         wx.Colour( 80,  80,  80)),
+                "unknown": (_("Color: unknown"),               wx.Colour(180,  80,   0)),
+            }
+            _color_mode = _get_color_mode(self._print_data)
+            _color_text, _color_colour = _COLOR_LABELS.get(
+                _color_mode,
+                (_("Color: unknown"), wx.Colour(180, 80, 0))
+            )
+            lbl_color = wx.StaticText(ctrl_bar, wx.ID_ANY, _color_text)
+            lbl_color.SetForegroundColour(_color_colour)
+            _font2 = lbl_color.GetFont()
+            _font2.SetWeight(wx.FONTWEIGHT_BOLD)
+            lbl_color.SetFont(_font2)
+
             # Inserisce i bottoni personalizzati nella toolbar
             sizer = ctrl_bar.GetSizer()
             if sizer:
@@ -1150,9 +1294,11 @@ class PrintManager:
                         spacer_idx = i
                         break
                 ins = (spacer_idx + 1) if spacer_idx is not None else sizer.GetItemCount()
-                sizer.Insert(ins,     btn_page_setup, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
-                sizer.Insert(ins + 1, btn_options,    0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
-                sizer.Insert(ins + 2, btn_close,      0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
+                sizer.Insert(ins,     lbl_duplex,    0, wx.LEFT | wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 6)
+                sizer.Insert(ins + 1, lbl_color,     0, wx.LEFT | wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 6)
+                sizer.Insert(ins + 2, btn_page_setup, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
+                sizer.Insert(ins + 3, btn_options,    0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
+                sizer.Insert(ins + 4, btn_close,      0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
 
             # Uniforma altezza bottoni
             ref_h = btn_options.GetBestSize().height

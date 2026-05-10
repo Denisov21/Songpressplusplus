@@ -1262,6 +1262,37 @@ Esempi pratici:
 
 Il controllo è disabilitato quando la checkbox «Rimuovi pagine vuote» è disattivata, e si riabilita automaticamente quando viene attivata.
 
+### Rilevamento automatico della stampante nell'anteprima
+
+La barra degli strumenti dell'anteprima di stampa mostra due indicatori che leggono le impostazioni **reali** della stampante selezionata, non solo quelle impostate da wx:
+
+| Indicatore | Valori possibili |
+| ---------- | ---------------- |
+| **Fronte/retro** | `Fronte/retro: disattivato (solo fronte)` · `ATTIVO — rilegatura lato lungo` · `ATTIVO — rilegatura lato corto` |
+| **Colore** | `Colore: stampa a colori` · `Colore: bianco e nero` |
+
+**Come funziona il rilevamento (Windows)**
+
+Su Windows il rilevamento legge direttamente il `DEVMODE` del driver nativo tramite `win32print`, che riflette le impostazioni del pannello del driver (es. il pannello Brother mostrato nella schermata). Su macOS e Linux viene usato il valore restituito da `wx.PrintData`.
+
+| Campo `DEVMODE` | Valori |
+| --------------- | ------ |
+| `dmDuplex` | `1` = solo fronte · `2` = fronte/retro lato lungo · `3` = fronte/retro lato corto |
+| `dmColor` | `1` = bianco e nero (`DMCOLOR_MONOCHROME`) · `2` = colore (`DMCOLOR_COLOR`) |
+
+**Affidabilità per tipo di stampante**
+
+| Situazione | Fronte/retro rilevato? | Colore rilevato? |
+| ---------- | ---------------------- | ---------------- |
+| Stampante locale con driver nativo (es. Brother, HP, Canon) | ✅ sì | ✅ sì |
+| Stampante di rete con driver nativo installato | ✅ sì | ✅ sì |
+| Stampante PDF (Microsoft Print to PDF, PDFCreator) | ⚠️ dipende | ⚠️ dipende |
+| Stampante di rete via IPP senza driver nativo (solo porta TCP/IP generica) | ❌ spesso no | ❌ spesso no |
+| Stampante B/N che non espone `dmColor` nel DEVMODE | ✅ sì | ⚠️ fallback wx |
+| macOS / Linux | ⚠️ solo valore wx | ⚠️ solo valore wx |
+
+> **Nota** — Se `win32print` non è disponibile o si verifica un errore, entrambi gli indicatori cadono automaticamente sul valore fornito da `wx.PrintData`. Il campo `dmColor` non è sempre presente nelle stampanti solo B/N: in quel caso il campo `getattr(devmode, 'Color', None)` restituisce `None` e viene usato il fallback wx.
+
 ---
 
 ## Esporta

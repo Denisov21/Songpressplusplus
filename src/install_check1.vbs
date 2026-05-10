@@ -15,7 +15,7 @@ Const APP_NAME        = "Songpress++"
 Const APP_VERSION     = "1.0.0"
 
 ' Dipendenze: nome pip | import Python | versione minima | versione massima (esclusa)
-Dim DEPS(7, 3)
+Dim DEPS(8, 3)
 DEPS(0,0) = "wxPython      " : DEPS(0,1) = "wxPython      " : DEPS(0,2) = "4.2.4  " : DEPS(0,3) = "5.0.0"
 DEPS(1,0) = "requests      " : DEPS(1,1) = "requests      " : DEPS(1,2) = "2.32.4 " : DEPS(1,3) = "3.0.0"
 DEPS(2,0) = "python-pptx   " : DEPS(2,1) = "python-pptx   " : DEPS(2,2) = "1.0.2  " : DEPS(2,3) = "2.0.0"
@@ -24,6 +24,7 @@ DEPS(4,0) = "reportlab     " : DEPS(4,1) = "reportlab     " : DEPS(4,2) = "4.0.0
 DEPS(5,0) = "pypdf         " : DEPS(5,1) = "pypdf         " : DEPS(5,2) = "6.0.0  " : DEPS(5,3) = "7.0.0"
 DEPS(6,0) = "markdown      " : DEPS(6,1) = "markdown      " : DEPS(6,2) = "3.4    " : DEPS(6,3) = "4.0.0"
 DEPS(7,0) = "mistune       " : DEPS(7,1) = "mistune       " : DEPS(7,2) = "3.0.0  " : DEPS(7,3) = "4.0.0"
+DEPS(8,0) = "pywin32       " : DEPS(8,1) = "pywin32       " : DEPS(8,2) = "308    " : DEPS(8,3) = "999.0"
 
 ' ---------------------------------------------------------------------------
 ' Oggetti globali
@@ -72,7 +73,7 @@ Set oFile = oFSO.OpenTextFile(batPath, 2, True)
 oFile.WriteLine "@echo off"
 oFile.WriteLine pythonExe & " -m pip install --upgrade pip"
 Dim j
-For j = 0 To 7
+For j = 0 To 8
     ' Qui solo versione minima, niente limite massimo per consentire aggiornamenti
     pipSpec = DEPS(j,0) & ">=" & DEPS(j,2)
     oFile.WriteLine pythonExe & " -m pip install --upgrade """ & pipSpec & """"
@@ -98,7 +99,7 @@ report = report & "[Python]  " & Trim(pyVer) & Chr(13)
 
 ' Verifica ogni pacchetto
 Dim installed, pkgVer, status
-For i = 0 To 7
+For i = 0 To 8
     pkgVer = GetInstalledVersion(pythonExe, DEPS(i,1))
     If pkgVer = "" Then
         status = "NON TROVATO"
