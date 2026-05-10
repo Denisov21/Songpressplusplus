@@ -240,95 +240,168 @@ class SongpressPrintout(wx.Printout):
                 self._scale_y = min(self._scale_y, self._scale_y * fit)
 
         # ── fit_to_page / shrink_to_fit ───────────────────────────────
+        #
+        # Approccio diretto: rendiamo tutti i segmenti su un DC temporaneo
+        # con la scala corrente, misuriamo l'altezza reale di ciascuno, e
+        # ricaviamo il fattore di scala / la riduzione di margine necessari
+        # senza approssimazioni su row_h.
+        #
+        # Grandezze usate in questo blocco:
+        #   px_per_page  = altezza utile in pixel-schermo (unità del Renderer)
+        #                = usable_h [device units] / self._scale_y
+        #   seg_h_px[]   = altezze reali di ciascun segmento in pixel-schermo
+        #   overflow_px  = quanto sporge l'ultimo segmento oltre la sua pagina
+        #                  (sempre nell'ultima pagina di quel segmento)
+        # ─────────────────────────────────────────────────────────────────────
+
         mdc2 = wx.MemoryDC(wx.Bitmap(1, 1))
 
-        total_h_px = 0  # accumula su tutti i segmenti
+        # Renderizza una volta sola tutti i segmenti e memorizza le altezze.
+        seg_h_px = []
         for seg_idx, seg_text in enumerate(self._segments):
             r = self._make_renderer()
             vc, lc, cc = self._seg_verse_start.get(seg_idx, (0, 0, 0))
             r.initialVerseCount  = vc
             r.initialLabelCount  = lc
             r.initialChorusCount = cc
-            sw, sh = r.Render(seg_text, mdc2)
-            total_h_px += sh  # somma l'altezza di ciascun segmento
+            _, sh = r.Render(seg_text, mdc2)
+            seg_h_px.append(max(1, sh))
+
+        total_h_px = sum(seg_h_px)
 
         if getattr(self.frame_obj, '_fit_to_page', False):
+            # Scala font per far stare tutto il contenuto in una sola pagina.
             if total_h_px * self._scale_y > usable_h:
                 f = usable_h / (total_h_px * self._scale_y)
                 self._scale_x *= f
                 self._scale_y *= f
+                # Aggiorna le altezze scalate (non i px, che sono invarianti
+                # rispetto al renderer, ma serviranno corretti sotto).
+                # Non serve: seg_h_px rimane in px-schermo; scale è cambiata.
 
         if getattr(self.frame_obj, '_shrink_to_fit', False):
-            min_margin_mm  = float(getattr(self.frame_obj, '_min_margin_shrink', 5))
-            min_margin_du  = self._mm_to_du(min_margin_mm, ppi_y)
-            # Clamp a 0: se il margine corrente è già sotto il minimo,
-            # non c'è margine riducibile (evita valori negativi che farebbero
-            # saltare il branch sbagliato o scalare il font inutilmente).
-            reducible_du   = max(0, min(mt, mb) - min_margin_du)
+            # ── Parametri di margine riducibile ───────────────────────────
+            min_margin_mm = float(getattr(self.frame_obj, '_min_margin_shrink', 5))
+            min_margin_du = self._mm_to_du(min_margin_mm, ppi_y)
 
-            r_check = self._make_renderer()
-            vc, lc, cc = self._seg_verse_start.get(0, (0, 0, 0))
-            r_check.initialVerseCount  = vc
-            r_check.initialLabelCount  = lc
-            r_check.initialChorusCount = cc
-            _, sh_check = r_check.Render(
-                self._segments[0], mdc2
+            # Quanto possiamo togliere da top e bottom rispettando il minimo.
+            # Calcolato separatamente per i due margini per distribuire
+            # correttamente anche quando mt ≠ mb.
+            red_top_max = max(0, mt - min_margin_du)
+            red_bot_max = max(0, mb - min_margin_du)
+            reducible_du = red_top_max + red_bot_max   # totale disponibile
+
+            # ── Calcolo overflow per ogni segmento ────────────────────────
+            # Per ciascun segmento, l'overflow è la parte che sporge
+            # nell'ultima pagina oltre un multiplo intero di px_per_page.
+            # Se overflow == 0 il segmento chiude esatto: non serve shrink.
+            # Prendiamo il worst-case su tutti i segmenti.
+
+            px_per_page = usable_h / self._scale_y   # in px-schermo
+
+            def _overflow_px(h_px, ppp):
+                """Pixel che debordano nell'ultima pagina di un segmento."""
+                if ppp <= 0:
+                    return 0.0
+                remainder = math.fmod(h_px, ppp)
+                # fmod restituisce 0.0 se h_px è multiplo esatto di ppp
+                return remainder
+
+            # Overflow massimo tra tutti i segmenti (in px-schermo).
+            max_overflow_px = max(
+                _overflow_px(h, px_per_page) for h in seg_h_px
             )
-            row_h = max(1, sh_check // max(1, sum(
-                1 for ln in self._segments[0].splitlines() if ln.strip()
-            )))
 
-            px_per_page = usable_h / self._scale_y
+            if max_overflow_px > 0:
+                # ── Fase 1: proviamo a recuperare l'overflow riducendo i margini ──
+                #
+                # Quanti device-units aggiuntivi ci servono in altezza utile
+                # per far rientrare max_overflow_px nella pagina?
+                # Convertiamo l'overflow da px-schermo a device-units:
+                #   needed_du = max_overflow_px * self._scale_y
+                needed_du = max_overflow_px * self._scale_y
 
-            def _best_ppp(ppp):
-                n = max(1, int(math.floor(ppp / row_h)))
-                return n * row_h
-
-            def _apply_margins(red_du):
-                new_usable = usable_h + red_du
-                new_ppp    = new_usable / self._scale_y
-                return new_usable, _best_ppp(new_ppp)
-
-            ideal_ppp = _best_ppp(px_per_page)
-            gap       = px_per_page - ideal_ppp
-
-            margin_reduced_du = 0  # quanti du sono stati sottratti ai margini
-
-            if gap > 0:
-                gap_du = gap * self._scale_y
-                if gap_du <= reducible_du:
-                    margin_reduced_du = gap_du
-                    usable_h, px_per_page = _apply_margins(gap_du)
-                    px_per_page = _best_ppp(px_per_page)
-                else:
+                if needed_du <= reducible_du:
+                    # I margini bastano: li riduciamo proporzionalmente.
+                    # Distribuiamo needed_du tra top e bottom in proporzione
+                    # alla loro riducibilità, così rispettiamo entrambi i minimi.
                     if reducible_du > 0:
-                        margin_reduced_du = reducible_du
-                        usable_h, px_per_page = _apply_margins(reducible_du)
-                        ideal_ppp = _best_ppp(px_per_page)
-                        gap       = px_per_page - ideal_ppp
-                        gap_du    = gap * self._scale_y
+                        ratio       = needed_du / reducible_du
+                        red_top_du  = int(math.ceil(red_top_max * ratio))
+                        red_bot_du  = int(math.floor(red_bot_max * ratio))
+                    else:
+                        red_top_du = red_bot_du = 0
 
-                    if gap > 0:
-                        n_rows_now  = max(1, int(math.floor(px_per_page / row_h)))
-                        target_ppp  = n_rows_now * row_h
-                        f           = usable_h / (self._scale_y * target_ppp)
-                        if f < 1.0:
-                            self._scale_x  *= f
-                            self._scale_y  *= f
-                            px_per_page     = usable_h / self._scale_y
-                            px_per_page     = _best_ppp(px_per_page)
+                    mt -= red_top_du
+                    mb -= red_bot_du
+                    usable_h += red_top_du + red_bot_du
+                    self._margin_du = (ml, mt, mr, mb)
 
-            # Se i margini sono stati ridotti virtualmente, aggiorna _margin_du
-            # in modo che il clipping in _render_logical_page usi la stessa
-            # altezza utile calcolata qui (altrimenti SetClippingRegion taglia
-            # il testo che l'algoritmo ha legittimamente incluso nell'area).
-            if margin_reduced_du > 0:
-                half = margin_reduced_du / 2.0
-                new_mt = max(0, mt - int(math.ceil(half)))
-                new_mb = max(0, mb - int(math.floor(half)))
-                mt = new_mt
-                mb = new_mb
-                self._margin_du = (ml, mt, mr, mb)
+                else:
+                    # ── Fase 2: margini non bastano → riduciamo anche il font ──
+                    #
+                    # Prima sfruttiamo tutto il margine disponibile…
+                    mt       -= red_top_max
+                    mb       -= red_bot_max
+                    usable_h += reducible_du
+                    self._margin_du = (ml, mt, mr, mb)
+
+                    # …poi calcoliamo il fattore di scala per far rientrare
+                    # l'overflow residuo nella pagina aggiornata.
+                    #
+                    # Per ogni segmento vogliamo:
+                    #   h_px * scale_y_new  ≡   0  (mod usable_h_new)
+                    # ovvero che h_px * scale_y_new sia un multiplo di usable_h_new.
+                    # La condizione necessaria e sufficiente è che per il segmento
+                    # più "scomodo" il numero di pagine che occupa con la nuova
+                    # scala sia un intero.
+                    #
+                    # Approccio: cerchiamo il fattore f < 1 tale che, per ogni
+                    # segmento, ceil(h_px * f * scale_y / usable_h) * usable_h
+                    # sia >= h_px * f * scale_y  (ovvero nessun overflow).
+                    # La soluzione conservativa più semplice e stabile:
+                    # scaliamo in modo che l'overflow peggiore diventi 0,
+                    # ovvero che ogni segmento occupi un numero intero di pagine.
+                    #
+                    # Per il segmento con overflow residuo:
+                    #   n_pages = ceil(h_px * scale_y / usable_h)
+                    #   target  = n_pages * usable_h          [in du]
+                    #   f       = target / (h_px * scale_y)   [≥ 1 se già ok, ≤ 1 se va ridotto]
+                    # Prendiamo il minimo f tra tutti i segmenti (quello che
+                    # richiede la riduzione maggiore).
+
+                    f_min = 1.0
+                    for h_px in seg_h_px:
+                        h_du = h_px * self._scale_y
+                        n_pages = max(1, math.ceil(h_du / usable_h))
+                        target_du = n_pages * usable_h
+                        if h_du > target_du:
+                            # non dovrebbe mai accadere per costruzione di ceil,
+                            # ma per robustezza:
+                            f_candidate = target_du / h_du
+                        elif h_du > 0:
+                            # Vogliamo f tale che h_px * scale_y * f <= target_du
+                            # con n_pages invariato (non vogliamo aggiungere pagine).
+                            # f_candidate = target_du / h_du  ← sarebbe ≥ 1, non utile.
+                            # Invece cerchiamo n_pages - 1 pagine se l'overflow
+                            # è ciò che causa il problema:
+                            overflow_du = math.fmod(h_du, usable_h)
+                            if overflow_du > 0:
+                                # Riduciamo fino a far sparire l'overflow:
+                                # (h_du - overflow_du) = (n_pages-1)*usable_h
+                                # f = (n_pages-1)*usable_h / h_du
+                                f_candidate = ((n_pages - 1) * usable_h) / h_du
+                                f_candidate = max(0.5, f_candidate)  # floor di sicurezza
+                            else:
+                                f_candidate = 1.0
+                        else:
+                            f_candidate = 1.0
+
+                        f_min = min(f_min, f_candidate)
+
+                    if f_min < 1.0:
+                        self._scale_x *= f_min
+                        self._scale_y *= f_min
 
         # ── calcolo definitivo degli offsets di pagina ─────────────────
         px_per_page = usable_h / self._scale_y
@@ -496,10 +569,15 @@ class PrintOptionsDialog:
         self._outer = outer = wx.BoxSizer(wx.VERTICAL)
 
         # ── Sezione Pagine ────────────────────────────────────────────
-        box_pages = wx.StaticBoxSizer(wx.StaticBox(dlg, label=_("Pages")), wx.VERTICAL)
-        self.cb = wx.CheckBox(dlg, label=_("Print 2 pages per sheet"))
-        self.cb.SetValue(owner._two_pages_per_sheet)
-        box_pages.Add(self.cb, 0, wx.ALL, _GAP)
+        box_pages = wx.StaticBoxSizer(
+            wx.StaticBox(dlg, label=_("Pages per sheet")), wx.HORIZONTAL
+        )
+        self.rb_page1 = wx.ToggleButton(dlg, label=_("1 page"))
+        self.rb_page2 = wx.ToggleButton(dlg, label=_("2 pages"))
+        self.rb_page1.SetValue(not owner._two_pages_per_sheet)
+        self.rb_page2.SetValue(owner._two_pages_per_sheet)
+        box_pages.Add(self.rb_page1, 1, wx.EXPAND | wx.ALL, _GAP)
+        box_pages.Add(self.rb_page2, 1, wx.EXPAND | wx.ALL, _GAP)
         outer.Add(box_pages, 0, wx.EXPAND | wx.ALL, _GAP)
 
         # ── Sezione Colonne ───────────────────────────────────────────
@@ -630,15 +708,26 @@ class PrintOptionsDialog:
     # ── Bind ──────────────────────────────────────────────────────────────────
 
     def _bind_events(self):
+        self.rb_page1.Bind(wx.EVT_TOGGLEBUTTON, self._on_page1)
+        self.rb_page2.Bind(wx.EVT_TOGGLEBUTTON, self._on_page2)
         self.rb_col1.Bind(wx.EVT_TOGGLEBUTTON, self._on_col1)
         self.rb_col2.Bind(wx.EVT_TOGGLEBUTTON, self._on_col2)
         self.cb_shrink.Bind(wx.EVT_CHECKBOX, self._on_shrink_changed)
         self.cb_remove_blank.Bind(wx.EVT_CHECKBOX, self._on_remove_blank_changed)
-        self.cb.Bind(wx.EVT_CHECKBOX, self._on_two_pages_changed)
         self.btn_pin.Bind(wx.EVT_BUTTON, self._on_pin)
         self.btn_ok.Bind(wx.EVT_BUTTON, self._on_ok)
 
     # ── Handler eventi ────────────────────────────────────────────────────────
+
+    def _on_page1(self, evt):
+        self.rb_page1.SetValue(True)
+        self.rb_page2.SetValue(False)
+        self.cb_no_mirror.Enable(False)
+
+    def _on_page2(self, evt):
+        self.rb_page2.SetValue(True)
+        self.rb_page1.SetValue(False)
+        self.cb_no_mirror.Enable(True)
 
     def _on_col1(self, evt):
         self.rb_col1.SetValue(True)
@@ -660,10 +749,6 @@ class PrintOptionsDialog:
         self.spin_blank_threshold.Enable(enabled)
         evt.Skip()
 
-    def _on_two_pages_changed(self, evt):
-        self.cb_no_mirror.Enable(self.cb.GetValue())
-        evt.Skip()
-
     def _on_pin(self, evt):
         PIN_OFF = u"📌"
         PIN_ON  = u"📍"
@@ -680,7 +765,7 @@ class PrintOptionsDialog:
 
     def _apply_options(self):
         o = self.owner
-        o._two_pages_per_sheet  = self.cb.GetValue()
+        o._two_pages_per_sheet  = self.rb_page2.GetValue()
         o._columns_per_page     = 2 if self.rb_col2.GetValue() else 1
         o._fit_to_page          = self.cb_fit.GetValue()
         o._shrink_to_fit        = self.cb_shrink.GetValue()
