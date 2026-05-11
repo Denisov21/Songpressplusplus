@@ -1404,8 +1404,8 @@ class MyPreferencesDialog(PreferencesDialog):
         lang = i18n.getLang()
         l = self.GetLanguage()
         if l is not None and l != lang:
-            msg = _("Language settings will be applied when you restart Songpress.")
-            d = wx.MessageDialog(self, msg, _("Songpress"), wx.ICON_INFORMATION | wx.OK)
+            msg = _("Language settings will be applied when you restart Songpress++.")
+            d = wx.MessageDialog(self, msg, _("Songpress++"), wx.ICON_INFORMATION | wx.OK)
             d.ShowModal()
         # Se il pin è attivo: applica il callback senza chiudere il dialogo
         if self._pinned:

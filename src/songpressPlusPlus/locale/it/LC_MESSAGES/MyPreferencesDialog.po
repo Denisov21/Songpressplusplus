@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: songpress\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-25 15:21+0200\n"
-"PO-Revision-Date: 2026-05-08 19:51+0200\n"
+"PO-Revision-Date: 2026-05-11 20:43+0200\n"
 "Last-Translator: Denisov21\n"
 "Language-Team: Italian (http://www.transifex.com/skeed/songpress-2/language/"
 "it/)\n"
@@ -44,12 +44,13 @@ msgstr ""
 "{eoc}"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/MyPreferencesDialog.py:120
-msgid "Language settings will be applied when you restart Songpress."
-msgstr "Le impostazioni della lingua verranno applicate al riavvio di Songpress."
+msgid "Language settings will be applied when you restart Songpress++."
+msgstr ""
+"Le impostazioni della lingua verranno applicate al riavvio di Songpress++."
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/MyPreferencesDialog.py:121
-msgid "Songpress"
-msgstr "Songpress"
+msgid "Songpress++"
+msgstr "Songpress++"
 
 #: PreferencesDialog.py (Syntax colours group)
 msgid "Syntax colours"
