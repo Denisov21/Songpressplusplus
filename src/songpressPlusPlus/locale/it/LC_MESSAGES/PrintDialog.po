@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: Songpress++ PrintDialog\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-05-04 00:00+0000\n"
-"PO-Revision-Date: 2026-05-04 00:00+0000\n"
+"PO-Revision-Date: 2026-05-11 20:30+0200\n"
 "Last-Translator: Denisov21\n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -101,6 +101,9 @@ msgstr "Opzioni di stampa..."
 
 msgid "Page setup..."
 msgstr "Impostazione pagina..."
+
+msgid "Driver settings..."
+msgstr "Impostazioni driver..."
 
 msgid "Print preview"
 msgstr "Anteprima di stampa"

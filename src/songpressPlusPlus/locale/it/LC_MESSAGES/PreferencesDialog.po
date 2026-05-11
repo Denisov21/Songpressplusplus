@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: songpress\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-05 16:22+0200\n"
-"PO-Revision-Date: 2026-05-08 19:56+0200\n"
+"PO-Revision-Date: 2026-05-11 20:15+0200\n"
 "Last-Translator: Denisov21\n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -52,8 +52,7 @@ msgstr "10"
 msgid "11"
 msgstr "11"
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/PreferencesDialog.py:53
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/PreferencesDialog.py:55
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/PreferencesDialog.py:53 /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/PreferencesDialog.py:55
 msgid "12"
 msgstr "12"
 
@@ -294,36 +293,24 @@ msgid "Delay preview refresh while typing (debounce)"
 msgstr "Ritarda aggiornamento anteprima durante la digitazione (debounce)"
 
 #: PreferencesDialog.py
-msgid ""
-"When enabled, the preview redraws only after a short pause in typing (300 ms), reducing CPU usage. When disabled, every "
-"keystroke immediately updates the preview."
-msgstr ""
-"Se abilitato, l'anteprima viene ridisegnata solo dopo una breve pausa nella digitazione (300 ms), riducendo l'uso della "
-"CPU. Se disabilitato, ogni tasto aggiorna immediatamente l'anteprima."
+msgid "When enabled, the preview redraws only after a short pause in typing (300 ms), reducing CPU usage. When disabled, every keystroke immediately updates the preview."
+msgstr "Se abilitato, l'anteprima viene ridisegnata solo dopo una breve pausa nella digitazione (300 ms), riducendo l'uso della CPU. Se disabilitato, ogni tasto aggiorna immediatamente l'anteprima."
 
 #: PreferencesDialog.py
 msgid "Double-click on preview jumps to source line in editor"
 msgstr "Doppio clic sull'anteprima porta alla riga sorgente nell'editor"
 
 #: PreferencesDialog.py
-msgid ""
-"When enabled, double-clicking on any word or chord in the preview moves the cursor to the corresponding line in the "
-"editor."
-msgstr ""
-"Se abilitato, il doppio clic su una parola o un accordo nell'anteprima sposta il cursore alla riga corrispondente "
-"nell'editor."
+msgid "When enabled, double-clicking on any word or chord in the preview moves the cursor to the corresponding line in the editor."
+msgstr "Se abilitato, il doppio clic su una parola o un accordo nell'anteprima sposta il cursore alla riga corrispondente nell'editor."
 
 #: PreferencesDialog.py
 msgid "Set minimum size for the preview panel at startup (370×520)"
 msgstr "Imposta la dimensione minima del pannello anteprima all'avvio (370×520)"
 
 #: PreferencesDialog.py
-msgid ""
-"When enabled, the preview panel cannot be resized below 370×520 pixels. This prevents the panel from appearing too small "
-"when the application starts."
-msgstr ""
-"Se abilitato, il pannello anteprima non può essere ridimensionato al di sotto di 370×520 pixel. In questo modo il "
-"pannello non appare troppo piccolo all'avvio."
+msgid "When enabled, the preview panel cannot be resized below 370×520 pixels. This prevents the panel from appearing too small when the application starts."
+msgstr "Se abilitato, il pannello anteprima non può essere ridimensionato al di sotto di 370×520 pixel. In questo modo il pannello non appare troppo piccolo all'avvio."
 
 #: PreferencesDialog.py guide viewer group title
 msgid "Quick guide"
@@ -428,8 +415,7 @@ msgid ""
 "This text is shown as the section label when {start_of_grid} is used without an explicit label argument.\n"
 "Example: {start_of_grid: label} overrides this value."
 msgstr ""
-"Questo testo viene mostrato come etichetta di sezione quando {start_of_grid} viene usato senza un argomento etichetta "
-"esplicito.\n"
+"Questo testo viene mostrato come etichetta di sezione quando {start_of_grid} viene usato senza un argomento etichetta esplicito.\n"
 "Esempio: {start_of_grid: etichetta} sovrascrive questo valore."
 
 #: PreferencesDialog.py format tab — chord grid space as pipe checkbox
@@ -719,3 +705,31 @@ msgstr "Istanza singola: apri i file nella finestra esistente"
 #: PreferencesDialog.py — General 2 tab, single instance checkbox tooltip
 msgid "When enabled, opening a file from Explorer or the command line will reuse the existing Songpress++ window instead of launching a new instance."
 msgstr "Se attivo, aprire un file da Explorer o dalla riga di comando riutilizza la finestra di Songpress++ già aperta, invece di avviarne una nuova."
+
+# — Preferenze — gruppo Stampa (tab Songpress++ Preview)
+msgid "Print"
+msgstr "Stampa"
+
+#: PreferencesDialog.py — Print group, live update checkbox
+msgid "Live update of duplex/color status in print preview (every 1.5 s)"
+msgstr "Aggiornamento in tempo reale dello stato fronte/retro e colore nell'anteprima (ogni 1,5 s)"
+
+#: PreferencesDialog.py — Print group, live update checkbox tooltip
+msgid "When enabled, the duplex and color status shown in the print preview status bar is refreshed every 1.5 seconds by querying the printer driver. This lets you see changes made in the driver panel without closing the preview. When disabled, the status is read once when the preview opens and stays fixed."
+msgstr ""
+"Se attivo, lo stato fronte/retro e colore mostrato nella barra di stato\n"
+"dell'anteprima di stampa viene aggiornato ogni 1,5 secondi interrogando\n"
+"il driver della stampante. Ciò consente di vedere le modifiche apportate\n"
+"nel pannello del driver senza chiudere l'anteprima. Se disattivo, lo stato\n"
+"viene letto una sola volta all'apertura dell'anteprima e rimane fisso."
+
+#: PreferencesDialog.py — Print group, always on top checkbox
+msgid "Keep print preview window always on top"
+msgstr "Mantieni sempre in primo piano la finestra di anteprima di stampa"
+
+#: PreferencesDialog.py — Print group, always on top checkbox tooltip
+msgid "When enabled, the print preview window stays on top of all other windows, including the main Songpress++ window. When disabled, the preview window behaves as a normal window."
+msgstr ""
+"Se attivo, la finestra di anteprima di stampa rimane sempre in primo piano\n"
+"rispetto a tutte le altre finestre, inclusa la finestra principale di Songpress++.\n"
+"Se disattivo, la finestra di anteprima si comporta come una finestra normale."

@@ -233,9 +233,6 @@ class PreferencesDialog(wx.Dialog):
         bSizerClearRecent.Add(self.openTemplatesFolderBtn, 0, wx.LEFT, 8)
         grpGeneral.Add(bSizerClearRecent, 0, wx.ALL, 5)
 
-        self.showPrintPreviewCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Show print preview before printing"), wx.DefaultPosition, wx.DefaultSize, 0)
-        grpGeneral.Add(self.showPrintPreviewCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
-
         self.multiCursorCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Enable multi-cursor (Alt+Click, Ctrl+D)"), wx.DefaultPosition, wx.DefaultSize, 0)
         grpGeneral.Add(self.multiCursorCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
 
@@ -661,6 +658,43 @@ class PreferencesDialog(wx.Dialog):
         grpPreview.Add(self.previewMinSizeCB, 0, wx.ALL, 5)
 
         bSizerSongpress.Add(grpPreview, 0, wx.EXPAND | wx.ALL, 8)
+
+        # Gruppo: Stampa
+        grpPrint = wx.StaticBoxSizer(
+            wx.StaticBox(self.songpressPanel, wx.ID_ANY, _(u"Print")),
+            wx.VERTICAL
+        )
+
+        self.showPrintPreviewCB = wx.CheckBox(
+            self.songpressPanel, wx.ID_ANY,
+            _(u"Show print preview before printing")
+        )
+        grpPrint.Add(self.showPrintPreviewCB, 0, wx.ALL, 5)
+
+        self.liveDriverPollCB = wx.CheckBox(
+            self.songpressPanel, wx.ID_ANY,
+            _(u"Live update of duplex/color status in print preview (every 1.5 s)")
+        )
+        self.liveDriverPollCB.SetToolTip(
+            _(u"When enabled, the duplex and color status shown in the print preview "
+              u"status bar is refreshed every 1.5 seconds by querying the printer driver. "
+              u"This lets you see changes made in the driver panel without closing the preview. "
+              u"When disabled, the status is read once when the preview opens and stays fixed.")
+        )
+        grpPrint.Add(self.liveDriverPollCB, 0, wx.ALL, 5)
+
+        self.printPreviewAlwaysOnTopCB = wx.CheckBox(
+            self.songpressPanel, wx.ID_ANY,
+            _(u"Keep print preview window always on top")
+        )
+        self.printPreviewAlwaysOnTopCB.SetToolTip(
+            _(u"When enabled, the print preview window stays on top of all other windows, "
+              u"including the main Songpress++ window. "
+              u"When disabled, the preview window behaves as a normal window.")
+        )
+        grpPrint.Add(self.printPreviewAlwaysOnTopCB, 0, wx.ALL, 5)
+
+        bSizerSongpress.Add(grpPrint, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
         # Gruppo: Nessun accordo — blocchi da nascondere
         grpNoChords = wx.StaticBoxSizer(

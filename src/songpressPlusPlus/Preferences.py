@@ -277,6 +277,8 @@ class Preferences(object):
         self.config.SetPath('/Print')
         v = self.config.Read('showPrintPreview')
         self.showPrintPreview = bool(int(v)) if v != '' else True
+        v = self.config.Read('printPreviewAlwaysOnTop')
+        self.printPreviewAlwaysOnTop = bool(int(v)) if v != '' else False
         self.config.SetPath('/')
 
     def _LoadMultiCursor(self):
@@ -311,6 +313,8 @@ class Preferences(object):
         self.previewMinSize = bool(int(v)) if v != '' else True
         v = self.config.Read('guideViewer')
         self.guideViewer = v if v in ('auto', 'builtin', 'markdown', 'mistune') else 'auto'
+        v = self.config.Read('liveDriverPoll')
+        self.liveDriverPoll = bool(int(v)) if v != '' else True
         self.config.SetPath('/')
 
     def _LoadGridDisplayMode(self):
@@ -494,6 +498,7 @@ class Preferences(object):
     def _SavePrintOptions(self):
         self.config.SetPath('/Print')
         self.config.Write('showPrintPreview', '1' if getattr(self, 'showPrintPreview', True) else '0')
+        self.config.Write('printPreviewAlwaysOnTop', '1' if getattr(self, 'printPreviewAlwaysOnTop', False) else '0')
         self.config.SetPath('/')
 
     def _SaveMultiCursor(self):
@@ -519,6 +524,7 @@ class Preferences(object):
         self.config.Write('dblClickFocus',     '1' if getattr(self, 'dblClickFocus',     True) else '0')
         self.config.Write('previewMinSize',    '1' if getattr(self, 'previewMinSize',    True) else '0')
         self.config.Write('guideViewer',           getattr(self, 'guideViewer', 'auto'))
+        self.config.Write('liveDriverPoll',        '1' if getattr(self, 'liveDriverPoll', True) else '0')
         self.config.SetPath('/')
 
     def _SaveGridDisplayMode(self):

@@ -196,6 +196,8 @@ class MyPreferencesDialog(PreferencesDialog):
         self.debounceRefreshCB.SetValue(getattr(self.pref, 'debounceRefresh', True))
         self.dblClickFocusCB.SetValue(getattr(self.pref, 'dblClickFocus', True))
         self.previewMinSizeCB.SetValue(getattr(self.pref, 'previewMinSize', True))
+        self.liveDriverPollCB.SetValue(getattr(self.pref, 'liveDriverPoll', True))
+        self.printPreviewAlwaysOnTopCB.SetValue(getattr(self.pref, 'printPreviewAlwaysOnTop', False))
 
         # Nessun accordo: blocchi da nascondere
         self.hideIntroChordCB.SetValue(getattr(self.pref, 'hideIntroChord', False))
@@ -1320,6 +1322,8 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.debounceRefresh   = self.debounceRefreshCB.GetValue()
         self.pref.dblClickFocus     = self.dblClickFocusCB.GetValue()
         self.pref.previewMinSize    = self.previewMinSizeCB.GetValue()
+        self.pref.liveDriverPoll    = self.liveDriverPollCB.GetValue()
+        self.pref.printPreviewAlwaysOnTop = self.printPreviewAlwaysOnTopCB.GetValue()
         # Viewer guida rapida
         _viewer_keys = ['auto', 'markdown', 'mistune', 'builtin']
         sel = self.guideViewerCh.GetSelection()

@@ -150,6 +150,115 @@ def _get_color_mode(print_data):
         return "unknown"
 
 
+def _open_driver_settings(print_data, parent_hwnd=None):
+    """
+    Apre il pannello impostazioni del driver di stampa (DocumentProperties).
+
+    Su Windows usa win32print.DocumentProperties per mostrare il dialogo
+    nativo del driver (es. Brother HL-L3270CDW).
+    Su altre piattaforme mostra un wx.PrintDialog in modalità setup.
+
+    Restituisce il wx.PrintData aggiornato (o quello originale se annullato).
+    """
+    if wx.Platform == '__WXMSW__':
+        try:
+            import win32print
+            import win32con
+
+            printer_name = print_data.GetPrinterName().strip()
+            if not printer_name:
+                printer_name = win32print.GetDefaultPrinter()
+
+            hprinter = win32print.OpenPrinter(printer_name)
+            try:
+                # Legge il DEVMODE corrente dal driver
+                props = win32print.GetPrinter(hprinter, 2)
+                devmode_in = props.get('pDevMode')
+
+                # Mostra il pannello del driver.
+                # I binding Python di win32print passano il pDevMode per
+                # riferimento all'oggetto: DocumentProperties lo modifica
+                # in-place sull'oggetto Python quando l'utente preme OK.
+                result = win32print.DocumentProperties(
+                    parent_hwnd or 0,
+                    hprinter,
+                    printer_name,
+                    devmode_in,   # devmode output — modificato in-place dal driver
+                    devmode_in,   # devmode input  — valori iniziali
+                    win32con.DM_IN_BUFFER | win32con.DM_OUT_BUFFER | win32con.DM_IN_PROMPT,
+                )
+
+                # result == IDOK (1) → utente ha confermato con OK
+                if result == 1 and devmode_in is not None:
+                    # ── 1. Salva il DEVMODE aggiornato nel driver ──────────────
+                    # Senza questo SetPrinter il driver dimentica le modifiche
+                    # non appena viene chiuso l'handle.
+                    try:
+                        props['pDevMode'] = devmode_in
+                        win32print.SetPrinter(hprinter, 2, props, 0)
+                    except Exception:
+                        pass  # diritti insufficienti o driver non supporta → continua
+
+                    # ── 2. Propaga i campi leggibili in wx.PrintData ──────────
+                    # wx.PrintData non conosce il DEVMODE direttamente; aggiorniamo
+                    # i campi che wx espone e che l'utente può aver modificato.
+
+                    # Orientamento (dmOrientation: 1=portrait, 2=landscape)
+                    orient = getattr(devmode_in, 'Orientation', None)
+                    if orient == 2:
+                        print_data.SetOrientation(wx.LANDSCAPE)
+                    elif orient == 1:
+                        print_data.SetOrientation(wx.PORTRAIT)
+
+                    # Fronte/retro (dmDuplex: 1=simplex, 2=vertical, 3=horizontal)
+                    dm_duplex = getattr(devmode_in, 'Duplex', None)
+                    if dm_duplex == 2:
+                        print_data.SetDuplex(wx.DUPLEX_VERTICAL)
+                    elif dm_duplex == 3:
+                        print_data.SetDuplex(wx.DUPLEX_HORIZONTAL)
+                    elif dm_duplex == 1:
+                        print_data.SetDuplex(wx.DUPLEX_SIMPLEX)
+
+                    # Colore (dmColor: 1=mono, 2=colore)
+                    dm_color = getattr(devmode_in, 'Color', None)
+                    if dm_color == 2:
+                        print_data.SetColour(True)
+                    elif dm_color == 1:
+                        print_data.SetColour(False)
+
+                    # Numero di copie (dmCopies)
+                    dm_copies = getattr(devmode_in, 'Copies', None)
+                    if dm_copies is not None and dm_copies > 0:
+                        print_data.SetNoCopies(dm_copies)
+
+                    # Formato carta (dmPaperSize → wx paper id)
+                    # La mappatura è 1:1 per i formati standard ISO/ANSI.
+                    dm_paper = getattr(devmode_in, 'PaperSize', None)
+                    if dm_paper is not None:
+                        # wx.PAPER_* ha gli stessi valori numerici di DMPAPER_*
+                        try:
+                            print_data.SetPaperId(dm_paper)
+                        except Exception:
+                            pass
+
+            finally:
+                win32print.ClosePrinter(hprinter)
+
+            return print_data
+
+        except Exception:
+            pass  # win32print non disponibile o errore → fallback sotto
+
+    # ── Fallback: wx.PrintDialog in modalità setup ────────────────────────
+    pdd = wx.PrintDialogData(print_data)
+    pdd.SetSetupDialog(True)
+    dlg = wx.PrintDialog(None, pdd)
+    if dlg.ShowModal() == wx.ID_OK:
+        print_data = wx.PrintData(dlg.GetPrintDialogData().GetPrintData())
+    dlg.Destroy()
+    return print_data
+
+
 # ── Costanti ──────────────────────────────────────────────────────────────────
 
 _GAP = 8          # margine interno dialogo (px)
@@ -1127,8 +1236,10 @@ class PrintManager:
             )
             return
 
+        _always_on_top = getattr(getattr(self, 'pref', None), 'printPreviewAlwaysOnTop', False)
+        _pf_style = wx.DEFAULT_FRAME_STYLE | wx.STAY_ON_TOP if _always_on_top else wx.DEFAULT_FRAME_STYLE
         pf = wx.PreviewFrame(preview, self.frame, _("Print preview"),
-                             style=wx.DEFAULT_FRAME_STYLE | wx.STAY_ON_TOP)
+                             style=_pf_style)
         pf.Initialize()
         self._preview_frame = pf
 
@@ -1163,6 +1274,36 @@ class PrintManager:
             btn_print = ctrl_bar.FindWindowById(wx.ID_PRINT)
             if btn_print is not None:
                 btn_print.SetLabel(_("Print..."))
+
+            # Bottone «Impostazioni driver»
+            btn_driver = wx.Button(ctrl_bar, wx.ID_ANY, _("Driver settings..."))
+            _driver_icon_path = glb.AddPath('img/option_printer24x24.png')
+            if os.path.isfile(_driver_icon_path):
+                img = wx.Image(_driver_icon_path, wx.BITMAP_TYPE_PNG)
+                btn_driver.SetBitmap(wx.Bitmap(img))
+                btn_driver.SetBitmapPosition(wx.LEFT)
+            else:
+                # Icona di fallback: stampante dal catalogo wxArtProvider
+                bmp = wx.ArtProvider.GetBitmap(wx.ART_PRINT, wx.ART_BUTTON, wx.Size(16, 16))
+                if bmp.IsOk():
+                    btn_driver.SetBitmap(bmp)
+                    btn_driver.SetBitmapPosition(wx.LEFT)
+
+            def on_driver_settings(e):
+                hwnd = None
+                if wx.Platform == '__WXMSW__':
+                    try:
+                        hwnd = pf.GetHandle()
+                    except Exception:
+                        hwnd = None
+                self._print_data = _open_driver_settings(self._print_data, parent_hwnd=hwnd)
+                # Aggiorna la status bar (duplex/colore possono essere cambiati)
+                try:
+                    _sb._refresh_labels()
+                except Exception:
+                    pass
+
+            btn_driver.Bind(wx.EVT_BUTTON, on_driver_settings)
 
             # Bottone «Opzioni di stampa»
             btn_options = wx.Button(ctrl_bar, wx.ID_ANY, _("Print options..."))
@@ -1244,47 +1385,8 @@ class PrintManager:
                         child.Hide()
                         break
 
-            # ── Etichetta stato fronte/retro ──────────────────────────────
-            # _get_duplex_mode() legge il DEVMODE del driver nativo (win32print)
-            # così rileva correttamente il duplex impostato nel pannello del
-            # driver (es. Brother), non solo quello impostato da wx.
-            _DUPLEX_LABELS = {
-                wx.DUPLEX_SIMPLEX:     (_("Duplex: off (simplex)"),                    wx.Colour(160, 160, 160)),
-                wx.DUPLEX_HORIZONTAL:  (_("Duplex: ON — short-edge binding"),          wx.Colour( 20, 140,  60)),
-                wx.DUPLEX_VERTICAL:    (_("Duplex: ON — long-edge binding"),           wx.Colour( 20, 140,  60)),
-            }
-            _duplex_mode  = _get_duplex_mode(self._print_data)
-            _duplex_text, _duplex_colour = _DUPLEX_LABELS.get(
-                _duplex_mode,
-                (_("Duplex: unknown (mode {})".format(_duplex_mode)), wx.Colour(180, 80, 0))
-            )
-            lbl_duplex = wx.StaticText(ctrl_bar, wx.ID_ANY, _duplex_text)
-            lbl_duplex.SetForegroundColour(_duplex_colour)
-            _font = lbl_duplex.GetFont()
-            _font.SetWeight(wx.FONTWEIGHT_BOLD)
-            lbl_duplex.SetFont(_font)
-
-            # ── Etichetta modalità colore ──────────────────────────────────
-            # _get_color_mode() legge dmColor dal DEVMODE del driver nativo
-            # (win32print), così rileva B/N o colore impostato nel pannello
-            # del driver, non solo quello impostato da wx.
-            _COLOR_LABELS = {
-                "color":   (_("Color: color print"),           wx.Colour(  0, 100, 200)),
-                "mono":    (_("Color: black & white"),         wx.Colour( 80,  80,  80)),
-                "unknown": (_("Color: unknown"),               wx.Colour(180,  80,   0)),
-            }
-            _color_mode = _get_color_mode(self._print_data)
-            _color_text, _color_colour = _COLOR_LABELS.get(
-                _color_mode,
-                (_("Color: unknown"), wx.Colour(180, 80, 0))
-            )
-            lbl_color = wx.StaticText(ctrl_bar, wx.ID_ANY, _color_text)
-            lbl_color.SetForegroundColour(_color_colour)
-            _font2 = lbl_color.GetFont()
-            _font2.SetWeight(wx.FONTWEIGHT_BOLD)
-            lbl_color.SetFont(_font2)
-
             # Inserisce i bottoni personalizzati nella toolbar
+            # (le etichette duplex/colore sono nella status bar in basso)
             sizer = ctrl_bar.GetSizer()
             if sizer:
                 spacer_idx = None
@@ -1294,15 +1396,14 @@ class PrintManager:
                         spacer_idx = i
                         break
                 ins = (spacer_idx + 1) if spacer_idx is not None else sizer.GetItemCount()
-                sizer.Insert(ins,     lbl_duplex,    0, wx.LEFT | wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 6)
-                sizer.Insert(ins + 1, lbl_color,     0, wx.LEFT | wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 6)
-                sizer.Insert(ins + 2, btn_page_setup, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
-                sizer.Insert(ins + 3, btn_options,    0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
-                sizer.Insert(ins + 4, btn_close,      0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
+                sizer.Insert(ins,     btn_page_setup, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
+                sizer.Insert(ins + 1, btn_driver,     0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
+                sizer.Insert(ins + 2, btn_options,    0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
+                sizer.Insert(ins + 3, btn_close,      0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
 
             # Uniforma altezza bottoni
             ref_h = btn_options.GetBestSize().height
-            for btn in (btn_page_setup, btn_close):
+            for btn in (btn_page_setup, btn_driver, btn_close):
                 btn.SetMinSize(wx.Size(btn.GetBestSize().width, ref_h))
             ctrl_bar.Layout()
 
@@ -1311,7 +1412,7 @@ class PrintManager:
                     h = btn_options.GetSize().height
                     if h < 4:
                         return
-                    for btn in (btn_page_setup, btn_close):
+                    for btn in (btn_page_setup, btn_driver, btn_close):
                         bw = btn.GetSize().width
                         btn.SetMinSize(wx.Size(bw, h))
                         btn.SetSize(wx.Size(bw, h))
@@ -1322,15 +1423,166 @@ class PrintManager:
 
         pf.Show()
 
-        # Al chiusura della preview ripristina il canvas al testo intero
+        # ── Barra di stato personalizzata (fronte/retro + colore) ─────────────
+        # wx.StatusBar nativa non supporta testo colorato per campo su Windows,
+        # quindi usiamo un wx.Panel agganciato come StatusBar owner-draw.
+        class _ColoredStatusBar(wx.StatusBar):
+            """
+            Status bar con testo colorato per i campi 1 e 2.
+
+            Campo 0 → testo nativo wxWidgets ("Pagina N di M").
+            Campo 1 → stato fronte/retro.
+            Campo 2 → modalità colore.
+
+            Se live_poll=True un wx.Timer interroga il driver ogni _POLL_MS ms
+            così le etichette si aggiornano in tempo reale anche mentre il
+            pannello del driver è aperto.
+            Se live_poll=False la lettura avviene una sola volta all'apertura
+            e rimane fissa fino alla chiusura della preview.
+            """
+
+            _POLL_MS = 1500   # intervallo di polling in millisecondi
+
+            # ── dizionari statici ──────────────────────────────────────────
+            _DUPLEX_LABELS = {
+                wx.DUPLEX_SIMPLEX:    (lambda: _("Duplex: off (simplex)"),           wx.Colour(160, 160, 160)),
+                wx.DUPLEX_HORIZONTAL: (lambda: _("Duplex: ON — short-edge binding"), wx.Colour( 20, 140,  60)),
+                wx.DUPLEX_VERTICAL:   (lambda: _("Duplex: ON — long-edge binding"),  wx.Colour( 20, 140,  60)),
+            }
+            _COLOR_LABELS = {
+                "color":   (lambda: _("Color: color print"),   wx.Colour(  0, 100, 200)),
+                "mono":    (lambda: _("Color: black & white"), wx.Colour( 80,  80,  80)),
+                "unknown": (lambda: _("Color: unknown"),       wx.Colour(180,  80,   0)),
+            }
+
+            def __init__(self, parent, print_data_ref, live_poll=True):
+                super().__init__(parent, style=wx.STB_DEFAULT_STYLE)
+                # print_data_ref: callable → wx.PrintData corrente
+                self._get_pd   = print_data_ref
+                self._live     = live_poll
+
+                self.SetFieldsCount(3)
+                self.SetStatusWidths([-1, -2, -2])
+
+                # Campo 1: fronte/retro
+                self._lbl_duplex = wx.StaticText(self, wx.ID_ANY, "")
+                _f1 = self._lbl_duplex.GetFont()
+                _f1.SetWeight(wx.FONTWEIGHT_BOLD)
+                self._lbl_duplex.SetFont(_f1)
+
+                # Campo 2: colore
+                self._lbl_color = wx.StaticText(self, wx.ID_ANY, "")
+                _f2 = self._lbl_color.GetFont()
+                _f2.SetWeight(wx.FONTWEIGHT_BOLD)
+                self._lbl_color.SetFont(_f2)
+
+                # Stato precedente per evitare refresh inutili
+                self._last_duplex = None
+                self._last_color  = None
+
+                # Prima lettura sempre immediata
+                self._refresh_labels()
+
+                # Timer: avviato solo se live_poll è attivo
+                self._timer = wx.Timer(self)
+                self.Bind(wx.EVT_TIMER, self._on_timer, self._timer)
+                if self._live:
+                    self._timer.Start(self._POLL_MS)
+
+                self.Bind(wx.EVT_SIZE, self._on_size)
+                wx.CallAfter(self._reposition)
+
+            # ── aggiornamento etichette ────────────────────────────────────
+
+            def _resolve_duplex(self):
+                """Restituisce (text, colour) per lo stato duplex corrente."""
+                try:
+                    mode = _get_duplex_mode(self._get_pd())
+                except Exception:
+                    mode = wx.DUPLEX_SIMPLEX
+                entry = self._DUPLEX_LABELS.get(mode)
+                if entry:
+                    text_fn, colour = entry
+                    return text_fn(), colour
+                return _("Duplex: unknown (mode {})".format(mode)), wx.Colour(180, 80, 0)
+
+            def _resolve_color(self):
+                """Restituisce (text, colour) per la modalità colore corrente."""
+                try:
+                    mode = _get_color_mode(self._get_pd())
+                except Exception:
+                    mode = "unknown"
+                entry = self._COLOR_LABELS.get(mode)
+                if entry:
+                    text_fn, colour = entry
+                    return text_fn(), colour
+                return _("Color: unknown"), wx.Colour(180, 80, 0)
+
+            def _refresh_labels(self):
+                """Interroga il driver e aggiorna le etichette se cambiate."""
+                changed = False
+
+                d_text, d_colour = self._resolve_duplex()
+                if d_text != self._last_duplex:
+                    self._last_duplex = d_text
+                    self._lbl_duplex.SetLabel(d_text)
+                    self._lbl_duplex.SetForegroundColour(d_colour)
+                    changed = True
+
+                c_text, c_colour = self._resolve_color()
+                if c_text != self._last_color:
+                    self._last_color = c_text
+                    self._lbl_color.SetLabel(c_text)
+                    self._lbl_color.SetForegroundColour(c_colour)
+                    changed = True
+
+                if changed:
+                    wx.CallAfter(self._reposition)
+
+            def _on_timer(self, evt):
+                self._refresh_labels()
+
+            # ── layout ────────────────────────────────────────────────────
+
+            def _reposition(self):
+                try:
+                    r1 = self.GetFieldRect(1)
+                    r2 = self.GetFieldRect(2)
+                    pad = 4
+                    for lbl, r in ((self._lbl_duplex, r1), (self._lbl_color, r2)):
+                        _, h = lbl.GetBestSize()
+                        y = r.y + max(0, (r.height - h) // 2)
+                        lbl.SetPosition(wx.Point(r.x + pad, y))
+                        lbl.SetSize(wx.Size(r.width - pad * 2, h))
+                except Exception:
+                    pass
+
+            def _on_size(self, evt):
+                evt.Skip()
+                wx.CallAfter(self._reposition)
+
+            def stop_timer(self):
+                """Ferma il polling; chiamato alla chiusura della preview."""
+                try:
+                    if self._timer.IsRunning():
+                        self._timer.Stop()
+                except Exception:
+                    pass
+
+        _live_poll = getattr(self, 'pref', None)
+        _live_poll = getattr(_live_poll, 'liveDriverPoll', True) if _live_poll else True
+        _sb = _ColoredStatusBar(pf, lambda: self._print_data, live_poll=_live_poll)
+        pf.SetStatusBar(_sb)
+
+        # Al chiusura della preview: ferma il timer di polling e ripristina il canvas
         def _on_preview_close(e):
             e.Skip()
+            _sb.stop_timer()
             wx.CallAfter(
                 self.previewCanvas.Refresh,
                 self._strip_hash_commands(self.text.GetText()),
             )
         pf.Bind(wx.EVT_CLOSE, _on_preview_close)
-
         # Dimensiona la finestra di anteprima al 90% dell'area di lavoro
         display_idx = wx.Display.GetFromWindow(self.frame)
         if display_idx == wx.NOT_FOUND:
