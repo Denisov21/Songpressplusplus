@@ -2,8 +2,8 @@
 ###############################################################
 # Name:             CopyAIBeatsPrompt.py
 # Purpose:    Adds the command **"Copy AI beats_time prompt"** (Ctrl+Shift+B):
-#copies a ready-to-paste prompt to the clipboard for use in an AI terminal
-#to add {beats_time: ...} directives from a PDF score.
+# copies a ready-to-paste prompt to the clipboard for use in an AI terminal
+# to add {beats_time: ...} directives from a PDF score.
 # Author:         Denisov21
 # Created:     2026-05-10
 # Copyright:  Denisov21 
@@ -23,7 +23,7 @@ to add {beats_time: ...} directives from a PDF score.
 STRUCTURE OF THE COPIED PROMPT
 --------------------------------
 Add beats_time to <file.crd> using the score <file.pdf>.
-The eighth note equals 1 beat. The beats_time must be written before the
+The quarter note equals 1 beat (♩). The beats_time must be written before the
 chord line, example:
 `{beats_time: DO=2 SOL=2 RE-=2 LA-=2}` / `[DO]Ecco[SOL]mi, [RE-]ecco[LA-]mi!`
 """
@@ -53,7 +53,7 @@ class CopyAIBeatsPromptMixin:
     #: are replaced at runtime with the actual file names.
     AI_BEATS_TEMPLATE_MSGID = (
         u"Add beats_time to {crd} using the score {pdf}.\n"
-        u"The eighth note equals 1 beat. The beats_time must be written "
+        u"The quarter note equals 1 beat (♩). The beats_time must be written "
         u"before the chord line, example:\n"
         u"`{{beats_time: DO=2 SOL=2 RE-=2 LA-=2}}` / "
         u"`[DO]Ecco[SOL]mi, [RE-]ecco[LA-]mi!`"
@@ -121,29 +121,3 @@ class CopyAIBeatsPromptMixin:
                 self.frame,
             )
 
-
-# ======================================================================
-# XML INSTRUCTIONS FOR XRC FILES
-# ======================================================================
-#
-# -- songpress.xrc  (English) ------------------------------------------
-# Paste this block AFTER the "insertDuration" item in the "insert" menu:
-#
-#   <object class="wxMenuItem" name="copyAIBeatsPrompt">
-#     <label>Copy &amp;AI beats_time prompt</label>
-#     <accel>Ctrl+Shift+B</accel>
-#     <help>Copy a ready-to-paste AI prompt to add beats_time directives using a PDF score</help>
-#     <bitmap>../img/beats.png</bitmap>
-#   </object>
-#
-# -- songpress_it.xrc  (Italian) ---------------------------------------
-# Paste this block AFTER the "insertDuration" item in the "insert" menu:
-#
-#   <object class="wxMenuItem" name="copyAIBeatsPrompt">
-#     <label>Copia prompt &amp;AI per beats_time</label>
-#     <accel>Ctrl+Shift+B</accel>
-#     <help>Copia negli appunti il prompt per l'AI per aggiungere i beats_time usando uno spartito PDF</help>
-#     <bitmap>../img/beats.png</bitmap>
-#   </object>
-#
-# ======================================================================
