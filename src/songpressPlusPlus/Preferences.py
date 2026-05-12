@@ -228,6 +228,7 @@ class Preferences(object):
         self._LoadDecoSliderColour()
         self._LoadNoChordHide()
         self._LoadSingleInstance()
+        self._LoadShowRestartMenuItem()
 
     def _LoadKlavierColour(self):
         self.config.SetPath('/KlavierColour')
@@ -396,6 +397,7 @@ class Preferences(object):
         self._SaveDecoSliderColour()
         self._SaveNoChordHide()
         self._SaveSingleInstance()
+        self._SaveShowRestartMenuItem()
         self.config.Flush()
 
     def _SaveKlavierColour(self):
@@ -656,4 +658,15 @@ class Preferences(object):
     def _SaveSingleInstance(self):
         self.config.SetPath('/App')
         self.config.Write('singleInstance', '1' if getattr(self, 'singleInstance', True) else '0')
+        self.config.SetPath('/')
+
+    def _LoadShowRestartMenuItem(self):
+        self.config.SetPath('/App')
+        v = self.config.Read('showRestartMenuItem')
+        self.showRestartMenuItem = bool(int(v)) if v != '' else True
+        self.config.SetPath('/')
+
+    def _SaveShowRestartMenuItem(self):
+        self.config.SetPath('/App')
+        self.config.Write('showRestartMenuItem', '1' if getattr(self, 'showRestartMenuItem', True) else '0')
         self.config.SetPath('/')

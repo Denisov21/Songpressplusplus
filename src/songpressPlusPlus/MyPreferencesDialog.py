@@ -29,6 +29,7 @@ class MyPreferencesDialog(PreferencesDialog):
 
         self._pinned = False
         self._on_apply = on_apply  # callback chiamato ad ogni OK con pin attivo
+        self._restart_requested = False  # True se l'utente ha scelto «Riavvia ora»
         self._on_theme_change = on_theme_change  # callback chiamato quando la lista temi cambia (salva/elimina)
         self._previewCanvas = previewCanvas  # riferimento opzionale per applicare subito le opzioni anteprima
         self.easyChords = easyChords
@@ -189,6 +190,7 @@ class MyPreferencesDialog(PreferencesDialog):
 
         # Single instance
         self.singleInstanceCB.SetValue(getattr(self.pref, 'singleInstance', True))
+        self.showRestartMenuItemCB.SetValue(getattr(self.pref, 'showRestartMenuItem', True))
 
         # Opzioni anteprima (tab Songpress)
         self.showPageIndicatorCB.SetValue(getattr(self.pref, 'showPageIndicator', True))
@@ -1316,6 +1318,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.intellisense = self.intellisenseCB.GetValue()
         # Single instance
         self.pref.singleInstance = self.singleInstanceCB.GetValue()
+        self.pref.showRestartMenuItem = self.showRestartMenuItemCB.GetValue()
         # Opzioni anteprima (tab Songpress)
         self.pref.showPageIndicator = self.showPageIndicatorCB.GetValue()
         self.pref.greyBackground    = self.greyBackgroundCB.GetValue()
@@ -1405,14 +1408,23 @@ class MyPreferencesDialog(PreferencesDialog):
         l = self.GetLanguage()
         if l is not None and l != lang:
             msg = _("Language settings will be applied when you restart Songpress++.")
-            d = wx.MessageDialog(self, msg, _("Songpress++"), wx.ICON_INFORMATION | wx.OK)
-            d.ShowModal()
+            d = wx.MessageDialog(
+                self, msg, _("Songpress++"),
+                wx.OK | wx.CANCEL | wx.ICON_INFORMATION,
+            )
+            d.SetOKCancelLabels(_("OK"), _("Restart now"))
+            if d.ShowModal() == wx.ID_CANCEL:
+                self._restart_requested = True
         # Se il pin è attivo: applica il callback senza chiudere il dialogo
         if self._pinned:
             if self._on_apply is not None:
                 self._on_apply()
         else:
             evt.Skip(True)
+        # Riavvio richiesto: chiude il dialogo preferenze (se ancora aperto)
+        # SongpressFrame intercetterà il flag e chiamerà OnRestart.
+        if self._restart_requested and not self._pinned:
+            self.EndModal(wx.ID_OK)
 
     def OnDecoBarHexChanged(self, evt):
         c = self._hex_to_colour(self.decoBarHexCtrl.GetValue())

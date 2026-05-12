@@ -249,6 +249,9 @@ class PreferencesDialog(wx.Dialog):
         self.singleInstanceCB.SetToolTip(_(u"When enabled, opening a file from Explorer or the command line will reuse the existing Songpress++ window instead of launching a new instance."))
         grpGeneral.Add(self.singleInstanceCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
 
+        self.showRestartMenuItemCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Show 'Restart Songpress++' in the File menu"), wx.DefaultPosition, wx.DefaultSize, 0)
+        grpGeneral.Add(self.showRestartMenuItemCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
         bSizer11b.Add(grpGeneral, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
         self.general2.SetSizer(bSizer11b)

@@ -129,7 +129,7 @@
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="restart">
-          <label>_Restart Songpress++</label>
+          <label>Restart Songpress++</label>
           <accel></accel>
           <bitmap>../img/restart.png</bitmap>
           <help>Close and restart Songpress++</help>

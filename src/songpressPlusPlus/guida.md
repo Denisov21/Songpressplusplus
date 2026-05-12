@@ -963,14 +963,17 @@ Tutte le principali direttive sono accessibili tramite il menu **Inserisci**, ch
 
 **Strumenti › Copia prompt IA per beats_time**
 
-Copia negli appunti un **prompt pronto da incollare** in un assistente IA (es. Claude), chiedendogli di aggiungere le direttive `{beats_time:}` al file della canzone corrente leggendo uno spartito PDF.
+Copia negli appunti un **prompt pronto da incollare** in un assistente di intelligenza artificiale, chiedendogli di aggiungere le direttive `{beats_time:}` al file della canzone corrente leggendo uno spartito PDF. L'IA analizza lo spartito, calcola la durata in battiti di ciascun accordo e restituisce il file `.crd` con le direttive già inserite.
 
 **Come si usa:**
 
 1. Apri il file della canzone (`.crd`, `.cho`, `.chordpro`, ecc.)
 2. Scegli **Strumenti › Copia prompt IA per beats_time** oppure premi <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>
-3. Incolla il prompt copiato nel terminale dell'IA
-4. Se lo spartito PDF ha un nome diverso dal file della canzone, modificalo nel prompt prima di inviarlo
+3. Apri l'assistente IA che preferisci (vedi sotto)
+4. Allega lo spartito PDF e il file della canzone
+5. Incolla il prompt copiato e invia
+
+Se lo spartito PDF ha un nome diverso dal file della canzone, modificalo nel prompt prima di inviarlo. Il nome del file della canzone e quello del PDF vengono compilati automaticamente dal documento aperto; il nome del PDF viene assunto uguale al file della canzone con estensione `.pdf`.
 
 **Struttura del prompt copiato negli appunti:**
 
@@ -981,7 +984,16 @@ accordi, esempio:
 `{beats_time: DO=2 SOL=2 RE-=2 LA-=2}` / `[DO]Ecco[SOL]mi, [RE-]ecco[LA-]mi!`
 ```
 
-Il nome del file della canzone e quello del PDF vengono compilati automaticamente dal documento aperto. Il nome del PDF viene assunto uguale al file della canzone con estensione `.pdf`; se necessario modificalo manualmente nel terminale dell'IA.
+**Assistenti IA compatibili**
+
+Qualsiasi assistente IA in grado di leggere file PDF e di testo è adatto. I seguenti sono alcuni esempi — l'elenco non è esaustivo e non costituisce una raccomandazione:
+
+| Assistente | Indirizzo | Note |
+| ---------- | --------- | ---- |
+| Claude (Anthropic) | [claude.ai](https://claude.ai) | Supporta allegati PDF e file di testo; piano gratuito disponibile |
+| ChatGPT (OpenAI) | [chatgpt.com](https://chatgpt.com) | Supporta allegati PDF e file di testo; piano gratuito disponibile |
+| Gemini (Google) | [gemini.google.com](https://gemini.google.com) | Supporta allegati PDF; piano gratuito disponibile |
+| Copilot (Microsoft) | [copilot.microsoft.com](https://copilot.microsoft.com) | Integrato in Windows 11 e Microsoft 365 |
 
 > **Nota** — Se nessun file canzone è aperto, viene mostrato un avviso. Apri prima il file, poi usa il comando.
 
@@ -1207,13 +1219,19 @@ I seguenti controlli si trovano nella scheda **Formattazione** delle preferenze 
 
 ## Stampa e anteprima
 
-- **Anteprima di stampa** — mostra l'anteprima con i pulsanti «Opzioni di stampa» e «Impostazione pagina»
-- **Stampa** — stampa direttamente; se la preferenza **Mostra anteprima di stampa prima di stampare** (scheda *Generale* delle opzioni) è attiva, viene mostrata prima l'anteprima di stampa; se è disattivata, la stampa parte immediatamente senza dialogo intermedio
+- **Anteprima di stampa** — mostra l'anteprima con i pulsanti «Opzioni di stampa», «Impostazione pagina» e «Impostazioni driver»
+- **Stampa** — se la preferenza **Mostra anteprima di stampa prima di stampare** (scheda *Generale* delle opzioni) è attiva, viene mostrata prima l'anteprima di stampa; se è disattivata, viene aperto il dialogo di stampa del sistema (selezione stampante, numero di copie, ecc.) e la stampa parte dopo la conferma
 - **Impostazione pagina** — carta, orientamento e margini (in mm)
 
-> **Finestra sempre in primo piano** — la finestra di anteprima di stampa è configurata con `wx.STAY_ON_TOP` e rimane sempre visibile sopra alla finestra principale dell'applicazione.
-
 > **Gestione automatica della selezione** — l'anteprima di stampa rileva automaticamente se è attiva una selezione di testo nell'editor (`_print_scope = 'auto'`): se c'è una selezione, viene stampata solo quella; altrimenti viene stampato l'intero documento. Non è necessaria alcuna impostazione manuale.
+
+### Preferenze di stampa (scheda *Anteprima Songpress++*)
+
+| Preferenza | Predefinito | Descrizione |
+| ---------- | ----------- | ----------- |
+| Mostra anteprima di stampa prima di stampare | ✅ attivo | Se attivo, il comando **Stampa** apre prima l'anteprima; se disattivato, apre direttamente il dialogo di stampa del sistema |
+| Aggiornamento in tempo reale dello stato fronte/retro e colore nell'anteprima (ogni 1,5 s) | ✅ attivo | Se attivo, la barra di stato dell'anteprima interroga il driver ogni 1,5 secondi e aggiorna gli indicatori duplex, colore e orientamento in tempo reale, anche mentre il pannello del driver è aperto; se disattivato, la lettura avviene una sola volta all'apertura |
+| Mantieni sempre in primo piano la finestra di anteprima di stampa | ☐ disattivo | Se attivo, la finestra di anteprima rimane sopra a tutte le altre finestre (`wx.STAY_ON_TOP`); se disattivato, si comporta come una finestra normale |
 
 ### Opzioni di stampa
 
@@ -1262,14 +1280,23 @@ Esempi pratici:
 
 Il controllo è disabilitato quando la checkbox «Rimuovi pagine vuote» è disattivata, e si riabilita automaticamente quando viene attivata.
 
+### Pulsante «Impostazioni driver» nell'anteprima
+
+La toolbar dell'anteprima include il pulsante **Impostazioni driver…** che apre il pannello nativo del driver di stampa (`DocumentProperties` su Windows, `wx.PrintDialog` in modalità setup su altre piattaforme). Da questo pannello si possono modificare tutte le impostazioni del driver: orientamento, fronte/retro, colore, numero di copie, formato carta e qualsiasi opzione specifica del modello (es. qualità di stampa, vassoio carta).
+
+Quando si confermano le modifiche con OK, Songpress++ propaga automaticamente in `wx.PrintData` i campi che wx espone (orientamento, duplex, colore, copie, formato carta) e aggiorna la barra di stato dell'anteprima. Se l'orientamento è cambiato, l'anteprima viene ricaricata automaticamente per mostrare il foglio nel verso corretto.
+
+> **Nota** — Il pulsante **Impostazioni driver…** è disponibile solo nell'anteprima di stampa, non nel menu principale.
+
 ### Rilevamento automatico della stampante nell'anteprima
 
-La barra degli strumenti dell'anteprima di stampa mostra due indicatori che leggono le impostazioni **reali** della stampante selezionata, non solo quelle impostate da wx:
+La barra di stato dell'anteprima di stampa mostra tre indicatori che leggono le impostazioni **reali** della stampante selezionata, non solo quelle impostate da wx:
 
 | Indicatore | Valori possibili |
 | ---------- | ---------------- |
 | **Fronte/retro** | `Fronte/retro: disattivato (solo fronte)` · `ATTIVO — rilegatura lato lungo` · `ATTIVO — rilegatura lato corto` |
 | **Colore** | `Colore: stampa a colori` · `Colore: bianco e nero` |
+| **Orientamento** | Icona foglio verticale (ritratto) o orizzontale (landscape) |
 
 **Come funziona il rilevamento (Windows)**
 

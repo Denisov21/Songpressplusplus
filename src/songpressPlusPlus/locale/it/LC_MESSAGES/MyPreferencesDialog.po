@@ -159,3 +159,15 @@ msgstr ""
 "%s\n"
 "\n"
 "(cartella esistente: %s)"
+
+#: MyPreferencesDialog.py
+msgid "Restart now"
+msgstr "Riavvia ora"
+
+#: MyPreferencesDialog.py
+msgid "OK"
+msgstr "OK"
+
+#: PreferencesDialog.py showRestartMenuItemCB
+msgid "Show 'Restart Songpress++' in the File menu"
+msgstr "Mostra 'Riavvia Songpress++' nel menu File"

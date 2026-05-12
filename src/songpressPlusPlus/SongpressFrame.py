@@ -964,6 +964,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
         self._showPageBreakLinesMenuId = xrc.XRCID('showPageBreakLines')
         self._showColumnBreakLinesMenuId = xrc.XRCID('showColumnBreakLines')
         self._showDurationBeatsMenuId = xrc.XRCID('showDurationBeats')
+        self._restartMenuId = xrc.XRCID('restart')
+        self._ApplyRestartMenuVisibility()
         self.findReplaceDialog = None
         self._lastFindSt    = ''
         self._lastFindFlags = 0
@@ -1026,6 +1028,52 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
         self.pref.Save()
         self.config.Flush()
         super().OnClose(evt)
+
+    def _ApplyRestartMenuVisibility(self):
+        """Mostra o nasconde la voce 'Riavvia Songpress++' nel menu File
+        in base alla preferenza showRestartMenuItem.
+
+        wxWidgets non supporta Show/Hide diretto sulle voci di menu:
+        si rimuove la voce (e il separatore sopra) e la si reinserisce
+        nella posizione originale quando torna visibile.
+        """
+        show = getattr(self.pref, 'showRestartMenuItem', True)
+        file_menu = self.menuBar.GetMenu(0)
+
+        # Cerca la posizione attuale dell'item restart (se presente)
+        restart_pos = None
+        for i in range(file_menu.GetMenuItemCount()):
+            if file_menu.FindItemByPosition(i).GetId() == self._restartMenuId:
+                restart_pos = i
+                break
+
+        if show and restart_pos is None:
+            # Era nascosta: la reinseriamo appena prima della voce 'exit'
+            exit_id = xrc.XRCID('exit')
+            exit_pos = None
+            for i in range(file_menu.GetMenuItemCount()):
+                if file_menu.FindItemByPosition(i).GetId() == exit_id:
+                    exit_pos = i
+                    break
+            if exit_pos is not None:
+                # Reinserisce il separatore e la voce
+                file_menu.InsertSeparator(exit_pos)
+                item = wx.MenuItem(file_menu, self._restartMenuId,
+                                   _("Restart Songpress++"), _("Close and restart Songpress++"))
+                _icon_path = glb.AddPath('img/restart.png')
+                if os.path.isfile(_icon_path):
+                    item.SetBitmap(wx.Bitmap(_icon_path, wx.BITMAP_TYPE_PNG))
+                file_menu.Insert(exit_pos + 1, item)
+                self.frame.Bind(wx.EVT_MENU, self.OnRestart, id=self._restartMenuId)
+
+        elif not show and restart_pos is not None:
+            # Rimuove la voce e il separatore immediatamente sopra
+            file_menu.Remove(self._restartMenuId)
+            # Controlla se la posizione precedente era un separatore
+            if restart_pos > 0:
+                prev = file_menu.FindItemByPosition(restart_pos - 1)
+                if prev is not None and prev.IsSeparator():
+                    file_menu.RemoveItem(prev)
 
     def OnRestart(self, evt):
         """Salva le preferenze, chiude la finestra e riavvia Songpress++.
@@ -7463,6 +7511,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
             # Aggiorna i colori delle caption bar con i nuovi valori da pref
             self._dockArt._pref = self.pref
             self._mgr.Update()
+            self._ApplyRestartMenuVisibility()
 
         f = MyPreferencesDialog(self.frame, self.pref, easyChords, on_apply=_apply_prefs,
                                 previewCanvas=self.previewCanvas)
@@ -7470,6 +7519,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
             _apply_prefs()
         if f.clearRecentFiles:
             self._ClearRecentFiles()
+        if getattr(f, '_restart_requested', False):
+            self.OnRestart(None)
 
     def _ClearRecentFiles(self):
         """Remove all entries from the recent files history."""

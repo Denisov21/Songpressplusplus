@@ -963,14 +963,17 @@ All main directives are accessible via the **Insert** menu, which opens support 
 
 **Tools › Copy AI beats_time prompt**
 
-Copies to the clipboard a **ready-to-paste prompt** for an AI assistant (e.g. Claude), asking it to add `{beats_time:}` directives to the current song file by reading a PDF score.
+Copies to the clipboard a **ready-to-paste prompt** for an AI assistant, asking it to add `{beats_time:}` directives to the current song file by reading a PDF score. The AI analyses the score, calculates the beat duration of each chord, and returns the `.crd` file with the directives already inserted.
 
 **How it works:**
 
 1. Open the song file (`.crd`, `.cho`, `.chordpro`, etc.)
 2. Choose **Tools › Copy AI beats_time prompt** or press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>
-3. Paste the copied prompt into the AI terminal
-4. If the PDF score has a different name than the song file, edit it in the prompt before sending
+3. Open your preferred AI assistant (see below)
+4. Attach the PDF score and the song file
+5. Paste the copied prompt and send
+
+If the PDF score has a different name than the song file, edit it in the prompt before sending. The song filename and the PDF name are filled in automatically from the open document; the PDF name is assumed to be the same as the song file with a `.pdf` extension.
 
 **Prompt structure copied to the clipboard:**
 
@@ -981,7 +984,16 @@ chord line, example:
 `{beats_time: DO=2 SOL=2 RE-=2 LA-=2}` / `[DO]Ecco[SOL]mi, [RE-]ecco[LA-]mi!`
 ```
 
-The song filename and the PDF name are filled in automatically from the open document. The PDF name is assumed to be the same as the song file with a `.pdf` extension; edit it manually in the AI terminal if needed.
+**Compatible AI assistants**
+
+Any AI assistant capable of reading PDF and text files is suitable. The following are a few examples — this list is not exhaustive and does not constitute a recommendation:
+
+| Assistant | Address | Notes |
+| --------- | ------- | ----- |
+| Claude (Anthropic) | [claude.ai](https://claude.ai) | Supports PDF and text file attachments; free plan available |
+| ChatGPT (OpenAI) | [chatgpt.com](https://chatgpt.com) | Supports PDF and text file attachments; free plan available |
+| Gemini (Google) | [gemini.google.com](https://gemini.google.com) | Supports PDF attachments; free plan available |
+| Copilot (Microsoft) | [copilot.microsoft.com](https://copilot.microsoft.com) | Built into Windows 11 and Microsoft 365 |
 
 > **Note** — If no song file is open, a warning dialog is shown. Open the file first, then use the command.
 
@@ -1207,13 +1219,19 @@ The following controls are found in the **Formatting** tab of preferences and af
 
 ## Printing and Preview
 
-- **Print preview** — shows the preview with "Print options" and "Page setup" buttons
-- **Print** — prints directly; if the preference **Show print preview before printing** (the *General* tab in options) is enabled, the print preview is shown first; if disabled, printing starts immediately with no intermediate dialog
+- **Print preview** — shows the preview with "Print options", "Page setup" and "Driver settings" buttons
+- **Print** — if the preference **Show print preview before printing** (the *General* tab in options) is enabled, the print preview is shown first; if disabled, the system print dialog opens (printer selection, number of copies, etc.) and printing starts after confirmation
 - **Page setup** — paper, orientation and margins (in mm)
 
-> **Always on top** — the print preview window is configured with `wx.STAY_ON_TOP` and always remains visible above the main application window.
-
 > **Automatic selection handling** — the print preview automatically detects whether a text selection is active in the editor (`_print_scope = 'auto'`): if a selection exists, only that portion is printed; otherwise the entire document is printed. No manual configuration is needed.
+
+### Print preferences (*Preview Songpress++* tab)
+
+| Preference | Default | Description |
+| ---------- | ------- | ----------- |
+| Show print preview before printing | ✅ on | When on, the **Print** command opens the preview first; when off, it opens the system print dialog directly |
+| Live update of duplex/color status in print preview (every 1.5 s) | ✅ on | When on, the preview status bar queries the printer driver every 1.5 seconds and refreshes the duplex, color and orientation indicators in real time, even while the driver panel is open; when off, the status is read once when the preview opens |
+| Keep print preview window always on top | ☐ off | When on, the preview window stays above all other windows (`wx.STAY_ON_TOP`); when off, it behaves as a normal window |
 
 ### Print Options
 
@@ -1262,14 +1280,23 @@ Practical examples:
 
 The control is disabled when the "Remove blank pages" checkbox is off, and re-enables automatically when it is turned on.
 
+### "Driver settings" button in the preview
+
+The preview toolbar includes the **Driver settings…** button, which opens the native printer driver panel (`DocumentProperties` on Windows, `wx.PrintDialog` in setup mode on other platforms). From this panel you can change all driver settings: orientation, duplex, color, number of copies, paper size, and any model-specific options (e.g. print quality, paper tray).
+
+When changes are confirmed with OK, Songpress++ automatically propagates the readable fields back into `wx.PrintData` (orientation, duplex, color, copies, paper size) and refreshes the preview status bar. If the orientation has changed, the preview reloads automatically to show the sheet in the correct direction.
+
+> **Note** — The **Driver settings…** button is only available inside the print preview, not from the main menu.
+
 ### Automatic printer detection in the preview
 
-The print preview toolbar displays two indicators that read the **actual** settings of the selected printer, not just the values set by wx:
+The print preview status bar displays three indicators that read the **actual** settings of the selected printer, not just the values set by wx:
 
 | Indicator | Possible values |
 | --------- | --------------- |
 | **Duplex** | `Duplex: off (simplex)` · `Duplex: ON — long-edge binding` · `Duplex: ON — short-edge binding` |
 | **Color** | `Color: color print` · `Color: black & white` |
+| **Orientation** | Portrait sheet icon or landscape sheet icon |
 
 **How detection works (Windows)**
 

@@ -150,6 +150,137 @@ def _get_color_mode(print_data):
         return "unknown"
 
 
+def _get_orientation(print_data):
+    """
+    Restituisce l'orientamento reale della stampante selezionata.
+
+    Strategia (Windows):
+      1. Prova win32print per leggere dmOrientation dal DEVMODE del driver.
+      2. Fallback: wx.PrintData.GetOrientation().
+
+    Su macOS / Linux restituisce direttamente il valore wx.
+
+    Valori restituiti (costanti wx):
+      wx.PORTRAIT   – orientamento verticale
+      wx.LANDSCAPE  – orientamento orizzontale
+    """
+    if wx.Platform == '__WXMSW__':
+        try:
+            import win32print
+
+            printer_name = print_data.GetPrinterName().strip()
+            if not printer_name:
+                printer_name = win32print.GetDefaultPrinter()
+
+            hprinter = win32print.OpenPrinter(printer_name)
+            try:
+                info = win32print.GetPrinter(hprinter, 2)
+            finally:
+                win32print.ClosePrinter(hprinter)
+
+            devmode = info.get('pDevMode')
+            if devmode is not None:
+                # dmOrientation: 1 = PORTRAIT, 2 = LANDSCAPE
+                orient = getattr(devmode, 'Orientation', None)
+                if orient == 2:
+                    return wx.LANDSCAPE
+                elif orient == 1:
+                    return wx.PORTRAIT
+        except Exception:
+            pass
+
+    return print_data.GetOrientation()
+
+
+def _make_orientation_bitmap(landscape: bool, field_h: int) -> wx.Bitmap:
+    """
+    Disegna e restituisce un wx.Bitmap che raffigura un foglio A4 stilizzato.
+
+    Portrait:  rettangolo verticale  (proporzione ~√2)
+    Landscape: rettangolo orizzontale (stesse dimensioni, ruotato 90°)
+
+    Il bitmap viene disegnato su sfondo trasparente tramite wx.GraphicsContext
+    in modo da adattarsi a qualsiasi colore della status bar.
+
+    Parametri
+    ----------
+    landscape : bool
+        True → foglio orizzontale, False → foglio verticale.
+    field_h : int
+        Altezza in pixel del campo della status bar; l'icona viene
+        dimensionata per occuparne circa il 75 %.
+    """
+    # ── dimensioni icona ──────────────────────────────────────────────────
+    icon_h = max(10, int(field_h * 0.75))
+    # proporzione A4 ≈ 1 : √2  →  corto = icon_h / √2
+    short = max(6, int(icon_h / 1.4142))
+
+    if landscape:
+        bmp_w, bmp_h = icon_h, short          # larghezza > altezza
+        rect_w, rect_h = icon_h - 2, short - 2
+    else:
+        bmp_w, bmp_h = short, icon_h          # altezza > larghezza
+        rect_w, rect_h = short - 2, icon_h - 2
+
+    bmp = wx.Bitmap(bmp_w, bmp_h, 32)
+
+    # ── disegno tramite GraphicsContext (anti-alias + trasparenza) ────────
+    mdc = wx.MemoryDC(bmp)
+    gc  = wx.GraphicsContext.Create(mdc)
+
+    # sfondo trasparente
+    gc.SetBrush(wx.TRANSPARENT_BRUSH)
+    gc.SetPen(wx.TRANSPARENT_PEN)
+    gc.DrawRectangle(0, 0, bmp_w, bmp_h)
+
+    # colori
+    if landscape:
+        fill   = wx.Colour(180, 210, 255)   # azzurro chiaro
+        border = wx.Colour( 20, 100, 180)   # blu
+    else:
+        fill   = wx.Colour(220, 220, 220)   # grigio chiaro
+        border = wx.Colour( 80,  80,  80)   # grigio scuro
+
+    gc.SetBrush(wx.Brush(fill))
+    gc.SetPen(wx.Pen(border, 1))
+    gc.DrawRectangle(1, 1, rect_w, rect_h)
+
+    # angolo ripiegato (dog-ear) in alto a destra — proporzione ~20 % del lato corto
+    ear = max(3, int(min(rect_w, rect_h) * 0.22))
+    x0  = 1 + rect_w - ear          # x inizio taglio
+    y0  = 1                          # y in cima
+
+    # ridisegna solo il corpo del foglio senza l'angolo
+    gc.SetBrush(wx.Brush(fill))
+    gc.SetPen(wx.Pen(border, 1))
+    path = gc.CreatePath()
+    path.MoveToPoint(1,            y0)
+    path.AddLineToPoint(x0,        y0)
+    path.AddLineToPoint(x0 + ear,  y0 + ear)
+    path.AddLineToPoint(x0 + ear,  y0 + rect_h)
+    path.AddLineToPoint(1,         y0 + rect_h)
+    path.CloseSubpath()
+    gc.DrawPath(path)
+
+    # triangolino dell'angolo ripiegato (colore leggermente più scuro)
+    fold_colour = wx.Colour(
+        max(0, fill.Red()   - 40),
+        max(0, fill.Green() - 40),
+        max(0, fill.Blue()  - 40),
+    )
+    gc.SetBrush(wx.Brush(fold_colour))
+    gc.SetPen(wx.Pen(border, 1))
+    fold = gc.CreatePath()
+    fold.MoveToPoint(x0,       y0)
+    fold.AddLineToPoint(x0 + ear, y0 + ear)
+    fold.AddLineToPoint(x0,       y0 + ear)
+    fold.CloseSubpath()
+    gc.DrawPath(fold)
+
+    mdc.SelectObject(wx.NullBitmap)
+    return bmp
+
+
 def _open_driver_settings(print_data, parent_hwnd=None):
     """
     Apre il pannello impostazioni del driver di stampa (DocumentProperties).
@@ -1296,12 +1427,19 @@ class PrintManager:
                         hwnd = pf.GetHandle()
                     except Exception:
                         hwnd = None
+                orient_before = self._print_data.GetOrientation()
                 self._print_data = _open_driver_settings(self._print_data, parent_hwnd=hwnd)
-                # Aggiorna la status bar (duplex/colore possono essere cambiati)
+                orient_after  = self._print_data.GetOrientation()
+                # Aggiorna la status bar (duplex/colore/orientamento possono essere cambiati)
                 try:
                     _sb._refresh_labels()
                 except Exception:
                     pass
+                # Se l'orientamento è cambiato la preview mostra ancora il foglio
+                # nel verso sbagliato: bisogna ricrearla con i nuovi dati di stampa.
+                if orient_after != orient_before:
+                    pf.Close()
+                    wx.CallAfter(self.OnPrintPreview, None)
 
             btn_driver.Bind(wx.EVT_BUTTON, on_driver_settings)
 
@@ -1428,11 +1566,12 @@ class PrintManager:
         # quindi usiamo un wx.Panel agganciato come StatusBar owner-draw.
         class _ColoredStatusBar(wx.StatusBar):
             """
-            Status bar con testo colorato per i campi 1 e 2.
+            Status bar con testo colorato per i campi 1, 2 e icona nel campo 3.
 
             Campo 0 → testo nativo wxWidgets ("Pagina N di M").
             Campo 1 → stato fronte/retro.
             Campo 2 → modalità colore.
+            Campo 3 → icona orientamento foglio (wx.StaticBitmap disegnata a codice).
 
             Se live_poll=True un wx.Timer interroga il driver ogni _POLL_MS ms
             così le etichette si aggiornano in tempo reale anche mentre il
@@ -1461,8 +1600,9 @@ class PrintManager:
                 self._get_pd   = print_data_ref
                 self._live     = live_poll
 
-                self.SetFieldsCount(3)
-                self.SetStatusWidths([-1, -2, -2])
+                # Campo 3: larghezza fissa per l'icona (bitmap + padding)
+                self.SetFieldsCount(4)
+                self.SetStatusWidths([-1, -2, -2, 44])
 
                 # Campo 1: fronte/retro
                 self._lbl_duplex = wx.StaticText(self, wx.ID_ANY, "")
@@ -1475,6 +1615,11 @@ class PrintManager:
                 _f2 = self._lbl_color.GetFont()
                 _f2.SetWeight(wx.FONTWEIGHT_BOLD)
                 self._lbl_color.SetFont(_f2)
+
+                # Campo 3: icona orientamento — placeholder, bitmap creata al primo reposition
+                self._bmp_orient = _make_orientation_bitmap(False, 20)
+                self._lbl_orient = wx.StaticBitmap(self, wx.ID_ANY, self._bmp_orient)
+                self._last_orient = None   # None → forza primo aggiornamento
 
                 # Stato precedente per evitare refresh inutili
                 self._last_duplex = None
@@ -1518,6 +1663,14 @@ class PrintManager:
                     return text_fn(), colour
                 return _("Color: unknown"), wx.Colour(180, 80, 0)
 
+            def _resolve_orient(self):
+                """Restituisce il bool landscape per l'orientamento corrente."""
+                try:
+                    orient = _get_orientation(self._get_pd())
+                except Exception:
+                    orient = wx.PORTRAIT
+                return orient == wx.LANDSCAPE
+
             def _refresh_labels(self):
                 """Interroga il driver e aggiorna le etichette se cambiate."""
                 changed = False
@@ -1536,6 +1689,18 @@ class PrintManager:
                     self._lbl_color.SetForegroundColour(c_colour)
                     changed = True
 
+                landscape = self._resolve_orient()
+                if landscape != self._last_orient:
+                    self._last_orient = landscape
+                    # Ricostruisce il bitmap con l'altezza attuale del campo
+                    try:
+                        field_h = self.GetFieldRect(3).height
+                    except Exception:
+                        field_h = 20
+                    self._bmp_orient = _make_orientation_bitmap(landscape, field_h)
+                    self._lbl_orient.SetBitmap(self._bmp_orient)
+                    changed = True
+
                 if changed:
                     wx.CallAfter(self._reposition)
 
@@ -1548,12 +1713,18 @@ class PrintManager:
                 try:
                     r1 = self.GetFieldRect(1)
                     r2 = self.GetFieldRect(2)
+                    r3 = self.GetFieldRect(3)
                     pad = 4
                     for lbl, r in ((self._lbl_duplex, r1), (self._lbl_color, r2)):
                         _, h = lbl.GetBestSize()
                         y = r.y + max(0, (r.height - h) // 2)
                         lbl.SetPosition(wx.Point(r.x + pad, y))
                         lbl.SetSize(wx.Size(r.width - pad * 2, h))
+                    # Campo 3: icona centrata nel campo
+                    bw, bh = self._lbl_orient.GetBestSize()
+                    ix = r3.x + max(0, (r3.width  - bw) // 2)
+                    iy = r3.y + max(0, (r3.height - bh) // 2)
+                    self._lbl_orient.SetPosition(wx.Point(ix, iy))
                 except Exception:
                     pass
 

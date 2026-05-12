@@ -1421,3 +1421,11 @@ msgstr "Un'altra istanza di Songpress++ è già in esecuzione."
 #: SDIMainFrame.py — single instance: file forwarded to existing window
 msgid "File opened in the existing Songpress++ window."
 msgstr "Il file è stato aperto nella finestra di Songpress++ già aperta."
+
+#: SongpressFrame.py _ApplyRestartMenuVisibility
+msgid "_Restart Songpress++"
+msgstr "_Riavvia Songpress++"
+
+#: SongpressFrame.py _ApplyRestartMenuVisibility
+msgid "Close and restart Songpress++"
+msgstr "Chiudi e riavvia Songpress++"
