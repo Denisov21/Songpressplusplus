@@ -71,6 +71,19 @@ class PreferencesDialog(wx.Dialog):
         bSizerSelColour.Add(self.selColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
         grpEditor.Add(bSizerSelColour, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
 
+        # Caret colour row
+        bSizerCaretColour = wx.BoxSizer(wx.HORIZONTAL)
+        self.labelCaretColour = wx.StaticText(self.general, wx.ID_ANY, _(u"Caret colour"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelCaretColour.Wrap(-1)
+        bSizerCaretColour.Add(self.labelCaretColour, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.caretColourHexCtrl = wx.TextCtrl(self.general, wx.ID_ANY, u"#000000", wx.DefaultPosition, wx.Size(80, -1), 0)
+        bSizerCaretColour.Add(self.caretColourHexCtrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.caretColourBtn = wx.Button(self.general, wx.ID_ANY, _(u"Pick…"), wx.DefaultPosition, wx.Size(60, -1), 0)
+        bSizerCaretColour.Add(self.caretColourBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.caretColourSwatch = wx.Panel(self.general, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
+        bSizerCaretColour.Add(self.caretColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
+        grpEditor.Add(bSizerCaretColour, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+
         # Caption Editor colour row
         bSizerCapEditor = wx.BoxSizer(wx.HORIZONTAL)
         self.labelCapEditor = wx.StaticText(self.general, wx.ID_ANY, _(u"Editor caption colour"), wx.DefaultPosition, wx.DefaultSize, 0)
@@ -927,6 +940,8 @@ class PreferencesDialog(wx.Dialog):
         self.editorBgHexCtrl.Bind(wx.EVT_TEXT, self.OnEditorBgHexChanged)
         self.selColourBtn.Bind(wx.EVT_BUTTON, self.OnSelColourPickColour)
         self.selColourHexCtrl.Bind(wx.EVT_TEXT, self.OnSelColourHexChanged)
+        self.caretColourBtn.Bind(wx.EVT_BUTTON, self.OnCaretColourPickColour)
+        self.caretColourHexCtrl.Bind(wx.EVT_TEXT, self.OnCaretColourHexChanged)
 
         self.capEditorBtn.Bind(wx.EVT_BUTTON, self.OnCapEditorPickColour)
         self.capEditorHexCtrl.Bind(wx.EVT_TEXT, self.OnCapEditorHexChanged)
@@ -999,6 +1014,12 @@ class PreferencesDialog(wx.Dialog):
         event.Skip()
 
     def OnSelColourPickColour(self, event):
+        event.Skip()
+
+    def OnCaretColourHexChanged(self, event):
+        event.Skip()
+
+    def OnCaretColourPickColour(self, event):
         event.Skip()
 
     def OnCapEditorHexChanged(self, event):

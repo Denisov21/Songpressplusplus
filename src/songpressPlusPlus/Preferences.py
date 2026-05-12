@@ -213,6 +213,7 @@ class Preferences(object):
         self._LoadContextMenu()
         self._LoadEditorBg()
         self._LoadSelColour()
+        self._LoadCaretColour()
         self._LoadCaptionColours()
         self._LoadPrintOptions()
         self._LoadMultiCursor()
@@ -272,6 +273,12 @@ class Preferences(object):
         self.config.SetPath('/Editor')
         h = self.config.Read('SelColourHex')
         self.selColourHex = h if h else '#C0C0C0'
+        self.config.SetPath('/')
+
+    def _LoadCaretColour(self):
+        self.config.SetPath('/Editor')
+        h = self.config.Read('CaretColourHex')
+        self.caretColourHex = h if h else '#000000'
         self.config.SetPath('/')
 
     def _LoadPrintOptions(self):
@@ -382,6 +389,7 @@ class Preferences(object):
         self._SaveContextMenu()
         self._SaveEditorBg()
         self._SaveSelColour()
+        self._SaveCaretColour()
         self._SaveCaptionColours()
         self._SavePrintOptions()
         self._SaveMultiCursor()
@@ -434,6 +442,11 @@ class Preferences(object):
     def _SaveSelColour(self):
         self.config.SetPath('/Editor')
         self.config.Write('SelColourHex', getattr(self, 'selColourHex', '#C0C0C0'))
+        self.config.SetPath('/')
+
+    def _SaveCaretColour(self):
+        self.config.SetPath('/Editor')
+        self.config.Write('CaretColourHex', getattr(self, 'caretColourHex', '#000000'))
         self.config.SetPath('/')
 
     def _LoadCaptionColours(self):

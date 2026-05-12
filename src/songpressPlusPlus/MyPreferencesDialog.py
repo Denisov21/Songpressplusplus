@@ -38,7 +38,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.fontCB.Bind(wx.EVT_TEXT_ENTER, self.OnFontSelected, self.fontCB)
         self.fontCB.Bind(wx.EVT_COMBOBOX, self.OnFontSelected, self.fontCB)
 
-        previewSong = _("#Comment\n{t:My Bonnie}\n\nMy [D]Bonnie lies [G]over the [D]ocean\noh [G]bring back my [A]Bonnie to [D]me!\n\n{soc}\n[D]Bring back, [E-]bring back,\n[A]bring back my Bonnie to [D]me!\n{eoc}")
+        previewSong = _("#Comment\n{t:My Bonnie}\n\nMy [D]Bonnie lies [G]over the [D]ocean\noh [G]bring back my [A]Bonnie to [D]me!\n\n{soc}\n[D]Bring back, [E-]bring back,\n[A]bring back my Bonnie to [D]me!\n{eoc}\n\n{start_of_grid}\n| [A] | [D] | [Mi] |\n{end_of_grid}")
         self.editor.SetText(previewSong)
         self.editor.SetFont(self.pref.editorFace, self.pref.editorSize)
         self.editor.SetReadOnly(True)
@@ -145,6 +145,13 @@ class MyPreferencesDialog(PreferencesDialog):
             self.selColourHexCtrl.SetValue(sel_hex)
             self.selColourSwatch.SetBackgroundColour(self._hex_to_colour(sel_hex))
             self._applySelColour(sel_hex)
+
+        # Caret colour
+        caret_hex = getattr(self.pref, 'caretColourHex', '#000000')
+        if hasattr(self, 'caretColourHexCtrl'):
+            self.caretColourHexCtrl.SetValue(caret_hex)
+            self.caretColourSwatch.SetBackgroundColour(self._hex_to_colour(caret_hex))
+            self._applyCaretColour(caret_hex)
 
         # Caption Editor colour
         cap_ed_hex = getattr(self.pref, 'captionEditorActiveHex', '#4682C8')
@@ -276,6 +283,10 @@ class MyPreferencesDialog(PreferencesDialog):
         """Applica il colore di selezione all'editor di anteprima nelle preferenze."""
         self.editor.SetSelColour(hex_str)
 
+    def _applyCaretColour(self, hex_str):
+        """Applica il colore del cursore (caret) all'editor di anteprima nelle preferenze."""
+        self.editor.SetCaretForeground(self._hex_to_colour(hex_str))
+
     def _colour_to_hex(self, colour):
         return '#{:02X}{:02X}{:02X}'.format(colour.Red(), colour.Green(), colour.Blue())
 
@@ -394,6 +405,32 @@ class MyPreferencesDialog(PreferencesDialog):
             self.selColourSwatch.SetBackgroundColour(chosen)
             self.selColourSwatch.Refresh()
             self._applySelColour(hex_val)
+        dlg.Destroy()
+
+    def OnCaretColourHexChanged(self, evt):
+        hex_val = self.caretColourHexCtrl.GetValue()
+        c = self._hex_to_colour(hex_val)
+        self.caretColourSwatch.SetBackgroundColour(c)
+        self.caretColourSwatch.Refresh()
+        self._applyCaretColour(hex_val)
+        evt.Skip()
+
+    def OnCaretColourPickColour(self, evt):
+        current = self._hex_to_colour(self.caretColourHexCtrl.GetValue())
+        data = wx.ColourData()
+        data.SetColour(current)
+        data.SetChooseFull(True)
+        self._apply_custom_colours(data, 'customColoursCaretColour')
+        dlg = wx.ColourDialog(self, data)
+        if dlg.ShowModal() == wx.ID_OK:
+            result_data = dlg.GetColourData()
+            chosen = result_data.GetColour()
+            hex_val = self._colour_to_hex(chosen)
+            self._read_custom_colours(result_data, 'customColoursCaretColour')
+            self.caretColourHexCtrl.SetValue(hex_val)
+            self.caretColourSwatch.SetBackgroundColour(chosen)
+            self.caretColourSwatch.Refresh()
+            self._applyCaretColour(hex_val)
         dlg.Destroy()
 
     def OnCapEditorHexChanged(self, evt):
@@ -517,6 +554,7 @@ class MyPreferencesDialog(PreferencesDialog):
     _THEME_COLOUR_KEYS = [
         ('bg',         'editorBgHex',            '#FFFFFF'),
         ('sel',        'selColourHex',            '#C0C0C0'),
+        ('caret',      'caretColourHex',          '#000000'),
         ('capeditor',  'captionEditorActiveHex',  '#4682C8'),
         ('cappreview', 'captionPreviewActiveHex', '#329B82'),
     ]
@@ -581,6 +619,7 @@ class MyPreferencesDialog(PreferencesDialog):
         d = {}
         d['bg']         = self.editorBgHexCtrl.GetValue().strip()
         d['sel']        = self.selColourHexCtrl.GetValue().strip()
+        d['caret']      = self.caretColourHexCtrl.GetValue().strip()
         d['capeditor']  = self.capEditorHexCtrl.GetValue().strip()
         d['cappreview'] = self.capPreviewHexCtrl.GetValue().strip()
         for key in self._THEME_SYNTAX_KEYS:
@@ -598,6 +637,7 @@ class MyPreferencesDialog(PreferencesDialog):
 
         _set(self.editorBgHexCtrl,    self.editorBgSwatch,    d.get('bg',         '#FFFFFF'), self._applyEditorBg)
         _set(self.selColourHexCtrl,   self.selColourSwatch,   d.get('sel',        '#C0C0C0'), self._applySelColour)
+        _set(self.caretColourHexCtrl, self.caretColourSwatch, d.get('caret',      '#000000'), self._applyCaretColour)
         _set(self.capEditorHexCtrl,   self.capEditorSwatch,   d.get('capeditor',  '#4682C8'))
         _set(self.capPreviewHexCtrl,  self.capPreviewSwatch,  d.get('cappreview', '#329B82'))
         for key in self._THEME_SYNTAX_KEYS:
@@ -1299,6 +1339,8 @@ class MyPreferencesDialog(PreferencesDialog):
             self.pref.editorBgHex = self.editorBgHexCtrl.GetValue().strip()
         if hasattr(self, 'selColourHexCtrl'):
             self.pref.selColourHex = self.selColourHexCtrl.GetValue().strip()
+        if hasattr(self, 'caretColourHexCtrl'):
+            self.pref.caretColourHex = self.caretColourHexCtrl.GetValue().strip()
         # Caption bar colours
         self.pref.captionEditorActiveHex  = self.capEditorHexCtrl.GetValue().strip()
         self.pref.captionPreviewActiveHex = self.capPreviewHexCtrl.GetValue().strip()

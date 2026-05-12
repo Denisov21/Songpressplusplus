@@ -30,7 +30,11 @@ msgid ""
 "{soc}\n"
 "[D]Bring back, [E-]bring back,\n"
 "[A]bring back my Bonnie to [D]me!\n"
-"{eoc}"
+"{eoc}\n"
+"\n"
+"{start_of_grid}\n"
+"| [A] | [D] | [Mi] |\n"
+"{end_of_grid}"
 msgstr ""
 "#Commento\n"
 "{t:La Fameja Dei Gobon }\n"
@@ -41,7 +45,11 @@ msgstr ""
 "{soc}\n"
 "Gobo so [Do]pare, goba sa mare goba la fja de so so[Fa]rela\n"
 "era goba anche [Do]quela la fa[Sol]miglia dei go[Do]bon.\n"
-"{eoc}"
+"{eoc}\n"
+"\n"
+"{start_of_grid}\n"
+"| [Do] | [Fa] | [Sol] |\n"
+"{end_of_grid}"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/MyPreferencesDialog.py:120
 msgid "Language settings will be applied when you restart Songpress++."
@@ -99,6 +107,10 @@ msgstr "Commenti"
 #: PreferencesDialog.py (Syntax colour rows)
 msgid "Tab / Grid"
 msgstr "Tab / Griglia"
+
+#: PreferencesDialog.py (Editor colour rows)
+msgid "Caret colour"
+msgstr "Colore cursore"
 
 #: MyPreferencesDialog.py (Theme dialogs)
 msgid "Theme name:"
