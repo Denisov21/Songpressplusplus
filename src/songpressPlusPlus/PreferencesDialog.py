@@ -31,7 +31,7 @@ class PreferencesDialog(wx.Dialog):
         grpEditor = wx.StaticBoxSizer(wx.StaticBox(self.general, wx.ID_ANY, _(u"Editor font")), wx.VERTICAL)
 
         bSizer12 = wx.BoxSizer(wx.HORIZONTAL)
-        self.label1 = wx.StaticText(self.general, wx.ID_ANY, _(u"Editor font"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.label1 = wx.StaticText(self.general, wx.ID_ANY, _(u"Font"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.label1.Wrap(-1)
         bSizer12.Add(self.label1, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         self.fontCB = FontComboBox(self.general, wx.ID_ANY, self.pref.editorFace)
@@ -196,9 +196,9 @@ class PreferencesDialog(wx.Dialog):
         self.general.SetSizer(bSizer11)
         self.general.Layout()
         bSizer11.Fit(self.general)
-        self.notebook.AddPage(self.general, _(u"General"), True)
+        self.notebook.AddPage(self.general, _(u"Editor"), True)
 
-        # ── Tab "Generale 2" ─────────────────────────────────────────
+        # ── Tab "Generale" ─────────────────────────────────────────
         self.general2 = wx.Panel(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL)
         bSizer11b = wx.BoxSizer(wx.VERTICAL)
 
@@ -270,7 +270,7 @@ class PreferencesDialog(wx.Dialog):
         self.general2.SetSizer(bSizer11b)
         self.general2.Layout()
         bSizer11b.Fit(self.general2)
-        self.notebook.AddPage(self.general2, _(u"General 2"), False)
+        self.notebook.AddPage(self.general2, _(u"General"), False)
 
         self.autoAdjust = wx.Panel(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL)
         bSizer18 = wx.BoxSizer(wx.VERTICAL)

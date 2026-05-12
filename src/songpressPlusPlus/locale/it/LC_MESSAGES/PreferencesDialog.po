@@ -96,9 +96,8 @@ msgstr "Estensione dei file predefinita"
 msgid "Language"
 msgstr "Lingua"
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/PreferencesDialog.py:131
-msgid "General"
-msgstr "Generale"
+msgid "Editor"
+msgstr "Editor"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/PreferencesDialog.py:135
 msgid "Offer to remove blank lines"
@@ -698,11 +697,11 @@ msgstr "Sopra il testo"
 msgid "Below text"
 msgstr "Sotto il testo"
 
-#: PreferencesDialog.py — General 2 tab, single instance checkbox
+#: PreferencesDialog.py — General tab, single instance checkbox
 msgid "Single instance: open files in the existing window"
 msgstr "Istanza singola: apri i file nella finestra esistente"
 
-#: PreferencesDialog.py — General 2 tab, single instance checkbox tooltip
+#: PreferencesDialog.py — General tab, single instance checkbox tooltip
 msgid "When enabled, opening a file from Explorer or the command line will reuse the existing Songpress++ window instead of launching a new instance."
 msgstr "Se attivo, aprire un file da Explorer o dalla riga di comando riutilizza la finestra di Songpress++ già aperta, invece di avviarne una nuova."
 
