@@ -119,6 +119,16 @@ def main():
     sys.excepthook = errdlg.ExceptionHook
     if platform.system() == 'Windows':
         import ctypes
+        # ── Nasconde la finestra console se l'app è stata lanciata con
+        #    python.exe invece di pythonw.exe (es. da terminale, da uv run,
+        #    o con alcuni launcher di terze parti).
+        #    GetConsoleWindow() restituisce 0 se non c'è console allocata
+        #    (build cx_Freeze con base=gui, doppio click su .exe): in quel
+        #    caso ShowWindow non viene chiamata e non ha effetti collaterali.
+        _hwnd_console = ctypes.windll.kernel32.GetConsoleWindow()
+        if _hwnd_console:
+            ctypes.windll.user32.ShowWindow(_hwnd_console, 0)  # SW_HIDE
+
         # AppUserModelID stabile (senza versione): Windows lo usa per raggruppare
         # le finestre sulla taskbar e per abbinare l'app alle associazioni file.
         # Se cambia ad ogni versione Windows perde il collegamento tra ProgID e app.

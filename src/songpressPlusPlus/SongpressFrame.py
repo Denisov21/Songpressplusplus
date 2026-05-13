@@ -1015,6 +1015,13 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
         self._UpdateBreakLinesMenuState()
         wx.CallAfter(self._SyncPreviewToggleButton)
         self.RestoreWindowGeometry()
+        # Thaw corrisponde al Freeze chiamato in FinalizePaneInitialization()
+        # prima di frame.Show(). A questo punto posizione e dimensione sono
+        # già corrette: il primo repaint mostra la finestra già definitiva.
+        try:
+            self.frame.Thaw()
+        except Exception:
+            pass
         if 'firstTimeEasyKey' in self.pref.notices:
             msg = _(
                 "You are not a skilled guitarist? Songpress++ can help you: when you open a song, it can detect if chords are difficult. If this is the case, Songpress++ will alert you, and offer to transpose your song to the easiest key, automatically.\n\nDo you want to turn this option on?")

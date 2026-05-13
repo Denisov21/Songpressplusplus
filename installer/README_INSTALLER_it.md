@@ -64,8 +64,11 @@ installer/
 ├── songpress++64bit.nsi
 ├── songpress++x86.nsi
 ├── songpressplusplus.ico
-├── uv.exe
 ├── license.txt
+├── uv-x86_64/
+│   └── uv.exe
+├── uv-i686/
+│   └── uv.exe
 └── tools/
     ├── rcedit-x64.exe
     ├── rcedit-x86.exe
@@ -230,6 +233,22 @@ Dopo l'installazione potrebbe essere presente nella cartella `bin\` il file
 `SongpressOpen.pyw`. Si tratta di un residuo del Songpress originale di Luca Allulli
 e non è referenziato da nessuna parte del progetto (né in `pyproject.toml` né negli
 script NSI). **Può essere cancellato tranquillamente.**
+
+
+
+### Verificare la versione di uv (PowerShell)
+
+Esempio del percorso:
+
+`& "E:\Users\Utente\Downloads\SongpressV65BETA\SongpressPlusPlus\installer\uv-x86_64\uv.exe" --version`
+
+esempio del risultato restituito:
+
+`uv 0.11.14 (3fdfdc7d4 2026-05-12 x86_64-pc-windows-msvc)`
+
+
+
+
 
 ---
 *Questo file è codificato UTF-8 senza BOM.*

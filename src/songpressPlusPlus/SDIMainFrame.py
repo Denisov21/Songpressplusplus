@@ -502,6 +502,11 @@ class SDIMainFrame(object):
                 self.menuBar.Check(menuid, self._mgr.GetPane(self.panesByMenu[menuid]).IsShown())
         else:
             self._mgr.Update()
+        # Freeze prima di Show(): il frame diventa visibile ma non ridisegna
+        # finché SongpressFrame.__init__ non chiama Thaw() dopo
+        # RestoreWindowGeometry(). In questo modo la finestra appare già
+        # nella posizione e dimensione corrette, senza sfarfallio.
+        self.frame.Freeze()
         self.frame.Show()
         if len(sys.argv) > 1:
             fn = sys.argv[1]
