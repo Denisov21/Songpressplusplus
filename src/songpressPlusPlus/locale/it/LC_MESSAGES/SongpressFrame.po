@@ -1429,3 +1429,11 @@ msgstr "_Riavvia Songpress++"
 #: SongpressFrame.py _ApplyRestartMenuVisibility
 msgid "Close and restart Songpress++"
 msgstr "Chiudi e riavvia Songpress++"
+
+#: SongpressFrame.py — formatToolBar toggle preview tool short label
+msgid "Show Songpress++ Preview"
+msgstr "Mostra anteprima Songpress++"
+
+#: SongpressFrame.py — formatToolBar toggle preview tool tooltip
+msgid "Show or hide the Songpress++ Preview panel"
+msgstr "Mostra o nascondi il pannello Anteprima Songpress++"

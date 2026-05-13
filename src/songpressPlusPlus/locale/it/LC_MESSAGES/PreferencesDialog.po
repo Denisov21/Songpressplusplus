@@ -732,3 +732,11 @@ msgstr ""
 "Se attivo, la finestra di anteprima di stampa rimane sempre in primo piano\n"
 "rispetto a tutte le altre finestre, inclusa la finestra principale di Songpress++.\n"
 "Se disattivo, la finestra di anteprima si comporta come una finestra normale."
+
+#: PreferencesDialog.py — Context menu tab, Appearance group label
+msgid "Appearance"
+msgstr "Aspetto"
+
+#: PreferencesDialog.py — Context menu tab, Appearance group, show icons checkbox
+msgid "Show icons in context menu"
+msgstr "Mostra icone nel menu contestuale"

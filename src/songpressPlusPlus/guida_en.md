@@ -108,7 +108,7 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | `{bar}` *(inside grid)*                   | ✅  | 🖊    | Explicit bar separator inside a grid block                                                                             |
 | `{start_of_part:Label}`/`{end_of_part}`   | ✅  | 🖊    | Generic section (ChordPro 6): rendered as an unnumbered verse with a free label; defaults to «Part» if omitted         |
 | `{sop}`/`{eop}`                           | ✅  | 🖊    | Abbreviation for `start_of_part`/`end_of_part`                                                                         |
-| `{new_song}`                              | 🔧  | 🖊    | Starts a new song in the same document: resets verse and chorus counters so numbering restarts from 1                  |
+| `{new_song}`                              | 🔧  | 🖊    | Starts a new song in the same document: resets verse and chorus counters (numbering restarts from 1) and clears the chord-pattern cache used by the *First verse only* filter |
 
 > **Note on bridge** — Both forms are supported: `{start_bridge}`/`{end_bridge}` (Songpress++ form, insertable from the menu) and `{start_of_bridge}`/`{end_of_bridge}` (standard ChordPro form, with abbreviations `{sob}`/`{eob}`). The two forms are equivalent and interchangeable.
 
@@ -1616,6 +1616,16 @@ Options are found in **Tools → Options... → Songpress++ Preview tab → No c
 > **Note:** the filter acts on the text passed to the renderer before each redraw. The source document in the editor is never modified.
 
 > **Technical note:** `{start_chord}`, `{start_bridge}`, `{start_of_grid}` are **paired blocks** (open tag + content + close tag): the entire section is suppressed. `{tempo_m}`, `{tempo_s}`, `{tempo_sp}`, `{tempo_c}`, `{tempo_cp}` and `{time}` are **single directives**: only the line containing them is removed.
+
+### `{new_song}` compatibility with chord filters
+
+| *Show chords* slider mode | Internal value | Compatible with `{new_song}`? | Notes |
+| ------------------------- | :------------: | :---------------------------: | ----- |
+| **None** | `0` | ✅ | `_strip_nochords_blocks()` does not touch `{new_song}`; the next song is filtered correctly |
+| **First verse only** *(one verse per chord pattern)* | `1` | ✅ | `{new_song}` also clears `chordPatterns`: patterns from the previous song no longer affect the comparison for the next one |
+| **Entire song** | `2` | ✅ | No filtering active; `{new_song}` only resets verse/chorus counters |
+
+> **Technical detail (mode 1):** before the fix, `chordPatterns` was not reset at `{new_song}`. The renderer compared verses of the second song against chord patterns from the first one via `minEditDist`, incorrectly stripping chords from verses that should have shown them. The fix adds `self.chordPatterns = []` alongside the other resets in `Renderer.py`.
 
 ---
 

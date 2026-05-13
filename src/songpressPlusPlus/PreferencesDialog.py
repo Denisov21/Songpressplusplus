@@ -56,7 +56,7 @@ class PreferencesDialog(wx.Dialog):
         bSizerEditorBg.Add(self.editorBgBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         self.editorBgSwatch = wx.Panel(self.general, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
         bSizerEditorBg.Add(self.editorBgSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
-        grpEditor.Add(bSizerEditorBg, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpEditor.Add(bSizerEditorBg, 0, wx.EXPAND | wx.ALL, 5)
 
         # Selection colour row
         bSizerSelColour = wx.BoxSizer(wx.HORIZONTAL)
@@ -69,7 +69,7 @@ class PreferencesDialog(wx.Dialog):
         bSizerSelColour.Add(self.selColourBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         self.selColourSwatch = wx.Panel(self.general, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
         bSizerSelColour.Add(self.selColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
-        grpEditor.Add(bSizerSelColour, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpEditor.Add(bSizerSelColour, 0, wx.EXPAND | wx.ALL, 5)
 
         # Caret colour row
         bSizerCaretColour = wx.BoxSizer(wx.HORIZONTAL)
@@ -82,7 +82,7 @@ class PreferencesDialog(wx.Dialog):
         bSizerCaretColour.Add(self.caretColourBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         self.caretColourSwatch = wx.Panel(self.general, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
         bSizerCaretColour.Add(self.caretColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
-        grpEditor.Add(bSizerCaretColour, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpEditor.Add(bSizerCaretColour, 0, wx.EXPAND | wx.ALL, 5)
 
         # Caption Editor colour row
         bSizerCapEditor = wx.BoxSizer(wx.HORIZONTAL)
@@ -95,7 +95,7 @@ class PreferencesDialog(wx.Dialog):
         bSizerCapEditor.Add(self.capEditorBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         self.capEditorSwatch = wx.Panel(self.general, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
         bSizerCapEditor.Add(self.capEditorSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
-        grpEditor.Add(bSizerCapEditor, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpEditor.Add(bSizerCapEditor, 0, wx.EXPAND | wx.ALL, 5)
 
         # Caption Preview colour row
         bSizerCapPreview = wx.BoxSizer(wx.HORIZONTAL)
@@ -108,7 +108,7 @@ class PreferencesDialog(wx.Dialog):
         bSizerCapPreview.Add(self.capPreviewBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         self.capPreviewSwatch = wx.Panel(self.general, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
         bSizerCapPreview.Add(self.capPreviewSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
-        grpEditor.Add(bSizerCapPreview, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpEditor.Add(bSizerCapPreview, 0, wx.EXPAND | wx.ALL, 5)
 
         # ── Colori sintassi editor ──────────────────────────────────
         grpSyntax = wx.StaticBoxSizer(wx.StaticBox(self.general, wx.ID_ANY, _(u"Syntax colours")), wx.VERTICAL)
@@ -175,7 +175,7 @@ class PreferencesDialog(wx.Dialog):
             self.syntaxSwatches[key] = sw
             self.syntaxPickBtns[key] = btn
         grpSyntax.Add(_syntaxGrid, 0, wx.EXPAND | wx.ALL, 5)
-        grpEditor.Add(grpSyntax, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpEditor.Add(grpSyntax, 0, wx.EXPAND | wx.ALL, 5)
 
         # Bind eventi sintassi
         for key in self.syntaxHexCtrls:
@@ -196,7 +196,6 @@ class PreferencesDialog(wx.Dialog):
         self.general.SetSizer(bSizer11)
         self.general.Layout()
         bSizer11.Fit(self.general)
-        self.notebook.AddPage(self.general, _(u"Editor"), True)
 
         # ── Tab "Generale" ─────────────────────────────────────────
         self.general2 = wx.Panel(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL)
@@ -223,7 +222,7 @@ class PreferencesDialog(wx.Dialog):
         self.extension = wx.Choice(self.general2, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, extensionChoices, 0)
         self.extension.SetSelection(0)
         bSizer1412.Add(self.extension, 1, wx.ALIGN_CENTER_VERTICAL)
-        grpSong.Add(bSizer1412, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpSong.Add(bSizer1412, 0, wx.EXPAND | wx.ALL, 5)
 
         bSizer14 = wx.BoxSizer(wx.HORIZONTAL)
         self.m_staticText10 = wx.StaticText(self.general2, wx.ID_ANY, _(u"Language"), wx.DefaultPosition, wx.DefaultSize, 0)
@@ -232,7 +231,7 @@ class PreferencesDialog(wx.Dialog):
         self.langCh = wx.adv.BitmapComboBox(self.general2, wx.ID_ANY, style=wx.CB_READONLY)
         self.langCh.SetSelection(0)
         bSizer14.Add(self.langCh, 1, wx.ALIGN_CENTER_VERTICAL)
-        grpSong.Add(bSizer14, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpSong.Add(bSizer14, 0, wx.EXPAND | wx.ALL, 5)
 
         bSizer11b.Add(grpSong, 0, wx.EXPAND | wx.ALL, 8)
 
@@ -247,30 +246,31 @@ class PreferencesDialog(wx.Dialog):
         grpGeneral.Add(bSizerClearRecent, 0, wx.ALL, 5)
 
         self.multiCursorCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Enable multi-cursor (Alt+Click, Ctrl+D)"), wx.DefaultPosition, wx.DefaultSize, 0)
-        grpGeneral.Add(self.multiCursorCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpGeneral.Add(self.multiCursorCB, 0, wx.ALL, 5)
 
         self.saveWindowGeometryCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Save window size and position on exit"), wx.DefaultPosition, wx.DefaultSize, 0)
-        grpGeneral.Add(self.saveWindowGeometryCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpGeneral.Add(self.saveWindowGeometryCB, 0, wx.ALL, 5)
 
         self.showDebugMsgCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Show debug messages (theme save path)"), wx.DefaultPosition, wx.DefaultSize, 0)
-        grpGeneral.Add(self.showDebugMsgCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpGeneral.Add(self.showDebugMsgCB, 0, wx.ALL, 5)
 
         self.intellisenseCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Enable directive intellisense (Ctrl+Space)"), wx.DefaultPosition, wx.DefaultSize, 0)
-        grpGeneral.Add(self.intellisenseCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpGeneral.Add(self.intellisenseCB, 0, wx.ALL, 5)
 
         self.singleInstanceCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Single instance: open files in the existing window"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.singleInstanceCB.SetToolTip(_(u"When enabled, opening a file from Explorer or the command line will reuse the existing Songpress++ window instead of launching a new instance."))
-        grpGeneral.Add(self.singleInstanceCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpGeneral.Add(self.singleInstanceCB, 0, wx.ALL, 5)
 
         self.showRestartMenuItemCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Show 'Restart Songpress++' in the File menu"), wx.DefaultPosition, wx.DefaultSize, 0)
-        grpGeneral.Add(self.showRestartMenuItemCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpGeneral.Add(self.showRestartMenuItemCB, 0, wx.ALL, 5)
 
-        bSizer11b.Add(grpGeneral, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        bSizer11b.Add(grpGeneral, 0, wx.EXPAND | wx.ALL, 8)
 
         self.general2.SetSizer(bSizer11b)
         self.general2.Layout()
         bSizer11b.Fit(self.general2)
-        self.notebook.AddPage(self.general2, _(u"General"), False)
+        self.notebook.AddPage(self.general2, _(u"General"), True)
+        self.notebook.AddPage(self.general, _(u"Editor"), False)
 
         self.autoAdjust = wx.Panel(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL)
         bSizer18 = wx.BoxSizer(wx.VERTICAL)
@@ -290,7 +290,7 @@ class PreferencesDialog(wx.Dialog):
         bSizerDecoBar.Add(self.decoBarColourBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         self.decoBarColourSwatch = wx.Panel(self.autoAdjust, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
         bSizerDecoBar.Add(self.decoBarColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
-        bSizer18.Add(bSizerDecoBar, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        bSizer18.Add(bSizerDecoBar, 0, wx.EXPAND | wx.ALL, 5)
 
         self.simplifyPanel = wx.ScrolledWindow(self.autoAdjust, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.HSCROLL | wx.SUNKEN_BORDER | wx.VSCROLL)
         self.simplifyPanel.SetScrollRate(5, 5)
@@ -334,7 +334,7 @@ class PreferencesDialog(wx.Dialog):
         verseSpinSizer.Add(self.verseBoxWidthSpin, 0, 0, 0)
         self._verseSpinPanel.SetSizer(verseSpinSizer)
         bSizerVerseBox.Add(self._verseSpinPanel, 0, wx.ALIGN_CENTER_VERTICAL)
-        grpTitleStruct.Add(bSizerVerseBox, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpTitleStruct.Add(bSizerVerseBox, 0, wx.EXPAND | wx.ALL, 5)
 
         bSizerFormat.Add(grpTitleStruct, 0, wx.EXPAND | wx.ALL, 8)
 
@@ -368,7 +368,7 @@ class PreferencesDialog(wx.Dialog):
         bSizerFingerNum.Add(self.fingerNumColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
         grpChords.Add(bSizerFingerNum, 0, wx.EXPAND | wx.ALL, 5)
 
-        bSizerFormat.Add(grpChords, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        bSizerFormat.Add(grpChords, 0, wx.EXPAND | wx.ALL, 8)
 
         # ── Gruppo: Tempo ────────────────────────────────────────────
         grpTempo = wx.StaticBoxSizer(
@@ -389,7 +389,7 @@ class PreferencesDialog(wx.Dialog):
         bSizerTempoIcon.Add(self.tempoIconSize32, 0, wx.ALIGN_CENTER_VERTICAL)
         grpTempo.Add(bSizerTempoIcon, 0, wx.EXPAND | wx.ALL, 5)
 
-        bSizerFormat.Add(grpTempo, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        bSizerFormat.Add(grpTempo, 0, wx.EXPAND | wx.ALL, 8)
 
         # ── Gruppo: Griglia accordi ──────────────────────────────────
         grpGrid = wx.StaticBoxSizer(
@@ -419,7 +419,7 @@ class PreferencesDialog(wx.Dialog):
         self.gridModePlain.SetToolTip(
             _(u"Chords are rendered spaced out without pipe separators.")
         )
-        grpGrid.Add(self.gridModePlain, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 4)
+        grpGrid.Add(self.gridModePlain, 0, wx.ALL, 4)
 
         self.gridModeTable = wx.RadioButton(
             self.formatPanel, wx.ID_ANY,
@@ -429,7 +429,7 @@ class PreferencesDialog(wx.Dialog):
             _(u"Each bar is rendered as a cell with a visible border, "
               u"like a grid table.")
         )
-        grpGrid.Add(self.gridModeTable, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 4)
+        grpGrid.Add(self.gridModeTable, 0, wx.ALL, 4)
 
         # ── Etichetta predefinita ────────────────────────────────────
         szLbl = wx.BoxSizer(wx.HORIZONTAL)
@@ -449,7 +449,7 @@ class PreferencesDialog(wx.Dialog):
               u"Example: {start_of_grid: label} overrides this value.")
         )
         szLbl.Add(self.gridDefaultLabelCtrl, 0, wx.ALIGN_CENTER_VERTICAL)
-        grpGrid.Add(szLbl, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.TOP, 5)
+        grpGrid.Add(szLbl, 0, wx.ALL, 5)
 
         self.gridSpaceAsPipeCB = wx.CheckBox(
             self.formatPanel, wx.ID_ANY,
@@ -460,7 +460,7 @@ class PreferencesDialog(wx.Dialog):
               u"inserts a | pipe separator, shifting the current cell to the right.\n"
               u"Disable this to type spaces normally inside grid blocks.")
         )
-        grpGrid.Add(self.gridSpaceAsPipeCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpGrid.Add(self.gridSpaceAsPipeCB, 0, wx.ALL, 5)
 
         # ── Direzione di size=N ──────────────────────────────────────
         szSizeDir = wx.BoxSizer(wx.HORIZONTAL)
@@ -494,9 +494,9 @@ class PreferencesDialog(wx.Dialog):
         szSizeDir.Add(self.gridSizeDirBoth, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
         szSizeDir.Add(self.gridSizeDirH,    0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
         szSizeDir.Add(self.gridSizeDirV,    0, wx.ALIGN_CENTER_VERTICAL)
-        grpGrid.Add(szSizeDir, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpGrid.Add(szSizeDir, 0, wx.ALL, 5)
 
-        bSizerFormat.Add(grpGrid, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        bSizerFormat.Add(grpGrid, 0, wx.EXPAND | wx.ALL, 8)
 
         # --- Gruppo: inserimento simbolo musicale ---
         grpSymbol = wx.StaticBoxSizer(
@@ -520,7 +520,7 @@ class PreferencesDialog(wx.Dialog):
         self.symbolSizeSpin.SetMinSize(wx.Size(60, -1))
         szSymbol.Add(self.symbolScaleCB, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
         szSymbol.Add(self.symbolSizeSpin, 0, wx.ALIGN_CENTER_VERTICAL)
-        grpSymbol.Add(szSymbol, 0, wx.LEFT | wx.RIGHT | wx.TOP | wx.BOTTOM, 5)
+        grpSymbol.Add(szSymbol, 0, wx.ALL, 5)
         self.symbolScaleCB.Bind(
             wx.EVT_CHECKBOX,
             lambda e: self.symbolSizeSpin.Enable(self.symbolScaleCB.GetValue()),
@@ -534,8 +534,8 @@ class PreferencesDialog(wx.Dialog):
               u"{start_verse}...{end_verse} so it is not counted\n"
               u"in the verse numbering.")
         )
-        grpSymbol.Add(self.symbolInsertVerseCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
-        bSizerFormat.Add(grpSymbol, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        grpSymbol.Add(self.symbolInsertVerseCB, 0, wx.ALL, 5)
+        bSizerFormat.Add(grpSymbol, 0, wx.EXPAND | wx.ALL, 8)
 
         # ── Gruppo: Beat count ({beats_time}) ───────────────────────
         grpDuration = wx.StaticBoxSizer(
@@ -562,12 +562,12 @@ class PreferencesDialog(wx.Dialog):
         self.durationBeatsSizeSpin = wx.SpinCtrl(self.formatPanel, wx.ID_ANY, "60", wx.DefaultPosition, wx.Size(70, -1), wx.SP_ARROW_KEYS, 30, 150, 60)
         self.durationBeatsSizeSpin.SetToolTip(_(u"Size of the beat-count number as a percentage of the chord font size (default: 60%)"))
         bSizerDurSize.Add(self.durationBeatsSizeSpin, 0, wx.ALIGN_CENTER_VERTICAL)
-        grpDuration.Add(bSizerDurSize, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpDuration.Add(bSizerDurSize, 0, wx.EXPAND | wx.ALL, 5)
 
         # Riga 3: grassetto
         self.durationBeatsBoldCB = wx.CheckBox(self.formatPanel, wx.ID_ANY, _(u"Bold"))
         self.durationBeatsBoldCB.SetToolTip(_(u"Draw the beat-count number in bold"))
-        grpDuration.Add(self.durationBeatsBoldCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpDuration.Add(self.durationBeatsBoldCB, 0, wx.ALL, 5)
 
         # Riga 4: allineamento (sinistra / centro / destra)
         bSizerDurAlign = wx.BoxSizer(wx.HORIZONTAL)
@@ -585,7 +585,7 @@ class PreferencesDialog(wx.Dialog):
         bSizerDurAlign.Add(self.durationBeatsAlignLeft,   0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
         bSizerDurAlign.Add(self.durationBeatsAlignCenter, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
         bSizerDurAlign.Add(self.durationBeatsAlignRight,  0, wx.ALIGN_CENTER_VERTICAL)
-        grpDuration.Add(bSizerDurAlign, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpDuration.Add(bSizerDurAlign, 0, wx.EXPAND | wx.ALL, 5)
 
         # Riga 5: modalità visualizzazione (numero / puntini / entrambi)
         bSizerDurMode = wx.BoxSizer(wx.HORIZONTAL)
@@ -603,9 +603,9 @@ class PreferencesDialog(wx.Dialog):
         bSizerDurMode.Add(self.durationModeNumber, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
         bSizerDurMode.Add(self.durationModeDots,   0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
         bSizerDurMode.Add(self.durationModeBoth,   0, wx.ALIGN_CENTER_VERTICAL)
-        grpDuration.Add(bSizerDurMode, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpDuration.Add(bSizerDurMode, 0, wx.EXPAND | wx.ALL, 5)
 
-        bSizerFormat.Add(grpDuration, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        bSizerFormat.Add(grpDuration, 0, wx.EXPAND | wx.ALL, 8)
 
         self.formatPanel.SetSizer(bSizerFormat)
         self.formatPanel.Layout()
@@ -710,7 +710,7 @@ class PreferencesDialog(wx.Dialog):
         )
         grpPrint.Add(self.printPreviewAlwaysOnTopCB, 0, wx.ALL, 5)
 
-        bSizerSongpress.Add(grpPrint, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        bSizerSongpress.Add(grpPrint, 0, wx.EXPAND | wx.ALL, 8)
 
         # Gruppo: Nessun accordo — blocchi da nascondere
         grpNoChords = wx.StaticBoxSizer(
@@ -736,7 +736,7 @@ class PreferencesDialog(wx.Dialog):
         self.hideIntroChordCB.SetToolTip(
             _(u"Hide {start_chord}…{end_chord} blocks when no chords are shown.")
         )
-        grpNoChords.Add(self.hideIntroChordCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpNoChords.Add(self.hideIntroChordCB, 0, wx.ALL, 5)
 
         self.hideBridgeCB = wx.CheckBox(
             self.songpressPanel, wx.ID_ANY,
@@ -745,7 +745,7 @@ class PreferencesDialog(wx.Dialog):
         self.hideBridgeCB.SetToolTip(
             _(u"Hide {start_bridge}…{end_bridge} blocks when no chords are shown.")
         )
-        grpNoChords.Add(self.hideBridgeCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpNoChords.Add(self.hideBridgeCB, 0, wx.ALL, 5)
 
         self.hideGridCB = wx.CheckBox(
             self.songpressPanel, wx.ID_ANY,
@@ -754,7 +754,7 @@ class PreferencesDialog(wx.Dialog):
         self.hideGridCB.SetToolTip(
             _(u"Hide {start_of_grid}…{end_of_grid} blocks when no chords are shown.")
         )
-        grpNoChords.Add(self.hideGridCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpNoChords.Add(self.hideGridCB, 0, wx.ALL, 5)
 
         self.hideTempoCB = wx.CheckBox(
             self.songpressPanel, wx.ID_ANY,
@@ -763,7 +763,7 @@ class PreferencesDialog(wx.Dialog):
         self.hideTempoCB.SetToolTip(
             _(u"Hide {tempo_m}, {tempo_s}, {tempo_sp}, {tempo_c}, {tempo_cp} directives when no chords are shown.")
         )
-        grpNoChords.Add(self.hideTempoCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpNoChords.Add(self.hideTempoCB, 0, wx.ALL, 5)
 
         self.hideTimeCB = wx.CheckBox(
             self.songpressPanel, wx.ID_ANY,
@@ -772,9 +772,9 @@ class PreferencesDialog(wx.Dialog):
         self.hideTimeCB.SetToolTip(
             _(u"Hide {time:...} directives when no chords are shown.")
         )
-        grpNoChords.Add(self.hideTimeCB, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
+        grpNoChords.Add(self.hideTimeCB, 0, wx.ALL, 5)
 
-        bSizerSongpress.Add(grpNoChords, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        bSizerSongpress.Add(grpNoChords, 0, wx.EXPAND | wx.ALL, 8)
 
         self.songpressPanel.SetSizer(bSizerSongpress)
         self.songpressPanel.Layout()
@@ -870,6 +870,12 @@ class PreferencesDialog(wx.Dialog):
         grpSel.Add(self.cmSelectAll, 0, wx.ALL, 4)
         bSizerCM.Add(grpSel, 0, wx.EXPAND | wx.ALL, 5)
 
+        # --- Gruppo Aspetto ---
+        grpAppearance = wx.StaticBoxSizer(wx.StaticBox(self.contextMenuPanel, wx.ID_ANY, _(u"Appearance")), wx.VERTICAL)
+        self.cmShowIcons = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Show icons in context menu"))
+        grpAppearance.Add(self.cmShowIcons, 0, wx.ALL, 4)
+        bSizerCM.Add(grpAppearance, 0, wx.EXPAND | wx.ALL, 5)
+
         self.contextMenuPanel.SetSizer(bSizerCM)
         self.contextMenuPanel.Layout()
         bSizerCM.Fit(self.contextMenuPanel)
@@ -962,7 +968,7 @@ class PreferencesDialog(wx.Dialog):
         btnBarSizer.Add(self.m_sdbSizer3OK, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4)
         btnBarSizer.Add(self.m_sdbSizer3Cancel, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4)
 
-        bSizer10.Add(btnBarSizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 4)
+        bSizer10.Add(btnBarSizer, 0, wx.EXPAND | wx.ALL, 4)
 
         self.SetSizer(bSizer10)
         self.Layout()
@@ -979,6 +985,7 @@ class PreferencesDialog(wx.Dialog):
         self.openTemplatesFolderBtn.Bind(wx.EVT_BUTTON, self.OnOpenTemplatesFolder)
         self.showDebugMsgCB.Bind(wx.EVT_CHECKBOX, self.OnShowDebugMsgChanged)
         self.cmConfirmDelete.Bind(wx.EVT_CHECKBOX, self.OnCmConfirmDeleteChanged)
+        self.cmShowIcons.Bind(wx.EVT_CHECKBOX, self.OnCmShowIconsChanged)
 
     def __del__(self):
         pass
@@ -1068,6 +1075,9 @@ class PreferencesDialog(wx.Dialog):
         event.Skip()
 
     def OnCmConfirmDeleteChanged(self, event):
+        event.Skip()
+
+    def OnCmShowIconsChanged(self, event):
         event.Skip()
 
     def OnDecoBarHexChanged(self, event):

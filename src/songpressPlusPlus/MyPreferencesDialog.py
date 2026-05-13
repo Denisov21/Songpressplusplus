@@ -115,6 +115,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.cmPropagateChorusChords.SetValue(getattr(self.pref, 'cmPropagateChorusChords', True))
         self.cmCopyTextOnly.SetValue(self.pref.cmCopyTextOnly)
         self.cmSelectAll.SetValue(self.pref.cmSelectAll)
+        self.cmShowIcons.SetValue(getattr(self.pref, 'cmShowIcons', True))
 
         # Klavier highlight colour
         default_hex = getattr(self.pref, 'klavierHighlightHex', '#D23C3C')
@@ -1315,6 +1316,10 @@ class MyPreferencesDialog(PreferencesDialog):
     def OnCmConfirmDeleteChanged(self, evt):
         """Aggiorna pref.cmConfirmDelete immediatamente, senza attendere OK."""
         self.pref.cmConfirmDelete = self.cmConfirmDelete.GetValue()
+
+    def OnCmShowIconsChanged(self, evt):
+        """Aggiorna pref.cmShowIcons immediatamente, senza attendere OK."""
+        self.pref.cmShowIcons = self.cmShowIcons.GetValue()
         evt.Skip()
 
     def OnOk(self, evt):
@@ -1445,6 +1450,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.cmPropagateChorusChords = self.cmPropagateChorusChords.GetValue()
         self.pref.cmCopyTextOnly          = self.cmCopyTextOnly.GetValue()
         self.pref.cmSelectAll    = self.cmSelectAll.GetValue()
+        self.pref.cmShowIcons    = self.cmShowIcons.GetValue()
         self.pref.Save()
         lang = i18n.getLang()
         l = self.GetLanguage()

@@ -291,6 +291,7 @@
           <help>Mostra/nascondi il pannello di Anteprima Songpress++</help>
           <checkable>1</checkable>
           <checked>1</checked>
+          <bitmap>../img/preview.png</bitmap>
         </object>
         <object class="wxMenuItem" name="showPageBreakLines">
           <label>Mostra: "Linee di interruzione pagina"</label>

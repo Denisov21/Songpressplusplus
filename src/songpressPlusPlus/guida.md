@@ -108,7 +108,7 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 | `{bar}` *(dentro grid)*                   | ✅  | 🖊    | Separatore di battuta esplicito all'interno di un blocco griglia                                                                     |
 | `{start_of_part:Etichetta}`/`{end_of_part}` | ✅  | 🖊  | Sezione generica (ChordPro 6): trattata come strofa con etichetta libera; se l'etichetta è omessa viene usato «Part»                |
 | `{sop}`/`{eop}`                           | ✅  | 🖊    | Abbreviazione di `start_of_part`/`end_of_part`                                                                                       |
-| `{new_song}`                              | 🔧  | 🖊    | Avvia una nuova canzone nello stesso documento: azzera i contatori di strofe e ritornelli in modo che la numerazione ricominci da 1  |
+| `{new_song}`                              | 🔧  | 🖊    | Avvia una nuova canzone nello stesso documento: azzera i contatori di strofe e ritornelli (la numerazione riparte da 1) e resetta gli schemi di accordi memorizzati per il filtro *Una strofa per ogni schema* |
 
 > **Nota sul bridge** — Sono supportate entrambe le forme: `{start_bridge}`/`{end_bridge}` (forma Songpress++, inseribile dal menu) e `{start_of_bridge}`/`{end_of_bridge}` (forma ChordPro standard, con abbreviazioni `{sob}`/`{eob}`). Le due forme sono equivalenti e intercambiabili.
 
@@ -1616,6 +1616,16 @@ Le opzioni si trovano in **Strumenti → Opzioni... → scheda Anteprima Songpre
 > **Nota:** il filtro agisce sul testo passato al renderer prima del ridisegno. Il documento sorgente nell'editor non viene mai modificato.
 
 > **Nota tecnica:** `{start_chord}`, `{start_bridge}`, `{start_of_grid}` sono **blocchi paired** (apertura + contenuto + chiusura): l'intera sezione viene soppressa. `{tempo_m}`, `{tempo_s}`, `{tempo_sp}`, `{tempo_c}`, `{tempo_cp}` e `{time}` sono invece **direttive singole**: viene rimossa soltanto la riga che le contiene.
+
+### Compatibilità di `{new_song}` con i filtri accordi
+
+| Modalità slider *Mostra accordi* | Valore interno | Compatibile con `{new_song}`? | Note |
+| -------------------------------- | :------------: | :---------------------------: | ---- |
+| **Nessuno** | `0` | ✅ | `_strip_nochords_blocks()` non tocca `{new_song}`; il brano successivo viene filtrato correttamente |
+| **Solo prima strofa** *(una strofa per ogni schema di accordi)* | `1` | ✅ | `{new_song}` azzera anche `chordPatterns`: gli schemi del brano precedente non inquinano il confronto sul brano successivo |
+| **Intera canzone** | `2` | ✅ | Nessun filtraggio attivo; `{new_song}` si limita ad azzerare i contatori di strofe/ritornelli |
+
+> **Dettaglio tecnico (modalità 1):** prima della correzione, `chordPatterns` non veniva resettato al `{new_song}`. Il renderer confrontava le strofe del secondo brano con gli schemi accordi del primo tramite `minEditDist`, rimuovendo erroneamente gli accordi da strofe che avrebbero dovuto mostrarli. La correzione aggiunge `self.chordPatterns = []` contestualmente agli altri azzeramenti in `Renderer.py`.
 
 ---
 

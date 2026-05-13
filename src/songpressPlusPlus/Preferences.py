@@ -9,24 +9,12 @@
 # License:     GNU GPL v2
 ##############################################################
 
-import datetime
-
 from . import i18n
 from .SongFormat import *
 from .decorators import StandardVerseNumbers
 from .Transpose import *
 
 _ = wx.GetTranslation
-
-
-def get_update_frequencies():
-    return {
-        0: _("Never"),
-        7: _("Week"),
-        14: _("Two weeks"),
-        30: _("Month"),
-        60: _("Two months"),
-    }
 
 
 def get_chords_positions():
@@ -55,10 +43,6 @@ class Preferences(object):
         * autoAdjustEasyKey
         * chordsPosition ('above' or 'below')
         * locale
-        * updateFrequency (days, or 0 for never)
-        * ignoredUpdates
-        * updateUrl
-        * updateLastCheck
         * Set/GetEasyChordsGroup
         * GetEasyChords
         * showRecentFiles (bool)
@@ -176,27 +160,6 @@ class Preferences(object):
             self.locale = None
         else:
             self.locale = lang
-        self.config.SetPath('/AutoUpdate')
-        f = self.config.Read('frequency')
-        if not f:
-            self.updateFrequency = 7
-        else:
-            self.updateFrequency = int(f)
-        i = self.config.Read('ignored')
-        if not i:
-            self.ignoredUpdates = set()
-        else:
-            self.ignoredUpdates = set(i.split(','))
-        u = self.config.Read('url')
-        if not u:
-            self.updateUrl = 'https://songpress.skeed.it/xmlrpc'
-        else:
-            self.updateUrl = u
-        d = self.config.Read('lastCheck')
-        if not d:
-            self.updateLastCheck = None
-        else:
-            self.updateLastCheck = datetime.datetime.fromordinal(int(d))
         self.config.SetPath('/App')
         showRecentFiles = self.config.Read('showRecentFiles')
         if showRecentFiles:
@@ -261,6 +224,8 @@ class Preferences(object):
         self.cmPropagateChorusChords = rb('propagateChorusChords')
         self.cmCopyTextOnly          = rb('copyTextOnly')
         self.cmSelectAll    = rb('selectAll')
+        v = self.config.Read('showIcons')
+        self.cmShowIcons = bool(int(v)) if v != '' else True
         self.config.SetPath('/')
 
     def _LoadEditorBg(self):
@@ -373,12 +338,6 @@ class Preferences(object):
         self.config.Write('defaultExtension', self.defaultExtension)
         if self.locale is not None:
             lang = self.config.Write('locale', self.locale)
-        self.config.SetPath('/AutoUpdate')
-        self.config.Write('frequency', str(self.updateFrequency))
-        self.config.Write('ignored', ",".join(self.ignoredUpdates))
-        self.config.Write('url', self.updateUrl)
-        if self.updateLastCheck is not None:
-            self.config.Write('lastCheck', str(self.updateLastCheck.toordinal()))
         self.config.SetPath('/App')
         self.config.Write('showRecentFiles', self.Bool2String(self.showRecentFiles))
         self.config.SetPath('/Format/Style')
@@ -432,6 +391,7 @@ class Preferences(object):
         self.config.Write('propagateChorusChords', '1' if getattr(self, 'cmPropagateChorusChords', True) else '0')
         self.config.Write('copyTextOnly',          '1' if getattr(self, 'cmCopyTextOnly',          True) else '0')
         self.config.Write('selectAll',    '1' if getattr(self, 'cmSelectAll',    True) else '0')
+        self.config.Write('showIcons',    '1' if getattr(self, 'cmShowIcons',    True) else '0')
         self.config.SetPath('/')
 
     def _SaveEditorBg(self):

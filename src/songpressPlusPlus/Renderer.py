@@ -533,11 +533,15 @@ class Renderer(object):
                         # Inizio nuovo brano nello stesso documento:
                         # chiudi il blocco corrente e azzera i contatori
                         # di strofe e ritornelli così la numerazione riparte da 1.
+                        # Azzera anche chordPatterns per evitare che il filtro
+                        # "una strofa per schema" (showChords==1) confronti le
+                        # strofe del nuovo brano con gli schemi di quello precedente.
                         self.EndBlock()
                         self.song.verseCount = 0
                         self.song.labelCount = 0
                         self.song.chorusCount = 0
                         self.sf.verse = []
+                        self.chordPatterns = []
                     # --- Fine nuovi comandi ---
                     elif cmd == 'c' or cmd == 'comment':
                         a = self.GetAttribute()

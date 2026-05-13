@@ -931,6 +931,18 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
             self.showChordsChooser,
             "pippo"
         )
+        self.formatToolBar.AddSeparator()
+        togglePreviewTool = self.formatToolBar.AddToggleTool(
+            wx.xrc.XRCID('preview'),
+            wx.Bitmap(wx.Image(glb.AddPath("img/preview.png"))),
+            wx.NullBitmap,
+            True,
+            None,
+            _("Show Songpress++ Preview"),
+            _("Show or hide the Songpress++ Preview panel"),
+        )
+        self.togglePreviewToolId = togglePreviewTool.GetId()
+        self.frame.Bind(wx.EVT_TOOL, self.OnTogglePaneView, id=self.togglePreviewToolId)
         self.formatToolBar.Realize()
         self.formatToolBarPane = self.AddPane(self.formatToolBar, aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(2),
                                                                                     _('Format'), 'format')
@@ -976,6 +988,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
         self.text.SetFont(self.pref.editorFace, self.pref.editorSize)
         self.text.SetBgColour(getattr(self.pref, 'editorBgHex', '#FFFFFF'))
         self.text.SetSelColour(getattr(self.pref, 'selColourHex', '#3399FF'))
+        self.text.SetCaretColour(getattr(self.pref, 'caretColourHex', '#000000'))
         _sc = getattr(self.pref, 'syntaxColours', {})
         for _k, _sid in [('normal', 11), ('chorus', 15), ('chord', 12), ('command', 13), ('attr', 14), ('comment', 16), ('tabgrid', 17)]:
             if _k in _sc:
@@ -1000,6 +1013,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
         self._ApplyPreviewMinSize()
         self._mgr.Update()
         self._UpdateBreakLinesMenuState()
+        wx.CallAfter(self._SyncPreviewToggleButton)
         self.RestoreWindowGeometry()
         if 'firstTimeEasyKey' in self.pref.notices:
             msg = _(
@@ -1073,7 +1087,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
             if restart_pos > 0:
                 prev = file_menu.FindItemByPosition(restart_pos - 1)
                 if prev is not None and prev.IsSeparator():
-                    file_menu.RemoveItem(prev)
+                    file_menu.Remove(prev)
 
     def OnRestart(self, evt):
         """Salva le preferenze, chiude la finestra e riavvia Songpress++.
@@ -7485,6 +7499,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
             self._applyFingerNumColor()
             self.text.SetBgColour(getattr(self.pref, 'editorBgHex', '#FFFFFF'))
             self.text.SetSelColour(getattr(self.pref, 'selColourHex', '#3399FF'))
+            self.text.SetCaretColour(getattr(self.pref, 'caretColourHex', '#000000'))
             _sc = getattr(self.pref, 'syntaxColours', {})
             for _k, _sid in [('normal', 11), ('chorus', 15), ('chord', 12), ('command', 13), ('attr', 14), ('comment', 16), ('tabgrid', 17)]:
                 if _k in _sc:
@@ -7846,6 +7861,16 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
             self._ApplyPreviewMinSize()
             self._mgr.Update()
         self._UpdateBreakLinesMenuState()
+        self._SyncPreviewToggleButton()
+
+    def _SyncPreviewToggleButton(self):
+        """Sincronizza lo stato premuto/rilasciato del pulsante toggle preview nella toolbar."""
+        if not hasattr(self, 'togglePreviewToolId'):
+            return
+        pane = self._mgr.GetPane('preview')
+        visible = pane.IsShown()
+        self.formatToolBar.ToggleTool(self.togglePreviewToolId, visible)
+        self.formatToolBar.Refresh()
 
     def OnPaneClose(self, evt):
         super().OnPaneClose(evt)
@@ -7855,6 +7880,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
             self.menuBar.Enable(self._showPageBreakLinesMenuId, False)
             self.menuBar.Enable(self._showColumnBreakLinesMenuId, False)
             self.menuBar.Enable(self._showDurationBeatsMenuId, False)
+            wx.CallAfter(self._SyncPreviewToggleButton)
         else:
             self._UpdateBreakLinesMenuState()
 

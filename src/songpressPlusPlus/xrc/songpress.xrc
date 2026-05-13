@@ -291,6 +291,7 @@
           <help>Show/hide Songpress++ Preview pane</help>
           <checkable>1</checkable>
           <checked>1</checked>
+          <bitmap>../img/preview.png</bitmap>
         </object>
         <object class="wxMenuItem" name="showPageBreakLines">
           <label>Show: "Page break lines"</label>

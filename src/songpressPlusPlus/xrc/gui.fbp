@@ -736,7 +736,7 @@
             </object>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/preview.png</property>
             <property name="checked">1</property>
             <property name="enabled">1</property>
             <property name="help">Show/hide preview pane</property>

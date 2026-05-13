@@ -183,6 +183,15 @@ class Editor(StyledTextCtrl):
         fg = wx.Colour(0, 0, 0) if luminance > 128 else wx.Colour(255, 255, 255)
         self.SetSelForeground(True, fg)
 
+    def SetCaretColour(self, hex_str):
+        """Imposta il colore del cursore di testo (caret)."""
+        try:
+            h = hex_str.strip().lstrip('#')
+            c = wx.Colour(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)) if len(h) == 6 else wx.Colour(0, 0, 0)
+        except Exception:
+            c = wx.Colour(0, 0, 0)
+        self.SetCaretForeground(c)
+
     def SetSyntaxColour(self, style_id, hex_str):
         """Imposta il colore foreground di uno stile STC tramite hex string."""
         try:
@@ -558,23 +567,6 @@ class Editor(StyledTextCtrl):
     def OnContextMenu(self, evt):
         menu = wx.Menu()
 
-        def add_item(label, handler, art_id=None, png_path=None, enabled=True):
-            item = wx.MenuItem(menu, wx.ID_ANY, label)
-            bmp = wx.NullBitmap
-            if png_path:
-                b = wx.Bitmap(png_path, wx.BITMAP_TYPE_PNG)
-                if b.IsOk():
-                    bmp = b
-            elif art_id is not None:
-                b = wx.ArtProvider.GetBitmap(art_id, wx.ART_MENU, (16, 16))
-                if b.IsOk():
-                    bmp = b
-            if bmp.IsOk():
-                item.SetBitmap(bmp)
-            menu.Append(item)
-            item.Enable(enabled)
-            menu.Bind(wx.EVT_MENU, handler, item)
-
         import os
         _img_dir = os.path.join(os.path.dirname(__file__), 'img')
         img = lambda name: os.path.join(_img_dir, name)
@@ -585,6 +577,26 @@ class Editor(StyledTextCtrl):
             if pref is None:
                 return True
             return getattr(pref, name, True)
+
+        show_icons = cm_pref('cmShowIcons')
+
+        def add_item(label, handler, art_id=None, png_path=None, enabled=True):
+            item = wx.MenuItem(menu, wx.ID_ANY, label)
+            if show_icons:
+                bmp = wx.NullBitmap
+                if png_path:
+                    b = wx.Bitmap(png_path, wx.BITMAP_TYPE_PNG)
+                    if b.IsOk():
+                        bmp = b
+                elif art_id is not None:
+                    b = wx.ArtProvider.GetBitmap(art_id, wx.ART_MENU, (16, 16))
+                    if b.IsOk():
+                        bmp = b
+                if bmp.IsOk():
+                    item.SetBitmap(bmp)
+            menu.Append(item)
+            item.Enable(enabled)
+            menu.Bind(wx.EVT_MENU, handler, item)
 
         has_selection = self.GetSelectedText() != ''
         can_paste = wx.TheClipboard.IsSupported(wx.DataFormat(wx.DF_TEXT))
