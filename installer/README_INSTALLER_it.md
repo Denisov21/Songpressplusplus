@@ -240,11 +240,27 @@ script NSI). **Può essere cancellato tranquillamente.**
 
 Esempio del percorso:
 
+```powershell
 `& "E:\Users\Utente\Downloads\SongpressV65BETA\SongpressPlusPlus\installer\uv-x86_64\uv.exe" --version`
+```
 
 esempio del risultato restituito:
 
+```powershell
 `uv 0.11.14 (3fdfdc7d4 2026-05-12 x86_64-pc-windows-msvc)`
+```
+
+Esempio del percorso:
+
+```powershell
+`& "E:\Users\Utente\Downloads\SongpressV65BETA\SongpressPlusPlus\installer\uv-i686\uv.exe" --version`
+```
+
+esempio del risultato restituito:
+
+```powershell
+`uv 0.11.14 (3fdfdc7d4 2026-05-12 i686-pc-windows-msvc)`
+```
 
 
 

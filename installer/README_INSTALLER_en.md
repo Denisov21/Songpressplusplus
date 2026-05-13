@@ -236,15 +236,29 @@ anywhere in the project (neither in `pyproject.toml` nor in the NSI scripts).
 
 Example path:
 
-```
+```powershell
 & "E:\Users\Utente\Downloads\SongpressV65BETA\SongpressPlusPlus\installer\uv-x86_64\uv.exe" --version
 ```
 
 Example output:
 
-```
+```powershell
 uv 0.11.14 (3fdfdc7d4 2026-05-12 x86_64-pc-windows-msvc)
 ```
+
+Example path:
+
+```powershell
+`& "E:\Users\Utente\Downloads\SongpressV65BETA\SongpressPlusPlus\installer\uv-i686\uv.exe" --version`
+```
+
+Example output:
+
+```powershell
+`uv 0.11.14 (3fdfdc7d4 2026-05-12 i686-pc-windows-msvc)`
+```
+
+
 
 ---
 *This file is UTF-8 encoded without BOM.*
