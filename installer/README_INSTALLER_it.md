@@ -3,9 +3,15 @@
 Per compilare il programma di installazione Windows è necessario scaricare:
 
 - I binari Windows x64 di `uv`, ad esempio [Releases · astral-sh/uv](https://github.com/astral-sh/uv/releases/)
-- Il [compilatore NSIS](https://nsis.sourceforge.io/Download)
+- Il [compilatore NSIS](https://nsis.sourceforge.io/Download) — scaricare la versione **64 bit** (`amd64` / `x64`), che compila sia installer a 64 bit sia a 32 bit. La versione a 32 bit (`x86`) non supporta la compilazione per `amd64`.
+  Per uso in CI/CD: [Install NSIS compiler 64bit · GitHub Actions Marketplace](https://github.com/marketplace/actions/install-nsis-compiler)
 
-Estrarre `uv.exe` dallo zip in questa cartella.
+Estrarre `uv.exe` dallo zip nella sottocartella corrispondente all'architettura:
+
+- `uv-x86_64\uv.exe` — per l'installer a **64 bit** (architettura x86_64 / AMD64, la più comune sui PC moderni)
+- `uv-i686\uv.exe` — per l'installer a **32 bit** (architettura i686 / x86, per sistemi a 32 bit o per distribuire un installer universale)
+
+Gli script `.nsi` puntano direttamente a queste sottocartelle — non è necessario copiare `uv.exe` nella cartella `installer\` principale.
 
 > **Nota antivirus — `uv.exe` non è un virus:** Alcuni antivirus potrebbero segnalare
 > `uv.exe` come sospetto a causa dell'euristica sui file eseguibili di nuova generazione.
@@ -65,9 +71,9 @@ installer/
 ├── songpress__x86.nsi
 ├── songpressplusplus.ico
 ├── license.txt
-├── uv-x86_64/
+├── uv-x86_64/               ← uv per installer 64 bit (x86_64 / AMD64)
 │   └── uv.exe
-├── uv-i686/
+├── uv-i686/                 ← uv per installer 32 bit (i686 / x86)
 │   └── uv.exe
 └── tools/
     ├── rcedit-x64.exe
