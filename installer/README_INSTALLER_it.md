@@ -16,15 +16,15 @@ Estrarre `uv.exe` dallo zip in questa cartella.
 
 Avviare poi il compilatore NSIS e compilare lo script `.nsi` appropriato:
 
-- **Installer a 64 bit**: compilare `songpress++64bit.nsi`
-- **Installer a 32 bit**: compilare `songpress++x86.nsi`
+- **Installer a 64 bit**: compilare `songpress__x64.nsi`
+- **Installer a 32 bit**: compilare `songpress__x86.nsi`
 
 ## Compilazione passo per passo
 
 1. Apri il programma NSIS
 2. Clicca su **Compile NSI scripts**
 3. Premi **File → Load Script**
-4. Seleziona `songpress++64bit.nsi` (64 bit) oppure `songpress++x86.nsi` (32 bit)
+4. Seleziona `songpress__x64.nsi` (64 bit) oppure `songpress__x86.nsi` (32 bit)
 5. Clicca **Compile**
 
 ## File NSI
@@ -61,8 +61,8 @@ senza SSL, evitando possibili blocchi TLS.
 
 ```
 installer/
-├── songpress++64bit.nsi
-├── songpress++x86.nsi
+├── songpress__x64.nsi
+├── songpress__x86.nsi
 ├── songpressplusplus.ico
 ├── license.txt
 ├── uv-x86_64/
@@ -238,28 +238,30 @@ script NSI). **Può essere cancellato tranquillamente.**
 
 ### Verificare la versione di uv (PowerShell)
 
-Esempio del percorso:
+Sostituire `<percorso-installer>` con il percorso effettivo della cartella `installer\` sul proprio sistema.
+
+**64 bit (`uv-x86_64`):**
 
 ```powershell
-`& "E:\Users\Utente\Downloads\SongpressV65BETA\SongpressPlusPlus\installer\uv-x86_64\uv.exe" --version`
+& "<percorso-installer>\uv-x86_64\uv.exe" --version
 ```
 
-esempio del risultato restituito:
+Esempio di output:
 
-```powershell
-`uv 0.11.14 (3fdfdc7d4 2026-05-12 x86_64-pc-windows-msvc)`
+```
+uv 0.11.14 (3fdfdc7d4 2026-05-12 x86_64-pc-windows-msvc)
 ```
 
-Esempio del percorso:
+**32 bit (`uv-i686`):**
 
 ```powershell
-`& "E:\Users\Utente\Downloads\SongpressV65BETA\SongpressPlusPlus\installer\uv-i686\uv.exe" --version`
+& "<percorso-installer>\uv-i686\uv.exe" --version
 ```
 
-esempio del risultato restituito:
+Esempio di output:
 
-```powershell
-`uv 0.11.14 (3fdfdc7d4 2026-05-12 i686-pc-windows-msvc)`
+```
+uv 0.11.14 (3fdfdc7d4 2026-05-12 i686-pc-windows-msvc)
 ```
 
 

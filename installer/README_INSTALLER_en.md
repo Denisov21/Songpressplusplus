@@ -15,15 +15,15 @@ Extract `uv.exe` from the zip into this folder.
 
 Then launch the NSIS compiler and compile the appropriate `.nsi` script:
 
-- **64-bit installer**: compile `songpress++64bit.nsi`
-- **32-bit installer**: compile `songpress++x86.nsi`
+- **64-bit installer**: compile `songpress__x64.nsi`
+- **32-bit installer**: compile `songpress__x86.nsi`
 
 ## Step-by-step compilation
 
 1. Open the NSIS program
 2. Click on **Compile NSI scripts**
 3. Press **File → Load Script**
-4. Select `songpress++64bit.nsi` (64-bit) or `songpress++x86.nsi` (32-bit)
+4. Select `songpress__x64.nsi` (64-bit) or `songpress__x86.nsi` (32-bit)
 5. Click **Compile**
 
 ## NSI file
@@ -60,8 +60,8 @@ avoiding potential TLS hangs.
 
 ```
 installer/
-├── songpress++64bit.nsi
-├── songpress++x86.nsi
+├── songpress__x64.nsi
+├── songpress__x86.nsi
 ├── songpressplusplus.ico
 ├── license.txt
 ├── uv-x86_64/
@@ -234,28 +234,30 @@ anywhere in the project (neither in `pyproject.toml` nor in the NSI scripts).
 
 ### Verify the uv Version (PowerShell)
 
-Example path:
+Replace `<installer-path>` with the actual path to the `installer\` folder on your system.
+
+**64-bit (`uv-x86_64`):**
 
 ```powershell
-& "E:\Users\Utente\Downloads\SongpressV65BETA\SongpressPlusPlus\installer\uv-x86_64\uv.exe" --version
+& "<installer-path>\uv-x86_64\uv.exe" --version
 ```
 
 Example output:
 
-```powershell
+```
 uv 0.11.14 (3fdfdc7d4 2026-05-12 x86_64-pc-windows-msvc)
 ```
 
-Example path:
+**32-bit (`uv-i686`):**
 
 ```powershell
-`& "E:\Users\Utente\Downloads\SongpressV65BETA\SongpressPlusPlus\installer\uv-i686\uv.exe" --version`
+& "<installer-path>\uv-i686\uv.exe" --version
 ```
 
 Example output:
 
-```powershell
-`uv 0.11.14 (3fdfdc7d4 2026-05-12 i686-pc-windows-msvc)`
+```
+uv 0.11.14 (3fdfdc7d4 2026-05-12 i686-pc-windows-msvc)
 ```
 
 
