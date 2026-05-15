@@ -408,6 +408,7 @@ class SongpressFindReplaceDialog(object):
             p = text.SearchPrev(flags, st)
         if p != -1:
             text.SetSelection(p, p + len(st))
+            text.EnsureCaretVisible()
             self.lblCount.SetLabel(u"")
             self.lblCount.SetForegroundColour(wx.Colour(0, 100, 180))
             # Evidenzia nell'editor sempre; nel preview solo se rbHlBoth è attivo
@@ -422,7 +423,7 @@ class SongpressFindReplaceDialog(object):
                     wherefrom, where, newStart = _(u"Reached the end"), _(u"beginning"), 0
                 else:
                     wherefrom, where, newStart = _(u"Reached the beginning"), _(u"end"), text.GetLength()
-                wrap_msg = _(u"%s of the song, restarting search from the %s") % (wherefrom, where)
+                wrap_msg = _(u"%s of the song, restarting search from the %s?") % (wherefrom, where)
                 do_wrap = silent_wrap or self._get_wrap_around()
                 if do_wrap:
                     text.SetSelection(newStart, newStart)
@@ -431,9 +432,9 @@ class SongpressFindReplaceDialog(object):
                     d = wx.MessageDialog(
                         self.dialog,
                         wrap_msg,
-                        self.owner.appName, wx.OK | wx.CANCEL | wx.ICON_INFORMATION
+                        self.owner.appName, wx.YES_NO | wx.ICON_INFORMATION
                     )
-                    if d.ShowModal() == wx.ID_OK:
+                    if d.ShowModal() == wx.ID_YES:
                         text.SetSelection(newStart, newStart)
                         self._OnFindNext(evt, silent_wrap=True)
             else:
@@ -5820,6 +5821,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
             p = text.SearchPrev(flags, st)
         if p != -1:
             text.SetSelection(p, p + len(st))
+            text.EnsureCaretVisible()
         else:
             # Ricomincia dall'inizio/fine
             if down:
@@ -5828,11 +5830,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
                 newStart, wherefrom, where = text.GetLength(), _("Reached the beginning"), _("end")
             d = wx.MessageDialog(
                 self.frame,
-                _("%s of the song, restarting search from the %s") % (wherefrom, where),
+                _("%s of the song, restarting search from the %s?") % (wherefrom, where),
                 self.appName,
-                wx.OK | wx.CANCEL | wx.ICON_INFORMATION
+                wx.YES_NO | wx.ICON_INFORMATION
             )
-            if d.ShowModal() == wx.ID_OK:
+            if d.ShowModal() == wx.ID_YES:
                 text.SetSelection(newStart, newStart)
                 self._FindInEditor(down=down)
 
