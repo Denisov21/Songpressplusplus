@@ -318,6 +318,9 @@ class Renderer(object):
                 # Rimuove la voce usata per non riassegnarla
                 self._pending_duration.pop(matched_idx)
                 self._duration_chord_idx = 0
+                # Se la lista è esaurita, rilascia anche lo snapshot del formato
+                if not self._pending_duration:
+                    self._beats_time_format_snapshot = None
         if not type == SongText.chord or self.sf.showChords > 0:
             self.currentLine.AddBox(t)
 
@@ -386,6 +389,10 @@ class Renderer(object):
         # Attivo per la riga immediatamente successiva alla direttiva.
         self._pending_duration = []   # lista di (accordo, battiti) in ordine
         self._duration_chord_idx = 0  # indice accordo corrente nella riga
+        # Snapshot del ParagraphFormat al momento di {beats_time}: evita che un
+        # {linespacing} successivo (sulla stessa riga o prima degli accordi) alteri
+        # retroattivamente il formato già in uso per la riga con duration_beats.
+        self._beats_time_format_snapshot = None
 
         self.song.columns = self.columns
         self.song.columnHeight = self.columnHeight
@@ -826,12 +833,20 @@ class Renderer(object):
                                     spacing = int(a)
                                 except (TypeError, ValueError):
                                     raise BreakException()
-                            self.format = ParagraphFormat(self.format)
-                            self.format.lineSpacing = spacing
+                            # Aggiorna i template sf (verranno ereditati dai blocchi successivi).
                             self.sf.lineSpacing = spacing
                             self.sf.chorus.lineSpacing = spacing
                             for v in self.sf.verse:
                                 v.lineSpacing = spacing
+                            # Aggiorna self.format IN-PLACE (non sostituendo l'oggetto):
+                            # SongBlock.format punta direttamente a self.format, quindi
+                            # sostituire self.format con un nuovo ParagraphFormat lascerebbe
+                            # il SongBlock con il riferimento al vecchio oggetto (senza spacing).
+                            # Modificando l'oggetto esistente, SongBlock.format si aggiorna
+                            # automaticamente poiché punta allo stesso oggetto.
+                            self.format.lineSpacing = spacing
+                            if self._beats_time_format_snapshot is not None:
+                                self._beats_time_format_snapshot.lineSpacing = spacing
                         except BreakException:
                             pass
                     elif cmd == 'taste':
@@ -872,6 +887,10 @@ class Renderer(object):
                                         pass
                             self._pending_duration = dur
                             self._duration_chord_idx = 0
+                            # Congela il formato corrente: se un {linespacing} compare
+                            # nella stessa riga o prima che gli accordi siano consumati,
+                            # non altererà il formato già usato per i SongText con duration_beats.
+                            self._beats_time_format_snapshot = ParagraphFormat(self.format)
 
             self.EndLine()
             if empty:

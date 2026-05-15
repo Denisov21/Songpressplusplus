@@ -183,6 +183,13 @@ Imposta l'**interlinea** tra le righe di testo della canzone dal punto in cui vi
 - La direttiva può essere inserita in qualsiasi punto della canzone; agisce sulle righe successive.
 - I valori tipici sono compresi tra `10` e `20` a seconda del font e della dimensione utilizzati.
 - Utile per regolare la densità del testo in stampa, specialmente con layout a due colonne o formato due pagine per foglio.
+- **Scope globale** — `{linespacing}` si propaga per tutta la canzone a partire dal punto di inserimento, attraversando anche le interruzioni di pagina (`{new_page}`). Se la direttiva viene usata più volte, ogni occorrenza sovrascrive il valore precedente; l'ultima `{linespacing}` presente nel file determina l'interlinea per il resto del brano.
+- **Coesistenza con `{new_page}` sulla stessa riga** — È consentito e funziona correttamente scrivere le due direttive sulla stessa riga, in entrambi gli ordini:
+  ```chordpro
+  {new_page} {linespacing:15}
+  {linespacing:15} {new_page}
+  ```
+  Il parser le processa in sequenza da sinistra a destra. In entrambi i casi il nuovo valore di interlinea viene aggiornato nel formato globale prima che venga costruito il blocco della pagina successiva, quindi le righe della nuova pagina adottano regolarmente il valore specificato. Non vi è alcuna differenza di comportamento tra i due ordini.
 
 ---
 
@@ -726,6 +733,80 @@ Il controllo sintassi integrato (`Strumenti → Controlla sintassi`) segnala gli
 | Accordo ripetuto | `{beats_time: Sol=2 Sol=1}` | accordo duplicato |
 | Battiti mancanti | `{beats_time: Sol=}` | valore mancante |
 | Battiti non interi o ≤ 0 | `{beats_time: Sol=0}`, `Sol=1.5` | deve essere intero positivo |
+
+### `{beats_time}` e `{linespacing}` — come interagiscono le distanze
+
+Quando si usa `{beats_time}` insieme a `{linespacing}`, è importante capire a quale **coppia accordo+testo** si applica lo spazio extra.
+
+La regola è semplice: `{linespacing}` agisce sulla distanza tra la riga corrente e la **successiva**; i numeri di battito (prodotti da `{beats_time}`) appaiono **sopra** gli accordi e non modificano il `linespacing` della riga stessa.
+
+#### Schema visivo
+
+```text
+{beats_time: Do=4 Sol=2 La-=2 Fa=4}
+[Do]Gloria a [Sol]Dio nell'[La-]alto dei [Fa]cieli
+
+                 ┌──────────────────────────────────────────┐
+                 │   2     2     2     2    ← numeri beats   │
+                 │  DO   SOL   LA-    FA    ← accordi        │
+                 │  Gloria a Dio nell'alto  ← testo          │
+                 └──────────────────────────────────────────┘
+                          ↕  linespacing  (spazio DOPO questa riga, verso la riga successiva)
+                 ┌──────────────────────────────────────────┐
+                 │   4     2     2     4    ← numeri beats   │
+                 │  DO   SOL   LA-    FA    ← accordi        │
+                 │  dei cieli, pace in te  ← testo           │
+                 └──────────────────────────────────────────┘
+```
+
+Il `linespacing` si inserisce **tra** i blocchi riga — ovvero tra il fondo della riga corrente e il margine superiore della riga successiva (inclusi gli eventuali numeri di battito che la sovrastano). I numeri di battito rimangono compressi **dentro** la loro riga.
+
+#### Confronto: senza e con `{linespacing}`
+
+```text
+── Senza {linespacing} ──────────────────────────────────────
+
+  2     2     2     2
+ DO   SOL   LA-    FA
+ Eccomi,  eccomi!           ← riga 1 (beats sopra gli accordi)
+  2     2                   ← riga 2 inizia subito sotto
+ FA    DO
+ Signore io vengo
+
+── Con {linespacing: 12} ────────────────────────────────────
+
+  2     2     2     2
+ DO   SOL   LA-    FA
+ Eccomi,  eccomi!
+                            ← {linespacing: 12} aggiunge 12 pt qui ↕
+  2     2
+ FA    DO
+ Signore io vengo
+```
+
+#### Dove inserire `{linespacing}` rispetto a `{beats_time}`
+
+`{linespacing}` deve essere collocato **prima** della riga a cui si vuole applicare, o in un punto separato del file per regolare l'intera sezione. Se lo si inserisce **nella stessa riga** di `{beats_time}`, il comportamento è definito: il nuovo valore di interlinea entra in vigore a partire dalla riga degli accordi **successiva**, senza alterare i numeri di battito già associati alla riga corrente.
+
+```chordpro
+{linespacing: 12}
+{beats_time: Do=4 Sol=2 La-=2 Fa=4}
+[Do]Eccomi, [Sol]eccomi! [La-]Signore [Fa]io vengo
+```
+
+```text
+  ↑ {linespacing: 12} si applica a partire da questa riga
+  │
+  │   4     2     2     4
+  │  DO   SOL   LA-    FA
+  │  Eccomi, eccomi!...
+  │
+  ╰──── 12 pt ────╮
+                  │
+     prossima riga...
+```
+
+> **Nota tecnica** — Internamente, `{beats_time}` e `{linespacing}` usano formati separati: il primo agisce sui `SongText` (i singoli token accordo), il secondo sul `ParagraphFormat` del blocco. Non si sovrascrivono a vicenda.
 
 ### Direttiva immagine
 

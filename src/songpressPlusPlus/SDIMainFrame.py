@@ -397,7 +397,11 @@ class SDIMainFrame(object):
         menu = evt.GetId()
         pane = self._mgr.GetPane(self.panesByMenu[menu])
         pane.Show(status)
-        self._mgr.Update()
+        self.frame.Freeze()
+        try:
+            self._mgr.Update()
+        finally:
+            self.frame.Thaw()
 
     def OnPaneClose(self, evt):
         pane = evt.GetPane()
@@ -508,13 +512,16 @@ class SDIMainFrame(object):
         # nella posizione e dimensione corrette, senza sfarfallio.
         self.frame.Freeze()
         self.frame.Show()
+        # Avvia il server single-instance PRIMA di aprire il file da argv,
+        # così il socket è in ascolto il prima possibile ed evita la race
+        # condition in cui una seconda istanza trova la porta libera perché
+        # il server non era ancora partito.
+        self._singleInstanceServer = None
+        self._StartSingleInstanceServer()
         if len(sys.argv) > 1:
             fn = sys.argv[1]
             _log(f"Scheduled OnDropFiles for: {fn!r}  exists={_os.path.isfile(fn)}")
             wx.CallAfter(self.OnDropFiles, [fn])
-        # Start single-instance listener if the preference is enabled
-        self._singleInstanceServer = None
-        wx.CallAfter(self._StartSingleInstanceServer)
 
     # ------------------------------------------------------------------ #
     #  Single-instance support (localhost socket)                          #

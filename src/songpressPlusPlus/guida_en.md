@@ -183,6 +183,13 @@ Sets the **line spacing** between text lines of the song from the point where th
 - The directive can be inserted anywhere in the song; it affects subsequent lines.
 - Typical values range between `10` and `20` depending on the font and size used.
 - Useful for adjusting text density in print, especially with two-column layout or two-pages-per-sheet format.
+- **Global scope** — `{linespacing}` propagates throughout the entire song from the point of insertion, even across page breaks (`{new_page}`). If the directive is used multiple times, each occurrence overwrites the previous value; the last `{linespacing}` in the file determines the line spacing for the rest of the song.
+- **Coexistence with `{new_page}` on the same line** — Placing both directives on the same line is allowed and works correctly, in either order:
+  ```chordpro
+  {new_page} {linespacing:15}
+  {linespacing:15} {new_page}
+  ```
+  The parser processes them left to right in sequence. In both cases the new line-spacing value is written to the global format before the first block of the new page is built, so lines on the new page adopt the specified value as expected. There is no behavioural difference between the two orders.
 
 ---
 
@@ -726,6 +733,80 @@ The built-in syntax checker (*Tools → Check syntax*) reports errors in the val
 | Duplicate chord | `{beats_time: G=2 G=1}` | chord appears more than once |
 | Missing beat count | `{beats_time: G=}` | missing beat count |
 | Non-integer or ≤ 0 beats | `{beats_time: G=0}`, `G=1.5` | must be a positive integer |
+
+### `{beats_time}` and `{linespacing}` — How Spacing Interacts
+
+When using `{beats_time}` together with `{linespacing}`, it is important to understand which **chord+text pair** the extra space applies to.
+
+The rule is straightforward: `{linespacing}` acts on the gap between the current line and the **next** one; beat numbers (produced by `{beats_time}`) appear **above** the chords and do not alter the `linespacing` of the line itself.
+
+#### Visual diagram
+
+```text
+{beats_time: C=4 G=2 Am=2 F=4}
+[C]Gloria a [G]Dio nell'[Am]alto dei [F]cieli
+
+                 ┌──────────────────────────────────────────┐
+                 │   4     2     2     4    ← beat numbers   │
+                 │   C     G    Am     F    ← chords         │
+                 │  Gloria a Dio nell'alto  ← lyrics         │
+                 └──────────────────────────────────────────┘
+                          ↕  linespacing  (space AFTER this line, towards the next)
+                 ┌──────────────────────────────────────────┐
+                 │   4     2     2     4    ← beat numbers   │
+                 │   C     G    Am     F    ← chords         │
+                 │  dei cieli, pace in te  ← lyrics          │
+                 └──────────────────────────────────────────┘
+```
+
+`linespacing` is inserted **between** line blocks — that is, between the bottom of the current line and the top margin of the next line (including any beat numbers above it). Beat numbers remain compressed **inside** their own line.
+
+#### Comparison: without and with `{linespacing}`
+
+```text
+── Without {linespacing} ────────────────────────────────────
+
+  4     2     2     4
+  C     G    Am     F
+  Here I am, Lord!           ← line 1 (beat numbers above chords)
+  4     2                    ← line 2 starts immediately below
+  F     C
+  I have heard you calling
+
+── With {linespacing: 12} ───────────────────────────────────
+
+  4     2     2     4
+  C     G    Am     F
+  Here I am, Lord!
+                             ← {linespacing: 12} adds 12 pt here ↕
+  4     2
+  F     C
+  I have heard you calling
+```
+
+#### Where to place `{linespacing}` relative to `{beats_time}`
+
+`{linespacing}` should be placed **before** the line it applies to, or at a separate point in the file to regulate an entire section. If placed **on the same line** as `{beats_time}`, the behaviour is well-defined: the new line-spacing value takes effect starting from the **next** chord line, without altering the beat numbers already assigned to the current line.
+
+```chordpro
+{linespacing: 12}
+{beats_time: C=4 G=2 Am=2 F=4}
+[C]Here I [G]am, [Am]Lord! [F]I hear you
+```
+
+```text
+  ↑ {linespacing: 12} applies starting from this line
+  │
+  │   4     2     2     4
+  │   C     G    Am     F
+  │   Here I am, Lord!...
+  │
+  ╰──── 12 pt ────╮
+                  │
+     next line...
+```
+
+> **Technical note** — Internally, `{beats_time}` and `{linespacing}` use separate structures: the former acts on `SongText` tokens (individual chord tokens), the latter on the `ParagraphFormat` of the block. They do not overwrite each other.
 
 ### Image Directive
 

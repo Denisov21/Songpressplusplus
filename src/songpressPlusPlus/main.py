@@ -94,7 +94,14 @@ def _get_config_path():
 
 
 def _read_single_instance_pref():
-    """Legge singleInstance da config.ini senza wx. Default True."""
+    """Legge singleInstance da config.ini senza wx. Default True.
+
+    wx.FileConfig scrive le sezioni in lowercase ma conserva il case
+    originale delle chiavi (es. 'singleInstance' con la S maiuscola).
+    configparser di default converte tutto in minuscolo, il che fa sì
+    che la chiave non venga mai trovata e si cada sempre nel fallback '1'.
+    Si risolve passando optionxform=str per disabilitare la normalizzazione.
+    """
     try:
         import configparser as _cp
         cfg_path = _get_config_path()
@@ -103,11 +110,15 @@ def _read_single_instance_pref():
             _log("Single-instance: config non trovato, uso default True")
             return True
         cfg = _cp.RawConfigParser()
+        # Mantiene il case originale delle chiavi (wx scrive 'singleInstance',
+        # non 'singleinstance'): senza questa riga configparser non trova mai
+        # il valore e restituisce sempre il fallback '1' → bug silenzioso.
+        cfg.optionxform = str
         cfg.read(cfg_path, encoding='utf-8')
-        # wx.FileConfig scrive le sezioni in lowercase
-        val = cfg.get('app', 'singleinstance', fallback='1')
+        # wx.FileConfig scrive le sezioni in lowercase → sezione [app]
+        val = cfg.get('app', 'singleInstance', fallback='1')
         result = val.strip() == '1'
-        _log(f"Single-instance: singleinstance={val!r} → {result}")
+        _log(f"Single-instance: singleInstance={val!r} → {result}")
         return result
     except Exception as e:
         _log(f"Single-instance: errore lettura config ({e}), uso default True")

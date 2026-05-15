@@ -303,7 +303,8 @@ class PreferencesDialog(wx.Dialog):
 
         # --- Tab "Format" ---
         # Ogni SpinCtrl è in un Panel dedicato per evitare il bug di sincronizzazione wx su Windows
-        self.formatPanel = wx.Panel(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL)
+        self.formatPanel = wx.ScrolledWindow(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL | wx.VSCROLL)
+        self.formatPanel.SetScrollRate(0, 10)
         bSizerFormat = wx.BoxSizer(wx.VERTICAL)
 
         # ── Gruppo: Titolo e struttura ───────────────────────────────
@@ -609,7 +610,6 @@ class PreferencesDialog(wx.Dialog):
 
         self.formatPanel.SetSizer(bSizerFormat)
         self.formatPanel.Layout()
-        bSizerFormat.Fit(self.formatPanel)
         self.notebook.AddPage(self.formatPanel, _(u"Format"), False)
         # --- Fine Tab "Format" ---
 

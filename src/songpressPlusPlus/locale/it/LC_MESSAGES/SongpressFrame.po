@@ -1437,3 +1437,29 @@ msgstr "Mostra anteprima Songpress++"
 #: SongpressFrame.py — formatToolBar toggle preview tool tooltip
 msgid "Show or hide the Songpress++ Preview panel"
 msgstr "Mostra o nascondi il pannello Anteprima Songpress++"
+
+#: SongpressFrame.py — wrap-around search: reached the end
+msgid "Reached the end"
+msgstr "Raggiunta la fine"
+
+#: SongpressFrame.py — wrap-around search: reached the beginning
+msgid "Reached the beginning"
+msgstr "Raggiunto l'inizio"
+
+#: SongpressFrame.py — wrap-around search: direction "beginning"
+#  Include la preposizione articolata corretta per l'italiano:
+#  "dall'inizio" (davanti a vocale). Il template usa "%s" senza preposizione fissa.
+msgid "beginning"
+msgstr "dall'inizio"
+
+#: SongpressFrame.py — wrap-around search: direction "end"
+#  "dalla fine" (davanti a consonante).
+msgid "end"
+msgstr "dalla fine"
+
+#: SongpressFrame.py — wrap-around search: full message ("%s of the song, restarting search from the %s")
+#  Secondo %s contiene già la preposizione articolata:
+#    "Raggiunta la fine della canzone, riavvio la ricerca dalla fine"
+#    "Raggiunto l'inizio della canzone, riavvio la ricerca dall'inizio"
+msgid "%s of the song, restarting search from the %s"
+msgstr "%s della canzone, riavvio la ricerca %s"
