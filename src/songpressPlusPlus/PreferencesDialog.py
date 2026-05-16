@@ -245,6 +245,15 @@ class PreferencesDialog(wx.Dialog):
         bSizerClearRecent.Add(self.openTemplatesFolderBtn, 0, wx.LEFT, 8)
         grpGeneral.Add(bSizerClearRecent, 0, wx.ALL, 5)
 
+        # Ordine alfabetico italiano:
+        # A - Abilita il pulsante 'Salva'…
+        # A - Abilita intellisense…
+        # A - Abilita multicursore…
+        # I - Istanza singola…
+        # M - Mostra 'Riavvia Songpress++'…
+        # M - Mostra messaggi di debug…
+        # S - Salva dimensione e posizione…
+
         self.enableSaveOnModifiedCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Enable 'Save' button only when the song is modified"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.enableSaveOnModifiedCB.SetToolTip(_(u"When enabled, the 'Save' button and menu item are greyed out until the song has unsaved changes."))
         grpGeneral.Add(self.enableSaveOnModifiedCB, 0, wx.ALL, 5)
@@ -257,9 +266,9 @@ class PreferencesDialog(wx.Dialog):
         self.multiCursorCB.SetToolTip(_(u"When enabled, Alt+Click adds a new cursor and Ctrl+D selects the next occurrence of the current word."))
         grpGeneral.Add(self.multiCursorCB, 0, wx.ALL, 5)
 
-        self.saveWindowGeometryCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Save window size and position on exit"), wx.DefaultPosition, wx.DefaultSize, 0)
-        self.saveWindowGeometryCB.SetToolTip(_(u"When enabled, the window size and position are saved on exit and restored the next time Songpress++ is launched."))
-        grpGeneral.Add(self.saveWindowGeometryCB, 0, wx.ALL, 5)
+        self.singleInstanceCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Single instance: open files in the existing window"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.singleInstanceCB.SetToolTip(_(u"When enabled, opening a file from Explorer or the command line will reuse the existing Songpress++ window instead of launching a new instance."))
+        grpGeneral.Add(self.singleInstanceCB, 0, wx.ALL, 5)
 
         self.showRestartMenuItemCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Show 'Restart Songpress++' in the File menu"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.showRestartMenuItemCB.SetToolTip(_(u"When enabled, a 'Restart Songpress++' item appears in the File menu, allowing a quick restart without closing and reopening the application manually."))
@@ -269,9 +278,9 @@ class PreferencesDialog(wx.Dialog):
         self.showDebugMsgCB.SetToolTip(_(u"When enabled, diagnostic messages such as the theme save path are shown in a popup during certain operations. Useful for troubleshooting."))
         grpGeneral.Add(self.showDebugMsgCB, 0, wx.ALL, 5)
 
-        self.singleInstanceCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Single instance: open files in the existing window"), wx.DefaultPosition, wx.DefaultSize, 0)
-        self.singleInstanceCB.SetToolTip(_(u"When enabled, opening a file from Explorer or the command line will reuse the existing Songpress++ window instead of launching a new instance."))
-        grpGeneral.Add(self.singleInstanceCB, 0, wx.ALL, 5)
+        self.saveWindowGeometryCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Save window size and position on exit"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.saveWindowGeometryCB.SetToolTip(_(u"When enabled, the window size and position are saved on exit and restored the next time Songpress++ is launched."))
+        grpGeneral.Add(self.saveWindowGeometryCB, 0, wx.ALL, 5)
 
         bSizer11b.Add(grpGeneral, 0, wx.EXPAND | wx.ALL, 8)
 
@@ -635,35 +644,12 @@ class PreferencesDialog(wx.Dialog):
             wx.VERTICAL
         )
 
-        self.showPageIndicatorCB = wx.CheckBox(
-            self.songpressPanel, wx.ID_ANY,
-            _(u"Show page indicator (e.g. 'Page 1 of 3')")
-        )
-        self.showPageIndicatorCB.SetToolTip(
-            _(u"Show or hide the page counter label at the top right of the preview panel")
-        )
-        grpPreview.Add(self.showPageIndicatorCB, 0, wx.ALL, 5)
-
-        self.greyBackgroundCB = wx.CheckBox(
-            self.songpressPanel, wx.ID_ANY,
-            _(u"Grey background in preview (page style)")
-        )
-        self.greyBackgroundCB.SetToolTip(
-            _(u"Show the preview on a grey background to simulate a printed page. "
-              u"When disabled, the background is white.")
-        )
-        grpPreview.Add(self.greyBackgroundCB, 0, wx.ALL, 5)
-
-        self.debounceRefreshCB = wx.CheckBox(
-            self.songpressPanel, wx.ID_ANY,
-            _(u"Delay preview refresh while typing (debounce)")
-        )
-        self.debounceRefreshCB.SetToolTip(
-            _(u"When enabled, the preview redraws only after a short pause in typing "
-              u"(300 ms), reducing CPU usage. When disabled, every keystroke "
-              u"immediately updates the preview.")
-        )
-        grpPreview.Add(self.debounceRefreshCB, 0, wx.ALL, 5)
+        # Ordine alfabetico italiano:
+        # D - Doppio clic…
+        # I - Imposta la dimensione…
+        # M - Mostra indicatore…
+        # R - Ritarda aggiornamento…
+        # S - Sfondo grigio…
 
         self.dblClickFocusCB = wx.CheckBox(
             self.songpressPanel, wx.ID_ANY,
@@ -685,6 +671,36 @@ class PreferencesDialog(wx.Dialog):
         )
         grpPreview.Add(self.previewMinSizeCB, 0, wx.ALL, 5)
 
+        self.showPageIndicatorCB = wx.CheckBox(
+            self.songpressPanel, wx.ID_ANY,
+            _(u"Show page indicator (e.g. 'Page 1 of 3')")
+        )
+        self.showPageIndicatorCB.SetToolTip(
+            _(u"Show or hide the page counter label at the top right of the preview panel")
+        )
+        grpPreview.Add(self.showPageIndicatorCB, 0, wx.ALL, 5)
+
+        self.debounceRefreshCB = wx.CheckBox(
+            self.songpressPanel, wx.ID_ANY,
+            _(u"Delay preview refresh while typing (debounce)")
+        )
+        self.debounceRefreshCB.SetToolTip(
+            _(u"When enabled, the preview redraws only after a short pause in typing "
+              u"(300 ms), reducing CPU usage. When disabled, every keystroke "
+              u"immediately updates the preview.")
+        )
+        grpPreview.Add(self.debounceRefreshCB, 0, wx.ALL, 5)
+
+        self.greyBackgroundCB = wx.CheckBox(
+            self.songpressPanel, wx.ID_ANY,
+            _(u"Grey background in preview (page style)")
+        )
+        self.greyBackgroundCB.SetToolTip(
+            _(u"Show the preview on a grey background to simulate a printed page. "
+              u"When disabled, the background is white.")
+        )
+        grpPreview.Add(self.greyBackgroundCB, 0, wx.ALL, 5)
+
         bSizerSongpress.Add(grpPreview, 0, wx.EXPAND | wx.ALL, 8)
 
         # Gruppo: Stampa
@@ -693,12 +709,10 @@ class PreferencesDialog(wx.Dialog):
             wx.VERTICAL
         )
 
-        self.showPrintPreviewCB = wx.CheckBox(
-            self.songpressPanel, wx.ID_ANY,
-            _(u"Show print preview before printing")
-        )
-        self.showPrintPreviewCB.SetToolTip(_(u"When enabled, a print preview window is shown before sending the document to the printer, allowing you to check the layout and page settings."))
-        grpPrint.Add(self.showPrintPreviewCB, 0, wx.ALL, 5)
+        # Ordine alfabetico italiano:
+        # A - Aggiornamento in tempo reale…
+        # M - Mantieni sempre in primo piano…
+        # M - Mostra anteprima di stampa…
 
         self.liveDriverPollCB = wx.CheckBox(
             self.songpressPanel, wx.ID_ANY,
@@ -723,6 +737,13 @@ class PreferencesDialog(wx.Dialog):
         )
         grpPrint.Add(self.printPreviewAlwaysOnTopCB, 0, wx.ALL, 5)
 
+        self.showPrintPreviewCB = wx.CheckBox(
+            self.songpressPanel, wx.ID_ANY,
+            _(u"Show print preview before printing")
+        )
+        self.showPrintPreviewCB.SetToolTip(_(u"When enabled, a print preview window is shown before sending the document to the printer, allowing you to check the layout and page settings."))
+        grpPrint.Add(self.showPrintPreviewCB, 0, wx.ALL, 5)
+
         bSizerSongpress.Add(grpPrint, 0, wx.EXPAND | wx.ALL, 8)
 
         # Gruppo: Nessun accordo — blocchi da nascondere
@@ -741,6 +762,13 @@ class PreferencesDialog(wx.Dialog):
         )
         _noChordHdr.SetToolTip(_noChordsTip)
         grpNoChords.Add(_noChordHdr, 0, wx.ALL, 5)
+
+        # Ordine alfabetico italiano:
+        # A - Accordi di intro…
+        # B - Bridge…
+        # G - Griglia…
+        # I - Indicazione di tempo…
+        # T - Tempo…
 
         self.hideIntroChordCB = wx.CheckBox(
             self.songpressPanel, wx.ID_ANY,
@@ -769,15 +797,6 @@ class PreferencesDialog(wx.Dialog):
         )
         grpNoChords.Add(self.hideGridCB, 0, wx.ALL, 5)
 
-        self.hideTempoCB = wx.CheckBox(
-            self.songpressPanel, wx.ID_ANY,
-            _(u"Tempo  {tempo_m}\\{tempo_s}\\{tempo_sp}\\{tempo_c}\\{tempo_cp}")
-        )
-        self.hideTempoCB.SetToolTip(
-            _(u"Hide {tempo_m}, {tempo_s}, {tempo_sp}, {tempo_c}, {tempo_cp} directives when no chords are shown.")
-        )
-        grpNoChords.Add(self.hideTempoCB, 0, wx.ALL, 5)
-
         self.hideTimeCB = wx.CheckBox(
             self.songpressPanel, wx.ID_ANY,
             _(u"Time signature  {time}")
@@ -786,6 +805,15 @@ class PreferencesDialog(wx.Dialog):
             _(u"Hide {time:...} directives when no chords are shown.")
         )
         grpNoChords.Add(self.hideTimeCB, 0, wx.ALL, 5)
+
+        self.hideTempoCB = wx.CheckBox(
+            self.songpressPanel, wx.ID_ANY,
+            _(u"Tempo  {tempo_m}\\{tempo_s}\\{tempo_sp}\\{tempo_c}\\{tempo_cp}")
+        )
+        self.hideTempoCB.SetToolTip(
+            _(u"Hide {tempo_m}, {tempo_s}, {tempo_sp}, {tempo_c}, {tempo_cp} directives when no chords are shown.")
+        )
+        grpNoChords.Add(self.hideTempoCB, 0, wx.ALL, 5)
 
         bSizerSongpress.Add(grpNoChords, 0, wx.EXPAND | wx.ALL, 8)
 

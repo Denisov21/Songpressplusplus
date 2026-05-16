@@ -148,27 +148,36 @@ def main():
         )
 
     # ── Single-instance check ────────────────────────────────────────────
-    if len(sys.argv) > 1 and _read_single_instance_pref():
+    if _read_single_instance_pref():
         from .SDIMainFrame import SDIMainFrame
-        _filepath = sys.argv[1]
-        _log(f"Single-instance: tentativo inoltro per {_filepath!r}")
 
-        # Error case: file does not exist
-        if not os.path.isfile(_filepath):
-            _log(f"Single-instance: file non trovato {_filepath!r}")
-            errdlg._show_error(
-                _("Cannot open file:") + f"\n{_filepath}\n\n" +
-                _("The file does not exist or is not accessible.")
-            )
-            sys.exit(1)
+        if len(sys.argv) > 1:
+            _filepath = sys.argv[1]
+            _log(f"Single-instance: tentativo inoltro per {_filepath!r}")
 
-        if SDIMainFrame._TrySendToExistingInstance(_filepath):
-            # Normal case: forwarded silently, existing window raises itself
-            _log("File inoltrato all'istanza esistente — uscita.")
-            sys.exit(0)
+            # Error case: file does not exist
+            if not os.path.isfile(_filepath):
+                _log(f"Single-instance: file non trovato {_filepath!r}")
+                errdlg._show_error(
+                    _("Cannot open file:") + f"\n{_filepath}\n\n" +
+                    _("The file does not exist or is not accessible.")
+                )
+                sys.exit(1)
 
-        # Fallback: no instance listening (first launch or crashed) — start normally
-        _log("Single-instance: nessuna istanza in ascolto, avvio normale.")
+            if SDIMainFrame._TrySendToExistingInstance(_filepath):
+                # Normal case: forwarded silently, existing window raises itself
+                _log("File inoltrato all'istanza esistente — uscita.")
+                sys.exit(0)
+
+            # Fallback: no instance listening (first launch or crashed) — start normally
+            _log("Single-instance: nessuna istanza in ascolto, avvio normale.")
+
+        else:
+            # No file argument: check if an instance is already running and raise it
+            if SDIMainFrame._TrySendToExistingInstance('__RAISE__'):
+                _log("Istanza esistente riportata in primo piano — uscita.")
+                sys.exit(0)
+            _log("Single-instance: nessuna istanza in ascolto, avvio normale.")
     # ── Fine single-instance check ───────────────────────────────────────
 
     songpressApp = SongpressApp()

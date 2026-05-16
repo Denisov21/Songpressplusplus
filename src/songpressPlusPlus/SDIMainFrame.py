@@ -583,7 +583,10 @@ class SDIMainFrame(object):
                         data += chunk
                     conn.close()
                     filepath = data.decode('utf-8').strip()
-                    if filepath:
+                    if filepath == '__RAISE__':
+                        wx.CallAfter(self.frame.Raise)
+                        wx.CallAfter(self.frame.RequestUserAttention)
+                    elif filepath:
                         wx.CallAfter(self._RaiseAndOpen, filepath)
                 except Exception:
                     pass
