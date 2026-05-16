@@ -4693,7 +4693,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
         filtered = [l for l in lines if not pattern.match(l)]
         return '\n'.join(filtered)
 
-    def _get_display_text(self):
+    def _get_display_text(self, ignore_selection=False):
         """Restituisce il testo del documento con i comandi # {...} rimossi.
         Se è attiva una selezione (non vuota e non multiriga singola-selezione
         col cursore), restituisce solo il testo selezionato, così l'anteprima
@@ -4703,10 +4703,16 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
         Quando showChords == 0 (Nessun accordo) e le relative preferenze sono
         attive, rimuove anche i blocchi {start_chord}, {start_bridge},
         {start_of_grid} con il loro contenuto.
+
+        ignore_selection=True: usa sempre il testo completo del documento,
+        ignorando la selezione corrente. Da usare quando il refresh è causato
+        da una modifica alle opzioni (e non da una selezione volontaria
+        dell'utente), per evitare che una selezione residua da Trova/Sostituisci
+        faccia mostrare nell'anteprima solo il testo trovato.
         """
         self.previewCanvas.SetDocumentDir(self.document)
         start, end = self.text.GetSelection()
-        if start != end:
+        if not ignore_selection and start != end:
             raw = self.text.GetTextRange(start, end)
         else:
             raw = self.text.GetText()
@@ -7529,7 +7535,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
                 getattr(self.pref, 'durationBeatsAlign', 'right'),
                 getattr(self.pref, 'durationBeatsMode', 'number'),
             )
-            self.previewCanvas.Refresh(self._get_display_text())
+            # Bug fix: usa ignore_selection=True per evitare che una selezione
+            # residua da Trova/Sostituisci faccia mostrare nell'anteprima solo
+            # il testo trovato (es. "ffffff") invece dell'intero documento.
+            self.previewCanvas.Refresh(self._get_display_text(ignore_selection=True))
             # Aggiorna il MinSize del pane AUI in base alla preferenza corrente
             self._ApplyPreviewMinSize()
             # Aggiorna i colori delle caption bar con i nuovi valori da pref

@@ -212,11 +212,15 @@ class Editor(StyledTextCtrl):
         self.ClearFindHighlight()
         if not word:
             return
-        self.IndicatorSetStyle(self.FIND_INDICATOR, wx.stc.STC_INDIC_ROUNDBOX)
+        # STC_INDIC_STRAIGHTBOX viene disegnato SOPRA la selezione (a differenza di
+        # STC_INDIC_ROUNDBOX con UnderLine=True che va sotto e viene coperto dal
+        # colore di selezione). In questo modo l'evidenziazione Find è sempre visibile
+        # indipendentemente dal colore di selezione impostato dall'utente.
+        self.IndicatorSetStyle(self.FIND_INDICATOR, wx.stc.STC_INDIC_STRAIGHTBOX)
         self.IndicatorSetForeground(self.FIND_INDICATOR, self.find_highlight_colour)
-        self.IndicatorSetAlpha(self.FIND_INDICATOR, 80)
-        self.IndicatorSetOutlineAlpha(self.FIND_INDICATOR, 200)
-        self.IndicatorSetUnder(self.FIND_INDICATOR, True)
+        self.IndicatorSetAlpha(self.FIND_INDICATOR, 120)
+        self.IndicatorSetOutlineAlpha(self.FIND_INDICATOR, 220)
+        self.IndicatorSetUnder(self.FIND_INDICATOR, False)
         self.SetIndicatorCurrent(self.FIND_INDICATOR)
         total = self.GetLength()
         p = 0
@@ -238,12 +242,12 @@ class Editor(StyledTextCtrl):
     def SetFindHighlightColour(self, colour):
         """Aggiorna il colore e ridisegna tutte le occorrenze già evidenziate."""
         self.find_highlight_colour = colour
-        # Aggiorna lo stile dell'indicatore
-        self.IndicatorSetStyle(self.FIND_INDICATOR, wx.stc.STC_INDIC_ROUNDBOX)
+        # Aggiorna lo stile dell'indicatore (coerente con SetFindHighlight)
+        self.IndicatorSetStyle(self.FIND_INDICATOR, wx.stc.STC_INDIC_STRAIGHTBOX)
         self.IndicatorSetForeground(self.FIND_INDICATOR, colour)
-        self.IndicatorSetAlpha(self.FIND_INDICATOR, 80)
-        self.IndicatorSetOutlineAlpha(self.FIND_INDICATOR, 200)
-        self.IndicatorSetUnder(self.FIND_INDICATOR, True)
+        self.IndicatorSetAlpha(self.FIND_INDICATOR, 120)
+        self.IndicatorSetOutlineAlpha(self.FIND_INDICATOR, 220)
+        self.IndicatorSetUnder(self.FIND_INDICATOR, False)
         # Scintilla non aggiorna i fill esistenti al cambio colore:
         # bisogna cancellare e riscrivere gli indicatori già presenti.
         # Troviamo tutte le posizioni con indicatore attivo e le rifacciamo.

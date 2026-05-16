@@ -884,6 +884,17 @@ class PreviewCanvas(object):
         """Imposta sfondo grigio (True) o bianco (False) nel pannello anteprima."""
         self._greyBackground = bool(grey)   # aggiorna il flag letto da OnPaint
         self._SyncBgColourToDecorator()
+        # Bug fix: se c'è un debounce pendente, il testo è in _pending_text ma
+        # non ancora in self.text. Chiamare panel.Refresh() direttamente farebbe
+        # scattare OnPaint con self.text == "" → l'anteprima sembrerebbe vuota.
+        # Forziamo il commit del testo pendente prima di ridisegnare.
+        if self._debounce_timer is not None:
+            try:
+                self._debounce_timer.Stop()
+            except Exception:
+                pass
+            self._debounce_timer = None
+            self.text = self._pending_text
         self.panel.Refresh()                # forza ridisegno con il nuovo sfondo
 
     def _SyncBgColourToDecorator(self):
@@ -917,7 +928,8 @@ class PreviewCanvas(object):
     def SetFindWord(self, word, flags=0, colour=None):
         """Evidenzia *word* nel preview (chiamato da SongpressFindReplaceDialog).
 
-        Passa la parola cercata al SongDecorator e forza un ridisegno immediato.
+        Passa la parola cercata al SongDecorator, scrolla il preview per portare
+        la prima occorrenza in vista, e forza un ridisegno immediato.
         flags:  stessi flag wx.stc usati in FindText (es. STC_FIND_MATCHCASE).
         colour: wx.Colour per l'evidenziazione (None = usa il colore corrente).
         """
@@ -926,6 +938,65 @@ class PreviewCanvas(object):
         if colour is not None:
             self.renderer.sd.find_colour = colour
         self.panel.Refresh()
+        if word:
+            self._ScrollToFindWord(word, flags)
+
+    def _ScrollToFindWord(self, word, flags=0):
+        """Scrolla il preview in modo che la prima occorrenza di *word* sia visibile.
+
+        Percorre l'albero song→block→line→token cercando la prima corrispondenza
+        e chiama panel.Scroll() per portare il token al centro del viewport.
+        """
+        song = getattr(self.renderer, 'song', None)
+        if song is None:
+            return
+        import wx.stc as _stc
+        match_case = bool(flags & _stc.STC_FIND_MATCHCASE)
+        needle = word if match_case else word.lower()
+
+        song_margin_top  = getattr(song, 'marginTop',  0)
+        song_margin_left = getattr(song, 'marginLeft', 0)
+
+        found_ty = None
+        found_th = None
+        for block in song.boxes:
+            bx = song_margin_left + block.x
+            by = song_margin_top  + block.y
+            for line in block.boxes:
+                ly = by + line.y
+                for token in line.boxes:
+                    raw = getattr(token, 'text', '') or ''
+                    hay = raw if match_case else raw.lower()
+                    if needle in hay:
+                        found_ty = ly + line.marginTop + token.y
+                        found_th = token.h
+                        break
+                if found_ty is not None:
+                    break
+            if found_ty is not None:
+                break
+
+        if found_ty is None:
+            return
+
+        # Converti coordinate renderer → pixel virtuali (zoom)
+        token_top_px = int(found_ty * self._zoom_factor)
+        token_h_px   = max(1, int(found_th * self._zoom_factor))
+
+        # Dimensione visibile del viewport
+        _, vh = self.panel.GetClientSize()
+
+        # Posizione scroll corrente in pixel
+        cur_scroll_y = self.panel.GetScrollPos(wx.VERTICAL) * self.pixedScrolled
+
+        # Già visibile? Non scorrere
+        if cur_scroll_y <= token_top_px and token_top_px + token_h_px <= cur_scroll_y + vh:
+            return
+
+        # Centra il token nel viewport
+        target_y = max(0, token_top_px - (vh - token_h_px) // 2)
+        scroll_unit = max(1, self.pixedScrolled)
+        self.panel.Scroll(-1, target_y // scroll_unit)
 
     def SetFindHighlightColour(self, colour):
         """Aggiorna solo il colore di evidenziazione nel preview e ridisegna."""
