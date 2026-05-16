@@ -882,6 +882,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
         self.mainToolBar.AddSeparator()
         self.AddTool(self.mainToolBar, 'printPreview', 'img/printPreview.png', _(u"Print preview"), _(u"Preview the song before printing"))
         self.AddTool(self.mainToolBar, 'print', 'img/print.png', _(u"Print"), _(u"Print the song"))
+        self.mainToolBar.AddSeparator()
+        self.AddTool(self.mainToolBar, 'options', 'img/setting.png', _(u"Options..."), _(u"Set program options"))
         self.mainToolBar.Realize()
         self.mainToolBarPane = self.AddPane(self.mainToolBar, aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(1),
                                                                                 _('Standard'), 'standard')

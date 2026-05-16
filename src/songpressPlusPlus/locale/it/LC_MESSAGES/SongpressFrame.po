@@ -1463,3 +1463,11 @@ msgstr "dalla fine"
 #    "Raggiunto l'inizio della canzone, riavvio la ricerca dall'inizio"
 msgid "%s of the song, restarting search from the %s?"
 msgstr "%s della canzone, riavvio la ricerca %s?"
+
+#: SongpressFrame.py — mainToolBar tool label
+msgid "Options..."
+msgstr "Opzioni..."
+
+#: SongpressFrame.py — mainToolBar tool tooltip
+msgid "Set program options"
+msgstr "Imposta le opzioni del programma"
