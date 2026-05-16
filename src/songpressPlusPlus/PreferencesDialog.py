@@ -245,6 +245,14 @@ class PreferencesDialog(wx.Dialog):
         bSizerClearRecent.Add(self.openTemplatesFolderBtn, 0, wx.LEFT, 8)
         grpGeneral.Add(bSizerClearRecent, 0, wx.ALL, 5)
 
+        self.enableSaveOnModifiedCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Enable 'Save' button only when the song is modified"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.enableSaveOnModifiedCB.SetToolTip(_(u"When enabled, the 'Save' button and menu item are greyed out until the song has unsaved changes."))
+        grpGeneral.Add(self.enableSaveOnModifiedCB, 0, wx.ALL, 5)
+
+        self.intellisenseCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Enable directive intellisense (Ctrl+Space)"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.intellisenseCB.SetToolTip(_(u"When enabled, pressing Ctrl+Space inside the editor shows a list of available ChordPro directives for auto-completion."))
+        grpGeneral.Add(self.intellisenseCB, 0, wx.ALL, 5)
+
         self.multiCursorCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Enable multi-cursor (Alt+Click, Ctrl+D)"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.multiCursorCB.SetToolTip(_(u"When enabled, Alt+Click adds a new cursor and Ctrl+D selects the next occurrence of the current word."))
         grpGeneral.Add(self.multiCursorCB, 0, wx.ALL, 5)
@@ -253,25 +261,17 @@ class PreferencesDialog(wx.Dialog):
         self.saveWindowGeometryCB.SetToolTip(_(u"When enabled, the window size and position are saved on exit and restored the next time Songpress++ is launched."))
         grpGeneral.Add(self.saveWindowGeometryCB, 0, wx.ALL, 5)
 
-        self.showDebugMsgCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Show debug messages (theme save path)"), wx.DefaultPosition, wx.DefaultSize, 0)
-        self.showDebugMsgCB.SetToolTip(_(u"When enabled, diagnostic messages such as the theme save path are shown in a popup during certain operations. Useful for troubleshooting."))
-        grpGeneral.Add(self.showDebugMsgCB, 0, wx.ALL, 5)
-
-        self.intellisenseCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Enable directive intellisense (Ctrl+Space)"), wx.DefaultPosition, wx.DefaultSize, 0)
-        self.intellisenseCB.SetToolTip(_(u"When enabled, pressing Ctrl+Space inside the editor shows a list of available ChordPro directives for auto-completion."))
-        grpGeneral.Add(self.intellisenseCB, 0, wx.ALL, 5)
-
-        self.singleInstanceCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Single instance: open files in the existing window"), wx.DefaultPosition, wx.DefaultSize, 0)
-        self.singleInstanceCB.SetToolTip(_(u"When enabled, opening a file from Explorer or the command line will reuse the existing Songpress++ window instead of launching a new instance."))
-        grpGeneral.Add(self.singleInstanceCB, 0, wx.ALL, 5)
-
         self.showRestartMenuItemCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Show 'Restart Songpress++' in the File menu"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.showRestartMenuItemCB.SetToolTip(_(u"When enabled, a 'Restart Songpress++' item appears in the File menu, allowing a quick restart without closing and reopening the application manually."))
         grpGeneral.Add(self.showRestartMenuItemCB, 0, wx.ALL, 5)
 
-        self.enableSaveOnModifiedCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Enable 'Save' button only when the song is modified"), wx.DefaultPosition, wx.DefaultSize, 0)
-        self.enableSaveOnModifiedCB.SetToolTip(_(u"When enabled, the 'Save' button and menu item are greyed out until the song has unsaved changes."))
-        grpGeneral.Add(self.enableSaveOnModifiedCB, 0, wx.ALL, 5)
+        self.showDebugMsgCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Show debug messages (theme save path)"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.showDebugMsgCB.SetToolTip(_(u"When enabled, diagnostic messages such as the theme save path are shown in a popup during certain operations. Useful for troubleshooting."))
+        grpGeneral.Add(self.showDebugMsgCB, 0, wx.ALL, 5)
+
+        self.singleInstanceCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Single instance: open files in the existing window"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.singleInstanceCB.SetToolTip(_(u"When enabled, opening a file from Explorer or the command line will reuse the existing Songpress++ window instead of launching a new instance."))
+        grpGeneral.Add(self.singleInstanceCB, 0, wx.ALL, 5)
 
         bSizer11b.Add(grpGeneral, 0, wx.EXPAND | wx.ALL, 8)
 
