@@ -856,6 +856,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
         self.AddTool(self.mainToolBar, 'open', 'img/open.png', _("Open"), _("Open an existing song"))
         self.saveTool = self.AddTool(self.mainToolBar, 'save', 'img/save.png', _("Save"), _("Save the song with the current file name"))
         self.mainToolBar.AddSeparator()
+        self.AddTool(self.mainToolBar, 'printPreview', 'img/printPreview.png', _(u"Print preview"), _(u"Preview the song before printing"))
+        self.AddTool(self.mainToolBar, 'print', 'img/print.png', _(u"Print"), _(u"Print the song"))
+        self.mainToolBar.AddSeparator()
         self.undoTool = self.AddTool(self.mainToolBar, 'undo', 'img/undo.png', _("Undo"), _("Undo the last change"))
         self.redoTool = self.AddTool(self.mainToolBar, 'redo',
             'img/redo.png', _("Redo"), _("Redo the last undone change"))
@@ -879,9 +882,6 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
             _("Check syntax"),
             _("Check ChordPro syntax of the document")
         )
-        self.mainToolBar.AddSeparator()
-        self.AddTool(self.mainToolBar, 'printPreview', 'img/printPreview.png', _(u"Print preview"), _(u"Preview the song before printing"))
-        self.AddTool(self.mainToolBar, 'print', 'img/print.png', _(u"Print"), _(u"Print the song"))
         self.mainToolBar.AddSeparator()
         self.AddTool(self.mainToolBar, 'options', 'img/setting.png', _(u"Options..."), _(u"Set program options"))
         self.mainToolBar.Realize()

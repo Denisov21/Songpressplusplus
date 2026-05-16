@@ -158,7 +158,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="submenu" expanded="true">
-            <property name="bitmap">Load From File; ../img/redo.png</property>
+            <property name="bitmap">Load From File; </property>
             <property name="label">E&amp;xport</property>
             <property name="name">export</property>
             <property name="permission">protected</property>
@@ -1057,7 +1057,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap">Load From File; ../img/picture.png</property>
+            <property name="bitmap">Load From File; ../img/transposer.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Insert the Transposer image and choose its position in the document</property>
