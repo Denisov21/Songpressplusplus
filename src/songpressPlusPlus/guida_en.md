@@ -4,6 +4,8 @@ This guide describes all ChordPro commands supported by Songpress++ and the main
 
 > **Legend** — The **Std** column indicates whether the directive is part of the official ChordPro standard (✅) or is specific to Songpress++ (🔧). The **Menu** column indicates whether the directive can be inserted via an application menu (⌨️) or must be typed manually in the editor (🖊).
 
+> **Tooltips** — Every checkbox in the preferences dialogs has a **descriptive tooltip**: hold the mouse pointer still over a checkbox for a moment and a short explanation of the corresponding option will appear.
+
 ---
 
 ## ChordPro Format — Basic Concepts
@@ -1318,6 +1320,8 @@ The following controls are found in the **Formatting** tab of preferences and af
 
 ### Print preferences (*Preview Songpress++* tab)
 
+> **Note — Automatic sorting** — The checkboxes in this group are sorted alphabetically according to the **active interface language**. The order may therefore differ from the one shown in this table.
+
 | Preference | Default | Description |
 | ---------- | ------- | ----------- |
 | Show print preview before printing | ✅ on | When on, the **Print** command opens the preview first; when off, it opens the system print dialog directly |
@@ -1676,6 +1680,8 @@ By default the preview panel has a minimum size of **370 × 520 px**: dragging t
 Options are found in **Tools → Options... → Songpress++ Preview tab**.
 All changes are applied **immediately** to the open panel, without needing to restart.
 
+> **Note — Automatic sorting** — The checkboxes in this group (as well as those in the *Print* and *No chords: blocks to hide* groups) are sorted alphabetically according to the **active interface language**. The order may therefore differ from the one shown in this table.
+
 | Option                                     | Default | Description                                                                                     |
 | ------------------------------------------ | :-----: | ----------------------------------------------------------------------------------------------- |
 | **Show page indicator**                    | ✓       | Shows/hides the "Page X of Y" label in the toolbar                                              |
@@ -1693,6 +1699,8 @@ All changes are applied **immediately** to the open panel, without needing to re
 When the **Show chords** slider (Format toolbar) is set to **None**, the preview and print output omit all inline `[…]` chords. With this setting active, you can also hide structural blocks that contain only chords and would be meaningless without them.
 
 Options are found in **Tools → Options... → Songpress++ Preview tab → No chords: blocks to hide**.
+
+> **Note — Automatic sorting** — The checkboxes in this group are sorted alphabetically according to the **active interface language**. The order may therefore differ from the one shown in this table.
 
 | Option | Default | Description |
 | ------ | :-----: | ----------- |

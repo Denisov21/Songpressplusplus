@@ -4,6 +4,8 @@ Questa guida descrive tutti i comandi ChordPro supportati da Songpress++ e le pr
 
 > **Legenda** — La colonna **Std** indica se la direttiva fa parte dello standard ChordPro ufficiale (✅) o è specifica di Songpress++ (🔧). La colonna **Menu** indica se la direttiva può essere inserita tramite un menu dell'applicazione (⌨️) o deve essere digitata manualmente nell'editor (🖊).
 
+> **Tooltip** — Tutte le checkbox presenti nei dialoghi delle preferenze dispongono di un **tooltip descrittivo**: tenendo il puntatore del mouse fermo su una checkbox per qualche secondo comparirà una breve spiegazione della funzione corrispondente.
+
 ---
 
 ## Formato ChordPro — Concetti base
@@ -1318,6 +1320,8 @@ I seguenti controlli si trovano nella scheda **Formattazione** delle preferenze 
 
 ### Preferenze di stampa (scheda *Anteprima Songpress++*)
 
+> **Nota — Ordinamento automatico** — Le checkbox di questo gruppo vengono ordinate alfabeticamente in base alla **lingua dell'interfaccia** attiva. L'ordine può quindi differire da quello mostrato in questa tabella.
+
 | Preferenza | Predefinito | Descrizione |
 | ---------- | ----------- | ----------- |
 | Mostra anteprima di stampa prima di stampare | ✅ attivo | Se attivo, il comando **Stampa** apre prima l'anteprima; se disattivato, apre direttamente il dialogo di stampa del sistema |
@@ -1676,6 +1680,8 @@ Per impostazione predefinita il pannello di anteprima ha una dimensione minima d
 Le opzioni si trovano in **Strumenti → Opzioni... → scheda Anteprima Songpress++**.
 Tutte le modifiche vengono applicate **immediatamente** al pannello aperto, senza necessità di riavvio.
 
+> **Nota — Ordinamento automatico** — Le checkbox di questo gruppo (come quelle dei gruppi *Stampa* e *Nessun accordo: blocchi da nascondere*) vengono ordinate alfabeticamente in base alla **lingua dell'interfaccia** attiva. L'ordine può quindi differire da quello mostrato in questa tabella.
+
 | Opzione                                        | Predefinito | Descrizione                                                                                        |
 | ---------------------------------------------- | :---------: | -------------------------------------------------------------------------------------------------- |
 | **Mostra indicatore pagina**                   | ✓           | Mostra/nasconde l'etichetta «Pagina X di Y» nella barra degli strumenti                            |
@@ -1693,6 +1699,8 @@ Tutte le modifiche vengono applicate **immediatamente** al pannello aperto, senz
 Quando lo slider **Mostra accordi** (barra degli strumenti Formato) è impostato su **Nessuno**, l'anteprima e la stampa omettono tutti gli accordi inline `[…]`. Con questa impostazione attiva è possibile nascondere anche i blocchi di struttura che contengono solo accordi e che diventerebbero privi di significato senza di essi.
 
 Le opzioni si trovano in **Strumenti → Opzioni... → scheda Anteprima Songpress++ → Nessun accordo: blocchi da nascondere**.
+
+> **Nota — Ordinamento automatico** — Le checkbox di questo gruppo vengono ordinate alfabeticamente in base alla **lingua dell'interfaccia** attiva. L'ordine può quindi differire da quello mostrato in questa tabella.
 
 | Opzione | Predefinito | Descrizione |
 | ------- | :---------: | ----------- |
