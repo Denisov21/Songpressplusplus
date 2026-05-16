@@ -246,15 +246,19 @@ class PreferencesDialog(wx.Dialog):
         grpGeneral.Add(bSizerClearRecent, 0, wx.ALL, 5)
 
         self.multiCursorCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Enable multi-cursor (Alt+Click, Ctrl+D)"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.multiCursorCB.SetToolTip(_(u"When enabled, Alt+Click adds a new cursor and Ctrl+D selects the next occurrence of the current word."))
         grpGeneral.Add(self.multiCursorCB, 0, wx.ALL, 5)
 
         self.saveWindowGeometryCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Save window size and position on exit"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.saveWindowGeometryCB.SetToolTip(_(u"When enabled, the window size and position are saved on exit and restored the next time Songpress++ is launched."))
         grpGeneral.Add(self.saveWindowGeometryCB, 0, wx.ALL, 5)
 
         self.showDebugMsgCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Show debug messages (theme save path)"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.showDebugMsgCB.SetToolTip(_(u"When enabled, diagnostic messages such as the theme save path are shown in a popup during certain operations. Useful for troubleshooting."))
         grpGeneral.Add(self.showDebugMsgCB, 0, wx.ALL, 5)
 
         self.intellisenseCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Enable directive intellisense (Ctrl+Space)"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.intellisenseCB.SetToolTip(_(u"When enabled, pressing Ctrl+Space inside the editor shows a list of available ChordPro directives for auto-completion."))
         grpGeneral.Add(self.intellisenseCB, 0, wx.ALL, 5)
 
         self.singleInstanceCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Single instance: open files in the existing window"), wx.DefaultPosition, wx.DefaultSize, 0)
@@ -262,7 +266,12 @@ class PreferencesDialog(wx.Dialog):
         grpGeneral.Add(self.singleInstanceCB, 0, wx.ALL, 5)
 
         self.showRestartMenuItemCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Show 'Restart Songpress++' in the File menu"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.showRestartMenuItemCB.SetToolTip(_(u"When enabled, a 'Restart Songpress++' item appears in the File menu, allowing a quick restart without closing and reopening the application manually."))
         grpGeneral.Add(self.showRestartMenuItemCB, 0, wx.ALL, 5)
+
+        self.enableSaveOnModifiedCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Enable 'Save' button only when the song is modified"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.enableSaveOnModifiedCB.SetToolTip(_(u"When enabled, the 'Save' button and menu item are greyed out until the song has unsaved changes."))
+        grpGeneral.Add(self.enableSaveOnModifiedCB, 0, wx.ALL, 5)
 
         bSizer11b.Add(grpGeneral, 0, wx.EXPAND | wx.ALL, 8)
 
@@ -275,10 +284,13 @@ class PreferencesDialog(wx.Dialog):
         self.autoAdjust = wx.Panel(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL)
         bSizer18 = wx.BoxSizer(wx.VERTICAL)
         self.autoRemoveBlankLines = wx.CheckBox(self.autoAdjust, wx.ID_ANY, _(u"Offer to remove blank lines"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.autoRemoveBlankLines.SetToolTip(_(u"When enabled, Songpress++ will offer to automatically remove unnecessary blank lines when opening or saving a song."))
         bSizer18.Add(self.autoRemoveBlankLines, 0, wx.ALL, 5)
         self.autoTab2Chordpro = wx.CheckBox(self.autoAdjust, wx.ID_ANY, _(u"Offer to convert songs in tab"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.autoTab2Chordpro.SetToolTip(_(u"When enabled, Songpress++ will offer to convert songs written in tab (chord-over-lyrics) format to ChordPro format automatically."))
         bSizer18.Add(self.autoTab2Chordpro, 0, wx.ALL, 5)
         self.autoAdjustEasyKey = wx.CheckBox(self.autoAdjust, wx.ID_ANY, _(u"Offer to transpose songs to simplify chords"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.autoAdjustEasyKey.SetToolTip(_(u"When enabled, Songpress++ will offer to transpose the song to the key that produces the simplest chord shapes (fewest sharps/flats)."))
         bSizer18.Add(self.autoAdjustEasyKey, 0, wx.ALL, 5)
         bSizerDecoBar = wx.BoxSizer(wx.HORIZONTAL)
         self.labelDecoBarColour = wx.StaticText(self.autoAdjust, wx.ID_ANY, _(u"Level bar colour"), wx.DefaultPosition, wx.DefaultSize, 0)
@@ -685,6 +697,7 @@ class PreferencesDialog(wx.Dialog):
             self.songpressPanel, wx.ID_ANY,
             _(u"Show print preview before printing")
         )
+        self.showPrintPreviewCB.SetToolTip(_(u"When enabled, a print preview window is shown before sending the document to the printer, allowing you to check the layout and page settings."))
         grpPrint.Add(self.showPrintPreviewCB, 0, wx.ALL, 5)
 
         self.liveDriverPollCB = wx.CheckBox(
@@ -833,7 +846,9 @@ class PreferencesDialog(wx.Dialog):
         # --- Gruppo Undo/Redo ---
         grpUndoRedo = wx.StaticBoxSizer(wx.StaticBox(self.contextMenuPanel, wx.ID_ANY, _(u"History")), wx.VERTICAL)
         self.cmUndo  = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Undo"))
+        self.cmUndo.SetToolTip(_(u"Show the 'Undo' command in the right-click context menu."))
         self.cmRedo  = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Redo"))
+        self.cmRedo.SetToolTip(_(u"Show the 'Redo' command in the right-click context menu."))
         grpUndoRedo.Add(self.cmUndo,  0, wx.ALL, 4)
         grpUndoRedo.Add(self.cmRedo,  0, wx.ALL, 4)
         bSizerCM.Add(grpUndoRedo, 0, wx.EXPAND | wx.ALL, 5)
@@ -841,10 +856,15 @@ class PreferencesDialog(wx.Dialog):
         # --- Gruppo Modifica ---
         grpEdit = wx.StaticBoxSizer(wx.StaticBox(self.contextMenuPanel, wx.ID_ANY, _(u"Edit")), wx.VERTICAL)
         self.cmCut    = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Cut"))
+        self.cmCut.SetToolTip(_(u"Show the 'Cut' command in the right-click context menu."))
         self.cmCopy   = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Copy"))
+        self.cmCopy.SetToolTip(_(u"Show the 'Copy' command in the right-click context menu."))
         self.cmPaste  = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Paste"))
+        self.cmPaste.SetToolTip(_(u"Show the 'Paste' command in the right-click context menu."))
         self.cmDelete = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Delete"))
+        self.cmDelete.SetToolTip(_(u"Show the 'Delete' command in the right-click context menu."))
         self.cmConfirmDelete = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Ask confirmation before deleting"))
+        self.cmConfirmDelete.SetToolTip(_(u"When enabled, a confirmation dialog is shown before any delete operation performed via the context menu."))
         grpEdit.Add(self.cmCut,    0, wx.ALL, 4)
         grpEdit.Add(self.cmCopy,   0, wx.ALL, 4)
         grpEdit.Add(self.cmPaste,  0, wx.ALL, 4)
@@ -855,9 +875,13 @@ class PreferencesDialog(wx.Dialog):
         # --- Gruppo Azioni speciali ---
         grpSpecial = wx.StaticBoxSizer(wx.StaticBox(self.contextMenuPanel, wx.ID_ANY, _(u"Special actions")), wx.VERTICAL)
         self.cmPasteChords           = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Paste chords"))
+        self.cmPasteChords.SetToolTip(_(u"Show the 'Paste chords' command in the right-click context menu."))
         self.cmPropagateVerseChords  = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Propagate verse chords"))
+        self.cmPropagateVerseChords.SetToolTip(_(u"Show the 'Propagate verse chords' command in the right-click context menu."))
         self.cmPropagateChorusChords = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Propagate chorus chords"))
+        self.cmPropagateChorusChords.SetToolTip(_(u"Show the 'Propagate chorus chords' command in the right-click context menu."))
         self.cmCopyTextOnly          = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Copy text only"))
+        self.cmCopyTextOnly.SetToolTip(_(u"Show the 'Copy text only' command in the right-click context menu (copies lyrics without chords)."))
         grpSpecial.Add(self.cmPasteChords,           0, wx.ALL, 4)
         grpSpecial.Add(self.cmPropagateVerseChords,  0, wx.ALL, 4)
         grpSpecial.Add(self.cmPropagateChorusChords, 0, wx.ALL, 4)
@@ -867,12 +891,14 @@ class PreferencesDialog(wx.Dialog):
         # --- Gruppo Selezione ---
         grpSel = wx.StaticBoxSizer(wx.StaticBox(self.contextMenuPanel, wx.ID_ANY, _(u"Selection")), wx.VERTICAL)
         self.cmSelectAll = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Select all"))
+        self.cmSelectAll.SetToolTip(_(u"Show the 'Select all' command in the right-click context menu."))
         grpSel.Add(self.cmSelectAll, 0, wx.ALL, 4)
         bSizerCM.Add(grpSel, 0, wx.EXPAND | wx.ALL, 5)
 
         # --- Gruppo Aspetto ---
         grpAppearance = wx.StaticBoxSizer(wx.StaticBox(self.contextMenuPanel, wx.ID_ANY, _(u"Appearance")), wx.VERTICAL)
         self.cmShowIcons = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Show icons in context menu"))
+        self.cmShowIcons.SetToolTip(_(u"When enabled, small icons are displayed next to each command in the right-click context menu."))
         grpAppearance.Add(self.cmShowIcons, 0, wx.ALL, 4)
         bSizerCM.Add(grpAppearance, 0, wx.EXPAND | wx.ALL, 5)
 
@@ -900,6 +926,7 @@ class PreferencesDialog(wx.Dialog):
             self._fileAssocCBs  = {}
             for ext in self._fileAssocExts:
                 cb = wx.CheckBox(self.fileAssocPanel, wx.ID_ANY, u"." + ext)
+                cb.SetToolTip(_(u"Associate the .%s file extension with Songpress++.") % ext)
                 self._fileAssocCBs[ext] = cb
                 bSizerFA.Add(cb, 0, wx.ALL, 4)
 

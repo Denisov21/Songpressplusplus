@@ -193,6 +193,7 @@ class Preferences(object):
         self._LoadNoChordHide()
         self._LoadSingleInstance()
         self._LoadShowRestartMenuItem()
+        self._LoadSaveOnModified()
 
     def _LoadKlavierColour(self):
         self.config.SetPath('/KlavierColour')
@@ -365,6 +366,7 @@ class Preferences(object):
         self._SaveNoChordHide()
         self._SaveSingleInstance()
         self._SaveShowRestartMenuItem()
+        self._SaveSaveOnModified()
         self.config.Flush()
 
     def _SaveKlavierColour(self):
@@ -586,6 +588,17 @@ class Preferences(object):
         self.config.Write('hideGrid',        '1' if getattr(self, 'hideGrid',        False) else '0')
         self.config.Write('hideTempo',       '1' if getattr(self, 'hideTempo',       False) else '0')
         self.config.Write('hideTime',        '1' if getattr(self, 'hideTime',        False) else '0')
+        self.config.SetPath('/')
+
+    def _LoadSaveOnModified(self):
+        self.config.SetPath('/App')
+        v = self.config.Read('enableSaveOnModified')
+        self.enableSaveOnModified = bool(int(v)) if v != '' else True
+        self.config.SetPath('/')
+
+    def _SaveSaveOnModified(self):
+        self.config.SetPath('/App')
+        self.config.Write('enableSaveOnModified', '1' if getattr(self, 'enableSaveOnModified', True) else '0')
         self.config.SetPath('/')
 
     def SetChorusLabel(self, c):

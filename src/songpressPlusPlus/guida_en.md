@@ -351,8 +351,9 @@ All options are specified as `key=value` pairs inside the directive argument, af
 | `size=N affects`    | choice  | Width and height | Controls which dimension is scaled by `size=N`: **Width and height** (both paddings), **Width only** (only `_pad_x`), **Height only** (only `_pad_y`). Set in Preferences. |
 | `chordtopspacing=N` | integer | `0`             | Extra space in pixels **above** each row of cells                                                                                                        |
 | `linespacing=N`     | integer | `0`             | Extra space in pixels **below** each row of cells                                                                                                        |
+| `sizedir=horizontal\|vertical\|both` | string | value from preferences | Overrides the global **size=N affects** preference for this block: `horizontal` (width only), `vertical` (height only), `both` (width and height) |
 
-> **Note:** `chordtopspacing` and `linespacing` inside `{start_of_grid}` act locally on that grid block only, independently of the global `{chordtopspacing}` and `{linespacing}` directives which affect normal verse/chorus blocks.
+> **Note:** `chordtopspacing` and `linespacing` inside `{start_of_grid}` act locally on that grid block only, independently of the global `{chordtopspacing}` and `{linespacing}` directives which affect normal verse/chorus blocks. `sizedir` is also local to the block and overrides the global preference only for that grid.
 
 ### Examples — start_of_grid
 
@@ -401,6 +402,14 @@ All options combined:
 {start_of_grid: Intro size=2 chordtopspacing=6 linespacing=3}
 | Am . . . | F . . . |
 | C . . .  | G . . . |
+{end_of_grid}
+```
+
+Local `sizedir` (overrides global preference for this block):
+
+```chordpro
+{start_of_grid: Chorus size=2 sizedir=horizontal}
+| G . . . | D . . . | Em . . . | C . . . |
 {end_of_grid}
 ```
 
@@ -453,7 +462,8 @@ When the cursor is inside a `{start_of_grid}` block:
 - In the editor, the block content is rendered in **brown italic**, like tab blocks.
 - `size=N` multiplies `_pad_x` (horizontal padding, base 8 px) and/or `_pad_y` (vertical padding, base 4 px) by N. Which dimension is scaled depends on the **Preferences → Format → Chord grid → size=N affects** option: *Width and height* (default, both paddings), *Width only* (only `_pad_x`), *Height only* (only `_pad_y`). N can be an integer or a decimal with up to 2 digits after the separator (`.` or `,`): e.g. `size=1.5`, `size=2,50`, `size=1.7`.
 - `chordtopspacing=N` adds N pixels above each row; `linespacing=N` adds N pixels below each row. Both default to `0` (no extra spacing).
-- Multiple options and a label can coexist in any order after the colon: `{start_of_grid: My Label size=3 linespacing=5}`.
+- `sizedir=horizontal|vertical|both` locally overrides the global **size=N affects** preference for the single block; if omitted, the value from preferences is used.
+- Multiple options and a label can coexist in any order after the colon: `{start_of_grid: My Label size=3 linespacing=5 sizedir=horizontal}`.
 - In pipe mode, the raw text inside the block must already contain `|` delimiters; in plain mode, chords separated by spaces are laid out automatically.
 
 ---

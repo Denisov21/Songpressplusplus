@@ -351,8 +351,9 @@ Tutte le opzioni si specificano come coppie `chiave=valore` nell'argomento della
 | `size=N agisce su`  | scelta  | Larghezza e altezza | Controlla quale dimensione viene moltiplicata da `size=N`: **Larghezza e altezza** (entrambi i padding), **Solo larghezza** (solo `_pad_x`), **Solo altezza** (solo `_pad_y`). Si imposta nelle preferenze.  |
 | `chordtopspacing=N` | intero  | `0`             | Spazio extra in pixel **sopra** ogni riga di celle                                                                                                                |
 | `linespacing=N`     | intero  | `0`             | Spazio extra in pixel **sotto** ogni riga di celle                                                                                                                |
+| `sizedir=horizontal\|vertical\|both` | stringa | valore da preferenze | Sovrascrive per questo blocco la preferenza globale **size=N agisce su**: `horizontal` (solo larghezza), `vertical` (solo altezza), `both` (larghezza e altezza) |
 
-> **Nota:** `chordtopspacing` e `linespacing` dentro `{start_of_grid}` agiscono localmente solo su quel blocco griglia, indipendentemente dalle direttive globali `{chordtopspacing}` e `{linespacing}` che influenzano i blocchi strofa/ritornello normali.
+> **Nota:** `chordtopspacing` e `linespacing` dentro `{start_of_grid}` agiscono localmente solo su quel blocco griglia, indipendentemente dalle direttive globali `{chordtopspacing}` e `{linespacing}` che influenzano i blocchi strofa/ritornello normali. Anche `sizedir` è locale al blocco e sovrascrive la preferenza globale solo per quella griglia.
 
 ### Esempi — start_of_grid
 
@@ -401,6 +402,14 @@ Tutte le opzioni combinate:
 {start_of_grid: Intro size=2 chordtopspacing=6 linespacing=3}
 | Am . . . | F . . . |
 | C . . .  | G . . . |
+{end_of_grid}
+```
+
+`sizedir` locale (sovrascrive la preferenza globale per questo blocco):
+
+```chordpro
+{start_of_grid: Ritornello size=2 sizedir=horizontal}
+| G . . . | D . . . | Em . . . | C . . . |
 {end_of_grid}
 ```
 
@@ -453,7 +462,8 @@ Quando il cursore si trova dentro un blocco `{start_of_grid}`:
 - Nell'editor il contenuto del blocco appare in **marrone corsivo**, come i blocchi tablatura.
 - `size=N` moltiplica `_pad_x` (padding orizzontale, base 8 px) e/o `_pad_y` (padding verticale, base 4 px) per N, ingrandendo le celle. Quale dimensione viene scalata dipende dall'opzione **Preferenze → Formattazione → Griglia accordi → size=N agisce su**: *Larghezza e altezza* (default, entrambi i padding), *Solo larghezza* (solo `_pad_x`), *Solo altezza* (solo `_pad_y`). N può essere un intero o un decimale con al massimo 2 cifre dopo il separatore (`.` o `,`): es. `size=1.5`, `size=2,50`, `size=1.7`.
 - `chordtopspacing=N` aggiunge N pixel sopra ogni riga; `linespacing=N` aggiunge N pixel sotto ogni riga. Entrambi hanno default `0` (nessuna spaziatura extra).
-- Più opzioni e un'etichetta possono coesistere in qualsiasi ordine dopo i due punti: `{start_of_grid: Mia Etichetta size=3 linespacing=5}`.
+- `sizedir=horizontal|vertical|both` sovrascrive localmente la preferenza globale **size=N agisce su** per il singolo blocco; se omesso, viene usato il valore dalle preferenze.
+- Più opzioni e un'etichetta possono coesistere in qualsiasi ordine dopo i due punti: `{start_of_grid: Mia Etichetta size=3 linespacing=5 sizedir=horizontal}`.
 - In modalità pipe, il testo raw dentro il blocco deve già contenere i delimitatori `|`; in modalità plain, gli accordi separati da spazi vengono distribuiti automaticamente.
 
 ---

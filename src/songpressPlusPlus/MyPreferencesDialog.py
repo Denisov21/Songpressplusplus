@@ -187,6 +187,9 @@ class MyPreferencesDialog(PreferencesDialog):
         # Multi-cursor
         self.multiCursorCB.SetValue(getattr(self.pref, 'multiCursor', False))
 
+        # Enable Save only when modified
+        self.enableSaveOnModifiedCB.SetValue(getattr(self.pref, 'enableSaveOnModified', True))
+
         # Salvataggio geometria finestra
         self.saveWindowGeometryCB.SetValue(getattr(self.pref, 'saveWindowGeometry', True))
 
@@ -1358,6 +1361,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.showPrintPreview = self.showPrintPreviewCB.GetValue()
         # Multi-cursor
         self.pref.multiCursor = self.multiCursorCB.GetValue()
+        self.pref.enableSaveOnModified = self.enableSaveOnModifiedCB.GetValue()
         # Salvataggio geometria finestra
         self.pref.saveWindowGeometry = self.saveWindowGeometryCB.GetValue()
         self.pref.showDebugMsg = self.showDebugMsgCB.GetValue()

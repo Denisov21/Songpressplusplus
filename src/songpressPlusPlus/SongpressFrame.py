@@ -854,7 +854,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
         self.mainToolBar.SetToolBitmapSize(wx.Size(16, 16))
         self.AddTool(self.mainToolBar, 'new', 'img/new.png', _("New"), _("Create a new song"))
         self.AddTool(self.mainToolBar, 'open', 'img/open.png', _("Open"), _("Open an existing song"))
-        self.AddTool(self.mainToolBar, 'save', 'img/save.png', _("Save"), _("Save the song with the current file name"))
+        self.saveTool = self.AddTool(self.mainToolBar, 'save', 'img/save.png', _("Save"), _("Save the song with the current file name"))
         self.mainToolBar.AddSeparator()
         self.undoTool = self.AddTool(self.mainToolBar, 'undo', 'img/undo.png', _("Undo"), _("Undo the last change"))
         self.redoTool = self.AddTool(self.mainToolBar, 'redo',
@@ -952,6 +952,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
         self.frame.Bind(EVT_TEXT_CHANGED, self.OnTextChanged)
         self.frame.Bind(wx.EVT_CHAR_HOOK, self._OnGlobalCharHook)
         self.exportMenuId = xrc.XRCID('export')
+        self.saveMenuId = xrc.XRCID('save')
         self.exportToClipboardAsAVectorImage = xrc.XRCID('exportToClipboardAsAVectorImage')
         self.exportAsEmfMenuId = xrc.XRCID('exportAsEmf')
         self.cutMenuId = xrc.XRCID('cut')
@@ -4790,9 +4791,26 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
 
         return ''.join(result)
 
+    def UpdateSave(self):
+        """Abilita/disabilita il pulsante e la voce di menu Save in base allo stato
+        'modified' e alla preferenza enableSaveOnModified."""
+        try:
+            enable_only_when_modified = getattr(self.pref, 'enableSaveOnModified', True)
+            if enable_only_when_modified:
+                is_modified = getattr(self, 'modified', False)
+            else:
+                is_modified = True   # sempre abilitato
+            self.mainToolBar.EnableTool(self.saveTool, is_modified)
+            if hasattr(self, 'saveMenuId'):
+                self.menuBar.Enable(self.saveMenuId, is_modified)
+            self.mainToolBar.Refresh()
+        except Exception:
+            pass
+
     def UpdateEverything(self):
         self.UpdateUndoRedo()
         self.UpdateCutCopyPaste()
+        self.UpdateSave()
 
     def TextUpdated(self):
         self.previewCanvas.Refresh(self._get_display_text())

@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: songpress\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-05 16:22+0200\n"
-"PO-Revision-Date: 2026-05-11 20:15+0200\n"
+"PO-Revision-Date: 2026-05-16 10:51+0200\n"
 "Last-Translator: Denisov21\n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -52,7 +52,8 @@ msgstr "10"
 msgid "11"
 msgstr "11"
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/PreferencesDialog.py:53 /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/PreferencesDialog.py:55
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/PreferencesDialog.py:53
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/PreferencesDialog.py:55
 msgid "12"
 msgstr "12"
 
@@ -435,7 +436,8 @@ msgstr ""
 msgid "size=N affects:"
 msgstr "size=N agisce su:"
 
-#: PreferencesDialog.py format tab — chord grid size=N affects: width and height
+#: PreferencesDialog.py format tab — chord grid size=N affects: width and
+#: height
 msgid "Width and height"
 msgstr "Larghezza e altezza"
 
@@ -737,6 +739,116 @@ msgstr ""
 msgid "Appearance"
 msgstr "Aspetto"
 
-#: PreferencesDialog.py — Context menu tab, Appearance group, show icons checkbox
+#: PreferencesDialog.py — Context menu tab, Appearance group, show icons
+#: checkbox
 msgid "Show icons in context menu"
 msgstr "Mostra icone nel menu contestuale"
+
+#: PreferencesDialog.py — General group, enable save on modified checkbox
+msgid "Enable 'Save' button only when the song is modified"
+msgstr "Abilita il pulsante 'Salva' solo quando il brano è modificato"
+
+#: PreferencesDialog.py — General group, enable save on modified checkbox
+#: tooltip
+msgid "When enabled, the 'Save' button and menu item are greyed out until the song has unsaved changes."
+msgstr "Se attivo, il pulsante 'Salva' e la voce di menu corrispondente sono disabilitati finché il brano non presenta modifiche non salvate."
+
+#: PreferencesDialog.py — General tab, multi-cursor checkbox tooltip
+msgid "When enabled, Alt+Click adds a new cursor and Ctrl+D selects the next occurrence of the current word."
+msgstr "Se attivo, Alt+Clic aggiunge un nuovo cursore e Ctrl+D seleziona l'occorrenza successiva della parola corrente."
+
+#: PreferencesDialog.py — General tab, save window geometry checkbox tooltip
+msgid "When enabled, the window size and position are saved on exit and restored the next time Songpress++ is launched."
+msgstr "Se attivo, le dimensioni e la posizione della finestra vengono salvate all'uscita e ripristinate al prossimo avvio di Songpress++."
+
+#: PreferencesDialog.py — General tab, show debug messages checkbox tooltip
+msgid "When enabled, diagnostic messages such as the theme save path are shown in a popup during certain operations. Useful for troubleshooting."
+msgstr "Se attivo, messaggi diagnostici come il percorso di salvataggio del tema vengono mostrati in un popup durante alcune operazioni. Utile per la risoluzione dei problemi."
+
+#: PreferencesDialog.py — General tab, intellisense checkbox tooltip
+msgid "When enabled, pressing Ctrl+Space inside the editor shows a list of available ChordPro directives for auto-completion."
+msgstr "Se attivo, premendo Ctrl+Spazio nell'editor viene mostrato un elenco delle direttive ChordPro disponibili per il completamento automatico."
+
+#: PreferencesDialog.py — General tab, show restart menu item checkbox tooltip
+msgid "When enabled, a 'Restart Songpress++' item appears in the File menu, allowing a quick restart without closing and reopening the application manually."
+msgstr "Se attivo, nel menu File compare la voce 'Riavvia Songpress++', che consente un riavvio rapido senza dover chiudere e riaprire manualmente l'applicazione."
+
+#: PreferencesDialog.py — AutoAdjust tab, remove blank lines checkbox tooltip
+msgid "When enabled, Songpress++ will offer to automatically remove unnecessary blank lines when opening or saving a song."
+msgstr "Se attivo, Songpress++ proporrà di rimuovere automaticamente le righe vuote superflue all'apertura o al salvataggio di un brano."
+
+#: PreferencesDialog.py — AutoAdjust tab, convert tab to chordpro checkbox tooltip
+msgid "When enabled, Songpress++ will offer to convert songs written in tab (chord-over-lyrics) format to ChordPro format automatically."
+msgstr "Se attivo, Songpress++ proporrà di convertire automaticamente i brani scritti in formato tab (accordi sopra il testo) nel formato ChordPro."
+
+#: PreferencesDialog.py — AutoAdjust tab, easy key checkbox tooltip
+msgid "When enabled, Songpress++ will offer to transpose the song to the key that produces the simplest chord shapes (fewest sharps/flats)."
+msgstr "Se attivo, Songpress++ proporrà di trasporre il brano nella tonalità che produce le forme di accordo più semplici (con meno diesis o bemolle)."
+
+#: PreferencesDialog.py format tab — chord grid size=N both tooltip
+msgid "size=N multiplies both horizontal and vertical cell padding."
+msgstr "size=N moltiplica sia il margine orizzontale che quello verticale delle celle."
+
+#: PreferencesDialog.py format tab — chord grid size=N width only tooltip
+msgid "size=N multiplies only horizontal cell padding; vertical padding stays at its base value."
+msgstr "size=N moltiplica solo il margine orizzontale delle celle; il margine verticale rimane al suo valore base."
+
+#: PreferencesDialog.py format tab — chord grid size=N height only tooltip
+msgid "size=N multiplies only vertical cell padding; horizontal padding stays at its base value."
+msgstr "size=N moltiplica solo il margine verticale delle celle; il margine orizzontale rimane al suo valore base."
+
+#: PreferencesDialog.py — Print group, show print preview checkbox tooltip
+msgid "When enabled, a print preview window is shown before sending the document to the printer, allowing you to check the layout and page settings."
+msgstr "Se attivo, viene mostrata una finestra di anteprima prima di inviare il documento alla stampante, permettendo di verificare il layout e le impostazioni di pagina."
+
+#: PreferencesDialog.py — Context menu tab, Undo checkbox tooltip
+msgid "Show the 'Undo' command in the right-click context menu."
+msgstr "Mostra il comando 'Annulla' nel menu contestuale (tasto destro)."
+
+#: PreferencesDialog.py — Context menu tab, Redo checkbox tooltip
+msgid "Show the 'Redo' command in the right-click context menu."
+msgstr "Mostra il comando 'Ripristina' nel menu contestuale (tasto destro)."
+
+#: PreferencesDialog.py — Context menu tab, Cut checkbox tooltip
+msgid "Show the 'Cut' command in the right-click context menu."
+msgstr "Mostra il comando 'Taglia' nel menu contestuale (tasto destro)."
+
+#: PreferencesDialog.py — Context menu tab, Copy checkbox tooltip
+msgid "Show the 'Copy' command in the right-click context menu."
+msgstr "Mostra il comando 'Copia' nel menu contestuale (tasto destro)."
+
+#: PreferencesDialog.py — Context menu tab, Paste checkbox tooltip
+msgid "Show the 'Paste' command in the right-click context menu."
+msgstr "Mostra il comando 'Incolla' nel menu contestuale (tasto destro)."
+
+#: PreferencesDialog.py — Context menu tab, Delete checkbox tooltip
+msgid "Show the 'Delete' command in the right-click context menu."
+msgstr "Mostra il comando 'Elimina' nel menu contestuale (tasto destro)."
+
+#: PreferencesDialog.py — Context menu tab, confirm delete checkbox tooltip
+msgid "When enabled, a confirmation dialog is shown before any delete operation performed via the context menu."
+msgstr "Se attivo, viene mostrata una finestra di conferma prima di qualsiasi operazione di eliminazione eseguita tramite il menu contestuale."
+
+#: PreferencesDialog.py — Context menu tab, Paste chords checkbox tooltip
+msgid "Show the 'Paste chords' command in the right-click context menu."
+msgstr "Mostra il comando 'Incolla accordi' nel menu contestuale (tasto destro)."
+
+#: PreferencesDialog.py — Context menu tab, Propagate verse chords checkbox tooltip
+msgid "Show the 'Propagate verse chords' command in the right-click context menu."
+msgstr "Mostra il comando 'Propaga accordi strofa' nel menu contestuale (tasto destro)."
+
+#: PreferencesDialog.py — Context menu tab, Propagate chorus chords checkbox tooltip
+msgid "Show the 'Propagate chorus chords' command in the right-click context menu."
+msgstr "Mostra il comando 'Propaga accordi ritornello' nel menu contestuale (tasto destro)."
+
+#: PreferencesDialog.py — Context menu tab, Copy text only checkbox tooltip
+msgid "Show the 'Copy text only' command in the right-click context menu (copies lyrics without chords)."
+msgstr "Mostra il comando 'Copia solo testo' nel menu contestuale (tasto destro) — copia il testo senza gli accordi."
+
+#: PreferencesDialog.py — Context menu tab, Select all checkbox tooltip
+msgid "Show the 'Select all' command in the right-click context menu."
+msgstr "Mostra il comando 'Seleziona tutto' nel menu contestuale (tasto destro)."
+
+#: PreferencesDialog.py — Context menu tab, Show icons checkbox tooltip
+msgid "When enabled, small icons are displayed next to each command in the right-click context menu."
+msgstr "Se attivo, vengono visualizzate piccole icone accanto a ciascun comando nel menu contestuale (tasto destro)."
