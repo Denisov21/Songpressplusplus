@@ -9,6 +9,8 @@
 # License:     GNU GPL v2
 ###############################################################
 
+#Qualsiasi nuovo .mo che aggiungi in locale/it/LC_MESSAGES/ verrà caricato automaticamente senza toccare il codice.
+
 import inspect
 import os
 import locale
