@@ -128,7 +128,14 @@ class SongpressToolbarsMixin:
         self.formatToolBar.SetExtraStyle(aui.AUI_TB_PLAIN_BACKGROUND)
 
         # Font chooser
+        fontIcon = wx.StaticBitmap(
+            self.formatToolBar, -1,
+            wx.Bitmap(wx.Image(glb.AddPath('img/font1.png')))
+        )
+        fontIcon.SetToolTip(_("Font used in the Songpress++ preview"))
+        self.formatToolBar.AddControl(fontIcon)
         self.fontChooser = FontComboBox(self.formatToolBar, -1, self.pref.format.face)
+        self.fontChooser.SetToolTip(_("Font used in the Songpress++ preview"))
         self.formatToolBar.AddControl(self.fontChooser)
         self.frame.Bind(wx.EVT_COMBOBOX,    self.OnFontSelected, self.fontChooser)
         self.fontChooser.Bind(wx.EVT_TEXT_ENTER, self.OnFontSelected, self.fontChooser)

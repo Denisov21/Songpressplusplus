@@ -55,30 +55,28 @@ def setLang(l):
     xrc_localedir = os.path.join(glb.path, "xrc", "locale")
     mylocale.AddCatalogLookupPathPrefix(localedir)
     mylocale.AddCatalogLookupPathPrefix(xrc_localedir)
-    mylocale.AddCatalog('songpress')
-    lc_messages_dir = os.path.join(localedir, l, "LC_MESSAGES")
-    if os.path.isdir(lc_messages_dir):
-        for f in os.listdir(lc_messages_dir):
-            fn, ext = os.path.splitext(f)
-            if ext.lower() == '.mo' and fn != 'songpress':
-                mylocale.AddCatalog(fn)
-    for f in os.listdir(glb.path):
-        fn, ext = os.path.splitext(f)
-        if ext.lower() == '.pot':
-            mylocale.AddCatalog(fn)
-    # Override _ with gettext so all modules get actual translations.
-    # Scansiona automaticamente tutti i .mo in LC_MESSAGES e li concatena.
-    import builtins
+
+    # Raccoglie tutti i nomi di catalogo da LC_MESSAGES (tutti i .mo presenti),
+    # garantendo che 'songpress' sia sempre il primo (catalogo principale).
     lc_messages_dir = os.path.join(localedir, l, "LC_MESSAGES")
     catalog_names = []
     if os.path.isdir(lc_messages_dir):
-        for f in os.listdir(lc_messages_dir):
+        for f in sorted(os.listdir(lc_messages_dir)):
             fn, ext = os.path.splitext(f)
-            if ext.lower() == '.mo':
+            if ext.lower() == '.mo' and fn not in catalog_names:
                 catalog_names.append(fn)
-    for name in ('songpress', 'SongpressFrame'):
-        if name not in catalog_names:
-            catalog_names.append(name)
+    # Assicura che 'songpress' sia sempre in testa
+    if 'songpress' in catalog_names:
+        catalog_names.remove('songpress')
+    catalog_names.insert(0, 'songpress')
+
+    # Carica ogni catalogo in wx.Locale (usato da wx.GetTranslation / _ = wx.GetTranslation)
+    for name in catalog_names:
+        mylocale.AddCatalog(name)
+
+    # Costruisce anche una catena gettext (usata da builtins._ nei moduli
+    # che importano _ da gettext anziché da wx)
+    import builtins
     combined = None
     for name in catalog_names:
         try:

@@ -354,3 +354,11 @@ msgstr "Inserisce un comando {linespacing}"
 #: SongpressToolbars.py — _BuildInsertToolBar (AddPane label)
 msgid "Insert"
 msgstr "Inserisci"
+
+#: SongpressToolbars.py — _BuildViewToolBar
+msgid "View"
+msgstr "Visualizza"
+
+#: SongpressToolbars.py — _BuildFormatToolBar (fontIcon tooltip, fontChooser tooltip)
+msgid "Font used in the Songpress++ preview"
+msgstr "Carattere usato nell'anteprima Songpress++"
