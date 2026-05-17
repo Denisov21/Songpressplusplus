@@ -868,6 +868,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.copyAsImageMenuId = xrc.XRCID('copyAsImage')
         self.pasteMenuId = xrc.XRCID('paste')
         self.pasteChordsMenuId = xrc.XRCID('pasteChords')
+        self.undoMenuId = xrc.XRCID('undo')
+        self.redoMenuId = xrc.XRCID('redo')
         self.propagateVerseChordsMenuId = xrc.XRCID('propagateVerseChords')
         self.propagateChorusChordsMenuId = xrc.XRCID('propagateChorusChords')
         self.removeChordsMenuId = xrc.XRCID('removeChords')
@@ -4568,8 +4570,12 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.pref.Save()
 
     def UpdateUndoRedo(self):
-        self.mainToolBar.EnableTool(self.undoTool, self.text.CanUndo())
-        self.mainToolBar.EnableTool(self.redoTool, self.text.CanRedo())
+        can_undo = self.text.CanUndo()
+        can_redo = self.text.CanRedo()
+        self.mainToolBar.EnableTool(self.undoTool, can_undo)
+        self.mainToolBar.EnableTool(self.redoTool, can_redo)
+        self.menuBar.Enable(self.undoMenuId, can_undo)
+        self.menuBar.Enable(self.redoMenuId, can_redo)
 
     def UpdateCutCopyPaste(self):
         s, e = self.text.GetSelection()
