@@ -148,7 +148,7 @@ class SongpressToolbarsMixin:
         self.formatToolBar.AddControl(showChordsIcon)
         self.showChordsChooser = wx.Slider(
             self.formatToolBar, -1, 0, 0, 2,
-            wx.DefaultPosition, (100, 22),
+            wx.DefaultPosition, (100, 32), #permette di modifica l'altezza della barra secondo valore!!!
             wx.SL_AUTOTICKS | wx.SL_HORIZONTAL
         )
         tt1 = wx.ToolTip(_("Hide or show chords in the formatted song"))
