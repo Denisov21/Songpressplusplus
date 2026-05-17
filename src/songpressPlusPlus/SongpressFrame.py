@@ -7810,12 +7810,12 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
     def _SyncPreviewToggleButton(self):
         """Sincronizza lo stato premuto/rilasciato del pulsante toggle preview nella toolbar."""
-        if not hasattr(self, 'togglePreviewToolId'):
+        if not hasattr(self, 'togglePreviewViewToolId'):
             return
         pane = self._mgr.GetPane('preview')
         visible = pane.IsShown()
-        self.formatToolBar.ToggleTool(self.togglePreviewToolId, visible)
-        self.formatToolBar.Refresh()
+        self.viewToolBar.ToggleTool(self.togglePreviewViewToolId, visible)
+        self.viewToolBar.Refresh()
 
     def OnPaneClose(self, evt):
         super().OnPaneClose(evt)
@@ -7937,8 +7937,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             pass
 
     def CheckLabelVerses(self):
-        self.formatToolBar.ToggleTool(self.labelVersesToolId, self.pref.labelVerses)
-        self.formatToolBar.Refresh()
+        self.viewToolBar.ToggleTool(self.labelVersesViewToolId, self.pref.labelVerses)
+        self.viewToolBar.Refresh()
         self.menuBar.Check(self.labelVersesMenuId, self.pref.labelVerses)
         if self.pref.labelVerses:
             self.pref.decorator.drawLabels = True

@@ -35,11 +35,12 @@ class SongpressToolbarsMixin:
     # ------------------------------------------------------------------
 
     def _BuildToolbars(self):
-        """Costruisce mainToolBar, formatToolBar e insertToolBar e le aggiunge
-        all'AUI manager."""
+        """Costruisce mainToolBar, formatToolBar, insertToolBar e viewToolBar e
+        le aggiunge all'AUI manager."""
         self._BuildMainToolBar()
         self._BuildFormatToolBar()
         self._BuildInsertToolBar()
+        self._BuildViewToolBar()
 
     # ------------------------------------------------------------------
     # Main toolbar  (Standard)
@@ -120,7 +121,7 @@ class SongpressToolbarsMixin:
 
     def _BuildFormatToolBar(self):
         self.formatToolBar = aui.AuiToolBar(
-            self.frame, wx.ID_ANY,
+            self.frame, wx.ID_ANY, wx.DefaultPosition,
             agwStyle=aui.AUI_TB_PLAIN_BACKGROUND
         )
         self.formatToolBar.SetToolBitmapSize(wx.Size(16, 16))
@@ -139,18 +140,6 @@ class SongpressToolbarsMixin:
         self.frame.Bind(wx.EVT_TEXT_CUT,   self.OnTextCutCopy, self.text)
         self.frame.Bind(wx.EVT_TEXT_COPY,  self.OnTextCutCopy, self.text)
 
-        # Toggle "Label verses"
-        labelVersesTool = self.formatToolBar.AddToggleTool(
-            wx.xrc.XRCID('labelVerses'),
-            wx.Bitmap(wx.Image(glb.AddPath("img/labelVerses.png"))),
-            wx.NullBitmap,
-            True,
-            None,
-            _("Show verse and chorus labels"),
-            _("Show or hide verse and chorus labels"),
-        )
-        self.labelVersesToolId = labelVersesTool.GetId()
-
         # Show-chords slider
         showChordsIcon = wx.StaticBitmap(
             self.formatToolBar, -1,
@@ -159,7 +148,7 @@ class SongpressToolbarsMixin:
         self.formatToolBar.AddControl(showChordsIcon)
         self.showChordsChooser = wx.Slider(
             self.formatToolBar, -1, 0, 0, 2,
-            wx.DefaultPosition, (100, -1),
+            wx.DefaultPosition, (100, 22),
             wx.SL_AUTOTICKS | wx.SL_HORIZONTAL
         )
         tt1 = wx.ToolTip(_("Hide or show chords in the formatted song"))
@@ -169,21 +158,12 @@ class SongpressToolbarsMixin:
         self.frame.Bind(wx.EVT_SCROLL, self.OnFontSelected, self.showChordsChooser)
         self.formatToolBar.AddControl(self.showChordsChooser, "pippo")
 
-        # Toggle "Preview"
         self.formatToolBar.AddSeparator()
-        togglePreviewTool = self.formatToolBar.AddToggleTool(
-            wx.xrc.XRCID('preview'),
-            wx.Bitmap(wx.Image(glb.AddPath("img/preview.png"))),
-            wx.NullBitmap,
-            True,
-            None,
-            _("Show Songpress++ Preview"),
-            _("Show or hide the Songpress++ Preview panel"),
-        )
-        self.togglePreviewToolId = togglePreviewTool.GetId()
-        self.frame.Bind(wx.EVT_TOOL, self.OnTogglePaneView, id=self.togglePreviewToolId)
+        self.AddTool(self.formatToolBar, 'insertLinespacing', 'img/line_spacing.png',
+                     _(u"Linespacing"), _(u"Insert a {linespacing} command"))
 
         self.formatToolBar.Realize()
+        self.formatToolBar.SetMinSize(self.mainToolBar.GetMinSize())
         self.formatToolBarPane = self.AddPane(
             self.formatToolBar,
             aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(2),
@@ -255,14 +235,53 @@ class SongpressToolbarsMixin:
                      _(u"Transposer image"), _(u"Insert the Transposer image and choose its position in the document"))
         self.AddTool(self.insertToolBar, 'insertMusicalSymbol',   'img/symbol.png',
                      _(u"Musical symbol (Unicode)"), _(u"Insert a Unicode musical symbol"))
-        self.insertToolBar.AddSeparator()
-
-        self.AddTool(self.insertToolBar, 'insertLinespacing', 'img/line_spacing.png',
-                     _(u"Linespacing"), _(u"Insert a {linespacing} command"))
 
         self.insertToolBar.Realize()
         self.insertToolBarPane = self.AddPane(
             self.insertToolBar,
             aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(3),
-            u'Insert', 'insert'
+            _('Insert'), 'insert'
+        )
+
+    # ------------------------------------------------------------------
+    # View toolbar  (Visualizza)
+    # ------------------------------------------------------------------
+
+    def _BuildViewToolBar(self):
+        self.viewToolBar = aui.AuiToolBar(
+            self.frame, wx.ID_ANY, wx.DefaultPosition,
+            agwStyle=aui.AUI_TB_PLAIN_BACKGROUND
+        )
+        self.viewToolBar.SetToolBitmapSize(wx.Size(16, 16))
+
+        # Toggle "Mostra anteprima Songpress++"
+        togglePreviewViewTool = self.viewToolBar.AddToggleTool(
+            wx.xrc.XRCID('preview'),
+            wx.Bitmap(wx.Image(glb.AddPath("img/preview.png"))),
+            wx.NullBitmap,
+            True,
+            None,
+            _("Show Songpress++ Preview"),
+            _("Show or hide the Songpress++ Preview panel"),
+        )
+        self.togglePreviewViewToolId = togglePreviewViewTool.GetId()
+        self.frame.Bind(wx.EVT_TOOL, self.OnTogglePaneView, id=self.togglePreviewViewToolId)
+
+        # Toggle "Mostra le etichette delle strofe e ritornelli"
+        labelVersesViewTool = self.viewToolBar.AddToggleTool(
+            wx.xrc.XRCID('labelVerses'),
+            wx.Bitmap(wx.Image(glb.AddPath("img/labelVerses.png"))),
+            wx.NullBitmap,
+            True,
+            None,
+            _("Show verse and chorus labels"),
+            _("Show or hide verse and chorus labels"),
+        )
+        self.labelVersesViewToolId = labelVersesViewTool.GetId()
+
+        self.viewToolBar.Realize()
+        self.viewToolBarPane = self.AddPane(
+            self.viewToolBar,
+            aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(4),
+            _('View'), 'view'
         )

@@ -105,6 +105,7 @@ class SDIMainFrame(object):
         self.menuBar = self.frame.GetMenuBar()
         self.panesByMenu = {}
         self.menusByPane = {}
+        self._captionsByPane = {}
         self.RetrieveRecentFileList()
 
     def Bind(self, event, handler, xrcname):
@@ -390,6 +391,7 @@ class SDIMainFrame(object):
         menuid = xrc.XRCID(menuName)
         self.panesByMenu[menuid] = menuName
         self.menusByPane[menuName] = menuid
+        self._captionsByPane[menuName] = caption
         self.Bind(wx.EVT_MENU, self.OnTogglePaneView, menuName)
 
     def OnTogglePaneView(self, evt):
@@ -502,6 +504,14 @@ class SDIMainFrame(object):
         #print "Config: " + str(p)
         if p:
             self._mgr.LoadPerspective(p)
+            # LoadPerspective ripristina i caption dalla stringa serializzata,
+            # che può contenere la lingua precedente. Li riscriviamo con i
+            # valori tradotti attuali, ricavati da menusByPane (nome pane ->
+            # caption passato ad AddPane, già tradotto da _()).
+            for paneName, caption in self._captionsByPane.items():
+                pane = self._mgr.GetPane(paneName)
+                if pane.IsOk():
+                    pane.Caption(caption)
             for menuid in self.panesByMenu:
                 self.menuBar.Check(menuid, self._mgr.GetPane(self.panesByMenu[menuid]).IsShown())
         else:

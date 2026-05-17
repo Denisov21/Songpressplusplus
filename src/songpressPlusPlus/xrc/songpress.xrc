@@ -293,6 +293,13 @@
             <checkable>1</checkable>
             <checked>1</checked>
           </object>
+          <object class="wxMenuItem" name="view">
+            <label>_View</label>
+            <accel></accel>
+            <help>Show/hide toolbar with view commands</help>
+            <checkable>1</checkable>
+            <checked>1</checked>
+          </object>
         </object>
         <object class="wxMenuItem" name="preview">
           <label>Songpress++ _Preview</label>

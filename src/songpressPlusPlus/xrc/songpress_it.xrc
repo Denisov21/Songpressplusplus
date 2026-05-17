@@ -293,6 +293,13 @@
             <checkable>1</checkable>
             <checked>1</checked>
           </object>
+          <object class="wxMenuItem" name="view">
+            <label>_Visualizza</label>
+            <accel></accel>
+            <help>Mostra/nascondi la barra degli strumenti di visualizzazione</help>
+            <checkable>1</checkable>
+            <checked>1</checked>
+          </object>
         </object>
         <object class="wxMenuItem" name="preview">
           <label>_Anteprima Songpress++</label>
