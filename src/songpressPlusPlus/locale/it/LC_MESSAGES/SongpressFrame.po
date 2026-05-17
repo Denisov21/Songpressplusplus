@@ -107,131 +107,6 @@ msgstr ""
 "  * wxPython (http://www.wxpython.org)\n"
 "  * python-pptx (per l'esportazione in PowerPoint)"
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:224
-msgid "New"
-msgstr "Nuovo"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:224
-msgid "Create a new song"
-msgstr "Crea una nuova canzone"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:225
-msgid "Open"
-msgstr "Apri"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:225
-msgid "Open an existing song"
-msgstr "Apre una canzone esistente"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:226
-msgid "Save"
-msgstr "Salva"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:226
-msgid "Save the song with the current file name"
-msgstr "Salva la canzone con il nome del file attuale"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:228
-msgid "Undo"
-msgstr "Annulla"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:228
-msgid "Undo the last change"
-msgstr "Annulla l'ultima modifica"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:230
-msgid "Redo"
-msgstr "Ripeti"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:230
-msgid "Redo the last undone change"
-msgstr "Ripete la modifica precedentemente annullata"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:233
-msgid "Cut"
-msgstr "Taglia"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:234
-msgid "Move selected text to the clipboard"
-msgstr "Sposta il testo selezionato negli appunti"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:235
-msgid "Copy"
-msgstr "Copia"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:236
-msgid "Copy selected text to the clipboard"
-msgstr "Copia il testo selezionato negli appunti"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:238
-msgid "Copy as image"
-msgstr "Copia come immagine"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:239
-msgid "Copy the entire FORMATTED song (or selected verses) to the clipboard"
-msgstr "Copia la canzone FORMATTATA (tutta o le strofe selezionate) negli appunti"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:240
-msgid "Paste"
-msgstr "Incolla"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:241
-msgid "Read text from the clipboard and insert it at the cursor position"
-msgstr "Legge il testo dagli appunti e lo inserisce nella posizione del cursore"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:242
-msgid "Paste chords"
-msgstr "Incolla accordi"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:243
-msgid "Merge chords from the copied text into the current selection"
-msgstr "Unisce gli accordi del testo copiato nella selezione corrente"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:258
-msgid "Insert title"
-msgstr "Inserisci titolo"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:259
-msgid "Insert a command to display the song title"
-msgstr "Inserisce un comando che mostra il titolo della canzone"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:260
-msgid "Insert chord"
-msgstr "Inserisci accordo"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:261
-msgid "Insert square brackets that will contain a chord"
-msgstr "Inserisce delle parentesi quadre, che conterranno un accordo"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:262
-msgid "Insert chorus"
-msgstr "Inserisci ritornello"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:263
-msgid "Insert a pair of commands that will contain the chorus"
-msgstr "Inserisce due comandi, tra i quali scrivere il ritornello"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:268
-msgid "Insert verse with custom label or without label"
-msgstr "Inserisci una strofa con un'etichetta personalizzata o senza etichetta"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:269
-msgid "Insert a verse with a custom label or without label"
-msgstr "Inserisce un comando per mostrare una strofa con un'etichetta personalizzabile"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:277
-msgid "Show verse and chorus labels"
-msgstr "Mostra le etichette delle strofe e ritornelli"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:278
-msgid "Show or hide verse and chorus labels"
-msgstr "Mostra o nasconde le etichette delle strofe e dei ritornelli"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:285
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:286
-msgid "Hide or show chords in the formatted song"
-msgstr "Mostra o nasconde gli accordi nella canzone formattata"
-
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:325
 msgid ""
 "You are not a skilled guitarist? Songpress++ can help you: when you open a song, it can detect if chords are difficult. If this is the case, Songpress++ will alert you, and offer to transpose your song to the easiest key, automatically.\n"
@@ -422,10 +297,6 @@ msgid "Command 'Paste chords': Select 1st chord line, 2nd text line"
 msgstr "Comando 'Integra accordi': Seleziona 1° linea accordi,  2° linea testo"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
-msgid "Time signature"
-msgstr "Indicazione di tempo"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Enter the time signature (e.g. 4/4, 3/4, 6/8):"
 msgstr "Inserisci l'indicazione di tempo (es. 4/4, 3/4, 6/8):"
 
@@ -444,10 +315,6 @@ msgstr "Tasti accordo"
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Enter the chord name (e.g. C, G, Am, D7):"
 msgstr "Inserisci il nome dell'accordo (es. C, G, Am, D7):"
-
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
-msgid "Key"
-msgstr "Tonalità"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Enter the song key (e.g. Am, C, G, F#m):"
@@ -499,14 +366,6 @@ msgstr "⚠ Rilevamento non riuscito"
 msgid "Metadata"
 msgstr "Metadati"
 
-#: SongpressFrame.py
-msgid "Guitar chord diagram"
-msgstr "Accordo chitarra"
-
-#: SongpressFrame.py — OnInsertFingering dialog title
-msgid "First chord fingering"
-msgstr "Diteggiatura primo accordo"
-
 #: SongpressFrame.py — OnInsertFingering chord field label OnChord
 msgid "Chord:"
 msgstr "Accordo:"
@@ -556,14 +415,6 @@ msgstr "Songpress++ - The Song Editor"
 #: SongpressFrame.py AUI pane preview
 msgid "Preview"
 msgstr "Anteprima"
-
-#: SongpressFrame.py AUI pane standard
-msgid "Standard"
-msgstr "Standard"
-
-#: SongpressFrame.py AUI pane format
-msgid "Format"
-msgstr "Formattazione"
 
 #: SongpressFrame.py error dialog title
 msgid "Error"
@@ -714,14 +565,6 @@ msgstr "Anteprima direttiva:"
 #: SongpressFrame.py insert image file dialog title
 msgid "Select image"
 msgstr "Seleziona immagine"
-
-#: SongpressFrame.py check syntax toolbar label
-msgid "Check syntax"
-msgstr "Verifica sintassi"
-
-#: SongpressFrame.py check syntax toolbar tooltip
-msgid "Check ChordPro syntax of the document"
-msgstr "Controlla la sintassi ChordPro del documento"
 
 #: SongpressFrame.py template submenu placeholder
 msgid "(no template available)"
@@ -1054,10 +897,6 @@ msgstr "Di cui complessi"
 msgid "Estimated duration"
 msgstr "Durata stimata"
 
-#: SongpressFrame.py OnSongStatistics row label (explicit duration)
-msgid "Duration"
-msgstr "Durata"
-
 #: SongpressFrame.py OnSongStatistics no metadata note
 msgid "  (no musical metadata found)"
 msgstr "  (nessun metadato musicale trovato)"
@@ -1203,10 +1042,6 @@ msgstr ""
 "Errore durante la lettura del PDF:\n"
 "%s"
 
-#: SongpressFrame.py — insert grid directive label
-msgid "Grid"
-msgstr "Griglia"
-
 #: SongpressFrame.py — insert image embed checkbox label
 msgid "If checked, the image data is encoded in base64 and stored directly "
 msgstr "Se selezionato, i dati dell'immagine sono codificati in base64 e memorizzati direttamente "
@@ -1261,10 +1096,6 @@ msgid ""
 msgstr ""
 "Template non trovato:\n"
 "%s"
-
-#: SongpressFrame.py — tempo metadata label
-msgid "Tempo"
-msgstr "Tempo"
 
 #: SongpressFrame.py — print preview error message
 msgid ""
@@ -1430,14 +1261,6 @@ msgstr "_Riavvia Songpress++"
 msgid "Close and restart Songpress++"
 msgstr "Chiudi e riavvia Songpress++"
 
-#: SongpressFrame.py — formatToolBar toggle preview tool short label
-msgid "Show Songpress++ Preview"
-msgstr "Mostra anteprima Songpress++"
-
-#: SongpressFrame.py — formatToolBar toggle preview tool tooltip
-msgid "Show or hide the Songpress++ Preview panel"
-msgstr "Mostra o nascondi il pannello Anteprima Songpress++"
-
 #: SongpressFrame.py — wrap-around search: reached the end
 msgid "Reached the end"
 msgstr "Raggiunta la fine"
@@ -1446,28 +1269,29 @@ msgstr "Raggiunta la fine"
 msgid "Reached the beginning"
 msgstr "Raggiunto l'inizio"
 
-#: SongpressFrame.py — wrap-around search: direction "beginning"
 #  Include la preposizione articolata corretta per l'italiano:
 #  "dall'inizio" (davanti a vocale). Il template usa "%s" senza preposizione fissa.
+#: SongpressFrame.py — wrap-around search: direction "beginning"
 msgid "beginning"
 msgstr "dall'inizio"
 
-#: SongpressFrame.py — wrap-around search: direction "end"
 #  "dalla fine" (davanti a consonante).
+#: SongpressFrame.py — wrap-around search: direction "end"
 msgid "end"
 msgstr "dalla fine"
 
-#: SongpressFrame.py — wrap-around search: full message ("%s of the song, restarting search from the %s")
 #  Secondo %s contiene già la preposizione articolata:
 #    "Raggiunta la fine della canzone, riavvio la ricerca dalla fine"
 #    "Raggiunto l'inizio della canzone, riavvio la ricerca dall'inizio"
+#: SongpressFrame.py — wrap-around search: full message ("%s of the song,
+#: restarting search from %s")
 msgid "%s of the song, restarting search from the %s?"
 msgstr "%s della canzone, riavvio la ricerca %s?"
 
-#: SongpressFrame.py — mainToolBar tool label
-msgid "Options..."
-msgstr "Opzioni..."
+#: SongpressFrame.py — View > Toolbars menu item for insertToolBar
+msgid "_Insert"
+msgstr "_Inserisci"
 
-#: SongpressFrame.py — mainToolBar tool tooltip
-msgid "Set program options"
-msgstr "Imposta le opzioni del programma"
+#: SongpressFrame.py — View > Toolbars menu item tooltip
+msgid "Show/hide toolbar with insert commands"
+msgstr "Mostra/nascondi la barra degli strumenti di inserimento"

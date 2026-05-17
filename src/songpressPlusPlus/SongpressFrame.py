@@ -51,6 +51,7 @@ from .MusicalSymbolDialog import MusicalSymbolDialog
 from . import KlavierRenderer
 from .PrintDialog import SongpressPrintout, PrintManager
 from .CopyAIBeatsPrompt import CopyAIBeatsPromptMixin
+from .SongpressToolbars import SongpressToolbarsMixin
 
 _ = wx.GetTranslation
 
@@ -709,7 +710,7 @@ else:
     ]
 
 
-class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
+class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, SongpressToolbarsMixin):
     def __init__(self, res):
         PrintManager.__init__(self)
         SDIMainFrame.__init__(
@@ -850,105 +851,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
         self._mgr.SetArtProvider(self._dockArt)
         # ───────────────────────────────────────────────────────────────
 
-        self.mainToolBar = aui.AuiToolBar(self.frame, wx.ID_ANY, wx.DefaultPosition, agwStyle=aui.AUI_TB_PLAIN_BACKGROUND)
-        self.mainToolBar.SetToolBitmapSize(wx.Size(16, 16))
-        self.AddTool(self.mainToolBar, 'new', 'img/new.png', _("New"), _("Create a new song"))
-        self.AddTool(self.mainToolBar, 'open', 'img/open.png', _("Open"), _("Open an existing song"))
-        self.saveTool = self.AddTool(self.mainToolBar, 'save', 'img/save.png', _("Save"), _("Save the song with the current file name"))
-        self.mainToolBar.AddSeparator()
-        self.AddTool(self.mainToolBar, 'printPreview', 'img/printPreview.png', _(u"Print preview"), _(u"Preview the song before printing"))
-        self.AddTool(self.mainToolBar, 'print', 'img/print.png', _(u"Print"), _(u"Print the song"))
-        self.mainToolBar.AddSeparator()
-        self.undoTool = self.AddTool(self.mainToolBar, 'undo', 'img/undo.png', _("Undo"), _("Undo the last change"))
-        self.redoTool = self.AddTool(self.mainToolBar, 'redo',
-            'img/redo.png', _("Redo"), _("Redo the last undone change"))
-        self.mainToolBar.AddSeparator()
-        self.cutTool = self.AddTool(self.mainToolBar, 'cut', 'img/cut.png', _("Cut"),
-                                                                _("Move selected text to the clipboard"))
-        self.copyTool = self.AddTool(self.mainToolBar, 'copy', 'img/copy.png', _("Copy"),
-                                                                 _("Copy selected text to the clipboard"))
-        self.copyOnlyTextTool = wx.xrc.XRCID('copyOnlyText')
-        self.AddTool(self.mainToolBar, 'copyAsImage', 'img/copyAsImage2.png', _("Copy as image"),
-                                     _("Copy the entire FORMATTED song (or selected verses) to the clipboard"))
-        self.pasteTool = self.AddTool(self.mainToolBar, 'paste', 'img/paste.png', _("Paste"),
-                                                                    _("Read text from the clipboard and insert it at the cursor position"))
-        self.pasteChordsTool = self.AddTool(self.mainToolBar, 'pasteChords', 'img/pasteChords.png', _("Paste chords"),
-                                                                                _("Merge chords from the copied text into the current selection"))
-        self.mainToolBar.AddSeparator()
-        self.syntaxCheckTool = self.AddTool(
-            self.mainToolBar,
-            'syntaxCheck',
-            'img/syntaxCheck.png',
-            _("Check syntax"),
-            _("Check ChordPro syntax of the document")
-        )
-        self.mainToolBar.AddSeparator()
-        self.AddTool(self.mainToolBar, 'options', 'img/setting.png', _(u"Options..."), _(u"Set program options"))
-        self.mainToolBar.Realize()
-        self.mainToolBarPane = self.AddPane(self.mainToolBar, aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(1),
-                                                                                _('Standard'), 'standard')
-        self.formatToolBar = aui.AuiToolBar(self.frame, wx.ID_ANY, agwStyle=aui.AUI_TB_PLAIN_BACKGROUND)
-        self.formatToolBar.SetExtraStyle(aui.AUI_TB_PLAIN_BACKGROUND)
-        self.fontChooser = FontComboBox(self.formatToolBar, -1, self.pref.format.face)
-        self.formatToolBar.AddControl(self.fontChooser)
-        self.frame.Bind(wx.EVT_COMBOBOX, self.OnFontSelected, self.fontChooser)
-        wx.UpdateUIEvent.SetUpdateInterval(500)
-        self.frame.Bind(wx.EVT_UPDATE_UI, self.OnIdle, self.frame)
-        self.frame.Bind(wx.EVT_TEXT_CUT, self.OnTextCutCopy, self.text)
-        self.frame.Bind(wx.EVT_TEXT_COPY, self.OnTextCutCopy, self.text)
-        self.fontChooser.Bind(wx.EVT_TEXT_ENTER, self.OnFontSelected, self.fontChooser)
-        self.fontChooser.Bind(wx.EVT_KILL_FOCUS, self.OnFontSelected, self.fontChooser)
-        self.AddTool(self.formatToolBar, 'title', 'img/title.png', _("Insert title"),
-                                 _("Insert a command to display the song title"))
-        self.AddTool(self.formatToolBar, 'chord', 'img/chord.png', _("Insert chord"),
-                                 _("Insert square brackets that will contain a chord"))
-        self.AddTool(self.formatToolBar, 'chorus', 'img/chorus.png', _("Insert chorus"),
-                                 _("Insert a pair of commands that will contain the chorus"))
-        self.AddTool(
-            self.formatToolBar,
-            'verseWithCustomLabelOrWithoutLabel',
-            'img/verse.png',
-            _("Insert verse with custom label or without label"),
-            _("Insert a verse with a custom label or without label"),
-        )
-        labelVersesTool = self.formatToolBar.AddToggleTool(  # AddToggleTool (agw) or AddTool
-            wx.xrc.XRCID('labelVerses'),
-            wx.Bitmap(wx.Image(glb.AddPath("img/labelVerses.png"))),
-            wx.NullBitmap,
-            True,
-            None,
-            _("Show verse and chorus labels"),
-            _("Show or hide verse and chorus labels"),
-        )
-        self.labelVersesToolId = labelVersesTool.GetId()
-        showChordsIcon = wx.StaticBitmap(self.formatToolBar, -1, wx.Bitmap(wx.Image(glb.AddPath('img/showChords.png'))))
-        self.formatToolBar.AddControl(showChordsIcon)
-        self.showChordsChooser = wx.Slider(self.formatToolBar, -1, 0, 0, 2, wx.DefaultPosition, (100, -1),
-                                                                             wx.SL_AUTOTICKS | wx.SL_HORIZONTAL)
-        tt1 = wx.ToolTip(_("Hide or show chords in the formatted song"))
-        tt2 = wx.ToolTip(_("Hide or show chords in the formatted song"))
-        self.showChordsChooser.SetToolTip(tt1)
-        showChordsIcon.SetToolTip(tt2)
-        self.frame.Bind(wx.EVT_SCROLL, self.OnFontSelected, self.showChordsChooser)
-        self.formatToolBar.AddControl(
-            self.showChordsChooser,
-            "pippo"
-        )
-        self.formatToolBar.AddSeparator()
-        togglePreviewTool = self.formatToolBar.AddToggleTool(
-            wx.xrc.XRCID('preview'),
-            wx.Bitmap(wx.Image(glb.AddPath("img/preview.png"))),
-            wx.NullBitmap,
-            True,
-            None,
-            _("Show Songpress++ Preview"),
-            _("Show or hide the Songpress++ Preview panel"),
-        )
-        self.togglePreviewToolId = togglePreviewTool.GetId()
-        self.frame.Bind(wx.EVT_TOOL, self.OnTogglePaneView, id=self.togglePreviewToolId)
-        self.formatToolBar.Realize()
-        self.formatToolBarPane = self.AddPane(self.formatToolBar, aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(2),
-                                                                                    _('Format'), 'format')
+        # ── Toolbars (Standard, Format, Insert) ──────────────────────
+        self._BuildToolbars()
+        # ─────────────────────────────────────────────────────────────
+
         self.BindMyMenu()
         self._BuildNewFromTemplateMenu()
         self.frame.Bind(EVT_TEXT_CHANGED, self.OnTextChanged)
@@ -1013,6 +919,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin):
         self._mgr.GetPane('preview').caption = _('Songpress++ Preview')
         self._mgr.GetPane('standard').caption = _('Standard')
         self._mgr.GetPane('format').caption = _('Format')
+        self._mgr.GetPane('insert').caption = _('Insert')
         # LoadPerspective sovrascrive MinSize: lo reimponiamo sempre dopo
         self._ApplyPreviewMinSize()
         self._mgr.Update()

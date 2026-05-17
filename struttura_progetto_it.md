@@ -38,6 +38,10 @@ Descrizione di ogni file e cartella presente nel progetto.
 | `struttura_progetto_it.md` | Questo file. Descrizione di ogni file e cartella del progetto. |
 | `guida_associazioni_file.md` | Guida alla verifica e sistemazione delle associazioni file su Windows. Copre: verifica del registro, correzione manuale tramite PowerShell, separazione tra cartella programma (`%LOCALAPPDATA%`) e dati utente (`%APPDATA%`), test di avvio con log diagnostico, reinstallazione pulita e uso della scheda "Associazioni file" in Songpress++. |
 | `Elenco programmi, pacchetti Python e versioni.md` | Elenco dei programmi, pacchetti Python e versioni utilizzate. |
+| `guida.md` | Guida utente completa di Songpress++ in italiano. Documenta comandi ChordPro supportati, sintassi delle direttive, funzionalità dell'editor e dell'anteprima. |
+| `guida_en.md` | Versione inglese della guida utente completa (`guida.md`). |
+| `guida_comandi_songpress.md` | Riferimento rapido ai comandi e alle scorciatoie di Songpress++ in italiano. |
+| `guida_comandi_songpress_en.md` | Versione inglese del riferimento rapido ai comandi (`guida_comandi_songpress.md`). |
 
 ### Licenza
 
@@ -82,6 +86,7 @@ Descrizione di ogni file e cartella presente nel progetto.
 | File | Descrizione |
 | ---- | ----------- |
 | `SongpressFrame.py` | Finestra principale dell'applicazione. Gestisce il layout generale, la barra dei menu, la toolbar e il coordinamento tra editor e anteprima. |
+| `SongpressToolbars.py` | Mixin `SongpressToolbarsMixin` che raccoglie la costruzione delle tre `AuiToolBar` di Songpress++: *Standard* (nuovo/apri/salva, stampa, modifica, copia come immagine, verifica sintassi, opzioni), *Format* (scelta font, etichette strofe, slider accordi, toggle anteprima) e *Insert* (tutti i comandi di inserimento: titolo, sottotitolo, accordo, ritornello, strofa, commento, interruzioni, blocchi, tempo, tonalità, durata, tastiere, immagini, simboli musicali, interlinea). Ereditato da `SongpressFrame` ed attivato tramite `self._BuildToolbars()`. |
 | `SDIMainFrame.py` | Frame base SDI (Single Document Interface) da cui `SongpressFrame` eredita. Fornisce la struttura base della finestra con supporto per apertura/salvataggio file. SetMinSize(wx.Size(370, 520)) |
 
 ### Editor e rendering
@@ -112,6 +117,7 @@ Descrizione di ogni file e cartella presente nel progetto.
 | `SongbookExporter.py` | Esporta una raccolta di canzoni come songbook PDF. Genera copertina, un brano per pagina (o più se lungo), indice finale con numero di pagina. Supporta: modalità 2 pagine per foglio, impostazione margini e formato carta, voci dell'indice cliccabili (link PDF interni), risoluzione automatica delle immagini `{image:}` relative alla cartella del file sorgente. |
 | `CanzonatorDialog.py` | Dialogo "Canzonatore": unisce più file ChordPro (`.crd`, `.cho`, `.chordpro`, `.chopro`, `.pro`, `.tab`, `.cpm`) in un unico file, con separatore `{new_page}` o riga vuota. Supporta riordino della lista, doppio clic per aprire i file nell'editor, scelta encoding output (UTF-8 / Latin-1) e dialogo di completamento con link cliccabili al file e alla cartella di destinazione. |
 | `PdfExporter.py` | Esporta la canzone (o il canzoniere) in formato PDF. |
+| `PrintDialog.py` | Dialogo per la configurazione della stampa: numero di pagine per foglio, colonne per pagina, scala e opzioni di layout. Usato da `SongpressFrame` prima di avviare la stampa o l'anteprima di stampa. |
 
 ### Preferenze e impostazioni
 
@@ -134,6 +140,7 @@ Descrizione di ogni file e cartella presente nel progetto.
 | `MyNotationDialog.py` | Dialogo per la scelta della notazione musicale (italiana, inglese, ecc.). |
 | `NotationDialog.py` | Versione base del dialogo di notazione. |
 | `ListDialog.py` | Dialogo generico con lista di elementi selezionabili. |
+| `MyListDialog.py` | Estensione/variante personalizzata di `ListDialog`. Fornisce la lista con comportamento adattato alle esigenze specifiche di Songpress++ (es. selezione notazione, selezione template). |
 | `FontFaceDialog.py` | Dialogo per la scelta del font (faccia tipografica). |
 | `FontComboBox.py` | Widget ComboBox per la selezione del font, usato nei dialoghi di formattazione. |
 | `errdlg.py` | Dialogo per la visualizzazione degli errori dell'applicazione. |
@@ -168,6 +175,7 @@ Descrizione di ogni file e cartella presente nel progetto.
 | File | Descrizione |
 | ---- | ----------- |
 | `Globals.py` | Variabili e costanti globali condivise tra i moduli dell'applicazione. |
+| `CopyAIBeatsPrompt.py` | Mixin `CopyAIBeatsPromptMixin` che aggiunge il comando **"Copy IA {beats_time} prompt"** (Ctrl+Shift+B): costruisce un prompt pronto all'uso da incollare in un terminale AI per l'aggiunta automatica di direttive `{beats_time:}` da uno spartito PDF, e lo copia negli appunti. Il nome del file `.crd` e quello del corrispondente `.pdf` vengono rilevati automaticamente dal documento aperto. Ereditato da `SongpressFrame`. |
 | `SyntaxChecker.py` | Controllo sintattico del formato ChordPro. Verifica parentesi quadre (accordi) e graffe (comandi): rileva parentesi non chiuse, accordi vuoti `[]`, comandi sconosciuti e comandi privi di valore obbligatorio. Restituisce una lista di `SyntaxError` con riga, colonna e messaggio. |
 | `utils.py` | Utilità condivise tra i moduli. Fornisce `undo_action(stc)`: context manager che raggruppa le modifiche su una `StyledTextCtrl` in un'unica azione annullabile, con supporto al nesting (le chiamate innestate sono no-op). Fornisce `temp_dir(keep=False)`: context manager che crea una directory temporanea e la elimina all'uscita (se `keep=True` la mantiene e ne registra il percorso nel log). |
 | `Enumerate.py` | Fornisce una classe o funzione di enumerazione (compatibilità con versioni Python precedenti). |
@@ -196,23 +204,35 @@ I file `.mo` sono le versioni **compilate** dei `.po`, lette a runtime da wxPyth
 | ------------------- | --------------------- |
 | `CompositePropertyPanel.po` / `.mo` | `CompositePropertyPanel.py` |
 | `CanzonatorDialog.po` / `.mo` | `CanzonatorDialog.py` |
+| `CopyAIBeatsPrompt.po` / `.mo` | `CopyAIBeatsPrompt.py` — prompt AI per `{beats_time}`, messaggi di conferma ed errore. |
 | `Editor.po` / `.mo` | `Editor.py` |
 | `errdlg.po` / `.mo` | `errdlg.py` |
 | `FontFaceDialog.po` / `.mo` | `FontFaceDialog.py` |
+| `main.po` / `.mo` | `main.py` — stringhe dell'entry point (es. messaggi di avvio o errori fatali). |
 | `MusicalSymbolDialog.po` / `.mo` | `MusicalSymbolDialog.py` |
 | `MyPreferencesDialog.po` / `.mo` | `MyPreferencesDialog.py` |
 | `NormalizeDialog.po` / `.mo` | `NormalizeDialog.py` / `MyNormalizeDialog.py` |
+| `PrintDialog.po` / `.mo` | `PrintDialog.py` — opzioni di stampa: pagine per foglio, colonne, scala. |
 | `NotationDialog.po` / `.mo` | `NotationDialog.py` / `MyNotationDialog.py` |
 | `Preferences.po` / `.mo` | `Preferences.py` |
 | `PreferencesDialog.po` / `.mo` | `PreferencesDialog.py` |
 | `PreviewCanvas.po` / `.mo` | `PreviewCanvas.py` |
+| `Renderer.po` / `.mo` | `Renderer.py` — eventuali messaggi localizzati del motore di rendering. |
 | `SDIMainFrame.po` / `.mo` | `SDIMainFrame.py` |
 | `SimplePropertyPanel.po` / `.mo` | `SimplePropertyPanel.py` |
 | `SongbookExporter.po` / `.mo` | `SongbookExporter.py`, `CanzonatorDialog.py` |
+| `SongpressToolbars.po` / `.mo` | `SongpressToolbars.py` — etichette e tooltip delle tre toolbar (Standard, Format, Insert). |
 | `SongpressFrame.po` / `.mo` | `SongpressFrame.py` |
 | `SyntaxCheckerDialog.po` / `.mo` | `SyntaxCheckerDialog.py` |
 | `Transpose.po` / `.mo` | `Transpose.py` |
 | `TransposeDialog.po` / `.mo` | `TransposeDialog.py` / `MyTransposeDialog.py` |
+
+### File `.pot` (template POT)
+
+I file `.pot` sono i **template gettext** generati automaticamente dall'estrazione delle stringhe con `pygettext` o `xgettext`. Servono come punto di partenza per creare nuove traduzioni e per aggiornare i `.po` esistenti tramite `msgmerge`. Non contengono traduzioni — solo i `msgid` originali.
+
+I `.pot` presenti nel progetto corrispondono ai moduli già elencati nella tabella sopra:
+`errdlg.pot`, `FontComboBox.pot`, `FontFaceDialog.pot`, `ListDialog.pot`, `MyPreferences.pot`, `MyPreferencesDialog.pot`, `NormalizeDialog.pot`, `NotationDialog.pot`, `PreferencesDialog.pot`, `PreviewCanvas.pot`, `SimplePropertyPanel.pot`, `Transpose.pot`.
 
 ---
 

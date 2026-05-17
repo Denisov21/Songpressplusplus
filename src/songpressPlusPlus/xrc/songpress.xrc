@@ -41,6 +41,7 @@
         </object>
         <object class="wxMenu" name="export">
           <label>E_xport</label>
+          <bitmap>../img/export.png</bitmap>
           <object class="wxMenuItem" name="exportToClipboardAsAVectorImage">
             <label>Export to _clipboard as a vector image</label>
             <accel>CTRL+D</accel>
@@ -119,6 +120,7 @@
         <object class="wxMenuItem" name="insertPageBreak">
           <label>Page _break</label>
           <accel>CTRL+SHIFT+RETURN</accel>
+          <bitmap>../img/new_page.png</bitmap>
           <help>Insert an explicit page break for printing</help>
         </object>
         <object class="wxMenuItem" name="insertColumnBreak">
@@ -284,6 +286,13 @@
             <checkable>1</checkable>
             <checked>1</checked>
           </object>
+          <object class="wxMenuItem" name="insert">
+            <label>_Insert</label>
+            <accel></accel>
+            <help>Show/hide toolbar with insert commands</help>
+            <checkable>1</checkable>
+            <checked>1</checked>
+          </object>
         </object>
         <object class="wxMenuItem" name="preview">
           <label>Songpress++ _Preview</label>
@@ -299,6 +308,7 @@
           <help>Show or hide the blue page break line in the preview</help>
           <checkable>1</checkable>
           <checked>1</checked>
+          <bitmap>../img/linee_o.png</bitmap>
         </object>
         <object class="wxMenuItem" name="showColumnBreakLines">
           <label>Show: "Column break lines"</label>
@@ -306,7 +316,7 @@
           <help>Show or hide the blue column break line in the preview</help>
           <checkable>1</checkable>
           <checked>1</checked>
-          <bitmap>../img/column.png</bitmap>
+          <bitmap>../img/linee_v.png</bitmap>
         </object>
         <object class="wxMenuItem" name="showDurationBeats">
           <label>Show: "duration {beats__time}"</label>
@@ -337,6 +347,7 @@
           <label>_Subtitle</label>
           <accel></accel>
           <help>Insert a command to display song subtitle</help>
+          <bitmap>../img/subtitle.png</bitmap>
         </object>
         <object class="wxMenuItem" name="chord">
           <label>C_hord...</label>
@@ -366,16 +377,19 @@
         <object class="wxMenuItem" name="insertVerse">
           <label>Unnumbered _verse {start__verse}\\{end__verse}</label>
           <accel></accel>
+          <bitmap>../img/verse_un_num.png</bitmap>
           <help>Insert an unnumbered verse with start__verse / end__verse commands</help>
         </object>
         <object class="wxMenuItem" name="insertChorusBlock">
           <label>_Chorus {start__chorus}\\{end__chorus}...</label>
           <accel></accel>
+          <bitmap>../img/repeat.png</bitmap>
           <help>Insert a chorus block with start__chorus / end__chorus commands</help>
         </object>
         <object class="wxMenuItem" name="insertChordBlock">
           <label>Intro _chords {start__chord}\\{end__chord}...</label>
           <accel></accel>
+          <bitmap>../img/chord_intro.png</bitmap>
           <help>Insert an intro chord section with start__chord / end__chord commands</help>
         </object>
         <object class="wxMenuItem" name="insertBridge">
@@ -386,6 +400,7 @@
         <object class="wxMenuItem" name="insertGrid">
           <label>_Grid {start__of__grid}\\{end__of__grid}...</label>
           <accel></accel>
+          <bitmap>../img/grid.png</bitmap>
           <help>Insert a chord grid block with start_of_grid / end_of_grid commands</help>
         </object>
         <object class="wxMenuItem" name="insertTempo">
@@ -397,11 +412,13 @@
         <object class="wxMenuItem" name="insertTime">
           <label>Time _signature {time:}...</label>
           <accel></accel>
+          <bitmap>../img/time.png</bitmap>
           <help>Insert ChordPro directive to set time signature (e.g. 4/4, 3/4)</help>
         </object>
         <object class="wxMenuItem" name="insertKey">
           <label>_Key {key:}...</label>
           <accel></accel>
+          <bitmap>../img/key.png</bitmap>
           <help>Insert ChordPro directive to set song key (e.g. Am, C, G)</help>
         </object>
         <object class="wxMenuItem" name="insertDuration">
@@ -449,6 +466,7 @@
         <object class="wxMenuItem" name="insertVerseNum">
           <label>Numbered v_erse {start__verse__num}\\{end__verse__num}</label>
           <accel></accel>
+          <bitmap>../img/verse_num.png</bitmap>
           <help>Insert a numbered verse with start__verse__num / end__verse__num commands</help>
         </object>
       </object>

@@ -158,7 +158,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="submenu" expanded="true">
-            <property name="bitmap">Load From File; </property>
+            <property name="bitmap">Load From File; ../img/export.png</property>
             <property name="label">E&amp;xport</property>
             <property name="name">export</property>
             <property name="permission">protected</property>
@@ -345,7 +345,7 @@
             <property name="permission">none</property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/new_page.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Insert an explicit page break for printing</property>
@@ -734,6 +734,19 @@
               <property name="shortcut"></property>
               <property name="unchecked_bitmap"></property>
             </object>
+            <object class="wxMenuItem" expanded="false">
+              <property name="bitmap"></property>
+              <property name="checked">1</property>
+              <property name="enabled">1</property>
+              <property name="help">Show/hide toolbar with insert commands</property>
+              <property name="id">ID_INSERT_TB</property>
+              <property name="kind">wxITEM_CHECK</property>
+              <property name="label">&amp;Insert</property>
+              <property name="name">insert</property>
+              <property name="permission">none</property>
+              <property name="shortcut"></property>
+              <property name="unchecked_bitmap"></property>
+            </object>
           </object>
           <object class="wxMenuItem" expanded="false">
             <property name="bitmap">Load From File; ../img/preview.png</property>
@@ -749,7 +762,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/linee_o.png</property>
             <property name="checked">1</property>
             <property name="enabled">1</property>
             <property name="help">Show or hide the blue page break line in the preview</property>
@@ -762,7 +775,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap">Load From File; ../img/column.png</property>
+            <property name="bitmap">Load From File; ../img/linee_v.png</property>
             <property name="checked">1</property>
             <property name="enabled">1</property>
             <property name="help">Show or hide the blue column break line in the preview</property>
@@ -819,7 +832,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ..\img\subtitle.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Insert a command to display song subtitle</property>
@@ -829,7 +842,7 @@
             <property name="name">subtitle</property>
             <property name="permission">none</property>
             <property name="shortcut"></property>
-            <property name="unchecked_bitmap"></property>
+            <property name="unchecked_bitmap">Load From File; </property>
           </object>
           <object class="wxMenuItem" expanded="false">
             <property name="bitmap">Load From File; ../img/chord.png</property>
@@ -888,7 +901,7 @@
             <property name="permission">none</property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/verse_un_num.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Insert an unnumbered verse with start__verse / end__verse commands</property>
@@ -901,7 +914,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/repeat.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Insert a chorus block with start__chorus / end__chorus commands</property>
@@ -914,7 +927,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/chord_intro.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Insert an intro chord section with start__chord / end__chord commands</property>
@@ -927,7 +940,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; </property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Insert a bridge block with start__bridge / end__bridge commands</property>
@@ -940,7 +953,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/grid.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Insert a chord grid block with start_of_grid / end_of_grid commands</property>
@@ -966,7 +979,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/time.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Insert ChordPro directive to set time signature (e.g. 4/4, 3/4)</property>
@@ -992,7 +1005,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/key.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Insert ChordPro directive to set song key (e.g. Am, C, G)</property>
@@ -1083,7 +1096,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/verse_num.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Insert a numbered verse with start__verse__num / end__verse__num commands</property>

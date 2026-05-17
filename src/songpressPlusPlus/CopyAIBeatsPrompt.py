@@ -25,7 +25,7 @@ STRUCTURE OF THE COPIED PROMPT
 Add beats_time to <file.crd> using the score <file.pdf>.
 The quarter note equals 1 beat (♩). The beats_time must be written before the
 chord line, example:
-`{beats_time: DO=2 SOL=2 RE-=2 LA-=2}` / `[DO]Ecco[SOL]mi, [RE-]ecco[LA-]mi!`
+`{beats_time: DO=2 SOL=2 RE-=2 LA-=2}` / `[DO]Luce nel [SOL]cielo`
 """
 
 import os
@@ -56,7 +56,7 @@ class CopyAIBeatsPromptMixin:
         u"The quarter note equals 1 beat (♩). The beats_time must be written "
         u"before the chord line, example:\n"
         u"`{{beats_time: DO=2 SOL=2 RE-=2 LA-=2}}` / "
-        u"`[DO]Ecco[SOL]mi, [RE-]ecco[LA-]mi!`"
+        u"`[DO]Luce nel [SOL]cielo`"
     )
 
     #: Supported song file extensions (ChordPro and compatible)

@@ -41,6 +41,7 @@
         </object>
         <object class="wxMenu" name="export">
           <label>E_sporta</label>
+          <bitmap>../img/export.png</bitmap>
           <object class="wxMenuItem" name="exportToClipboardAsAVectorImage">
             <label>Esporta negli _appunti come immagine vettoriale</label>
             <accel>CTRL+D</accel>
@@ -119,6 +120,7 @@
         <object class="wxMenuItem" name="insertPageBreak">
           <label>Interruzione di  _pagina</label>
           <accel>CTRL+SHIFT+RETURN</accel>
+          <bitmap>../img/new_page.png</bitmap>
           <help>Inserisci un'interruzione di pagina esplicita per la stampa</help>
         </object>
         <object class="wxMenuItem" name="insertColumnBreak">
@@ -284,6 +286,13 @@
             <checkable>1</checkable>
             <checked>1</checked>
           </object>
+          <object class="wxMenuItem" name="insert">
+            <label>_Inserisci</label>
+            <accel></accel>
+            <help>Mostra/nascondi la barra degli strumenti di inserimento</help>
+            <checkable>1</checkable>
+            <checked>1</checked>
+          </object>
         </object>
         <object class="wxMenuItem" name="preview">
           <label>_Anteprima Songpress++</label>
@@ -294,22 +303,23 @@
           <bitmap>../img/preview.png</bitmap>
         </object>
         <object class="wxMenuItem" name="showPageBreakLines">
-          <label>Mostra: "Linee di interruzione pagina"</label>
+          <label>Linee di interruzione pagina</label>
           <accel></accel>
           <help>Mostra o nascondi la linea blu di interruzione pagina nell'anteprima</help>
           <checkable>1</checkable>
           <checked>1</checked>
+          <bitmap>../img/linee_o.png</bitmap>
         </object>
         <object class="wxMenuItem" name="showColumnBreakLines">
-          <label>Mostra: "Linee di interruzione colonna"</label>
+          <label>Linee di interruzione colonna</label>
           <accel></accel>
           <help>Mostra o nascondi la linea blu di interruzione colonna nell'anteprima</help>
           <checkable>1</checkable>
           <checked>1</checked>
-          <bitmap>../img/column.png</bitmap>
+          <bitmap>../img/linee_v.png</bitmap>
         </object>
         <object class="wxMenuItem" name="showDurationBeats">
-          <label>Mostra: "Durata accordo {beats__time}"</label>
+          <label>Durata accordo {beats__time}</label>
           <accel></accel>
           <help>Mostra o nascondi il numero di battiti sopra gli accordi (direttiva {beats_time:})</help>
           <checkable>1</checkable>
@@ -337,6 +347,7 @@
           <label>_Sottotitolo</label>
           <accel></accel>
           <help>Inserisci un comando per visualizzare il sottotitolo della canzone</help>
+          <bitmap>../img/subtitle.png</bitmap>
         </object>
         <object class="wxMenuItem" name="chord">
           <label>A_ccordo...</label>
@@ -366,16 +377,19 @@
         <object class="wxMenuItem" name="insertVerse">
           <label>Strofa _non numerata {start__verse}\\{end__verse}</label>
           <accel></accel>
+          <bitmap>../img/verse_un_num.png</bitmap>
           <help>Inserisci una strofa non numerata con i comandi start__verse / end__verse</help>
         </object>
         <object class="wxMenuItem" name="insertChorusBlock">
           <label>_Ritornello {start__chorus}\\{end__chorus}...</label>
           <accel></accel>
+          <bitmap>../img/repeat.png</bitmap>
           <help>Inserisci un blocco ritornello con i comandi start__chorus / end__chorus</help>
         </object>
         <object class="wxMenuItem" name="insertChordBlock">
           <label>Accordi di _intro {start__chord}\\{end__chord}...</label>
           <accel></accel>
+          <bitmap>../img/chord_intro.png</bitmap>
           <help>Inserisci una sezione di accordi intro con i comandi start__chord / end__chord</help>
         </object>
         <object class="wxMenuItem" name="insertBridge">
@@ -386,6 +400,7 @@
         <object class="wxMenuItem" name="insertGrid">
           <label>_Griglia {start__of__grid}\\{end__of__grid}...</label>
           <accel></accel>
+          <bitmap>../img/grid.png</bitmap>
           <help>Inserisci un blocco griglia di accordi con i comandi start_of_grid / end_of_grid</help>
         </object>
         <object class="wxMenuItem" name="insertTempo">
@@ -397,11 +412,13 @@
         <object class="wxMenuItem" name="insertTime">
           <label>_Indicazione del tempo {time:}...</label>
           <accel></accel>
+          <bitmap>../img/time.png</bitmap>
           <help>Inserisci la direttiva ChordPro per impostare il tempo musicale (es. 4/4, 3/4)</help>
         </object>
         <object class="wxMenuItem" name="insertKey">
           <label>_Tonalità {key:}...</label>
           <accel></accel>
+          <bitmap>../img/key.png</bitmap>
           <help>Inserisci la direttiva ChordPro per impostare la tonalità (es. Am, Do, Sol)</help>
         </object>
         <object class="wxMenuItem" name="insertDuration">
@@ -449,6 +466,7 @@
         <object class="wxMenuItem" name="insertVerseNum">
           <label>Strofa _numerata {start__verse__num}\\{end__verse__num}</label>
           <accel></accel>
+          <bitmap>../img/verse_num.png</bitmap>
           <help>Inserisci una strofa numerata con i comandi start__verse__num / end__verse__num</help>
         </object>
       </object>
