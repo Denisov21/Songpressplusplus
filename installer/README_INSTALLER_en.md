@@ -76,7 +76,7 @@ installer/
 │   └── uv.exe
 └── tools/
     ├── rcedit-x64.exe
-    ├── rcedit-x86.exe
+    ├── rcedit-i686.exe
     ├── set_iconx64.bat
     └── set_iconx86.bat
 ```
@@ -92,9 +92,9 @@ not included in the installer or the final application.
 | File | Purpose |
 |------|---------|
 | `rcedit-x64.exe` | Command-line tool to embed an icon into a Windows `.exe` file (64-bit systems) |
-| `rcedit-x86.exe` | Command-line tool to embed an icon into a Windows `.exe` file (32-bit systems) |
+| `rcedit-i686.exe` | Command-line tool to embed an icon into a Windows `.exe` file (32-bit systems) |
 | `set_iconx64.bat` | Helper script for **64-bit** systems — uses `rcedit-x64.exe` |
-| `set_iconx86.bat` | Helper script for **32-bit** systems — uses `rcedit-x86.exe` |
+| `set_iconx86.bat` | Helper script for **32-bit** systems — uses `rcedit-i686.exe` |
 
 ### How to use the bat scripts
 
@@ -107,10 +107,10 @@ compiling the NSIS installer, so that the final `.exe` already has the correct i
 1. Double-click the correct bat (it will request administrator privileges automatically)
 2. When prompted, drag and drop `SongPressPlusPlus.exe` onto the window (or paste its path)
 3. When prompted, drag and drop `songpressplusplus.ico` onto the window (or paste its path)
-4. The script will apply the icon and confirm success
+4. The script will apply the icon, confirm success, and **automatically restart Explorer** to refresh the icon cache
 
 > **Download rcedit**: https://github.com/electron/rcedit/releases — download both
-> `rcedit-x64.exe` and `rcedit-x86.exe` and place them in the `tools/` folder.
+> `rcedit-x64.exe` and `rcedit-i686.exe` and place them in the `tools/` folder.
 
 > **Antivirus note**: Windows Defender may flag rcedit as `Exploit.PayloadProtect`.
 > This is a **false positive** caused by the nature of the tool (it modifies exe binaries).
@@ -228,6 +228,83 @@ songpress++x86-setup.exe          ← 32-bit installer
 1. Build the application with cx_Freeze
 2. Run `tools\set_iconx64.bat` (or `set_iconx86.bat` on 32-bit) to embed the icon into `SongPressPlusPlus.exe`
 3. Compile the NSIS script to generate the installer
+
+
+
+## Missing icon on the exe and in the "Open with" menu — fixed in the .nsi file
+
+![Songpress++ problema con Apri con](../src/songpressplusplus/img/GUIDE/Powershell_it.png)
+
+**Symptom:** After installation, `SongPressPlusPlus.exe` shows no icon in File Explorer,
+in the "Open with" context menu, and on the taskbar.
+
+**Cause:** `uv tool install` generates the exe without an embedded icon.
+
+**Fix applied in the `.nsi` scripts:** During installation, `rcedit` is extracted to
+`$PLUGINSDIR` and automatically embeds the icon into the exe immediately after `uv`
+creates it:
+
+```nsi
+; 6b. Embed icon into exe via rcedit
+!if /FileExists "${SRCDIR}\installer\tools\rcedit-x64.exe"
+  File "/oname=$PLUGINSDIR\rcedit.exe" "${SRCDIR}\installer\tools\rcedit-x64.exe"
+!endif
+${If} ${FileExists} "$PLUGINSDIR\rcedit.exe"
+  nsExec::ExecToLog '"$PLUGINSDIR\rcedit.exe" "$SongpressExe" --set-icon "$INSTDIR\songpressplusplus.ico"'
+  Pop $0
+${EndIf}
+```
+
+`rcedit` is extracted to `$PLUGINSDIR` (NSIS temporary folder, deleted after installation)
+and is not included in the final installation.
+
+**Manual workaround (with older installers):** Use `tools\set_iconx64.bat`
+(or `set_iconx86.bat` on 32-bit) — drag and drop the exe and ico when prompted. The bat
+automatically refreshes the Windows icon cache and restarts Explorer.
+
+> **Note:** If Songpress++ is reinstalled via `uv tool install` without recompiling the
+> installer, the exe is overwritten and the icon is lost. Recompile the installer with
+> the updated `.nsi` file to embed the icon automatically on every installation.
+
+## Start menu shortcut missing — fixed in the .nsi file
+
+**Symptom:** After a standard installation, Songpress++ does not appear in the Windows 11
+Start menu app grid.
+
+**Cause:** If `DoInstallLocal` calls `Abort` (e.g. because `uv` fails or the exe is not
+found), execution jumps out of the main `Section` before the Start menu shortcut is created.
+
+**Fix applied in the `.nsi` scripts:** A fallback block in `Section -Post` (which always
+runs, even after `Abort`) recreates the shortcut if missing and calls `SHChangeNotify` to
+notify Windows of the change. The installer's finish page also shows the message:
+
+- 🇮🇹 *Per completare l'installazione e visualizzare Songpress++ nel menu Start, è consigliato riavviare il computer.*
+- 🇬🇧 *To complete the installation and make Songpress++ appear in the Start menu, it is recommended to restart your computer.*
+
+```nsi
+; Section -Post — fallback shortcut + Windows notification
+${If} $SongpressExe == ""
+  StrCpy $SongpressExe "$INSTDIR\bin\SongPressPlusPlus.exe"
+${EndIf}
+!insertmacro MUI_STARTMENU_GETFOLDER Application $ICONS_GROUP
+${Unless} ${FileExists} "$SMPROGRAMS\$ICONS_GROUP\Songpress++.lnk"
+  CreateDirectory "$SMPROGRAMS\$ICONS_GROUP"
+  CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\Songpress++.lnk" \
+    "$SongpressExe" "" "$INSTDIR\songpressplusplus.ico" 0
+${EndUnless}
+System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, i 0, i 0)'
+```
+
+**Manual workaround (with older installers):** Create the shortcut manually:
+
+1. Open `%APPDATA%\Microsoft\Windows\Start Menu\Programs\` in File Explorer
+2. Create a new folder named `Songpress++`
+3. Navigate to `%LOCALAPPDATA%\Songpress++\bin\`, right-click `SongPressPlusPlus.exe` → *Create shortcut*
+4. Move the shortcut into the folder created in step 2
+
+> **Note on the BOM:** NSIS requires `.nsi` files to be in UTF-16 LE with a 2-byte BOM
+> (`FF FE`). A double BOM causes `Invalid command: "﻿;"` on line 1.
+> Verify that the file starts with exactly `FF FE` followed by the first character `;`.
 
 ## Notes
 

@@ -15,10 +15,10 @@ echo ================================================
 echo.
 
 :: rcedit nella stessa cartella del bat
-set RCEDIT=%~dp0rcedit-x64.exe
+set RCEDIT=%~dp0rcedit-x86.exe
 
 if not exist "%RCEDIT%" (
-    echo ERRORE: rcedit-x64.exe non trovato nella cartella:
+    echo ERRORE: rcedit-x86.exe non trovato nella cartella:
     echo %~dp0
     pause & exit /b 1
 )
