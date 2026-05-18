@@ -52,6 +52,17 @@ Comportamento:
 - Se la cartella esiste, viene pre-selezionata con ☑ e vengono aggiunte automaticamente anche le sue sottocartelle interne (`bin`, `tools`, `python`, `cache`) non ancora presenti in lista
 - Se la cartella non esiste viene aggiunta comunque come **Assente** (utile per rimuovere voci di registro orfane senza cartella corrispondente)
 
+## Ricerca collegamento Start Menu
+
+Il percorso del collegamento Start Menu viene risolto a runtime leggendo il valore
+`NSIS:StartMenuDir` dalla chiave Uninstall nel registro. Questo gestisce il caso in
+cui l'utente abbia personalizzato il nome della cartella durante l'installazione
+(default `Songpress++`, ma modificabile nel wizard NSIS).
+
+Se la chiave non esiste (installazione rimossa o registro già parzialmente pulito),
+lo script usa il percorso fisso `%Programs%\Songpress++\Songpress++.lnk` come fallback.
+In ogni caso viene controllato anche il collegamento sul Desktop tramite `Shell Folders`.
+
 ## Percorsi cartelle controllati (pattern fissi)
 
 Per ogni unità disponibile vengono controllati i seguenti pattern:

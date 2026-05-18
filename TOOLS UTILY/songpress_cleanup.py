@@ -1,5 +1,5 @@
 ###############################################################
-# Name:             songpress_clenaup.py
+# Name:             songpress_cleanup.py
 # Purpose:     Songpress++ Cleanup Tool Rimuove nel cestino tutte le cartelle e chiavi di registro lasciate da installazioni attuali o precedenti di Songpress++.
 # Author:        Denisov21
 # Created:     2026-04-11
@@ -280,13 +280,62 @@ REG_VALUES = [
     (r"Software\Classes\.sng\OpenWithProgids",      "Songpress.ChordPro",  "OpenWithProgids .sng → Songpress.ChordPro"),
 ]
 
-# Shortcut da rimuovere (percorsi con variabili ambiente, risolti a runtime)
-SHORTCUTS = [
-    (r"%APPDATA%\Microsoft\Windows\Start Menu\Programs\Songpress++\Songpress++.lnk",
-     "Collegamento Start Menu"),
-    (r"%USERPROFILE%\Desktop\Songpress++.lnk",
-     "Collegamento Desktop"),
-]
+def _build_shortcuts() -> list[tuple[str, str]]:
+    """
+    Costruisce la lista degli shortcut da controllare.
+    Il collegamento Start Menu viene cercato leggendo 'NSIS:StartMenuDir'
+    dalla chiave Uninstall nel registro (valore scritto dall'installer NSIS).
+    Questo gestisce il caso in cui l'utente abbia cambiato il nome della
+    cartella durante l'installazione (default "Songpress++", ma personalizzabile).
+    Se la chiave non esiste, usa il percorso fisso come fallback.
+    """
+    shortcuts: list[tuple[str, str]] = []
+    seen: set[str] = set()
+
+    def add(path: str, label: str) -> None:
+        norm = os.path.normpath(path)
+        key  = norm.lower()
+        if key not in seen:
+            seen.add(key)
+            shortcuts.append((norm, label))
+
+    # Shell Folder "Programs" = $SMPROGRAMS in NSIS
+    programs_dir = _shell_folder(
+        "Programs",
+        r"%APPDATA%\Microsoft\Windows\Start Menu\Programs",
+    )
+
+    # ── Collegamento Start Menu ──────────────────────────────────────────
+    # 1. Percorso reale dal registro (NSIS:StartMenuDir)
+    try:
+        k = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Uninstall\Songpress++",
+        )
+        icons_group, _ = winreg.QueryValueEx(k, "NSIS:StartMenuDir")
+        winreg.CloseKey(k)
+        add(
+            os.path.join(programs_dir, icons_group, "Songpress++.lnk"),
+            f"Collegamento Start Menu ({icons_group})",
+        )
+    except Exception:
+        pass
+
+    # 2. Fallback percorso fisso (cartella "Songpress++" — default NSIS)
+    add(
+        os.path.join(programs_dir, "Songpress++", "Songpress++.lnk"),
+        "Collegamento Start Menu (default)",
+    )
+
+    # ── Collegamento Desktop ─────────────────────────────────────────────
+    desktop = _shell_folder("Desktop", r"%USERPROFILE%\Desktop")
+    add(os.path.join(desktop, "Songpress++.lnk"), "Collegamento Desktop")
+
+    return shortcuts
+
+
+# Shortcut da rimuovere — costruiti a runtime per leggere NSIS:StartMenuDir
+SHORTCUTS = _build_shortcuts()
 
 # Sottocartelle interne all'installazione da cercare e rimuovere separatamente.
 INSTALL_SUBDIRS = ["bin", "tools", "python", "cache"]
