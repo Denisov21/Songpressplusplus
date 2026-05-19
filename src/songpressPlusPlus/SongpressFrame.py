@@ -6025,7 +6025,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         # --- dialog ---
         dlg = wx.Dialog(
             self.frame,
-            title=_("Dependencies — Songpress++"),
+            title=_("Check dependencies — Songpress++"),
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         )
         outer = wx.BoxSizer(wx.VERTICAL)

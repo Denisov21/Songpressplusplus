@@ -1304,8 +1304,8 @@ msgstr "Verifica dipendenze..."
 msgid "Show required dependencies and whether they are correctly installed"
 msgstr "Mostra le dipendenze richieste e se sono installate correttamente"
 
-msgid "Dependencies — Songpress++"
-msgstr "Dipendenze — Songpress++"
+msgid "Check dependencies — Songpress++"
+msgstr "Verifica dipendenze — Songpress++"
 
 msgid "All required dependencies are installed correctly."
 msgstr "Tutte le dipendenze richieste sono installate correttamente."
