@@ -285,16 +285,54 @@ def _open_driver_settings(print_data, parent_hwnd=None):
     """
     Apre il pannello impostazioni del driver di stampa (DocumentProperties).
 
-    Su Windows usa win32print.DocumentProperties per mostrare il dialogo
-    nativo del driver (es. Brother HL-L3270CDW).
-    Su altre piattaforme mostra un wx.PrintDialog in modalità setup.
+    Su Windows prova in ordine:
+      1. win32print (pywin32) — usa DEVMODEType allocato correttamente
+      2. ctypes puro su winspool.drv — sempre disponibile su Windows
+    Su altre piattaforme (o se entrambi falliscono) mostra wx.PageSetupDialog.
 
     Restituisce il wx.PrintData aggiornato (o quello originale se annullato).
     """
+
+    def _apply_devmode_to_printdata(dm, pd):
+        """Copia i campi rilevanti dal DEVMODE (pywin32 object) in wx.PrintData."""
+        orient = getattr(dm, 'Orientation', None)
+        if orient == 2:
+            pd.SetOrientation(wx.LANDSCAPE)
+        elif orient == 1:
+            pd.SetOrientation(wx.PORTRAIT)
+
+        duplex = getattr(dm, 'Duplex', None)
+        if duplex == 2:
+            pd.SetDuplex(wx.DUPLEX_VERTICAL)
+        elif duplex == 3:
+            pd.SetDuplex(wx.DUPLEX_HORIZONTAL)
+        elif duplex == 1:
+            pd.SetDuplex(wx.DUPLEX_SIMPLEX)
+
+        color = getattr(dm, 'Color', None)
+        if color == 2:
+            pd.SetColour(True)
+        elif color == 1:
+            pd.SetColour(False)
+
+        copies = getattr(dm, 'Copies', None)
+        if copies is not None and copies > 0:
+            pd.SetNoCopies(copies)
+
+        paper = getattr(dm, 'PaperSize', None)
+        if paper is not None and paper > 0:
+            try:
+                pd.SetPaperId(paper)
+            except Exception:
+                pass
+
     if wx.Platform == '__WXMSW__':
+
+        # ── Tentativo 1: pywin32 (win32print + pywintypes.DEVMODEType) ─────
         try:
             import win32print
             import win32con
+            import pywintypes
 
             printer_name = print_data.GetPrinterName().strip()
             if not printer_name:
@@ -302,75 +340,36 @@ def _open_driver_settings(print_data, parent_hwnd=None):
 
             hprinter = win32print.OpenPrinter(printer_name)
             try:
-                # Legge il DEVMODE corrente dal driver
-                props = win32print.GetPrinter(hprinter, 2)
-                devmode_in = props.get('pDevMode')
+                # Prima chiamata: ottieni la dimensione totale del DEVMODE
+                # (None, None, 0 → sola query della dimensione)
+                dm_size = win32print.DocumentProperties(
+                    parent_hwnd or 0, hprinter, printer_name, None, None, 0
+                )
+                if dm_size <= 0:
+                    raise RuntimeError(f"DocumentProperties size query: {dm_size}")
 
-                # Mostra il pannello del driver.
-                # I binding Python di win32print passano il pDevMode per
-                # riferimento all'oggetto: DocumentProperties lo modifica
-                # in-place sull'oggetto Python quando l'utente preme OK.
+                # Calcola dmDriverExtra = dimensione totale − dimensione fissa
+                dm_fixed = pywintypes.DEVMODEType().Size
+                driver_extra = max(0, dm_size - dm_fixed)
+
+                # Alloca un DEVMODE con la driverExtra corretta e leggi
+                # le impostazioni correnti dal driver (DM_OUT_BUFFER)
+                dm = pywintypes.DEVMODEType(driver_extra)
+                win32print.DocumentProperties(
+                    parent_hwnd or 0, hprinter, printer_name,
+                    dm, dm, win32con.DM_OUT_BUFFER
+                )
+
+                # Mostra il pannello del driver con DM_IN_PROMPT
                 result = win32print.DocumentProperties(
-                    parent_hwnd or 0,
-                    hprinter,
-                    printer_name,
-                    devmode_in,   # devmode output — modificato in-place dal driver
-                    devmode_in,   # devmode input  — valori iniziali
+                    parent_hwnd or 0, hprinter, printer_name,
+                    dm, dm,
                     win32con.DM_IN_BUFFER | win32con.DM_OUT_BUFFER | win32con.DM_IN_PROMPT,
                 )
 
-                # result == IDOK (1) → utente ha confermato con OK
-                if result == 1 and devmode_in is not None:
-                    # ── 1. Salva il DEVMODE aggiornato nel driver ──────────────
-                    # Senza questo SetPrinter il driver dimentica le modifiche
-                    # non appena viene chiuso l'handle.
-                    try:
-                        props['pDevMode'] = devmode_in
-                        win32print.SetPrinter(hprinter, 2, props, 0)
-                    except Exception:
-                        pass  # diritti insufficienti o driver non supporta → continua
-
-                    # ── 2. Propaga i campi leggibili in wx.PrintData ──────────
-                    # wx.PrintData non conosce il DEVMODE direttamente; aggiorniamo
-                    # i campi che wx espone e che l'utente può aver modificato.
-
-                    # Orientamento (dmOrientation: 1=portrait, 2=landscape)
-                    orient = getattr(devmode_in, 'Orientation', None)
-                    if orient == 2:
-                        print_data.SetOrientation(wx.LANDSCAPE)
-                    elif orient == 1:
-                        print_data.SetOrientation(wx.PORTRAIT)
-
-                    # Fronte/retro (dmDuplex: 1=simplex, 2=vertical, 3=horizontal)
-                    dm_duplex = getattr(devmode_in, 'Duplex', None)
-                    if dm_duplex == 2:
-                        print_data.SetDuplex(wx.DUPLEX_VERTICAL)
-                    elif dm_duplex == 3:
-                        print_data.SetDuplex(wx.DUPLEX_HORIZONTAL)
-                    elif dm_duplex == 1:
-                        print_data.SetDuplex(wx.DUPLEX_SIMPLEX)
-
-                    # Colore (dmColor: 1=mono, 2=colore)
-                    dm_color = getattr(devmode_in, 'Color', None)
-                    if dm_color == 2:
-                        print_data.SetColour(True)
-                    elif dm_color == 1:
-                        print_data.SetColour(False)
-
-                    # Numero di copie (dmCopies)
-                    dm_copies = getattr(devmode_in, 'Copies', None)
-                    if dm_copies is not None and dm_copies > 0:
-                        print_data.SetNoCopies(dm_copies)
-
-                    # Formato carta (dmPaperSize → wx paper id)
-                    # La mappatura è 1:1 per i formati standard ISO/ANSI.
-                    dm_paper = getattr(devmode_in, 'PaperSize', None)
-                    if dm_paper is not None:
-                        # wx.PAPER_* ha gli stessi valori numerici di DMPAPER_*
-                        try:
-                            print_data.SetPaperId(dm_paper)
-                        except Exception:
-                            pass
+                # IDOK = 1
+                if result == 1:
+                    _apply_devmode_to_printdata(dm, print_data)
 
             finally:
                 win32print.ClosePrinter(hprinter)
@@ -378,14 +377,112 @@ def _open_driver_settings(print_data, parent_hwnd=None):
             return print_data
 
         except Exception:
-            pass  # win32print non disponibile o errore → fallback sotto
+            pass  # win32print non disponibile o errore → tentativo 2
 
-    # ── Fallback: wx.PrintDialog in modalità setup ────────────────────────
-    pdd = wx.PrintDialogData(print_data)
-    pdd.SetSetupDialog(True)
-    dlg = wx.PrintDialog(None, pdd)
+        # ── Tentativo 2: ctypes puro su winspool.drv ───────────────────────
+        try:
+            import ctypes
+            import ctypes.wintypes as wt
+
+            DM_IN_BUFFER  = 8
+            DM_OUT_BUFFER = 2
+            DM_IN_PROMPT  = 4
+
+            # Offset nella struttura DEVMODEW (Unicode, Windows ≥ 2000)
+            _OFF_ORIENTATION = 44
+            _OFF_PAPERSIZE   = 46
+            _OFF_COPIES      = 78
+            _OFF_COLOR       = 96
+            _OFF_DUPLEX      = 100
+
+            def _short(buf, off):
+                return ctypes.c_short.from_buffer_copy(buf[off:off + 2]).value
+
+            winspool = ctypes.WinDLL('winspool.drv', use_last_error=True)
+
+            printer_name = print_data.GetPrinterName().strip()
+            if not printer_name:
+                buf_size = wt.DWORD(0)
+                winspool.GetDefaultPrinterW(None, ctypes.byref(buf_size))
+                buf = ctypes.create_unicode_buffer(buf_size.value)
+                winspool.GetDefaultPrinterW(buf, ctypes.byref(buf_size))
+                printer_name = buf.value
+
+            if not printer_name:
+                raise RuntimeError("Nessuna stampante predefinita trovata")
+
+            hprinter = wt.HANDLE()
+            if not winspool.OpenPrinterW(printer_name, ctypes.byref(hprinter), None):
+                raise ctypes.WinError(ctypes.get_last_error())
+
+            try:
+                # Query dimensione
+                dm_size = winspool.DocumentPropertiesW(
+                    parent_hwnd or 0, hprinter, printer_name, None, None, 0
+                )
+                if dm_size <= 0:
+                    raise RuntimeError(f"DocumentProperties size query: {dm_size}")
+
+                # Leggi impostazioni correnti
+                dm_buf = ctypes.create_string_buffer(dm_size)
+                ret = winspool.DocumentPropertiesW(
+                    parent_hwnd or 0, hprinter, printer_name,
+                    dm_buf, None, DM_OUT_BUFFER
+                )
+                if ret != 1:
+                    raise RuntimeError(f"DocumentProperties DM_OUT_BUFFER: {ret}")
+
+                # Mostra dialogo driver
+                dm_out = ctypes.create_string_buffer(dm_size)
+                ret = winspool.DocumentPropertiesW(
+                    parent_hwnd or 0, hprinter, printer_name,
+                    dm_out, dm_buf,
+                    DM_IN_BUFFER | DM_OUT_BUFFER | DM_IN_PROMPT,
+                )
+
+                if ret == 1:
+                    orient  = _short(dm_out, _OFF_ORIENTATION)
+                    paper   = _short(dm_out, _OFF_PAPERSIZE)
+                    copies  = _short(dm_out, _OFF_COPIES)
+                    color   = _short(dm_out, _OFF_COLOR)
+                    duplex  = _short(dm_out, _OFF_DUPLEX)
+
+                    if orient == 2:
+                        print_data.SetOrientation(wx.LANDSCAPE)
+                    elif orient == 1:
+                        print_data.SetOrientation(wx.PORTRAIT)
+                    if paper > 0:
+                        try:
+                            print_data.SetPaperId(paper)
+                        except Exception:
+                            pass
+                    if copies > 0:
+                        print_data.SetNoCopies(copies)
+                    if color == 2:
+                        print_data.SetColour(True)
+                    elif color == 1:
+                        print_data.SetColour(False)
+                    if duplex == 2:
+                        print_data.SetDuplex(wx.DUPLEX_VERTICAL)
+                    elif duplex == 3:
+                        print_data.SetDuplex(wx.DUPLEX_HORIZONTAL)
+                    elif duplex == 1:
+                        print_data.SetDuplex(wx.DUPLEX_SIMPLEX)
+
+            finally:
+                winspool.ClosePrinter(hprinter)
+
+            return print_data
+
+        except Exception:
+            pass  # ctypes fallito → fallback wx
+
+    # ── Fallback: wx.PageSetupDialog (non-Windows o entrambi i tentativi falliti)
+    # SetSetupDialog() è stato rimosso in wxPython 4.x (Phoenix).
+    pdd = wx.PageSetupDialogData(print_data)
+    dlg = wx.PageSetupDialog(None, pdd)
     if dlg.ShowModal() == wx.ID_OK:
-        print_data = wx.PrintData(dlg.GetPrintDialogData().GetPrintData())
+        print_data = wx.PrintData(dlg.GetPageSetupDialogData().GetPrintData())
     dlg.Destroy()
     return print_data
 
@@ -499,6 +596,11 @@ class SongpressPrintout(wx.Printout):
         r.gridSizeDir     = getattr(self.frame_obj.pref, 'gridSizeDir',     'both')
         r.columns         = getattr(self.frame_obj, '_columns_per_page', 1)
         r.columnHeight    = getattr(self, '_col_h_px', 0)
+        # Imposta la directory del documento per risolvere i percorsi relativi
+        # delle immagini ({image: intro.png} → cerca nella stessa cartella del .crd)
+        import os as _os
+        doc_path = getattr(self.frame_obj, 'document', None)
+        r._document_dir = _os.path.dirname(doc_path) if doc_path else ''
         return r
 
     def _ensure_layout(self, dc):
@@ -614,7 +716,7 @@ class SongpressPrintout(wx.Printout):
         total_h_px = sum(seg_h_px)
 
         if getattr(self.frame_obj, '_fit_to_page', False):
-            # Scala font per far stare tutto il contenuto in una sola pagina.
+            # Scala font in riduzione se il contenuto eccede la pagina (no ingrandimento).
             if total_h_px * self._scale_y > usable_h:
                 f = usable_h / (total_h_px * self._scale_y)
                 self._scale_x *= f
@@ -941,8 +1043,9 @@ class PrintOptionsDialog:
             wx.StaticBox(dlg, label=_("Scaling")), wx.VERTICAL
         )
 
-        self.cb_fit = wx.CheckBox(dlg, label=_("Fit to page"))
+        self.cb_fit = wx.CheckBox(dlg, label=_("Shrink if exceeds page"))
         self.cb_fit.SetValue(owner._fit_to_page)
+        self.cb_fit.SetToolTip(_("Reduce the content only if it exceeds the page size (no upscaling)"))
         box_resize.Add(self.cb_fit, 0, wx.ALL, _GAP)
 
         # cb_shrink + nota secondaria
@@ -952,6 +1055,7 @@ class PrintOptionsDialog:
             shrink_panel, label=_("Shrink to fit current page")
         )
         self.cb_shrink.SetValue(owner._shrink_to_fit)
+        self.cb_shrink.SetToolTip(_("Reduce the content only if it exceeds the page size, to avoid bottom clipping"))
         note = wx.StaticText(shrink_panel, label=_("(prevent bottom clipping)"))
         note.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT))
         nf = note.GetFont()
@@ -990,11 +1094,13 @@ class PrintOptionsDialog:
             dlg, label=_("Do not replicate (leave right half blank)")
         )
         self.cb_no_mirror.SetValue(owner._no_mirror_right)
+        self.cb_no_mirror.SetToolTip(_("In 2-pages mode, print only on the left half and leave the right half blank (no mirroring)"))
         self.cb_no_mirror.Enable(owner._two_pages_per_sheet)
         box_adv.Add(self.cb_no_mirror, 0, wx.ALL, _GAP)
 
         self.cb_remove_blank = wx.CheckBox(dlg, label=_("Remove blank pages"))
         self.cb_remove_blank.SetValue(owner._remove_blank_pages)
+        self.cb_remove_blank.SetToolTip(_("Skip pages that are empty or contain only whitespace, based on the threshold below"))
         box_adv.Add(self.cb_remove_blank, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
 
         row2 = wx.BoxSizer(wx.HORIZONTAL)

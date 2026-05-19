@@ -1334,7 +1334,7 @@ The following controls are found in the **Formatting** tab of preferences and af
 | ---------------------------------------------- | ------------------------------------------------------------------- |
 | Pages per sheet (1 / 2)                        | Selects how many logical pages to print on one physical sheet       |
 | Columns per page (1 / 2)                       | Distributes text across one or two columns                          |
-| Shrink and fit to page                         | Reduces content to fit on a single page                             |
+| Shrink if exceeds page                         | Reduces content only if it exceeds the page size (no upscaling)     |
 | Shrink to fit current page                     | Further reduces to avoid content being cut at the bottom            |
 | Don't replicate (leave right half blank)       | With 2 pages/sheet: leaves the second half blank instead of copying |
 | Remove blank pages                             | Removes nearly-empty logical pages from the print output            |
@@ -1357,7 +1357,7 @@ How the logic works: Songpress++ measures, for each segment of the song (separat
 
 **Second step** — scales the content (shrinks text/chords), only if margin reduction alone was not sufficient. The scale factor is calculated separately for each segment and the most restrictive one is applied, ensuring no segment is clipped.
 
-In practice: the value (default 5 mm) represents the floor below which margins never drop during auto-reduction. The higher the value, the less aggressive the margin compression (and the sooner text scaling begins). The control is disabled when the Shrink to fit checkbox is off, and re-enables automatically when it is turned on.
+In practice: the value (default 5 mm) represents the floor below which margins never drop during auto-reduction. The higher the value, the less aggressive the margin compression (and the sooner text scaling begins). The control is disabled when the Shrink if exceeds page checkbox is off, and re-enables automatically when it is turned on.
 
 **What is "Blank page threshold (%)"?**
 
@@ -1377,9 +1377,32 @@ The control is disabled when the "Remove blank pages" checkbox is off, and re-en
 
 ### "Driver settings" button in the preview
 
-The preview toolbar includes the **Driver settings…** button, which opens the native printer driver panel (`DocumentProperties` on Windows, `wx.PrintDialog` in setup mode on other platforms). From this panel you can change all driver settings: orientation, duplex, color, number of copies, paper size, and any model-specific options (e.g. print quality, paper tray).
+The preview toolbar includes the **Driver settings…** button, which opens the native printer driver panel (`DocumentProperties` on Windows). From this panel you can change all driver settings: orientation, duplex, color, number of copies, paper size, and any model-specific options (e.g. print quality, paper tray).
 
-When changes are confirmed with OK, Songpress++ automatically propagates the readable fields back into `wx.PrintData` (orientation, duplex, color, copies, paper size) and refreshes the preview status bar. If the orientation has changed, the preview reloads automatically to show the sheet in the correct direction.
+#### How it works internally
+
+The panel is opened following three cascading paths:
+
+**Attempt 1 — pywin32 (preferred path on Windows)**
+
+Uses the `win32print` and `pywintypes` bindings included with the `pywin32` dependency:
+
+1. First call to `DocumentProperties(hwnd, hprinter, name, None, None, 0)` → retrieves the total size of the driver-specific DEVMODE.
+2. Allocates a `pywintypes.DEVMODEType(driver_extra)` with the correct size (fixed size + `dmDriverExtra`).
+3. Second call with `DM_OUT_BUFFER` → reads the current driver settings into the allocated buffer.
+4. Third call with `DM_IN_BUFFER | DM_OUT_BUFFER | DM_IN_PROMPT` → **shows the native driver panel** and waits for the user's confirmation.
+
+**Attempt 2 — pure ctypes via `winspool.drv` (fallback, no external dependencies)**
+
+If `pywin32` is unavailable or raises an error, the same logic is applied via `ctypes.WinDLL('winspool.drv')`, calling `DocumentPropertiesW` directly with `ctypes.create_string_buffer` buffers. The relevant DEVMODE fields (orientation, paper size, copies, color, duplex) are read using fixed offsets in the `DEVMODEW` structure.
+
+**Attempt 3 — Informational dialog (non-Windows or both attempts failed)**
+
+On platforms other than Windows, or if both previous attempts fail, an informational message box is shown explaining that the driver settings panel is not available on this platform, and suggesting the use of the preview toolbar to change orientation, paper size and margins. No additional dialog window is opened, to avoid showing two windows with overlapping functions.
+
+#### Propagation of changes
+
+When the user confirms with OK, Songpress++ automatically propagates the readable fields back into `wx.PrintData` (orientation, duplex, color, copies, paper size) and refreshes the preview status bar. If the orientation has changed, the preview reloads automatically to show the sheet in the correct direction.
 
 > **Note** — The **Driver settings…** button is only available inside the print preview, not from the main menu.
 

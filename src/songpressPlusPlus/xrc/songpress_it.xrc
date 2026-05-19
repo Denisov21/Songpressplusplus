@@ -637,6 +637,12 @@
           <help>Apri la guida di riferimento ai comandi di Songpress++</help>
           <bitmap>../img/livesafer.png</bitmap>
         </object>
+        <object class="wxMenuItem" name="checkDependencies">
+          <label>_Verifica dipendenze...</label>
+          <accel></accel>
+          <help>Mostra le dipendenze richieste e se sono installate correttamente</help>
+          <bitmap>../img/checked_dipendence.png</bitmap>
+        </object>
         <object class="wxMenuItem" name="about">
           <label>_Informazioni...</label>
           <accel></accel>

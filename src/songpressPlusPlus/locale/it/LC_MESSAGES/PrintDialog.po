@@ -53,8 +53,8 @@ msgstr "1 colonna"
 msgid "2 columns"
 msgstr "2 colonne"
 
-msgid "Fit to page"
-msgstr "Riduci e adatta alla pagina"
+msgid "Shrink if exceeds page"
+msgstr "Riduci se eccede la pagina"
 
 msgid "Shrink to fit current page"
 msgstr "Riduci per adattare alla pagina corrente"
@@ -163,3 +163,25 @@ msgstr "Colore: bianco e nero"
 
 msgid "Color: unknown"
 msgstr "Colore: sconosciuto"
+
+# ── Tooltip checkbox — Opzioni di stampa ─────────────────────────────────────
+
+msgid "Reduce the content only if it exceeds the page size (no upscaling)"
+msgstr "Riduce il contenuto solo se eccede le dimensioni della pagina (senza ingrandimento)"
+
+msgid "Reduce the content only if it exceeds the page size, to avoid bottom clipping"
+msgstr "Riduce il contenuto solo se supera le dimensioni della pagina, per evitare il taglio in fondo"
+
+msgid "In 2-pages mode, print only on the left half and leave the right half blank (no mirroring)"
+msgstr "In modalità 2 pagine, stampa solo sulla metà sinistra e lascia vuota la metà destra (senza replica)"
+
+msgid "Skip pages that are empty or contain only whitespace, based on the threshold below"
+msgstr "Salta le pagine vuote o che contengono solo spazi, in base alla soglia impostata"
+
+# ── Fallback dialogo impostazioni driver ─────────────────────────────────────
+
+msgid "The printer driver settings panel is not available on this platform.\n\nUse the print preview toolbar to change orientation, paper size and margins."
+msgstr "Il pannello delle impostazioni del driver di stampa non è disponibile su questa piattaforma.\n\nUtilizza la barra degli strumenti dell'anteprima di stampa per modificare orientamento, formato carta e margini."
+
+msgid "Driver settings unavailable"
+msgstr "Impostazioni driver non disponibili"

@@ -1306,6 +1306,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         Bind(self.OnGuide, 'guide')
         Bind(self.OnGuideMarkdown, 'guideMarkdown')
         Bind(self.OnGuideCommandsMarkdown, 'guideCommandsMarkdown')
+        Bind(self.OnCheckDependencies, 'checkDependencies')
         # --- NUOVO: Normalizza spazi multipli ---
         Bind(self.OnNormalizeSpaces, 'normalizeSpaces')
         # --- NUOVO: Formato => Altro ---
@@ -5987,6 +5988,106 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.pref.SetFont(font, showChords)
         self.SetFont(True)
         evt.Skip()
+
+    def OnCheckDependencies(self, evt):
+        """Mostra una finestra con le dipendenze richieste e il loro stato."""
+        import importlib
+        import sys
+
+        # (nome_visualizzato, nome_modulo, note)
+        DEPS = [
+            ("wxPython",        "wx",           ""),
+            ("requests",        "requests",     ""),
+            ("python-pptx",     "pptx",         ""),
+            ("pyshortcuts",     "pyshortcuts",  ""),
+            ("reportlab",       "reportlab",    ""),
+            ("pypdf",           "pypdf",        ""),
+            ("markdown",        "markdown",     ""),
+            ("mistune",         "mistune",      ""),
+            ("pywin32",         "win32print",   _("Windows only")),
+        ]
+
+        rows = []
+        all_ok = True
+        for display, module, note in DEPS:
+            try:
+                mod = importlib.import_module(module)
+                ver = getattr(mod, '__version__', None) or getattr(mod, 'VERSION', None) or "?"
+                status = u"\u2705"   # ✅
+                ver_str = str(ver)
+            except ImportError:
+                status = u"\u274c"   # ❌
+                ver_str = _("not installed")
+                if not note:          # obbligatoria
+                    all_ok = False
+            rows.append((display, status, ver_str, note))
+
+        # --- dialog ---
+        dlg = wx.Dialog(
+            self.frame,
+            title=_("Dependencies — Songpress++"),
+            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
+        )
+        outer = wx.BoxSizer(wx.VERTICAL)
+
+        # Riepilogo in cima
+        summary_text = (
+            _("All required dependencies are installed correctly.")
+            if all_ok
+            else _("One or more required dependencies are missing.")
+        )
+        summary_icon = u"\u2705 " if all_ok else u"\u274c "
+        summary_lbl = wx.StaticText(dlg, label=summary_icon + summary_text)
+        font = summary_lbl.GetFont()
+        font.SetWeight(wx.FONTWEIGHT_BOLD)
+        summary_lbl.SetFont(font)
+        outer.Add(summary_lbl, 0, wx.ALL, 12)
+
+        # Griglia
+        grid = wx.FlexGridSizer(cols=4, vgap=4, hgap=12)
+        grid.AddGrowableCol(0)
+        grid.AddGrowableCol(2)
+
+        def _hdr(text):
+            lbl = wx.StaticText(dlg, label=text)
+            f = lbl.GetFont()
+            f.SetWeight(wx.FONTWEIGHT_BOLD)
+            lbl.SetFont(f)
+            return lbl
+
+        grid.Add(_hdr(_("Package")),  0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(_hdr(_("Status")),   0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(_hdr(_("Version")),  0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(_hdr(_("Notes")),    0, wx.ALIGN_CENTER_VERTICAL)
+
+        for display, status, ver_str, note in rows:
+            grid.Add(wx.StaticText(dlg, label=display),  0, wx.ALIGN_CENTER_VERTICAL)
+            grid.Add(wx.StaticText(dlg, label=status),   0, wx.ALIGN_CENTER_VERTICAL)
+            grid.Add(wx.StaticText(dlg, label=ver_str),  0, wx.ALIGN_CENTER_VERTICAL)
+            grid.Add(wx.StaticText(dlg, label=note),     0, wx.ALIGN_CENTER_VERTICAL)
+
+        outer.Add(grid, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+
+        # Python / wxPython info
+        outer.Add(wx.StaticLine(dlg), 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 12)
+        py_info = wx.StaticText(
+            dlg,
+            label=u"Python {}    wxPython {}".format(
+                sys.version.split()[0],
+                wx.__version__,
+            ),
+        )
+        outer.Add(py_info, 0, wx.ALL, 10)
+
+        # Bottone OK
+        btn_ok = wx.Button(dlg, wx.ID_OK, _("Close"))
+        btn_ok.SetDefault()
+        outer.Add(btn_ok, 0, wx.ALIGN_RIGHT | wx.ALL, 10)
+
+        dlg.SetSizerAndFit(outer)
+        dlg.CentreOnParent()
+        dlg.ShowModal()
+        dlg.Destroy()
 
     def OnGuide(self, evt):
         wx.LaunchDefaultBrowser(_("http://www.skeed.it/songpress-manual"))

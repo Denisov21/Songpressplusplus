@@ -1334,7 +1334,7 @@ I seguenti controlli si trovano nella scheda **Formattazione** delle preferenze 
 | ---------------------------------------------------- | ------------------------------------------------------------------------ |
 | Pagine per foglio (1 / 2)                            | Seleziona quante pagine logiche stampare su un foglio fisico             |
 | Colonne per pagina (1 / 2)                           | Distribuisce il testo su una o due colonne                               |
-| Comprimi e adatta alla pagina                        | Riduce il contenuto per farlo rientrare in una sola pagina               |
+| Riduci se eccede la pagina                           | Riduce il contenuto solo se eccede la pagina (senza ingrandimento)       |
 | Comprimi per adattare alla pagina corrente           | Riduce ulteriormente per evitare che il contenuto venga tagliato in basso|
 | Non replicare (lascia metà destra vuota)             | Con 2 pagine/foglio: lascia la seconda metà vuota invece di copiare     |
 | Rimuovi pagine vuote                                 | Rimuove le pagine logiche quasi vuote dall'output di stampa              |
@@ -1357,7 +1357,7 @@ Come funziona la logica: Songpress++ misura per ciascun segmento del brano (sepa
 
 **Secondo passo** — scala il contenuto (rimpicciolisce testo/accordi), solo se la riduzione dei margini da sola non è stata sufficiente. Il fattore di scala viene calcolato separatamente per ogni segmento e viene applicato il più restrittivo, garantendo che nessun segmento venga tagliato.
 
-In pratica: il valore (predefinito 5 mm) rappresenta il limite inferiore al di sotto del quale i margini non scendono mai durante la riduzione automatica. Maggiore è il valore, meno aggressiva è la compressione dei margini (e prima inizia la scalatura del testo). Il controllo è disabilitato quando la checkbox Comprimi per adattare è disattivata, e si riabilita automaticamente quando viene attivata.
+In pratica: il valore (predefinito 5 mm) rappresenta il limite inferiore al di sotto del quale i margini non scendono mai durante la riduzione automatica. Maggiore è il valore, meno aggressiva è la compressione dei margini (e prima inizia la scalatura del testo). Il controllo è disabilitato quando la checkbox Riduci se eccede la pagina è disattivata, e si riabilita automaticamente quando viene attivata.
 
 **Cosa significa «Soglia pagina vuota (%)»?**
 
@@ -1377,9 +1377,32 @@ Il controllo è disabilitato quando la checkbox «Rimuovi pagine vuote» è disa
 
 ### Pulsante «Impostazioni driver» nell'anteprima
 
-La toolbar dell'anteprima include il pulsante **Impostazioni driver…** che apre il pannello nativo del driver di stampa (`DocumentProperties` su Windows, `wx.PrintDialog` in modalità setup su altre piattaforme). Da questo pannello si possono modificare tutte le impostazioni del driver: orientamento, fronte/retro, colore, numero di copie, formato carta e qualsiasi opzione specifica del modello (es. qualità di stampa, vassoio carta).
+La toolbar dell'anteprima include il pulsante **Impostazioni driver…** che apre il pannello nativo del driver di stampa (`DocumentProperties` su Windows). Da questo pannello si possono modificare tutte le impostazioni del driver: orientamento, fronte/retro, colore, numero di copie, formato carta e qualsiasi opzione specifica del modello (es. qualità di stampa, vassoio carta).
 
-Quando si confermano le modifiche con OK, Songpress++ propaga automaticamente in `wx.PrintData` i campi che wx espone (orientamento, duplex, colore, copie, formato carta) e aggiorna la barra di stato dell'anteprima. Se l'orientamento è cambiato, l'anteprima viene ricaricata automaticamente per mostrare il foglio nel verso corretto.
+#### Come funziona internamente
+
+L'apertura del pannello segue tre percorsi in cascata:
+
+**Tentativo 1 — pywin32 (percorso preferito su Windows)**
+
+Usa i binding `win32print` e `pywintypes` inclusi nella dipendenza `pywin32`:
+
+1. Prima chiamata a `DocumentProperties(hwnd, hprinter, nome, None, None, 0)` → ottiene la dimensione totale del DEVMODE specifico del driver.
+2. Alloca un `pywintypes.DEVMODEType(driver_extra)` con la dimensione corretta (dimensione fissa + `dmDriverExtra`).
+3. Seconda chiamata con `DM_OUT_BUFFER` → legge le impostazioni correnti nel buffer allocato.
+4. Terza chiamata con `DM_IN_BUFFER | DM_OUT_BUFFER | DM_IN_PROMPT` → **mostra il pannello nativo del driver** e attende la conferma dell'utente.
+
+**Tentativo 2 — ctypes puro su `winspool.drv` (fallback, nessuna dipendenza esterna)**
+
+Se `pywin32` non è disponibile o genera un errore, viene usata la stessa logica tramite `ctypes.WinDLL('winspool.drv')`, chiamando `DocumentPropertiesW` direttamente con buffer `ctypes.create_string_buffer`. I campi del DEVMODE risultante (orientamento, formato carta, copie, colore, duplex) vengono letti tramite offset fissi nella struttura `DEVMODEW`.
+
+**Tentativo 3 — Finestra informativa (non-Windows o entrambi i tentativi falliti)**
+
+Su piattaforme diverse da Windows, o se entrambi i tentativi precedenti falliscono, viene mostrata una finestra informativa che avvisa che il pannello del driver non è disponibile su questa piattaforma, suggerendo di usare la toolbar dell'anteprima per modificare orientamento, formato carta e margini. Non viene aperta nessuna finestra di dialogo aggiuntiva per evitare la comparsa di due finestre con funzioni simili.
+
+#### Propagazione delle modifiche
+
+Quando l'utente conferma con OK, Songpress++ propaga automaticamente in `wx.PrintData` i campi che wx espone (orientamento, duplex, colore, copie, formato carta) e aggiorna la barra di stato dell'anteprima. Se l'orientamento è cambiato, l'anteprima viene ricaricata automaticamente per mostrare il foglio nel verso corretto.
 
 > **Nota** — Il pulsante **Impostazioni driver…** è disponibile solo nell'anteprima di stampa, non nel menu principale.
 

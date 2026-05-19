@@ -1295,3 +1295,41 @@ msgstr "_Inserisci"
 #: SongpressFrame.py — View > Toolbars menu item tooltip
 msgid "Show/hide toolbar with insert commands"
 msgstr "Mostra/nascondi la barra degli strumenti di inserimento"
+
+# ── Verifica dipendenze (? → Verifica dipendenze…) ───────────────────────────
+
+msgid "Check dependencies..."
+msgstr "Verifica dipendenze..."
+
+msgid "Show required dependencies and whether they are correctly installed"
+msgstr "Mostra le dipendenze richieste e se sono installate correttamente"
+
+msgid "Dependencies — Songpress++"
+msgstr "Dipendenze — Songpress++"
+
+msgid "All required dependencies are installed correctly."
+msgstr "Tutte le dipendenze richieste sono installate correttamente."
+
+msgid "One or more required dependencies are missing."
+msgstr "Una o più dipendenze richieste non sono installate."
+
+msgid "Package"
+msgstr "Pacchetto"
+
+msgid "Status"
+msgstr "Stato"
+
+msgid "Version"
+msgstr "Versione"
+
+msgid "Notes"
+msgstr "Note"
+
+msgid "Windows only"
+msgstr "Solo Windows"
+
+msgid "not installed"
+msgstr "non installato"
+
+msgid "Close"
+msgstr "Chiudi"
