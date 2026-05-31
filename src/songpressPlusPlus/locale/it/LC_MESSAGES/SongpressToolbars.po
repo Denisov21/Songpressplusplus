@@ -137,7 +137,7 @@ msgstr "Standard"
 
 #: SongpressToolbars.py — _BuildFormatToolBar
 msgid "Show verse and chorus labels"
-msgstr "Mostra le etichette delle strofe e ritornelli"
+msgstr "Etichetta strofe e ritornelli"
 
 #: SongpressToolbars.py — _BuildFormatToolBar
 msgid "Show or hide verse and chorus labels"
@@ -149,7 +149,7 @@ msgstr "Mostra o nasconde gli accordi nella canzone formattata"
 
 #: SongpressToolbars.py — _BuildFormatToolBar
 msgid "Show Songpress++ Preview"
-msgstr "Mostra anteprima Songpress++"
+msgstr "Anteprima Songpress++"
 
 #: SongpressToolbars.py — _BuildFormatToolBar
 msgid "Show or hide the Songpress++ Preview panel"
@@ -186,10 +186,6 @@ msgstr "Inserisce delle parentesi quadre, che conterranno un accordo"
 #: SongpressToolbars.py — _BuildInsertToolBar
 msgid "Insert chorus"
 msgstr "Inserisci ritornello"
-
-#: SongpressToolbars.py — INSERT_TOOLBAR_ITEMS
-msgid "Chorus..."
-msgstr "Ritornello..."
 
 #: SongpressToolbars.py — _BuildInsertToolBar
 msgid "Insert a pair of commands that will contain the chorus"
@@ -228,116 +224,132 @@ msgid "Insert a column break"
 msgstr "Inserisce un'interruzione di colonna"
 
 #: SongpressToolbars.py — _BuildInsertToolBar
-msgid "Unnumbered verse"
-msgstr "Strofa non numerata"
+msgid "Unnumbered verse {start_verse}\\{end_verse}"
+msgstr "Strofa non numerata {start_verse}\\{end_verse}"
 
 #: SongpressToolbars.py — _BuildInsertToolBar
 msgid "Insert an unnumbered verse {start_verse}\\{end_verse}"
 msgstr "Inserisce una strofa non numerata {start_verse}\\{end_verse}"
 
 #: SongpressToolbars.py — _BuildInsertToolBar
-msgid "Numbered verse"
-msgstr "Strofa numerata"
+msgid "Numbered verse {start_verse_num}\\{end_verse_num}"
+msgstr "Strofa numerata {start_verse_num}\\{end_verse_num}"
 
 #: SongpressToolbars.py — _BuildInsertToolBar
 msgid "Insert a numbered verse {start_verse_num}\\{end_verse_num}"
 msgstr "Inserisce una strofa numerata {start_verse_num}\\{end_verse_num}"
 
 #: SongpressToolbars.py — _BuildInsertToolBar
-msgid "Chorus block"
-msgstr "Blocco ritornello"
+msgid "Chorus {start_chorus}\\{end_chorus}..."
+msgstr "Ritornello {start_chorus}\\{end_chorus}..."
 
 #: SongpressToolbars.py — _BuildInsertToolBar
 msgid "Insert a chorus block {start_chorus}\\{end_chorus}"
 msgstr "Inserisce un blocco ritornello {start_chorus}\\{end_chorus}"
 
 #: SongpressToolbars.py — _BuildInsertToolBar
-msgid "Intro chords"
-msgstr "Accordi introduttivi"
+msgid "Intro chords {start_chord}\\{end_chord}..."
+msgstr "Accordi di intro {start_chord}\\{end_chord}..."
 
 #: SongpressToolbars.py — _BuildInsertToolBar
 msgid "Insert an intro chord section {start_chord}\\{end_chord}"
 msgstr "Inserisce una sezione accordi introduttivi {start_chord}\\{end_chord}"
 
 #: SongpressToolbars.py — _BuildInsertToolBar
-msgid "Grid"
-msgstr "Griglia"
+msgid "Grid {start_of_grid}\\{end_of_grid}..."
+msgstr "Griglia {start_of_grid}\\{end_of_grid}..."
 
 #: SongpressToolbars.py — _BuildInsertToolBar
 msgid "Insert a chord grid block {start_of_grid}\\{end_of_grid}"
 msgstr "Inserisce un blocco griglia accordi {start_of_grid}\\{end_of_grid}"
 
 #: SongpressToolbars.py — _BuildInsertToolBar
-msgid "Tempo"
-msgstr "Tempo"
+msgid "Tempo {tempo:}..."
+msgstr "Tempo {tempo:}..."
 
 #: SongpressToolbars.py — _BuildInsertToolBar
 msgid "Insert a {tempo:} command"
 msgstr "Inserisce un comando {tempo:}"
 
 #: SongpressToolbars.py — _BuildInsertToolBar
-msgid "Time signature"
-msgstr "Indicazione di tempo"
+msgid "Tempo marking {tempo_label:}..."
+msgstr "Indicazione agogica {tempo_label:}..."
+
+#: SongpressToolbars.py — _BuildInsertToolBar
+msgid "Insert a {tempo_label:} command"
+msgstr "Inserisce un comando {tempo_label:}"
+
+#: SongpressToolbars.py — _BuildInsertToolBar
+msgid "Bridge {start_bridge}\\{end_bridge}..."
+msgstr "Bridge {start_bridge}\\{end_bridge}..."
+
+#: SongpressToolbars.py — _BuildInsertToolBar
+msgid "Insert a bridge block {start_bridge}\\{end_bridge}"
+msgstr "Inserisce un blocco bridge {start_bridge}\\{end_bridge}"
+
+#: SongpressToolbars.py — _BuildInsertToolBar
+msgid "Time signature {time:}..."
+msgstr "Indicazione del tempo {time:}..."
 
 #: SongpressToolbars.py — _BuildInsertToolBar
 msgid "Insert a {time:} command"
 msgstr "Inserisce un comando {time:}"
 
 #: SongpressToolbars.py — _BuildInsertToolBar
-msgid "Key"
-msgstr "Tonalità"
+msgid "Key {key:}"
+msgstr "Tonalità {key:}"
 
 #: SongpressToolbars.py — _BuildInsertToolBar
 msgid "Insert a {key:} command"
 msgstr "Inserisce un comando {key:}"
 
 #: SongpressToolbars.py — _BuildInsertToolBar
-msgid "Duration"
-msgstr "Durata accordo"
+msgid "Duration {beats_time:}..."
+msgstr "Durata accordo {beats_time}"
 
 #: SongpressToolbars.py — _BuildInsertToolBar
 msgid "Insert a {beats_time:} command"
 msgstr "Inserisce un comando {beats_time:}"
 
 #: SongpressToolbars.py — _BuildInsertToolBar
-msgid "Chord keyboard"
-msgstr "Tastiera accordo"
+msgid "Chord keyboard {taste:}..."
+msgstr "Tastiera accordo {taste:}..."
 
 #: SongpressToolbars.py — _BuildInsertToolBar
 msgid "Insert a chord keyboard {taste:}"
 msgstr "Inserisce una tastiera accordi {taste:}"
 
 #: SongpressToolbars.py — _BuildInsertToolBar
-msgid "First chord fingering"
-msgstr "Diteggiatura accordo iniziale"
+msgid "First chord fingering {fingering:}..."
+msgstr "Diteggiatura primo accordo {fingering:}..."
 
 #: SongpressToolbars.py — _BuildInsertToolBar
 msgid "Insert a {fingering:} command"
 msgstr "Inserisce un comando {fingering:}"
 
 #: SongpressToolbars.py — _BuildInsertToolBar
-msgid "Guitar chord diagram"
-msgstr "Diagramma accordo chitarra"
+msgid "Guitar chord diagram {define:}..."
+msgstr "Diagramma accordo chitarra {define:}..."
 
 #: SongpressToolbars.py — _BuildInsertToolBar
 msgid "Insert a {define:} command"
 msgstr "Inserisce un comando {define:}"
 
 #: SongpressToolbars.py — _BuildInsertToolBar
-msgid "Image"
-msgstr "Immagine"
+msgid "Image {image:}..."
+msgstr "Immagine {image:}..."
 
 #: SongpressToolbars.py — _BuildInsertToolBar
 msgid "Insert an image (PNG, JPG, GIF) into the song"
 msgstr "Inserisce un'immagine (PNG, JPG, GIF) nella canzone"
 
 #: SongpressToolbars.py — _BuildInsertToolBar
-msgid "Transposer image"
-msgstr "Immagine Trasposizione"
+msgid "Transposer image {start_of_tab:TP}\\{end_of_tab}"
+msgstr "Immagine Transposer {start_of_tab:TP}\\{end_of_tab}"
 
 #: SongpressToolbars.py — _BuildInsertToolBar
 msgid "Insert the Transposer image and choose its position in the document"
-msgstr "Inserisce l'immagine Trasposizione e sceglie la sua posizione nel documento"
+msgstr "Inserisce l'immagine Transposer e sceglie la sua posizione nel documento"
 
 #: SongpressToolbars.py — _BuildInsertToolBar
 msgid "Musical symbol (Unicode)"
@@ -358,6 +370,30 @@ msgstr "Inserisce un comando {linespacing}"
 #: SongpressToolbars.py — _BuildInsertToolBar (AddPane label)
 msgid "Insert"
 msgstr "Inserisci"
+
+#: SongpressToolbars.py — INSERT_TOOLBAR_ITEMS
+msgid "Title"
+msgstr "Titolo"
+
+#: SongpressToolbars.py — INSERT_TOOLBAR_ITEMS
+msgid "Subtitle"
+msgstr "Sottotitolo"
+
+#: SongpressToolbars.py — INSERT_TOOLBAR_ITEMS
+msgid "Chord..."
+msgstr "Accordo..."
+
+#: SongpressToolbars.py — INSERT_TOOLBAR_ITEMS
+msgid "Chorus..."
+msgstr "Ritornello..."
+
+#: SongpressToolbars.py — INSERT_TOOLBAR_ITEMS
+msgid "Verse with custom label or without label..."
+msgstr "Strofa con etichetta personalizzata o senza..."
+
+#: SongpressToolbars.py — INSERT_TOOLBAR_ITEMS
+msgid "Comment..."
+msgstr "Commento..."
 
 #: SongpressToolbars.py — _BuildViewToolBar
 msgid "View"

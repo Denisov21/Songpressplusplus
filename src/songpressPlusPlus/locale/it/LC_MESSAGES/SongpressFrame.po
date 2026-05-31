@@ -1342,3 +1342,19 @@ msgstr "Seleziona o digita un'indicazione agogica:"
 
 msgid "You can also type a custom expression (e.g. \"Allegretto moderato\")."
 msgstr "Puoi anche digitare un'espressione personalizzata (es. \"Allegretto moderato\")."
+
+#: SongpressFrame.py — OnInsertKey dialog title
+msgid "Key"
+msgstr "Tonalità"
+
+#: SongpressFrame.py — OnInsertDefine dialog title
+msgid "Guitar chord diagram"
+msgstr "Diagramma accordo chitarra"
+
+#: SongpressFrame.py — OnInsertFingering dialog title
+msgid "First chord fingering"
+msgstr "Diteggiatura primo accordo"
+
+#: SongpressFrame.py — OnInsertTime dialog title
+msgid "Time signature"
+msgstr "Indicazione del tempo"
