@@ -273,7 +273,7 @@ class SongpressToolbarsMixin:
         ('title',                             _(u'Title'),                              'tb_title'),
         ('subtitle',                          _(u'Subtitle'),                           'tb_subtitle'),
         ('chord',                             _(u'Chord'),                              'tb_chord'),
-        ('chorus',                            _(u'Chorus'),                             'tb_chorus'),
+        ('chorus',                            _(u'Chorus...'),                          'tb_chorus'),
         ('verseWithCustomLabelOrWithoutLabel',_(u'Verse (custom label)'),               'tb_verse'),
         ('comment',                           _(u'Comment'),                            'tb_comment'),
         ('insertPageBreak',                   _(u'Page break'),                         'tb_pageBreak'),

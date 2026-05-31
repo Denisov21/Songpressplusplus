@@ -877,7 +877,7 @@
             <property name="help">Insert a couple of commands that will contain chorus</property>
             <property name="id">ID_CHORUS</property>
             <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">Cho&amp;rus</property>
+            <property name="label">Cho&amp;rus...</property>
             <property name="name">chorus</property>
             <property name="permission">none</property>
             <property name="shortcut">CTRL+U</property>

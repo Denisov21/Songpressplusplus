@@ -363,7 +363,7 @@
           <bitmap>../img/chord.png</bitmap>
         </object>
         <object class="wxMenuItem" name="chorus">
-          <label>Rit_ornello</label>
+          <label>Rit_ornello...</label>
           <accel>CTRL+U</accel>
           <help>Inserisci una coppia di comandi che conterranno il ritornello</help>
           <bitmap>../img/chorus.png</bitmap>

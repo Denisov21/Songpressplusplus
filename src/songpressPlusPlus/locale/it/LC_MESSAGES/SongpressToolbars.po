@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: songpress\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-05-17 00:00+0200\n"
-"PO-Revision-Date: 2026-05-17 00:00+0200\n"
+"PO-Revision-Date: 2026-05-31 21:40+0200\n"
 "Last-Translator: Denisov21\n"
 "Language-Team: \n"
 "Language: it\n"
@@ -188,8 +188,8 @@ msgid "Insert chorus"
 msgstr "Inserisci ritornello"
 
 #: SongpressToolbars.py — INSERT_TOOLBAR_ITEMS
-msgid "Chorus"
-msgstr "Ritornello"
+msgid "Chorus..."
+msgstr "Ritornello..."
 
 #: SongpressToolbars.py — _BuildInsertToolBar
 msgid "Insert a pair of commands that will contain the chorus"
@@ -363,6 +363,7 @@ msgstr "Inserisci"
 msgid "View"
 msgstr "Visualizza"
 
-#: SongpressToolbars.py — _BuildFormatToolBar (fontIcon tooltip, fontChooser tooltip)
+#: SongpressToolbars.py — _BuildFormatToolBar (fontIcon tooltip, fontChooser
+#: tooltip)
 msgid "Font used in the Songpress++ preview"
 msgstr "Carattere usato nell'anteprima Songpress++"
