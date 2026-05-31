@@ -853,7 +853,6 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         # ── Toolbars (Standard, Format, Insert) ──────────────────────
         self._BuildToolbars()
-        self._LoadInsertToolBarVis()
         self._ApplyMainToolBarVisibility()
         self._ApplyFormatToolBarVisibility()
         self._ApplyInsertToolBarVisibility()
@@ -964,7 +963,6 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self._SaveGuidePrefs()
         self._SaveKlavierColour()
         self._SaveCustomColours()
-        self._SaveInsertToolBarVis()
         self.pref.Save()
         self.config.Flush()
         super().OnClose(evt)
@@ -1081,41 +1079,6 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             val = self.config.Read('keyDisplay')
             if val:
                 self.pref.keyDisplay = (val == '1')
-        except Exception:
-            pass
-
-    def _SaveInsertToolBarVis(self):
-        """Salva la visibilità delle icone di tutte le toolbar nel config."""
-        try:
-            self.config.SetPath('/InsertToolBarVis')
-            for _xrc, _label, pref_key in self.INSERT_TOOLBAR_ITEMS:
-                self.config.Write(pref_key, '1' if getattr(self.pref, pref_key, True) else '0')
-            for _xrc, _label, pref_key in self.MAIN_TOOLBAR_ITEMS:
-                self.config.Write(pref_key, '1' if getattr(self.pref, pref_key, True) else '0')
-            for _xrc, _label, pref_key in self.FORMAT_TOOLBAR_ITEMS:
-                self.config.Write(pref_key, '1' if getattr(self.pref, pref_key, True) else '0')
-            for _xrc, _label, pref_key in self.VIEW_TOOLBAR_ITEMS:
-                self.config.Write(pref_key, '1' if getattr(self.pref, pref_key, True) else '0')
-        except Exception:
-            pass
-
-    def _LoadInsertToolBarVis(self):
-        """Ripristina la visibilità delle icone di tutte le toolbar dal config."""
-        try:
-            self.config.SetPath('/InsertToolBarVis')
-            all_items = (
-                list(self.INSERT_TOOLBAR_ITEMS)
-                + list(self.MAIN_TOOLBAR_ITEMS)
-                + list(self.FORMAT_TOOLBAR_ITEMS)
-                + list(self.VIEW_TOOLBAR_ITEMS)
-            )
-            for _xrc, _label, pref_key in all_items:
-                val = self.config.Read(pref_key)
-                if val:
-                    setattr(self.pref, pref_key, val == '1')
-                else:
-                    if not hasattr(self.pref, pref_key):
-                        setattr(self.pref, pref_key, True)
         except Exception:
             pass
 

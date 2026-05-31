@@ -194,6 +194,7 @@ class Preferences(object):
         self._LoadSingleInstance()
         self._LoadShowRestartMenuItem()
         self._LoadSaveOnModified()
+        self._LoadToolbarVis()
 
     def _LoadKlavierColour(self):
         self.config.SetPath('/KlavierColour')
@@ -367,6 +368,7 @@ class Preferences(object):
         self._SaveSingleInstance()
         self._SaveShowRestartMenuItem()
         self._SaveSaveOnModified()
+        self._SaveToolbarVis()
         self.config.Flush()
 
     def _SaveKlavierColour(self):
@@ -599,6 +601,103 @@ class Preferences(object):
     def _SaveSaveOnModified(self):
         self.config.SetPath('/App')
         self.config.Write('enableSaveOnModified', '1' if getattr(self, 'enableSaveOnModified', True) else '0')
+        self.config.SetPath('/')
+
+    def _LoadToolbarVis(self):
+        """Carica la visibilità delle icone delle quattro toolbar dal config.
+
+        Le chiavi seguono il prefisso del gruppo:
+          tbm_*  →  Standard toolbar
+          tbf_*  →  Format toolbar
+          tbv_*  →  View toolbar
+          tb_*   →  Insert toolbar
+        Il default per tutte le voci è True (icona visibile).
+        """
+        self.config.SetPath('/ToolbarVis')
+        def _rb(key):
+            v = self.config.Read(key)
+            return bool(int(v)) if v != '' else True
+        # Standard toolbar
+        self.tbm_new           = _rb('tbm_new')
+        self.tbm_open          = _rb('tbm_open')
+        self.tbm_save          = _rb('tbm_save')
+        self.tbm_printPreview  = _rb('tbm_printPreview')
+        self.tbm_print         = _rb('tbm_print')
+        self.tbm_undo          = _rb('tbm_undo')
+        self.tbm_redo          = _rb('tbm_redo')
+        self.tbm_cut           = _rb('tbm_cut')
+        self.tbm_copy          = _rb('tbm_copy')
+        self.tbm_copyAsImage   = _rb('tbm_copyAsImage')
+        self.tbm_paste         = _rb('tbm_paste')
+        self.tbm_pasteChords   = _rb('tbm_pasteChords')
+        self.tbm_syntaxCheck   = _rb('tbm_syntaxCheck')
+        self.tbm_options       = _rb('tbm_options')
+        # Format toolbar
+        self.tbf_fontChooser      = _rb('tbf_fontChooser')
+        self.tbf_showChords       = _rb('tbf_showChords')
+        self.tbf_insertLinespacing = _rb('tbf_insertLinespacing')
+        # View toolbar
+        self.tbv_preview     = _rb('tbv_preview')
+        self.tbv_labelVerses = _rb('tbv_labelVerses')
+        # Insert toolbar
+        self.tb_title               = _rb('tb_title')
+        self.tb_subtitle            = _rb('tb_subtitle')
+        self.tb_chord               = _rb('tb_chord')
+        self.tb_chorus              = _rb('tb_chorus')
+        self.tb_verse               = _rb('tb_verse')
+        self.tb_comment             = _rb('tb_comment')
+        self.tb_pageBreak           = _rb('tb_pageBreak')
+        self.tb_columnBreak         = _rb('tb_columnBreak')
+        self.tb_insertVerse         = _rb('tb_insertVerse')
+        self.tb_insertVerseNum      = _rb('tb_insertVerseNum')
+        self.tb_insertChorusBlock   = _rb('tb_insertChorusBlock')
+        self.tb_insertChordBlock    = _rb('tb_insertChordBlock')
+        self.tb_insertBridge        = _rb('tb_insertBridge')
+        self.tb_insertGrid          = _rb('tb_insertGrid')
+        self.tb_insertTempo         = _rb('tb_insertTempo')
+        self.tb_insertTempoLabel    = _rb('tb_insertTempoLabel')
+        self.tb_insertTime          = _rb('tb_insertTime')
+        self.tb_insertKey           = _rb('tb_insertKey')
+        self.tb_insertDuration      = _rb('tb_insertDuration')
+        self.tb_insertTaste         = _rb('tb_insertTaste')
+        self.tb_insertFingering     = _rb('tb_insertFingering')
+        self.tb_insertDefine        = _rb('tb_insertDefine')
+        self.tb_insertImage         = _rb('tb_insertImage')
+        self.tb_insertTransposerImage = _rb('tb_insertTransposerImage')
+        self.tb_insertMusicalSymbol = _rb('tb_insertMusicalSymbol')
+        self.config.SetPath('/')
+
+    def _SaveToolbarVis(self):
+        """Salva la visibilità delle icone delle quattro toolbar nel config."""
+        self.config.SetPath('/ToolbarVis')
+        def _w(key):
+            self.config.Write(key, '1' if getattr(self, key, True) else '0')
+        # Standard toolbar
+        _w('tbm_new');          _w('tbm_open');         _w('tbm_save')
+        _w('tbm_printPreview'); _w('tbm_print')
+        _w('tbm_undo');         _w('tbm_redo')
+        _w('tbm_cut');          _w('tbm_copy');         _w('tbm_copyAsImage')
+        _w('tbm_paste');        _w('tbm_pasteChords')
+        _w('tbm_syntaxCheck');  _w('tbm_options')
+        # Format toolbar
+        _w('tbf_fontChooser'); _w('tbf_showChords'); _w('tbf_insertLinespacing')
+        # View toolbar
+        _w('tbv_preview'); _w('tbv_labelVerses')
+        # Insert toolbar
+        _w('tb_title');             _w('tb_subtitle')
+        _w('tb_chord');             _w('tb_chorus')
+        _w('tb_verse');             _w('tb_comment')
+        _w('tb_pageBreak');         _w('tb_columnBreak')
+        _w('tb_insertVerse');       _w('tb_insertVerseNum')
+        _w('tb_insertChorusBlock'); _w('tb_insertChordBlock')
+        _w('tb_insertBridge');      _w('tb_insertGrid')
+        _w('tb_insertTempo');       _w('tb_insertTempoLabel')
+        _w('tb_insertTime');        _w('tb_insertKey')
+        _w('tb_insertDuration')
+        _w('tb_insertTaste');       _w('tb_insertFingering')
+        _w('tb_insertDefine')
+        _w('tb_insertImage');       _w('tb_insertTransposerImage')
+        _w('tb_insertMusicalSymbol')
         self.config.SetPath('/')
 
     def SetChorusLabel(self, c):

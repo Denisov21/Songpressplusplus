@@ -187,6 +187,10 @@ msgstr "Inserisce delle parentesi quadre, che conterranno un accordo"
 msgid "Insert chorus"
 msgstr "Inserisci ritornello"
 
+#: SongpressToolbars.py — INSERT_TOOLBAR_ITEMS
+msgid "Chorus"
+msgstr "Ritornello"
+
 #: SongpressToolbars.py — _BuildInsertToolBar
 msgid "Insert a pair of commands that will contain the chorus"
 msgstr "Inserisce due comandi, tra i quali scrivere il ritornello"

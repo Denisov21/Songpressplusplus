@@ -280,3 +280,6 @@ msgstr "Carattere"
 
 msgid "Linespacing"
 msgstr "Interlinea"
+
+msgid "Bridge {start_bridge}\\{end_bridge}"
+msgstr "Bridge {start_bridge}\\{end_bridge}"
