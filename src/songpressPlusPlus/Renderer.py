@@ -655,6 +655,11 @@ class Renderer(object):
                                 self.AddSubTitle(u' = %s' % a.strip())
                             if self.currentLine is not None and self.currentLine.boxes:
                                 self.currentLine.boxes[-1].is_tempo_dotted_eighth = True
+                    elif cmd == 'tempo_label':
+                        # Indicazione agogica testuale (es. Andante, Allegretto, Lento...)
+                        a = self.GetAttribute()
+                        if a is not None and a.strip() != '':
+                            self.AddSubTitle(a.strip())
                     elif cmd == 'time':
                         a = self.GetAttribute()
                         if a is not None and a.strip() != '' and self.timeDisplay:

@@ -1333,3 +1333,12 @@ msgstr "non installato"
 
 msgid "Close"
 msgstr "Chiudi"
+
+msgid "Tempo marking"
+msgstr "Indicazione agogica"
+
+msgid "Select or type a tempo marking:"
+msgstr "Seleziona o digita un'indicazione agogica:"
+
+msgid "You can also type a custom expression (e.g. \"Allegretto moderato\")."
+msgstr "Puoi anche digitare un'espressione personalizzata (es. \"Allegretto moderato\")."

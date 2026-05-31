@@ -88,6 +88,7 @@ _KNOWN_COMMANDS = {
     "chordsize", "chordfont", "chordcolour", "chordcolor",
     # Musical indications
     "tempo", "tempo_m", "tempo_s", "tempo_sp", "tempo_c", "tempo_cp",
+    "tempo_label",
     "time",
     # Images
     "image",
@@ -636,6 +637,7 @@ def _validate_command(content: str, line_num: int, col: int,
         "beats_time", "ccli",
         "duration",
         "tempo", "tempo_m", "tempo_s", "tempo_sp", "tempo_c", "tempo_cp",
+        "tempo_label",
         "time",
         "define", "taste", "fingering",
         "image",

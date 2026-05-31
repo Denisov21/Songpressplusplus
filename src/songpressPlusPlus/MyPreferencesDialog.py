@@ -35,6 +35,10 @@ class MyPreferencesDialog(PreferencesDialog):
         self.easyChords = easyChords
         self.clearRecentFiles = False
 
+        # ── Scheda "Toolbar Inserisci" — costruita programmaticamente ──
+        self._BuildInsertToolBarTab()
+        # ────────────────────────────────────────────────────────────────
+
         self.fontCB.Bind(wx.EVT_TEXT_ENTER, self.OnFontSelected, self.fontCB)
         self.fontCB.Bind(wx.EVT_COMBOBOX, self.OnFontSelected, self.fontCB)
 
@@ -269,6 +273,104 @@ class MyPreferencesDialog(PreferencesDialog):
             exe = _sys.executable if not getattr(_sys, 'frozen', False) else _sys.executable
             for ext, cb in self._fileAssocCBs.items():
                 cb.SetValue(self._IsExtAssociated(ext, exe))
+
+    # ------------------------------------------------------------------
+    # Scheda visibilità toolbar (Standard, Formato, Inserisci)
+    # ------------------------------------------------------------------
+
+    def _BuildToolbarsTab(self):
+        """Aggiunge la scheda 'Toolbar' al notebook principale del dialogo.
+        Al suo interno un notebook secondario con tre sotto-schede:
+        Standard, Formato, Inserisci.
+        """
+        from .SongpressToolbars import SongpressToolbarsMixin
+
+        outer = wx.Panel(self.notebook)
+        outer_vbox = wx.BoxSizer(wx.VERTICAL)
+
+        inner_nb = wx.Notebook(outer)
+        self._tb_checkboxes = {}   # pref_key → wx.CheckBox (tutte le barre)
+
+        # Helper: costruisce una sotto-scheda con checkbox + Seleziona/Deseleziona
+        def _make_sub_tab(items, sep_after_set, title):
+            panel = wx.Panel(inner_nb)
+            vbox  = wx.BoxSizer(wx.VERTICAL)
+
+            scroll = wx.ScrolledWindow(panel, style=wx.VSCROLL)
+            scroll.SetScrollRate(0, 12)
+            grid = wx.BoxSizer(wx.VERTICAL)
+
+            prev = None
+            for xrc_name, label, pref_key in items:
+                if prev is not None and prev in sep_after_set:
+                    grid.Add(wx.StaticLine(scroll), 0,
+                             wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 6)
+                cb = wx.CheckBox(scroll, -1, label)
+                cb.SetValue(getattr(self.pref, pref_key, True))
+                self._tb_checkboxes[pref_key] = cb
+                grid.Add(cb, 0, wx.LEFT | wx.TOP, 6)
+                prev = xrc_name
+
+            scroll.SetSizer(grid)
+            grid.FitInside(scroll)
+
+            btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            btn_all  = wx.Button(panel, -1, _("Select all"))
+            btn_none = wx.Button(panel, -1, _("Deselect all"))
+            btn_sizer.Add(btn_all,  0, wx.RIGHT, 6)
+            btn_sizer.Add(btn_none, 0)
+
+            # Closures sui checkbox della singola scheda (snapshot della lista)
+            _keys = [pk for _, _, pk in items]
+            def on_all(e, keys=_keys):
+                for k in keys:
+                    self._tb_checkboxes[k].SetValue(True)
+            def on_none(e, keys=_keys):
+                for k in keys:
+                    self._tb_checkboxes[k].SetValue(False)
+
+            btn_all.Bind(wx.EVT_BUTTON, on_all)
+            btn_none.Bind(wx.EVT_BUTTON, on_none)
+
+            vbox.Add(scroll,    1, wx.EXPAND | wx.ALL, 6)
+            vbox.Add(btn_sizer, 0, wx.ALL, 6)
+            panel.SetSizer(vbox)
+            inner_nb.AddPage(panel, title)
+
+        # ── Scheda Standard ──────────────────────────────────────────
+        _make_sub_tab(
+            SongpressToolbarsMixin.MAIN_TOOLBAR_ITEMS,
+            SongpressToolbarsMixin._MAIN_TOOLBAR_SEPARATORS_AFTER,
+            _("Standard"),
+        )
+
+        # ── Scheda Formato ───────────────────────────────────────────
+        _make_sub_tab(
+            SongpressToolbarsMixin.FORMAT_TOOLBAR_ITEMS,
+            set(),   # nessun separatore nella barra Formato
+            _("Format"),
+        )
+
+        # ── Scheda Inserisci ─────────────────────────────────────────
+        _make_sub_tab(
+            SongpressToolbarsMixin.INSERT_TOOLBAR_ITEMS,
+            SongpressToolbarsMixin._INSERT_TOOLBAR_SEPARATORS_AFTER,
+            _("Insert"),
+        )
+
+        # ── Scheda Visualizza ────────────────────────────────────────
+        _make_sub_tab(
+            SongpressToolbarsMixin.VIEW_TOOLBAR_ITEMS,
+            set(),   # nessun separatore nella barra View
+            _("View"),
+        )
+
+        outer_vbox.Add(inner_nb, 1, wx.EXPAND | wx.ALL, 4)
+        outer.SetSizer(outer_vbox)
+        self.notebook.AddPage(outer, _("Toolbars"))
+
+    # Alias per compatibilità con il codice esistente che chiama _BuildInsertToolBarTab
+    _BuildInsertToolBarTab = _BuildToolbarsTab
 
     def _hex_to_colour(self, hex_str):
         try:
@@ -1455,6 +1557,9 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.cmCopyTextOnly          = self.cmCopyTextOnly.GetValue()
         self.pref.cmSelectAll    = self.cmSelectAll.GetValue()
         self.pref.cmShowIcons    = self.cmShowIcons.GetValue()
+        # Visibilità icone toolbar Inserisci
+        for pref_key, cb in self._tb_checkboxes.items():
+            setattr(self.pref, pref_key, cb.GetValue())
         self.pref.Save()
         lang = i18n.getLang()
         l = self.GetLanguage()

@@ -402,6 +402,7 @@
         <object class="wxMenuItem" name="insertBridge">
           <label>_Bridge {start__bridge}\\{end__bridge}...</label>
           <accel></accel>
+          <bitmap>../img/bridge.png</bitmap>
           <help>Insert a bridge block with start__bridge / end__bridge commands</help>
         </object>
         <object class="wxMenuItem" name="insertGrid">
@@ -415,6 +416,12 @@
           <accel></accel>
           <help>Insert ChordPro directive to set song tempo (BPM)</help>
           <bitmap>../img/metronome.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="insertTempoLabel">
+          <label>Tempo _label {tempo__label:}...</label>
+          <accel></accel>
+          <help>Insert ChordPro directive to set a textual tempo marking (e.g. Andante, Allegro, Lento)</help>
+          <bitmap>../img/agogic.png</bitmap>
         </object>
         <object class="wxMenuItem" name="insertTime">
           <label>Time _signature {time:}...</label>

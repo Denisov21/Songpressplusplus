@@ -50,6 +50,7 @@ Songpress++ utilizza il formato **ChordPro** esteso. I comandi sono racchiusi tr
    - [tempo_c](#tempo_c)
    - [tempo_sp](#tempo_sp)
    - [tempo_cp](#tempo_cp)
+   - [tempo_label](#tempo_label)
    - [time](#time)
    - [beats_time](#beats_time)
 7. [Formattazione del testo](#7-formattazione-del-testo)
@@ -705,6 +706,27 @@ La **dimensione dell'icona** è configurabile in *Strumenti → Opzioni... → F
 
 ---
 
+### `tempo_label`
+
+**Sintassi:** `{tempo_label: testo}`
+
+Imposta un'**indicazione agogica testuale** (es. *Allegro*, *Andante*, *Lento*, *Moderato*, *Allegretto*). Il valore viene visualizzato come sottotitolo nella stessa area degli altri metadati musicali. Non accetta BPM né parametri numerici: è testo libero.
+
+```chordpro
+{tempo_label: Andante}
+{tempo_label: Allegretto moderato}
+{tempo_label: Largo}
+```
+
+Può essere usato da solo oppure in combinazione con `{tempo:}`:
+
+```chordpro
+{tempo: 76}
+{tempo_label: Andante}
+```
+
+---
+
 ### `time`
 
 **Sintassi:** `{time: N/D}`
@@ -1248,6 +1270,7 @@ Accessibile da **Formato → Indicazione di tempo** (o clic sull'indicazione nel
 | `{tempo_c: N}` | — | Musicale | Tempo in BPM (croma) |
 | `{tempo_sp: N}` | — | Musicale | Tempo in BPM (semiminima puntata) |
 | `{tempo_cp: N}` | — | Musicale | Tempo in BPM (croma puntata) |
+| `{tempo_label: ...}` | — | Musicale | Indicazione agogica testuale (Allegro, Andante, Lento, …) |
 | `{time: N/D}` | — | Musicale | Metro (indicazione di misura) |
 | `{beats_time: ACC=N ...}` | — | Musicale | Durata in battiti degli accordi della riga successiva |
 | `{textsize: N}` | — | Testo | Dimensione font testo |

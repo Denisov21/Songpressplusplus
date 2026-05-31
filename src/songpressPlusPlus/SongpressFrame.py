@@ -853,6 +853,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         # ── Toolbars (Standard, Format, Insert) ──────────────────────
         self._BuildToolbars()
+        self._LoadInsertToolBarVis()
+        self._ApplyMainToolBarVisibility()
+        self._ApplyFormatToolBarVisibility()
+        self._ApplyInsertToolBarVisibility()
+        self._ApplyViewToolBarVisibility()
         # ─────────────────────────────────────────────────────────────
 
         self.BindMyMenu()
@@ -959,6 +964,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self._SaveGuidePrefs()
         self._SaveKlavierColour()
         self._SaveCustomColours()
+        self._SaveInsertToolBarVis()
         self.pref.Save()
         self.config.Flush()
         super().OnClose(evt)
@@ -1075,6 +1081,41 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             val = self.config.Read('keyDisplay')
             if val:
                 self.pref.keyDisplay = (val == '1')
+        except Exception:
+            pass
+
+    def _SaveInsertToolBarVis(self):
+        """Salva la visibilità delle icone di tutte le toolbar nel config."""
+        try:
+            self.config.SetPath('/InsertToolBarVis')
+            for _xrc, _label, pref_key in self.INSERT_TOOLBAR_ITEMS:
+                self.config.Write(pref_key, '1' if getattr(self.pref, pref_key, True) else '0')
+            for _xrc, _label, pref_key in self.MAIN_TOOLBAR_ITEMS:
+                self.config.Write(pref_key, '1' if getattr(self.pref, pref_key, True) else '0')
+            for _xrc, _label, pref_key in self.FORMAT_TOOLBAR_ITEMS:
+                self.config.Write(pref_key, '1' if getattr(self.pref, pref_key, True) else '0')
+            for _xrc, _label, pref_key in self.VIEW_TOOLBAR_ITEMS:
+                self.config.Write(pref_key, '1' if getattr(self.pref, pref_key, True) else '0')
+        except Exception:
+            pass
+
+    def _LoadInsertToolBarVis(self):
+        """Ripristina la visibilità delle icone di tutte le toolbar dal config."""
+        try:
+            self.config.SetPath('/InsertToolBarVis')
+            all_items = (
+                list(self.INSERT_TOOLBAR_ITEMS)
+                + list(self.MAIN_TOOLBAR_ITEMS)
+                + list(self.FORMAT_TOOLBAR_ITEMS)
+                + list(self.VIEW_TOOLBAR_ITEMS)
+            )
+            for _xrc, _label, pref_key in all_items:
+                val = self.config.Read(pref_key)
+                if val:
+                    setattr(self.pref, pref_key, val == '1')
+                else:
+                    if not hasattr(self.pref, pref_key):
+                        setattr(self.pref, pref_key, True)
         except Exception:
             pass
 
@@ -1322,6 +1363,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         Bind(self.OnInsertBridge, 'insertBridge')
         Bind(self.OnInsertGrid, 'insertGrid')
         Bind(self.OnInsertTempo, 'insertTempo')
+        Bind(self.OnInsertTempoLabel, 'insertTempoLabel')
         Bind(self.OnInsertTime, 'insertTime')
         Bind(self.OnInsertKey, 'insertKey')
         Bind(self.OnInsertBeatsTime, 'insertDuration')
@@ -2335,6 +2377,66 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 self.InsertWithCaret("{tempo:%s}" % val)
             else:
                 self.InsertWithCaret("{tempo:|}")
+            self.previewCanvas.Refresh(self._get_display_text())
+        d.Destroy()
+
+    def OnInsertTempoLabel(self, evt):
+        """Inserisce la direttiva {tempo_label: <indicazione agogica>}."""
+
+        # Indicazioni agogiche standard, dalla più lenta alla più veloce
+        _AGOGIC_LABELS = [
+            "Grave",
+            "Largo",
+            "Larghetto",
+            "Lento",
+            "Adagio",
+            "Adagietto",
+            "Andante",
+            "Andantino",
+            "Moderato",
+            "Allegretto",
+            "Allegro",
+            "Vivace",
+            "Presto",
+            "Prestissimo",
+        ]
+
+        d = wx.Dialog(self.frame, title=_("Tempo marking"))
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        vbox.Add(
+            wx.StaticText(d, -1, _("Select or type a tempo marking:")),
+            0, wx.ALL, 8
+        )
+
+        combo = wx.ComboBox(
+            d, -1,
+            value="",
+            choices=_AGOGIC_LABELS,
+            style=wx.CB_DROPDOWN
+        )
+        vbox.Add(combo, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 8)
+
+        vbox.Add(
+            wx.StaticText(
+                d, -1,
+                _("You can also type a custom expression (e.g. \"Allegretto moderato\").")
+            ),
+            0, wx.LEFT | wx.RIGHT | wx.TOP, 8
+        )
+
+        btn_sizer = d.CreateButtonSizer(wx.OK | wx.CANCEL)
+        vbox.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 8)
+        d.SetSizer(vbox)
+        vbox.Fit(d)
+        combo.SetFocus()
+
+        if d.ShowModal() == wx.ID_OK:
+            val = combo.GetValue().strip()
+            if val:
+                self.InsertWithCaret("{tempo_label:%s}" % val)
+            else:
+                self.InsertWithCaret("{tempo_label:|}")
             self.previewCanvas.Refresh(self._get_display_text())
         d.Destroy()
 
@@ -7579,6 +7681,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self._dockArt._pref = self.pref
             self._mgr.Update()
             self._ApplyRestartMenuVisibility()
+            self._ApplyMainToolBarVisibility()
+            self._ApplyFormatToolBarVisibility()
+            self._ApplyInsertToolBarVisibility()
+            self._ApplyViewToolBarVisibility()
 
         f = MyPreferencesDialog(self.frame, self.pref, easyChords, on_apply=_apply_prefs,
                                 previewCanvas=self.previewCanvas)

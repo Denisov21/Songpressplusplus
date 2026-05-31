@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: songpress\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-10-25 15:21+0200\n"
-"PO-Revision-Date: 2026-05-11 20:43+0200\n"
+"PO-Revision-Date: 2026-05-31 19:20+0200\n"
 "Last-Translator: Denisov21\n"
 "Language-Team: Italian (http://www.transifex.com/skeed/songpress-2/language/"
 "it/)\n"
@@ -85,10 +85,6 @@ msgid "Normal text"
 msgstr "Testo normale"
 
 #: PreferencesDialog.py (Syntax colour rows)
-msgid "Chorus"
-msgstr "Ritornello"
-
-#: PreferencesDialog.py (Syntax colour rows)
 msgid "Chords"
 msgstr "Accordi"
 
@@ -152,10 +148,6 @@ msgstr ""
 "Impossibile leggere il file tema:\n"
 "%s"
 
-#: PreferencesDialog.py (General 2 tab)
-msgid "General 2"
-msgstr "Generale 2"
-
 #: PreferencesDialog.py (Debug checkbox)
 msgid "Show debug messages (theme save path)"
 msgstr "Mostra messaggi di debug (percorso salvataggio tema)"
@@ -183,3 +175,108 @@ msgstr "OK"
 #: PreferencesDialog.py showRestartMenuItemCB
 msgid "Show 'Restart Songpress++' in the File menu"
 msgstr "Mostra 'Riavvia Songpress++' nel menu File"
+
+msgid "Show or hide icons in the Insert toolbar:"
+msgstr "Mostra o nascondi le icone nella toolbar Inserisci:"
+
+msgid "Insert toolbar"
+msgstr "Toolbar Inserisci"
+
+msgid "Select all"
+msgstr "Seleziona tutto"
+
+msgid "Deselect all"
+msgstr "Deseleziona tutto"
+
+msgid "Title"
+msgstr "Titolo"
+
+msgid "Subtitle"
+msgstr "Sottotitolo"
+
+msgid "Chord"
+msgstr "Accordo"
+
+msgid "Chorus"
+msgstr "Ritornello"
+
+msgid "Verse (custom label)"
+msgstr "Strofa (etichetta personalizzata)"
+
+msgid "Comment"
+msgstr "Commento"
+
+msgid "Page break"
+msgstr "Interruzione di pagina"
+
+msgid "Column break"
+msgstr "Interruzione di colonna"
+
+msgid "Unnumbered verse"
+msgstr "Strofa non numerata"
+
+msgid "Numbered verse"
+msgstr "Strofa numerata"
+
+msgid "Chorus block"
+msgstr "Blocco ritornello"
+
+msgid "Intro chords"
+msgstr "Accordi introduttivi"
+
+msgid "Grid"
+msgstr "Griglia"
+
+msgid "Tempo {tempo:}"
+msgstr "Tempo {tempo:}"
+
+msgid "Tempo marking {tempo_label:}"
+msgstr "Indicazione agogica {tempo_label:}"
+
+msgid "Time signature {time:}"
+msgstr "Indicazione di tempo {time:}"
+
+msgid "Key {key:}"
+msgstr "Tonalità {key:}"
+
+msgid "Duration {beats_time:}"
+msgstr "Durata accordo {beats_time:}"
+
+msgid "Chord keyboard {taste:}"
+msgstr "Tastiera accordo {taste:}"
+
+msgid "Fingering {fingering:}"
+msgstr "Diteggiatura {fingering:}"
+
+msgid "Guitar diagram {define:}"
+msgstr "Diagramma chitarra {define:}"
+
+msgid "Image {image:}"
+msgstr "Immagine {image:}"
+
+msgid "Transposer image"
+msgstr "Immagine Trasposizione"
+
+msgid "Musical symbol"
+msgstr "Simbolo musicale"
+
+msgid "Toolbars"
+msgstr "Toolbar"
+
+msgid "Standard"
+msgstr "Standard"
+
+msgid "Format"
+msgstr "Formato"
+
+msgid "Insert"
+msgstr "Inserisci"
+
+msgid "Show/hide chords"
+msgstr "Mostra/nascondi accordi"
+
+msgid "Font"
+msgstr "Carattere"
+
+msgid "Linespacing"
+msgstr "Interlinea"

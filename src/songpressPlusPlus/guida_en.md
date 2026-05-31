@@ -1299,6 +1299,48 @@ Uncheck *Single instance* if you need to:
 > **Note — startup.log** — Every single-instance event is logged in `%LOCALAPPDATA%\Songpress++\startup.log` (Windows) or `~/.Songpress++/startup.log` (Linux/macOS). The log records the config path read, the value of the `singleinstance` key, whether an existing instance was found, and whether the file was forwarded successfully. This is the first place to look when troubleshooting multiple-window behaviour.
 
 ---
+## Toolbar Customisation
+
+Songpress++ lets you show or hide individual icons in each of the four toolbars: **Standard**, **Format**, **Insert** and **View**.
+
+### How to access the settings
+
+Open **Tools → Options…** and select the **Toolbars** tab. The tab contains four sub-tabs, one per toolbar:
+
+| Sub-tab   | Toolbar              | Configurable icons |
+|-----------|----------------------|--------------------|
+| Standard  | Standard toolbar     | New, Open, Save, Print preview, Print, Undo, Redo, Cut, Copy, Copy as image, Paste, Paste chords, Check syntax, Options… |
+| Format    | Format toolbar       | Font, Show/hide chords, Linespacing |
+| Insert    | Insert toolbar       | All insert icons (title, chords, verses, musical metadata, images, symbols, etc.) |
+| View      | View toolbar         | Show Songpress++ Preview, Show verse and chorus labels |
+
+### How to show or hide an icon
+
+1. In the corresponding sub-tab, **check** the box to show the icon, **uncheck** it to hide it.
+2. The **Select all** and **Deselect all** buttons act only on the current sub-tab.
+3. Click **OK**: the toolbar updates immediately.
+
+Settings are saved to the application configuration file and restored at every startup.
+
+> **Note:** hiding an icon from the toolbar does not remove the corresponding command. All commands remain accessible via the menu and keyboard shortcuts.
+
+### Separator behaviour
+
+Visual separators between icon groups are managed automatically: if all icons in a group are hidden, the separator between that group and the next disappears, preventing orphan separators in the toolbar.
+
+### Developer notes
+
+The full list of configurable icons is defined in the class constants `MAIN_TOOLBAR_ITEMS`, `FORMAT_TOOLBAR_ITEMS`, `INSERT_TOOLBAR_ITEMS` and `VIEW_TOOLBAR_ITEMS` in the `SongpressToolbarsMixin` mixin (`SongpressToolbars.py`). Each entry has the form `(xrc_name, label, pref_key)`.
+
+When adding a new command to a toolbar, it is sufficient to:
+
+1. Add the entry to the corresponding `*_TOOLBAR_ITEMS` constant.
+2. Add the icon path to `_*_toolbar_icons` and the help text to `_*_toolbar_helps` inside the respective `_Build*ToolBar()` method.
+
+**`MyPreferencesDialog` and `SongpressFrame` require no changes**: both read the `*_TOOLBAR_ITEMS` constants dynamically — the preferences dialog automatically generates checkboxes for every new entry, and the config save/load iterates over the full list.
+
+---
+
 ## Display Preferences
 
 The following controls are found in the **Formatting** tab of preferences and affect the preview and print output.

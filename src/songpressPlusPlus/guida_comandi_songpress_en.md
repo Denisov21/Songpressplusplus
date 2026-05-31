@@ -50,6 +50,7 @@ Songpress++ uses the extended **ChordPro** format. Commands are enclosed in curl
    - [tempo_c](#tempo_c)
    - [tempo_sp](#tempo_sp)
    - [tempo_cp](#tempo_cp)
+   - [tempo_label](#tempo_label)
    - [time](#time)
    - [beats_time](#beats_time)
 7. [Text formatting](#7-text-formatting)
@@ -705,6 +706,27 @@ The **icon size** can be configured in *Tools → Options... → Formatting → 
 
 ---
 
+### `tempo_label`
+
+**Syntax:** `{tempo_label: text}`
+
+Sets a **textual tempo marking** (e.g. *Allegro*, *Andante*, *Lento*, *Moderato*, *Allegretto*). The value is displayed as a subtitle in the same area as other musical metadata. It does not accept BPM or numeric parameters: it is free text.
+
+```chordpro
+{tempo_label: Andante}
+{tempo_label: Allegretto moderato}
+{tempo_label: Largo}
+```
+
+It may be used alone or combined with `{tempo:}`:
+
+```chordpro
+{tempo: 76}
+{tempo_label: Andante}
+```
+
+---
+
 ### `time`
 
 **Syntax:** `{time: N/D}`
@@ -1250,6 +1272,7 @@ Accessible from **Format → Tempo indication** (or by clicking the indication i
 | `{tempo_c: N}` | — | Musical | Tempo in BPM (eighth note) |
 | `{tempo_sp: N}` | — | Musical | Tempo in BPM (dotted quarter note) |
 | `{tempo_cp: N}` | — | Musical | Tempo in BPM (dotted eighth note) |
+| `{tempo_label: ...}` | — | Musical | Textual tempo marking (Allegro, Andante, Lento, …) |
 | `{time: N/D}` | — | Musical | Time signature |
 | `{beats_time: CH=N ...}` | — | Musical | Beat duration of chords on the next line |
 | `{textsize: N}` | — | Text | Text font size |

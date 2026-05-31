@@ -1299,6 +1299,48 @@ Deseleziona *Istanza singola* se hai bisogno di:
 > **Nota — startup.log** — Ogni evento legato all'istanza singola viene registrato in `%LOCALAPPDATA%\Songpress++\startup.log` (Windows) oppure `~/.Songpress++/startup.log` (Linux/macOS). Il log registra il percorso del config letto, il valore della chiave `singleinstance`, se è stata trovata un'istanza esistente e se il file è stato inoltrato con successo. È il primo posto dove cercare in caso di comportamento anomalo con più finestre.
 
 ---
+## Personalizzazione delle toolbar
+
+Songpress++ consente di mostrare o nascondere singole icone in ciascuna delle quattro barre degli strumenti: **Standard**, **Formattazione**, **Inserisci** e **Visualizza**.
+
+### Come accedere alle impostazioni
+
+Aprire **Strumenti → Opzioni…** e selezionare la scheda **Toolbar**. La scheda contiene quattro sotto-schede, una per barra:
+
+| Sotto-scheda    | Barra corrispondente | Icone configurabili |
+|-----------------|----------------------|---------------------|
+| Standard        | Barra standard       | Nuovo, Apri, Salva, Anteprima di stampa, Stampa, Annulla, Ripeti, Taglia, Copia, Copia come immagine, Incolla, Incolla accordi, Verifica sintassi, Opzioni… |
+| Formattazione   | Barra di formattazione | Font, Mostra/nascondi accordi, Interlinea |
+| Inserisci       | Barra di inserimento | Tutte le icone di inserimento (titolo, accordi, strofe, metadati musicali, immagini, simboli, ecc.) |
+| Visualizza      | Barra di visualizzazione | Mostra anteprima Songpress++, Mostra etichette strofe e ritornelli |
+
+### Come mostrare o nascondere un'icona
+
+1. Nella sotto-scheda corrispondente, **spuntare** la casella per mostrare l'icona, **deselezionarla** per nasconderla.
+2. I pulsanti **Seleziona tutto** e **Deseleziona tutto** agiscono solo sulla sotto-scheda corrente.
+3. Fare clic su **OK**: la toolbar viene aggiornata immediatamente.
+
+Le impostazioni vengono salvate nel file di configurazione dell'applicazione e ripristinate ad ogni avvio.
+
+> **Nota:** nascondere un'icona dalla toolbar non rimuove il comando corrispondente. Tutti i comandi rimangono sempre accessibili dal menu e tramite le scorciatoie da tastiera.
+
+### Comportamento dei separatori
+
+I separatori visivi tra gruppi di icone vengono gestiti automaticamente: se tutte le icone di un gruppo vengono nascoste, il separatore tra quel gruppo e il successivo scompare, evitando separatori orfani nella toolbar.
+
+### Note per sviluppatori
+
+La lista completa delle icone configurabili è definita nelle costanti di classe `MAIN_TOOLBAR_ITEMS`, `FORMAT_TOOLBAR_ITEMS`, `INSERT_TOOLBAR_ITEMS` e `VIEW_TOOLBAR_ITEMS` nel mixin `SongpressToolbarsMixin` (`SongpressToolbars.py`). Ogni voce ha la forma `(xrc_name, label, pref_key)`.
+
+Quando si aggiunge un nuovo comando a una toolbar, è sufficiente:
+
+1. Aggiungere la voce alla costante `*_TOOLBAR_ITEMS` corrispondente.
+2. Aggiungere il percorso icona in `_*_toolbar_icons` e il testo di aiuto in `_*_toolbar_helps` dentro il rispettivo metodo `_Build*ToolBar()`.
+
+**`MyPreferencesDialog` e `SongpressFrame` non richiedono alcuna modifica**: entrambi leggono le costanti `*_TOOLBAR_ITEMS` in modo dinamico — il dialogo preferenze genera automaticamente i checkbox per ogni nuova voce, e il save/load del config itera sull'intera lista.
+
+---
+
 ## Preferenze di visualizzazione
 
 I seguenti controlli si trovano nella scheda **Formattazione** delle preferenze e influenzano l'anteprima e la stampa.

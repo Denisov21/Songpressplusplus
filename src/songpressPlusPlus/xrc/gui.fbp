@@ -375,7 +375,7 @@
             <property name="permission">none</property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap">Load From File; SongpressV50 OK/Songpressplusplus/src/songpressPlusPlus/img/restart.png</property>
+            <property name="bitmap">Load From File; ../img/restart.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Close and restart Songpress++</property>
@@ -953,7 +953,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap">Load From File; </property>
+            <property name="bitmap">Load From File; ../img/bridge.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Insert a bridge block with start__bridge / end__bridge commands</property>
@@ -963,7 +963,7 @@
             <property name="name">insertBridge</property>
             <property name="permission">none</property>
             <property name="shortcut"></property>
-            <property name="unchecked_bitmap"></property>
+            <property name="unchecked_bitmap">Load From File; </property>
           </object>
           <object class="wxMenuItem" expanded="false">
             <property name="bitmap">Load From File; ../img/grid.png</property>
@@ -987,6 +987,19 @@
             <property name="kind">wxITEM_NORMAL</property>
             <property name="label">&amp;Tempo {tempo:}...</property>
             <property name="name">insertTempo</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap">Load From File; ..\img\agogic.png</property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert ChordPro directive to set a textual tempo marking (e.g. Andante, Allegro, Lento)</property>
+            <property name="id">ID_INSERT_TEMPO_LABEL</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">Tempo &amp;label {tempo_label:}...</property>
+            <property name="name">insertTempoLabel</property>
             <property name="permission">none</property>
             <property name="shortcut"></property>
             <property name="unchecked_bitmap"></property>
@@ -1485,7 +1498,7 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap">Load From File; SongpressV69 - Copia - Copia/SongpressPlusPlus/src/songpressPlusPlus/img/checked_dipendence.png</property>
+            <property name="bitmap">Load From File; ../img/checked_dipendence.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Show required dependencies and whether they are correctly installed</property>
