@@ -112,32 +112,98 @@ class SongpressToolbarsMixin:
     # ------------------------------------------------------------------
 
     FORMAT_TOOLBAR_ITEMS = [
-        ('fontChooser',        _(u'Font'),                   'tbf_fontChooser'),
-        ('showChordsChooser',  _(u'Show/hide chords'),       'tbf_showChords'),
-        ('insertLinespacing',  _(u'Linespacing'),            'tbf_insertLinespacing'),
+        ('fontChooser',       _(u'Font used in the Songpress++ preview'),      'tbf_fontChooser'),
+        ('showChordsChooser', _(u'Hide or show chords in the formatted song'), 'tbf_showChords'),
+        ('insertLinespacing', _(u'Linespacing'),                               'tbf_insertLinespacing'),
     ]
 
-    def _ApplyFormatToolBarVisibility(self):
-        """Mostra/nasconde i controlli della format toolbar in base ai flag tbf_* in self.pref.
+    _FORMAT_TOOLBAR_SEPARATORS_AFTER = {'showChordsChooser'}
 
-        La format toolbar contiene controlli wx (FontComboBox, Slider) che non possono
-        essere rimossi/aggiunti dinamicamente senza ricreare la toolbar: usiamo
-        Show/Hide sui controlli wxWindow stessi e poi Realize().
+    def _ApplyFormatToolBarVisibility(self):
+        """Ricostruisce la format toolbar in base ai flag tbf_* in self.pref.
+
+        AuiToolBar non gestisce in modo affidabile Show/Hide sui controlli
+        custom (FontComboBox, Slider) aggiunti via AddControl: l'unico approccio
+        robusto è distruggere i controlli esistenti e ricrearli, esattamente come
+        fanno _ApplyMainToolBarVisibility e _ApplyInsertToolBarVisibility.
         """
         show_font   = getattr(self.pref, 'tbf_fontChooser',       True)
         show_chords = getattr(self.pref, 'tbf_showChords',         True)
         show_ls     = getattr(self.pref, 'tbf_insertLinespacing',  True)
 
-        for ctrl in getattr(self, '_format_font_controls', []):
-            ctrl.Show(show_font)
-        for ctrl in getattr(self, '_format_chords_controls', []):
-            ctrl.Show(show_chords)
+        # Salva il valore corrente di fontChooser e showChordsChooser
+        # prima di distruggerli, per poterlo ripristinare dopo.
+        saved_font_face   = self.pref.format.face
+        saved_show_chords = self.pref.format.showChords
 
-        tool_id = wx.xrc.XRCID('insertLinespacing')
-        item = self.formatToolBar.FindTool(tool_id)
-        if item is not None:
-            item.SetState(aui.AUI_BUTTON_STATE_HIDDEN if not show_ls
-                          else item.GetState() & ~aui.AUI_BUTTON_STATE_HIDDEN)
+        # Distrugge i controlli custom (FontComboBox e Slider) prima di
+        # ClearTools, altrimenti restano orfani nella toolbar.
+        for ctrl in getattr(self, '_format_font_controls', []):
+            ctrl.Destroy()
+        self._format_font_controls = []
+        for ctrl in getattr(self, '_format_chords_controls', []):
+            ctrl.Destroy()
+        self._format_chords_controls = []
+
+        self.formatToolBar.ClearTools()
+
+        # ── Carattere ─────────────────────────────────────────────────
+        if show_font:
+            fontIcon = wx.StaticBitmap(
+                self.formatToolBar, -1,
+                wx.Bitmap(wx.Image(glb.AddPath('img/font1.png')))
+            )
+            fontIcon.SetToolTip(_("Font used in the Songpress++ preview"))
+            self.formatToolBar.AddControl(fontIcon)
+            self.fontChooser = FontComboBox(self.formatToolBar, -1, saved_font_face)
+            self.fontChooser.SetToolTip(_("Font used in the Songpress++ preview"))
+            self.formatToolBar.AddControl(self.fontChooser)
+            self.frame.Bind(wx.EVT_COMBOBOX,        self.OnFontSelected, self.fontChooser)
+            self.fontChooser.Bind(wx.EVT_TEXT_ENTER, self.OnFontSelected, self.fontChooser)
+            self.fontChooser.Bind(wx.EVT_KILL_FOCUS, self.OnFontSelected, self.fontChooser)
+            self._format_font_controls = [fontIcon, self.fontChooser]
+        else:
+            # fontChooser non esiste più: crea un dummy non visibile per
+            # non rompere il codice che chiama self.fontChooser.SetValue()
+            self.fontChooser = FontComboBox(self.formatToolBar, -1, saved_font_face)
+            self.fontChooser.Hide()
+            self._format_font_controls = []
+
+        # ── Mostra/nascondi accordi ────────────────────────────────────
+        if show_chords:
+            showChordsIcon = wx.StaticBitmap(
+                self.formatToolBar, -1,
+                wx.Bitmap(wx.Image(glb.AddPath('img/showChords.png')))
+            )
+            self.formatToolBar.AddControl(showChordsIcon)
+            self.showChordsChooser = wx.Slider(
+                self.formatToolBar, -1, saved_show_chords, 0, 2,
+                wx.DefaultPosition, (100, 32),
+                wx.SL_AUTOTICKS | wx.SL_HORIZONTAL
+            )
+            tt1 = wx.ToolTip(_("Hide or show chords in the formatted song"))
+            tt2 = wx.ToolTip(_("Hide or show chords in the formatted song"))
+            self.showChordsChooser.SetToolTip(tt1)
+            showChordsIcon.SetToolTip(tt2)
+            self.frame.Bind(wx.EVT_SCROLL, self.OnFontSelected, self.showChordsChooser)
+            self.formatToolBar.AddControl(self.showChordsChooser, "pippo")
+            self._format_chords_controls = [showChordsIcon, self.showChordsChooser]
+        else:
+            # showChordsChooser non esiste più: dummy nascosto
+            self.showChordsChooser = wx.Slider(
+                self.formatToolBar, -1, saved_show_chords, 0, 2,
+                wx.DefaultPosition, (100, 32),
+                wx.SL_AUTOTICKS | wx.SL_HORIZONTAL
+            )
+            self.showChordsChooser.Hide()
+            self._format_chords_controls = []
+
+        # ── Interlinea ─────────────────────────────────────────────────
+        if show_font or show_chords:
+            self.formatToolBar.AddSeparator()
+        if show_ls:
+            self.AddTool(self.formatToolBar, 'insertLinespacing', 'img/line_spacing.png',
+                         _(u"Linespacing"), _(u"Insert a {linespacing} command"))
 
         self.formatToolBar.Realize()
         self._mgr.Update()

@@ -313,6 +313,7 @@ class MyPreferencesDialog(PreferencesDialog):
 
             scroll.SetSizer(grid)
             grid.FitInside(scroll)
+            scroll.SetVirtualSize(grid.GetMinSize())
 
             btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
             btn_all  = wx.Button(panel, -1, _("Select all"))
@@ -347,7 +348,7 @@ class MyPreferencesDialog(PreferencesDialog):
         # ── Scheda Formato ───────────────────────────────────────────
         _make_sub_tab(
             SongpressToolbarsMixin.FORMAT_TOOLBAR_ITEMS,
-            set(),   # nessun separatore nella barra Formato
+            SongpressToolbarsMixin._FORMAT_TOOLBAR_SEPARATORS_AFTER,
             _("Format"),
         )
 

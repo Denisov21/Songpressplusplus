@@ -143,7 +143,7 @@ msgstr "Etichetta strofe e ritornelli"
 msgid "Show or hide verse and chorus labels"
 msgstr "Mostra o nasconde le etichette delle strofe e dei ritornelli"
 
-#: SongpressToolbars.py — _BuildFormatToolBar
+#: SongpressToolbars.py — _BuildFormatToolBar, FORMAT_TOOLBAR_ITEMS label
 msgid "Hide or show chords in the formatted song"
 msgstr "Mostra o nasconde gli accordi nella canzone formattata"
 
@@ -400,6 +400,6 @@ msgid "View"
 msgstr "Visualizza"
 
 #: SongpressToolbars.py — _BuildFormatToolBar (fontIcon tooltip, fontChooser
-#: tooltip)
+#: tooltip, FORMAT_TOOLBAR_ITEMS label)
 msgid "Font used in the Songpress++ preview"
 msgstr "Carattere usato nell'anteprima Songpress++"
