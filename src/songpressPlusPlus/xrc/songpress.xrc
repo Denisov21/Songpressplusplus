@@ -369,7 +369,7 @@
           <bitmap>../img/chorus.png</bitmap>
         </object>
         <object class="wxMenuItem" name="comment">
-          <label>Co_mment</label>
+          <label>Co_mment...</label>
           <accel>CTRL+M</accel>
           <help>Insert a command to display a comment</help>
           <bitmap>../img/comment.png</bitmap>
@@ -563,11 +563,13 @@
         <object class="wxMenuItem" name="transpose">
           <label>_Transpose...</label>
           <accel></accel>
+          <bitmap>../img/transpose.png</bitmap>
           <help>Transpose song or selected text</help>
         </object>
         <object class="wxMenuItem" name="simplifyChords">
           <label>S_implify chords...</label>
           <accel></accel>
+          <bitmap>../img/simplify.png</bitmap>
           <help>Transpose chords to the easiest key</help>
         </object>
         <object class="wxMenuItem" name="changeChordNotation">
