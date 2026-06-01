@@ -725,6 +725,19 @@ It may be used alone or combined with `{tempo:}`:
 {tempo_label: Andante}
 ```
 
+Traditional tempo markings correspond to the following reference BPM ranges (♩ = beats per minute). Values are indicative; musicological sources may differ slightly.
+
+| Tempo marking | BPM range      |
+| ------------- | -------------- |
+| Largo         | 40 – 60 BPM    |
+| Larghetto     | 60 – 66 BPM    |
+| Adagio        | 66 – 76 BPM    |
+| Andante       | 76 – 108 BPM   |
+| Moderato      | 108 – 120 BPM  |
+| Allegro       | 120 – 168 BPM  |
+| Presto        | 168 – 200 BPM  |
+| Prestissimo   | 200 – 208 BPM  |
+
 ---
 
 ### `time`

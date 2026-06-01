@@ -71,6 +71,19 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 > **Note on extended metadata** — The directives `{sorttitle}`, `{keywords}`, `{topic}`, `{collection}`, `{language}`, and `{meta}` are recognised and accepted by the parser for compatibility with ChordPro 6 files, but their value is not shown in the preview or in print: they are treated as pure metadata and consumed silently. The `{duration}` directive has a special behaviour: its value is used by the **Song Statistics** feature (see below).
 
 > **Note on tempo** — `{tempo:}` has four display modes selectable in the insert dialog: **Tempo:** (plain text), **♩** (note icon with value `♩ = 120`), **BPM** (text `BPM: 120`), **🎼** (metronome icon with value `🎼 = 120`). Checking *Metadata* treats the value as pure metadata with no visual output. The dialog choice sets the **global mode**; to override it for a single command use the form `{tempo:BPM,M}` (e.g. `{tempo:120,1}`). The `{tempo_m:}`, `{tempo_s:}` etc. variants always display their own fixed icon regardless of this setting. The `{tempo_label:}` directive allows inserting a **textual tempo marking** (e.g. `Andante`, `Allegro moderato`) independently of any numeric BPM value.
+>
+> **Traditional tempo markings and reference BPM ranges** (♩ = beats per minute):
+>
+> | Tempo marking | BPM range      |
+> | ------------- | -------------- |
+> | Largo         | 40 – 60 BPM    |
+> | Larghetto     | 60 – 66 BPM    |
+> | Adagio        | 66 – 76 BPM    |
+> | Andante       | 76 – 108 BPM   |
+> | Moderato      | 108 – 120 BPM  |
+> | Allegro       | 120 – 168 BPM  |
+> | Presto        | 168 – 200 BPM  |
+> | Prestissimo   | 200 – 208 BPM  |
 
 > **Note on key (`{key}`)** — The *Insert → Key* dialog lets you insert the `{key:key}` directive in three ways:
 >

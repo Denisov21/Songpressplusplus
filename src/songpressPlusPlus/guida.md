@@ -71,6 +71,19 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 > **Nota sui metadati estesi** — Le direttive `{sorttitle}`, `{keywords}`, `{topic}`, `{collection}`, `{language}`, `{meta}` vengono riconosciute e accettate dal parser per garantire la compatibilità con file ChordPro 6, ma il loro valore non viene visualizzato nell'anteprima né in stampa: sono trattate come puri metadati. Il token `:valore` viene consumato silenziosamente. La direttiva `{duration}` ha invece un comportamento speciale: il suo valore viene usato dalla funzione **Statistiche brano** (vedi sotto).
 
 > **Nota sul tempo** — `{tempo:}` ha quattro modalità di visualizzazione selezionabili nel dialogo di inserimento: **Tempo:** (testo semplice), **♩** (nota musicale con valore `♩ = 120`), **BPM** (testo `BPM: 120`), **🎼** (metronomo con valore `♩ = 120`). Spuntando *Metadati*, il valore viene trattato come puro metadato e non appare nell'anteprima né in stampa. La scelta nel dialogo imposta la **modalità globale**; per sovrascriverla per un singolo comando usa la forma `{tempo:BPM,M}` (es. `{tempo:120,1}`). Le varianti `{tempo_m:}`, `{tempo_s:}` ecc. mostrano sempre la propria icona fissa indipendentemente da questa impostazione. La direttiva `{tempo_label:}` permette invece di inserire un'**indicazione agogica testuale** (es. `Andante`, `Allegro moderato`) indipendentemente dal BPM numerico.
+>
+> **Indicazioni agogiche tradizionali e intervalli BPM di riferimento** (♩ = battiti per minuto):
+>
+> | Indicazione agogica | Intervallo BPM |
+> | ------------------- | -------------- |
+> | Largo               | 40 – 60 BPM    |
+> | Larghetto           | 60 – 66 BPM    |
+> | Adagio              | 66 – 76 BPM    |
+> | Andante             | 76 – 108 BPM   |
+> | Moderato            | 108 – 120 BPM  |
+> | Allegro             | 120 – 168 BPM  |
+> | Presto              | 168 – 200 BPM  |
+> | Prestissimo         | 200 – 208 BPM  |
 
 > **Nota sulla tonalità (`{key}`)** — Il dialogo *Inserisci → Tonalità* permette di inserire la direttiva `{key:tonalità}` con tre modalità:
 >

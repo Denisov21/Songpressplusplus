@@ -725,6 +725,19 @@ Può essere usato da solo oppure in combinazione con `{tempo:}`:
 {tempo_label: Andante}
 ```
 
+Le indicazioni agogiche tradizionali corrispondono ai seguenti intervalli BPM di riferimento (♩ = battiti per minuto). I valori sono indicativi: le fonti musicologiche possono differire leggermente.
+
+| Indicazione agogica | Intervallo BPM |
+| ------------------- | -------------- |
+| Largo               | 40 – 60 BPM    |
+| Larghetto           | 60 – 66 BPM    |
+| Adagio              | 66 – 76 BPM    |
+| Andante             | 76 – 108 BPM   |
+| Moderato            | 108 – 120 BPM  |
+| Allegro             | 120 – 168 BPM  |
+| Presto              | 168 – 200 BPM  |
+| Prestissimo         | 200 – 208 BPM  |
+
 ---
 
 ### `time`
