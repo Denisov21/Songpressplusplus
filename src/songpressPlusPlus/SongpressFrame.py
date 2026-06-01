@@ -52,6 +52,7 @@ from . import KlavierRenderer
 from .PrintDialog import SongpressPrintout, PrintManager
 from .CopyAIBeatsPrompt import CopyAIBeatsPromptMixin
 from .SongpressToolbars import SongpressToolbarsMixin
+from . import ChordProDirectives
 
 _ = wx.GetTranslation
 
@@ -5106,28 +5107,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
     # Direttive proprietarie di Songpress++ (non standard ChordPro)
     # Direttive NON presenti nella specifica ufficiale chordpro.org → icona 🔧
     # Fonte: https://www.chordpro.org/chordpro/chordpro-directives/
-    _SONGPRESSPLUSPLUS_DIRECTIVES = {
-        # Metadati estesi non ufficiali
-        'beats_time',                              # S++ – battiti per accordo
-        'ccli',                                    # S++ – codice CCLI (non in spec)
-        'arranger',                                # S++ – non in spec ufficiale
-        'keywords', 'topic', 'collection',        # S++ – non in spec ufficiale
-        'language',                                # S++ – non in spec ufficiale
-        # Varianti tempo proprietarie
-        'tempo_m', 'tempo_s', 'tempo_sp',
-        'tempo_c', 'tempo_cp',
-        # Struttura proprietaria
-        'start_of_part', 'end_of_part',           # S++ – non in spec
-        'start_verse', 'end_verse',               # S++ – non in spec
-        'start_verse_num', 'end_verse_num',       # S++ – non in spec
-        'start_chord', 'end_chord',               # S++ – non in spec
-        'row', 'bar',                             # S++ – non in spec
-        'sop', 'eop',                             # S++ – alias non ufficiali
-        # Formattazione proprietaria
-        'linespacing', 'chordtopspacing',         # S++ – non in spec
-        # Diagrammi/tastiera proprietari
-        'taste', 'fingering',                     # S++ – estensioni S++
-    }
+    _SONGPRESSPLUSPLUS_DIRECTIVES = ChordProDirectives.SPPLUSPLUS_DIRECTIVES
 
     # ID immagine per AutoComp (Scintilla RegisterImage)
     # Tipo 1 -> icona verde "✅" = direttiva ChordPro standard ufficiale
@@ -5166,54 +5146,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.text.RegisterImage(self._AUTOCOMP_IMG_CHORDPRO,   img_cp)
         self.text.RegisterImage(self._AUTOCOMP_IMG_SPPLUSPLUS, img_sp)
 
-    # Lista completa direttive mostrate nell'intellisense.
-    # La classificazione ✅/🔧 è derivata dalla specifica ufficiale:
-    # https://www.chordpro.org/chordpro/chordpro-directives/
-    _CHORDPRO_DIRECTIVES = [
-        # ── Metadati ufficiali ChordPro ✅ ────────────────────────────
-        'title', 'subtitle', 'artist', 'composer', 'lyricist',
-        'copyright', 'album', 'year', 'key', 'time', 'tempo', 'capo',
-        'duration', 'sorttitle', 'meta',
-        # ── Metadati estesi ✅ (ChordPro 6) ───────────────────────────
-        'pagetype', 'columns',
-        # ── Metadati Songpress++ 🔧 ────────────────────────────────────
-        'arranger',                                        # non in spec
-        'beats_time',                                      # S++ esclusivo
-        'ccli',                                            # non in spec
-        'keywords', 'topic', 'collection', 'language',    # non in spec
-        'tempo_m', 'tempo_s', 'tempo_sp', 'tempo_c', 'tempo_cp',
-        # ── Struttura ufficiale ChordPro ✅ ───────────────────────────
-        'start_of_chorus', 'end_of_chorus',
-        'start_of_verse', 'end_of_verse',
-        'start_of_bridge', 'end_of_bridge',
-        'start_of_tab', 'end_of_tab',
-        'start_of_grid', 'end_of_grid',
-        'new_page', 'column_break',
-        'new_song',
-        # ── Struttura Songpress++ 🔧 ───────────────────────────────────
-        'start_of_part', 'end_of_part',
-        'start_verse', 'end_verse',
-        'start_verse_num', 'end_verse_num',
-        'start_chord', 'end_chord',
-        'row', 'bar',
-        # ── Formattazione ufficiale ChordPro ✅ ───────────────────────
-        'comment', 'comment_italic', 'comment_box',
-        'image',
-        'textfont', 'textsize', 'textcolour',
-        'chordfont', 'chordsize', 'chordcolour',
-        'transpose',
-        # ── Formattazione Songpress++ 🔧 ───────────────────────────────
-        'linespacing', 'chordtopspacing',
-        # ── Alias ufficiali ChordPro ✅ ───────────────────────────────
-        't', 'st', 'c', 'ci', 'cb', 'np',
-        'soc', 'eoc', 'sov', 'eov', 'sob', 'eob', 'sot', 'eot',
-        # ── Alias Songpress++ 🔧 ───────────────────────────────────────
-        'sop', 'eop',
-        # ── Diagrammi/accordi ufficiali ChordPro ✅ ───────────────────
-        'define',
-        # ── Diagrammi/tastiera Songpress++ 🔧 ─────────────────────────
-        'taste', 'fingering',
-    ]
+    # Lista completa direttive mostrate nell'intellisense → ChordProDirectives.py
+    _CHORDPRO_DIRECTIVES = ChordProDirectives.DIRECTIVES
 
     def _ShowDirectiveIntellisense(self):
         """Mostra il popup di completamento direttive ChordPro (Ctrl+Space).
@@ -5283,14 +5217,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         stc.AutoCompShow(typed_len, ' '.join(_tagged(d) for d in matches))
 
     # Direttive che non accettano valore (si chiudono con '}' direttamente)
-    _DIRECTIVES_NO_VALUE = {
-        'end_of_chorus', 'end_of_verse', 'end_of_bridge',
-        'end_of_tab', 'end_of_grid', 'end_verse', 'end_verse_num',
-        'end_chord', 'new_page', 'column_break',
-        'end_of_part', 'row', 'bar',
-        'eoc', 'eov', 'eob', 'eot', 'np', 'eop',
-        'new_song',
-    }
+    _DIRECTIVES_NO_VALUE = ChordProDirectives.DIRECTIVES_NO_VALUE
 
     def _OnIntellisenseSelection(self, evt):
         """Gestisce la selezione dall'autocomplete ChordPro.

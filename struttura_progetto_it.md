@@ -87,6 +87,7 @@ Descrizione di ogni file e cartella presente nel progetto.
 | ---- | ----------- |
 | `SongpressFrame.py` | Finestra principale dell'applicazione. Gestisce il layout generale, la barra dei menu, la toolbar e il coordinamento tra editor e anteprima. |
 | `SongpressToolbars.py` | Mixin `SongpressToolbarsMixin` che raccoglie la costruzione delle tre `AuiToolBar` di Songpress++: *Standard* (nuovo/apri/salva, stampa, modifica, copia come immagine, verifica sintassi, opzioni), *Format* (scelta font, etichette strofe, slider accordi, toggle anteprima) e *Insert* (tutti i comandi di inserimento: titolo, sottotitolo, accordo, ritornello, strofa, commento, interruzioni, blocchi, tempo, tonalità, durata, tastiere, immagini, simboli musicali, interlinea). Ereditato da `SongpressFrame` ed attivato tramite `self._BuildToolbars()`. |
+| `ChordProDirectives.py` | Unico punto di definizione delle direttive ChordPro e Songpress++ per l'intellisense dell'editor. Espone tre costanti: `DIRECTIVES` (lista ordinata completa mostrata nel popup di completamento), `SPPLUSPLUS_DIRECTIVES` (set delle direttive esclusive Songpress++, icona 🔧), `DIRECTIVES_NO_VALUE` (set delle direttive senza valore, chiuse con `}` direttamente). Importato da `SongpressFrame` tramite `from . import ChordProDirectives`. Per aggiungere o rimuovere una direttiva è sufficiente modificare questo file. |
 | `SDIMainFrame.py` | Frame base SDI (Single Document Interface) da cui `SongpressFrame` eredita. Fornisce la struttura base della finestra con supporto per apertura/salvataggio file. SetMinSize(wx.Size(370, 520)) |
 
 ### Editor e rendering
@@ -223,6 +224,7 @@ I file `.mo` sono le versioni **compilate** dei `.po`, lette a runtime da wxPyth
 | `SongbookExporter.po` / `.mo` | `SongbookExporter.py`, `CanzonatorDialog.py` |
 | `SongpressToolbars.po` / `.mo` | `SongpressToolbars.py` — etichette e tooltip delle tre toolbar (Standard, Format, Insert). |
 | `SongpressFrame.po` / `.mo` | `SongpressFrame.py` |
+| `ChordProDirectives.po` / `.mo` | `ChordProDirectives.py` — nessuna stringa localizzata al momento; file predisposto per future traduzioni dei nomi delle direttive o dei commenti. (Non serve a nulla `ChordProDirectives.po` / `.mo`!) |
 | `SyntaxCheckerDialog.po` / `.mo` | `SyntaxCheckerDialog.py` |
 | `Transpose.po` / `.mo` | `Transpose.py` |
 | `TransposeDialog.po` / `.mo` | `TransposeDialog.py` / `MyTransposeDialog.py` |

@@ -57,6 +57,7 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 | `{tempo_sp:BPM}`    |              | 🔧  | 🖊    | Tempo con icona **semiminima puntata** fissa                                              |
 | `{tempo_c:BPM}`     |              | 🔧  | 🖊    | Tempo con icona **croma** fissa                                                           |
 | `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo con icona **croma puntata** fissa                                                   |
+| `{tempo_label:Testo}` |            | 🔧  | ⌨️   | Indicazione agogica testuale (es. `{tempo_label:Andante}`, `{tempo_label:Allegro moderato}`); visualizzata come testo accanto alle altre direttive di tempo |
 | `{time:N/M}`        |              | ✅  | ⌨️   | Indicazione di tempo (es. `{time:4/4}`, `{time:3/4}`); visualizzata con simbolo grafico   |
 | `{beats_time: Acc=N …}` |            | 🔧  | ⌨️   | Durata in battiti degli accordi (es. `{beats_time: Do=2 Sol=1}`); visualizza numero, punti o entrambi sopra gli accordi (configurabile nelle preferenze) |
 | `{duration:mm:ss}`  |              | ✅  | 🖊    | Durata totale della canzone (es. `{duration:12:45}`); non visualizzata nell'anteprima né in stampa, ma riportata nelle **Statistiche brano** come «Durata» effettiva al posto della stima automatica. Commentando la riga con `#` la durata torna ad essere calcolata automaticamente. |
@@ -69,7 +70,7 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 
 > **Nota sui metadati estesi** — Le direttive `{sorttitle}`, `{keywords}`, `{topic}`, `{collection}`, `{language}`, `{meta}` vengono riconosciute e accettate dal parser per garantire la compatibilità con file ChordPro 6, ma il loro valore non viene visualizzato nell'anteprima né in stampa: sono trattate come puri metadati. Il token `:valore` viene consumato silenziosamente. La direttiva `{duration}` ha invece un comportamento speciale: il suo valore viene usato dalla funzione **Statistiche brano** (vedi sotto).
 
-> **Nota sul tempo** — `{tempo:}` ha quattro modalità di visualizzazione selezionabili nel dialogo di inserimento: **Tempo:** (testo semplice), **♩** (nota musicale con valore `♩ = 120`), **BPM** (testo `BPM: 120`), **🎼** (metronomo con valore `♩ = 120`). Spuntando *Metadati*, il valore viene trattato come puro metadato e non appare nell'anteprima né in stampa. La scelta nel dialogo imposta la **modalità globale**; per sovrascriverla per un singolo comando usa la forma `{tempo:BPM,M}` (es. `{tempo:120,1}`). Le varianti `{tempo_m:}`, `{tempo_s:}` ecc. mostrano sempre la propria icona fissa indipendentemente da questa impostazione.
+> **Nota sul tempo** — `{tempo:}` ha quattro modalità di visualizzazione selezionabili nel dialogo di inserimento: **Tempo:** (testo semplice), **♩** (nota musicale con valore `♩ = 120`), **BPM** (testo `BPM: 120`), **🎼** (metronomo con valore `♩ = 120`). Spuntando *Metadati*, il valore viene trattato come puro metadato e non appare nell'anteprima né in stampa. La scelta nel dialogo imposta la **modalità globale**; per sovrascriverla per un singolo comando usa la forma `{tempo:BPM,M}` (es. `{tempo:120,1}`). Le varianti `{tempo_m:}`, `{tempo_s:}` ecc. mostrano sempre la propria icona fissa indipendentemente da questa impostazione. La direttiva `{tempo_label:}` permette invece di inserire un'**indicazione agogica testuale** (es. `Andante`, `Allegro moderato`) indipendentemente dal BPM numerico.
 
 > **Nota sulla tonalità (`{key}`)** — Il dialogo *Inserisci → Tonalità* permette di inserire la direttiva `{key:tonalità}` con tre modalità:
 >
@@ -644,9 +645,9 @@ La dimensione dell'icona nota (o metronomo) si imposta in *Opzioni → Formato �
 | **24×24** | Dimensione predefinita, adatta alla maggior parte dei casi |
 | **32×32** | Documenti con font grandi o per maggiore leggibilità |
 
-La preferenza si applica a tutte le direttive `{tempo:}` e varianti (`{tempo_m:}`, `{tempo_s:}` ecc.) nell'anteprima e in stampa.
+La preferenza si applica a tutte le direttive `{tempo:}` e varianti (`{tempo_m:}`, `{tempo_s:}` ecc.) nell'anteprima e in stampa. La direttiva `{tempo_label:}` non è influenzata da questa preferenza: visualizza sempre il testo agogico così com'è.
 
-> **Nota — Varianti con icona fissa** — Le direttive `{tempo_m:}`, `{tempo_s:}`, `{tempo_sp:}`, `{tempo_c:}`, `{tempo_cp:}` mostrano sempre la propria icona nota specifica (rispettivamente minima, semiminima, semiminima puntata, croma, croma puntata) **indipendentemente** dalla modalità di visualizzazione globale impostata per `{tempo:}`. L'unica cosa influenzata dalla preferenza globale è il formato del numero: `= 120` oppure `BPM: 120`. Queste varianti non hanno una voce di menu dedicata e vanno digitate manualmente nell'editor.
+> **Nota — Varianti con icona fissa** — Le direttive `{tempo_m:}`, `{tempo_s:}`, `{tempo_sp:}`, `{tempo_c:}`, `{tempo_cp:}` mostrano sempre la propria icona nota specifica (rispettivamente minima, semiminima, semiminima puntata, croma, croma puntata) **indipendentemente** dalla modalità di visualizzazione globale impostata per `{tempo:}`. L'unica cosa influenzata dalla preferenza globale è il formato del numero: `= 120` oppure `BPM: 120`. Queste varianti non hanno una voce di menu dedicata e vanno digitate manualmente nell'editor. La direttiva `{tempo_label:}` è invece inseribile tramite menu (*Inserisci → Indicazione agogica*) e visualizza un'etichetta testuale senza alcun valore numerico.
 
 ### Durata degli accordi — `{beats_time:}`
 
@@ -1772,14 +1773,14 @@ Le opzioni si trovano in **Strumenti → Opzioni... → scheda Anteprima Songpre
 | **Accordi di intro `{start_chord}`\`{end_chord}`** | ☐ | Nasconde l'intero blocco intro accordi (compreso il suo contenuto) quando gli accordi sono disabilitati |
 | **Bridge `{start_bridge}`\`{end_bridge}`** | ☐ | Nasconde i blocchi bridge quando gli accordi sono disabilitati (copre anche le forme `{start_of_bridge}`/`{sob}`) |
 | **Griglia `{start_of_grid}`\`{end_of_grid}`** | ☐ | Nasconde i blocchi griglia accordi quando gli accordi sono disabilitati (copre anche le forme `{sog}`, `{grid}`) |
-| **Tempo `{tempo_m}`\`{tempo_s}`\`{tempo_sp}`\`{tempo_c}`\`{tempo_cp}`** | ☐ | Nasconde tutte le direttive di indicazione del tempo quando gli accordi sono disabilitati |
+| **Tempo `{tempo_m}`\`{tempo_s}`\`{tempo_sp}`\`{tempo_c}`\`{tempo_cp}`\`{tempo_label}`** | ☐ | Nasconde tutte le direttive di indicazione del tempo quando gli accordi sono disabilitati |
 | **Indicazione di tempo `{time}`** | ☐ | Nasconde le direttive `{time:…}` (indicazione metrica, es. `4/4`) quando gli accordi sono disabilitati |
 
 > **Nota:** le checkbox agiscono **esclusivamente** quando lo slider Mostra accordi è su *Nessuno* (valore 0). Con le altre modalità (*Solo prima strofa*, *Intera canzone*) i blocchi vengono sempre visualizzati normalmente, indipendentemente da queste impostazioni.
 
 > **Nota:** il filtro agisce sul testo passato al renderer prima del ridisegno. Il documento sorgente nell'editor non viene mai modificato.
 
-> **Nota tecnica:** `{start_chord}`, `{start_bridge}`, `{start_of_grid}` sono **blocchi paired** (apertura + contenuto + chiusura): l'intera sezione viene soppressa. `{tempo_m}`, `{tempo_s}`, `{tempo_sp}`, `{tempo_c}`, `{tempo_cp}` e `{time}` sono invece **direttive singole**: viene rimossa soltanto la riga che le contiene.
+> **Nota tecnica:** `{start_chord}`, `{start_bridge}`, `{start_of_grid}` sono **blocchi paired** (apertura + contenuto + chiusura): l'intera sezione viene soppressa. `{tempo_m}`, `{tempo_s}`, `{tempo_sp}`, `{tempo_c}`, `{tempo_cp}`, `{tempo_label}` e `{time}` sono invece **direttive singole**: viene rimossa soltanto la riga che le contiene.
 
 ### Compatibilità di `{new_song}` con i filtri accordi
 

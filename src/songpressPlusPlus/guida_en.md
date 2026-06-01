@@ -57,6 +57,7 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | `{tempo_sp:BPM}`    |              | 🔧  | 🖊    | Tempo with fixed **dotted quarter note** icon                                            |
 | `{tempo_c:BPM}`     |              | 🔧  | 🖊    | Tempo with fixed **eighth note** icon                                                    |
 | `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo with fixed **dotted eighth note** icon                                             |
+| `{tempo_label:Text}` |             | 🔧  | ⌨️   | Textual tempo marking (e.g. `{tempo_label:Andante}`, `{tempo_label:Allegro moderato}`); displayed as text alongside other tempo directives |
 | `{time:N/M}`        |              | ✅  | ⌨️   | Time signature (e.g. `{time:4/4}`, `{time:3/4}`); rendered with a graphical time symbol  |
 | `{beats_time: Ch=N …}` |           | 🔧  | ⌨️   | Beat duration of chords (e.g. `{beats_time: C=2 G=1}`); displays a number, dots, or both above chords (configurable in preferences) |
 | `{duration:mm:ss}`  |              | ✅  | 🖊    | Total song duration (e.g. `{duration:12:45}`); not shown in preview or print, but displayed in **Song Statistics** as the actual «Duration» instead of the automatic estimate. Commenting out the line with `#` restores automatic duration calculation. |
@@ -69,7 +70,7 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 
 > **Note on extended metadata** — The directives `{sorttitle}`, `{keywords}`, `{topic}`, `{collection}`, `{language}`, and `{meta}` are recognised and accepted by the parser for compatibility with ChordPro 6 files, but their value is not shown in the preview or in print: they are treated as pure metadata and consumed silently. The `{duration}` directive has a special behaviour: its value is used by the **Song Statistics** feature (see below).
 
-> **Note on tempo** — `{tempo:}` has four display modes selectable in the insert dialog: **Tempo:** (plain text), **♩** (note icon with value `♩ = 120`), **BPM** (text `BPM: 120`), **🎼** (metronome icon with value `🎼 = 120`). Checking *Metadata* treats the value as pure metadata with no visual output. The dialog choice sets the **global mode**; to override it for a single command use the form `{tempo:BPM,M}` (e.g. `{tempo:120,1}`). The `{tempo_m:}`, `{tempo_s:}` etc. variants always display their own fixed icon regardless of this setting.
+> **Note on tempo** — `{tempo:}` has four display modes selectable in the insert dialog: **Tempo:** (plain text), **♩** (note icon with value `♩ = 120`), **BPM** (text `BPM: 120`), **🎼** (metronome icon with value `🎼 = 120`). Checking *Metadata* treats the value as pure metadata with no visual output. The dialog choice sets the **global mode**; to override it for a single command use the form `{tempo:BPM,M}` (e.g. `{tempo:120,1}`). The `{tempo_m:}`, `{tempo_s:}` etc. variants always display their own fixed icon regardless of this setting. The `{tempo_label:}` directive allows inserting a **textual tempo marking** (e.g. `Andante`, `Allegro moderato`) independently of any numeric BPM value.
 
 > **Note on key (`{key}`)** — The *Insert → Key* dialog lets you insert the `{key:key}` directive in three ways:
 >
@@ -644,9 +645,9 @@ The size of the note (or metronome) icon is set in *Options → Format → Tempo
 | **24×24** | Default size, suitable for most cases |
 | **32×32** | Documents with large fonts or for greater readability |
 
-The preference applies to all `{tempo:}` directives and their variants (`{tempo_m:}`, `{tempo_s:}` etc.) in both preview and print.
+The preference applies to all `{tempo:}` directives and their variants (`{tempo_m:}`, `{tempo_s:}` etc.) in both preview and print. The `{tempo_label:}` directive is not affected by this preference: it always displays the textual marking as-is.
 
-> **Note — Fixed-icon variants** — The directives `{tempo_m:}`, `{tempo_s:}`, `{tempo_sp:}`, `{tempo_c:}`, `{tempo_cp:}` always display their own specific note icon (half note, quarter note, dotted quarter, eighth note, dotted eighth respectively) **regardless** of the global display mode set for `{tempo:}`. The only thing affected by the global preference is the number format: `= 120` or `BPM: 120`. These variants have no dedicated menu entry and must be typed directly in the editor.
+> **Note — Fixed-icon variants** — The directives `{tempo_m:}`, `{tempo_s:}`, `{tempo_sp:}`, `{tempo_c:}`, `{tempo_cp:}` always display their own specific note icon (half note, quarter note, dotted quarter, eighth note, dotted eighth respectively) **regardless** of the global display mode set for `{tempo:}`. The only thing affected by the global preference is the number format: `= 120` or `BPM: 120`. These variants have no dedicated menu entry and must be typed directly in the editor. The `{tempo_label:}` directive is instead available via menu (*Insert → Tempo marking*) and displays a textual label with no numeric value.
 
 ### Chord Beat Duration — `{beats_time:}`
 
@@ -1772,14 +1773,14 @@ Options are found in **Tools → Options... → Songpress++ Preview tab → No c
 | **Intro chords `{start_chord}`\`{end_chord}`** | ☐ | Hides the entire intro chord block (including its content) when chords are disabled |
 | **Bridge `{start_bridge}`\`{end_bridge}`** | ☐ | Hides bridge blocks when chords are disabled (also covers `{start_of_bridge}`/`{sob}`) |
 | **Grid `{start_of_grid}`\`{end_of_grid}`** | ☐ | Hides chord grid blocks when chords are disabled (also covers `{sog}`, `{grid}`) |
-| **Tempo `{tempo_m}`\`{tempo_s}`\`{tempo_sp}`\`{tempo_c}`\`{tempo_cp}`** | ☐ | Hides all tempo directives when chords are disabled |
+| **Tempo `{tempo_m}`\`{tempo_s}`\`{tempo_sp}`\`{tempo_c}`\`{tempo_cp}`\`{tempo_label}`** | ☐ | Hides all tempo directives when chords are disabled |
 | **Time signature `{time}`** | ☐ | Hides `{time:…}` directives (e.g. `4/4`) when chords are disabled |
 
 > **Note:** the checkboxes take effect **only** when the Show chords slider is set to *None* (value 0). With the other modes (*First verse only*, *Entire song*) blocks are always rendered normally, regardless of these settings.
 
 > **Note:** the filter acts on the text passed to the renderer before each redraw. The source document in the editor is never modified.
 
-> **Technical note:** `{start_chord}`, `{start_bridge}`, `{start_of_grid}` are **paired blocks** (open tag + content + close tag): the entire section is suppressed. `{tempo_m}`, `{tempo_s}`, `{tempo_sp}`, `{tempo_c}`, `{tempo_cp}` and `{time}` are **single directives**: only the line containing them is removed.
+> **Technical note:** `{start_chord}`, `{start_bridge}`, `{start_of_grid}` are **paired blocks** (open tag + content + close tag): the entire section is suppressed. `{tempo_m}`, `{tempo_s}`, `{tempo_sp}`, `{tempo_c}`, `{tempo_cp}`, `{tempo_label}` and `{time}` are **single directives**: only the line containing them is removed.
 
 ### `{new_song}` compatibility with chord filters
 
