@@ -750,10 +750,14 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.SetDefaultExtension(self.pref.defaultExtension)
         self.statusBar = self.frame.GetStatusBar()
         if self.statusBar:
-            self.statusBar.SetFieldsCount(2)
-            self.statusBar.SetStatusWidths([-1, 160])
+            self.statusBar.SetFieldsCount(3)
+            self.statusBar.SetStatusWidths([-1, 160, 110])
         self._statusTimer = wx.Timer(self.frame)
         self.frame.Bind(wx.EVT_TIMER, self._OnStatusTimerExpired, self._statusTimer)
+        # Timer per aggiornare NUM / CAPS / SCR nella status bar (campo 2)
+        self._lockKeysTimer = wx.Timer(self.frame)
+        self.frame.Bind(wx.EVT_TIMER, self._OnLockKeysTimer, self._lockKeysTimer)
+        self._lockKeysTimer.Start(300)
         # Workaround: wx.lib.agw.aui framemanager crashes with a wxAssertionError
         # in BufferedDC when the frame is resized to zero (e.g. minimised).
         # Skip the event before AUI can attempt to repaint with invalid dimensions.
@@ -958,6 +962,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                     self.SetDefaultExtension(self.pref.defaultExtension)
 
     def OnClose(self, evt):
+        if hasattr(self, '_lockKeysTimer') and self._lockKeysTimer.IsRunning():
+            self._lockKeysTimer.Stop()
         self.SaveWindowGeometry()
         self._SavePageMargins()
         self._SaveTempoDisplay()
@@ -5959,6 +5965,23 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         if getattr(self.pref, 'multiCursor', False):
             parts.append(_(u"Multicursor"))
         self.statusBar.SetStatusText(u"  ● " + u"  ● ".join(parts) if parts else u"", 1)
+
+    def _UpdateLockKeys(self):
+        """Aggiorna il campo 2 della status bar con lo stato di CAPS / NUM / SCR."""
+        if not self.statusBar:
+            return
+        caps = wx.GetKeyState(wx.WXK_CAPITAL)
+        num  = wx.GetKeyState(wx.WXK_NUMLOCK)
+        scr  = wx.GetKeyState(wx.WXK_SCROLL)
+        parts = []
+        if caps: parts.append(u"CAPS")
+        if num:  parts.append(u"NUM")
+        if scr:  parts.append(u"SCR")
+        self.statusBar.SetStatusText(u"  ".join(parts), 2)
+
+    def _OnLockKeysTimer(self, evt):
+        """Callback del timer periodico per aggiornare gli indicatori lock-keys."""
+        self._UpdateLockKeys()
 
     def OnIntegrateChords(self, evt):
         ln = self.text.GetCurrentLine()

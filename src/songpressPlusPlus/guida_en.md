@@ -2056,6 +2056,39 @@ The *Find* and *Replace with* fields are **ComboBoxes** that store up to **10** 
 
 ---
 
+## Status Bar
+
+The **status bar** is located at the bottom of the Songpress++ window and displays real-time information about the editor state and keyboard status.
+
+### Left Field — Messages
+
+The wider field on the left displays temporary application messages (for example, notices about completed operations or instructions for special commands). The message disappears automatically after a few seconds.
+
+### Center Field — Editor Indicators
+
+The second field shows indicators for the currently active editor modes:
+
+| Indicator | Meaning |
+| --------- | ------- |
+| **● Intellisense** | Autocomplete is active. Typing `{` followed by a few letters and pressing <kbd>Ctrl</kbd>+<kbd>Space</kbd> opens the ChordPro directive menu. |
+| **● Multicursor** | Multicursor mode is active. Multiple simultaneous cursors can be placed in the text. |
+
+Indicators appear only when the corresponding mode is enabled in Preferences. Both can be toggled from the *Edit → Preferences* menu.
+
+### Right Field — Lock Keys
+
+The third field, at the far right, permanently shows the state of the **keyboard lock keys**, in Debian/GNOME style:
+
+| Badge | Key | Behaviour |
+| ----- | --- | --------- |
+| **CAPS** | <kbd>Caps Lock</kbd> | **On** (grey background, dark text): letters are typed in uppercase. **Off**: the badge is not shown. |
+| **NUM** | <kbd>Num Lock</kbd> | **On**: the numeric keypad produces digits. **Off**: the badge is not shown. |
+| **SCR** | <kbd>Scroll Lock</kbd> | **On**: Scroll Lock is engaged. **Off**: the badge is not shown. |
+
+> **Tooltip** — Hovering the mouse pointer over a badge shows a tooltip that explicitly states the current key state (e.g. *Caps Lock: on* / *Caps Lock: off*).
+
+---
+
 ## License and Credits
 
 **Songpress++** is a derivative work of **Songpress**, originally developed by Luca Allulli / [Skeed](https://www.skeed.it/songpress) — copyright © 2009–2026 Luca Allulli (Skeed).

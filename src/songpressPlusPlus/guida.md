@@ -2056,6 +2056,39 @@ I campi *Trova* e *Sostituisci con* sono **ComboBox** che memorizzano fino a **1
 
 ---
 
+## Barra di stato
+
+La **barra di stato** si trova nella parte inferiore della finestra di Songpress++ e mostra in tempo reale informazioni sullo stato dell'editor e della tastiera.
+
+### Campo sinistro — Messaggi
+
+Il campo più largo, a sinistra, visualizza messaggi temporanei dell'applicazione (ad esempio avvisi su operazioni completate o istruzioni per comandi speciali). Il messaggio scompare automaticamente dopo alcuni secondi.
+
+### Campo centrale — Indicatori editor
+
+Il secondo campo mostra gli indicatori relativi alle modalità attive nell'editor:
+
+| Indicatore | Significato |
+| ---------- | ----------- |
+| **● Intellisense** | L'autocompletamento è attivo. Digitando `{` seguito da alcune lettere e premendo <kbd>Ctrl</kbd>+<kbd>Spazio</kbd> si apre il menu delle direttive ChordPro. |
+| **● Multicursor** | La modalità multicursore è attiva. È possibile posizionare più cursori simultanei nel testo. |
+
+Gli indicatori appaiono solo quando la modalità corrispondente è abilitata nelle preferenze. Entrambi possono essere attivati o disattivati dal menu *Modifica → Preferenze*.
+
+### Campo destro — Tasti di blocco
+
+Il terzo campo, all'estrema destra, visualizza in modo permanente lo stato dei **tasti di blocco della tastiera**, in stile Debian/GNOME:
+
+| Badge | Tasto | Comportamento |
+| ----- | ----- | ------------- |
+| **CAPS** | <kbd>Caps Lock</kbd> | **Attivo** (sfondo grigio, testo scuro): le lettere vengono digitate in maiuscolo. **Non attivo**: il badge non è visualizzato. |
+| **NUM** | <kbd>Num Lock</kbd> | **Attivo**: il tastierino numerico produce cifre. **Non attivo**: il badge non è visualizzato. |
+| **SCR** | <kbd>Scroll Lock</kbd> | **Attivo**: lo Scroll Lock è inserito. **Non attivo**: il badge non è visualizzato. |
+
+> **Tooltip** — Passando il puntatore del mouse su un badge appare un tooltip che indica esplicitamente lo stato corrente del tasto (es. *Caps Lock: attivo* / *Caps Lock: non attivo*).
+
+---
+
 ## Licenza e crediti
 
 **Songpress++** è un'opera derivata di **Songpress**, originariamente sviluppato da Luca Allulli / [Skeed](https://www.skeed.it/songpress) — copyright © 2009–2026 Luca Allulli (Skeed).
