@@ -283,3 +283,7 @@ msgstr "Interlinea"
 
 msgid "Bridge {start_bridge}\\{end_bridge}"
 msgstr "Bridge {start_bridge}\\{end_bridge}"
+
+#: PreferencesDialog.py (File associations tooltip)
+msgid "Associate the .%s file extension with Songpress++."
+msgstr "Associa l'estensione di file .%s con Songpress++."
