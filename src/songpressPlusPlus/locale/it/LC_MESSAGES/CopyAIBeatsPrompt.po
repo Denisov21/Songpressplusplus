@@ -1,5 +1,5 @@
 # Italian translation for CopyAIBeatsPrompt.py
-# Songpress++ – Denis Ovtcharenko (Denisov21)
+# Songpress++ – Denisov21
 # Copyright (C) 2026 Denisov21
 # License: GNU GPL v2
 #
