@@ -59,7 +59,155 @@ In sintesi: `Avvio SONGPRESS2.vbs` è la versione di sviluppo/debug, `Avvio SONG
 
 ## Installazione su Linux
 
-(Mai testata)
+### Prerequisiti
+
+Assicurati di avere installati i seguenti pacchetti:
+
+```bash
+sudo apt install python3 python3-pip python3-venv fakeroot dpkg imagemagick
+```
+
+---
+
+### Creazione del pacchetto .deb
+
+Lo script `build_deb.sh` si trova nella root del progetto, accanto a `pyproject.toml`.
+
+#### 1. Entra nella cartella del progetto
+
+```bash
+cd /home/denis/Songpress_DEFINitiVO3/SongpressPlusPlus
+```
+
+#### 2. Rendi eseguibile lo script (solo la prima volta)
+
+```bash
+chmod +x build_deb.sh
+```
+
+#### 3. Esegui lo script
+
+```bash
+./build_deb.sh
+```
+
+Lo script esegue automaticamente:
+
+- Lettura di nome e versione da `pyproject.toml`
+- Costruzione della wheel Python con `pip` e `hatchling`
+- Installazione della wheel nell'albero del pacchetto
+- Creazione del wrapper `GDK_BACKEND=x11` per la compatibilità con Wayland
+- Creazione del symlink minuscolo `songpressplusplus` → `SongpressPlusPlus`
+- Generazione della voce nel menu applicazioni (file `.desktop`)
+- Produzione del file `.deb` finale nella cartella `build_deb/`
+
+Al termine vedrai:
+
+```
+✅  Pacchetto creato: build_deb/songpressplusplus_6.1.1_all.deb
+```
+
+---
+
+### Installazione del pacchetto .deb
+
+```bash
+sudo dpkg -i "build_deb/songpressplusplus_6.1.1_all.deb"
+```
+
+In caso di dipendenze mancanti:
+
+```bash
+sudo apt-get install -f
+```
+
+---
+
+### Aggiornamento a una nuova versione
+
+#### 1. Aggiorna la versione in `pyproject.toml`
+
+```toml
+[project]
+version = "6.2.0"   # ← modifica questo numero
+```
+
+#### 2. Rimuovi la versione installata, ricostruisci e reinstalla
+
+```bash
+sudo dpkg -r songpressplusplus
+./build_deb.sh
+```
+
+Al termine dello script, `build_deb/` conterrà il nuovo `.deb` con il numero
+di versione aggiornato. Installalo con il comando suggerito a schermo, ad esempio:
+
+```bash
+sudo dpkg -i "build_deb/songpressplusplus_6.2.0_all.deb"
+```
+
+> **Suggerimento:** non è necessario ricordare il numero di versione esatto —
+> puoi usare il completamento automatico della shell con `Tab` dopo aver digitato
+> `sudo dpkg -i "build_deb/songpressplusplus_`, oppure copiare il comando
+> che lo script stampa al termine della build.
+
+---
+
+### Disinstallazione
+
+```bash
+sudo dpkg -r songpressplusplus
+```
+
+---
+
+### Avvio del programma
+
+Dopo l'installazione il programma si avvia in tre modi:
+
+**Da terminale:**
+```bash
+SongpressPlusPlus
+# oppure (minuscolo)
+songpressplusplus
+```
+
+**Dal menu applicazioni** (KDE/GNOME): cerca "Songpress" nel launcher.
+
+> Il wrapper installato imposta automaticamente `GDK_BACKEND=x11` per garantire
+> la compatibilità con wxPython su sistemi Wayland. Non è necessario impostare
+> la variabile manualmente.
+
+---
+
+### Note tecniche Linux
+
+- Il pacchetto è testato su **Debian 13 / Ubuntu 24.04** con Python 3.13 e wxPython 4.2.3 GTK3
+- I messaggi GTK alla console (`gtk_image_menu_item_set_image`, `ScreenToClient`) sono innocui e non indicano errori
+- Su sistemi Wayland il programma usa automaticamente il backend X11 tramite XWayland
+
+---
+
+### Associazione file su Linux — avvertenza importante
+
+Songpress++ include una scheda **Associazioni file** nelle Opzioni (`Strumenti → Opzioni → Associazioni file`) con i pulsanti "Associa tutto" e "Disassocia tutto". Su Linux questi pulsanti creano file locali in `~/.local/share/` che **entrano in conflitto** con le associazioni già installate dal pacchetto `.deb` a livello di sistema.
+
+**Non usare "Associa tutto" su Linux** se hai installato il pacchetto `.deb`: le associazioni per `.crd`, `.cho`, `.chordpro`, `.chopro`, `.pro` e `.sng` sono già configurate correttamente dal pacchetto e funzionano senza intervento manuale.
+
+> **Nota:** a partire dalla versione attuale, i pulsanti "Associa tutto", "Disassocia tutto" e "Applica ora" sono **disabilitati automaticamente** su Linux quando il programma viene avviato dal pacchetto `.deb`. Non è quindi possibile creare associazioni locali per errore.
+
+Se hai già premuto "Associa tutto" per errore e vuoi ripristinare le associazioni di sistema, esegui questi comandi da terminale:
+
+```bash
+rm -f ~/.local/share/applications/songpress.desktop
+rm -f ~/.local/share/mime/packages/songpress-mime.xml
+rm -f ~/.local/share/mime/text/x-chordpro.xml
+update-desktop-database ~/.local/share/applications
+update-mime-database ~/.local/share/mime
+kbuildsycoca6 --noincremental 2>/dev/null || true
+```
+
+Dopo aver eseguito i comandi, il doppio click sui file `.crd` tornerà ad usare le associazioni del pacchetto `.deb`.
 
 ## Installazione su MAC
 

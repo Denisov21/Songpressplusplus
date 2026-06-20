@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="text/x-chordpro">
+    <comment>ChordPro song file</comment>
+    <comment xml:lang="it">File canzone ChordPro</comment>
+    <glob pattern="*.crd"/>
+    <glob pattern="*.cho"/>
+    <glob pattern="*.chordpro"/>
+    <glob pattern="*.chopro"/>
+    <glob pattern="*.pro"/>
+    <glob pattern="*.sng"/>
+    <icon name="songpressplusplus"/>
+  </mime-type>
+</mime-info>

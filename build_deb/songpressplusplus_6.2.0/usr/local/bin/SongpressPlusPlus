@@ -1,0 +1,4 @@
+#!/bin/sh
+# Wrapper: forza backend X11 per compatibilità wxPython/Wayland
+export GDK_BACKEND=x11
+exec /usr/local/bin/SongpressPlusPlus_bin "$@" 2>/dev/null

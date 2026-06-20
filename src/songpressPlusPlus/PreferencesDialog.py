@@ -952,10 +952,13 @@ class PreferencesDialog(wx.Dialog):
 
             self._fileAssocExts = ["crd", "cho", "chordpro", "chopro", "pro", "tab", "sng"]
             self._fileAssocCBs  = {}
+            import platform as _plcb
             for ext in self._fileAssocExts:
                 cb = wx.CheckBox(self.fileAssocPanel, wx.ID_ANY, u"." + ext)
                 cb.SetToolTip(_(u"Associate the .%s file extension with Songpress++.") % ext)
                 self._fileAssocCBs[ext] = cb
+                if _plcb.system() == 'Linux':
+                    cb.Disable()
                 bSizerFA.Add(cb, 0, wx.ALL, 4)
 
             bSizerFA.Add(wx.StaticLine(self.fileAssocPanel), 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
@@ -970,12 +973,21 @@ class PreferencesDialog(wx.Dialog):
             btnUnassocAll.Bind(wx.EVT_BUTTON, self.OnUnassociateAll)
             self._btnAssocAll   = btnAssocAll
             self._btnUnassocAll = btnUnassocAll
+            # Su Linux con pacchetto .deb le associazioni sono gestite dal sistema:
+            # disabilita i pulsanti per evitare conflitti con /usr/share/mime
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
 
             bSizerFA.Add(wx.StaticLine(self.fileAssocPanel), 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 5)
             btnApply = wx.Button(self.fileAssocPanel, wx.ID_ANY, _(u"Apply now"))
             bSizerFA.Add(btnApply, 0, wx.ALL, 8)
             btnApply.Bind(wx.EVT_BUTTON, self.OnApplyFileAssoc)
             self._btnApplyFileAssoc = btnApply
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
         else:
             note = wx.StaticText(self.fileAssocPanel, wx.ID_ANY,
                 _(u"File association is not available on this operating system."),

@@ -1,0 +1,187 @@
+# Italian translations for PrintDialog.py
+# Songpress++ — PrintDialog module
+# Copyright (C) 2026 Denisov21
+# License: GNU GPL v2
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Songpress++ PrintDialog\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-04 00:00+0000\n"
+"PO-Revision-Date: 2026-05-11 20:30+0200\n"
+"Last-Translator: Denisov21\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# ── Dialog title ──────────────────────────────────────────────────────────────
+
+msgid "Print options"
+msgstr "Opzioni di stampa"
+
+# ── Section headers ───────────────────────────────────────────────────────────
+
+msgid "Pages per sheet"
+msgstr "Pagine per foglio"
+
+msgid "Columns per page"
+msgstr "Colonne per pagina"
+
+msgid "Scaling"
+msgstr "Ridimensionamento"
+
+msgid "Advanced options"
+msgstr "Opzioni avanzate"
+
+msgid "Scale"
+msgstr "Scala"
+
+# ── Checkboxes and labels ─────────────────────────────────────────────────────
+
+msgid "1 page"
+msgstr "1 pagina"
+
+msgid "2 pages"
+msgstr "2 pagine"
+
+msgid "1 column"
+msgstr "1 colonna"
+
+msgid "2 columns"
+msgstr "2 colonne"
+
+msgid "Shrink if exceeds page"
+msgstr "Riduci se eccede la pagina"
+
+msgid "Shrink to fit current page"
+msgstr "Riduci per adattare alla pagina corrente"
+
+msgid "(prevent bottom clipping)"
+msgstr "(evita il taglio in fondo)"
+
+msgid "Min margin for auto-shrink (mm):"
+msgstr "Margine minimo per riduzione automatica (mm):"
+
+msgid "Do not replicate (leave right half blank)"
+msgstr "Non replicare (lascia bianca la metà destra)"
+
+msgid "Remove blank pages"
+msgstr "Rimuovi pagine bianche"
+
+msgid "Blank page threshold (%):"
+msgstr "Soglia pagina vuota (%):"
+
+msgid "Scale (%):"
+msgstr "Scala (%):"
+
+# ── Buttons and tooltips ──────────────────────────────────────────────────────
+
+msgid "Keep this dialog open after applying"
+msgstr "Mantieni aperto il dialog dopo aver applicato"
+
+msgid "OK"
+msgstr "OK"
+
+msgid "Cancel"
+msgstr "Annulla"
+
+# ── PrintManager / preview toolbar ───────────────────────────────────────────
+
+msgid "Print"
+msgstr "Stampa"
+
+msgid "Print..."
+msgstr "Stampa..."
+
+msgid "Print options..."
+msgstr "Opzioni di stampa..."
+
+msgid "Page setup..."
+msgstr "Impostazione pagina..."
+
+msgid "Driver settings..."
+msgstr "Impostazioni driver..."
+
+msgid "Print preview"
+msgstr "Anteprima di stampa"
+
+msgid "Print preview error"
+msgstr "Errore anteprima di stampa"
+
+msgid "Unable to create print preview.\nPlease check your printer settings."
+msgstr "Impossibile creare l'anteprima di stampa.\nControllare le impostazioni della stampante."
+
+msgid "Print error"
+msgstr "Errore di stampa"
+
+msgid "An error occurred while printing.\nPlease check your printer settings."
+msgstr "Si è verificato un errore durante la stampa.\nControllare le impostazioni della stampante."
+
+msgid "Next page"
+msgstr "Pagina successiva"
+
+msgid "Previous page"
+msgstr "Pagina precedente"
+
+msgid "First page"
+msgstr "Prima pagina"
+
+msgid "Last page"
+msgstr "Ultima pagina"
+
+msgid "Close"
+msgstr "Chiudi"
+
+msgid "Selection"
+msgstr "Selezione"
+
+# ── Duplex status label (toolbar anteprima) ───────────────────────────────────
+
+msgid "Duplex: off (simplex)"
+msgstr "Fronte/retro: disattivato (solo fronte)"
+
+msgid "Duplex: ON — short-edge binding"
+msgstr "Fronte/retro: ATTIVO — rilegatura lato corto"
+
+msgid "Duplex: ON — long-edge binding"
+msgstr "Fronte/retro: ATTIVO — rilegatura lato lungo"
+
+#. Stringa di fallback: {0} viene sostituito con il codice numerico del modo duplex
+msgid "Duplex: unknown (mode {})"
+msgstr "Fronte/retro: modalità sconosciuta (codice {})"
+
+# ── Color mode label (toolbar anteprima) ─────────────────────────────────────
+
+msgid "Color: color print"
+msgstr "Colore: stampa a colori"
+
+msgid "Color: black & white"
+msgstr "Colore: bianco e nero"
+
+msgid "Color: unknown"
+msgstr "Colore: sconosciuto"
+
+# ── Tooltip checkbox — Opzioni di stampa ─────────────────────────────────────
+
+msgid "Reduce the content only if it exceeds the page size (no upscaling)"
+msgstr "Riduce il contenuto solo se eccede le dimensioni della pagina (senza ingrandimento)"
+
+msgid "Reduce the content only if it exceeds the page size, to avoid bottom clipping"
+msgstr "Riduce il contenuto solo se supera le dimensioni della pagina, per evitare il taglio in fondo"
+
+msgid "In 2-pages mode, print only on the left half and leave the right half blank (no mirroring)"
+msgstr "In modalità 2 pagine, stampa solo sulla metà sinistra e lascia vuota la metà destra (senza replica)"
+
+msgid "Skip pages that are empty or contain only whitespace, based on the threshold below"
+msgstr "Salta le pagine vuote o che contengono solo spazi, in base alla soglia impostata"
+
+# ── Fallback dialogo impostazioni driver ─────────────────────────────────────
+
+msgid "The printer driver settings panel is not available on this platform.\n\nUse the print preview toolbar to change orientation, paper size and margins."
+msgstr "Il pannello delle impostazioni del driver di stampa non è disponibile su questa piattaforma.\n\nUtilizza la barra degli strumenti dell'anteprima di stampa per modificare orientamento, formato carta e margini."
+
+msgid "Driver settings unavailable"
+msgstr "Impostazioni driver non disponibili"

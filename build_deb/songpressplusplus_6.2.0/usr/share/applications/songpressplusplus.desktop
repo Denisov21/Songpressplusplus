@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Songpress++
+GenericName=Song Typesetter
+Comment=Genera canzonieri di alta qualità in PDF e PPTX
+Exec=env GDK_BACKEND=x11 /usr/local/bin/SongpressPlusPlus %f
+Icon=songpressplusplus
+Terminal=false
+Categories=Office;Publishing;Education;
+Keywords=song;chords;songbook;pdf;
+MimeType=text/x-chordpro;
+StartupNotify=true

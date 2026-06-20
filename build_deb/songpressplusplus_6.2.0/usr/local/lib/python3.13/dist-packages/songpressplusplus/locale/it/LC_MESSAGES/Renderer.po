@@ -1,0 +1,57 @@
+# Songpress++ — Renderer.py translations
+# Copyright (C) 2026 Denisov21
+# License: GNU GPL v2
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Songpress++\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-12 00:00+0000\n"
+"PO-Revision-Date: 2026-04-12 00:00+0000\n"
+"Last-Translator: Denisov21\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# Etichetta predefinita del blocco {start_of_tab} senza etichetta
+msgid "Tab"
+msgstr "Tab"
+
+# Etichetta predefinita del blocco {start_of_grid} senza etichetta
+msgid "Grid"
+msgstr "Griglia"
+
+# Etichetta predefinita del blocco {start_chord} senza etichetta
+msgid "Intro"
+msgstr "Intro"
+
+# Etichetta predefinita del blocco {start_of_part} senza etichetta
+msgid "Part"
+msgstr "Parte"
+
+# Prefisso visualizzato per {key:}
+msgid "Key: %s"
+msgstr "Tonalità: %s"
+
+# Prefisso visualizzato per {capo:}
+msgid "Capo: %s"
+msgstr "Capotasto: %s"
+
+# Prefisso visualizzato per {lyricist:}
+msgid "Lyrics: %s"
+msgstr "Testo: %s"
+
+# Prefisso visualizzato per {arranger:}
+msgid "Arrangement: %s"
+msgstr "Arrangiamento: %s"
+
+# Prefisso visualizzato per {album:}
+msgid "Album: %s"
+msgstr "Album: %s"
+
+# Simbolo copyright visualizzato per {copyright:}
+msgid "© %s"
+msgstr "© %s"

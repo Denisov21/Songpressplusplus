@@ -1,0 +1,289 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Translators:
+msgid ""
+msgstr ""
+"Project-Id-Version: songpress\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-10-25 15:21+0200\n"
+"PO-Revision-Date: 2026-05-31 19:20+0200\n"
+"Last-Translator: Denisov21\n"
+"Language-Team: Italian (http://www.transifex.com/skeed/songpress-2/language/"
+"it/)\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.9\n"
+
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/MyPreferencesDialog.py:34
+msgid ""
+"#Comment\n"
+"{t:My Bonnie}\n"
+"\n"
+"My [D]Bonnie lies [G]over the [D]ocean\n"
+"oh [G]bring back my [A]Bonnie to [D]me!\n"
+"\n"
+"{soc}\n"
+"[D]Bring back, [E-]bring back,\n"
+"[A]bring back my Bonnie to [D]me!\n"
+"{eoc}\n"
+"\n"
+"{start_of_grid}\n"
+"| [A] | [D] | [Mi] |\n"
+"{end_of_grid}"
+msgstr ""
+"#Commento\n"
+"{t:La Fameja Dei Gobon }\n"
+"\n"
+"Un [Do]gobo ed una goba a l'età di novant'[Fa]anni\n"
+"per por fine ai loro af[Do]fanni si de[Sol]cisero a spo[Do]sar.\n"
+"\n"
+"{soc}\n"
+"Gobo so [Do]pare, goba sa mare goba la fja de so so[Fa]rela\n"
+"era goba anche [Do]quela la fa[Sol]miglia dei go[Do]bon.\n"
+"{eoc}\n"
+"\n"
+"{start_of_grid}\n"
+"| [Do] | [Fa] | [Sol] |\n"
+"{end_of_grid}"
+
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/MyPreferencesDialog.py:120
+msgid "Language settings will be applied when you restart Songpress++."
+msgstr ""
+"Le impostazioni della lingua verranno applicate al riavvio di Songpress++."
+
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/MyPreferencesDialog.py:121
+msgid "Songpress++"
+msgstr "Songpress++"
+
+#: PreferencesDialog.py (Syntax colours group)
+msgid "Syntax colours"
+msgstr "Colori sintassi"
+
+#: PreferencesDialog.py (Theme label)
+msgid "Theme:"
+msgstr "Tema:"
+
+#: PreferencesDialog.py (Theme buttons)
+msgid "Load"
+msgstr "Carica"
+
+#: PreferencesDialog.py (Theme buttons)
+msgid "Save"
+msgstr "Salva"
+
+#: PreferencesDialog.py (Theme buttons)
+msgid "Delete"
+msgstr "Elimina"
+
+#: PreferencesDialog.py (Syntax colour rows)
+msgid "Normal text"
+msgstr "Testo normale"
+
+#: PreferencesDialog.py (Syntax colour rows)
+msgid "Chords"
+msgstr "Accordi"
+
+#: PreferencesDialog.py (Syntax colour rows)
+msgid "Commands"
+msgstr "Comandi"
+
+#: PreferencesDialog.py (Syntax colour rows)
+msgid "Attributes"
+msgstr "Attributi"
+
+#: PreferencesDialog.py (Syntax colour rows)
+msgid "Comments"
+msgstr "Commenti"
+
+#: PreferencesDialog.py (Syntax colour rows)
+msgid "Tab / Grid"
+msgstr "Tab / Griglia"
+
+#: PreferencesDialog.py (Editor colour rows)
+msgid "Caret colour"
+msgstr "Colore cursore"
+
+#: MyPreferencesDialog.py (Theme dialogs)
+msgid "Theme name:"
+msgstr "Nome tema:"
+
+#: MyPreferencesDialog.py (Theme dialogs)
+msgid "Save theme"
+msgstr "Salva tema"
+
+#: MyPreferencesDialog.py (Theme dialogs)
+msgid "Delete theme «%s»?"
+msgstr "Eliminare il tema «%s»?"
+
+#: MyPreferencesDialog.py (Theme errors)
+msgid ""
+"Cannot create themes folder:\n"
+"%s\n"
+"\n"
+"%s"
+msgstr ""
+"Impossibile creare la cartella temi:\n"
+"%s\n"
+"\n"
+"%s"
+
+#: MyPreferencesDialog.py (Theme errors)
+msgid ""
+"Cannot save theme file:\n"
+"%s"
+msgstr ""
+"Impossibile salvare il file tema:\n"
+"%s"
+
+#: MyPreferencesDialog.py (Theme errors)
+msgid ""
+"Cannot read theme file:\n"
+"%s"
+msgstr ""
+"Impossibile leggere il file tema:\n"
+"%s"
+
+#: PreferencesDialog.py (Debug checkbox)
+msgid "Show debug messages (theme save path)"
+msgstr "Mostra messaggi di debug (percorso salvataggio tema)"
+
+#: MyPreferencesDialog.py (Debug messagebox)
+msgid ""
+"DEBUG: saving theme to:\n"
+"%s\n"
+"\n"
+"(folder exists: %s)"
+msgstr ""
+"DEBUG: salvataggio tema in:\n"
+"%s\n"
+"\n"
+"(cartella esistente: %s)"
+
+#: MyPreferencesDialog.py
+msgid "Restart now"
+msgstr "Riavvia ora"
+
+#: MyPreferencesDialog.py
+msgid "OK"
+msgstr "OK"
+
+#: PreferencesDialog.py showRestartMenuItemCB
+msgid "Show 'Restart Songpress++' in the File menu"
+msgstr "Mostra 'Riavvia Songpress++' nel menu File"
+
+msgid "Show or hide icons in the Insert toolbar:"
+msgstr "Mostra o nascondi le icone nella toolbar Inserisci:"
+
+msgid "Insert toolbar"
+msgstr "Toolbar Inserisci"
+
+msgid "Select all"
+msgstr "Seleziona tutto"
+
+msgid "Deselect all"
+msgstr "Deseleziona tutto"
+
+msgid "Title"
+msgstr "Titolo"
+
+msgid "Subtitle"
+msgstr "Sottotitolo"
+
+msgid "Chord"
+msgstr "Accordo"
+
+msgid "Chorus"
+msgstr "Ritornello"
+
+msgid "Verse (custom label)"
+msgstr "Strofa (etichetta personalizzata)"
+
+msgid "Comment"
+msgstr "Commento"
+
+msgid "Page break"
+msgstr "Interruzione di pagina"
+
+msgid "Column break"
+msgstr "Interruzione di colonna"
+
+msgid "Unnumbered verse"
+msgstr "Strofa non numerata"
+
+msgid "Numbered verse"
+msgstr "Strofa numerata"
+
+msgid "Chorus block"
+msgstr "Blocco ritornello"
+
+msgid "Intro chords"
+msgstr "Accordi introduttivi"
+
+msgid "Grid"
+msgstr "Griglia"
+
+msgid "Tempo {tempo:}"
+msgstr "Tempo {tempo:}"
+
+msgid "Tempo marking {tempo_label:}"
+msgstr "Indicazione agogica {tempo_label:}"
+
+msgid "Time signature {time:}"
+msgstr "Indicazione di tempo {time:}"
+
+msgid "Key {key:}"
+msgstr "Tonalità {key:}"
+
+msgid "Duration {beats_time:}"
+msgstr "Durata accordo {beats_time:}"
+
+msgid "Chord keyboard {taste:}"
+msgstr "Tastiera accordo {taste:}"
+
+msgid "Fingering {fingering:}"
+msgstr "Diteggiatura {fingering:}"
+
+msgid "Guitar diagram {define:}"
+msgstr "Diagramma chitarra {define:}"
+
+msgid "Image {image:}"
+msgstr "Immagine {image:}"
+
+msgid "Transposer image"
+msgstr "Immagine Trasposizione"
+
+msgid "Musical symbol"
+msgstr "Simbolo musicale"
+
+msgid "Toolbars"
+msgstr "Toolbar"
+
+msgid "Standard"
+msgstr "Standard"
+
+msgid "Format"
+msgstr "Formato"
+
+msgid "Insert"
+msgstr "Inserisci"
+
+msgid "Show/hide chords"
+msgstr "Mostra/nascondi accordi"
+
+msgid "Font"
+msgstr "Carattere"
+
+msgid "Linespacing"
+msgstr "Interlinea"
+
+msgid "Bridge {start_bridge}\\{end_bridge}"
+msgstr "Bridge {start_bridge}\\{end_bridge}"
+
+#: PreferencesDialog.py (File associations tooltip)
+msgid "Associate the .%s file extension with Songpress++."
+msgstr "Associa l'estensione di file .%s con Songpress++."

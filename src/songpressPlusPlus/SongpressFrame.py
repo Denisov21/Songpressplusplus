@@ -1883,7 +1883,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                     eval_sz.Add(lbl_verdict, 0, wx.ALIGN_CENTER_VERTICAL)
                     eval_panel.SetSizer(eval_sz)
                     body.Add(eval_panel, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 6)
-
+                    gauge = wx.Gauge(page, range=100, size=(-1, 8))
+                    gauge.SetValue(st['score'])
+                    body.Add(gauge, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 12)
                     body.AddSpacer(10)
 
                 # Titolo del singolo brano (dentro la tab)
@@ -2001,7 +2003,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             eval_panel.SetSizer(eval_sz)
             body.Add(eval_panel, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 6)
 
-
+            gauge = wx.Gauge(scroll, range=100, size=(-1, 8))
+            gauge.SetValue(st['score'])
+            body.Add(gauge, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 12)
             body.AddSpacer(10)
 
             _section(_('Structure'))
