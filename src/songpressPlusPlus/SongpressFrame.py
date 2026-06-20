@@ -1883,9 +1883,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                     eval_sz.Add(lbl_verdict, 0, wx.ALIGN_CENTER_VERTICAL)
                     eval_panel.SetSizer(eval_sz)
                     body.Add(eval_panel, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 6)
-                    gauge = wx.Gauge(page, range=100, size=(-1, 8))
-                    gauge.SetValue(st['score'])
-                    body.Add(gauge, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 12)
+
                     body.AddSpacer(10)
 
                 # Titolo del singolo brano (dentro la tab)
@@ -1974,7 +1972,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             def _row(key, value):
                 hz = wx.BoxSizer(wx.HORIZONTAL)
                 k_lbl = wx.StaticText(scroll, label=key)
+                k_lbl.SetForegroundColour(wx.BLACK)
                 v_lbl = wx.StaticText(scroll, label=str(value))
+                v_lbl.SetForegroundColour(wx.BLACK)
                 fv = v_lbl.GetFont()
                 fv.SetWeight(wx.FONTWEIGHT_BOLD)
                 v_lbl.SetFont(fv)
@@ -2001,9 +2001,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             eval_panel.SetSizer(eval_sz)
             body.Add(eval_panel, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 6)
 
-            gauge = wx.Gauge(scroll, range=100, size=(-1, 8))
-            gauge.SetValue(st['score'])
-            body.Add(gauge, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 12)
+
             body.AddSpacer(10)
 
             _section(_('Structure'))
@@ -3349,14 +3347,17 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             font_title.SetWeight(wx.FONTWEIGHT_BOLD)
             font_title.SetPointSize(font_title.GetPointSize() + 2)
             title_lbl.SetFont(font_title)
+            title_lbl.SetForegroundColour(wx.BLACK)
             hbox_title.Add(title_lbl, 0, wx.ALIGN_CENTER_VERTICAL)
             vbox.Add(hbox_title, 0, wx.ALIGN_CENTER | wx.ALL, 10)
         except Exception:
             title_lbl = wx.StaticText(panel, label=u"Songpress++ - The Song Editor {}".format(glb.VERSION))
+            title_lbl.SetForegroundColour(wx.BLACK)
             vbox.Add(title_lbl, 0, wx.ALIGN_CENTER | wx.ALL, 10)
 
         def add_text(text):
             lbl = wx.StaticText(panel, label=text)
+            lbl.SetForegroundColour(wx.BLACK)
             vbox.Add(lbl, 0, wx.ALIGN_CENTER | wx.LEFT | wx.RIGHT, 15)
 
         def add_link(label, url):
@@ -4637,7 +4638,12 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
     def Save(self):
         self.text.Save()
-        self.UpdateEverything()
+        # UpdateEverything() viene chiamato da SDIMainFrame.SaveFile() tramite Save(),
+        # ma a quel punto self.modified è ancora True (viene azzerato subito dopo da
+        # SaveFile()). Usiamo wx.CallAfter per posticipare l'aggiornamento dell'UI
+        # al momento in cui self.modified è già False, così il pulsante Salva
+        # viene disabilitato correttamente con un solo salvataggio.
+        wx.CallAfter(self.UpdateEverything)
 
     def SavePreferences(self):
         self.pref.Save()
