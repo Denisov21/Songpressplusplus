@@ -317,6 +317,9 @@ class SDIMainFrame(object):
             if dlg.ShowModal() == wx.ID_OK:
 
                 fn = dlg.GetPath()
+                preferences = getattr(self, 'pref', None)
+                if preferences is not None and hasattr(preferences, 'SanitizeFilename'):
+                    fn = preferences.SanitizeFilename(fn)
                 if os.path.isfile(fn):
                     msg = _("File \"%s\" already exists. Do you want to overwrite it?") % (fn, )
                     d = wx.MessageDialog(

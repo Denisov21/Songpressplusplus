@@ -197,6 +197,9 @@ class MyPreferencesDialog(PreferencesDialog):
         # Salvataggio geometria finestra
         self.saveWindowGeometryCB.SetValue(getattr(self.pref, 'saveWindowGeometry', True))
 
+        # Sostituzione spazi con '_' nei nomi file salvati
+        self.replaceSpacesInFilenamesCB.SetValue(getattr(self.pref, 'replaceSpacesInFilenames', False))
+
         # Debug messages
         self.showDebugMsgCB.SetValue(getattr(self.pref, 'showDebugMsg', False))
 
@@ -1469,6 +1472,8 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.enableSaveOnModified = self.enableSaveOnModifiedCB.GetValue()
         # Salvataggio geometria finestra
         self.pref.saveWindowGeometry = self.saveWindowGeometryCB.GetValue()
+        # Sostituzione spazi con '_' nei nomi file salvati
+        self.pref.replaceSpacesInFilenames = self.replaceSpacesInFilenamesCB.GetValue()
         self.pref.showDebugMsg = self.showDebugMsgCB.GetValue()
         # Intellisense direttive
         self.pref.intellisense = self.intellisenseCB.GetValue()

@@ -495,6 +495,22 @@ msgstr ""
 msgid "Save window size and position on exit"
 msgstr "Salva dimensione e posizione della finestra all'uscita"
 
+#: PreferencesDialog.py — General tab, replace spaces in filenames checkbox
+msgid "Replace spaces with '_' in saved file names"
+msgstr "Sostituisci gli spazi con '_' nei nomi dei file salvati"
+
+#: PreferencesDialog.py — General tab, replace spaces in filenames checkbox
+#: tooltip
+msgid ""
+"When enabled, any whitespace in the file name (not the folder path) is "
+"replaced with an underscore '_' whenever a file is saved or exported. "
+"Works the same way on Windows and Linux."
+msgstr ""
+"Se attivo, ogni spazio presente nel nome del file (non nel percorso della "
+"cartella) viene sostituito con un trattino basso '_' ogni volta che un "
+"file viene salvato o esportato. Funziona allo stesso modo su Windows e "
+"Linux."
+
 #: PreferencesDialog.py format tab — tempo icon size label
 msgid "Tempo icon size"
 msgstr "Dimensione icone tempo"

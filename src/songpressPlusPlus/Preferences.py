@@ -9,6 +9,9 @@
 # License:     GNU GPL v2
 ##############################################################
 
+import os
+import re
+
 from . import i18n
 from .SongFormat import *
 from .decorators import StandardVerseNumbers
@@ -194,6 +197,7 @@ class Preferences(object):
         self._LoadSingleInstance()
         self._LoadShowRestartMenuItem()
         self._LoadSaveOnModified()
+        self._LoadReplaceSpacesInFilenames()
         self._LoadToolbarVis()
 
     def _LoadKlavierColour(self):
@@ -368,6 +372,7 @@ class Preferences(object):
         self._SaveSingleInstance()
         self._SaveShowRestartMenuItem()
         self._SaveSaveOnModified()
+        self._SaveReplaceSpacesInFilenames()
         self._SaveToolbarVis()
         self.config.Flush()
 
@@ -603,6 +608,17 @@ class Preferences(object):
         self.config.Write('enableSaveOnModified', '1' if getattr(self, 'enableSaveOnModified', True) else '0')
         self.config.SetPath('/')
 
+    def _LoadReplaceSpacesInFilenames(self):
+        self.config.SetPath('/App')
+        v = self.config.Read('replaceSpacesInFilenames')
+        self.replaceSpacesInFilenames = bool(int(v)) if v != '' else False
+        self.config.SetPath('/')
+
+    def _SaveReplaceSpacesInFilenames(self):
+        self.config.SetPath('/App')
+        self.config.Write('replaceSpacesInFilenames', '1' if getattr(self, 'replaceSpacesInFilenames', False) else '0')
+        self.config.SetPath('/')
+
     def _LoadToolbarVis(self):
         """Carica la visibilità delle icone delle quattro toolbar dal config.
 
@@ -699,6 +715,20 @@ class Preferences(object):
         _w('tb_insertImage');       _w('tb_insertTransposerImage')
         _w('tb_insertMusicalSymbol')
         self.config.SetPath('/')
+
+    def SanitizeFilename(self, path):
+        """Se l'opzione 'replaceSpacesInFilenames' è attiva, sostituisce ogni
+        spazio bianco nel nome del file (non nella cartella) con '_'.
+        Funziona allo stesso modo su Windows e Linux, perché opera solo
+        sulla stringa del nome file, senza toccare i separatori di percorso.
+        """
+        if not path:
+            return path
+        if not getattr(self, 'replaceSpacesInFilenames', False):
+            return path
+        directory, filename = os.path.split(path)
+        filename = re.sub(r'\s+', '_', filename)
+        return os.path.join(directory, filename) if directory else filename
 
     def SetChorusLabel(self, c):
         self.chorusLabel = c

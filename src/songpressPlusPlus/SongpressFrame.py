@@ -1761,7 +1761,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             multi = True
 
         # ── Costanti colori ───────────────────────────────────────────
-        BG      = wx.Colour(250, 250, 252)
+        BG      = wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW)
         HDR     = wx.Colour(52, 101, 164)
         STAR_ON = wx.Colour(255, 180, 0)
 
@@ -1854,7 +1854,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 def _row(key, value, _body=body, _page=page):
                     hz = wx.BoxSizer(wx.HORIZONTAL)
                     k_lbl = wx.StaticText(_page, label=key)
+                    k_lbl.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT))
                     v_lbl = wx.StaticText(_page, label=str(value))
+                    v_lbl.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT))
                     fv = v_lbl.GetFont()
                     fv.SetWeight(wx.FONTWEIGHT_BOLD)
                     v_lbl.SetFont(fv)
@@ -1867,25 +1869,20 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
                 # Valutazione stelle (solo per i brani singoli, non il totale)
                 if not is_total_tab and st['stars']:
-                    eval_panel = wx.Panel(page)
-                    eval_panel.SetBackgroundColour(wx.Colour(240, 245, 255))
-                    eval_sz = wx.BoxSizer(wx.HORIZONTAL)
-                    lbl_stars = wx.StaticText(eval_panel, label=st['stars'])
-                    f_s = lbl_stars.GetFont()
-                    f_s.SetPointSize(f_s.GetPointSize() + 6)
-                    lbl_stars.SetFont(f_s)
-                    lbl_stars.SetForegroundColour(STAR_ON)
-                    lbl_verdict = wx.StaticText(eval_panel, label='  ' + st['verdict'])
-                    f_v = lbl_verdict.GetFont()
-                    f_v.SetWeight(wx.FONTWEIGHT_BOLD)
-                    lbl_verdict.SetFont(f_v)
-                    eval_sz.Add(lbl_stars,   0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)
-                    eval_sz.Add(lbl_verdict, 0, wx.ALIGN_CENTER_VERTICAL)
-                    eval_panel.SetSizer(eval_sz)
-                    body.Add(eval_panel, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 6)
-                    gauge = wx.Gauge(page, range=100, size=(-1, 8))
-                    gauge.SetValue(st['score'])
-                    body.Add(gauge, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 12)
+                    _eval_sz = wx.BoxSizer(wx.HORIZONTAL)
+                    _lbl_stars = wx.StaticText(page, label=st['stars'])
+                    _fs = _lbl_stars.GetFont()
+                    _fs.SetPointSize(_fs.GetPointSize() + 6)
+                    _lbl_stars.SetFont(_fs)
+                    _lbl_stars.SetForegroundColour(STAR_ON)
+                    _lbl_verdict = wx.StaticText(page, label='  ' + st['verdict'])
+                    _fv = _lbl_verdict.GetFont()
+                    _fv.SetWeight(wx.FONTWEIGHT_BOLD)
+                    _lbl_verdict.SetFont(_fv)
+                    _lbl_verdict.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT))
+                    _eval_sz.Add(_lbl_stars,   0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)
+                    _eval_sz.Add(_lbl_verdict, 0, wx.ALIGN_CENTER_VERTICAL)
+                    body.Add(_eval_sz, 0, wx.LEFT | wx.TOP | wx.BOTTOM, 6)
                     body.AddSpacer(10)
 
                 # Titolo del singolo brano (dentro la tab)
@@ -1974,9 +1971,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             def _row(key, value):
                 hz = wx.BoxSizer(wx.HORIZONTAL)
                 k_lbl = wx.StaticText(scroll, label=key)
-                k_lbl.SetForegroundColour(wx.BLACK)
+                k_lbl.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT))
                 v_lbl = wx.StaticText(scroll, label=str(value))
-                v_lbl.SetForegroundColour(wx.BLACK)
+                v_lbl.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT))
                 fv = v_lbl.GetFont()
                 fv.SetWeight(wx.FONTWEIGHT_BOLD)
                 v_lbl.SetFont(fv)
@@ -1986,26 +1983,21 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 body.AddSpacer(3)
 
             # Valutazione
-            eval_panel = wx.Panel(scroll)
-            eval_panel.SetBackgroundColour(wx.Colour(240, 245, 255))
-            eval_sz = wx.BoxSizer(wx.HORIZONTAL)
-            lbl_stars = wx.StaticText(eval_panel, label=st['stars'])
-            f_s = lbl_stars.GetFont()
-            f_s.SetPointSize(f_s.GetPointSize() + 6)
-            lbl_stars.SetFont(f_s)
-            lbl_stars.SetForegroundColour(STAR_ON)
-            lbl_verdict = wx.StaticText(eval_panel, label='  ' + st['verdict'])
-            f_v = lbl_verdict.GetFont()
-            f_v.SetWeight(wx.FONTWEIGHT_BOLD)
-            lbl_verdict.SetFont(f_v)
-            eval_sz.Add(lbl_stars,   0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)
-            eval_sz.Add(lbl_verdict, 0, wx.ALIGN_CENTER_VERTICAL)
-            eval_panel.SetSizer(eval_sz)
-            body.Add(eval_panel, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 6)
+            _eval_sz = wx.BoxSizer(wx.HORIZONTAL)
+            _lbl_stars = wx.StaticText(scroll, label=st['stars'])
+            _fs = _lbl_stars.GetFont()
+            _fs.SetPointSize(_fs.GetPointSize() + 6)
+            _lbl_stars.SetFont(_fs)
+            _lbl_stars.SetForegroundColour(STAR_ON)
+            _lbl_verdict = wx.StaticText(scroll, label='  ' + st['verdict'])
+            _fv = _lbl_verdict.GetFont()
+            _fv.SetWeight(wx.FONTWEIGHT_BOLD)
+            _lbl_verdict.SetFont(_fv)
+            _lbl_verdict.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT))
+            _eval_sz.Add(_lbl_stars,   0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)
+            _eval_sz.Add(_lbl_verdict, 0, wx.ALIGN_CENTER_VERTICAL)
+            body.Add(_eval_sz, 0, wx.LEFT | wx.TOP | wx.BOTTOM, 6)
 
-            gauge = wx.Gauge(scroll, range=100, size=(-1, 8))
-            gauge.SetValue(st['score'])
-            body.Add(gauge, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 12)
             body.AddSpacer(10)
 
             _section(_('Structure'))
@@ -3335,9 +3327,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             for x in glb.languages
         ])
         dlg = wx.Dialog(self.frame, title=_("About Songpress++ - The Song Editor"))
-        dlg.SetBackgroundColour(wx.WHITE)
+        dlg.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW))
         panel = wx.Panel(dlg)
-        panel.SetBackgroundColour(wx.WHITE)
+        panel.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW))
         vbox = wx.BoxSizer(wx.VERTICAL)
 
         # Icona + titolo
@@ -3351,17 +3343,17 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             font_title.SetWeight(wx.FONTWEIGHT_BOLD)
             font_title.SetPointSize(font_title.GetPointSize() + 2)
             title_lbl.SetFont(font_title)
-            title_lbl.SetForegroundColour(wx.BLACK)
+            title_lbl.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT))
             hbox_title.Add(title_lbl, 0, wx.ALIGN_CENTER_VERTICAL)
             vbox.Add(hbox_title, 0, wx.ALIGN_CENTER | wx.ALL, 10)
         except Exception:
             title_lbl = wx.StaticText(panel, label=u"Songpress++ - The Song Editor {}".format(glb.VERSION))
-            title_lbl.SetForegroundColour(wx.BLACK)
+            title_lbl.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT))
             vbox.Add(title_lbl, 0, wx.ALIGN_CENTER | wx.ALL, 10)
 
         def add_text(text):
             lbl = wx.StaticText(panel, label=text)
-            lbl.SetForegroundColour(wx.BLACK)
+            lbl.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT))
             vbox.Add(lbl, 0, wx.ALIGN_CENTER | wx.LEFT | wx.RIGHT, 15)
 
         def add_link(label, url):
@@ -3576,7 +3568,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         _PANEL_H     = _LABEL_H + _KBD_H + 10
 
         kbd_panel = wx.Panel(dlg, -1, size=(_PANEL_W, _PANEL_H))
-        kbd_panel.SetBackgroundColour(wx.WHITE)
+        kbd_panel.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW))
         kbd_panel.Show(False)
         vbox.Add(kbd_panel, 0, wx.LEFT | wx.BOTTOM, 10)
 
@@ -4879,6 +4871,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             if dlg.ShowModal() == wx.ID_OK:
 
                 fn = dlg.GetPath()
+                pref = getattr(self, 'pref', None)
+                if pref is not None and hasattr(pref, 'SanitizeFilename'):
+                    fn = pref.SanitizeFilename(fn)
                 if os.path.isfile(fn):
                     msg = "File \"%s\" already exists. Do you want to overwrite it?" % (fn,)
                     d = wx.MessageDialog(

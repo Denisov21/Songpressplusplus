@@ -282,6 +282,10 @@ class PreferencesDialog(wx.Dialog):
         self.saveWindowGeometryCB.SetToolTip(_(u"When enabled, the window size and position are saved on exit and restored the next time Songpress++ is launched."))
         grpGeneral.Add(self.saveWindowGeometryCB, 0, wx.ALL, 5)
 
+        self.replaceSpacesInFilenamesCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Replace spaces with '_' in saved file names"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.replaceSpacesInFilenamesCB.SetToolTip(_(u"When enabled, any whitespace in the file name (not the folder path) is replaced with an underscore '_' whenever a file is saved or exported. Works the same way on Windows and Linux."))
+        grpGeneral.Add(self.replaceSpacesInFilenamesCB, 0, wx.ALL, 5)
+
         bSizer11b.Add(grpGeneral, 0, wx.EXPAND | wx.ALL, 8)
 
         self.general2.SetSizer(bSizer11b)
@@ -973,6 +977,38 @@ class PreferencesDialog(wx.Dialog):
             btnUnassocAll.Bind(wx.EVT_BUTTON, self.OnUnassociateAll)
             self._btnAssocAll   = btnAssocAll
             self._btnUnassocAll = btnUnassocAll
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
             # Su Linux con pacchetto .deb le associazioni sono gestite dal sistema:
             # disabilita i pulsanti per evitare conflitti con /usr/share/mime
             import platform as _pl
@@ -985,6 +1021,30 @@ class PreferencesDialog(wx.Dialog):
             bSizerFA.Add(btnApply, 0, wx.ALL, 8)
             btnApply.Bind(wx.EVT_BUTTON, self.OnApplyFileAssoc)
             self._btnApplyFileAssoc = btnApply
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
             import platform as _pl2
             if _pl2.system() == 'Linux':
                 btnApply.Disable()
