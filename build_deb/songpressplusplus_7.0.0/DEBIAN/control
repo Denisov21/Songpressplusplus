@@ -1,0 +1,11 @@
+Package: songpressplusplus
+Version: 7.0.0
+Architecture: all
+Maintainer: Denisov21
+Installed-Size: 7832
+Depends: python3 (>= 3.12), python3-wxgtk4.0 | python3-wxpython4, python3-requests, python3-reportlab, python3-markdown, python3-mistune, python3-pypdf
+Section: utils
+Priority: optional
+Homepage: https://github.com/Denisov21/Songpressplusplus
+Description: Songpress++ is a free, easy-to-use song typesetting program
+ that generates high-quality songbooks (PDF, PPTX).

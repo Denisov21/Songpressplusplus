@@ -1,0 +1,624 @@
+"""Framework providing common functionality for SDI Main Frames
+
+The module provides an (abstract) class loads an XRC resource describing a SDI Frame.
+It expects to find some menu elements, characterized by their XRC name:
+    - new
+    - open
+    - save
+    - saveAs
+    - exit
+    - about
+"""
+
+###############################################################
+# Name:             SDIMainFrame.py
+# Purpose:     Abstract class for SDI Main Frames
+# Author:         Luca Allulli (webmaster@roma21.it)
+# Modified by:  Denisov21
+# Created:     2009-01-16
+# Copyright: Luca Allulli (https://www.skeed.it/songpress)
+#               Modifications copyright Denisov21
+# License:     GNU GPL v2
+##############################################################
+
+import os
+import sys
+import platform
+import socket
+import threading
+
+import wx
+import wx.adv
+# import wx.aui as aui
+from wx.lib.agw import aui
+from wx import xrc
+
+from . import i18n
+
+
+_ = wx.GetTranslation
+
+class SDIDropTarget(wx.FileDropTarget):
+    def __init__(self, sdi):
+        wx.FileDropTarget.__init__(self)
+        self.sdi = sdi
+
+    def OnDropFiles(self, x, y, arr):
+        return self.sdi.OnDropFiles(arr)
+
+
+class SDIMainFrame(object):
+    """Abstract class. Override methods New, Open, Save"""
+    ###UI generation###
+
+    def __init__(
+        self,
+        res,
+        frameName='MainFrame',
+        appName='SDIApp',
+        authorName='Nobody',
+        docType='document',
+        docExt='txt',
+        appLongName=None,
+        icon=None,
+        version="1.0",
+        url="",
+        copyright = "",
+        licensing = "",
+        thanks = "",
+        importFormats = [] # List of tuples: (format name, [extensions])
+    ):
+        self.config = wx.Config.Get()
+        # localizeXrc re-loads the XRC with the active wx.Locale so that
+        # wx.GetTranslation() translates all <label> and <help> strings
+        # during XmlResource.Load().  The incoming `res` argument is
+        # intentionally replaced by the localised resource.
+        self.res = i18n.localizeXrc('xrc/songpress.xrc')
+        self.appName = appName
+        self.appLongName = self.appName if appLongName == None else appLongName
+        self.authorName = authorName
+        self.modified = False
+        self.version = version
+        self.url = url
+        self.copyright = copyright
+        self.licensing = licensing
+        self.thanks = thanks
+        self.document = ''
+        self.docType = docType
+        self.docExt = docExt
+        self.importFormats = importFormats
+        wx.Config.Set(self.config)
+        self.frame = self.res.LoadFrame(None, frameName)
+        self.frame.SetMinSize(wx.Size(400, 520)) #dimensione minima finestra
+        if icon != None:
+            self.icon = icon
+            self.frame.SetIcon(wx.Icon(icon, wx.BITMAP_TYPE_ICO))
+        else:
+            self.icon = None
+        self.BindMenu()
+        self.frame.Bind(wx.EVT_CLOSE, self.OnClose, self.frame)
+        dt = SDIDropTarget(self)
+        self.frame.SetDropTarget(dt)
+        self.UpdateTitle()
+        self._mgr = aui.AuiManager(self.frame, aui.AUI_MGR_ALLOW_FLOATING | aui.AUI_MGR_LIVE_RESIZE | aui.AUI_MGR_HINT_FADE)
+        self._mgr.Bind(aui.EVT_AUI_PANE_CLOSE, self.OnPaneClose)
+        self.menuBar = self.frame.GetMenuBar()
+        self.panesByMenu = {}
+        self.menusByPane = {}
+        self._captionsByPane = {}
+        self.RetrieveRecentFileList()
+
+    def Bind(self, event, handler, xrcname):
+        """Bind an event, coming from a control by xrc name, to a handler"""
+        self.frame.Bind(event, handler, id=xrc.XRCID(xrcname))
+
+    def BindMenu(self):
+        """Bind a menu item, by xrc name, to a handler"""
+        def Bind(handler, xrcname):
+            self.Bind(wx.EVT_MENU, handler, xrcname)
+
+        Bind(self.OnNew, 'new')
+        Bind(self.OnOpen, 'open')
+        Bind(self.OnSave, 'save')
+        Bind(self.OnSaveAs, 'saveAs')
+        Bind(self.OnExit, 'exit')
+        Bind(self.OnAbout, 'about')
+        
+    def SetDefaultExtension(self, ext):
+        self.docExt = ext
+
+    def OnNew(self, evt):
+        """Menu handler for File->New"""
+        if self.AskSaveModified():
+            self.document = ''
+            self.New()
+            self.modified = False
+            self.UpdateTitle()
+
+    def OnOpen(self, evt):
+        """Menu handler for File->Open"""
+        if self.AskSaveModified():
+            if self.importFormats == []:
+                filter = _("%s files (*.%s)|%s") % (
+                        self.docExt,
+                        self.docExt,
+                        self.docExt,
+                    )
+            else:
+                filter = "|".join(["%s|%s" % (x[0], ";".join(["*." + y for y in x[1]])) for x in self.importFormats])
+            filter += _("|All files (*.*)|*.*")
+            dlg = wx.FileDialog(
+                self.frame,
+                _("Open file"),
+                "",
+                "",
+                filter,
+                wx.FD_OPEN
+            )
+
+            if dlg.ShowModal() == wx.ID_OK:
+                fn = dlg.GetPath()
+                if os.path.isfile(fn):
+                    self.document = fn
+                    self.Open()
+                    self.UpdateRecentFileList(fn)
+                    self.modified = False
+                    self.UpdateTitle()
+                else:
+                    msg = _("File \"%s\" does not exist.") % (fn, )
+                    d = wx.MessageDialog(
+                        self.frame,
+                        msg,
+                        self.appLongName,
+                        wx.OK | wx.ICON_ERROR
+                    )
+                    d.ShowModal()
+
+    def OnSave(self, evt):
+        """Menu handler for File->Save"""
+        self.SaveFile()
+
+    def OnSaveAs(self, evt):
+        """Menu handler for File->Save As"""
+        if self.AskSaveFilename():
+            self.SaveFile()
+
+    def OnExit(self, evt):
+        """Menu handler for File->Exit"""
+        self.frame.Close()
+
+    def OnAbout(self, evt):
+        """Menu handler for ?->About"""
+        info = wx.adv.AboutDialogInfo()
+        info.SetName(self.appLongName)
+        info.SetVersion(self.version)
+        info.SetCopyright(self.copyright)
+        info.SetDescription(self.url + "\n\n" + self.licensing + "\n\n" + self.thanks)
+        if self.icon:
+            try:
+                bmp = wx.Bitmap(self.icon, wx.BITMAP_TYPE_ICO)
+                if bmp.IsOk():
+                    img = bmp.ConvertToImage().Scale(64, 64, wx.IMAGE_QUALITY_HIGH)
+                    info.SetIcon(wx.Icon(img.ConvertToBitmap()))
+            except Exception:
+                pass
+        wx.adv.AboutBox(info, self.frame)
+
+    def OnDropFiles(self, arr):
+        """Handler for drop action: opens the dropped file, if it is exactly one"""
+        import datetime, os as _os
+        def _log(msg):
+            try:
+                log_path = _os.path.join(
+                    _os.path.expanduser('~'), 'AppData', 'Local', 'Songpress++', 'startup.log'
+                )
+                _os.makedirs(_os.path.dirname(log_path), exist_ok=True)
+                with open(log_path, 'a', encoding='utf-8') as f:
+                    f.write(f"[{datetime.datetime.now():%Y-%m-%d %H:%M:%S}] {msg}\n")
+            except Exception:
+                pass
+        _log(f"OnDropFiles arr={arr}")
+        if len(arr) == 1:
+            fn = arr[0]
+            exists = os.path.isfile(fn)
+            _log(f"  fn={fn!r}  exists={exists}")
+            if exists and self.AskSaveModified():
+                self.document = fn
+                try:
+                    self.Open()
+                    _log("  Open() OK")
+                except Exception as e:
+                    _log(f"  Open() EXCEPTION: {e}")
+                    raise
+                self.UpdateRecentFileList(fn)
+                self.modified = False
+                self.UpdateTitle()
+                return True
+            elif not exists:
+                _log(f"  SKIP: file not found")
+        return False
+
+    def OnClose(self, evt):
+        """Handler for windows close event"""
+        if self.AskSaveModified(evt.CanVeto()):
+            try:
+                self.config.SetPath('/SDIMainFrame')
+                self.config.Write("Version", self.version)
+                p = self._mgr.SavePerspective()
+                self.config.Write("Perspective", p)
+                self._mgr.UnInit()
+                del self._mgr
+            except AttributeError:
+                # Handle the case where _mgr has already been deleted
+                pass
+            self._StopSingleInstanceServer()
+            self.SavePreferences()
+            self.frame.Destroy()
+        else:
+            evt.Veto()
+
+    ###Ordinary methods###
+
+    def SetModified(self, m = True):
+        """Set the modified flag, if main document is modified"""
+        self.modified = m
+        self.UpdateTitle()
+
+    def UpdateTitle(self):
+        """Updates form title; to be called when the filename or the modified status changes"""
+        if self.modified:
+            mod = '* '
+        else:
+            mod = ''
+        if self.document == '':
+            doc = _('Untitled')
+        else:
+            doc = os.path.basename(self.document)
+            (doc, ext) = os.path.splitext(doc)
+        self.frame.SetTitle(u"%s%s - %s" % (mod, doc, self.appLongName))
+
+    def AskSaveModified(self, canCancel = True):
+        """If file has been modified, propose to save changes. Return False if cancelled, True otherwise"""
+        if not self.modified:
+            return True
+
+        if canCancel:
+            cc = wx.CANCEL
+        else:
+            cc = 0
+
+        d = wx.MessageDialog(self.frame, _("Your %s has been modified. Do you want to save it?") % (self.docType), self.appLongName, wx.YES_NO | wx.ICON_INFORMATION | cc)
+        res = d.ShowModal()
+        if res == wx.ID_CANCEL:
+            return False
+        elif res == wx.ID_NO:
+            return True
+        else: #wxID_YES
+            return self.SaveFile();
+
+    def AskSaveFilename(self):
+        """Ask and updates the filename (without saving); return False if user cancels, True otherwise"""
+        leave = False;
+        consensus = False;
+        while not leave:
+            dlg = wx.FileDialog(
+                self.frame,
+                _("Choose a name for the file"),
+                "",
+                "",
+                _("%s files (*.%s)|*.%s|All files (*.*)|*.*") % (
+                        self.docExt,
+                        self.docExt,
+                        self.docExt,
+                    ),
+                wx.FD_SAVE
+            )
+
+            if dlg.ShowModal() == wx.ID_OK:
+
+                fn = dlg.GetPath()
+                preferences = getattr(self, 'pref', None)
+                if preferences is not None and hasattr(preferences, 'SanitizeFilename'):
+                    fn = preferences.SanitizeFilename(fn)
+                if os.path.isfile(fn):
+                    msg = _("File \"%s\" already exists. Do you want to overwrite it?") % (fn, )
+                    d = wx.MessageDialog(
+                        self.frame,
+                        msg,
+                        self.appLongName,
+                        wx.YES_NO | wx.CANCEL | wx.ICON_WARNING
+                    )
+                    res = d.ShowModal()
+                    if res == wx.ID_CANCEL:
+                        leave = True
+                        consensus = False
+                    elif res == wx.ID_NO:
+                        leave = False
+                        consensus = False
+                    else: #wxID_YES
+                        leave = True
+                        consensus = True
+                else:
+                    leave = True
+                    consensus = True
+
+            else:
+                leave = True
+                consensus = False
+
+        if consensus:
+            if platform.system() == 'Linux':
+                # Since wxPython file dialog in Linux does not add default extension
+                # when it has not been specified by user, we add it ourselves
+                pref, ext = os.path.splitext(fn)
+                if ext == '':
+                    fn = '%s.%s' % (fn, self.docExt)
+            self.document = fn
+            self.UpdateTitle()
+            return True
+        else:
+            return False
+
+    def SaveFile(self):
+        """Save file, asking for file name if necessary. Return False if user cancels, True otherwise"""
+        if self.document == '':
+            if not self.AskSaveFilename():
+                return False
+        self.Save()
+        self.UpdateRecentFileList(self.document)
+        self.modified = False
+        self.UpdateTitle()
+        return True
+
+    def New(self):
+        """To be overridden: create a blank document"""
+        pass
+
+    def Open(self):
+        """To be overridden: open a document"""
+        pass
+
+    def Save(self):
+        """To be overridden: save a document"""
+        return True
+
+    def SavePreferences(self):
+        """To be overridden: save preferences to wxConfig object"""
+        pass
+
+    def AddMainPane(self, window):
+        self._mgr.AddPane(window, aui.AuiPaneInfo().CenterPane().Name('_main'))
+
+    def AddPane(self, window, info, caption, menuName):
+        self._mgr.AddPane(window, info.Name(menuName).Caption(caption))
+        menuid = xrc.XRCID(menuName)
+        self.panesByMenu[menuid] = menuName
+        self.menusByPane[menuName] = menuid
+        self._captionsByPane[menuName] = caption
+        self.Bind(wx.EVT_MENU, self.OnTogglePaneView, menuName)
+
+    def OnTogglePaneView(self, evt):
+        status = evt.GetInt()
+        menu = evt.GetId()
+        pane = self._mgr.GetPane(self.panesByMenu[menu])
+        pane.Show(status)
+        self.frame.Freeze()
+        try:
+            self._mgr.Update()
+        finally:
+            self.frame.Thaw()
+
+    def OnPaneClose(self, evt):
+        pane = evt.GetPane()
+        menuid = self.menusByPane[pane.name]
+        self.menuBar.Check(menuid, False)
+
+    def RetrieveRecentFileList(self):
+        self.recentMenuBase = 800
+        self.config.SetPath('/SDIMainFrame/RecentFiles')
+        self.recentFiles = []
+        self._showRecentFiles = True  # default: mostra i file recenti
+        self._recentMenuCount = 0     # quante voci sono effettivamente nel menu
+        for i in range(1, 5):
+            f = self.config.Read(str(i))
+            if f:
+                self.recentFiles.append(f)
+            self.frame.Bind(wx.EVT_MENU, self.OnRecentFile, id = self.recentMenuBase + i)
+        self.UpdateRecentFileMenu()
+
+    def EmptyRecentFileMenu(self):
+        """Rimuove dal menu File solo le voci effettivamente presenti."""
+        fileMenu = self.menuBar.GetMenu(0)
+        for i in range(1, self._recentMenuCount + 1):
+            fileMenu.Remove(self.recentMenuBase + i)
+        self._recentMenuCount = 0
+
+    def SetShowRecentFiles(self, show):
+        """Abilita o disabilita la visualizzazione dei file recenti nel menu File.
+        Se show=False, il menu viene svuotato; se show=True, viene ripopolato."""
+        self._showRecentFiles = show
+        self.EmptyRecentFileMenu()
+        if show:
+            self.UpdateRecentFileMenu()
+
+    def UpdateRecentFileMenu(self):
+        if not self._showRecentFiles:
+            return
+        i = 1
+        fileMenu = self.menuBar.GetMenu(0)
+        self.config.SetPath('/SDIMainFrame/RecentFiles')
+        for k in self.recentFiles:
+            d, f = os.path.split(k)
+            if len(d) > 25:
+                d = d[:25] + "..."
+            fileMenu.Append(self.recentMenuBase + i, os.path.join(d, f))
+            self.config.Write(str(i), k)
+            i += 1
+        self._recentMenuCount = len(self.recentFiles)
+
+    def UpdateRecentFileList(self, name):
+        self.EmptyRecentFileMenu()
+        if name in self.recentFiles:
+            self.recentFiles.remove(name)
+        self.recentFiles.insert(0, name)
+        if len(self.recentFiles) > 4:
+            self.recentFiles.pop()
+        self.UpdateRecentFileMenu()
+
+    def ClearRecentFiles(self):
+        """Cancella la lista dei file recenti dal menu e dalla configurazione."""
+        self.EmptyRecentFileMenu()
+        self.recentFiles = []
+        self.config.SetPath('/SDIMainFrame/RecentFiles')
+        for i in range(1, 5):
+            self.config.DeleteEntry(str(i), False)
+        self.config.Flush()
+
+    def OnRecentFile(self, evt):
+        i = evt.GetId() - self.recentMenuBase
+        fn = self.recentFiles[i-1]
+        if os.path.isfile(fn) and self.AskSaveModified():
+            self.document = fn
+            self.Open()
+            self.UpdateRecentFileList(fn)
+            self.modified = False
+            self.UpdateTitle()
+
+    def FinalizePaneInitialization(self):
+        import datetime, os as _os
+        def _log(msg):
+            try:
+                log_path = _os.path.join(
+                    _os.path.expanduser('~'), 'AppData', 'Local', 'Songpress++', 'startup.log'
+                )
+                _os.makedirs(_os.path.dirname(log_path), exist_ok=True)
+                with open(log_path, 'a', encoding='utf-8') as f:
+                    f.write(f"[{datetime.datetime.now():%Y-%m-%d %H:%M:%S}] {msg}\n")
+            except Exception:
+                pass
+        _log(f"FinalizePaneInitialization  argv={sys.argv}")
+        self.config.SetPath('/SDIMainFrame')
+        v = self.config.Read("Version", "0.0")
+        vs = v.split('.')
+        svs = self.version.split('.')
+        p = False
+        if vs[:2] == svs[:2]:
+            p = self.config.Read("Perspective")
+        #print "Config: " + str(p)
+        if p:
+            self._mgr.LoadPerspective(p)
+            # LoadPerspective ripristina i caption dalla stringa serializzata,
+            # che può contenere la lingua precedente. Li riscriviamo con i
+            # valori tradotti attuali, ricavati da menusByPane (nome pane ->
+            # caption passato ad AddPane, già tradotto da _()).
+            for paneName, caption in self._captionsByPane.items():
+                pane = self._mgr.GetPane(paneName)
+                if pane.IsOk():
+                    pane.Caption(caption)
+            for menuid in self.panesByMenu:
+                self.menuBar.Check(menuid, self._mgr.GetPane(self.panesByMenu[menuid]).IsShown())
+        else:
+            self._mgr.Update()
+        # Freeze prima di Show(): il frame diventa visibile ma non ridisegna
+        # finché SongpressFrame.__init__ non chiama Thaw() dopo
+        # RestoreWindowGeometry(). In questo modo la finestra appare già
+        # nella posizione e dimensione corrette, senza sfarfallio.
+        self.frame.Freeze()
+        self.frame.Show()
+        # Avvia il server single-instance PRIMA di aprire il file da argv,
+        # così il socket è in ascolto il prima possibile ed evita la race
+        # condition in cui una seconda istanza trova la porta libera perché
+        # il server non era ancora partito.
+        self._singleInstanceServer = None
+        self._StartSingleInstanceServer()
+        if len(sys.argv) > 1:
+            fn = sys.argv[1]
+            _log(f"Scheduled OnDropFiles for: {fn!r}  exists={_os.path.isfile(fn)}")
+            wx.CallAfter(self.OnDropFiles, [fn])
+
+    # ------------------------------------------------------------------ #
+    #  Single-instance support (localhost socket)                          #
+    # ------------------------------------------------------------------ #
+
+    _SINGLE_INSTANCE_PORT = 47833  # arbitrary local port
+
+    @classmethod
+    def _TrySendToExistingInstance(cls, filepath):
+        """Try to forward *filepath* to an already-running instance.
+
+        Returns True if the message was delivered (caller should exit),
+        False if no instance is listening (caller should start normally).
+        """
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(1.0)
+            s.connect(('127.0.0.1', cls._SINGLE_INSTANCE_PORT))
+            s.sendall(filepath.encode('utf-8'))
+            s.close()
+            return True
+        except (ConnectionRefusedError, OSError):
+            return False
+
+    def _StartSingleInstanceServer(self):
+        """Bind to the local port and listen for file-open requests.
+
+        Called via wx.CallAfter after the frame is shown, so it never
+        blocks the main thread.  A daemon thread handles incoming
+        connections, dispatching wx.CallAfter(self.OnDropFiles, …) so
+        the UI update always happens on the main thread.
+        """
+        # Only start if the preference is set (default: True)
+        pref = getattr(self, 'pref', None)
+        if pref is not None and not getattr(pref, 'singleInstance', True):
+            return
+        try:
+            srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            srv.bind(('127.0.0.1', self._SINGLE_INSTANCE_PORT))
+            srv.listen(5)
+            self._singleInstanceServer = srv
+        except OSError:
+            # Port already in use — another instance is running; nothing to do.
+            return
+
+        def _listen():
+            while True:
+                try:
+                    conn, _ = srv.accept()
+                except OSError:
+                    break  # server socket closed on exit
+                try:
+                    data = b''
+                    while True:
+                        chunk = conn.recv(4096)
+                        if not chunk:
+                            break
+                        data += chunk
+                    conn.close()
+                    filepath = data.decode('utf-8').strip()
+                    if filepath == '__RAISE__':
+                        wx.CallAfter(self.frame.Raise)
+                        wx.CallAfter(self.frame.RequestUserAttention)
+                    elif filepath:
+                        wx.CallAfter(self._RaiseAndOpen, filepath)
+                except Exception:
+                    pass
+
+        t = threading.Thread(target=_listen, daemon=True)
+        t.start()
+
+    def _RaiseAndOpen(self, filepath):
+        """Bring the window to the front and open *filepath*."""
+        self.frame.Raise()
+        self.frame.RequestUserAttention()
+        if filepath and os.path.isfile(filepath):
+            self.OnDropFiles([filepath])
+
+    def _StopSingleInstanceServer(self):
+        """Close the server socket (called from OnClose)."""
+        if self._singleInstanceServer is not None:
+            try:
+                self._singleInstanceServer.close()
+            except Exception:
+                pass
+            self._singleInstanceServer = None
