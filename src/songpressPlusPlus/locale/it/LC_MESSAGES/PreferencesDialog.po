@@ -868,3 +868,35 @@ msgstr "Mostra il comando 'Seleziona tutto' nel menu contestuale (tasto destro).
 #: PreferencesDialog.py — Context menu tab, Show icons checkbox tooltip
 msgid "When enabled, small icons are displayed next to each command in the right-click context menu."
 msgstr "Se attivo, vengono visualizzate piccole icone accanto a ciascun comando nel menu contestuale (tasto destro)."
+
+#: PreferencesDialog.py — General tab, toolbar icon size label
+msgid "Toolbar icon size"
+msgstr "Dimensione icone barra degli strumenti"
+
+#: PreferencesDialog.py — General tab, toolbar icon size: small radio
+msgid "Small (16×16)"
+msgstr "Piccole (16×16)"
+
+#: PreferencesDialog.py — General tab, toolbar icon size: medium radio
+msgid "Medium (19×19)"
+msgstr "Medie (19×19)"
+
+#: PreferencesDialog.py — General tab, toolbar icon size: large radio
+msgid "Large (21×21)"
+msgstr "Grandi (21×21)"
+
+#: PreferencesDialog.py — General tab, toolbar icon size: small tooltip
+msgid "Small toolbar icon size (16×16 pixels, default)."
+msgstr "Icone piccole nella barra degli strumenti (16×16 pixel, predefinito)."
+
+#: PreferencesDialog.py — General tab, toolbar icon size: medium tooltip
+msgid "Medium toolbar icon size (19×19 pixels, 1.2× larger)."
+msgstr "Icone medie nella barra degli strumenti (19×19 pixel, 1,2× più grandi)."
+
+#: PreferencesDialog.py — General tab, toolbar icon size: large tooltip
+msgid "Large toolbar icon size (21×21 pixels, 1.3× larger)."
+msgstr "Icone grandi nella barra degli strumenti (21×21 pixel, 1,3× più grandi)."
+
+#: PreferencesDialog.py — General tab, toolbar icon size: standard tooltip
+msgid "Standard toolbar icon size (16×16 pixels)."
+msgstr "Dimensione standard delle icone della barra degli strumenti (16×16 pixel)."

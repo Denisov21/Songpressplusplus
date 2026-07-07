@@ -286,6 +286,22 @@ class PreferencesDialog(wx.Dialog):
         self.replaceSpacesInFilenamesCB.SetToolTip(_(u"When enabled, any whitespace in the file name (not the folder path) is replaced with an underscore '_' whenever a file is saved or exported. Works the same way on Windows and Linux."))
         grpGeneral.Add(self.replaceSpacesInFilenamesCB, 0, wx.ALL, 5)
 
+        # ── Dimensione icone toolbar ─────────────────────────────────
+        bSizerTbIconSize = wx.BoxSizer(wx.HORIZONTAL)
+        self.labelTbIconSize = wx.StaticText(self.general2, wx.ID_ANY, _(u"Toolbar icon size"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelTbIconSize.Wrap(-1)
+        bSizerTbIconSize.Add(self.labelTbIconSize, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        self.tbIconSizeSmall = wx.RadioButton(self.general2, wx.ID_ANY, _(u"Small (16×16)"), wx.DefaultPosition, wx.DefaultSize, wx.RB_GROUP)
+        self.tbIconSizeMedium = wx.RadioButton(self.general2, wx.ID_ANY, _(u"Medium (19×19)"))
+        self.tbIconSizeLarge = wx.RadioButton(self.general2, wx.ID_ANY, _(u"Large (21×21)"))
+        self.tbIconSizeSmall.SetToolTip(_(u"Standard toolbar icon size (16×16 pixels)."))
+        self.tbIconSizeMedium.SetToolTip(_(u"Medium toolbar icon size (19×19 pixels, 1.2× larger)."))
+        self.tbIconSizeLarge.SetToolTip(_(u"Large toolbar icon size (21×21 pixels, 1.3× larger)."))
+        bSizerTbIconSize.Add(self.tbIconSizeSmall, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        bSizerTbIconSize.Add(self.tbIconSizeMedium, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        bSizerTbIconSize.Add(self.tbIconSizeLarge, 0, wx.ALIGN_CENTER_VERTICAL)
+        grpGeneral.Add(bSizerTbIconSize, 0, wx.EXPAND | wx.ALL, 5)
+
         bSizer11b.Add(grpGeneral, 0, wx.EXPAND | wx.ALL, 8)
 
         self.general2.SetSizer(bSizer11b)

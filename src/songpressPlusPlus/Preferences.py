@@ -199,6 +199,7 @@ class Preferences(object):
         self._LoadSaveOnModified()
         self._LoadReplaceSpacesInFilenames()
         self._LoadToolbarVis()
+        self._LoadToolbarIconSize()
 
     def _LoadKlavierColour(self):
         self.config.SetPath('/KlavierColour')
@@ -374,6 +375,7 @@ class Preferences(object):
         self._SaveSaveOnModified()
         self._SaveReplaceSpacesInFilenames()
         self._SaveToolbarVis()
+        self._SaveToolbarIconSize()
         self.config.Flush()
 
     def _SaveKlavierColour(self):
@@ -715,6 +717,28 @@ class Preferences(object):
         _w('tb_insertImage');       _w('tb_insertTransposerImage')
         _w('tb_insertMusicalSymbol')
         self.config.SetPath('/')
+
+    def _LoadToolbarIconSize(self):
+        """Carica la dimensione delle icone toolbar: 'small' (16px), 'medium' (19px) o 'large' (21px)."""
+        self.config.SetPath('/ToolbarVis')
+        v = self.config.Read('toolbarIconSize')
+        self.toolbarIconSize = v if v in ('small', 'medium', 'large') else 'small'
+        self.config.SetPath('/')
+
+    def _SaveToolbarIconSize(self):
+        self.config.SetPath('/ToolbarVis')
+        self.config.Write('toolbarIconSize', getattr(self, 'toolbarIconSize', 'small'))
+        self.config.SetPath('/')
+
+    @property
+    def toolbarIconPx(self):
+        """Restituisce la dimensione in pixel delle icone toolbar (16, 19 o 21)."""
+        sz = getattr(self, 'toolbarIconSize', 'small')
+        if sz == 'medium':
+            return 19
+        if sz == 'large':
+            return 21
+        return 16
 
     def SanitizeFilename(self, path):
         """Se l'opzione 'replaceSpacesInFilenames' è attiva, sostituisce ogni

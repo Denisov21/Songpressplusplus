@@ -200,6 +200,15 @@ class MyPreferencesDialog(PreferencesDialog):
         # Sostituzione spazi con '_' nei nomi file salvati
         self.replaceSpacesInFilenamesCB.SetValue(getattr(self.pref, 'replaceSpacesInFilenames', False))
 
+        # Dimensione icone toolbar
+        _tbSz = getattr(self.pref, 'toolbarIconSize', 'small')
+        if _tbSz == 'large':
+            self.tbIconSizeLarge.SetValue(True)
+        elif _tbSz == 'medium':
+            self.tbIconSizeMedium.SetValue(True)
+        else:
+            self.tbIconSizeSmall.SetValue(True)
+
         # Debug messages
         self.showDebugMsgCB.SetValue(getattr(self.pref, 'showDebugMsg', False))
 
@@ -1474,6 +1483,13 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.saveWindowGeometry = self.saveWindowGeometryCB.GetValue()
         # Sostituzione spazi con '_' nei nomi file salvati
         self.pref.replaceSpacesInFilenames = self.replaceSpacesInFilenamesCB.GetValue()
+        # Dimensione icone toolbar
+        if self.tbIconSizeLarge.GetValue():
+            self.pref.toolbarIconSize = 'large'
+        elif self.tbIconSizeMedium.GetValue():
+            self.pref.toolbarIconSize = 'medium'
+        else:
+            self.pref.toolbarIconSize = 'small'
         self.pref.showDebugMsg = self.showDebugMsgCB.GetValue()
         # Intellisense direttive
         self.pref.intellisense = self.intellisenseCB.GetValue()

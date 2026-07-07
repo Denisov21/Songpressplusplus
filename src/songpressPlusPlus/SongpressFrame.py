@@ -765,6 +765,23 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             w, h = evt.GetSize()
             if w > 0 and h > 0:
                 evt.Skip()
+                # Dopo un resize il dock row può avere spazio in eccesso
+                # che AUI redistribuisce allargando i pane toolbar oltre il
+                # BestSize. Un Update differito ricalcola il layout e
+                # compatta i pane.
+                # _tb_finalizing è True mentre _FinalizeToolbarLayout gira
+                # (incluso il suo SendSizeEvent): lo usiamo per NON
+                # rischedulare una seconda chiamata dal size event che
+                # _FinalizeToolbarLayout stessa genera.
+                if getattr(self, '_tb_finalizing', False):
+                    return
+                if not getattr(self, '_tb_layout_pending', False):
+                    self._tb_layout_pending = True
+                    def _deferred_tb_update():
+                        self._tb_layout_pending = False
+                        if self.frame:
+                            self._FinalizeToolbarLayout()
+                    wx.CallAfter(_deferred_tb_update)
         self.frame.Bind(wx.EVT_SIZE, _OnFrameSize)
         self.text = Editor(self)
         dt = SDIDropTarget(self)
@@ -862,6 +879,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self._ApplyFormatToolBarVisibility()
         self._ApplyInsertToolBarVisibility()
         self._ApplyViewToolBarVisibility()
+        self._FinalizeToolbarLayout()
         # ─────────────────────────────────────────────────────────────
 
         self.BindMyMenu()
@@ -933,7 +951,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self._mgr.GetPane('insert').caption = _('Insert')
         # LoadPerspective sovrascrive MinSize: lo reimponiamo sempre dopo
         self._ApplyPreviewMinSize()
-        self._mgr.Update()
+        # LoadPerspective sovrascrive anche i BestSize dei pane toolbar
+        # con i valori salvati (potenzialmente obsoleti): richiamo
+        # _FinalizeToolbarLayout per ricalcolare i BestSize reali dal
+        # contenuto delle toolbar ed evitare spazio bianco a destra.
+        self._FinalizeToolbarLayout()
         self._UpdateBreakLinesMenuState()
         wx.CallAfter(self._SyncPreviewToggleButton)
         self.RestoreWindowGeometry()
@@ -4607,10 +4629,14 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
     def AddTool(self, toolbar, resource_string, icon_path, label, help):
         tool = wx.xrc.XRCID(resource_string)
+        img = wx.Image(glb.AddPath(icon_path))
+        px = getattr(self.pref, 'toolbarIconPx', 16)
+        if px != 16 and img.IsOk():
+            img = self._padImageToSize(img, px)
         toolbar.AddTool(
             tool,
             label,
-            wx.Bitmap(wx.Image(glb.AddPath(icon_path))),
+            wx.Bitmap(img),
             wx.NullBitmap,
             wx.ITEM_NORMAL,
             label,
@@ -4618,6 +4644,18 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             None
         )
         return tool
+
+    @staticmethod
+    def _padImageToSize(img, px):
+        """Centra un wx.Image su un canvas trasparente px×px senza riscalare."""
+        w, h = img.GetWidth(), img.GetHeight()
+        canvas = wx.Image(px, px)
+        canvas.InitAlpha()
+        canvas.SetAlpha(bytes(px * px))
+        ox = (px - w) // 2
+        oy = (px - h) // 2
+        canvas.Paste(img, ox, oy)
+        return canvas
 
     def New(self):
         self.text.AutoChangeMode(True)
@@ -7597,12 +7635,20 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self._ApplyPreviewMinSize()
             # Aggiorna i colori delle caption bar con i nuovi valori da pref
             self._dockArt._pref = self.pref
-            self._mgr.Update()
+            # NB: NON chiamare self._mgr.Update() qui. In agw AUI,
+            # Update() è implementato come wx.CallAfter(DoUpdate), quindi
+            # il DoUpdate gira DOPO il ritorno di _apply_prefs.  In quel
+            # momento DoUpdate sovrascrive i BestSize delle toolbar con
+            # valori pre-rebuild (letti prima che le icone cambino
+            # dimensione), impedendo il ridimensionamento su layout
+            # multi-riga.  _FinalizeToolbarLayout() fa già DoUpdate()
+            # sincrono, che applica anche i cambi preview/dockArt.
             self._ApplyRestartMenuVisibility()
             self._ApplyMainToolBarVisibility()
             self._ApplyFormatToolBarVisibility()
             self._ApplyInsertToolBarVisibility()
             self._ApplyViewToolBarVisibility()
+            self._FinalizeToolbarLayout()
 
         f = MyPreferencesDialog(self.frame, self.pref, easyChords, on_apply=_apply_prefs,
                                 previewCanvas=self.previewCanvas)

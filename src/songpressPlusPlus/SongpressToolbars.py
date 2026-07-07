@@ -31,6 +31,98 @@ class SongpressToolbarsMixin:
     """
 
     # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _toolbarBitmapSize(self):
+        """Restituisce la dimensione corrente delle icone toolbar come wx.Size."""
+        px = getattr(self.pref, 'toolbarIconPx', 16)
+        return wx.Size(px, px)
+
+    def _toolbarControlHeight(self):
+        """Altezza massima per i controlli custom (Slider, ComboBox)
+        aggiunti alla toolbar via AddControl.
+
+        Corrisponde all'altezza del contenuto di un tool standard
+        (icona + 2 × tool_border_padding) così la riga della format
+        toolbar non diventa più alta delle altre.
+        """
+        px = getattr(self.pref, 'toolbarIconPx', 16)
+        return px + 6  # 6 = 2 × tool_border_padding (default 3)
+
+    def _scaledToolbarBitmap(self, image_path):
+        """Carica un'immagine e, se la dimensione toolbar è maggiore,
+        la centra su un canvas trasparente più grande senza riscalare,
+        così l'icona resta nitida pixel-per-pixel."""
+        img = wx.Image(glb.AddPath(image_path))
+        px = getattr(self.pref, 'toolbarIconPx', 16)
+        if px != 16 and img.IsOk():
+            img = self._padImageToSize(img, px)
+        return wx.Bitmap(img)
+
+    @staticmethod
+    def _padImageToSize(img, px):
+        """Centra un wx.Image su un canvas trasparente px×px."""
+        w, h = img.GetWidth(), img.GetHeight()
+        canvas = wx.Image(px, px)
+        canvas.InitAlpha()
+        # Imposta tutto il canvas trasparente con un blocco di byte
+        canvas.SetAlpha(bytes(px * px))
+        # Centra l'icona originale
+        ox = (px - w) // 2
+        oy = (px - h) // 2
+        canvas.Paste(img, ox, oy)
+        return canvas
+
+    def _RealizeToolbar(self, toolbar):
+        """Realize della toolbar + vincoli di dimensione sul pane.
+
+        NON chiama _mgr.Update(): quando più toolbar vengono ricostruite
+        insieme, serve un singolo Update finale tramite
+        _FinalizeToolbarLayout() per evitare layout intermedi incoerenti.
+        """
+        toolbar.SetGripperVisible(False)
+        toolbar.Realize()
+        sz = toolbar.GetMinSize()
+        pane = self._mgr.GetPane(toolbar)
+        if pane.IsOk():
+            pane.BestSize(sz)
+            pane.MaxSize(sz)
+            pane.MinSize(wx.Size(1, 1))
+
+    def _FinalizeToolbarLayout(self):
+        """Ricalcola il layout di tutte le toolbar con MaxSize = contenuto.
+
+        MaxSize impedisce ad AUI di allargare il pane oltre la
+        dimensione reale del contenuto → niente spazio bianco.
+        MinSize(1,1) resta basso per consentire l'overflow (»»)
+        quando la finestra è troppo stretta.
+        """
+        self._tb_finalizing = True
+        try:
+            for tb in (self.mainToolBar, self.formatToolBar,
+                       self.insertToolBar, self.viewToolBar):
+                tb.SetGripperVisible(False)
+                tb.Realize()
+                sz = tb.GetMinSize()
+                pane = self._mgr.GetPane(tb)
+                if pane.IsOk():
+                    pane.BestSize(sz)
+                    pane.MaxSize(sz)
+                    pane.MinSize(wx.Size(1, 1))
+            self._mgr.DoUpdate()
+            # DoUpdate → SwitchToolBarOrientation forza
+            # SetGripperVisible(True) sulle toolbar: resettiamo
+            # subito perché il pane ha Gripper(False) e AUI non
+            # riserva spazio per il gripper nel layout.
+            for tb in (self.mainToolBar, self.formatToolBar,
+                       self.insertToolBar, self.viewToolBar):
+                tb.SetGripperVisible(False)
+            self.frame.SendSizeEvent()
+        finally:
+            self._tb_finalizing = False
+
+    # ------------------------------------------------------------------
     # Entry point
     # ------------------------------------------------------------------
 
@@ -69,6 +161,7 @@ class SongpressToolbarsMixin:
 
     def _ApplyMainToolBarVisibility(self):
         """Ricostruisce la main toolbar rispettando i flag tbm_* in self.pref."""
+        self.mainToolBar.SetToolBitmapSize(self._toolbarBitmapSize())
         self.mainToolBar.ClearTools()
 
         prev_was_sep = True
@@ -104,8 +197,7 @@ class SongpressToolbarsMixin:
             prev_was_sep = False
             last_added = xrc_name
 
-        self.mainToolBar.Realize()
-        self._mgr.Update()
+        self._RealizeToolbar(self.mainToolBar)
 
     # ------------------------------------------------------------------
     # Format toolbar — mappa icone/flag di visibilità
@@ -145,13 +237,16 @@ class SongpressToolbarsMixin:
             ctrl.Destroy()
         self._format_chords_controls = []
 
+        self.formatToolBar.SetToolBitmapSize(self._toolbarBitmapSize())
         self.formatToolBar.ClearTools()
+
+        _slider_h = self._toolbarControlHeight()
 
         # ── Carattere ─────────────────────────────────────────────────
         if show_font:
             fontIcon = wx.StaticBitmap(
                 self.formatToolBar, -1,
-                wx.Bitmap(wx.Image(glb.AddPath('img/font1.png')))
+                self._scaledToolbarBitmap('img/font1.png')
             )
             fontIcon.SetToolTip(_("Font used in the Songpress++ preview"))
             self.formatToolBar.AddControl(fontIcon)
@@ -173,12 +268,12 @@ class SongpressToolbarsMixin:
         if show_chords:
             showChordsIcon = wx.StaticBitmap(
                 self.formatToolBar, -1,
-                wx.Bitmap(wx.Image(glb.AddPath('img/showChords.png')))
+                self._scaledToolbarBitmap('img/showChords.png')
             )
             self.formatToolBar.AddControl(showChordsIcon)
             self.showChordsChooser = wx.Slider(
                 self.formatToolBar, -1, saved_show_chords, 0, 2,
-                wx.DefaultPosition, (100, 32),
+                wx.DefaultPosition, (100, _slider_h),
                 wx.SL_AUTOTICKS | wx.SL_HORIZONTAL
             )
             tt1 = wx.ToolTip(_("Hide or show chords in the formatted song"))
@@ -192,7 +287,7 @@ class SongpressToolbarsMixin:
             # showChordsChooser non esiste più: dummy nascosto
             self.showChordsChooser = wx.Slider(
                 self.formatToolBar, -1, saved_show_chords, 0, 2,
-                wx.DefaultPosition, (100, 32),
+                wx.DefaultPosition, (100, _slider_h),
                 wx.SL_AUTOTICKS | wx.SL_HORIZONTAL
             )
             self.showChordsChooser.Hide()
@@ -205,8 +300,7 @@ class SongpressToolbarsMixin:
             self.AddTool(self.formatToolBar, 'insertLinespacing', 'img/line_spacing.png',
                          _(u"Linespacing"), _(u"Insert a {linespacing} command"))
 
-        self.formatToolBar.Realize()
-        self._mgr.Update()
+        self._RealizeToolbar(self.formatToolBar)
 
     # ------------------------------------------------------------------
     # Main toolbar  (Standard)
@@ -215,9 +309,9 @@ class SongpressToolbarsMixin:
     def _BuildMainToolBar(self):
         self.mainToolBar = aui.AuiToolBar(
             self.frame, wx.ID_ANY, wx.DefaultPosition,
-            agwStyle=aui.AUI_TB_PLAIN_BACKGROUND
+            agwStyle=aui.AUI_TB_PLAIN_BACKGROUND | aui.AUI_TB_OVERFLOW
         )
-        self.mainToolBar.SetToolBitmapSize(wx.Size(16, 16))
+        self.mainToolBar.SetToolBitmapSize(self._toolbarBitmapSize())
 
         self._main_toolbar_icons = {
             'new':          'img/new.png',
@@ -259,7 +353,7 @@ class SongpressToolbarsMixin:
 
         self.mainToolBarPane = self.AddPane(
             self.mainToolBar,
-            aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(1),
+            aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(1).PaneBorder(False).Gripper(False),
             _('Standard'), 'standard'
         )
 
@@ -270,15 +364,15 @@ class SongpressToolbarsMixin:
     def _BuildFormatToolBar(self):
         self.formatToolBar = aui.AuiToolBar(
             self.frame, wx.ID_ANY, wx.DefaultPosition,
-            agwStyle=aui.AUI_TB_PLAIN_BACKGROUND
+            agwStyle=aui.AUI_TB_PLAIN_BACKGROUND | aui.AUI_TB_OVERFLOW
         )
-        self.formatToolBar.SetToolBitmapSize(wx.Size(16, 16))
+        self.formatToolBar.SetToolBitmapSize(self._toolbarBitmapSize())
         self.formatToolBar.SetExtraStyle(aui.AUI_TB_PLAIN_BACKGROUND)
 
         # Font chooser
         fontIcon = wx.StaticBitmap(
             self.formatToolBar, -1,
-            wx.Bitmap(wx.Image(glb.AddPath('img/font1.png')))
+            self._scaledToolbarBitmap('img/font1.png')
         )
         fontIcon.SetToolTip(_("Font used in the Songpress++ preview"))
         self.formatToolBar.AddControl(fontIcon)
@@ -300,12 +394,13 @@ class SongpressToolbarsMixin:
         # Show-chords slider
         showChordsIcon = wx.StaticBitmap(
             self.formatToolBar, -1,
-            wx.Bitmap(wx.Image(glb.AddPath('img/showChords.png')))
+            self._scaledToolbarBitmap('img/showChords.png')
         )
         self.formatToolBar.AddControl(showChordsIcon)
+        _slider_h = self._toolbarControlHeight()
         self.showChordsChooser = wx.Slider(
             self.formatToolBar, -1, 0, 0, 2,
-            wx.DefaultPosition, (100, 32), #permette di modifica l'altezza della barra secondo valore!!!
+            wx.DefaultPosition, (100, _slider_h),
             wx.SL_AUTOTICKS | wx.SL_HORIZONTAL
         )
         tt1 = wx.ToolTip(_("Hide or show chords in the formatted song"))
@@ -322,10 +417,15 @@ class SongpressToolbarsMixin:
                      _(u"Linespacing"), _(u"Insert a {linespacing} command"))
 
         self.formatToolBar.Realize()
-        self.formatToolBar.SetMinSize(self.mainToolBar.GetMinSize())
+        # NB: NON forzare qui SetMinSize alla larghezza della main toolbar.
+        # Farlo "gonfiava" la format toolbar fino alla larghezza della
+        # Standard quando il suo contenuto è più stretto, lasciando spazio
+        # bianco a destra; ed era incoerente con il percorso di rebuild
+        # (_ApplyFormatToolBarVisibility -> _RealizeToolbar), che usa invece
+        # la dimensione reale. Dopo Realize() il MinSize è già quello giusto.
         self.formatToolBarPane = self.AddPane(
             self.formatToolBar,
-            aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(2),
+            aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(2).PaneBorder(False).Gripper(False),
             _('Format'), 'format'
         )
 
@@ -375,6 +475,7 @@ class SongpressToolbarsMixin:
         AuiToolBar non supporta Show/Hide per singola icona: l'unico modo
         affidabile è cancellare tutti i tool e reinserire quelli visibili.
         """
+        self.insertToolBar.SetToolBitmapSize(self._toolbarBitmapSize())
         self.insertToolBar.ClearTools()
 
         prev_was_separator = True   # evita separatore iniziale
@@ -402,8 +503,7 @@ class SongpressToolbarsMixin:
             prev_was_separator = False
             last_added_xrc = xrc_name
 
-        self.insertToolBar.Realize()
-        self._mgr.Update()
+        self._RealizeToolbar(self.insertToolBar)
 
     # ------------------------------------------------------------------
     # Insert toolbar
@@ -412,9 +512,9 @@ class SongpressToolbarsMixin:
     def _BuildInsertToolBar(self):
         self.insertToolBar = aui.AuiToolBar(
             self.frame, wx.ID_ANY, wx.DefaultPosition,
-            agwStyle=aui.AUI_TB_PLAIN_BACKGROUND
+            agwStyle=aui.AUI_TB_PLAIN_BACKGROUND | aui.AUI_TB_OVERFLOW
         )
-        self.insertToolBar.SetToolBitmapSize(wx.Size(16, 16))
+        self.insertToolBar.SetToolBitmapSize(self._toolbarBitmapSize())
 
         # Dizionari icon-path e help per ogni tool: usati da _ApplyInsertToolBarVisibility
         # per ricostruire la toolbar quando la visibilità cambia.
@@ -478,7 +578,7 @@ class SongpressToolbarsMixin:
 
         self.insertToolBarPane = self.AddPane(
             self.insertToolBar,
-            aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(3),
+            aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(3).PaneBorder(False).Gripper(False),
             _('Insert'), 'insert'
         )
 
@@ -505,6 +605,7 @@ class SongpressToolbarsMixin:
             if item is not None:
                 _toggle_states[xrc_name] = self.viewToolBar.GetToolToggled(tid)
 
+        self.viewToolBar.SetToolBitmapSize(self._toolbarBitmapSize())
         self.viewToolBar.ClearTools()
 
         for xrc_name, label, pref_key in self.VIEW_TOOLBAR_ITEMS:
@@ -513,7 +614,7 @@ class SongpressToolbarsMixin:
             icon_path = self._view_toolbar_icons[xrc_name]
             tool = self.viewToolBar.AddToggleTool(
                 wx.xrc.XRCID(xrc_name),
-                wx.Bitmap(wx.Image(glb.AddPath(icon_path))),
+                self._scaledToolbarBitmap(icon_path),
                 wx.NullBitmap,
                 True,
                 None,
@@ -532,15 +633,14 @@ class SongpressToolbarsMixin:
                 self.viewToolBar.ToggleTool(wx.xrc.XRCID(xrc_name),
                                             _toggle_states[xrc_name])
 
-        self.viewToolBar.Realize()
-        self._mgr.Update()
+        self._RealizeToolbar(self.viewToolBar)
 
     def _BuildViewToolBar(self):
         self.viewToolBar = aui.AuiToolBar(
             self.frame, wx.ID_ANY, wx.DefaultPosition,
-            agwStyle=aui.AUI_TB_PLAIN_BACKGROUND
+            agwStyle=aui.AUI_TB_PLAIN_BACKGROUND | aui.AUI_TB_OVERFLOW
         )
-        self.viewToolBar.SetToolBitmapSize(wx.Size(16, 16))
+        self.viewToolBar.SetToolBitmapSize(self._toolbarBitmapSize())
 
         self._view_toolbar_icons = {
             'preview':    'img/preview.png',
@@ -554,7 +654,7 @@ class SongpressToolbarsMixin:
         # Toggle "Mostra anteprima Songpress++"
         togglePreviewViewTool = self.viewToolBar.AddToggleTool(
             wx.xrc.XRCID('preview'),
-            wx.Bitmap(wx.Image(glb.AddPath("img/preview.png"))),
+            self._scaledToolbarBitmap("img/preview.png"),
             wx.NullBitmap,
             True,
             None,
@@ -567,7 +667,7 @@ class SongpressToolbarsMixin:
         # Toggle "Mostra le etichette delle strofe e ritornelli"
         labelVersesViewTool = self.viewToolBar.AddToggleTool(
             wx.xrc.XRCID('labelVerses'),
-            wx.Bitmap(wx.Image(glb.AddPath("img/labelVerses.png"))),
+            self._scaledToolbarBitmap("img/labelVerses.png"),
             wx.NullBitmap,
             True,
             None,
@@ -579,6 +679,6 @@ class SongpressToolbarsMixin:
         self.viewToolBar.Realize()
         self.viewToolBarPane = self.AddPane(
             self.viewToolBar,
-            aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(4),
+            aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(4).PaneBorder(False).Gripper(False),
             _('View'), 'view'
         )
