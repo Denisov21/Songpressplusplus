@@ -6636,6 +6636,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             size=(160, -1),
             style=wx.SL_HORIZONTAL,
         )
+        self._styleSliderForTheme(zoom_slider)
         zoom_slider.SetToolTip(_("Zoom (50% – 200%)"))
 
         btn_zoom_in = wx.Button(dlg, wx.ID_ANY, u"+", size=(28, -1))
@@ -7405,6 +7406,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             dlg, value=_zoom_pct[0], minValue=50, maxValue=200,
             size=(160, -1), style=wx.SL_HORIZONTAL,
         )
+        self._styleSliderForTheme(zoom_slider)
         zoom_slider.SetToolTip(_("Zoom (50% – 200%)"))
 
         btn_zoom_in = wx.Button(dlg, wx.ID_ANY, u"+", size=(28, -1))

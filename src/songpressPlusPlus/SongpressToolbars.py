@@ -17,6 +17,43 @@ from .Globals import glb
 _ = wx.GetTranslation
 
 
+class ShowChordsChoice(wx.Choice):
+    """Menu a tendina a 3 voci che sostituisce il vecchio wx.Slider
+    "mostra accordi".
+
+    Vantaggi rispetto allo Slider:
+      * segue nativamente il tema chiaro/scuro di GTK3 (niente riquadro
+        chiaro fisso sul tema scuro);
+      * le tre modalità sono etichettate in chiaro invece di essere tre
+        tacche mute.
+
+    L'indice selezionato (0/1/2) coincide con pref.format.showChords, quindi
+    l'API GetValue()/SetValue() del vecchio Slider è mantenuta e il resto del
+    codice (OnFontSelected, SetFont, ...) non richiede modifiche.
+
+    Le etichette riusano stringhe gettext già presenti nel menu
+    "Show chords for", così non servono nuove traduzioni nei .po.
+    """
+
+    def __init__(self, parent, id=wx.ID_ANY, value=0,
+                 pos=wx.DefaultPosition, size=wx.DefaultSize, style=0):
+        labels = [
+            _(u"No chords"),
+            _(u"One verse for each chord pattern"),
+            _(u"Whole song"),
+        ]
+        super().__init__(parent, id, pos, size, choices=labels, style=style)
+        self.SetSelection(max(0, min(2, int(value))))
+
+    # ── Compatibilità con l'API del vecchio wx.Slider ────────────────
+    def GetValue(self):
+        sel = self.GetSelection()
+        return sel if sel != wx.NOT_FOUND else 0
+
+    def SetValue(self, v):
+        self.SetSelection(max(0, min(2, int(v))))
+
+
 class SongpressToolbarsMixin:
     """Mixin che raccoglie la costruzione delle tre AuiToolBar di Songpress++.
 
@@ -49,6 +86,27 @@ class SongpressToolbarsMixin:
         """
         px = getattr(self.pref, 'toolbarIconPx', 16)
         return px + 6  # 6 = 2 × tool_border_padding (default 3)
+
+    @staticmethod
+    def _styleSliderForTheme(slider):
+        """Fa sì che un wx.Slider segua il tema di sistema (chiaro/scuro).
+
+        Su GTK3 (Debian/KDE) wx.Slider disegna uno sfondo chiaro fisso
+        (#F0F0F0): con un tema scuro appare come un riquadro chiaro
+        "sospeso" nella toolbar (il controllo "non si vede"). Allineando
+        background e foreground ai colori di sistema il controllo si fonde
+        con la toolbar sia in tema chiaro sia in tema scuro.
+
+        SYS_COLOUR_BTNFACE è lo stesso colore base usato dall'art provider
+        di AuiToolBar con AUI_TB_PLAIN_BACKGROUND, quindi lo slider combacia
+        con lo sfondo della toolbar su cui è collocato.
+        """
+        if slider is None:
+            return
+        slider.SetBackgroundColour(
+            wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE))
+        slider.SetForegroundColour(
+            wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT))
 
     def _scaledToolbarBitmap(self, image_path):
         """Carica un'immagine e, se la dimensione toolbar è maggiore,
@@ -240,8 +298,6 @@ class SongpressToolbarsMixin:
         self.formatToolBar.SetToolBitmapSize(self._toolbarBitmapSize())
         self.formatToolBar.ClearTools()
 
-        _slider_h = self._toolbarControlHeight()
-
         # ── Carattere ─────────────────────────────────────────────────
         if show_font:
             fontIcon = wx.StaticBitmap(
@@ -271,24 +327,20 @@ class SongpressToolbarsMixin:
                 self._scaledToolbarBitmap('img/showChords.png')
             )
             self.formatToolBar.AddControl(showChordsIcon)
-            self.showChordsChooser = wx.Slider(
-                self.formatToolBar, -1, saved_show_chords, 0, 2,
-                wx.DefaultPosition, (100, _slider_h),
-                wx.SL_AUTOTICKS | wx.SL_HORIZONTAL
+            self.showChordsChooser = ShowChordsChoice(
+                self.formatToolBar, -1, saved_show_chords
             )
             tt1 = wx.ToolTip(_("Hide or show chords in the formatted song"))
             tt2 = wx.ToolTip(_("Hide or show chords in the formatted song"))
             self.showChordsChooser.SetToolTip(tt1)
             showChordsIcon.SetToolTip(tt2)
-            self.frame.Bind(wx.EVT_SCROLL, self.OnFontSelected, self.showChordsChooser)
+            self.frame.Bind(wx.EVT_CHOICE, self.OnFontSelected, self.showChordsChooser)
             self.formatToolBar.AddControl(self.showChordsChooser, "pippo")
             self._format_chords_controls = [showChordsIcon, self.showChordsChooser]
         else:
             # showChordsChooser non esiste più: dummy nascosto
-            self.showChordsChooser = wx.Slider(
-                self.formatToolBar, -1, saved_show_chords, 0, 2,
-                wx.DefaultPosition, (100, _slider_h),
-                wx.SL_AUTOTICKS | wx.SL_HORIZONTAL
+            self.showChordsChooser = ShowChordsChoice(
+                self.formatToolBar, -1, saved_show_chords
             )
             self.showChordsChooser.Hide()
             self._format_chords_controls = []
@@ -397,17 +449,14 @@ class SongpressToolbarsMixin:
             self._scaledToolbarBitmap('img/showChords.png')
         )
         self.formatToolBar.AddControl(showChordsIcon)
-        _slider_h = self._toolbarControlHeight()
-        self.showChordsChooser = wx.Slider(
-            self.formatToolBar, -1, 0, 0, 2,
-            wx.DefaultPosition, (100, _slider_h),
-            wx.SL_AUTOTICKS | wx.SL_HORIZONTAL
+        self.showChordsChooser = ShowChordsChoice(
+            self.formatToolBar, -1, 0
         )
         tt1 = wx.ToolTip(_("Hide or show chords in the formatted song"))
         tt2 = wx.ToolTip(_("Hide or show chords in the formatted song"))
         self.showChordsChooser.SetToolTip(tt1)
         showChordsIcon.SetToolTip(tt2)
-        self.frame.Bind(wx.EVT_SCROLL, self.OnFontSelected, self.showChordsChooser)
+        self.frame.Bind(wx.EVT_CHOICE, self.OnFontSelected, self.showChordsChooser)
         self.formatToolBar.AddControl(self.showChordsChooser, "pippo")
         # Teniamo i riferimenti per Show/Hide
         self._format_chords_controls = [showChordsIcon, self.showChordsChooser]
