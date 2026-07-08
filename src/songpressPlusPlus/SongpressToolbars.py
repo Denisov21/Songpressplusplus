@@ -59,8 +59,8 @@ class ShowChordsChoice(wx.Choice):
         viene disegnato in modo affidabile.
         """
         best = self.GetBestSize()
-        w = best.width if best.width > 20 else 200
-        w = min(w, 200)   # tetto: il testo lungo viene troncato ma resta nel tooltip/menu
+        w = best.width if best.width > 20 else 230
+        w = min(w, 230)   # tetto: il testo lungo viene troncato ma resta nel tooltip/menu
         h = best.height if best.height > 10 else -1
         size = wx.Size(w, h)
         self.SetInitialSize(size)
