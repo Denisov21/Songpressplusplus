@@ -44,6 +44,27 @@ class ShowChordsChoice(wx.Choice):
         ]
         super().__init__(parent, id, pos, size, choices=labels, style=style)
         self.SetSelection(max(0, min(2, int(value))))
+        self._freezeSize()
+
+    def _freezeSize(self):
+        """Fissa una dimensione esplicita e deterministica.
+
+        Su GTK3, quando un wx.Choice viene aggiunto a una AuiToolBar con
+        AddControl, la toolbar interroga GetBestSize()/MinSize durante il
+        Realize: se il widget non è ancora completamente realizzato può
+        restituire larghezza 0 e la toolbar riserva 0 px → il menu a tendina
+        "a volte non appare" (in tema chiaro e scuro). Congelando una MinSize
+        concreta (calcolata sull'etichetta più lunga, con un valore minimo di
+        sicurezza) la toolbar riserva sempre lo spazio corretto e il controllo
+        viene disegnato in modo affidabile.
+        """
+        best = self.GetBestSize()
+        w = best.width if best.width > 20 else 200
+        w = min(w, 200)   # tetto: il testo lungo viene troncato ma resta nel tooltip/menu
+        h = best.height if best.height > 10 else -1
+        size = wx.Size(w, h)
+        self.SetInitialSize(size)
+        self.SetMinSize(size)
 
     # ── Compatibilità con l'API del vecchio wx.Slider ────────────────
     def GetValue(self):
@@ -177,6 +198,22 @@ class SongpressToolbarsMixin:
                        self.insertToolBar, self.viewToolBar):
                 tb.SetGripperVisible(False)
             self.frame.SendSizeEvent()
+
+            # Windows: dopo un rebuild i vecchi StaticBitmap (icone font,
+            # accordi) vengono distrutti e ricreati; la zona che occupavano
+            # non viene invalidata, così i pixel della vecchia icona restano
+            # come "fantasma" (icona doppia) finché un WM_PAINT — tipicamente
+            # il passaggio del mouse — non ridisegna quell'area. Forziamo qui
+            # un erase+repaint pulito di ogni toolbar e dei suoi controlli
+            # figli, eliminando il fantasma senza bisogno dell'hover.
+            # È un problema specifico di wxMSW: su GTK/macOS non serve.
+            if wx.Platform == '__WXMSW__':
+                for tb in (self.mainToolBar, self.formatToolBar,
+                           self.insertToolBar, self.viewToolBar):
+                    tb.Refresh(eraseBackground=True)
+                    for child in tb.GetChildren():
+                        child.Refresh()
+                    tb.Update()
         finally:
             self._tb_finalizing = False
 

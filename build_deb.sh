@@ -47,15 +47,30 @@ PY
 DEB_NAME=$(echo "$PKG_NAME" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
 DEB_VERSION="$PKG_VERSION"
 DEB_ARCH="all"
-MAINTAINER="Denisov21"
+# NB: il campo Maintainer DEVE essere nel formato "Nome <email>",
+#     altrimenti Discover/GDebi mostrano "Autore sconosciuto".
+#     Cambia l'email se ne hai una tua; questa noreply di GitHub è valida.
+MAINTAINER="Denisov21 <Denisov21@users.noreply.github.com>"
+AUTHOR_NAME="Denisov21"
+# Licenza in formato SPDX (mostrata da Discover al posto di "Sconosciuta").
+LICENSE="GPL-2.0-only"
 DESCRIPTION="Songpress++ is a free, easy-to-use song typesetting program
  that generates high-quality songbooks (PDF, PPTX)."
 HOMEPAGE="https://github.com/Denisov21/Songpressplusplus"
 
-# Dipendenze runtime Debian/Ubuntu equivalenti
-DEPENDS="python3 (>= 3.12), python3-wxgtk4.0 | python3-wxpython4, \
+# Dipendenze runtime disponibili come pacchetti Debian/Ubuntu.
+# python3-pip serve al postinst per installare le dipendenze solo-PyPI.
+DEPENDS="python3 (>= 3.12), python3-pip, python3-wxgtk4.0 | python3-wxpython4, \
 python3-requests, python3-reportlab, python3-markdown, python3-mistune, \
 python3-pypdf"
+
+# Dipendenze che NON esistono nei repo Debian: si installano via pip nel postinst.
+# Formato: "nome_pip:nome_modulo_import" (uno per riga).
+#   - python-pptx  → modulo "pptx"       (necessario su Linux)
+#   - pyshortcuts  → modulo "pyshortcuts"
+# NB: pywin32 è escluso di proposito, è solo per Windows.
+PIP_DEPS="python-pptx:pptx
+pyshortcuts:pyshortcuts"
 
 # Cartelle di lavoro
 BUILD_DIR="$SCRIPT_DIR/build_deb"
@@ -67,21 +82,8 @@ echo "==> Pulizia build precedente..."
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
-# ── 1. Build della wheel ──────────────────────────────────────────────────────
-echo "==> Costruzione wheel con pip + hatchling..."
-WHEEL_DIR="$BUILD_DIR/wheel"
-mkdir -p "$WHEEL_DIR"
-
 PYTHON="${VIRTUAL_ENV:+$VIRTUAL_ENV/bin/python3}"
 PYTHON="${PYTHON:-python3}"
-
-"$PYTHON" -m pip wheel \
-    --no-deps \
-    --wheel-dir "$WHEEL_DIR" \
-    "$SCRIPT_DIR"
-
-WHEEL_FILE=$(ls "$WHEEL_DIR"/*.whl | head -n1)
-echo "    Wheel: $WHEEL_FILE"
 
 # ── 1b. Patch SongpressFrame.py: SetForegroundColour nella finestra About ────
 echo "==> Patch SetForegroundColour finestra About..."
@@ -128,6 +130,136 @@ with open(path, "w") as f:
     f.write(content)
 print(f"    Patch applicata: {count}/3 fix in {path}")
 PATCH
+
+# ── 1e. Patch SongpressFrame.py: Statistiche brano tema scuro ────────────────
+echo "==> Patch Statistiche brano (BG sistema, stelle+verdetto, testo tema scuro)..."
+"$PYTHON" - <<'PATCH_STATS'
+import re, subprocess, sys
+
+result = subprocess.run(
+    ["find", "src/songpressplusplus", "-name", "SongpressFrame.py"],
+    capture_output=True, text=True
+)
+candidates = result.stdout.strip().splitlines()
+if not candidates:
+    print("    SongpressFrame.py non trovato, skip patch.")
+    sys.exit(0)
+
+path = candidates[0]
+with open(path, encoding='utf-8') as f:
+    content = f.read()
+
+FG = "wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT)"
+fixes = []
+
+# 1. BG hardcoded → colore di sistema
+fixes.append((
+    'BG      = wx.Colour(250, 250, 252)',
+    'BG      = wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW)'
+))
+
+# 2. eval_panel caso multi-tab → sizer diretto su page, senza pannello bianco
+fixes.append((
+    "                    eval_panel = wx.Panel(page)\n"
+    "                    eval_panel.SetBackgroundColour(wx.Colour(240, 245, 255))\n"
+    "                    eval_sz = wx.BoxSizer(wx.HORIZONTAL)\n"
+    "                    lbl_stars = wx.StaticText(eval_panel, label=st['stars'])\n"
+    "                    f_s = lbl_stars.GetFont()\n"
+    "                    f_s.SetPointSize(f_s.GetPointSize() + 6)\n"
+    "                    lbl_stars.SetFont(f_s)\n"
+    "                    lbl_stars.SetForegroundColour(STAR_ON)\n"
+    "                    lbl_verdict = wx.StaticText(eval_panel, label='  ' + st['verdict'])\n"
+    "                    f_v = lbl_verdict.GetFont()\n"
+    "                    f_v.SetWeight(wx.FONTWEIGHT_BOLD)\n"
+    "                    lbl_verdict.SetFont(f_v)\n"
+    "                    eval_sz.Add(lbl_stars,   0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)\n"
+    "                    eval_sz.Add(lbl_verdict, 0, wx.ALIGN_CENTER_VERTICAL)\n"
+    "                    eval_panel.SetSizer(eval_sz)\n"
+    "                    body.Add(eval_panel, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 6)",
+    "                    _eval_sz = wx.BoxSizer(wx.HORIZONTAL)\n"
+    "                    _lbl_stars = wx.StaticText(page, label=st['stars'])\n"
+    "                    _fs = _lbl_stars.GetFont()\n"
+    "                    _fs.SetPointSize(_fs.GetPointSize() + 6)\n"
+    "                    _lbl_stars.SetFont(_fs)\n"
+    "                    _lbl_stars.SetForegroundColour(STAR_ON)\n"
+    "                    _lbl_verdict = wx.StaticText(page, label='  ' + st['verdict'])\n"
+    "                    _fv = _lbl_verdict.GetFont()\n"
+    "                    _fv.SetWeight(wx.FONTWEIGHT_BOLD)\n"
+    "                    _lbl_verdict.SetFont(_fv)\n"
+    f"                    _lbl_verdict.SetForegroundColour({FG})\n"
+    "                    _eval_sz.Add(_lbl_stars,   0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)\n"
+    "                    _eval_sz.Add(_lbl_verdict, 0, wx.ALIGN_CENTER_VERTICAL)\n"
+    "                    body.Add(_eval_sz, 0, wx.LEFT | wx.TOP | wx.BOTTOM, 6)"
+))
+
+# 3. eval_panel caso singolo brano → sizer diretto su scroll
+fixes.append((
+    "            eval_panel = wx.Panel(scroll)\n"
+    "            eval_panel.SetBackgroundColour(wx.Colour(240, 245, 255))\n"
+    "            eval_sz = wx.BoxSizer(wx.HORIZONTAL)\n"
+    "            lbl_stars = wx.StaticText(eval_panel, label=st['stars'])\n"
+    "            f_s = lbl_stars.GetFont()\n"
+    "            f_s.SetPointSize(f_s.GetPointSize() + 6)\n"
+    "            lbl_stars.SetFont(f_s)\n"
+    "            lbl_stars.SetForegroundColour(STAR_ON)\n"
+    "            lbl_verdict = wx.StaticText(eval_panel, label='  ' + st['verdict'])\n"
+    "            f_v = lbl_verdict.GetFont()\n"
+    "            f_v.SetWeight(wx.FONTWEIGHT_BOLD)\n"
+    "            lbl_verdict.SetFont(f_v)\n"
+    "            eval_sz.Add(lbl_stars,   0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)\n"
+    "            eval_sz.Add(lbl_verdict, 0, wx.ALIGN_CENTER_VERTICAL)\n"
+    "            eval_panel.SetSizer(eval_sz)\n"
+    "            body.Add(eval_panel, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 6)",
+    "            _eval_sz = wx.BoxSizer(wx.HORIZONTAL)\n"
+    "            _lbl_stars = wx.StaticText(scroll, label=st['stars'])\n"
+    "            _fs = _lbl_stars.GetFont()\n"
+    "            _fs.SetPointSize(_fs.GetPointSize() + 6)\n"
+    "            _lbl_stars.SetFont(_fs)\n"
+    "            _lbl_stars.SetForegroundColour(STAR_ON)\n"
+    "            _lbl_verdict = wx.StaticText(scroll, label='  ' + st['verdict'])\n"
+    "            _fv = _lbl_verdict.GetFont()\n"
+    "            _fv.SetWeight(wx.FONTWEIGHT_BOLD)\n"
+    "            _lbl_verdict.SetFont(_fv)\n"
+    f"            _lbl_verdict.SetForegroundColour({FG})\n"
+    "            _eval_sz.Add(_lbl_stars,   0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)\n"
+    "            _eval_sz.Add(_lbl_verdict, 0, wx.ALIGN_CENTER_VERTICAL)\n"
+    "            body.Add(_eval_sz, 0, wx.LEFT | wx.TOP | wx.BOTTOM, 6)"
+))
+
+# 4. Testo _row multi-tab → SYS_COLOUR_WINDOWTEXT
+fixes.append((
+    "                    k_lbl = wx.StaticText(_page, label=key)\n"
+    "                    v_lbl = wx.StaticText(_page, label=str(value))",
+    "                    k_lbl = wx.StaticText(_page, label=key)\n"
+    f"                    k_lbl.SetForegroundColour({FG})\n"
+    "                    v_lbl = wx.StaticText(_page, label=str(value))\n"
+    f"                    v_lbl.SetForegroundColour({FG})"
+))
+
+# 5. Testo _row singolo brano → SYS_COLOUR_WINDOWTEXT
+fixes.append((
+    "            k_lbl = wx.StaticText(scroll, label=key)\n"
+    "            v_lbl = wx.StaticText(scroll, label=str(value))",
+    "            k_lbl = wx.StaticText(scroll, label=key)\n"
+    f"            k_lbl.SetForegroundColour({FG})\n"
+    "            v_lbl = wx.StaticText(scroll, label=str(value))\n"
+    f"            v_lbl.SetForegroundColour({FG})"
+))
+
+# 6. Rimuovi gauge rimasti
+lines = content.splitlines(keepends=True)
+lines = [l for l in lines if not re.search(
+    r'gauge\s*=\s*wx\.Gauge|gauge\.SetValue|body\.Add\(gauge', l)]
+content = ''.join(lines)
+
+count = sum(1 for old, _ in fixes if old in content)
+for old, new in fixes:
+    content = content.replace(old, new)
+
+with open(path, 'w', encoding='utf-8') as f:
+    f.write(content)
+print(f"    Patch 1e: {count}/{len(fixes)} fix applicati in {path}")
+PATCH_STATS
 
 # ── 1c. Patch PreferencesDialog.py: disabilita pulsanti assoc su Linux ───────
 echo "==> Patch pulsanti associazione file (Linux)..."
@@ -206,7 +338,20 @@ else:
     print(f"    Patch già presente o testo non trovato in {path}")
 PATCH3
 
-# ── 2. Installazione nell'albero del pacchetto ────────────────────────────────
+# ── 2. Build della wheel (DOPO le patch) ─────────────────────────────────────
+echo "==> Costruzione wheel con pip + hatchling..."
+WHEEL_DIR="$BUILD_DIR/wheel"
+mkdir -p "$WHEEL_DIR"
+
+"$PYTHON" -m pip wheel \
+    --no-deps \
+    --wheel-dir "$WHEEL_DIR" \
+    "$SCRIPT_DIR"
+
+WHEEL_FILE=$(ls "$WHEEL_DIR"/*.whl | head -n1)
+echo "    Wheel: $WHEEL_FILE"
+
+# ── 3. Installazione nell'albero del pacchetto ────────────────────────────────
 echo "==> Installazione nell'albero del pacchetto..."
 mkdir -p "$INSTALL_PREFIX/share/applications"
 mkdir -p "$INSTALL_PREFIX/share/pixmaps"
@@ -228,7 +373,7 @@ if [[ -n "$SITE_PKG" ]]; then
     rmdir "$(dirname "$SITE_PKG")" 2>/dev/null || true
 fi
 
-# ── 3. Desktop entry & icona ─────────────────────────────────────────────────
+# ── 4. Desktop entry & icona ─────────────────────────────────────────────────
 echo "==> Creazione .desktop e icona..."
 
 ICON_SRC="$SCRIPT_DIR/installer/songpressplusplus.ico"
@@ -257,17 +402,30 @@ fi
 rm -f "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}-"*.png
 
 # Installa icona nelle cartelle hicolor/mimetypes per KDE/GNOME
-# (necessario perché KDE usa hicolor per le icone dei tipi MIME)
+# (necessario perché KDE usa hicolor per le icone e Discover per la card).
+# Se ImageMagick non c'è, si copia comunque il PNG (senza ridimensionare):
+# meglio un'icona non ottimizzata che nessuna icona.
 if [[ -f "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}.png" ]]; then
     for SIZE in 256 128 64 48; do
         mkdir -p "$INSTALL_PREFIX/share/icons/hicolor/${SIZE}x${SIZE}/apps"
         mkdir -p "$INSTALL_PREFIX/share/icons/hicolor/${SIZE}x${SIZE}/mimetypes"
+        DST_APP="$INSTALL_PREFIX/share/icons/hicolor/${SIZE}x${SIZE}/apps/${DEB_NAME}.png"
+        DST_MIME="$INSTALL_PREFIX/share/icons/hicolor/${SIZE}x${SIZE}/mimetypes/${DEB_NAME}.png"
         if command -v convert &>/dev/null; then
-            convert "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}.png"                 -resize "${SIZE}x${SIZE}"                 "$INSTALL_PREFIX/share/icons/hicolor/${SIZE}x${SIZE}/apps/${DEB_NAME}.png"                 2>/dev/null || true
-            cp "$INSTALL_PREFIX/share/icons/hicolor/${SIZE}x${SIZE}/apps/${DEB_NAME}.png"                "$INSTALL_PREFIX/share/icons/hicolor/${SIZE}x${SIZE}/mimetypes/${DEB_NAME}.png"                2>/dev/null || true
+            convert "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}.png" \
+                -resize "${SIZE}x${SIZE}" "$DST_APP" 2>/dev/null || \
+                cp "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}.png" "$DST_APP"
+        else
+            cp "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}.png" "$DST_APP"
         fi
+        cp "$DST_APP" "$DST_MIME" 2>/dev/null || true
     done
     echo "    Icone hicolor installate (256/128/64/48)"
+else
+    echo "    [ATTENZIONE] Nessuna icona trovata!"
+    echo "                 Metti un PNG in: installer/songpressplusplus.png"
+    echo "                 (oppure installer/songpressplusplus.ico + ImageMagick)."
+    echo "                 Senza icona Discover mostrerà il segnaposto '...'."
 fi
 
 # File XML tipo MIME per estensioni ChordPro
@@ -304,6 +462,42 @@ MimeType=text/x-chordpro;
 StartupNotify=true
 DESKTOP
 
+# ── 4b. AppStream metainfo ───────────────────────────────────────────────────
+# È ciò che Discover usa per la scheda del pacchetto: nome leggibile,
+# icona, autore e licenza. Senza questo file mostra il nome del file
+# (es. "songpressplusplus_7") e nessuna icona.
+echo "==> Creazione AppStream metainfo..."
+mkdir -p "$INSTALL_PREFIX/share/metainfo"
+cat > "$INSTALL_PREFIX/share/metainfo/${DEB_NAME}.metainfo.xml" <<METAINFO
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>${DEB_NAME}</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>${LICENSE}</project_license>
+  <name>Songpress++</name>
+  <developer id="io.github.denisov21">
+    <name>${AUTHOR_NAME}</name>
+  </developer>
+  <developer_name>${AUTHOR_NAME}</developer_name>
+  <summary>Song typesetting program that generates high-quality songbooks</summary>
+  <description>
+    <p>
+      Songpress++ is a free, easy-to-use song typesetting program
+      that generates high-quality songbooks in PDF and PPTX.
+    </p>
+  </description>
+  <launchable type="desktop-id">${DEB_NAME}.desktop</launchable>
+  <icon type="stock">${DEB_NAME}</icon>
+  <icon type="local">/usr/share/pixmaps/${DEB_NAME}.png</icon>
+  <url type="homepage">${HOMEPAGE}</url>
+  <categories>
+    <category>Office</category>
+    <category>Publishing</category>
+  </categories>
+  <content_rating type="oars-1.1"/>
+</component>
+METAINFO
+
 # ── 4. File DEBIAN/control ────────────────────────────────────────────────────
 echo "==> Scrittura DEBIAN/control..."
 mkdir -p "$PKG_ROOT/DEBIAN"
@@ -323,10 +517,32 @@ Homepage: ${HOMEPAGE}
 Description: ${DESCRIPTION}
 CONTROL
 
+# ── 4c. File copyright (DEP-5) ───────────────────────────────────────────────
+# Convenzione Debian: la licenza sta in /usr/share/doc/<pkg>/copyright.
+echo "==> Scrittura copyright (DEP-5)..."
+DOC_DIR="$INSTALL_PREFIX/share/doc/${DEB_NAME}"
+mkdir -p "$DOC_DIR"
+cat > "$DOC_DIR/copyright" <<COPYRIGHT
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Songpress++
+Source: ${HOMEPAGE}
+
+Files: *
+Copyright: $(date +%Y) ${AUTHOR_NAME}
+License: ${LICENSE}
+COPYRIGHT
+
 # ── 5. Script postinst / postrm ───────────────────────────────────────────────
-cat > "$PKG_ROOT/DEBIAN/postinst" <<'POSTINST'
+# Parte 1 (heredoc NON quotato): inietta la lista PIP_DEPS da build_deb.sh.
+cat > "$PKG_ROOT/DEBIAN/postinst" <<POSTINST_HEAD
 #!/bin/sh
 set -e
+# Dipendenze solo-PyPI (nome_pip:modulo), iniettate da build_deb.sh.
+PIP_DEPS="${PIP_DEPS}"
+POSTINST_HEAD
+
+# Parte 2 (heredoc quotato): logica eseguita sul sistema di destinazione.
+cat >> "$PKG_ROOT/DEBIAN/postinst" <<'POSTINST_BODY'
 if command -v update-mime-database >/dev/null 2>&1; then
     update-mime-database /usr/share/mime || true
 fi
@@ -336,7 +552,31 @@ fi
 if command -v gtk-update-icon-cache >/dev/null 2>&1; then
     gtk-update-icon-cache -qf /usr/share/icons/hicolor || true
 fi
-POSTINST
+
+# ── Installa le dipendenze Python presenti solo su PyPI (non nei repo Debian) ──
+# python-pptx e pyshortcuts non sono pacchettizzati in Debian: si installano
+# via pip. pywin32 è escluso (solo Windows). Passo NON bloccante: se manca la
+# rete, l'installazione del pacchetto riesce comunque.
+PY=$(command -v python3 || true)
+if [ -n "$PY" ]; then
+    # Debian 12+/13 marca l'ambiente come "externally managed" (PEP 668):
+    # serve --break-system-packages per installare a livello di sistema.
+    BSP=""
+    if "$PY" -m pip install --help 2>/dev/null | grep -q -- --break-system-packages; then
+        BSP="--break-system-packages"
+    fi
+    echo "$PIP_DEPS" | while IFS=: read PIP_NAME MOD_NAME; do
+        [ -z "$PIP_NAME" ] && continue
+        if "$PY" -c "import $MOD_NAME" >/dev/null 2>&1; then
+            echo "Songpress++: dipendenza '$PIP_NAME' già presente."
+        else
+            echo "Songpress++: installo '$PIP_NAME' via pip..."
+            "$PY" -m pip install $BSP --root-user-action=ignore --no-warn-script-location "$PIP_NAME" \
+                || echo "Songpress++: [ATTENZIONE] non sono riuscito a installare '$PIP_NAME'. Fallo a mano con:  sudo pip3 install $BSP $PIP_NAME"
+        fi
+    done
+fi
+POSTINST_BODY
 chmod 0755 "$PKG_ROOT/DEBIAN/postinst"
 
 cat > "$PKG_ROOT/DEBIAN/postrm" <<'POSTRM'
