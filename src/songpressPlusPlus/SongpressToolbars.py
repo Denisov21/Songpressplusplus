@@ -46,23 +46,38 @@ class ShowChordsChoice(wx.Choice):
         self.SetSelection(max(0, min(2, int(value))))
         self._freezeSize()
 
+    #: Margine (px) per la freccia del dropdown + bordi, che GTK3 non
+    #: include in modo affidabile nella sola misura del testo.
+    _ARROW_MARGIN = 44
+    #: Larghezza minima di sicurezza contro il width=0 su GTK3.
+    _MIN_WIDTH = 120
+
     def _freezeSize(self):
-        """Fissa una dimensione esplicita e deterministica.
+        """Fissa una dimensione esplicita e deterministica, larga quanto
+        l'etichetta più lunga.
 
         Su GTK3, quando un wx.Choice viene aggiunto a una AuiToolBar con
         AddControl, la toolbar interroga GetBestSize()/MinSize durante il
         Realize: se il widget non è ancora completamente realizzato può
         restituire larghezza 0 e la toolbar riserva 0 px → il menu a tendina
         "a volte non appare" (in tema chiaro e scuro). Congelando una MinSize
-        concreta (calcolata sull'etichetta più lunga, con un valore minimo di
-        sicurezza) la toolbar riserva sempre lo spazio corretto e il controllo
+        concreta la toolbar riserva sempre lo spazio corretto e il controllo
         viene disegnato in modo affidabile.
+
+        La larghezza è calcolata sull'etichetta più lunga misurata con il
+        font reale del controllo (GetTextExtent) più un margine per la
+        freccia del dropdown e i bordi, così il testo non viene mai troncato.
+        Nessun tetto massimo: la voce "Una strofa per ogni schema di accordi"
+        deve rientrare per intero.
         """
         best = self.GetBestSize()
-        w = best.width if best.width > 20 else 230
-        w = min(w, 230)   # tetto: il testo lungo viene troncato ma resta nel tooltip/menu
+        # Etichette effettive del controllo (già tradotte).
+        labels = [self.GetString(i) for i in range(self.GetCount())]
+        text_w = max((self.GetTextExtent(lbl).width for lbl in labels),
+                     default=0)
+        w = max(text_w + self._ARROW_MARGIN, best.width, self._MIN_WIDTH)
         h = best.height if best.height > 10 else -1
-        size = wx.Size(w, h)
+        size = wx.Size(int(w), h)
         self.SetInitialSize(size)
         self.SetMinSize(size)
 
@@ -167,7 +182,7 @@ class SongpressToolbarsMixin:
         if pane.IsOk():
             pane.BestSize(sz)
             pane.MaxSize(sz)
-            pane.MinSize(wx.Size(1, 1))
+            pane.MinSize(sz)
 
     def _FinalizeToolbarLayout(self):
         """Ricalcola il layout di tutte le toolbar con MaxSize = contenuto.
@@ -188,7 +203,7 @@ class SongpressToolbarsMixin:
                 if pane.IsOk():
                     pane.BestSize(sz)
                     pane.MaxSize(sz)
-                    pane.MinSize(wx.Size(1, 1))
+                    pane.MinSize(sz)
             self._mgr.DoUpdate()
             # DoUpdate → SwitchToolBarOrientation forza
             # SetGripperVisible(True) sulle toolbar: resettiamo

@@ -209,6 +209,16 @@ kbuildsycoca6 --noincremental 2>/dev/null || true
 
 Dopo aver eseguito i comandi, il doppio click sui file `.crd` tornerà ad usare le associazioni del pacchetto `.deb`.
 
+---
+
+### Percorso di installazione dei file
+
+Dopo l'installazione del pacchetto `.deb`, i file del programma vengono copiati in:
+
+```
+/usr/local/lib/python3.13/dist-packages/songpressplusplus/
+```
+
 ## Installazione su MAC
 
 (Mai testata)
