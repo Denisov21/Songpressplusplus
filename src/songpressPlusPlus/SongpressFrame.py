@@ -873,6 +873,16 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self._mgr.SetArtProvider(self._dockArt)
         # ───────────────────────────────────────────────────────────────
 
+        # Cambio tema del desktop a caldo (soprattutto Linux/GTK): senza questo
+        # gestore, la cornice AUI e la toolbar dell'anteprima restano sui colori
+        # del vecchio tema finché non si riavvia il programma. Windows aggiorna
+        # i controlli standard da solo, ma la dock-art AUI va comunque re-inizializzata.
+        self.frame.Bind(wx.EVT_SYS_COLOUR_CHANGED, self._OnSysColourChanged)
+        # Su wxGTK EVT_SYS_COLOUR_CHANGED non scatta e la palette wx è congelata
+        # all'avvio: ci agganciamo quindi direttamente al segnale di GTK per
+        # sapere quando l'utente cambia tema, e forziamo il ridisegno.
+        self._StartThemeWatch()
+
         # ── Toolbars (Standard, Format, Insert) ──────────────────────
         self._BuildToolbars()
         self._ApplyMainToolBarVisibility()
@@ -986,6 +996,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
     def OnClose(self, evt):
         if hasattr(self, '_lockKeysTimer') and self._lockKeysTimer.IsRunning():
             self._lockKeysTimer.Stop()
+        self._StopThemeWatch()
         self.SaveWindowGeometry()
         self._SavePageMargins()
         self._SaveTempoDisplay()
@@ -995,6 +1006,85 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.pref.Save()
         self.config.Flush()
         super().OnClose(evt)
+
+    def _RefreshThemeColours(self):
+        """Riapplica il tema corrente a dock-art AUI e anteprima, senza riavvio.
+
+        Su Linux i pannelli tornano a seguire il tema GTK (via wx.NullColour) e
+        vengono ridisegnati. Su Windows resta un semplice refresh, innocuo.
+        """
+        try:
+            # Prova a rileggere le metriche/colori (utile su Windows).
+            if getattr(self, '_dockArt', None) is not None and hasattr(self._dockArt, 'Init'):
+                self._dockArt.Init()
+        except Exception:
+            pass
+        try:
+            if getattr(self, 'previewCanvas', None) is not None and \
+               hasattr(self.previewCanvas, 'RefreshSystemColours'):
+                self.previewCanvas.RefreshSystemColours()
+        except Exception:
+            pass
+        try:
+            self._mgr.Update()
+        except Exception:
+            pass
+        try:
+            self.frame.Refresh()
+        except Exception:
+            pass
+
+    def _OnSysColourChanged(self, evt):
+        """Gestore EVT_SYS_COLOUR_CHANGED (affidabile solo su Windows)."""
+        self._RefreshThemeColours()
+        evt.Skip()
+
+    def _StartThemeWatch(self):
+        """Aggancia il segnale GTK di cambio tema (Linux). No-op altrove.
+
+        wx non ci avvisa dei cambi tema su GTK, ma GTK sì: ci colleghiamo a
+        GtkSettings ('gtk-theme-name' e 'gtk-application-prefer-dark-theme').
+        Se PyGObject non è disponibile, semplicemente non facciamo nulla.
+        """
+        self._gtk_settings = None
+        self._gtk_handlers = []
+        try:
+            import gi
+            gi.require_version('Gtk', '3.0')
+            from gi.repository import Gtk
+            settings = Gtk.Settings.get_default()
+            if settings is not None:
+                self._gtk_settings = settings
+                self._gtk_handlers.append(
+                    settings.connect('notify::gtk-theme-name', self._OnGtkThemeChanged))
+                self._gtk_handlers.append(
+                    settings.connect('notify::gtk-application-prefer-dark-theme',
+                                     self._OnGtkThemeChanged))
+        except Exception:
+            self._gtk_settings = None
+            self._gtk_handlers = []
+
+    def _OnGtkThemeChanged(self, *args):
+        """Callback dal loop GTK: rimanda il refresh al loop wx con CallAfter."""
+        try:
+            wx.CallAfter(self._RefreshThemeColours)
+        except Exception:
+            pass
+
+    def _StopThemeWatch(self):
+        """Scollega i segnali GTK alla chiusura."""
+        try:
+            s = getattr(self, '_gtk_settings', None)
+            if s is not None:
+                for h in getattr(self, '_gtk_handlers', []):
+                    try:
+                        s.disconnect(h)
+                    except Exception:
+                        pass
+            self._gtk_settings = None
+            self._gtk_handlers = []
+        except Exception:
+            pass
 
     def _ApplyRestartMenuVisibility(self):
         """Mostra o nasconde la voce 'Riavvia Songpress++' nel menu File

@@ -135,13 +135,23 @@ class PreviewCanvas(object):
         if not embedded:
             # ── Toolbar compatta ────────────────────────────────────────
             toolbar = wx.Panel(parent_win, style=wx.BORDER_NONE)
-            toolbar.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE))
+            # NB: NON fissiamo il colore con SYS_COLOUR_BTNFACE. Su wxGTK quel
+            # valore viene letto una sola volta all'avvio e resta congelato, per
+            # cui la toolbar non seguirebbe i cambi di tema del desktop. Lasciando
+            # il colore di default è GTK stesso a ridipingerla col tema corrente,
+            # esattamente come fa già coi pulsanti nativi. (Su Windows: invariato.)
+            toolbar.SetBackgroundColour(wx.NullColour)
             tb_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
             # Pulsante copia (sostituisce HyperlinkCtrl)
+            # L'icona ART_COPY del tema simbolico esce grigio chiarissimo sul
+            # tema chiaro (poco contrasto): la disegniamo noi nel colore del
+            # testo dei pulsanti, così sul tema chiaro è nera e ben visibile
+            # (e resta leggibile anche sul tema scuro).
             btn_copy = wx.BitmapButton(
                 toolbar, wx.ID_ANY,
-                wx.ArtProvider.GetBitmap(wx.ART_COPY, wx.ART_TOOLBAR, (16, 16)),
+                self._make_copy_bitmap(
+                    wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNTEXT), 16),
                 style=wx.BORDER_NONE,
             )
             btn_copy.SetToolTip(_("Copy formatted song to clipboard"))
@@ -153,7 +163,7 @@ class PreviewCanvas(object):
             # Zoom out (pulsante piccolo a sinistra dello slider)
             btn_zoom_out = wx.BitmapButton(
                 toolbar, wx.ID_ANY,
-                wx.ArtProvider.GetBitmap(wx.ART_MINUS, wx.ART_TOOLBAR, (16, 16)),
+                self._make_sign_bitmap(self._ZOOM_RED, plus=False, px=16),
                 style=wx.BORDER_NONE,
             )
             btn_zoom_out.SetToolTip(_("Zoom out (Ctrl+-)"))
@@ -173,7 +183,7 @@ class PreviewCanvas(object):
             # Zoom in (pulsante piccolo a destra dello slider)
             btn_zoom_in = wx.BitmapButton(
                 toolbar, wx.ID_ANY,
-                wx.ArtProvider.GetBitmap(wx.ART_PLUS, wx.ART_TOOLBAR, (16, 16)),
+                self._make_sign_bitmap(self._ZOOM_RED, plus=True, px=16),
                 style=wx.BORDER_NONE,
             )
             btn_zoom_in.SetToolTip(_("Zoom in (Ctrl++)"))
@@ -225,6 +235,10 @@ class PreviewCanvas(object):
             toolbar.Layout()
             outer.Add(toolbar, 0, wx.EXPAND)
 
+            # Riferimento alla toolbar per poterne riaggiornare i colori
+            # quando cambia il tema del desktop (vedi RefreshSystemColours).
+            self._toolbar = toolbar
+
             # ── Separatore ───────────────────────────────────────────────
             outer.Add(wx.StaticLine(parent_win), 0, wx.EXPAND)
 
@@ -241,11 +255,20 @@ class PreviewCanvas(object):
             btn_fit.Bind(wx.EVT_BUTTON,        self._OnFitWidth)
             self._zoom_slider.Bind(wx.EVT_SLIDER, self._OnZoomSlider)
             btn_fullscreen.Bind(wx.EVT_BUTTON, self._OnFullscreen)
+
+            # Applica subito i colori freschi del tema GTK (sfondo toolbar +
+            # icona copia col colore-testo corrente). Ripetuto a ogni cambio
+            # tema tramite RefreshSystemColours (chiamata dal watcher GTK).
+            try:
+                self._ApplyGtkTheme()
+            except Exception:
+                pass
         else:
             self.link = None
             self._zoom_label  = None
             self._zoom_slider = None
             self._page_label  = None
+            self._toolbar     = None
 
         # Cache dimensioni ultimo render (px pre-zoom) — inizializzate PRIMA
         # dei bind degli eventi perché EVT_SIZE su Windows può scattare
@@ -279,6 +302,163 @@ class PreviewCanvas(object):
         self._SyncBgColourToDecorator()
         self.main_panel.SetSizer(outer)
         self.main_panel.Layout()
+
+        # Su Linux/GTK, se il tema del desktop cambia mentre il programma è
+        # aperto, i pannelli con colore impostato esplicitamente (la toolbar,
+        # che usa SYS_COLOUR_BTNFACE) restano "congelati" sul vecchio colore
+        # finché non si riavvia. Intercettando EVT_SYS_COLOUR_CHANGED
+        # rileggiamo i colori di sistema e ridisegniamo, così il cambio tema
+        # è immediato senza riavvio. Innocuo su Windows.
+        self.main_panel.Bind(wx.EVT_SYS_COLOUR_CHANGED, self._OnSysColourChanged)
+
+    # -----------------------------------------------------------------------
+    # Icona "copia" disegnata a mano (per controllarne il colore)
+    # -----------------------------------------------------------------------
+
+    @staticmethod
+    def _make_copy_bitmap(colour, px=16):
+        """Disegna l'icona 'copia' (due fogli sovrapposti) nel colore dato.
+
+        Sfondo trasparente, contorni nel colore richiesto: così sul tema chiaro
+        l'icona è nera e ben visibile, senza dipendere dal set simbolico GTK.
+        """
+        try:
+            if colour is None or not colour.IsOk():
+                colour = wx.Colour(0, 0, 0)
+        except Exception:
+            colour = wx.Colour(0, 0, 0)
+
+        bmp = wx.Bitmap.FromRGBA(px, px, 0, 0, 0, 0)   # tutto trasparente
+        dc = wx.MemoryDC(bmp)
+        gc = wx.GraphicsContext.Create(dc)
+        if gc is not None:
+            gc.SetPen(wx.Pen(colour, 1))
+            gc.SetBrush(wx.TRANSPARENT_BRUSH)
+            # foglio posteriore e foglio anteriore, leggermente sfalsati
+            gc.DrawRectangle(5.5, 2.5, 7, 9)
+            gc.DrawRectangle(2.5, 5.5, 7, 9)
+        dc.SelectObject(wx.NullBitmap)
+        return bmp
+
+    # Rosso usato per le icone zoom (allineato al rosso "negativo" di Breeze)
+    _ZOOM_RED = wx.Colour(218, 68, 83)   # #DA4453
+
+    @staticmethod
+    def _make_sign_bitmap(colour, plus=False, px=16):
+        """Disegna un '−' (o un '+') nel colore dato, sfondo trasparente.
+
+        Serve per rendere i pulsanti zoom coerenti (entrambi rossi), invece di
+        affidarsi alle icone simboliche del tema che colorano diversamente
+        'list-remove' e 'list-add'.
+        """
+        try:
+            if colour is None or not colour.IsOk():
+                colour = wx.Colour(0, 0, 0)
+        except Exception:
+            colour = wx.Colour(0, 0, 0)
+
+        bmp = wx.Bitmap.FromRGBA(px, px, 0, 0, 0, 0)   # tutto trasparente
+        dc = wx.MemoryDC(bmp)
+        gc = wx.GraphicsContext.Create(dc)
+        if gc is not None:
+            gc.SetPen(wx.Pen(colour, 2))
+            c = px / 2.0
+            r = px * 0.30
+            gc.StrokeLine(c - r, c, c + r, c)          # barra orizzontale (−)
+            if plus:
+                gc.StrokeLine(c, c - r, c, c + r)      # barra verticale (+)
+        dc.SelectObject(wx.NullBitmap)
+        return bmp
+
+    # -----------------------------------------------------------------------
+    # Cambio tema desktop (Linux/GTK): riapplica i colori di sistema a caldo
+    # -----------------------------------------------------------------------
+
+    def _OnSysColourChanged(self, evt):
+        """Gestore EVT_SYS_COLOUR_CHANGED: il tema del desktop è cambiato."""
+        self.RefreshSystemColours()
+        # Lascia propagare l'evento ai figli (comportamento standard wx).
+        evt.Skip()
+
+    @staticmethod
+    def _fresh_gtk_colours():
+        """Legge (bg, fg) FRESCHI dal tema GTK corrente.
+
+        wx.SystemSettings.GetColour su GTK congela i colori all'avvio; GTK
+        invece li conosce sempre aggiornati. Restituisce due wx.Colour, oppure
+        (None, None) se PyGObject/GTK non sono disponibili.
+        """
+        try:
+            import gi
+            gi.require_version('Gtk', '3.0')
+            from gi.repository import Gtk
+            ctx = Gtk.Button().get_style_context()
+
+            def _col(names):
+                for n in names:
+                    ok, rgba = ctx.lookup_color(n)
+                    if ok:
+                        return wx.Colour(int(round(rgba.red * 255)),
+                                         int(round(rgba.green * 255)),
+                                         int(round(rgba.blue * 255)))
+                return None
+
+            bg = _col(['theme_bg_color', 'theme_base_color', 'bg_color'])
+            fg = _col(['theme_fg_color', 'theme_text_color', 'fg_color'])
+            return bg, fg
+        except Exception:
+            return None, None
+
+    @staticmethod
+    def _tint_toolbar(toolbar, bg, fg, copy_btn=None):
+        """Applica bg/fg del tema ai figli 'non nativi' di una toolbar.
+
+        I pulsanti nativi (wx.Button) e lo slider si tematizzano da soli e non
+        vengono toccati. StaticText/StaticLine/BitmapButton ricevono lo sfondo;
+        le StaticText anche il colore testo. Se copy_btn è dato, ne ridisegna
+        l'icona nel colore-testo fresco.
+        """
+        if toolbar is None:
+            return
+        if bg is not None and bg.IsOk():
+            toolbar.SetBackgroundColour(bg)
+        for ch in toolbar.GetChildren():
+            if isinstance(ch, wx.Slider):
+                continue
+            # wx.BitmapButton deriva da wx.Button: lo vogliamo colorare, i
+            # pulsanti di testo nativi no (si tematizzano da soli).
+            if isinstance(ch, wx.Button) and not isinstance(ch, wx.BitmapButton):
+                continue
+            if bg is not None and bg.IsOk():
+                ch.SetBackgroundColour(bg)
+            if fg is not None and fg.IsOk() and isinstance(ch, wx.StaticText):
+                ch.SetForegroundColour(fg)
+        if copy_btn is not None and hasattr(copy_btn, 'SetBitmap'):
+            col = fg if (fg is not None and fg.IsOk()) \
+                else wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNTEXT)
+            copy_btn.SetBitmap(PreviewCanvas._make_copy_bitmap(col, 16))
+        toolbar.Refresh(True)
+        toolbar.Update()
+
+    def _ApplyGtkTheme(self):
+        """Riporta toolbar, etichette e icona copia ai colori GTK correnti."""
+        bg, fg = self._fresh_gtk_colours()
+        self._tint_toolbar(getattr(self, '_toolbar', None), bg, fg,
+                            copy_btn=getattr(self, 'link', None))
+        if getattr(self, 'main_panel', None) is not None:
+            self.main_panel.Refresh()
+            self.main_panel.Update()
+        fs = getattr(self, '_fullscreen_frame', None)
+        if fs is not None and hasattr(fs, 'RefreshSystemColours'):
+            fs.RefreshSystemColours()
+
+    def RefreshSystemColours(self):
+        """Chiamata dal watcher GTK a ogni cambio tema: riapplica i colori."""
+        try:
+            self._ApplyGtkTheme()
+        except Exception:
+            # Se qualche widget è già stato distrutto ignoriamo silenziosamente.
+            pass
 
     # -----------------------------------------------------------------------
     # Paint
@@ -1052,7 +1232,9 @@ class _FullscreenPreviewFrame(wx.Frame):
 
         # ── Toolbar minimale ──────────────────────────────────────────────
         toolbar = wx.Panel(self, style=wx.BORDER_NONE)
-        toolbar.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE))
+        # Colore di default (non SYS_COLOUR_BTNFACE congelato) → segue il tema GTK.
+        toolbar.SetBackgroundColour(wx.NullColour)
+        self._fs_toolbar = toolbar
         tb_sz = wx.BoxSizer(wx.HORIZONTAL)
 
         btn_close = wx.Button(toolbar, wx.ID_ANY, _("Exit full screen (Esc / F11)"),
@@ -1089,6 +1271,8 @@ class _FullscreenPreviewFrame(wx.Frame):
 
         toolbar.SetSizer(tb_sz)
         toolbar.Layout()
+        # Colori freschi del tema GTK anche per la finestra fullscreen.
+        PreviewCanvas._tint_toolbar(toolbar, *PreviewCanvas._fresh_gtk_colours())
 
         # ── Canvas scrolled ───────────────────────────────────────────────
         self._panel = wx.ScrolledWindow(self, style=wx.BORDER_NONE)
@@ -1218,6 +1402,18 @@ class _FullscreenPreviewFrame(wx.Frame):
 
         self.owner._on_click_callback(line_num)
         evt.Skip()
+
+    # ── Cambio tema desktop (Linux/GTK) ───────────────────────────────────
+
+    def RefreshSystemColours(self):
+        """Fa rileggere il tema GTK alla toolbar della finestra fullscreen."""
+        try:
+            bg, fg = PreviewCanvas._fresh_gtk_colours()
+            PreviewCanvas._tint_toolbar(getattr(self, '_fs_toolbar', None), bg, fg)
+            if getattr(self, '_panel', None) is not None:
+                self._panel.Refresh()
+        except Exception:
+            pass
 
     # ── Chiusura ──────────────────────────────────────────────────────────
 
