@@ -43,8 +43,9 @@
           <label>E_sporta</label>
           <bitmap>../img/export.png</bitmap>
           <object class="wxMenuItem" name="exportToClipboardAsAVectorImage">
-            <label>Esporta negli _appunti come immagine vettoriale</label>
+            <label>Esporta negli _appunti come immagine</label>
             <accel>CTRL+D</accel>
+            <bitmap>../img/copyAsImage.png</bitmap>
             <help>Copia la canzone formattata negli appunti per incollarla in qualsiasi programma</help>
           </object>
           <object class="wxMenuItem" name="exportAsSvg">

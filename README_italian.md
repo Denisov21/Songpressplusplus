@@ -34,12 +34,12 @@ Poi avviare `src/Avvio SONGPRESS.vbs` oppure `src/Avvio SONGPRESS2.vbs`.
 
 In alternativa, è possibile avviare l'applicazione direttamente con Python dalla root del progetto:
 
+> **⚠️ Nota:** il percorso qui sotto è solo un **esempio** ed è **da verificare**. Sostituiscilo con il percorso effettivo in cui hai clonato o estratto il progetto sul tuo sistema.
+
 ```
 cd E:\Users\Utente\Downloads\SongpressV33_OK\Songpressplusplus
 python main.py
 ```
-
-> **Nota:** Il percorso indicato (`E:\Users\Utente\Downloads\SongpressV33_OK\Songpressplusplus`) è un esempio. Sostituiscilo con il percorso effettivo in cui hai clonato o estratto il progetto sul tuo sistema.
 
 > **Nota:** `main.py` va eseguito dalla directory radice del progetto (`Songpressplusplus\`), dove si trova, affinché il pacchetto `songpressPlusPlus` venga trovato correttamente nel Python path.
 
@@ -67,6 +67,21 @@ Assicurati di avere installati i seguenti pacchetti:
 sudo apt install python3 python3-pip python3-venv fakeroot dpkg imagemagick
 ```
 
+> **Utenti Wayland:** per copiare il brano negli appunti **come immagine** è
+> necessario il pacchetto `wl-clipboard` (che fornisce `wl-copy`). Il pacchetto
+> `.deb` lo indica tra i `Recommends`, quindi `apt` lo installa automaticamente.
+> Se esegui da sorgente su una sessione Wayland, installalo manualmente:
+> ```bash
+> sudo apt install wl-clipboard
+> ```
+> Su sessioni X11 non serve. Per sapere su quale sessione sei:
+> ```bash
+> # rapido
+> echo "$XDG_SESSION_TYPE"      # stampa  wayland  oppure  x11
+> # autorevole (systemd-logind, consigliato sulle distro recenti)
+> loginctl show-session "$(loginctl --no-legend list-sessions | awk -v u="$USER" '$3==u {print $1; exit}')" -p Type --value
+> ```
+
 ---
 
 ### Creazione del pacchetto .deb
@@ -74,6 +89,8 @@ sudo apt install python3 python3-pip python3-venv fakeroot dpkg imagemagick
 Lo script `build_deb.sh` si trova nella root del progetto, accanto a `pyproject.toml`.
 
 #### 1. Entra nella cartella del progetto
+
+> **⚠️ Nota:** il percorso qui sotto è solo un **esempio** ed è **da verificare**. Sostituiscilo con il percorso effettivo in cui si trova il progetto sul tuo sistema.
 
 ```bash
 cd /home/denis/Songpress_DEFINitiVO3/SongpressPlusPlus
@@ -101,18 +118,20 @@ Lo script esegue automaticamente:
 - Generazione della voce nel menu applicazioni (file `.desktop`)
 - Produzione del file `.deb` finale nella cartella `build_deb/`
 
-Al termine vedrai:
+Al termine vedrai (il numero di versione mostrato è solo un **esempio**, dipende da quello in `pyproject.toml`):
 
 ```
-✅  Pacchetto creato: build_deb/songpressplusplus_6.1.1_all.deb
+✅  Pacchetto creato: build_deb/songpressplusplus_7.0.2_all.deb
 ```
 
 ---
 
 ### Installazione del pacchetto .deb
 
+> **⚠️ Nota:** il numero di versione (`7.0.2`) è solo un **esempio** ed è **da verificare**: usa quello effettivamente prodotto dallo script, mostrato a schermo al termine della build.
+
 ```bash
-sudo dpkg -i "build_deb/songpressplusplus_6.1.1_all.deb"
+sudo dpkg -i "build_deb/songpressplusplus_7.0.2_all.deb"
 ```
 
 In caso di dipendenze mancanti:
@@ -129,7 +148,7 @@ sudo apt-get install -f
 
 ```toml
 [project]
-version = "6.2.0"   # ← modifica questo numero
+version = "7.0.2"   # ← modifica questo numero
 ```
 
 #### 2. Rimuovi la versione installata, ricostruisci e reinstalla
@@ -143,7 +162,7 @@ Al termine dello script, `build_deb/` conterrà il nuovo `.deb` con il numero
 di versione aggiornato. Installalo con il comando suggerito a schermo, ad esempio:
 
 ```bash
-sudo dpkg -i "build_deb/songpressplusplus_6.2.0_all.deb"
+sudo dpkg -i "build_deb/songpressplusplus_7.0.2_all.deb"
 ```
 
 > **Suggerimento:** non è necessario ricordare il numero di versione esatto —
@@ -185,6 +204,16 @@ songpressplusplus
 - Il pacchetto è testato su **Debian 13 / Ubuntu 24.04** con Python 3.13 e wxPython 4.2.3 GTK3
 - I messaggi GTK alla console (`gtk_image_menu_item_set_image`, `ScreenToClient`) sono innocui e non indicano errori
 - Su sistemi Wayland il programma usa automaticamente il backend X11 tramite XWayland
+- Su Wayland, la **Copia come immagine** usa `wl-copy` (dal pacchetto `wl-clipboard`) per mettere l'immagine negli appunti, perché la clipboard di wxGTK su Wayland registra solo formati testo. Il pacchetto è un `Recommends` del `.deb`; se manca, il programma mostra un messaggio che spiega come installarlo.
+
+> **Come scoprire se stai usando X11 o Wayland.** Metodo rapido:
+> ```bash
+> echo "$XDG_SESSION_TYPE"      # stampa  wayland  oppure  x11
+> ```
+> Metodo autorevole (systemd-logind, consigliato sulle distro recenti):
+> ```bash
+> loginctl show-session "$(loginctl --no-legend list-sessions | awk -v u="$USER" '$3==u {print $1; exit}')" -p Type --value
+> ```
 
 ---
 
@@ -214,6 +243,8 @@ Dopo aver eseguito i comandi, il doppio click sui file `.crd` tornerà ad usare 
 ### Percorso di installazione dei file
 
 Dopo l'installazione del pacchetto `.deb`, i file del programma vengono copiati in:
+
+> **⚠️ Nota:** il percorso qui sotto è solo un **esempio** ed è **da verificare**: la versione di Python (`python3.13`) può variare a seconda del sistema.
 
 ```
 /usr/local/lib/python3.13/dist-packages/songpressplusplus/
@@ -290,7 +321,7 @@ Dopo l'installazione del pacchetto `.deb`, i file del programma vengono copiati 
 
 ### Esportazione e appunti
 - Possibilità di **incollare le canzoni formattate** come immagine vettoriale in qualsiasi applicazione Windows o Linux (Affinity, Microsoft Word, LibreOffice, Microsoft Publisher, Inkscape, ecc.)
-- **Copia come immagine**: copia il brano formattato (o le strofe selezionate) negli appunti come Windows Metafile (WMF) su Windows, o come SVG + PNG su Linux
+- **Copia come immagine**: copia il brano formattato (o le strofe selezionate) negli appunti come Windows Metafile (WMF) su Windows, o come SVG + PNG su Linux (su Wayland il PNG viene messo negli appunti tramite `wl-copy`)
 - **Esportazione in EMF** (Windows Metafile, solo Windows) e in formato **vettoriale SVG**
 - **Esportazione in PNG** e **HTML** (pagine web complete o frammenti)
 - **Copia solo testo**: copia il testo del brano senza accordi negli appunti
@@ -303,15 +334,30 @@ Dopo l'installazione del pacchetto `.deb`, i file del programma vengono copiati 
 
 ### Interfaccia e preferenze
 - **Interfaccia bilingue**: italiano e inglese
+- **Adattamento automatico al tema di sistema**: su **Linux** l'interfaccia utente rispecchia automaticamente il tema di sistema, chiaro o scuro, e si aggiorna al volo al cambio di tema **senza necessità di riavviare** il programma. Su **Windows** l'interfaccia rispecchia solo il tema chiaro del sistema.
 - **Editor personalizzabile**: tipo e dimensione del carattere, colore di sfondo, colore di selezione e colorazione sintattica per elemento (testo normale, ritornello, accordi, comandi, attributi, commenti, griglia tab)
 - **Guida integrata**: visualizzatore di aiuto con rendering Markdown, controllo zoom (50 %–200 %), tema chiaro/scuro, modalità a schermo intero e ricerca nel documento
 - **Posizione e dimensioni finestra**: salva e ripristina l'ultima posizione e il layout della finestra (prospettiva AUI)
 
 ## Immagini programma
 
+### Sistema operativo Windows (solo tema chiaro)
+
 ![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Schermata_principale_it.png)
 
 ![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Menu_contestuale_it.png)
+
+### Sistema operativo Linux (Debian)
+
+![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Schermata_principale_linux_brezza_it.png)
+
+![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Schermata_principale_linux__brezza_scuro_it.png)
+
+![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Menu_contestuale_linux_brezza_it.png)
+
+![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Menu_contestuale_linux_brezza_scuro_it.png)
+
+
 
 ## Aggiungere una nuova direttiva ChordPro (guida per sviluppatori)
 

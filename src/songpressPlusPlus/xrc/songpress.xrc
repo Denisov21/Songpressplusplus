@@ -43,9 +43,10 @@
           <label>E_xport</label>
           <bitmap>../img/export.png</bitmap>
           <object class="wxMenuItem" name="exportToClipboardAsAVectorImage">
-            <label>Export to _clipboard as a vector image</label>
+            <label>Export to _clipboard as a image</label>
             <accel>CTRL+D</accel>
             <help>Copy formatted song to clipboard, so that it can be pasted into any program</help>
+            <bitmap>../img/copyAsImage.png</bitmap>
           </object>
           <object class="wxMenuItem" name="exportAsSvg">
             <label>Export as _SVG...</label>

@@ -64,6 +64,13 @@ DEPENDS="python3 (>= 3.12), python3-pip, python3-wxgtk4.0 | python3-wxpython4, \
 python3-requests, python3-reportlab, python3-markdown, python3-mistune, \
 python3-pypdf"
 
+# Dipendenze consigliate (installate da apt di default, ma non obbligatorie):
+#   - wl-clipboard  → fornisce wl-copy, usato per copiare l'immagine dello
+#                     spartito negli appunti su sessioni Wayland (la clipboard
+#                     immagine di wxGTK su Wayland registra solo testo).
+#     Su X11 non serve. Se manca, l'app avvisa come installarlo.
+RECOMMENDS="wl-clipboard"
+
 # Dipendenze che NON esistono nei repo Debian: si installano via pip nel postinst.
 # Formato: "nome_pip:nome_modulo_import" (uno per riga).
 #   - python-pptx  → modulo "pptx"       (necessario su Linux)
@@ -338,6 +345,128 @@ else:
     print(f"    Patch già presente o testo non trovato in {path}")
 PATCH3
 
+# ── 1f. Patch crash _mgr al cambio lingua / chiusura ─────────────────────────
+echo "==> Patch crash _mgr (cambio lingua / teardown)..."
+"$PYTHON" - <<'PATCH1F'
+import subprocess, sys
+
+def find(name):
+    r = subprocess.run(["find", "src/songpressplusplus", "-name", name],
+                       capture_output=True, text=True)
+    c = r.stdout.strip().splitlines()
+    return c[0] if c else None
+
+fr = find("SongpressFrame.py")
+tb = find("SongpressToolbars.py")
+if not fr or not tb:
+    print("    File non trovati, skip patch 1f.")
+    sys.exit(0)
+
+with open(fr) as f: frc = f.read()
+with open(tb) as f: tbc = f.read()
+
+old_a = '''                    def _deferred_tb_update():
+                        self._tb_layout_pending = False
+                        if self.frame:
+                            self._FinalizeToolbarLayout()'''
+new_a = '''                    def _deferred_tb_update():
+                        self._tb_layout_pending = False
+                        # Durante la chiusura/riavvio l'AUI manager puo' essere
+                        # gia' stato smontato (UnInit): _mgr non esiste piu'.
+                        # self.frame resta "truthy" ma il layout non va toccato.
+                        if (self.frame
+                                and getattr(self, '_mgr', None) is not None
+                                and not getattr(self, '_closing', False)):
+                            self._FinalizeToolbarLayout()'''
+old_b = '''    def OnClose(self, evt):
+        if hasattr(self, '_lockKeysTimer') and self._lockKeysTimer.IsRunning():'''
+new_b = '''    def OnClose(self, evt):
+        self._closing = True
+        if hasattr(self, '_lockKeysTimer') and self._lockKeysTimer.IsRunning():'''
+old_c = '''        self._tb_finalizing = True
+        try:
+            for tb in (self.mainToolBar, self.formatToolBar,
+                       self.insertToolBar, self.viewToolBar):
+                tb.SetGripperVisible(False)'''
+new_c = '''        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
+        # toolbar non esistono piu', non c'e' layout da ricalcolare.
+        if getattr(self, '_mgr', None) is None:
+            return
+        if not all(getattr(self, name, None) is not None for name in
+                   ('mainToolBar', 'formatToolBar',
+                    'insertToolBar', 'viewToolBar')):
+            return
+        self._tb_finalizing = True
+        try:
+            for tb in (self.mainToolBar, self.formatToolBar,
+                       self.insertToolBar, self.viewToolBar):
+                tb.SetGripperVisible(False)'''
+
+count = 0
+for old, new in ((old_a, new_a), (old_b, new_b)):
+    if old in frc:
+        frc = frc.replace(old, new); count += 1
+if old_c in tbc:
+    tbc = tbc.replace(old_c, new_c); count += 1
+
+with open(fr, "w") as f: f.write(frc)
+with open(tb, "w") as f: f.write(tbc)
+print(f"    Patch 1f: {count}/3 fix applicati")
+PATCH1F
+
+# ── 1g. Patch warning "Cannot set locale" (i18n.py) ──────────────────────────
+echo "==> Patch warning locale mancante (i18n)..."
+"$PYTHON" - <<'PATCH1G'
+import subprocess, sys
+
+r = subprocess.run(["find", "src/songpressplusplus", "-name", "i18n.py"],
+                   capture_output=True, text=True)
+c = r.stdout.strip().splitlines()
+if not c:
+    print("    i18n.py non trovato, skip patch 1g.")
+    sys.exit(0)
+path = c[0]
+
+with open(path) as f:
+    content = f.read()
+
+old = '''def setLang(l):
+    global current_language, mylocale, _
+    current_language = l
+    langid = wx.Locale.FindLanguageInfo(l).Language
+    mylocale = wx.Locale(langid)
+    localedir = os.path.join(glb.path, "locale")'''
+new = '''def setLang(l):
+    global current_language, mylocale, _
+    current_language = l
+    info = wx.Locale.FindLanguageInfo(l)
+    langid = info.Language if info is not None else wx.LANGUAGE_DEFAULT
+
+    # Su sistemi dove il locale C della lingua richiesta (es. en_US.UTF-8)
+    # non e' stato generato con locale-gen, wx.Locale non riesce a chiamare
+    # setlocale() ed emette un wxLogWarning che, col log target GUI di
+    # default, compare come finestra "Cannot set locale to language ...".
+    # La traduzione (cataloghi .mo) funziona comunque, perche' dipende dalla
+    # lingua impostata in wx.Locale e non dal locale C: silenziamo quindi
+    # solo quel warning durante la costruzione, senza perdere le traduzioni
+    # ne' l'oggetto mylocale (usato da wx.GetLocale() altrove).
+    _nolog = wx.LogNull()
+    try:
+        mylocale = wx.Locale(langid)
+    finally:
+        del _nolog
+
+    localedir = os.path.join(glb.path, "locale")'''
+
+if old in content:
+    content = content.replace(old, new)
+    with open(path, "w") as f:
+        f.write(content)
+    print(f"    Patch 1g: 1/1 fix applicato in {path}")
+else:
+    print(f"    Patch 1g già presente o testo non trovato in {path}")
+PATCH1G
+
 # ── 2. Build della wheel (DOPO le patch) ─────────────────────────────────────
 echo "==> Costruzione wheel con pip + hatchling..."
 WHEEL_DIR="$BUILD_DIR/wheel"
@@ -511,6 +640,7 @@ Architecture: ${DEB_ARCH}
 Maintainer: ${MAINTAINER}
 Installed-Size: ${INSTALLED_SIZE}
 Depends: ${DEPENDS}
+Recommends: ${RECOMMENDS}
 Section: utils
 Priority: optional
 Homepage: ${HOMEPAGE}

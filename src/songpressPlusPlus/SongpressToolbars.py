@@ -192,6 +192,46 @@ class SongpressToolbarsMixin:
         MinSize(1,1) resta basso per consentire l'overflow (»»)
         quando la finestra è troppo stretta.
         """
+        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
+        # toolbar non esistono piu', non c'e' layout da ricalcolare.
+        if getattr(self, '_mgr', None) is None:
+            return
+        if not all(getattr(self, name, None) is not None for name in
+                   ('mainToolBar', 'formatToolBar',
+                    'insertToolBar', 'viewToolBar')):
+            return
+        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
+        # toolbar non esistono piu', non c'e' layout da ricalcolare.
+        if getattr(self, '_mgr', None) is None:
+            return
+        if not all(getattr(self, name, None) is not None for name in
+                   ('mainToolBar', 'formatToolBar',
+                    'insertToolBar', 'viewToolBar')):
+            return
+        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
+        # toolbar non esistono piu', non c'e' layout da ricalcolare.
+        if getattr(self, '_mgr', None) is None:
+            return
+        if not all(getattr(self, name, None) is not None for name in
+                   ('mainToolBar', 'formatToolBar',
+                    'insertToolBar', 'viewToolBar')):
+            return
+        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
+        # toolbar non esistono piu', non c'e' layout da ricalcolare.
+        if getattr(self, '_mgr', None) is None:
+            return
+        if not all(getattr(self, name, None) is not None for name in
+                   ('mainToolBar', 'formatToolBar',
+                    'insertToolBar', 'viewToolBar')):
+            return
+        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
+        # toolbar non esistono piu', non c'e' layout da ricalcolare.
+        if getattr(self, '_mgr', None) is None:
+            return
+        if not all(getattr(self, name, None) is not None for name in
+                   ('mainToolBar', 'formatToolBar',
+                    'insertToolBar', 'viewToolBar')):
+            return
         self._tb_finalizing = True
         try:
             for tb in (self.mainToolBar, self.formatToolBar,

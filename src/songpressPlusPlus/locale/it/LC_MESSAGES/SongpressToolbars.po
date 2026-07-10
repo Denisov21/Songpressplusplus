@@ -147,6 +147,18 @@ msgstr "Mostra o nasconde le etichette delle strofe e dei ritornelli"
 msgid "Hide or show chords in the formatted song"
 msgstr "Mostra o nasconde gli accordi nella canzone formattata"
 
+#: SongpressToolbars.py — ShowChordsChoice
+msgid "No chords"
+msgstr "Nessun accordo"
+
+#: SongpressToolbars.py — ShowChordsChoice
+msgid "One verse for each chord pattern"
+msgstr "Una strofa per ogni schema di accordi"
+
+#: SongpressToolbars.py — ShowChordsChoice
+msgid "Whole song"
+msgstr "Tutta la canzone"
+
 #: SongpressToolbars.py — _BuildFormatToolBar
 msgid "Show Songpress++ Preview"
 msgstr "Anteprima Songpress++"

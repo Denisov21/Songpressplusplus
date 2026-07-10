@@ -71,6 +71,7 @@ import wx
 import wx.adv
 
 from .Renderer import *
+from .Globals import glb   # per glb.AddPath('img/...')
 
 _ = wx.GetTranslation
 
@@ -122,6 +123,9 @@ class PreviewCanvas(object):
         # signature: callback(line_number: int) dove line_number e' 0-based
         # Impostata da SongpressFrame con SetClickCallback()
         self._on_click_callback = None
+        # Callback chiamata al clic sul pulsante "copia" della toolbar.
+        # signature: callback() senza argomenti (di norma SongpressFrame.CopyAsImage).
+        self._on_copy_callback = None
         # Se False il doppio-click non fa nulla (disabilitato da opzioni)
         self._dblClickFocusEnabled = True
 
@@ -150,8 +154,7 @@ class PreviewCanvas(object):
             # (e resta leggibile anche sul tema scuro).
             btn_copy = wx.BitmapButton(
                 toolbar, wx.ID_ANY,
-                self._make_copy_bitmap(
-                    wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNTEXT), 16),
+                self._load_copy_bitmap(16),
                 style=wx.BORDER_NONE,
             )
             btn_copy.SetToolTip(_("Copy formatted song to clipboard"))
@@ -316,6 +319,26 @@ class PreviewCanvas(object):
     # -----------------------------------------------------------------------
 
     @staticmethod
+    def _load_copy_bitmap(px=16):
+        """Carica l'icona 'copia' dal PNG del progetto (img/copyAsImage.png).
+
+        Viene scalata a px×px (alta qualità) se necessario. Se il file non è
+        caricabile per qualunque motivo, ripiega sull'icona disegnata a mano
+        nel colore-testo dei pulsanti, così il pulsante resta comunque usabile.
+        """
+        try:
+            img = wx.Image(glb.AddPath('img/copyAsImage.png'))
+            if img.IsOk():
+                if img.GetWidth() != px or img.GetHeight() != px:
+                    img = img.Scale(px, px, wx.IMAGE_QUALITY_HIGH)
+                return wx.Bitmap(img)
+        except Exception:
+            pass
+        # Fallback: icona disegnata nel colore-testo corrente
+        return PreviewCanvas._make_copy_bitmap(
+            wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNTEXT), px)
+
+    @staticmethod
     def _make_copy_bitmap(colour, px=16):
         """Disegna l'icona 'copia' (due fogli sovrapposti) nel colore dato.
 
@@ -434,9 +457,9 @@ class PreviewCanvas(object):
             if fg is not None and fg.IsOk() and isinstance(ch, wx.StaticText):
                 ch.SetForegroundColour(fg)
         if copy_btn is not None and hasattr(copy_btn, 'SetBitmap'):
-            col = fg if (fg is not None and fg.IsOk()) \
-                else wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNTEXT)
-            copy_btn.SetBitmap(PreviewCanvas._make_copy_bitmap(col, 16))
+            # L'icona copia ora è un PNG fisso (img/copy_2.png): la ricarichiamo
+            # tale e quale, senza ricolorarla col fg del tema.
+            copy_btn.SetBitmap(PreviewCanvas._load_copy_bitmap(16))
         toolbar.Refresh(True)
         toolbar.Update()
 
@@ -581,16 +604,21 @@ class PreviewCanvas(object):
     # -----------------------------------------------------------------------
 
     def _OnCopyButton(self, evt):
-        """Rilancia come EVT_HYPERLINK per retrocompatibilità con SongpressFrame."""
-        # SongpressFrame si aggancia a EVT_HYPERLINK sul link originale.
-        # Poiché ora link == btn_copy (wx.BitmapButton), rilanciamo l'evento
-        # come wx.CommandEvent generico catturato da SongpressFrame tramite
-        # main_panel.Bind(wx.adv.EVT_HYPERLINK, ..., self.previewCanvas.link).
-        # Tuttavia EVT_HYPERLINK e EVT_BUTTON sono tipi diversi; la soluzione
-        # più pulita è far sì che SongpressFrame si agganci a EVT_BUTTON.
-        # Per non toccare SongpressFrame, creiamo e processiamo un HyperlinkEvent.
+        """Esegue la copia negli appunti al clic sul pulsante 'copia'.
+
+        Usa la callback diretta registrata da SongpressFrame con
+        SetCopyCallback() (di norma SongpressFrame.CopyAsImage): chiama
+        direttamente la logica di copia, senza dipendere dagli eventi wx.
+        Come ripiego (callback non impostata) rilancia EVT_HYPERLINK.
+        """
+        cb = getattr(self, '_on_copy_callback', None)
+        if callable(cb):
+            cb()
+            return
+        # Fallback legacy: rilancia EVT_HYPERLINK dove SongpressFrame lo aggancia.
         ev = wx.adv.HyperlinkEvent(self.link, self.link.GetId(), "")
-        self.link.GetEventHandler().ProcessEvent(ev)
+        ev.SetEventObject(self.link)
+        self.main_panel.GetEventHandler().ProcessEvent(ev)
 
     def _OnMouseWheel(self, evt):
         if evt.ControlDown():
@@ -747,6 +775,15 @@ class PreviewCanvas(object):
         Impostata da SongpressFrame subito dopo la creazione di PreviewCanvas.
         """
         self._on_click_callback = callback
+
+    def SetCopyCallback(self, callback):
+        """Registra la callback eseguita al clic sul pulsante "copia" della toolbar.
+
+        callback()  — senza argomenti; di norma SongpressFrame.CopyAsImage.
+        È il meccanismo affidabile per la copia: chiama direttamente la logica
+        di copia senza dipendere dal routing/propagazione degli eventi wx.
+        """
+        self._on_copy_callback = callback
 
     # -----------------------------------------------------------------------
     # Hit-test preciso sui SongBox

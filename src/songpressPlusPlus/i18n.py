@@ -51,8 +51,23 @@ _ = lambda x: x
 def setLang(l):
     global current_language, mylocale, _
     current_language = l
-    langid = wx.Locale.FindLanguageInfo(l).Language
-    mylocale = wx.Locale(langid)
+    info = wx.Locale.FindLanguageInfo(l)
+    langid = info.Language if info is not None else wx.LANGUAGE_DEFAULT
+
+    # Su sistemi dove il locale C della lingua richiesta (es. en_US.UTF-8)
+    # non e' stato generato con locale-gen, wx.Locale non riesce a chiamare
+    # setlocale() ed emette un wxLogWarning che, col log target GUI di
+    # default, compare come finestra "Cannot set locale to language ...".
+    # La traduzione (cataloghi .mo) funziona comunque, perche' dipende dalla
+    # lingua impostata in wx.Locale e non dal locale C: silenziamo quindi
+    # solo quel warning durante la costruzione, senza perdere le traduzioni
+    # ne' l'oggetto mylocale (usato da wx.GetLocale() altrove).
+    _nolog = wx.LogNull()
+    try:
+        mylocale = wx.Locale(langid)
+    finally:
+        del _nolog
+
     localedir = os.path.join(glb.path, "locale")
     xrc_localedir = os.path.join(glb.path, "xrc", "locale")
     mylocale.AddCatalogLookupPathPrefix(localedir)

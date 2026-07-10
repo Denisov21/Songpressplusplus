@@ -779,7 +779,12 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                     self._tb_layout_pending = True
                     def _deferred_tb_update():
                         self._tb_layout_pending = False
-                        if self.frame:
+                        # Durante la chiusura/riavvio l'AUI manager puo' essere
+                        # gia' stato smontato (UnInit): _mgr non esiste piu'.
+                        # self.frame resta "truthy" ma il layout non va toccato.
+                        if (self.frame
+                                and getattr(self, '_mgr', None) is not None
+                                and not getattr(self, '_closing', False)):
                             self._FinalizeToolbarLayout()
                     wx.CallAfter(_deferred_tb_update)
         self.frame.Bind(wx.EVT_SIZE, _OnFrameSize)
@@ -794,6 +799,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.previewCanvas = PreviewCanvas(self.frame, self.pref.format, self.pref.notations, self.pref.decorator)
         # Registra la callback doppio-click: naviga alla riga sorgente nell'editor
         self.previewCanvas.SetClickCallback(self._OnPreviewClick)
+        # Callback diretta per il pulsante "copia" della toolbar anteprima:
+        # chiama CopyAsImage senza passare per gli eventi wx (più affidabile).
+        self.previewCanvas.SetCopyCallback(self.CopyAsImage)
         self._mgr.AddPane(
             self.text,
             aui.AuiPaneInfo()
@@ -918,6 +926,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.chordsBelowMenuId = xrc.XRCID('chordsBelow')
         if platform.system() != 'Windows':
             self.menuBar.GetMenu(0).FindItemById(self.exportMenuId).GetSubMenu().Delete(self.exportAsEmfMenuId)
+        self._LocalizeClipboardMenuLabel()
         self._chord_dialog_pinned = False   # True = keep insert-chord dialog open after OK
         self._showPageBreakLines = True
         self._showColumnBreakLines = True
@@ -994,6 +1003,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                     self.SetDefaultExtension(self.pref.defaultExtension)
 
     def OnClose(self, evt):
+        self._closing = True
         if hasattr(self, '_lockKeysTimer') and self._lockKeysTimer.IsRunning():
             self._lockKeysTimer.Stop()
         self._StopThemeWatch()
@@ -5435,39 +5445,183 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
     def OnCopyOnlyText(self, evt):
         self.text.CopyOnlyText()
 
+    def _setStatus(self, msg, clear_after_ms=None):
+        """Scrive un messaggio nella status bar, se presente (best-effort).
+
+        Se `clear_after_ms` è indicato (in millisecondi), il messaggio viene
+        cancellato automaticamente dopo quel tempo tramite _statusTimer
+        (lo stesso timer usato per gli altri messaggi temporizzati).
+        """
+        try:
+            if getattr(self, 'statusBar', None):
+                self.statusBar.SetStatusText(msg, 0)
+                if clear_after_ms:
+                    timer = getattr(self, '_statusTimer', None)
+                    if timer is not None:
+                        timer.StartOnce(clear_after_ms)
+        except Exception:
+            pass
+
+    @staticmethod
+    def _bitmap_to_png_bytes(bmp):
+        """Converte un wx.Bitmap in bytes PNG."""
+        img = bmp.ConvertToImage()
+        with temp_dir() as path:
+            fp = os.path.join(path, 'clip.png')
+            img.SaveFile(fp, wx.BITMAP_TYPE_PNG)
+            with open(fp, 'rb') as f:
+                return f.read()
+
+    @staticmethod
+    def _copy_bytes_wayland(data, mime):
+        """Mette `data` (bytes) sulla clipboard Wayland con wl-copy, tipo `mime`.
+
+        La clipboard immagine di wxGTK su Wayland non registra i formati immagine
+        (advertisa solo testo), quindi usiamo wl-copy, lo strumento nativo di
+        Wayland. Restituisce True se wl-copy ha accettato i dati.
+        """
+        import shutil
+        import subprocess
+        exe = shutil.which('wl-copy')
+        if not exe:
+            return False
+        try:
+            subprocess.run([exe, '--type', mime],
+                           input=data, check=True, timeout=10)
+            return True
+        except Exception:
+            return False
+
+    @staticmethod
+    def _is_wayland():
+        """True se la sessione grafica corrente è Wayland (non X11).
+
+        Nota: dipende solo da WAYLAND_DISPLAY / XDG_SESSION_TYPE, quindi resta
+        True anche col wrapper GDK_BACKEND=x11 (che non tocca queste variabili).
+        È volutamente la stessa condizione usata da CopyAsImage per scegliere il
+        percorso wl-copy, così l'etichetta del menu e il formato realmente
+        copiato non possono divergere.
+        """
+        return bool(os.environ.get('WAYLAND_DISPLAY')) or \
+            os.environ.get('XDG_SESSION_TYPE', '').lower() == 'wayland'
+
     def CopyAsImage(self):
         if platform.system() == 'Windows':
-            # Windows Metafile
+            # Windows Metafile (funziona già: lasciato invariato)
             dc = wx.MetafileDC()
             self.DrawOnDC(dc)
             m = dc.Close()
             m.SetClipboard(dc.MaxX(), dc.MaxY())
+            return
 
-        else:
-            composite = wx.DataObjectComposite()
+        # --- Linux / macOS --------------------------------------------------
+        # Genera i dati immagine (SVG + PNG). Se qualcosa va storto qui, mostra
+        # l'errore invece di fallire in silenzio.
+        try:
             size = self.ComputeRenderedSize()
 
-            # 1. SVG
+            # SVG (vettoriale)
             with temp_dir() as path:
-                svg_obj = wx.CustomDataObject("image/svg+xml")
                 fp = os.path.join(path, 'temp.svg')
                 self.SaveSvg(fp, size=size)
                 with open(fp, 'rb') as f:
-                    svg_obj.SetData(f.read())
-                composite.Add(svg_obj, preferred=True)
+                    svg_bytes = f.read()
 
-            # 2. PNG
+            # PNG (bitmap)
             bmp = self.RenderAsPng(scale=2, size=size)
-            png_obj = wx.BitmapDataObject(bmp)
-            composite.Add(png_obj)
+        except Exception:
+            import traceback
+            wx.MessageBox(
+                _("Could not build the image to copy:\n\n") + traceback.format_exc(),
+                _("Songpress++"), wx.OK | wx.ICON_ERROR)
+            return
 
-            # Place on Clipboard
+        # Su Wayland la clipboard immagine di wxGTK non funziona (registra solo
+        # testo): usiamo wl-copy. Su X11/macOS usiamo la clipboard di wx.
+        is_wayland = self._is_wayland()
+
+        if is_wayland:
+            import shutil
+            if not shutil.which('wl-copy'):
+                wx.MessageBox(
+                    _("On Wayland, copying an image needs the 'wl-clipboard' "
+                      "package.\n\nInstall it with:\n    sudo apt install wl-clipboard"),
+                    _("Songpress++"), wx.OK | wx.ICON_ERROR)
+                return
+            png_bytes = self._bitmap_to_png_bytes(bmp)
+            if self._copy_bytes_wayland(png_bytes, 'image/png'):
+                self._setStatus(
+                    _("Copied to the clipboard as an image."), 10000)
+            else:
+                wx.MessageBox(
+                    _("wl-copy could not set the clipboard."),
+                    _("Songpress++"), wx.OK | wx.ICON_ERROR)
+            return
+
+        # --- X11 / macOS: clipboard di wx (SVG preferito + PNG) -------------
+        composite = wx.DataObjectComposite()
+        svg_obj = wx.CustomDataObject("image/svg+xml")
+        svg_obj.SetData(svg_bytes)
+        composite.Add(svg_obj, preferred=True)
+        composite.Add(wx.BitmapDataObject(bmp))
+
+        opened = False
+        for _attempt in range(5):
             if wx.TheClipboard.Open():
-                wx.TheClipboard.SetData(composite)
-                wx.TheClipboard.Close()
+                opened = True
+                break
+            wx.MilliSleep(60)
+        if not opened:
+            wx.MessageBox(
+                _("Could not access the system clipboard."),
+                _("Songpress++"), wx.OK | wx.ICON_ERROR)
+            return
+
+        ok = False
+        try:
+            ok = wx.TheClipboard.SetData(composite)
+        finally:
+            wx.TheClipboard.Close()
+        try:
+            wx.TheClipboard.Flush()
+        except Exception:
+            pass
+
+        if ok:
+            self._setStatus(
+                _("Copied to the clipboard as a vector image."), 10000)
+        else:
+            wx.MessageBox(
+                _("The clipboard refused the image data."),
+                _("Songpress++"), wx.OK | wx.ICON_ERROR)
 
     def OnCopyAsImage(self, evt):
         self.CopyAsImage()
+
+    def _LocalizeClipboardMenuLabel(self):
+        """Adatta l'etichetta della voce 'Esporta negli appunti…' al backend.
+
+        La copia produce un vettoriale (SVG preferito / WMF su Windows) solo su
+        X11/macOS/Windows; su Wayland la clipboard riceve un PNG raster. Perciò
+        la parola 'vettoriale' viene mostrata solo quando NON siamo su Wayland,
+        coerentemente con la status bar. L'acceleratore già presente nella voce
+        (es. Ctrl+D) viene preservato.
+        """
+        try:
+            if not getattr(self, '_is_wayland', None) or not self._is_wayland():
+                return  # X11/macOS/Windows: resta l'etichetta 'vettoriale' dell'XRC
+            mid = getattr(self, 'exportToClipboardAsAVectorImage', None)
+            bar = getattr(self, 'menuBar', None)
+            if not mid or bar is None:
+                return
+            item = bar.FindItemById(mid)
+            if item is None:
+                return
+            old = item.GetItemLabel()  # può contenere '\t<acceleratore>'
+            accel = ('\t' + old.split('\t', 1)[1]) if '\t' in old else ''
+            item.SetItemLabel(_("Export to &clipboard as an image") + accel)
+        except Exception:
+            pass
 
     def OnPaste(self, evt):
         self.text.Paste()
@@ -7657,7 +7811,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         if count > 0 and dc != de:
             msg = _("The key of your song, %s, is not the easiest to play (difficulty: %.1f/5.0).\n") % (c, 5 * dc)
             msg += _("Do you want to transpose the key %s, which is the easiest one (difficulty: %.1f/5.0)?") % (e, 5 * de)
-            d = wx.MessageDialog(self.frame, msg, title, wx.YES_NO | wx.ICON_QUESTION)
+            d = wx.GenericMessageDialog(self.frame, msg, title, wx.YES_NO | wx.ICON_QUESTION)
             if d.ShowModal() == wx.ID_YES:
                 t = transposeChordPro(translateChord(c, notation), translateChord(e, notation), t, notation)
                 self.text.ReplaceTextOrSelection(t)
@@ -7666,7 +7820,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 msg = _("The key of your song, %s, is already the easiest to play (difficulty: %.1f/5.0).\n") % (c, 5 * dc)
             else:
                 msg = _("Your song or current selection does not contain any chords.")
-            d = wx.MessageDialog(self.frame, msg, title, wx.OK | wx.ICON_INFORMATION)
+            d = wx.GenericMessageDialog(self.frame, msg, title, wx.OK | wx.ICON_INFORMATION)
             d.ShowModal()
         self.text.AutoChangeMode(False)
 

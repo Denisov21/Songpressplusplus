@@ -297,6 +297,18 @@ msgid "Command 'Paste chords': Select 1st chord line, 2nd text line"
 msgstr "Comando 'Integra accordi': Seleziona 1° linea accordi,  2° linea testo"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
+msgid "Copied to the clipboard as a vector image."
+msgstr "Copiato negli appunti come immagine vettoriale."
+
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
+msgid "Copied to the clipboard as an image."
+msgstr "Copiato negli appunti come immagine."
+
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
+msgid "Export to &clipboard as an image"
+msgstr "Esporta negli &appunti come immagine"
+
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Enter the time signature (e.g. 4/4, 3/4, 6/8):"
 msgstr "Inserisci l'indicazione di tempo (es. 4/4, 3/4, 6/8):"
 
