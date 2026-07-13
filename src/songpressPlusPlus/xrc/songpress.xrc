@@ -584,6 +584,12 @@
           <help>Normalize chords according to current notation</help>
         </object>
         <object class="separator"/>
+        <object class="wxMenuItem" name="chordProImport">
+          <label>Convert _inline chords to ChordPro</label>
+          <accel></accel>
+          <bitmap>../img/square.png</bitmap>
+          <help>Wrap chords glued to lyrics in square brackets, using the current notation</help>
+        </object>
         <object class="wxMenuItem" name="convertTabToChordpro">
           <label>Convert _Tab to Chordpro</label>
           <accel></accel>

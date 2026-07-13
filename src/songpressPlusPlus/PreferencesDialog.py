@@ -286,6 +286,10 @@ class PreferencesDialog(wx.Dialog):
         self.replaceSpacesInFilenamesCB.SetToolTip(_(u"When enabled, any whitespace in the file name (not the folder path) is replaced with an underscore '_' whenever a file is saved or exported. Works the same way on Windows and Linux."))
         grpGeneral.Add(self.replaceSpacesInFilenamesCB, 0, wx.ALL, 5)
 
+        self.suggestTitleAsFilenameCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Suggest the song {title:} as file name in 'Save as'"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.suggestTitleAsFilenameCB.SetToolTip(_(u"When enabled, the 'Save as' dialog proposes the value of the {title:} directive as the default file name. Invalid characters are removed. This option works together with 'Replace spaces with _': if both are enabled, the suggested name will use underscores instead of spaces."))
+        grpGeneral.Add(self.suggestTitleAsFilenameCB, 0, wx.ALL, 5)
+
         # ── Dimensione icone toolbar ─────────────────────────────────
         bSizerTbIconSize = wx.BoxSizer(wx.HORIZONTAL)
         self.labelTbIconSize = wx.StaticText(self.general2, wx.ID_ANY, _(u"Toolbar icon size"), wx.DefaultPosition, wx.DefaultSize, 0)

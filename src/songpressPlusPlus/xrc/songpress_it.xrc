@@ -584,6 +584,12 @@
           <help>Normalizza gli accordi secondo la notazione corrente</help>
         </object>
         <object class="separator"/>
+        <object class="wxMenuItem" name="chordProImport">
+          <label>Converti accordi in linea in _ChordPro</label>
+          <accel></accel>
+          <bitmap>../img/square.png</bitmap>
+          <help>Racchiude tra parentesi quadre gli accordi attaccati al testo, secondo la notazione corrente</help>
+        </object>
         <object class="wxMenuItem" name="convertTabToChordpro">
           <label>Converti _Tab in ChordPro</label>
           <accel></accel>

@@ -87,6 +87,133 @@ class SongDecorator(object):
         # Modify line margins
         pass
         
+    # ── Battiti sopra l'accordo ({beats_time: ...}) ────────────────────────────
+    # Routine unica condivisa da:
+    #   - LayoutComposeLine / PostDrawLine  (righe normali, blocchi verse:
+    #     include {start_chord} e {start_bridge}, che sono blocchi verse)
+    #   - LayoutComposeGrid / _DrawGridBox  (celle dei blocchi {start_of_grid})
+
+    def _BeatsApexFont(self, base_font):
+        """Font dell'apice (numero battiti) derivato dal font dell'accordo."""
+        size_pct  = getattr(self, 'durationBeatsSizePct', 60)
+        is_bold   = getattr(self, 'durationBeatsBold', False)
+        apex_size = max(5, int(base_font.GetPointSize() * size_pct / 100))
+        return wx.Font(
+            apex_size,
+            base_font.GetFamily(),
+            base_font.GetStyle(),
+            wx.FONTWEIGHT_BOLD if is_bold else wx.FONTWEIGHT_NORMAL,
+            False,
+            base_font.GetFaceName(),
+        )
+
+    def _BeatsApexHeight(self, base_font):
+        """Altezza (px) da riservare sopra l'accordo per numero/puntini.
+
+        Ritorna 0 se la visualizzazione dei battiti è disattivata.
+        NOTA: altera il font del DC — il chiamante deve ripristinarlo.
+        """
+        if not getattr(self, 'showDurationBeats', True):
+            return 0
+        mode      = getattr(self, 'durationBeatsMode', 'number')
+        apex_font = self._BeatsApexFont(base_font)
+        apex_size = apex_font.GetPointSize()
+        self.dc.SetFont(apex_font)
+        if mode in ('number', 'both'):
+            _lw, lh = self.dc.GetTextExtent('0')
+            dot_extra = 0
+            if mode == 'both':
+                dot_r     = max(1, int(apex_size * 0.30))
+                dot_extra = dot_r * 2 + 2
+            return lh + dot_extra + 1
+        elif mode == 'dots':
+            dot_r = max(1, int(apex_size * 0.30))
+            return dot_r * 2 + 2
+        return 0
+
+    def _DrawBeatsApex(self, beats, chord_left, chord_w, chord_top, base_font):
+        """Disegna numero e/o puntini dei battiti sopra un accordo.
+
+        chord_left/chord_w/chord_top sono in coordinate assolute del DC.
+        NOTA: altera font, colore, pen e brush del DC — il chiamante ripristina.
+        """
+        if beats is None or beats < 1:
+            return
+        if not getattr(self, 'showDurationBeats', True):
+            return
+
+        mode       = getattr(self, 'durationBeatsMode', 'number')
+        colour_hex = getattr(self, 'durationBeatsColourHex', '#6464C8')
+        try:
+            colour = wx.Colour(colour_hex)
+        except Exception:
+            colour = wx.Colour(100, 100, 200)
+
+        apex_font = self._BeatsApexFont(base_font)
+        apex_size = apex_font.GetPointSize()
+        chord_right = int(chord_left + chord_w)
+        self.dc.SetFont(apex_font)
+        self.dc.SetTextForeground(colour)
+        self.dc.SetBackgroundMode(wx.TRANSPARENT)
+
+        # ── Modalità NUMERO ──────────────────────────────────────
+        if mode in ('number', 'both'):
+            label = str(beats)
+            lw, lh = self.dc.GetTextExtent(label)
+            align = getattr(self, 'durationBeatsAlign', 'right')
+            if align == 'left':
+                ax = int(chord_left)
+            elif align == 'center':
+                ax = int(chord_left) + (int(chord_w) - lw) // 2
+            else:
+                ax = chord_right - lw
+            ay = int(chord_top) - lh - 1
+            self.dc.DrawText(label, ax, ay)
+
+        # ── Modalità PUNTINI ─────────────────────────────────────
+        if mode in ('dots', 'both'):
+            dot_r = max(1, int(apex_size * 0.30))
+            self.dc.SetFont(apex_font)
+            _mw, mh = self.dc.GetTextExtent('0')
+            if mode == 'both':
+                # Sopra il numero: numero a (chord_top - mh - 1), puntini più in alto
+                dot_y = int(chord_top) - mh - 1 - dot_r - 2
+            else:
+                dot_y = int(chord_top) - dot_r - 2
+            box_w = max(int(chord_w), dot_r * 3 * beats)
+            self.dc.SetPen(wx.TRANSPARENT_PEN)
+            self.dc.SetBrush(wx.Brush(colour, wx.SOLID))
+            for i in range(beats):
+                frac  = (i + 0.5) / beats
+                dot_x = int(chord_left) + int(box_w * frac)
+                self.dc.DrawCircle(dot_x, dot_y, dot_r)
+            self.dc.SetBrush(wx.NullBrush)
+            self.dc.SetPen(wx.NullPen)
+
+    def _DrawCellBeats(self, cell, beats, cell_text_left, cell_text_top, chord_font):
+        """Disegna i battiti sopra OGNI accordo contenuto in una cella di griglia.
+
+        cell            -- testo della cella (può contenere più accordi: 'DO SOL')
+        beats           -- lista di battiti allineata a cell.split() (int o None)
+        cell_text_left  -- x del primo carattere del testo della cella (assoluto)
+        cell_text_top   -- y del bordo superiore del testo della cella (assoluto)
+        """
+        if not cell or not beats:
+            return
+        tokens = cell.split()
+        for k, tok in enumerate(tokens):
+            b = beats[k] if k < len(beats) else None
+            if not b:
+                continue
+            # Offset x del token: larghezza del prefisso (token precedenti + spazi)
+            self.dc.SetFont(chord_font)
+            prefix = u' '.join(tokens[:k])
+            if prefix:
+                prefix += u' '
+            pw, _ph = self.dc.GetTextExtent(prefix) if prefix else (0, 0)
+            tw, _th = self.dc.GetTextExtent(tok)
+            self._DrawBeatsApex(b, cell_text_left + pw, tw, cell_text_top, chord_font)
+
     def LayoutComposeLine(self, line):
         # Pass 1: determine size of text
         chordMaxH = 0
@@ -133,36 +260,12 @@ class SongDecorator(object):
         # corretto e la linea di interruzione di pagina viene posizionata bene.
         beatsExtraH = 0
         if hasChords and getattr(self, 'showDurationBeats', True):
-            size_pct = getattr(self, 'durationBeatsSizePct', 60)
-            mode     = getattr(self, 'durationBeatsMode', 'number')
             for t in line.boxes:
                 if t.type != SongText.chord:
                     continue
                 if getattr(t, 'duration_beats', 0) < 1:
                     continue
-                base_size = t.font.GetPointSize()
-                apex_size = max(5, int(base_size * size_pct / 100))
-                apex_font = wx.Font(
-                    apex_size,
-                    t.font.GetFamily(),
-                    t.font.GetStyle(),
-                    wx.FONTWEIGHT_BOLD if getattr(self, 'durationBeatsBold', False)
-                    else wx.FONTWEIGHT_NORMAL,
-                    False,
-                    t.font.GetFaceName(),
-                )
-                self.dc.SetFont(apex_font)
-                if mode in ('number', 'both'):
-                    _lw, lh = self.dc.GetTextExtent(str(getattr(t, 'duration_beats', 1)))
-                    dot_extra = 0
-                    if mode == 'both':
-                        dot_r   = max(1, int(apex_size * 0.30))
-                        _mw, mh = self.dc.GetTextExtent('0')
-                        dot_extra = dot_r * 2 + 2
-                    beatsExtraH = max(beatsExtraH, lh + dot_extra + 1)
-                elif mode == 'dots':
-                    dot_r = max(1, int(apex_size * 0.30))
-                    beatsExtraH = max(beatsExtraH, dot_r * 2 + 2)
+                beatsExtraH = max(beatsExtraH, self._BeatsApexHeight(t.font))
             # Ripristina font per il Pass 2
             if line.boxes:
                 self.dc.SetFont(line.boxes[0].font)
@@ -393,7 +496,16 @@ class SongDecorator(object):
         col_count = max((len(row) for row in gridbox.rows), default=1)
         row_top    = int(gridbox.chordTopSpacing) if gridbox.chordTopSpacing is not None else 0
         row_bottom = int(gridbox.lineSpacing)     if gridbox.lineSpacing     is not None else 0
-        row_h      = cell_h + row_top + row_bottom
+        # ── Spazio extra sopra le celle per i battiti ({beats_time: ...}) ──
+        # Stessa routine usata dalle righe normali (_BeatsApexHeight), così i
+        # numerini/puntini nella griglia hanno identico aspetto e ingombro.
+        beats_h = 0
+        if gridbox.HasBeats():
+            _beats_base_font = getattr(gridbox, 'chord_font', None) or gridbox.font
+            beats_h = self._BeatsApexHeight(_beats_base_font)
+            self.dc.SetFont(gridbox.font)   # _BeatsApexHeight altera il font del DC
+        gridbox.beats_h = beats_h
+        row_h      = cell_h + row_top + row_bottom + beats_h
         gridbox.cell_w   = cell_w
         gridbox.cell_h   = cell_h
         gridbox.row_h    = row_h
@@ -745,80 +857,21 @@ class SongDecorator(object):
         # ── Numero/puntini battiti sopra ogni accordo ({beats_time: ...}) ─
         if not getattr(self, 'showDurationBeats', True):
             return
-        mode = getattr(self, 'durationBeatsMode', 'number')
-        colour_hex = getattr(self, 'durationBeatsColourHex', '#6464C8')
-        try:
-            colour = wx.Colour(colour_hex)
-        except Exception:
-            colour = wx.Colour(100, 100, 200)
 
         # Costruisce la sequenza completa dei box della riga in ordine di x
         all_boxes = sorted(line.boxes, key=lambda t: t.x)
 
-        for idx, text in enumerate(all_boxes):
+        for text in all_boxes:
             if text.type != SongText.chord:
                 continue
             beats = getattr(text, 'duration_beats', 0)
             if beats < 1:
                 continue
 
-            chord_left  = int(lx + line.marginLeft + text.x + text.marginLeft)
-            chord_right = chord_left + int(text.w)
-            chord_top   = int(ly + line.marginTop + text.y + text.marginTop)
+            chord_left = int(lx + line.marginLeft + text.x + text.marginLeft)
+            chord_top  = int(ly + line.marginTop + text.y + text.marginTop)
 
-            # Font apice
-            base_font = text.font
-            size_pct  = getattr(self, 'durationBeatsSizePct', 60)
-            is_bold   = getattr(self, 'durationBeatsBold', False)
-            apex_size = max(5, int(base_font.GetPointSize() * size_pct / 100))
-            apex_font = wx.Font(
-                apex_size,
-                base_font.GetFamily(),
-                base_font.GetStyle(),
-                wx.FONTWEIGHT_BOLD if is_bold else wx.FONTWEIGHT_NORMAL,
-                False,
-                base_font.GetFaceName(),
-            )
-            self.dc.SetFont(apex_font)
-            self.dc.SetTextForeground(colour)
-            self.dc.SetBackgroundMode(wx.TRANSPARENT)
-
-            # ── Modalità NUMERO ──────────────────────────────────────
-            if mode in ('number', 'both'):
-                label = str(beats)
-                lw, lh = self.dc.GetTextExtent(label)
-                align = getattr(self, 'durationBeatsAlign', 'right')
-                if align == 'left':
-                    ax = chord_left
-                elif align == 'center':
-                    ax = chord_left + (int(text.w) - lw) // 2
-                else:
-                    ax = chord_right - lw
-                ay = chord_top - lh - 1
-                self.dc.DrawText(label, ax, ay)
-
-            # ── Modalità PUNTINI ─────────────────────────────────────
-            # ── Modalità PUNTINI ─────────────────────────────────────
-            if mode in ('dots', 'both'):
-                dot_r = max(1, int(apex_size * 0.30))
-                self.dc.SetFont(apex_font)
-                _mw, mh = self.dc.GetTextExtent('0')
-                if mode == 'both':
-                    # Sopra il numero: numero è a (chord_top - mh - 1),
-                    # puntini ancora più in alto
-                    dot_y = chord_top - mh - 1 - dot_r - 2
-                else:
-                    # Al posto del numero
-                    dot_y = chord_top - dot_r - 2
-                box_w = max(int(text.w), dot_r * 3 * beats)
-                self.dc.SetPen(wx.TRANSPARENT_PEN)
-                self.dc.SetBrush(wx.Brush(colour, wx.SOLID))
-                for i in range(beats):
-                    frac  = (i + 0.5) / beats
-                    dot_x = chord_left + int(box_w * frac)
-                    self.dc.DrawCircle(dot_x, dot_y, dot_r)
-                self.dc.SetBrush(wx.NullBrush)
-                self.dc.SetPen(wx.NullPen)
+            self._DrawBeatsApex(beats, chord_left, int(text.w), chord_top, text.font)
 
             # Ripristina font e colore
             self.dc.SetFont(text.font)
@@ -1086,13 +1139,18 @@ class SongDecorator(object):
         _chord_font  = getattr(gridbox, 'chord_font',  None) or font
         _chord_color = getattr(gridbox, 'chord_color', None) or wx.Colour(255, 0, 0)
 
+        # Offset verticale effettivo del contenuto della cella: allo spazio
+        # chordTopSpacing si somma quello riservato ai battiti (0 se assenti).
+        beats_h  = getattr(gridbox, 'beats_h', 0)
+        row_top += beats_h
+
         if mode == 'table':
             pen = wx.Pen(wx.Colour(80, 80, 80), max(1, int(1 / self.pen_scale)))
             self.dc.SetPen(pen)
             self.dc.SetBrush(wx.TRANSPARENT_BRUSH)
             spacer_h = getattr(gridbox, 'spacer_h', max(4, cell_h // 2))
             cy = by
-            for row in gridbox.rows:
+            for ri, row in enumerate(gridbox.rows):
                 if not row:
                     cy += spacer_h
                     continue
@@ -1100,6 +1158,8 @@ class SongDecorator(object):
                     cx = bx + ci * cell_w
                     self.dc.SetFont(font)
                     self.dc.SetTextForeground(wx.BLACK)
+                    self.dc.SetPen(pen)
+                    self.dc.SetBrush(wx.TRANSPARENT_BRUSH)
                     self.dc.DrawRectangle(cx, cy + row_top, cell_w, cell_h)
                     if cell:
                         self.dc.SetFont(_chord_font)
@@ -1108,12 +1168,17 @@ class SongDecorator(object):
                         tx = cx + (cell_w - tw) // 2
                         ty = cy + row_top + (cell_h - th) // 2
                         self.dc.DrawText(cell, tx, ty)
+                        # Battiti sopra ciascun accordo della cella
+                        beats = gridbox.GetBeats(ri, ci)
+                        if beats:
+                            self._DrawCellBeats(cell, beats, tx,
+                                                cy + row_top, _chord_font)
                 cy += row_h
 
         else:
             spacer_h = getattr(gridbox, 'spacer_h', max(4, cell_h // 2))
             cy = by
-            for row in gridbox.rows:
+            for ri, row in enumerate(gridbox.rows):
                 if not row:
                     cy += spacer_h
                     continue
@@ -1124,15 +1189,14 @@ class SongDecorator(object):
                         self.dc.SetFont(font)
                         self.dc.SetTextForeground(wx.BLACK)
                         self.dc.DrawText('|', cx, cy + row_top + pad_y)
-                        if cell:
-                            self.dc.SetFont(_chord_font)
-                            self.dc.SetTextForeground(_chord_color)
-                            self.dc.DrawText(cell, cx + pad_x, cy + row_top + pad_y)
-                    else:  # plain
-                        if cell:
-                            self.dc.SetFont(_chord_font)
-                            self.dc.SetTextForeground(_chord_color)
-                            self.dc.DrawText(cell, cx + pad_x, cy + row_top + pad_y)
+                    if cell:
+                        self.dc.SetFont(_chord_font)
+                        self.dc.SetTextForeground(_chord_color)
+                        self.dc.DrawText(cell, cx + pad_x, cy + row_top + pad_y)
+                        beats = gridbox.GetBeats(ri, ci)
+                        if beats:
+                            self._DrawCellBeats(cell, beats, cx + pad_x,
+                                                cy + row_top + pad_y, _chord_font)
                 # Chiudi l'ultima | in modalità pipe
                 if mode == 'pipe' and row:
                     self.dc.SetFont(font)

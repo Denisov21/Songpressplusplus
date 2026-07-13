@@ -200,6 +200,9 @@ class MyPreferencesDialog(PreferencesDialog):
         # Sostituzione spazi con '_' nei nomi file salvati
         self.replaceSpacesInFilenamesCB.SetValue(getattr(self.pref, 'replaceSpacesInFilenames', False))
 
+        # Suggerisci {title:} come nome file in "Salva con nome"
+        self.suggestTitleAsFilenameCB.SetValue(getattr(self.pref, 'suggestTitleAsFilename', False))
+
         # Dimensione icone toolbar
         _tbSz = getattr(self.pref, 'toolbarIconSize', 'small')
         if _tbSz == 'large':
@@ -1483,6 +1486,8 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.saveWindowGeometry = self.saveWindowGeometryCB.GetValue()
         # Sostituzione spazi con '_' nei nomi file salvati
         self.pref.replaceSpacesInFilenames = self.replaceSpacesInFilenamesCB.GetValue()
+        # Suggerisci {title:} come nome file in "Salva con nome"
+        self.pref.suggestTitleAsFilename = self.suggestTitleAsFilenameCB.GetValue()
         # Dimensione icone toolbar
         if self.tbIconSizeLarge.GetValue():
             self.pref.toolbarIconSize = 'large'

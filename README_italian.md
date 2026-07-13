@@ -351,7 +351,7 @@ Dopo l'installazione del pacchetto `.deb`, i file del programma vengono copiati 
 
 ![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Schermata_principale_linux_brezza_it.png)
 
-![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Schermata_principale_linux__brezza_scuro_it.png)
+![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Schermata_principale_linux_brezza_scuro_it.png)
 
 ![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Menu_contestuale_linux_brezza_it.png)
 

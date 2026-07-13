@@ -287,3 +287,19 @@ msgstr "Bridge {start_bridge}\\{end_bridge}"
 #: PreferencesDialog.py (File associations tooltip)
 msgid "Associate the .%s file extension with Songpress++."
 msgstr "Associa l'estensione di file .%s con Songpress++."
+#: PreferencesDialog.py suggestTitleAsFilenameCB
+msgid "Suggest the song {title:} as file name in 'Save as'"
+msgstr "Suggerisci il {title:} del brano come nome file in 'Salva con nome'"
+
+#: PreferencesDialog.py suggestTitleAsFilenameCB (tooltip)
+msgid ""
+"When enabled, the 'Save as' dialog proposes the value of the {title:} "
+"directive as the default file name. Invalid characters are removed. This "
+"option works together with 'Replace spaces with _': if both are enabled, the "
+"suggested name will use underscores instead of spaces."
+msgstr ""
+"Se attiva, la finestra 'Salva con nome' propone il valore della direttiva "
+"{title:} come nome file predefinito. I caratteri non validi vengono rimossi. "
+"Questa opzione è complementare a \"Sostituisci gli spazi con '_'\": se sono "
+"attive entrambe, il nome suggerito userà i trattini bassi al posto degli "
+"spazi."

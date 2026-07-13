@@ -296,16 +296,28 @@ class SDIMainFrame(object):
         else: #wxID_YES
             return self.SaveFile();
 
+    def GetSuggestedFilename(self):
+        """To be overridden: file name (with extension, no path) proposed by
+        default in the 'Save as' dialog. Returns '' to leave the field empty."""
+        if self.document:
+            return os.path.basename(self.document)
+        return ''
+
     def AskSaveFilename(self):
         """Ask and updates the filename (without saving); return False if user cancels, True otherwise"""
         leave = False;
         consensus = False;
+        defaultDir = os.path.dirname(self.document) if self.document else ""
+        try:
+            defaultFile = self.GetSuggestedFilename() or ""
+        except Exception:
+            defaultFile = ""
         while not leave:
             dlg = wx.FileDialog(
                 self.frame,
                 _("Choose a name for the file"),
-                "",
-                "",
+                defaultDir,
+                defaultFile,
                 _("%s files (*.%s)|*.%s|All files (*.*)|*.*") % (
                         self.docExt,
                         self.docExt,

@@ -143,6 +143,57 @@ class Renderer(object):
             self.format.face = saved
             self._tab_saved_face = None
 
+    @staticmethod
+    def _ParseBeatsTime(a):
+        """Parsa il valore di {beats_time: DO=4 SOL=2 ...} → [(accordo_upper, battiti), ...].
+
+        Unico punto di parsing: usato sia dal ramo normale (tokenizer) sia dal
+        ramo grid, che non passa dal tokenizer.
+        """
+        dur = []
+        if not a:
+            return dur
+        for token in a.strip().split():
+            if '=' in token:
+                chord, _sep, beats = token.partition('=')
+                try:
+                    dur.append((chord.strip().upper(), int(beats.strip())))
+                except ValueError:
+                    pass
+        return dur
+
+    @staticmethod
+    def _MatchBeatsToNames(cells, pending):
+        """Mappa le celle di una riga grid → battiti per OGNI accordo della cella.
+
+        Una cella può contenere più accordi (es. '|[DO] [SOL] |' → cella 'DO SOL'),
+        quindi il risultato per ogni cella è una LISTA di battiti (o None), una voce
+        per accordo, allineata a cell.split().
+
+        Stessa semantica di AddText: match per nome (case-insensitive) con consumo
+        della voce usata, fallback posizionale sulla prima voce residua.
+        `pending` viene consumata (copia difensiva a carico del chiamante).
+        """
+        out = []
+        for cell in cells:
+            if not cell or not cell.strip():
+                out.append([])
+                continue
+            cell_beats = []
+            for name in cell.split():
+                key = name.strip().upper()
+                matched = None
+                for idx, (chord_name, beats) in enumerate(pending):
+                    if chord_name.upper() == key:
+                        matched = beats
+                        pending.pop(idx)
+                        break
+                if matched is None and pending:
+                    matched = pending.pop(0)[1]   # fallback posizionale
+                cell_beats.append(matched)
+            out.append(cell_beats)
+        return out
+
     def BeginGrid(self, label=None):
         """Apre un blocco {start_of_grid}: raccoglie le righe in self._grid_rows."""
         import re as _re
@@ -171,6 +222,9 @@ class Renderer(object):
             '', raw, flags=_re.IGNORECASE).strip()
         self._grid_label = clean_label if clean_label else default_label
         self._grid_rows = []   # list[list[str]] — celle per ogni riga
+        # {beats_time: ...} dentro la griglia: struttura parallela a _grid_rows
+        self._grid_beats_rows = []       # list[list[int|None]]
+        self._grid_pending_duration = [] # battiti in attesa della prossima riga di celle
 
     def EndGrid(self):
         """Chiude il blocco grid e aggiunge un SongGridBox alla canzone."""
@@ -182,7 +236,9 @@ class Renderer(object):
         chord_font  = self.format.chord.wxFont
         chord_color = self.format.chord.color
         label = getattr(self, '_grid_label', _("Grid"))
+        beats_rows = getattr(self, '_grid_beats_rows', None) or None
         box = SongGridBox(rows, display_mode=mode, font=font, label=label,
+                          beats_rows=beats_rows,
                           size=getattr(self, '_grid_size', 1),
                           chordTopSpacing=getattr(self, '_grid_chordTopSpacing', None),
                           lineSpacing=getattr(self, '_grid_lineSpacing', None),
@@ -198,6 +254,8 @@ class Renderer(object):
         self.song.AddBox(box)
         self._grid_rows = None
         self._grid_label = None
+        self._grid_beats_rows = None
+        self._grid_pending_duration = []
 
     def _ParseGridLine(self, l):
         """Estrae le celle da una riga del blocco grid.
@@ -231,19 +289,13 @@ class Renderer(object):
             inner = parts[1:-1] if len(parts) >= 2 else parts
             if not inner:
                 return []
-            contents = [p.strip() for p in inner]
-            widths   = [len(p)    for p in inner]
-            # Larghezza minima di riferimento = parte non vuota più corta
-            ref_widths = [w for w, c in zip(widths, contents) if c]
-            min_w = min(ref_widths) if ref_widths else 1
-            # Ogni parte occupa round(width/min_w) celle:
-            # parte più larga = accordo preceduto da celle vuote
-            result = []
-            for w, c in zip(widths, contents):
-                n_cells = max(1, round(w / min_w))
-                result.extend([''  ] * (n_cells - 1))  # celle vuote extra
-                result.append(c)                         # cella con accordo (o '')
-            return result
+            # Ogni coppia di | delimita ESATTAMENTE una battuta = una cella.
+            # La larghezza in caratteri scritta nell'editor è irrilevante: una
+            # battuta più larga (| DO FA SOL |) non genera celle vuote extra.
+            # Una battuta senza accordi (| Am |   | G |) resta una cella vuota.
+            # Gli spazi interni vengono normalizzati (_clean_cell), così più
+            # accordi nella stessa battuta risultano separati da un solo spazio.
+            return [_clean_cell(p) for p in inner]
 
         # ── Solo chord token separati da spazio: ogni accordo = cella ──
         chords = _re.findall(r'\[([^\]]+)\]', l)
@@ -406,6 +458,8 @@ class Renderer(object):
 
         import re as _re_grid
         _EOG_RE = _re_grid.compile(r'\{(?:end_of_grid|eog)\s*\}', _re_grid.IGNORECASE)
+        # Riga composta SOLO da {beats_time: ...} (usata dentro i blocchi grid)
+        _BT_RE = _re_grid.compile(r'^\{\s*beats_time\s*:?([^}]*)\}$', _re_grid.IGNORECASE)
 
         for l in self.text.splitlines():
             self.lineCount += 1
@@ -414,9 +468,17 @@ class Renderer(object):
             # ── Blocco grid: raccoglie le righe in _grid_rows ─────────
             if getattr(self, '_grid_rows', None) is not None:
                 stripped_l = l.strip()
+                # {beats_time: ...} da solo sulla riga → battiti per la riga di celle
+                # successiva. Dentro la grid non si passa dal tokenizer, quindi la
+                # direttiva va intercettata qui, altrimenti finirebbe in una cella.
+                _bt = _BT_RE.match(stripped_l)
+                if _bt:
+                    self._grid_pending_duration = self._ParseBeatsTime(_bt.group(1))
+                    continue
                 # {row} / {r} da solo sulla riga → riga vuota separatrice
                 if stripped_l in ('{row}', '{r}'):
                     self._grid_rows.append([])   # lista vuota = riga vuota
+                    self._grid_beats_rows.append([])
                     continue
                 # Se la riga contiene {end_of_grid} o {eog} la passiamo alla
                 # tokenizzazione normale (che chiuderà il blocco via EndGrid).
@@ -429,6 +491,15 @@ class Renderer(object):
                     cells = self._ParseGridLine(l)
                     if cells:
                         self._grid_rows.append(cells)
+                        pending = list(self._grid_pending_duration)
+                        if pending:
+                            self._grid_beats_rows.append(
+                                self._MatchBeatsToNames(cells, pending))
+                            # I battiti valgono solo per la riga immediatamente
+                            # successiva alla direttiva (come nel corpo del brano).
+                            self._grid_pending_duration = []
+                        else:
+                            self._grid_beats_rows.append([[] for _c in cells])
                     continue
             # ─────────────────────────────────────────────────────────
 
@@ -882,14 +953,7 @@ class Renderer(object):
                         # Associa il numero di battiti a ciascun accordo della riga successiva.
                         a = self.GetAttribute()
                         if a is not None and a.strip():
-                            dur = []
-                            for token in a.strip().split():
-                                if '=' in token:
-                                    chord, _sep, beats = token.partition('=')
-                                    try:
-                                        dur.append((chord.strip().upper(), int(beats.strip())))
-                                    except ValueError:
-                                        pass
+                            dur = self._ParseBeatsTime(a)
                             self._pending_duration = dur
                             self._duration_chord_idx = 0
                             # Congela il formato corrente: se un {linespacing} compare

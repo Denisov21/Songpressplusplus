@@ -45,6 +45,8 @@ from .Globals import glb
 from .Preferences import Preferences
 from . import i18n
 from .utils import temp_dir, undo_action
+from . import chordpro_import
+from .chordpro_import import get_roots, convert as chordpro_convert
 from .SyntaxChecker import check as syntax_check
 from .SyntaxCheckerDialog import SyntaxCheckerDialog, EVT_SYNTAX_GOTO
 from .MusicalSymbolDialog import MusicalSymbolDialog
@@ -751,7 +753,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.statusBar = self.frame.GetStatusBar()
         if self.statusBar:
             self.statusBar.SetFieldsCount(3)
-            self.statusBar.SetStatusWidths([-1, 160, 110])
+            self._ResizeStatusFields(u"")
         self._statusTimer = wx.Timer(self.frame)
         self.frame.Bind(wx.EVT_TIMER, self._OnStatusTimerExpired, self._statusTimer)
         # Timer per aggiornare NUM / CAPS / SCR nella status bar (campo 2)
@@ -1433,6 +1435,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         Bind(self.OnSimplifyChords, 'simplifyChords')
         Bind(self.OnChangeChordNotation, 'changeChordNotation')
         Bind(self.OnNormalizeChords, 'cleanupChords')
+        Bind(self.OnChordProImport, 'chordProImport')
         Bind(self.OnConvertTabToChordpro, 'convertTabToChordpro')
         Bind(self.OnRemoveSpuriousBlankLines, 'removeSpuriousBlankLines')
         Bind(self.OnOptions, 'options')
@@ -2679,6 +2682,54 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             raw = re.findall(r'\[([^\]]+)\]', line_text)
             return [c.strip() for c in raw if c.strip()]
 
+        # ── Rilevamento accordi dentro i blocchi ──────────────────────────
+        # Nei blocchi {start_of_grid} gli accordi si scrivono normalmente SENZA
+        # parentesi quadre (| Am | F | G |): la sola regex [ ... ] non li vede.
+        # {start_chord} e {start_bridge} sono blocchi verse normali e usano [ ].
+        GRID_OPEN_RE      = re.compile(r'^\s*\{\s*(?:start_of_grid|sog|grid)\b', re.IGNORECASE)
+        GRID_CLOSE_RE     = re.compile(r'\{\s*(?:end_of_grid|eog)\s*\}', re.IGNORECASE)
+        DIRECTIVE_ONLY_RE = re.compile(r'^\s*\{[^}]*\}\s*$')
+
+        def _line_in_grid(idx):
+            """True se la riga idx si trova dentro un blocco {start_of_grid}."""
+            for i in range(idx - 1, -1, -1):
+                lt = stc.GetLine(i)
+                if GRID_CLOSE_RE.search(lt):
+                    return False
+                if GRID_OPEN_RE.match(lt):
+                    return True
+            return False
+
+        def _extract_grid_roots(line_text):
+            """Accordi di una riga di griglia: | Am | F | G |  oppure  Am F G.
+
+            Una cella può contenere più accordi (| DO SOL | RE- LA- |): vengono
+            restituiti come accordi distinti, uno per token.
+            """
+            s = re.sub(r'\[([^\]]+)\]', r'\1', line_text).strip()
+            if not s or DIRECTIVE_ONLY_RE.match(s):
+                return []
+            if '|' in s:
+                parts = s.split('|')
+                inner = parts[1:-1] if len(parts) >= 2 else parts
+                roots = []
+                for p in inner:
+                    roots.extend(p.split())
+                return roots
+            return [w for w in s.split() if w]
+
+        def _roots_at(idx):
+            """Accordi della riga idx, con supporto alle griglie senza [ ]."""
+            if not (0 <= idx < total_lines):
+                return []
+            line_text = stc.GetLine(idx)
+            roots = _extract_roots(line_text)
+            if roots:
+                return roots
+            if _line_in_grid(idx):
+                return _extract_grid_roots(line_text)
+            return []
+
         # ── Rileva se almeno una selezione è estesa (non puntiforme) ──────
         _sel_ranges = [(stc.GetSelectionNStart(i), stc.GetSelectionNEnd(i))
                        for i in range(n_sel)]
@@ -2708,7 +2759,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             # Raccoglie accordi unici (ordine di prima apparizione) dalle righe selezionate
             _seen_roots = []
             for ln in _selected_line_indices:
-                for r in _extract_roots(stc.GetLine(ln)):
+                for r in _roots_at(ln):
                     if r not in _seen_roots:
                         _seen_roots.append(r)
             all_roots = _seen_roots
@@ -2717,7 +2768,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             # (usata da _do_insert per applicare per-riga nella modalità selezione)
             _sel_line_roots = {}
             for ln in _selected_line_indices:
-                roots = _extract_roots(stc.GetLine(ln))
+                roots = _roots_at(ln)
                 if roots:
                     _sel_line_roots[ln] = roots
 
@@ -2734,39 +2785,42 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
             # Helper: data una riga del cursore, trova il TESTO della riga con accordi
             # Priorità: riga corrente → successiva → precedente
-            def _find_chord_line(cur_line):
-                candidates = []
-                candidates.append(stc.GetLine(cur_line))
-                if cur_line + 1 < total_lines:
-                    candidates.append(stc.GetLine(cur_line + 1))
-                if cur_line - 1 >= 0:
-                    candidates.append(stc.GetLine(cur_line - 1))
-                for ln in candidates:
-                    if re.search(r'\[([^\]]+)\]', ln):
-                        return ln
-                return u""
-
             # Helper: ritorna l'INDICE della riga accordi vicina a cur_line, o -1
             def _find_chord_line_idx(cur_line):
                 for candidate in [cur_line, cur_line + 1, cur_line - 1]:
-                    if 0 <= candidate < total_lines:
-                        if re.search(r'\[([^\]]+)\]', stc.GetLine(candidate)):
-                            return candidate
+                    if 0 <= candidate < total_lines and _roots_at(candidate):
+                        return candidate
                 return -1
+
+            # Helper: accordi della riga vicina a cur_line (lista vuota se nessuna)
+            def _find_chord_line(cur_line):
+                return _roots_at(_find_chord_line_idx(cur_line))
 
             # 1. Raccogli le posizioni di tutti i cursori (ordine inverso)
             if n_sel > 1:
                 cursor_positions = sorted(
-                    [stc.GetSelectionNStart(i) for i in range(n_sel)],
+                    {stc.GetSelectionNStart(i) for i in range(n_sel)},
                     reverse=True
                 )
+                # Dedup: più cursori sulla STESSA riga di accordi devono
+                # produrre un solo {beats_time} (altrimenti il secondo
+                # inserimento sovrascriveva il primo).
+                _uniq, _seen_lines = [], set()
+                for _pos in cursor_positions:            # bottom→top
+                    _ci  = _find_chord_line_idx(stc.LineFromPosition(_pos))
+                    _key = _ci if _ci >= 0 else ('pos', _pos)
+                    if _key in _seen_lines:
+                        continue
+                    _seen_lines.add(_key)
+                    _uniq.append(_pos)
+                cursor_positions = _uniq
+                n_sel = len(cursor_positions)   # badge/tab coerenti col dedup
             else:
                 cursor_positions = [stc.GetCurrentPos()]
 
             # 2. Determina all_roots dalla riga del cursore principale
             main_line  = stc.LineFromPosition(cursor_positions[-1])  # cursore più in alto
-            chord_line = _find_chord_line(main_line)
-            all_roots  = _extract_roots(chord_line)
+            all_roots  = _find_chord_line(main_line)
 
             # 2b. Raccoglie roots e indici riga per ogni cursore (top→bottom)
             if n_sel > 1:
@@ -2774,7 +2828,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 per_cursor_chord_lines = []
                 for pos in reversed(cursor_positions):   # ordine top→bottom
                     cl = stc.LineFromPosition(pos)
-                    per_cursor_roots.append(_extract_roots(_find_chord_line(cl)))
+                    per_cursor_roots.append(_find_chord_line(cl))
                     per_cursor_chord_lines.append(_find_chord_line_idx(cl))
                 _all_same = all(r == per_cursor_roots[0] for r in per_cursor_roots)
             else:
@@ -3250,21 +3304,19 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             # ── MODALITÀ CURSORE (comportamento originale) ──────────────
             def _find_chord_line_idx(cur_line):
                 """Ritorna l'indice della riga degli accordi vicina a cur_line, o -1.
-                Priorità: riga corrente → precedente → successiva."""
+                Priorità: riga corrente → precedente → successiva.
+                Riconosce anche le righe di griglia scritte senza [ ]."""
                 for candidate in [cur_line, cur_line - 1, cur_line + 1]:
-                    if 0 <= candidate < stc.GetLineCount():
-                        if re.search(r'\[([^\]]+)\]', stc.GetLine(candidate)):
-                            return candidate
+                    if 0 <= candidate < stc.GetLineCount() and _roots_at(candidate):
+                        return candidate
                 return -1
 
-            cur_n_sel = stc.GetSelections()
-            if cur_n_sel > 1:
-                cur_positions = sorted(
-                    [stc.GetSelectionNStart(i) for i in range(cur_n_sel)],
-                    reverse=True   # bottom→top per non invalidare gli offset
-                )
-            else:
-                cur_positions = [stc.GetCurrentPos()]
+            # Riusa le posizioni già raccolte e deduplicate (bottom→top):
+            # rileggere le selezioni qui è fragile (il dialogo è modale e i
+            # marker di highlight possono averle alterate) e reintrodurrebbe
+            # i cursori duplicati sulla stessa riga.
+            cur_positions = list(cursor_positions)
+            cur_n_sel     = len(cur_positions)
 
             with undo_action(stc):
                 for idx, pos in enumerate(cur_positions):
@@ -3334,10 +3386,25 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             # per non invalidare gli offset — oppure ricostruisce l'intero testo.
             new_lines = []
             inserted  = 0
+            in_grid   = False
             for i, line in enumerate(lines):
+                # Traccia l'ingresso/uscita dai blocchi {start_of_grid}: al loro
+                # interno gli accordi sono celle senza parentesi quadre.
+                if GRID_CLOSE_RE.search(line):
+                    in_grid = False
+                    new_lines.append(line)
+                    continue
+                if GRID_OPEN_RE.match(line):
+                    in_grid = True
+                    new_lines.append(line)
+                    continue
+
                 # La riga ha accordi?
-                chords_in_line = chord_pat.findall(line)
-                if not chords_in_line:
+                if in_grid:
+                    row_roots = _extract_grid_roots(line)
+                else:
+                    row_roots = [c.strip() for c in chord_pat.findall(line) if c.strip()]
+                if not row_roots:
                     new_lines.append(line)
                     continue
 
@@ -3349,7 +3416,6 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
                 # Costruisce la direttiva per questa riga specifica
                 # usando i valori dello spin per ogni accordo trovato
-                row_roots = [c.strip() for c in chords_in_line if c.strip()]
                 row_parts = []
                 for r in row_roots:
                     v = spin_val.get(r, _default_val)   # default 0 se tutto azzerato, altrimenti 1
@@ -4756,6 +4822,39 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         oy = (px - h) // 2
         canvas.Paste(img, ox, oy)
         return canvas
+
+    def GetSuggestedFilename(self):
+        """Nome file proposto in 'Salva con nome'.
+
+        Se la preferenza 'suggestTitleAsFilename' è attiva e il brano contiene
+        una direttiva {title:} (o {t:}), propone quel titolo come nome file.
+        L'eventuale opzione 'replaceSpacesInFilenames' viene applicata a valle
+        da Preferences.SuggestFilenameFromTitle(), quindi le due opzioni si
+        compongono senza conflitti.
+        Altrimenti ricade sul comportamento standard di SDIMainFrame.
+        """
+        fallback = SDIMainFrame.GetSuggestedFilename(self)
+        pref = getattr(self, 'pref', None)
+        if pref is None or not hasattr(pref, 'SuggestFilenameFromTitle'):
+            return fallback
+        name = pref.SuggestFilenameFromTitle(self.text.GetText(), default='')
+        if not name:
+            if getattr(pref, 'showDebugMsg', False):
+                if not getattr(pref, 'suggestTitleAsFilename', False):
+                    reason = _("the option is disabled")
+                elif not pref.ExtractTitle(self.text.GetText()):
+                    reason = _("no {title:} directive found in the song "
+                               "(check that it is not on a line starting with '#')")
+                else:
+                    reason = _("the title contains no characters valid for a file name")
+                wx.MessageBox(
+                    _("DEBUG: file name not suggested because %s.") % reason,
+                    self.appLongName,
+                    wx.OK | wx.ICON_INFORMATION,
+                    self.frame,
+                )
+            return fallback
+        return '%s.%s' % (name, self.docExt)
 
     def New(self):
         self.text.AutoChangeMode(True)
@@ -6251,7 +6350,24 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             parts.append(_(u"Intellisense"))
         if getattr(self.pref, 'multiCursor', False):
             parts.append(_(u"Multicursor"))
-        self.statusBar.SetStatusText(u"  ● " + u"  ● ".join(parts) if parts else u"", 1)
+        text = (u"  ● " + u"  ● ".join(parts)) if parts else u""
+        self._ResizeStatusFields(text)
+        self.statusBar.SetStatusText(text, 1)
+
+    def _ResizeStatusFields(self, text=None):
+        """Adatta le larghezze dei campi fissi della status bar al testo
+        effettivo (dipende da lingua, font di sistema e DPI): evita che
+        'Multicursore' venga troncato su Linux/KDE."""
+        if not self.statusBar:
+            return
+        if text is None:
+            text = self.statusBar.GetStatusText(1)
+        dc = wx.ClientDC(self.statusBar)
+        dc.SetFont(self.statusBar.GetFont())
+        pad = dc.GetTextExtent(u"MM")[0]            # margine laterale
+        w1 = (dc.GetTextExtent(text)[0] + pad) if text else 0
+        w2 = dc.GetTextExtent(u"CAPS  NUM  SCR")[0] + pad
+        self.statusBar.SetStatusWidths([-1, w1, w2])
 
     def _UpdateLockKeys(self):
         """Aggiorna il campo 2 della status bar con lo stato di CAPS / NUM / SCR."""
@@ -7839,6 +7955,58 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         n = testTabFormat(t, self.pref.notations)
         if n is not None:
             self.text.ReplaceTextOrSelection(tab2ChordPro(t, n))
+
+    def OnChordProImport(self, evt):
+        """Racchiude tra [ ] gli accordi attaccati al testo (brano o selezione).
+
+        Es.:  LAProtegga il popoSOLlo  ->  [LA]Protegga il popo[SOL]lo
+        Usa la notazione predefinita corrente (self.pref.notations[0]).
+        """
+        # --- notazione corrente -------------------------------------
+        if not self.pref.notations:
+            wx.MessageBox(
+                _("No chord notation is available. Check Options > General."),
+                _("Convert glued chords"), wx.OK | wx.ICON_ERROR, self.frame)
+            return
+        notation = self.pref.notations[0]
+
+        # --- conversione --------------------------------------------
+        t = self.text.GetTextOrSelection()
+        try:
+            roots = get_roots(notation, self.pref.notations)
+            res = chordpro_convert(t, roots)
+        except Exception as e:
+            wx.MessageBox(
+                _("Cannot convert chords: %s") % e,
+                _("Convert glued chords"), wx.OK | wx.ICON_ERROR, self.frame)
+            return
+
+        # --- esiti che non modificano il testo ----------------------
+        if res.status == chordpro_import.EMPTY:
+            self.statusBar.SetStatusText(_("Nothing to convert: the text is empty"))
+            return
+
+        if res.status == chordpro_import.ALREADY_CHORDPRO:
+            self.statusBar.SetStatusText(
+                _("Nothing to convert: chords are already in ChordPro format"))
+            return
+
+        if res.status == chordpro_import.NO_CHORDS:
+            wx.MessageBox(
+                _("No glued chords were found using the %(desc)s notation.\n\n"
+                  "Chords must be attached to the lyrics, e.g. %(example)s\n\n"
+                  "If the song uses a different notation, change it in "
+                  "Options > General > Default notation.")
+                % {'desc': getattr(notation, 'desc', notation.id),
+                   'example': '%sProtegga il popo%slo' % (roots[0], roots[1])},
+                _("Convert glued chords"), wx.OK | wx.ICON_INFORMATION, self.frame)
+            return
+
+        # --- conversione riuscita -----------------------------------
+        with undo_action(self.text):
+            self.text.ReplaceTextOrSelection(res.text)
+        self.statusBar.SetStatusText(
+            _("%d chords converted to ChordPro") % res.added)
 
     def OnRemoveSpuriousBlankLines(self, evt):
         self.text.ReplaceTextOrSelection(removeSpuriousLines(self.text.GetTextOrSelection()))

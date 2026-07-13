@@ -356,6 +356,35 @@ Alternative form (closes automatically at the next blank line):
 | C . . . | G . . . | Am . . . | F . . . |
 ```
 
+### How Cells Are Counted — start_of_grid
+
+**Each pair of `|` delimits exactly one bar = one cell.** The number of cells depends **only** on how many `|` you type, not on how many characters or spaces are inside them:
+
+```chordpro
+{start_of_grid}
+| F C | C F G | C |
+{end_of_grid}
+```
+
+produces **3 cells** (`F C`, `C F G`, `C`), even though the second bar is much wider than the others. Inner spacing is normalised: `| C      F |` and `| C F |` give the same result.
+
+A bar may contain **more than one chord** (`| F C |` = one cell with two chords), and chords can be written with or without square brackets:
+
+```chordpro
+| F C | G |
+|[F] [C] |[G] |
+```
+
+To leave an **empty bar**, write a cell with no content:
+
+```chordpro
+| Am |   | G |
+```
+
+produces 3 cells, the middle one empty.
+
+> **Note (behaviour change)** — In earlier versions the bar's width in characters was used to estimate how many cells it spanned: a bar wider than the others automatically generated **extra empty cells** before it. This behaviour has been removed because it produced unwanted phantom bars. If an old song relied on deliberately wide bars to push chords to the right, replace them with explicit empty cells (`|   |`).
+
 ### Options — start_of_grid
 
 All options are specified as `key=value` pairs inside the directive argument, after the optional label. They can be combined freely.
@@ -471,6 +500,23 @@ When the cursor is inside a `{start_of_grid}` block:
 
 > The space-bar-as-pipe behaviour can be disabled in **Format → Chord grid → Space bar inserts \| separator**.
 > The dimension scaled by `size=N` is configured in **Format → Chord grid → size=N affects**: choose between *Width and height* (default), *Width only*, or *Height only*.
+
+### Chord Beats Inside a Grid — `{beats_time:}`
+
+The `{beats_time:}` directive also works **inside** a grid block: put it on a line of its own, immediately **before** the row of cells it refers to.
+
+```chordpro
+{start_of_grid:Intro linespacing=10}
+{beats_time: C=2 G=2 Dm=2 Am=2}
+|[C] [G] |[Dm] [Am] |
+{end_of_grid}
+```
+
+Beats are drawn **above each individual chord**, even when a bar contains more than one, using the same appearance (number, dots, or both), colour, alignment and size set in **Preferences → Format → Beat count (`{beats_time}`)**. The space needed is reserved automatically above the cells.
+
+The directive applies **only to the row of cells immediately below it**: to assign beats to several rows, repeat it before each one.
+
+The command *Insert → Chord duration `{beats_time:}`…* also recognises grid rows written **without square brackets** (`| Am | F | G |`), so the dialog works exactly as it does in the body of the song.
 
 ### Usage Notes — start_of_grid
 
@@ -701,6 +747,8 @@ The `{beats_time:}` directive specifies the **beat duration** of each chord on t
 
 Each `{beats_time:}` directive applies to the **line of text/chords immediately below it**. To assign durations to multiple lines, place a `{beats_time:}` before each one.
 
+The directive also works inside `{start_chord}`, `{start_bridge}` and `{start_of_grid}` blocks — see *Chord Beats Inside a Grid*.
+
 **Inserting from the menu — guided dialog:**
 
 The command *Insert → Chord duration {beats_time:}…* is also accessible via the keyboard shortcut <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd>.
@@ -725,6 +773,8 @@ The dialog provides three additional controls:
 > **Note — Multi-cursor** — The command is compatible with multi-cursor mode (Alt+Click, Ctrl+D). If multiple cursors are active over the same chord sequence, the dialog displays a **green badge** ("● Multi-cursor active: N positions") and inserts the directive at all positions in a single `Ctrl+Z`. If the cursors point to **different chord sequences** (heterogeneous multi-cursor), the dialog opens a **Notebook** with one tab per cursor (up to a maximum of 5): each tab shows the SpinCtrl fields specific to that position and its own real-time preview. A **Preview (cursor 1)** summary field is always visible below the Notebook. If the active cursors exceed 5, a warning is shown: «⚠ Showing first 5 cursors of N».
 >
 > In heterogeneous multi-cursor mode, the dialog also shows the checkbox **☑ Highlight chord rows in editor**, next to a **colour picker**. When enabled, the chord rows each cursor refers to are highlighted with a background colour directly in the editor: the row of the **active cursor** (the tab selected in the Notebook) uses the **full colour** chosen with the picker, while the rows of the **other cursors** use the same hue in a lighter tint (automatically blended towards white). The chosen colour and the checkbox state are **saved in preferences** and restored on the next opening. Highlights are automatically removed when the dialog is closed (OK, Cancel or X).
+>
+> **Multiple cursors on the same line** — If two or more cursors fall on the **same chord line**, they are treated as **a single one**: the line receives one `{beats_time:}` directive and the dialog shows a single tab (the badge count reflects the effective cursors, not the ones placed). This is the intended behaviour, since a chord line can only be preceded by one directive.
 
 **Preview display:**
 
@@ -1041,6 +1091,55 @@ All main directives are accessible via the **Insert** menu, which opens support 
 - **Change notation** — converts between Anglo-Saxon notation (C D E…) and solfège (Do Re Mi…)
 - **Normalize chords** — standardizes chord spelling (e.g. `Hm` → `Bm`)
 - **Convert Tab → ChordPro** — automatically converts tab format (chords above text) to inline ChordPro
+- **Convert inline chords to ChordPro** — wraps in `[ ]` the chords *glued* to the lyrics (see below)
+
+#### Convert Inline Chords to ChordPro
+
+For songs where chords are **stuck to the syllables** of the lyrics, with no square brackets — the typical format of many songbooks copied from the web or from old text files:
+
+```
+LAProtegga il nostro popoSOLlo
+```
+
+becomes:
+
+```chordpro
+[LA]Protegga il nostro popo[SOL]lo
+```
+
+The command acts on the **selection**, if any text is selected, otherwise on the **whole song**. The operation can be undone with a single <kbd>Ctrl</kbd>+<kbd>Z</kbd>.
+
+**Notation used**
+
+The conversion uses the **default notation** set in **Tools → Options… → General → Default notation**. If the song is written in another notation, change it *before* running the command, otherwise the chords will not be recognised.
+
+**How chords are told apart from lyrics**
+
+| Situation | Result |
+| --- | --- |
+| Root preceded by a **lowercase** letter | Chord inside the word → `popo[SOL]lo` |
+| Root at the start of a word, followed by an **uppercase** letter | Chord → `[SOL]Fa che` |
+| Root at the start of a word, followed by a **lowercase** letter | Depends on the notation (see below) |
+| Line made up of **chords only** | All wrapped → `[D] [G] [A]` |
+| `{…}` directives, `#` comments, text already in `[ ]` | Left untouched |
+
+The ambiguous case (root at the start of a word followed by a lowercase letter) is resolved according to the notation:
+
+- **Notations whose roots are all uppercase and at least 2 characters long** (`DO RE MI FA SOL LA SI`): accepted, since `REtuoi` is not an Italian word.
+- **Single-letter notations** (`C D E`) **or capitalised ones** (`Do Re Mi`): rejected, otherwise common words such as `Fai` would become `[F]ai` or `[Fa]i`.
+
+Accidentals (`#`, `b`, `♯`, `♭`), qualities (`-`, `m`, `M`, `min`, `maj`, `dim`, `aug`, `°`, `+`), extensions (`sus`, `add`, digits) and slash bass notes (`Am/C`) are recognised as well. A `b` counts as a flat only if it is **not** followed by further lowercase letters, so `LAbella` stays `[LA]bella` rather than `[LAb]ella`.
+
+**Messages**
+
+| Outcome | Message |
+| --- | --- |
+| Conversion successful | Status bar: *«N chords converted to ChordPro»* |
+| Empty text | Status bar: *«Nothing to convert: the text is empty»* |
+| Chords already in `[ ]` | Status bar: *«Nothing to convert: chords are already in ChordPro format»* |
+| No glued chords recognised | Warning dialog showing the notation used, an example of the expected format, and a suggestion to change the default notation |
+
+> **Tip:** after converting, it is worth running **Tools → Check syntax** (<kbd>F7</kbd>) and glancing at the preview: lyric words that happen to match a note name may, in rare cases, be wrapped by mistake.
 
 ### Format and Structure
 
@@ -1313,6 +1412,208 @@ Uncheck *Single instance* if you need to:
 > **Note — startup.log** — Every single-instance event is logged in `%LOCALAPPDATA%\Songpress++\startup.log` (Windows) or `~/.Songpress++/startup.log` (Linux/macOS). The log records the config path read, the value of the `singleinstance` key, whether an existing instance was found, and whether the file was forwarded successfully. This is the first place to look when troubleshooting multiple-window behaviour.
 
 ---
+## Options Window — Complete Reference
+
+Opened from **Tools → Options…** (window title: *Songpress++ options*). It is a resizable tabbed dialog (minimum size 730 × 800 px).
+
+### Buttons shared by all tabs
+
+| Button | Function |
+| ------ | -------- |
+| 📌 **Pin** | Keeps the dialog open after pressing OK: preferences are saved and applied immediately, but the window stays available for further changes. Very handy when tuning colours and spacing while watching the preview update. |
+| **OK** | Saves all preferences (`Preferences.Save()`) and closes the window. |
+| **Cancel** | Closes without saving. Interactive previews (syntax colours, editor background…) are discarded. |
+
+> **Restart** — Changing the **interface language** is the only option that requires a restart. On confirmation a message appears with two buttons: **OK** (applied at next launch) and **Restart now** (restarts Songpress++ immediately). Every other option takes effect at once.
+
+---
+
+### *General* tab
+
+#### **Song** group
+
+| Field | Default | Description |
+| ----- | ------- | ----------- |
+| **Default notation** | first in list | Chord notation used for new songs (Italian, English, German…). |
+| **Default file extension** | `crd` | Extension proposed when saving. Values: `crd`, `pro`, `chopro`, `chordpro`, `cho`, `sng`. |
+| **Language** | system language | Interface language, shown with a flag. **Requires a restart.** |
+
+#### **General** group
+
+| Command / option | Default | Description |
+| ---------------- | :-----: | ----------- |
+| **Clear recent files** (button) | — | Empties the recent-files list. The removal happens when you confirm with OK. |
+| **Open templates folder** (button) | — | Opens the `templates/` folder (also used for colour themes) in the system file manager. |
+| **Enable 'Save' button only when the song is modified** | ✓ | Save (menu and toolbar) stays greyed out until there are unsaved changes. |
+| **Enable directive intellisense (Ctrl+Space)** | ✓ | Auto-completion of ChordPro directives in the editor. |
+| **Enable multi-cursor (Alt+Click, Ctrl+D)** | ☐ | Alt+Click adds a cursor; Ctrl+D selects the next occurrence of the current word. |
+| **Single instance: open files in the existing window** | ✓ | Files opened from Explorer or the command line reuse the existing window. See *Single instance mode*. |
+| **Show 'Restart Songpress++' in the File menu** | ✓ | Adds a quick-restart item to the File menu. |
+| **Show debug messages (theme save path)** | ☐ | Shows diagnostic popups (e.g. where a theme file was written). Troubleshooting only. |
+| **Save window size and position on exit** | ✓ | Restores the window geometry at the next launch. |
+| **Replace spaces with '_' in saved file names** | ☐ | Whitespace in the file name (not the folder path) becomes an underscore when saving or exporting. |
+| **Suggest the song {title:} as file name in 'Save as'** | ☐ | Proposes the title as the default file name, stripped of invalid characters. See *Saved File Names*. |
+| **Toolbar icon size** | Small | Radio: **Small (16×16)**, **Medium (19×19)**, **Large (21×21)**. |
+
+> Checkboxes in this group are sorted alphabetically according to the interface language, so the on-screen order may differ from the table.
+
+---
+
+### *Editor* tab
+
+#### **Editor font** group
+
+| Field | Default | Description |
+| ----- | ------- | ----------- |
+| **Font** | system fixed-width font | Editor typeface (list with preview). |
+| **Size** | 12 | Font size (7–20). |
+| **Editor background colour** | `#FFFFFF` | Background of the writing area. |
+| **Selection colour** | `#C0C0C0` | Background of selected text. |
+| **Caret colour** | `#000000` | Colour of the insertion caret. |
+| **Editor caption colour** | `#4682C8` | Title bar colour of the *Editor* AUI pane. |
+| **Preview caption colour** | `#329B82` | Title bar colour of the *Preview* AUI pane. |
+
+Each colour has three controls: the **hex** field (`#RRGGBB`, editable by hand), the **Pick…** button (system colour picker) and the **swatch** preview.
+
+#### **Syntax colours** group
+
+Controls ChordPro syntax highlighting in the editor. The preview at the bottom of the tab shows the result immediately on a sample song.
+
+| Element | Default |
+| ------- | ------- |
+| **Normal text** | `#000000` |
+| **Chorus** | `#000000` |
+| **Chords** | `#FF0000` |
+| **Commands** | `#0000FF` |
+| **Attributes** | `#008000` |
+| **Comments** | `#808080` |
+| **Tab / Grid** | `#8B5A00` |
+
+**Theme bar** — saves and reuses colour combinations:
+
+- **Theme** (list) — themes available in the `templates/` folder.
+- **Load** — applies the selected theme to the colour fields.
+- **Save** — asks for a name and stores the current combination as a theme.
+- **Delete** — removes the selected theme after confirmation.
+
+> With *Show debug messages* enabled, saving a theme also displays the full path of the file that was created.
+
+---
+
+### *AutoAdjust* tab
+
+Controls the automatic fix-up offers made when opening or saving a song.
+
+| Option | Default | Description |
+| ------ | :-----: | ----------- |
+| **Offer to remove blank lines** | ✓ | Offers to delete unnecessary blank lines. |
+| **Offer to convert songs in tab** | ✓ | Offers to convert *chords-over-lyrics* format to ChordPro. |
+| **Offer to transpose songs to simplify chords** | ☐ | Offers to transpose to the key with the simplest chord shapes. |
+| **Level bar colour** | `#2980B9` | Colour of the bars in the simplification sliders below. |
+
+Below, the scrollable **chord simplification** panel has one slider per chord group: it sets how "easy" that group is considered when Songpress++ looks for the optimal key.
+
+---
+
+### *Format* tab
+
+#### **Title and structure** group
+
+| Field | Default | Range |
+| ----- | :-----: | ----- |
+| **Title underline thickness** | 4 | 1–5 |
+| **Verse number box thickness** | 1 | 1–5 |
+
+#### **Chords and keyboard** group
+
+| Field | Default | Description |
+| ----- | ------- | ----------- |
+| **Klavier key colour** | `#D23C3C` | Key highlight in the keyboard diagram. |
+| **Finger number colour** | `#1A1A1A` | Colour of `{fingering:}` numbers. |
+
+#### **Tempo** group
+
+| Field | Default | Description |
+| ----- | ------- | ----------- |
+| **Tempo icon size** | 24×24 | Size of the `{tempo_*}` directive icons: 16×16, 24×24, 32×32. |
+
+#### **Chord grid (`{start_of_grid}`…`{end_of_grid}`)** group
+
+| Field | Default | Description |
+| ----- | :-----: | ----------- |
+| **Display mode** | Pipe | **Pipe table** (`\| C \| G \| Am \| F \|`), **Plain spacing** (chords spaced without pipes), **Table** (cells with drawn borders). |
+| **Default label** | *Grid* | Label used when `{start_of_grid}` has no argument. `{start_of_grid: Intro}` overrides it. |
+| **Space bar inserts the pipe `\|` separator (pipe mode)** | ✓ | Inside a grid block the space bar inserts a `\|`, shifting the current cell to the right. Disable it to type normal spaces. |
+| **`size=N` affects** | Width and height | Whether `size=N` multiplies cell padding in **width and height**, **width only** or **height only**. |
+
+#### **Musical symbol insertion** group
+
+| Field | Default | Description |
+| ----- | :-----: | ----------- |
+| **Custom size when inserting musical symbols (pt)** | ☐ | When enabled, the symbol is wrapped in `{textsize:N}`…`{textsize:}` with the size chosen in the spin control (6–144, default 24). |
+| **Wrap symbol in a verse block (not counted)** | ☐ | The symbol is wrapped in `{start_verse}`…`{end_verse}` so it is excluded from verse numbering. |
+
+#### **Beat count (`{beats_time}`)** group
+
+| Field | Default | Description |
+| ----- | :-----: | ----------- |
+| **Colour** | `#6464C8` | Colour of the beat number/dots. |
+| **Font size (% of chord font)** | 60 | 30–150 %. |
+| **Bold** | ☐ | Draws the number in bold. |
+| **Position** | Right | Left / Center / Right relative to the chord name. |
+| **Display mode** | Number | **Number**, **Dots** (between chords) or **Both**. |
+
+---
+
+### *Songpress++ Preview* tab
+
+Holds three groups already described in detail in the *Preview options*, *Printing and Preview* and *No chords: blocks to hide* chapters:
+
+- **Songpress++ Preview** — Double-click jumps to the editor (✓), Minimum panel size 370×520 (✓), Show page indicator (✓), Delay preview refresh while typing — debounce (✓), Grey background (✓).
+- **Print** — Live update of duplex/colour status in the print preview every 1.5 s (✓), Keep print preview always on top (☐), Show print preview before printing (✓).
+- **No chords: blocks to hide** — Intro chords, Bridge, Grid, Time signature `{time}`, Tempo `{tempo_*}` (all ☐).
+
+---
+
+### *Quick guide* tab
+
+| Field | Default | Description |
+| ----- | ------- | ----------- |
+| **Markdown viewer** | Automatic | Engine used to render this guide: **Automatic** (tries *python-markdown*, then *mistune*, then the built-in parser), **python-markdown**, **mistune**, **Built-in parser**. The first two must be installed separately. |
+
+---
+
+### *Context menu* tab
+
+Chooses which entries appear in the editor's right-click menu.
+
+| Group | Items |
+| ----- | ----- |
+| **History** | Undo, Redo |
+| **Edit** | Cut, Copy, Paste, Delete + **Ask confirmation before deleting** (☐, sub-option of *Delete*) |
+| **Special actions** | Paste chords, Propagate verse chords, Propagate chorus chords, Copy text only |
+| **Selection** | Select all |
+| **Appearance** | **Show icons in context menu** (✓) |
+
+---
+
+### *File associations* tab
+
+Associates extensions with Songpress++ **for the current user only**.
+
+- Checkboxes for: `.crd`, `.cho`, `.chordpro`, `.chopro`, `.pro`, `.tab`, `.sng`
+- **Associate all** / **Unassociate all** and **Apply now** buttons
+
+> **On Linux** the controls are disabled: with the `.deb` package MIME associations are handled by the system (`/usr/share/mime`) and are not touched by the application. On Windows the keys are written under `HKEY_CURRENT_USER`. On other systems the tab shows a "not available" notice.
+
+---
+
+### *Toolbars* tab
+
+Contains four sub-tabs — **Standard**, **Format**, **Insert**, **View** — with one checkbox per icon of the corresponding bar, plus **Select all** / **Deselect all** buttons (acting only on the active sub-tab). Details and separator behaviour in the *Toolbar Customisation* chapter.
+
+---
+
 ## Toolbar Customisation
 
 Songpress++ lets you show or hide individual icons in each of the four toolbars: **Standard**, **Format**, **Insert** and **View**.
@@ -1355,13 +1656,56 @@ When adding a new command to a toolbar, it is sufficient to:
 
 ---
 
+## Saved File Names
+
+Two checkboxes in the **General** tab of **Tools → Options…** control the name proposed and used when saving a song. They are **independent** and can be enabled together: the first decides *which* name is proposed, the second *how* it is written.
+
+| Option | Default | Effect |
+|---|---|---|
+| **Suggest the song `{title:}` as file name in 'Save as'** | off | The *File name* field of the "Save as" dialog is pre-filled with the song title |
+| **Replace spaces with `_` in saved file names** | off | Every space in the file name (not in the folder path) becomes an underscore |
+
+### Suggesting the Name from the Title
+
+When enabled, Songpress++ reads the `{title:}` directive (or its short form `{t:}`) and proposes it as the file name, with the default extension already applied.
+
+Extraction rules:
+
+- the **first** valid `{title:}` or `{t:}` directive in the document is used;
+- lines starting with `#` are ChordPro comments and are **ignored**, so a commented-out title is never proposed;
+- inline chords inside the title are stripped: `{title: [C]Ave Maria}` → `Ave Maria`;
+- if the closing `}` is missing, the rest of the line is used;
+- characters not allowed in file names (`< > : " / \ | ? *`) are removed, and leading or trailing dots are stripped (to avoid hidden files on Linux);
+- if the title is missing, empty or contains no valid characters, the field falls back to the default behaviour (current document name, or empty for a new song).
+
+Other directives starting with `t` — `{tempo:}`, `{time:}`, `{taste:}` — are never mistaken for `{t:}`.
+
+### How the Two Options Interact
+
+The two options **compose** without conflicting. With `{title: Ave Maria splendore del mattino}` and the `crd` extension:
+
+| Suggest title | Replace spaces | Proposed name |
+|---|---|---|
+| ✗ | ✗ | *(empty)* |
+| ✓ | ✗ | `Ave del mattino.crd` |
+| ✓ | ✓ | `Ave_del_mattino.crd` |
+| ✗ | ✓ | *(empty, but manually typed spaces become `_`)* |
+
+The name can still be edited in the dialog before confirming.
+
+> **Note — Windows and Linux** — Behaviour is identical on both systems. Characters that are illegal on Windows are removed on Linux too, where some would technically be allowed: this keeps files portable across platforms.
+
+> **Tip — Diagnostics** — If the name is not proposed even though the option is enabled, turn on **Show debug messages** in the same tab: Songpress++ will report the reason (option disabled, no `{title:}` directive found, or title with no valid characters).
+
+---
+
 ## Display Preferences
 
 The following controls are found in the **Formatting** tab of preferences and affect the preview and print output.
 
 | Field                         | Default | Range | Step |
 | ----------------------------- | ------- | ----- | ---- |
-| Title underline thickness     | 2       | 1–5   | 1    |
+| Title underline thickness     | 4       | 1–5   | 1    |
 | Verse number border thickness | 1       | 1–5   | 1    |
 
 ---
@@ -2086,6 +2430,18 @@ The third field, at the far right, permanently shows the state of the **keyboard
 | **SCR** | <kbd>Scroll Lock</kbd> | **On**: Scroll Lock is engaged. **Off**: the badge is not shown. |
 
 > **Tooltip** — Hovering the mouse pointer over a badge shows a tooltip that explicitly states the current key state (e.g. *Caps Lock: on* / *Caps Lock: off*).
+
+#### Windows vs Linux differences
+
+The three badges **do not behave identically on both platforms**, because their behaviour depends on how the operating system exposes the lock-key state.
+
+| Badge | Windows | Linux (X11 / Wayland) |
+| ----- | ------- | --------------------- |
+| **CAPS** | Reflects the *lock* state: stays lit while Caps Lock is engaged. | Same as Windows: Caps Lock is a real modifier (`Lock`), so its state is read correctly. |
+| **NUM** | Reflects the *lock* state: stays lit while Num Lock is engaged. | Same as Windows: Num Lock is a real modifier (`Mod2`). |
+| **SCR** | Reflects the *lock* state: stays lit while Scroll Lock is engaged. | ⚠️ **Appears only while the key is physically held down and disappears as soon as it is released.** |
+
+> **Note — SCR on Linux** — In modern keyboard layouts (XKB), `Scroll_Lock` is no longer mapped to a modifier or to a system LED, so there is no "engaged/disengaged" state the application can query. In that case the library function used by Songpress++ returns only the *instantaneous* key state (pressed/released). As a result, on Linux the **SCR** badge flickers — it shows up while <kbd>Scroll Lock</kbd> is held down and vanishes on release — instead of staying lit. **This is not a Songpress++ defect**: it is a limitation of the desktop environment. The **CAPS** and **NUM** indicators, by contrast, behave identically on Windows and Linux.
 
 ---
 

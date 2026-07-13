@@ -356,6 +356,35 @@ Forma alternativa (si chiude automaticamente alla riga vuota successiva):
 | C . . . | G . . . | Am . . . | F . . . |
 ```
 
+### Come vengono contate le celle — start_of_grid
+
+**Ogni coppia di `|` delimita esattamente una battuta = una cella.** Il numero di celle dipende **solo** da quante `|` scrivi, non da quanti caratteri o spazi ci sono dentro:
+
+```chordpro
+{start_of_grid}
+| FA DO | DO FA SOL | DO |
+{end_of_grid}
+```
+
+produce **3 celle** (`FA DO`, `DO FA SOL`, `DO`), anche se la seconda battuta è molto più larga delle altre. Gli spazi interni vengono normalizzati: `| DO      FA |` e `| DO FA |` danno lo stesso risultato.
+
+Una battuta può contenere **più di un accordo** (`| FA DO |` = una cella con due accordi), e gli accordi si possono scrivere indifferentemente con o senza parentesi quadre:
+
+```chordpro
+| FA DO | SOL |
+|[FA] [DO] |[SOL] |
+```
+
+Per lasciare una **battuta vuota**, scrivi una cella senza contenuto:
+
+```chordpro
+| Am |   | G |
+```
+
+produce 3 celle, di cui la centrale vuota.
+
+> **Nota (cambiamento di comportamento)** — Nelle versioni precedenti la larghezza in caratteri della battuta veniva usata per stimare quante celle occupasse: una battuta più larga delle altre generava automaticamente delle **celle vuote extra** prima di sé. Questo comportamento è stato rimosso perché produceva battute fantasma non richieste. Se in un vecchio brano avevi usato battute volutamente larghe per spostare gli accordi a destra, sostituiscile con celle vuote esplicite (`|   |`).
+
 ### Opzioni — start_of_grid
 
 Tutte le opzioni si specificano come coppie `chiave=valore` nell'argomento della direttiva, dopo l'eventuale etichetta. Possono essere combinate liberamente.
@@ -468,6 +497,23 @@ Quando il cursore si trova dentro un blocco `{start_of_grid}`:
 | ----------------------| ------------------------------------------------------------------------------------------------------------ |
 | **Barra spaziatrice** | Inserisce un separatore `\|` pipe, spostando la cella corrente verso destra (configurabile nelle preferenze) |
 | `{row}` / `{r}`       | Inserisce una riga vuota separatrice (spazio verticale tra le righe)                                         |
+
+### Battiti degli accordi nella griglia — `{beats_time:}`
+
+La direttiva `{beats_time:}` funziona anche **dentro** un blocco griglia: mettila su una riga tutta sua, subito **prima** della riga di celle a cui si riferisce.
+
+```chordpro
+{start_of_grid:Intro linespacing=10}
+{beats_time: DO=2 SOL=2 RE-=2 LA-=2}
+|[DO] [SOL] |[RE-] [LA-] |
+{end_of_grid}
+```
+
+I battiti vengono disegnati **sopra ogni singolo accordo**, anche quando una battuta ne contiene più di uno, con lo stesso aspetto (numero, puntini o entrambi), colore, allineamento e dimensione impostati in **Preferenze → Formattazione → Conteggio battiti (`{beats_time}`)**. Lo spazio necessario viene riservato automaticamente sopra le celle.
+
+La direttiva vale **solo per la riga di celle immediatamente successiva**: per assegnare i battiti a più righe, ripetila prima di ciascuna.
+
+Il comando *Inserisci → Durata accordi `{beats_time:}`…* riconosce anche le righe di griglia scritte **senza parentesi quadre** (`| Am | F | G |`), quindi puoi usare il dialogo esattamente come nel corpo del brano.
 
 > Il comportamento della barra spaziatrice come pipe può essere disabilitato in **Formattazione → Griglia accordi → Barra spaziatrice inserisce il separatore \|**.
 > La dimensione scalata da `size=N` si configura in **Formattazione → Griglia accordi → size=N agisce su**: scegli tra *Larghezza e altezza* (default), *Solo larghezza* o *Solo altezza*.
@@ -701,6 +747,8 @@ La direttiva `{beats_time:}` specifica la **durata in battiti** di ciascun accor
 
 Ogni direttiva `{beats_time:}` si applica **alla riga di testo/accordi immediatamente successiva**. Per assegnare durate a più righe, inserisci una `{beats_time:}` prima di ognuna.
 
+La direttiva funziona anche dentro i blocchi `{start_chord}`, `{start_bridge}` e `{start_of_grid}` — vedi *Battiti degli accordi nella griglia*.
+
 **Inserimento dal menu — dialogo guidato:**
 
 Il comando *Inserisci → Durata accordo {beats_time:}…* è accessibile anche tramite la scorciatoia da tastiera <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd>.
@@ -725,6 +773,8 @@ Il dialogo offre tre controlli aggiuntivi:
 > **Nota — Multicursore** — Il comando è compatibile con il multicursore (Alt+Clic, Ctrl+D). Se sono attivi più cursori sulla stessa sequenza di accordi, il dialogo mostra un **badge verde** («● Multicursore attivo: N posizioni») e la direttiva viene inserita in tutte le posizioni in un solo `Ctrl+Z`. Se invece i cursori puntano a **sequenze di accordi diverse** (multicursore eterogeneo), il dialogo apre un **Notebook** con una tab per ogni cursore (fino a un massimo di 5): ogni tab mostra gli SpinCtrl specifici per quella posizione e la propria anteprima in tempo reale. Sotto il Notebook è sempre visibile un campo **Anteprima (cursore 1)** riepilogativo. Se i cursori attivi superano 5, viene mostrato un avviso «⚠ Visualizzati i primi 5 cursori su N».
 >
 > Nella modalità multicursore eterogeneo il dialogo mostra anche la checkbox **☑ Evidenzia le righe degli accordi nell'editor**, affiancata da un **colour picker**. Quando è attiva, le righe degli accordi a cui si riferisce ogni cursore vengono evidenziate nell'editor con un colore di sfondo: la riga del **cursore attivo** (la tab selezionata nel Notebook) usa il **colore pieno** scelto con il picker, mentre le righe degli **altri cursori** usano la stessa tinta in versione più chiara (schiarita automaticamente verso il bianco). Il colore scelto e lo stato della checkbox vengono **salvati nelle preferenze** e ripristinati alla prossima apertura. Le evidenziazioni vengono rimosse automaticamente alla chiusura del dialogo (OK, Annulla o X).
+>
+> **Più cursori sulla stessa riga** — Se due o più cursori ricadono sulla **stessa riga di accordi**, vengono considerati come **uno solo**: la riga riceve una singola direttiva `{beats_time:}` e nel dialogo compare una sola tab (il conteggio del badge riflette i cursori effettivi, non quelli inseriti con Alt+Clic). Questo è il comportamento corretto, dato che una riga di accordi può essere preceduta da una sola direttiva.
 
 **Visualizzazione nell'anteprima:**
 
@@ -1041,6 +1091,55 @@ Tutte le principali direttive sono accessibili tramite il menu **Inserisci**, ch
 - **Cambia notazione** — converte tra notazione anglosassone (C D E…) e solfeggio (Do Re Mi…)
 - **Normalizza accordi** — standardizza la scrittura degli accordi (es. `Hm` → `Bm`)
 - **Converti Tab → ChordPro** — converte automaticamente il formato tab (accordi sopra il testo) in ChordPro inline
+- **Converti accordi in linea in ChordPro** — racchiude tra `[ ]` gli accordi *attaccati* alle parole del testo (vedi sotto)
+
+#### Converti accordi in linea in ChordPro
+
+Serve per i brani in cui gli accordi sono **incollati alle sillabe** del testo, senza parentesi quadre — il formato tipico di molti canzonieri copiati da internet o da vecchi file di testo:
+
+```
+LAProtegga il nostro popoSOLlo
+```
+
+diventa:
+
+```chordpro
+[LA]Protegga il nostro popo[SOL]lo
+```
+
+Il comando agisce sulla **selezione**, se c'è del testo selezionato, altrimenti sull'**intero brano**. L'operazione è annullabile con un singolo <kbd>Ctrl</kbd>+<kbd>Z</kbd>.
+
+**Notazione usata**
+
+La conversione usa la **notazione predefinita** impostata in **Strumenti → Opzioni… → Generale → Notazione predefinita**. Se il brano è scritto in un'altra notazione, cambiala *prima* di lanciare il comando: gli accordi non verranno riconosciuti.
+
+**Come distingue un accordo dal testo**
+
+| Situazione | Esito |
+| --- | --- |
+| Radice preceduta da una lettera **minuscola** | Accordo dentro la parola → `popo[SOL]lo` |
+| Radice a inizio parola, seguita da una **maiuscola** | Accordo → `[SOL]Fa che` |
+| Radice a inizio parola, seguita da una **minuscola** | Dipende dalla notazione (vedi sotto) |
+| Riga composta **solo da accordi** | Racchiusi tutti → `[RE] [SOL] [LA]` |
+| Direttive `{…}`, commenti `#`, testo già tra `[ ]` | Lasciati intatti |
+
+Il caso ambiguo (radice a inizio parola seguita da minuscola) è risolto in base alla notazione:
+
+- **Notazioni con radici tutte maiuscole e lunghe almeno 2 caratteri** (`DO RE MI FA SOL LA SI`): accettato, perché `REtuoi` non è una parola italiana.
+- **Notazioni a lettera singola** (`C D E`) **o capitalizzate** (`Do Re Mi`): rifiutato, altrimenti parole comuni come `Fai` diventerebbero `[F]ai` o `[Fa]i`.
+
+Vengono riconosciute anche alterazioni (`#`, `b`, `♯`, `♭`), qualità (`-`, `m`, `M`, `min`, `maj`, `dim`, `aug`, `°`, `+`), estensioni (`sus`, `add`, numeri) e il basso dopo la barra (`LA-/DO`). La `b` di bemolle vale come alterazione solo se **non** è seguita da altre minuscole, così `LAbella` resta `[LA]bella` e non `[LAb]ella`.
+
+**Messaggi**
+
+| Esito | Messaggio |
+| --- | --- |
+| Conversione riuscita | Nella barra di stato: *«N accordi convertiti in ChordPro»* |
+| Testo vuoto | Nella barra di stato: *«Niente da convertire: il testo è vuoto»* |
+| Accordi già tra `[ ]` | Nella barra di stato: *«Niente da convertire: gli accordi sono già in formato ChordPro»* |
+| Nessun accordo attaccato riconosciuto | Finestra di avviso con la notazione usata, un esempio del formato atteso e l'invito a cambiare la notazione predefinita |
+
+> **Suggerimento:** dopo la conversione conviene lanciare **Strumenti → Controlla sintassi** (<kbd>F7</kbd>) e dare un'occhiata all'anteprima: parole del testo che coincidono con un nome di nota possono, in casi rari, essere racchiuse per errore.
 
 ### Formato e struttura
 
@@ -1313,6 +1412,208 @@ Deseleziona *Istanza singola* se hai bisogno di:
 > **Nota — startup.log** — Ogni evento legato all'istanza singola viene registrato in `%LOCALAPPDATA%\Songpress++\startup.log` (Windows) oppure `~/.Songpress++/startup.log` (Linux/macOS). Il log registra il percorso del config letto, il valore della chiave `singleinstance`, se è stata trovata un'istanza esistente e se il file è stato inoltrato con successo. È il primo posto dove cercare in caso di comportamento anomalo con più finestre.
 
 ---
+## Finestra Opzioni — riferimento completo
+
+Si apre da **Strumenti → Opzioni…** (titolo della finestra: *Opzioni Songpress++*). È un dialogo a schede ridimensionabile (dimensione minima 730 × 800 px).
+
+### Pulsanti comuni a tutte le schede
+
+| Pulsante | Funzione |
+| -------- | -------- |
+| 📌 **Pin** | Mantiene la finestra aperta dopo aver premuto OK: le preferenze vengono salvate e applicate immediatamente, ma il dialogo resta a disposizione per ulteriori modifiche. Molto comodo per regolare colori e spaziature vedendo subito l'effetto nell'anteprima. |
+| **OK** | Salva tutte le preferenze (`Preferences.Save()`) e chiude la finestra. |
+| **Annulla** | Chiude senza salvare. Le anteprime interattive (colori sintassi, sfondo editor…) vengono comunque scartate. |
+
+> **Riavvio** — Cambiare la **lingua dell'interfaccia** è l'unica opzione che richiede il riavvio. Alla conferma appare un messaggio con due pulsanti: **OK** (applica al prossimo avvio) e **Riavvia ora** (riavvia subito Songpress++). Tutte le altre opzioni hanno effetto immediato.
+
+---
+
+### Scheda *Generale*
+
+#### Gruppo **Canzone**
+
+| Campo | Predefinito | Descrizione |
+| ----- | ----------- | ----------- |
+| **Notazione predefinita** | prima della lista | Notazione degli accordi usata per i nuovi brani (italiana, inglese, tedesca…). |
+| **Estensione predefinita** | `crd` | Estensione proposta al salvataggio. Valori: `crd`, `pro`, `chopro`, `chordpro`, `cho`, `sng`. |
+| **Lingua** | lingua di sistema | Lingua dell'interfaccia, con bandierina. **Richiede il riavvio.** |
+
+#### Gruppo **Generale**
+
+| Comando / opzione | Predefinito | Descrizione |
+| ----------------- | :---------: | ----------- |
+| **Cancella file recenti** (pulsante) | — | Svuota l'elenco dei file recenti. La cancellazione avviene alla conferma con OK. |
+| **Apri cartella modelli** (pulsante) | — | Apre nel file manager di sistema la cartella `templates/` usata anche per i temi dei colori. |
+| **Abilita il pulsante «Salva» solo quando la canzone è modificata** | ✓ | Il comando Salva (menu e toolbar) resta disabilitato finché non ci sono modifiche non salvate. |
+| **Abilita intellisense direttive (Ctrl+Spazio)** | ✓ | Attiva il completamento automatico delle direttive ChordPro nell'editor. |
+| **Abilita multicursore (Alt+Clic, Ctrl+D)** | ☐ | Alt+Clic aggiunge un cursore; Ctrl+D seleziona l'occorrenza successiva della parola corrente. |
+| **Istanza singola: apri i file nella finestra esistente** | ✓ | I file aperti da Esplora risorse o da riga di comando riutilizzano la finestra già aperta. Vedi il capitolo *Modalità istanza singola*. |
+| **Mostra «Riavvia Songpress++» nel menu File** | ✓ | Aggiunge la voce di riavvio rapido al menu File. |
+| **Mostra messaggi di debug (percorso salvataggio temi)** | ☐ | Mostra popup diagnostici (es. il percorso in cui viene salvato un tema). Utile solo per diagnosi. |
+| **Salva dimensione e posizione della finestra all'uscita** | ✓ | Ripristina geometria della finestra al successivo avvio. |
+| **Sostituisci gli spazi con «_» nei nomi dei file salvati** | ☐ | Gli spazi nel nome del file (non nel percorso) diventano underscore in salvataggio ed esportazione. |
+| **Suggerisci il {title:} della canzone come nome file in «Salva con nome»** | ☐ | Propone il titolo come nome file, ripulito dai caratteri non validi. Vedi *Nomi dei file salvati*. |
+| **Dimensione icone toolbar** | Piccole | Radio: **Piccole (16×16)**, **Medie (19×19)**, **Grandi (21×21)**. |
+
+> Le checkbox del gruppo sono ordinate alfabeticamente secondo la lingua dell'interfaccia: l'ordine a schermo può differire da quello della tabella.
+
+---
+
+### Scheda *Editor*
+
+#### Gruppo **Font editor**
+
+| Campo | Predefinito | Descrizione |
+| ----- | ----------- | ----------- |
+| **Font** | font a spaziatura fissa di sistema | Carattere dell'editor (elenco con anteprima). |
+| **Dimensione** | 12 | Corpo del font (7–20). |
+| **Colore di sfondo editor** | `#FFFFFF` | Sfondo dell'area di scrittura. |
+| **Colore selezione** | `#C0C0C0` | Sfondo del testo selezionato. |
+| **Colore cursore (caret)** | `#000000` | Colore della barra di inserimento. |
+| **Colore didascalia Editor** | `#4682C8` | Colore della barra titolo del riquadro AUI *Editor*. |
+| **Colore didascalia Anteprima** | `#329B82` | Colore della barra titolo del riquadro AUI *Anteprima*. |
+
+Ogni colore ha tre controlli: il campo **esadecimale** (`#RRGGBB`, modificabile a mano), il pulsante **Scegli…** (apre il selettore colore di sistema) e il **quadratino di anteprima**.
+
+#### Gruppo **Colori sintassi**
+
+Colora l'evidenziazione della sintassi ChordPro nell'editor. L'anteprima in fondo alla scheda mostra subito il risultato su un brano di esempio.
+
+| Elemento | Predefinito |
+| -------- | ----------- |
+| **Testo normale** | `#000000` |
+| **Ritornello** | `#000000` |
+| **Accordi** | `#FF0000` |
+| **Comandi** | `#0000FF` |
+| **Attributi** | `#008000` |
+| **Commenti** | `#808080` |
+| **Tab / Griglia** | `#8B5A00` |
+
+**Barra dei temi** — permette di salvare e riusare combinazioni di colori:
+
+- **Tema** (elenco) — temi disponibili nella cartella `templates/`.
+- **Carica** — applica il tema selezionato ai campi colore.
+- **Salva** — chiede un nome e salva la combinazione corrente come tema.
+- **Elimina** — rimuove il tema selezionato previa conferma.
+
+> Con *Mostra messaggi di debug* attivo, al salvataggio di un tema viene mostrato il percorso completo del file creato.
+
+---
+
+### Scheda *Correzione automatica*
+
+Controlla le proposte automatiche di correzione all'apertura/salvataggio di un brano.
+
+| Opzione | Predefinito | Descrizione |
+| ------- | :---------: | ----------- |
+| **Proponi di rimuovere le righe vuote** | ✓ | Offre di eliminare le righe vuote superflue. |
+| **Proponi di convertire le canzoni in tab** | ✓ | Offre di convertire il formato *accordi sopra il testo* in ChordPro. |
+| **Proponi di trasporre per semplificare gli accordi** | ☐ | Offre di trasporre nella tonalità con gli accordi più semplici. |
+| **Colore barra livelli** | `#2980B9` | Colore delle barre dei cursori di semplificazione sottostanti. |
+
+Sotto, il pannello scorrevole **semplificazione accordi** contiene un cursore per ogni gruppo di accordi: imposta quanto un dato gruppo debba essere considerato «facile» quando Songpress++ cerca la tonalità ottimale.
+
+---
+
+### Scheda *Formato*
+
+#### Gruppo **Titolo e struttura**
+
+| Campo | Predefinito | Intervallo |
+| ----- | :---------: | ---------- |
+| **Spessore sottolineatura titolo** | 4 | 1–5 |
+| **Spessore bordo numero strofa** | 1 | 1–5 |
+
+#### Gruppo **Accordi e tastiera**
+
+| Campo | Predefinito | Descrizione |
+| ----- | ----------- | ----------- |
+| **Colore tasti Klavier** | `#D23C3C` | Evidenziazione dei tasti nel diagramma di tastiera. |
+| **Colore numeri diteggiatura** | `#1A1A1A` | Colore dei numeri di `{fingering:}`. |
+
+#### Gruppo **Tempo**
+
+| Campo | Predefinito | Descrizione |
+| ----- | ----------- | ----------- |
+| **Dimensione icone tempo** | 24×24 | Dimensione delle icone delle direttive `{tempo_*}`: 16×16, 24×24, 32×32. |
+
+#### Gruppo **Griglia accordi (`{start_of_grid}`…`{end_of_grid}`)**
+
+| Campo | Predefinito | Descrizione |
+| ----- | :---------: | ----------- |
+| **Modalità di visualizzazione** | Pipe | **Tabella pipe** (`\| C \| G \| Am \| F \|`), **Spaziatura semplice** (accordi spaziati senza pipe), **Tabella** (celle con bordi disegnati). |
+| **Etichetta predefinita** | *Griglia* | Etichetta usata quando `{start_of_grid}` non ha argomento. `{start_of_grid: Intro}` la sovrascrive. |
+| **La barra spaziatrice inserisce il separatore pipe `\|` (modalità pipe)** | ✓ | Dentro un blocco griglia lo spazio inserisce un `\|` spostando la cella corrente a destra. Disattivare per digitare spazi normali. |
+| **`size=N` agisce su** | Larghezza e altezza | Scegli se `size=N` moltiplichi il padding delle celle in **larghezza e altezza**, **solo larghezza** o **solo altezza**. |
+
+#### Gruppo **Inserimento simbolo musicale**
+
+| Campo | Predefinito | Descrizione |
+| ----- | :---------: | ----------- |
+| **Dimensione personalizzata all'inserimento dei simboli (pt)** | ☐ | Se attivo, il simbolo viene racchiuso tra `{textsize:N}`…`{textsize:}` con il corpo scelto nello spin (6–144, predefinito 24). |
+| **Racchiudi il simbolo in un blocco strofa (non conteggiato)** | ☐ | Il simbolo viene avvolto in `{start_verse}`…`{end_verse}` così da non entrare nella numerazione delle strofe. |
+
+#### Gruppo **Conteggio battute (`{beats_time}`)**
+
+| Campo | Predefinito | Descrizione |
+| ----- | :---------: | ----------- |
+| **Colore** | `#6464C8` | Colore del numero/puntini di durata. |
+| **Dimensione font (% del font accordo)** | 60 | 30–150 %. |
+| **Grassetto** | ☐ | Disegna il numero in grassetto. |
+| **Posizione** | Destra | Sinistra / Centro / Destra rispetto al nome dell'accordo. |
+| **Modalità di visualizzazione** | Numero | **Numero**, **Puntini** (fra gli accordi) o **Entrambi**. |
+
+---
+
+### Scheda *Anteprima Songpress++*
+
+Contiene tre gruppi già descritti in dettaglio nei capitoli *Opzioni anteprima*, *Stampa e anteprima* e *Nessun accordo: blocchi da nascondere*:
+
+- **Anteprima Songpress++** — Doppio clic porta il focus all'editor (✓), Dimensione minima pannello 370×520 (✓), Mostra indicatore pagina (✓), Ritarda aggiornamento durante la digitazione — debounce (✓), Sfondo grigio (✓).
+- **Stampa** — Aggiornamento in tempo reale dello stato duplex/colore nell'anteprima ogni 1,5 s (✓), Mantieni l'anteprima di stampa sempre in primo piano (☐), Mostra anteprima di stampa prima di stampare (✓).
+- **Nessun accordo: blocchi da nascondere** — Accordi di intro, Bridge, Griglia, Indicazione di tempo `{time}`, Tempo `{tempo_*}` (tutti ☐).
+
+---
+
+### Scheda *Guida rapida*
+
+| Campo | Predefinito | Descrizione |
+| ----- | ----------- | ----------- |
+| **Visualizzatore Markdown** | Automatico | Motore usato per il rendering di questa guida: **Automatico** (prova *python-markdown*, poi *mistune*, infine il parser interno), **python-markdown**, **mistune**, **Parser interno**. I primi due vanno installati separatamente. |
+
+---
+
+### Scheda *Menu contestuale*
+
+Sceglie quali voci compaiono nel menu del tasto destro dell'editor.
+
+| Gruppo | Voci |
+| ------ | ---- |
+| **Cronologia** | Annulla, Ripeti |
+| **Modifica** | Taglia, Copia, Incolla, Elimina + **Chiedi conferma prima di eliminare** (☐, sotto-opzione di *Elimina*) |
+| **Azioni speciali** | Incolla accordi, Propaga accordi strofa, Propaga accordi ritornello, Copia solo testo |
+| **Selezione** | Seleziona tutto |
+| **Aspetto** | **Mostra le icone nel menu contestuale** (✓) |
+
+---
+
+### Scheda *Associazioni file*
+
+Associa le estensioni a Songpress++ **solo per l'utente corrente**.
+
+- Checkbox per: `.crd`, `.cho`, `.chordpro`, `.chopro`, `.pro`, `.tab`, `.sng`
+- Pulsanti **Associa tutte** / **Rimuovi tutte** e **Applica ora**
+
+> **Su Linux** i controlli sono disabilitati: con il pacchetto `.deb` le associazioni MIME sono gestite dal sistema (`/usr/share/mime`) e non vengono modificate dall'applicazione. Su Windows la scrittura avviene in `HKEY_CURRENT_USER`. Su altri sistemi la scheda mostra un avviso di non disponibilità.
+
+---
+
+### Scheda *Toolbar*
+
+Contiene quattro sotto-schede — **Standard**, **Formato**, **Inserisci**, **Visualizza** — con una checkbox per ogni icona della relativa barra e i pulsanti **Seleziona tutto** / **Deseleziona tutto** (agiscono solo sulla sotto-scheda attiva). Dettagli e comportamento dei separatori nel capitolo *Personalizzazione delle toolbar*.
+
+---
+
 ## Personalizzazione delle toolbar
 
 Songpress++ consente di mostrare o nascondere singole icone in ciascuna delle quattro barre degli strumenti: **Standard**, **Formattazione**, **Inserisci** e **Visualizza**.
@@ -1355,13 +1656,56 @@ Quando si aggiunge un nuovo comando a una toolbar, è sufficiente:
 
 ---
 
+## Nomi dei file salvati
+
+Nella scheda **Generale** di **Strumenti → Opzioni…** due caselle di controllo governano il nome proposto e usato quando si salva un brano. Sono **indipendenti** e possono essere attivate insieme: la prima decide *quale* nome viene proposto, la seconda *come* viene scritto.
+
+| Opzione | Predefinito | Effetto |
+|---|---|---|
+| **Suggerisci il `{title:}` del brano come nome file in 'Salva con nome'** | disattiva | Il campo *Nome file* della finestra «Salva con nome» viene precompilato con il titolo del brano |
+| **Sostituisci gli spazi con `_` nei nomi dei file salvati** | disattiva | Ogni spazio nel nome del file (non nel percorso della cartella) diventa un trattino basso |
+
+### Suggerimento del nome dal titolo
+
+Se l'opzione è attiva, Songpress++ legge la direttiva `{title:}` (o la forma abbreviata `{t:}`) e la propone come nome file, con l'estensione predefinita già applicata.
+
+Regole di estrazione:
+
+- viene usata la **prima** direttiva `{title:}` o `{t:}` valida del documento;
+- le righe che iniziano con `#` sono commenti ChordPro e vengono **ignorate**, quindi un titolo commentato non viene proposto;
+- gli eventuali accordi inline nel titolo vengono rimossi: `{title: [Do]Ave Maria}` → `Ave Maria`;
+- se manca la `}` di chiusura, viene preso il resto della riga;
+- i caratteri non ammessi nei nomi file (`< > : " / \ | ? *`) vengono eliminati, e i punti iniziali o finali vengono rimossi (per evitare file nascosti su Linux);
+- se il titolo manca, è vuoto o non contiene caratteri validi, il campo torna al comportamento predefinito (nome del documento corrente, oppure vuoto per un brano nuovo).
+
+Le altre direttive che iniziano per `t` — `{tempo:}`, `{time:}`, `{taste:}` — non vengono mai confuse con `{t:}`.
+
+### Interazione tra le due opzioni
+
+Le due opzioni si **compongono** senza conflitti. Con `{title: Ave Maria splendore del mattino}` ed estensione `crd`:
+
+| Suggerisci titolo | Sostituisci spazi | Nome proposto |
+|---|---|---|
+| ✗ | ✗ | *(vuoto)* |
+| ✓ | ✗ | `Ave del mattino.crd` |
+| ✓ | ✓ | `Ave_del_mattino.crd` |
+| ✗ | ✓ | *(vuoto, ma gli spazi digitati a mano diventano `_`)* |
+
+Il nome resta comunque modificabile nella finestra di dialogo prima di confermare.
+
+> **Nota — Windows e Linux** — Il comportamento è identico sui due sistemi. I caratteri illegali su Windows vengono rimossi anche su Linux, dove tecnicamente alcuni sarebbero ammessi: questo garantisce che i file restino portabili tra le due piattaforme.
+
+> **Suggerimento — Diagnostica** — Se il nome non viene proposto nonostante l'opzione sia attiva, attivare **Mostra messaggi di debug** nella stessa scheda: Songpress++ segnalerà il motivo (opzione disattiva, direttiva `{title:}` assente, oppure titolo privo di caratteri validi).
+
+---
+
 ## Preferenze di visualizzazione
 
 I seguenti controlli si trovano nella scheda **Formattazione** delle preferenze e influenzano l'anteprima e la stampa.
 
 | Campo                                  | Predefinito | Intervallo | Passo |
 | -------------------------------------- | ----------- | ---------- | ----- |
-| Spessore sottolineatura titolo         | 2           | 1–5        | 1     |
+| Spessore sottolineatura titolo         | 4           | 1–5        | 1     |
 | Spessore bordo numero strofa           | 1           | 1–5        | 1     |
 
 ---
@@ -2086,6 +2430,18 @@ Il terzo campo, all'estrema destra, visualizza in modo permanente lo stato dei *
 | **SCR** | <kbd>Scroll Lock</kbd> | **Attivo**: lo Scroll Lock è inserito. **Non attivo**: il badge non è visualizzato. |
 
 > **Tooltip** — Passando il puntatore del mouse su un badge appare un tooltip che indica esplicitamente lo stato corrente del tasto (es. *Caps Lock: attivo* / *Caps Lock: non attivo*).
+
+#### Differenze tra Windows e Linux
+
+Il comportamento dei tre badge **non è identico sulle due piattaforme**, perché dipende da come il sistema operativo espone lo stato dei tasti di blocco.
+
+| Badge | Windows | Linux (X11 / Wayland) |
+| ----- | ------- | --------------------- |
+| **CAPS** | Riflette lo stato del *lock*: resta acceso finché Caps Lock è inserito. | Identico a Windows: Caps Lock è un modificatore reale (`Lock`), quindi lo stato viene letto correttamente. |
+| **NUM** | Riflette lo stato del *lock*: resta acceso finché Num Lock è inserito. | Identico a Windows: Num Lock è un modificatore reale (`Mod2`). |
+| **SCR** | Riflette lo stato del *lock*: resta acceso finché Scroll Lock è inserito. | ⚠️ **Appare solo mentre il tasto è fisicamente premuto e scompare non appena viene rilasciato.** |
+
+> **Nota — SCR su Linux** — Nei layout di tastiera moderni (XKB) `Scroll_Lock` non è più mappato a un modificatore né a un LED di sistema: non esiste quindi uno stato «inserito/disinserito» che l'applicazione possa interrogare. La funzione di libreria usata da Songpress++ restituisce in questo caso soltanto lo stato *istantaneo* del tasto (premuto/rilasciato). Il risultato è che su Linux il badge **SCR** lampeggia — compare mentre si tiene premuto <kbd>Scroll Lock</kbd> e sparisce al rilascio — invece di restare acceso. **Non è un difetto di Songpress++**: è una limitazione dell'ambiente grafico. Gli indicatori **CAPS** e **NUM** funzionano invece in modo identico su Windows e su Linux.
 
 ---
 

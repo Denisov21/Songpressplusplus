@@ -24,6 +24,14 @@
 
 set -euo pipefail
 
+# ── Marcatore di stato: "V" verde ─────────────────────────────────────────────
+# Se stdout è un terminale usa il colore ANSI, altrimenti solo il carattere.
+if [[ -t 1 ]]; then
+    OK=$'\e[1;32m✔\e[0m'
+else
+    OK='✔'
+fi
+
 # ── Configurazione ────────────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -85,7 +93,7 @@ PKG_ROOT="$BUILD_DIR/${DEB_NAME}_${DEB_VERSION}"
 INSTALL_PREFIX="$PKG_ROOT/usr"
 
 # ── Pulizia precedente build ──────────────────────────────────────────────────
-echo "==> Pulizia build precedente..."
+echo "$OK Pulizia build precedente..."
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
@@ -93,7 +101,7 @@ PYTHON="${VIRTUAL_ENV:+$VIRTUAL_ENV/bin/python3}"
 PYTHON="${PYTHON:-python3}"
 
 # ── 1b. Patch SongpressFrame.py: SetForegroundColour nella finestra About ────
-echo "==> Patch SetForegroundColour finestra About..."
+echo "$OK Patch SetForegroundColour finestra About..."
 "$PYTHON" - <<'PATCH'
 import re, sys
 
@@ -139,7 +147,7 @@ print(f"    Patch applicata: {count}/3 fix in {path}")
 PATCH
 
 # ── 1e. Patch SongpressFrame.py: Statistiche brano tema scuro ────────────────
-echo "==> Patch Statistiche brano (BG sistema, stelle+verdetto, testo tema scuro)..."
+echo "$OK Patch Statistiche brano (BG sistema, stelle+verdetto, testo tema scuro)..."
 "$PYTHON" - <<'PATCH_STATS'
 import re, subprocess, sys
 
@@ -269,7 +277,7 @@ print(f"    Patch 1e: {count}/{len(fixes)} fix applicati in {path}")
 PATCH_STATS
 
 # ── 1c. Patch PreferencesDialog.py: disabilita pulsanti assoc su Linux ───────
-echo "==> Patch pulsanti associazione file (Linux)..."
+echo "$OK Patch pulsanti associazione file (Linux)..."
 "$PYTHON" - <<'PATCH2'
 import subprocess, sys
 
@@ -311,7 +319,7 @@ print(f"    Patch applicata: {count}/3 fix in {path}")
 PATCH2
 
 # ── 1d. Patch MyPreferencesDialog.py: IsOk() prima di Red()/Green()/Blue() ────
-echo "==> Patch crash colore selettore (IsOk)..."
+echo "$OK Patch crash colore selettore (IsOk)..."
 "$PYTHON" - <<'PATCH3'
 import subprocess, sys
 
@@ -346,7 +354,7 @@ else:
 PATCH3
 
 # ── 1f. Patch crash _mgr al cambio lingua / chiusura ─────────────────────────
-echo "==> Patch crash _mgr (cambio lingua / teardown)..."
+echo "$OK Patch crash _mgr (cambio lingua / teardown)..."
 "$PYTHON" - <<'PATCH1F'
 import subprocess, sys
 
@@ -415,7 +423,7 @@ print(f"    Patch 1f: {count}/3 fix applicati")
 PATCH1F
 
 # ── 1g. Patch warning "Cannot set locale" (i18n.py) ──────────────────────────
-echo "==> Patch warning locale mancante (i18n)..."
+echo "$OK Patch warning locale mancante (i18n)..."
 "$PYTHON" - <<'PATCH1G'
 import subprocess, sys
 
@@ -468,7 +476,7 @@ else:
 PATCH1G
 
 # ── 2. Build della wheel (DOPO le patch) ─────────────────────────────────────
-echo "==> Costruzione wheel con pip + hatchling..."
+echo "$OK Costruzione wheel con pip + hatchling..."
 WHEEL_DIR="$BUILD_DIR/wheel"
 mkdir -p "$WHEEL_DIR"
 
@@ -481,7 +489,7 @@ WHEEL_FILE=$(ls "$WHEEL_DIR"/*.whl | head -n1)
 echo "    Wheel: $WHEEL_FILE"
 
 # ── 3. Installazione nell'albero del pacchetto ────────────────────────────────
-echo "==> Installazione nell'albero del pacchetto..."
+echo "$OK Installazione nell'albero del pacchetto..."
 mkdir -p "$INSTALL_PREFIX/share/applications"
 mkdir -p "$INSTALL_PREFIX/share/pixmaps"
 mkdir -p "$INSTALL_PREFIX/share/mime/packages"
@@ -503,7 +511,7 @@ if [[ -n "$SITE_PKG" ]]; then
 fi
 
 # ── 4. Desktop entry & icona ─────────────────────────────────────────────────
-echo "==> Creazione .desktop e icona..."
+echo "$OK Creazione .desktop e icona..."
 
 ICON_SRC="$SCRIPT_DIR/installer/songpressplusplus.ico"
 ICON_PNG="$SCRIPT_DIR/installer/songpressplusplus.png"
@@ -595,7 +603,7 @@ DESKTOP
 # È ciò che Discover usa per la scheda del pacchetto: nome leggibile,
 # icona, autore e licenza. Senza questo file mostra il nome del file
 # (es. "songpressplusplus_7") e nessuna icona.
-echo "==> Creazione AppStream metainfo..."
+echo "$OK Creazione AppStream metainfo..."
 mkdir -p "$INSTALL_PREFIX/share/metainfo"
 cat > "$INSTALL_PREFIX/share/metainfo/${DEB_NAME}.metainfo.xml" <<METAINFO
 <?xml version="1.0" encoding="UTF-8"?>
@@ -628,7 +636,7 @@ cat > "$INSTALL_PREFIX/share/metainfo/${DEB_NAME}.metainfo.xml" <<METAINFO
 METAINFO
 
 # ── 4. File DEBIAN/control ────────────────────────────────────────────────────
-echo "==> Scrittura DEBIAN/control..."
+echo "$OK Scrittura DEBIAN/control..."
 mkdir -p "$PKG_ROOT/DEBIAN"
 
 INSTALLED_SIZE=$(du -sk "$INSTALL_PREFIX" | awk '{print $1}')
@@ -649,7 +657,7 @@ CONTROL
 
 # ── 4c. File copyright (DEP-5) ───────────────────────────────────────────────
 # Convenzione Debian: la licenza sta in /usr/share/doc/<pkg>/copyright.
-echo "==> Scrittura copyright (DEP-5)..."
+echo "$OK Scrittura copyright (DEP-5)..."
 DOC_DIR="$INSTALL_PREFIX/share/doc/${DEB_NAME}"
 mkdir -p "$DOC_DIR"
 cat > "$DOC_DIR/copyright" <<COPYRIGHT
@@ -689,6 +697,7 @@ fi
 # rete, l'installazione del pacchetto riesce comunque.
 PY=$(command -v python3 || true)
 if [ -n "$PY" ]; then
+    echo "Songpress++: controllo dipendenze PyPI (richiede una connessione a Internet)..."
     # Debian 12+/13 marca l'ambiente come "externally managed" (PEP 668):
     # serve --break-system-packages per installare a livello di sistema.
     BSP=""
@@ -719,7 +728,7 @@ POSTRM
 chmod 0755 "$PKG_ROOT/DEBIAN/postrm"
 
 # ── 6. Permessi ───────────────────────────────────────────────────────────────
-echo "==> Impostazione permessi..."
+echo "$OK Impostazione permessi..."
 find "$PKG_ROOT" -type d -exec chmod 0755 {} \;
 find "$PKG_ROOT" -type f -exec chmod 0644 {} \;
 # Rende eseguibili tutti i file in qualsiasi cartella bin/ (usr/bin e usr/local/bin)
@@ -730,7 +739,7 @@ chmod 0755 "$PKG_ROOT/DEBIAN/postrm"
 # ── 6b. Wrapper GDK_BACKEND=x11 e symlink minuscolo ──────────────────────────
 # Fatto DOPO il passo permessi per evitare che chmod 0644 azzeri il wrapper.
 # pip --prefix installa in usr/local/bin (non usr/bin) — cerchiamo ovunque.
-echo "==> Creazione wrapper GDK_BACKEND=x11..."
+echo "$OK Creazione wrapper GDK_BACKEND=x11..."
 REAL_BIN=$(find "$PKG_ROOT" -path "*/bin/SongpressPlusPlus" -not -name "*_bin" | head -n1)
 echo "    Binario trovato: ${REAL_BIN:-(nessuno)}"
 
@@ -762,7 +771,7 @@ fi
 
 # ── 7. Costruzione del .deb ───────────────────────────────────────────────────
 DEB_FILE="$BUILD_DIR/${DEB_NAME}_${DEB_VERSION}_${DEB_ARCH}.deb"
-echo "==> Costruzione del pacchetto .deb..."
+echo "$OK Costruzione del pacchetto .deb..."
 
 if command -v fakeroot &>/dev/null; then
     fakeroot dpkg-deb --build "$PKG_ROOT" "$DEB_FILE"
@@ -777,3 +786,8 @@ echo ""
 echo "📦  Per installarlo:"
 echo "   sudo dpkg -i \"$DEB_FILE\""
 echo "   sudo apt-get install -f"
+echo ""
+echo "🌐  NOTA: l'installazione richiede una connessione a Internet."
+echo "    Durante il postinst vengono scaricate via pip le dipendenze non"
+echo "    presenti nei repository Debian (python-pptx, pyshortcuts) e via apt"
+echo "    quelle di sistema mancanti. Senza rete l'app potrebbe non partire."

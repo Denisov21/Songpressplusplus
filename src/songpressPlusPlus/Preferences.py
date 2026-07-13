@@ -198,6 +198,7 @@ class Preferences(object):
         self._LoadShowRestartMenuItem()
         self._LoadSaveOnModified()
         self._LoadReplaceSpacesInFilenames()
+        self._LoadSuggestTitleAsFilename()
         self._LoadToolbarVis()
         self._LoadToolbarIconSize()
 
@@ -374,6 +375,7 @@ class Preferences(object):
         self._SaveShowRestartMenuItem()
         self._SaveSaveOnModified()
         self._SaveReplaceSpacesInFilenames()
+        self._SaveSuggestTitleAsFilename()
         self._SaveToolbarVis()
         self._SaveToolbarIconSize()
         self.config.Flush()
@@ -621,6 +623,17 @@ class Preferences(object):
         self.config.Write('replaceSpacesInFilenames', '1' if getattr(self, 'replaceSpacesInFilenames', False) else '0')
         self.config.SetPath('/')
 
+    def _LoadSuggestTitleAsFilename(self):
+        self.config.SetPath('/App')
+        v = self.config.Read('suggestTitleAsFilename')
+        self.suggestTitleAsFilename = bool(int(v)) if v != '' else False
+        self.config.SetPath('/')
+
+    def _SaveSuggestTitleAsFilename(self):
+        self.config.SetPath('/App')
+        self.config.Write('suggestTitleAsFilename', '1' if getattr(self, 'suggestTitleAsFilename', False) else '0')
+        self.config.SetPath('/')
+
     def _LoadToolbarVis(self):
         """Carica la visibilità delle icone delle quattro toolbar dal config.
 
@@ -753,6 +766,58 @@ class Preferences(object):
         directory, filename = os.path.split(path)
         filename = re.sub(r'\s+', '_', filename)
         return os.path.join(directory, filename) if directory else filename
+
+    # Caratteri non ammessi nei nomi file (unione di Windows e POSIX)
+    _INVALID_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
+
+    def ExtractTitle(self, text):
+        """Estrae il valore della direttiva {title: ...} (o {t: ...}) dal testo
+        della canzone. Restituisce una stringa vuota se non presente.
+
+        Regole:
+          * le righe che iniziano con '#' sono commenti ChordPro e vengono ignorate;
+          * la direttiva può essere scritta {title:X}, {t:X}, { Title : X };
+          * se manca la '}' di chiusura, si prende il resto della riga;
+          * eventuali accordi inline [Do] presenti nel titolo vengono rimossi.
+        """
+        if not text:
+            return ''
+        rx = re.compile(r'\{\s*(?:title|t)\s*:([^}\n]*)(?:\}|$)', re.IGNORECASE)
+        for line in text.splitlines():
+            stripped = line.lstrip()
+            if stripped.startswith('#'):
+                continue  # riga di commento: la direttiva non è attiva
+            m = rx.search(stripped)
+            if m:
+                title = re.sub(r'\[[^\]]*\]', '', m.group(1))  # via gli accordi
+                title = title.strip()
+                if title:
+                    return title
+        return ''
+
+    def SuggestFilenameFromTitle(self, text, default=''):
+        """Restituisce il nome file (senza estensione) suggerito nella finestra
+        'Salva con nome', basato sulla direttiva {title:} del brano.
+
+        Se l'opzione 'suggestTitleAsFilename' è disattivata, oppure il titolo
+        non è presente/è vuoto, restituisce `default`.
+
+        Nota: NON entra in conflitto con 'replaceSpacesInFilenames'; le due
+        opzioni sono complementari e si compongono. Questa funzione produce il
+        nome, SanitizeFilename() decide se gli spazi diventano '_'.
+        """
+        if not getattr(self, 'suggestTitleAsFilename', False):
+            return default
+        title = self.ExtractTitle(text)
+        if not title:
+            return default
+        # Rimuove i caratteri non validi e normalizza gli spazi
+        name = self._INVALID_FILENAME_CHARS.sub('', title)
+        name = re.sub(r'\s+', ' ', name).strip().strip('.')
+        if not name:
+            return default
+        # Applica l'eventuale sostituzione spazi -> '_' (opzione indipendente)
+        return self.SanitizeFilename(name)
 
     def SetChorusLabel(self, c):
         self.chorusLabel = c

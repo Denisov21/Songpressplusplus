@@ -217,9 +217,14 @@ class SongGridBox(SongBox):
 
      def __init__(self, rows, display_mode='pipe', font=None, label='Grid', size=1,
                   chordTopSpacing=None, lineSpacing=None, sizeDir='both',
-                  chord_font=None, chord_color=None):
+                  chord_font=None, chord_color=None, beats_rows=None):
           SongBox.__init__(self, 0, 0, 0, 0)
           self.rows = rows            # list[list[str]]
+          # Battiti per cella dalla direttiva {beats_time: ...} dentro il blocco grid.
+          # Struttura PARALLELA a rows: beats_rows[i][j] = int oppure None.
+          # None / lista vuota = nessun battito (comportamento identico al passato).
+          self.beats_rows = beats_rows or []
+          self.beats_h = 0            # altezza riservata sopra le celle (calcolata dal decorator)
           self.display_mode = display_mode
           self.font = font
           self.chord_font = chord_font    # wx.Font per il testo degli accordi nelle celle
@@ -239,6 +244,36 @@ class SongGridBox(SongBox):
           self.drawBlock = True
           self.pageBreakBefore = False
           self.columnBreakBefore = False
+
+     def GetBeats(self, i, j):
+          """Battiti della cella (riga i, colonna j).
+
+          Ritorna una LISTA con un elemento per accordo della cella (int o None),
+          allineata a cell.split(); [] se la cella non ha battiti.
+          Accetta anche un int singolo per retrocompatibilità.
+          """
+          try:
+               b = self.beats_rows[i][j]
+          except (IndexError, TypeError):
+               return []
+          if isinstance(b, int):
+               return [b] if b > 0 else []
+          if not b:
+               return []
+          return [x if (isinstance(x, int) and x > 0) else None for x in b]
+
+     def HasBeats(self):
+          """True se almeno una cella ha dei battiti associati."""
+          for row in (self.beats_rows or []):
+               for cell in (row or []):
+                    if isinstance(cell, int):
+                         if cell > 0:
+                              return True
+                         continue
+                    for b in (cell or []):
+                         if isinstance(b, int) and b > 0:
+                              return True
+          return False
 
      def GetLastLineTextHeight(self):
           return 0
