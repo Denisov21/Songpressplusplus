@@ -913,6 +913,255 @@ template"**. Deve aprirsi Dolphin (o il gestore file predefinito) su
 file `.crd` in `songs/`, questo compare al riavvio nel menu
 **File → Nuovo da template**.
 
+> **Aggiornamento:** la scelta della cartella *aperta dal pulsante* su Linux è
+> stata rivista dalla **Patch 9** (vedi sotto): ora viene mostrata la cartella
+> `templates/` **del pacchetto installato**. La cartella dati utente resta
+> quella scrivibile usata per salvare temi e template personali.
+
+---
+
+## Patch 9 — "Apri cartella template" su Linux: mostrare la cartella del pacchetto
+
+**File:** `src/songpressplusplus/MyPreferencesDialog.py`
+
+**Problema:** su Linux il pulsante **Opzioni → Generale → "Apri cartella
+template"** non apriva la cartella di installazione dei template, cioè
+
+```
+/usr/local/lib/python3.13/dist-packages/songpressplusplus/templates/
+```
+
+ma ripiegava sulla cartella dati utente (o comunque su un percorso diverso,
+mai la radice `templates/` del pacchetto — e in nessun caso deve finire in una
+sua sottocartella come `templates/local_dir/`, che è solo lo scheletro copiato
+nella cartella dati al primo avvio).
+
+La causa è nella Patch 8: `OnOpenTemplatesFolder()` usava
+`_get_templates_dir()`, che seleziona la prima radice **scrivibile**. Con
+l'installazione `.deb` la cartella del pacchetto è di `root`, quindi il test
+`os.access(d, W_OK | X_OK)` fallisce e la funzione ripiega sulla cartella dati
+utente. Ma **per *ispezionare* una cartella nel file manager basta il permesso
+di lettura**: la scrivibilità è un requisito del *salvataggio* (temi), non
+dell'apertura.
+
+**Fix:** si separano le due esigenze invece di modificare `_get_templates_dir()`
+(che è usato anche da `_get_themes_dir()` per **scrivere** i temi, e che quindi
+deve continuare a restituire una cartella scrivibile).
+
+Nuovo metodo `MyPreferencesDialog._get_templates_dir_to_open()`:
+
+* su **Linux**, se `glb.path/templates` esiste (`os.path.isdir()`), la
+  restituisce **così com'è** — nessun `makedirs()`, nessun test `W_OK`, quindi
+  nessun ripiego indesiderato;
+* su **Windows/macOS** e come rete di sicurezza (albero sorgenti senza
+  `templates/`), delega a `_get_templates_dir()`, mantenendo il comportamento
+  precedente.
+
+`OnOpenTemplatesFolder()` chiama ora `_get_templates_dir_to_open()` al posto di
+`_get_templates_dir()`. Nient'altro cambia: `xdg-open`/`os.startfile`/`open`,
+i fallback e la gestione degli errori restano quelli della Patch 8.
+
+> **Conseguenza sui percorsi (Debian):**
+>
+> | Azione | Cartella |
+> |---|---|
+> | Pulsante "Apri cartella template" | `/usr/local/lib/python3.13/dist-packages/songpressplusplus/templates/` (sola lettura, contiene gli esempi distribuiti) |
+> | Salvataggio temi / template personali | `~/.Songpress++/templates/` (scrivibile) |
+>
+> La lettura non cambia: `_theme_roots()` e
+> `SongpressFrame._PopulateTemplateMenu()` scandiscono comunque **entrambe** le
+> radici, con quella utente che ha la precedenza su quella di sistema.
+
+> **Packaging:** nessuna modifica a `build_deb.sh` — la patch vive interamente
+> nei sorgenti.
+
+### Verifica
+
+```bash
+python3 - <<'PY'
+import os, re
+p = "src/songpressplusplus/MyPreferencesDialog.py"
+src = open(p).read()
+checks = [
+    ("def _get_templates_dir_to_open", "Patch 9a — helper cartella da aprire"),
+    ("path = self._get_templates_dir_to_open()", "Patch 9b — handler aggiornato"),
+]
+for needle, desc in checks:
+    print(f"{'✅' if needle in src else '❌'} {desc}")
+# il vecchio helper deve restare (serve a _get_themes_dir per SCRIVERE)
+print(f"{'✅' if 'def _get_templates_dir(self)' in src else '❌'} Patch 9c — _get_templates_dir() conservato")
+PY
+```
+
+### Applicazione sul file installato (senza ricostruire il .deb)
+
+```bash
+SRC=~/Songpress_DEFINitiVO3/SongpressPlusPlus/src/songpressplusplus
+DST=/usr/local/lib/python3.13/dist-packages/songpressplusplus
+sudo cp "$SRC/MyPreferencesDialog.py" "$DST/MyPreferencesDialog.py"
+```
+
+### Test funzionale
+
+```bash
+# la cartella che il pulsante deve aprire
+ls -la /usr/local/lib/python3.13/dist-packages/songpressplusplus/templates/
+# → fonts/  local_dir/  slides/  songs/  themes/
+```
+
+In Songpress++: **Strumenti → Opzioni → Generale → "Apri cartella template"**.
+Dolphin deve aprirsi esattamente su quella cartella (**non** su
+`.../templates/local_dir/`, **non** su `~/.Songpress++/templates/`), senza
+alcun dialogo di errore.
+
+---
+
+## Patch 10 — Template: seeding della cartella utente al primo avvio
+
+**File:** `src/songpressplusplus/TemplateSeed.py` (**nuovo**),
+`src/songpressplusplus/MyPreferencesDialog.py`,
+`src/songpressplusplus/Globals.py`
+
+> **Sostituisce la Patch 9**, che apriva la cartella `templates/` del pacchetto:
+> quella cartella mostra sì gli esempi, ma appartiene a `root` — l'utente non
+> può crearci un proprio modello.
+
+**Problema:** la cartella dei template del pacchetto e quella scrivibile
+dell'utente erano in conflitto irriducibile.
+
+| cartella | contenuto | scrivibile? |
+|---|---|---|
+| `/usr/local/lib/python3.13/dist-packages/songpressplusplus/templates/` | gli esempi distribuiti | ❌ è di `root` |
+| `~/.Songpress++/templates/` | vuota | ✅ |
+
+Aprire la prima → non ci si può creare nulla. Aprire la seconda → è deserta.
+Nessuna delle due è la risposta giusta, e **spostare i file in
+`templates/local_dir/` non cambierebbe nulla**: resta sotto `/usr/local`, resta
+di `root`, e per giunta `local_dir/` ha già un suo significato (è lo *scheletro*
+`local_dir/templates/{songs,slides}` che `build_deb.sh` verifica).
+
+**Fix — seeding al primo avvio.** Si popola la cartella utente con i template
+del pacchetto, così è al tempo stesso **completa e scrivibile**, e il pulsante
+torna ad aprire quella.
+
+> **Perché non nel `postinst` del `.deb`.** `dpkg` gira come `root`, prima che
+> esista una sessione utente: non sa *quale* home usare (la macchina può avere
+> più utenti) e i file che creasse in `~/.Songpress++/` sarebbero **di proprietà
+> di root**, cioè di nuovo non scrivibili — esattamente il problema da cui si sta
+> scappando. Il seeding va fatto dall'applicazione, al primo avvio *per
+> quell'utente*. Dal punto di vista dell'utente il risultato è identico: dopo
+> l'installazione trova tutto in `~/.Songpress++/templates/`.
+
+1. **Nuovo modulo `TemplateSeed.py`** con `seed_user_templates(pkg_templates,
+   user_templates, force=False)`. Copia ricorsivamente tutto il contenuto di
+   `<pacchetto>/templates/` nella cartella utente:
+
+   ```
+   templates/            →  ~/.Songpress++/templates/
+   ├── fonts/            →  ├── fonts/
+   ├── slides/           →  ├── slides/
+   ├── songs/            →  ├── songs/
+   ├── themes/           →  ├── themes/
+   └── local_dir/        →  ├── .seeded   ← marcatore di idempotenza
+       └── templates/       └── (il contenuto di local_dir/templates/ è fuso qui)
+           ├── songs/
+           └── slides/
+   ```
+
+   Garanzie:
+   * **non sovrascrive mai** un file già presente → le personalizzazioni
+     dell'utente sono intoccabili;
+   * **idempotente** grazie al marcatore `.seeded`: i file che l'utente cancella
+     volutamente non ricompaiono a ogni avvio (per rifare il seeding basta
+     cancellare `.seeded`);
+   * `os.chmod(d, mode | 0o200)` dopo ogni `shutil.copy2()`, perché `copy2`
+     preserva i permessi della sorgente (0644 di root nel `.deb`);
+   * `local_dir/` **non** viene ricreata nella home: sarebbe una duplicazione
+     priva di senso. Il suo sotto-albero `local_dir/templates/*` viene *fuso*
+     nella destinazione;
+   * salta il caso `pkg_templates == user_templates` (portable / venv / albero
+     sorgenti);
+   * **non solleva mai eccezioni**: il seeding è un'agevolazione, non deve poter
+     impedire l'avvio.
+
+2. **`MyPreferencesDialog`**: `_get_templates_dir_to_open()` non punta più al
+   pacchetto — restituisce `_get_templates_dir()` (la radice **scrivibile**)
+   dopo aver invocato il nuovo helper `_seed_templates_dir()`. Il seeding è
+   ripetuto qui, oltre che all'avvio, perché è idempotente e a costo nullo:
+   garantisce la cartella popolata anche aggiornando il solo
+   `MyPreferencesDialog.py`.
+
+3. **`Globals`**: nuovo metodo `SeedUserTemplates(force=False)`, invocato in
+   coda a `InitDataPath()` (quindi a ogni avvio, ma effettivo solo la prima
+   volta). Nuova costante `USER_TEMPLATE_SUBDIRS = ('fonts', 'slides', 'songs',
+   'themes')`: è `TEMPLATE_SUBDIRS` **meno `local_dir`**, perché quella cartella
+   è lo scheletro che vive dentro il pacchetto e ricrearne una copia vuota nella
+   home dell'utente sarebbe un doppione. `_TEMPLATE_SUBDIRS` di
+   `MyPreferencesDialog` è allineata di conseguenza.
+
+### Packaging
+
+`TemplateSeed.py` sta dentro il package, quindi entra nella wheel senza
+modifiche a `pyproject.toml` (i moduli `.py` del package sono inclusi
+automaticamente). Nessuna modifica a `build_deb.sh`.
+
+### Verifica
+
+```bash
+python3 - <<'PY'
+import os
+BASE = "src/songpressplusplus"
+checks = [
+    ("TemplateSeed.py",        "def seed_user_templates",          "Patch 10a — modulo di seeding"),
+    ("TemplateSeed.py",        "_MARKER",                          "Patch 10b — marcatore di idempotenza"),
+    ("MyPreferencesDialog.py", "def _seed_templates_dir",          "Patch 10c — helper nel dialogo"),
+    ("MyPreferencesDialog.py", "path = self._get_templates_dir()", "Patch 10d — pulsante → cartella scrivibile"),
+    ("Globals.py",             "seed_user_templates",              "Patch 10e — seeding all'avvio"),
+]
+for filename, needle, desc in checks:
+    path = os.path.join(BASE, filename)
+    try:
+        found = needle in open(path).read()
+        print(f"{{'✅' if found else '❌'}} {{desc}}")
+    except FileNotFoundError:
+        print(f"⚠️  File non trovato: {{path}}")
+PY
+```
+
+### Applicazione sul file installato (senza ricostruire il .deb)
+
+```bash
+SRC=~/Songpress_DEFINitiVO3/SongpressPlusPlus/src/songpressplusplus
+DST=/usr/local/lib/python3.13/dist-packages/songpressplusplus
+sudo cp "$SRC/TemplateSeed.py"        "$DST/TemplateSeed.py"
+sudo cp "$SRC/MyPreferencesDialog.py" "$DST/MyPreferencesDialog.py"
+sudo cp "$SRC/Globals.py"             "$DST/Globals.py"
+```
+
+### Test funzionale
+
+```bash
+# 1. stato di partenza pulito (ATTENZIONE: cancella i template personali!)
+rm -rf ~/.Songpress++/templates
+
+# 2. avvia Songpress++, poi chiudi. La cartella deve essersi popolata:
+find ~/.Songpress++/templates -maxdepth 2 | sort
+#    → fonts/  slides/  songs/  themes/  .seeded  + i file distribuiti
+#      (NIENTE local_dir/)
+
+# 3. i file devono essere TUOI e scrivibili
+ls -l ~/.Songpress++/templates/songs/
+touch ~/.Songpress++/templates/songs/mio_modello.crd     # deve funzionare
+
+# 4. idempotenza: cancella un file distribuito e riavvia — non deve tornare.
+#    Per rifare il seeding completo:  rm ~/.Songpress++/templates/.seeded
+```
+
+In Songpress++: **Strumenti → Opzioni → Generale → "Apri cartella template"**
+apre ora `~/.Songpress++/templates/`, **piena** dei template distribuiti e
+**scrivibile**: ci puoi creare i tuoi modelli, che sopravvivono agli
+aggiornamenti del `.deb` e hanno la precedenza sugli omonimi di sistema.
+
 ---
 
 ## Verifica rapida — tutte le patch in un colpo solo
@@ -950,6 +1199,10 @@ checks = [
     ("MyPreferencesDialog.py", "xdg-open",                                                   "Patch 8c — apertura cartella su Linux"),
     ("Globals.py",             "if not os.path.isdir(folder):",                              "Patch 8d — ListLocalGlobalDir tollerante"),
     ("Globals.py",             "'templates', 'slides'",                                      "Patch 8e — sottocartelle create in InitDataPath"),
+    ("MyPreferencesDialog.py", "def _get_templates_dir_to_open",                             "Patch 9  — helper cartella da aprire"),
+    ("TemplateSeed.py",        "def seed_user_templates",                                    "Patch 10a — modulo di seeding template"),
+    ("MyPreferencesDialog.py", "def _seed_templates_dir",                                    "Patch 10b — seeding invocato dal dialogo"),
+    ("Globals.py",             "seed_user_templates",                                        "Patch 10c — seeding all'avvio"),
 ]
 
 for filename, needle, desc in checks:

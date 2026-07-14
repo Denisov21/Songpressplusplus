@@ -140,6 +140,18 @@ If any dependencies are missing:
 sudo apt-get install -f
 ```
 
+**Installation folder.** The package installs the program files into the system
+`dist-packages` tree:
+
+```
+/usr/local/lib/python3.13/dist-packages/songpressplusplus/
+```
+
+> **⚠️ Note:** the Python version (`python3.13`) may differ depending on your
+> system. The folder is owned by `root` and is therefore read-only for the user:
+> personal templates and themes are stored in the user data folder instead
+> (see "Templates folder on Linux").
+
 ---
 
 ### Upgrading to a new version
@@ -257,14 +269,16 @@ With the `.deb` installation, the package folder (`/usr/local/lib/python3.13/dis
 
 ```
 ~/.Songpress++/templates/
+├── .seeded      ← marker: the templates have already been copied
 ├── fonts/       ← custom fonts used by preview and export
-├── local_dir/   ← skeleton copied into the data folder on first run
 ├── slides/      ← PowerPoint templates (.pptx) → presentation export
 ├── songs/       ← song templates (.crd) → "File → New from template" menu
 └── themes/      ← editor colour themes (.ini)
 ```
 
-All five subfolders are created automatically and match the ones found on Windows. Editor **themes** live here too: `_get_themes_dir()` derives from the same root, so themes and templates always stay together.
+All four subfolders are created automatically and match the ones found on Windows. Editor **themes** live here too: `_get_themes_dir()` derives from the same root, so themes and templates always stay together.
+
+**Seeding on first run.** The package ships a fifth folder, `templates/local_dir/`, which is *not* a template folder: it is the **skeleton** of the user data folder (the same idea as `/etc/skel`). It is never re-created in the user's home — `TemplateSeed.seed_user_templates()` skips it and merges its sub-tree (`local_dir/templates/*`) straight into `~/.Songpress++/templates/`, together with the rest of the templates shipped with the package. The copy cannot be done from the `.deb` `postinst` (dpkg runs as `root` and does not know which home to write to), so it happens at the first launch **for each user**, with the correct owner and permissions. Existing user files are **never overwritten**, and the `.seeded` marker stops deleted files from silently reappearing at every launch. Deleting `.seeded` forces the copy again on the next start.
 
 > **⚠️ Note:** on Linux wxWidgets uses the "classic" layout (`~/.<AppName>`), so the exact folder name depends on the `AppName` set by the application. To find out the actual path, just click **"Open templates folder"**: the file manager opens on exactly the folder in use.
 

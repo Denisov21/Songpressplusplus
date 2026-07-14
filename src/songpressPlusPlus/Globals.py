@@ -62,6 +62,13 @@ class Globals(object):
     #   themes/     → editor colour themes (.ini)
     TEMPLATE_SUBDIRS = ('fonts', 'local_dir', 'slides', 'songs', 'themes')
 
+    # Subfolders that must exist in the *user data dir*. Same list minus
+    # local_dir/: that folder is the skeleton shipped inside the package, and
+    # re-creating an empty copy of it in the user's home would be a pointless
+    # duplicate. Its contents (local_dir/templates/*) are merged straight into
+    # the user's templates/ tree by TemplateSeed.seed_user_templates().
+    USER_TEMPLATE_SUBDIRS = ('fonts', 'slides', 'songs', 'themes')
+
     def __init__(self):
         object.__init__(self)
         current_file = os.path.abspath(__file__)
@@ -96,12 +103,44 @@ class Globals(object):
         # if templates/local_dir was incomplete or not shipped at all. Without
         # them ListLocalGlobalDir('templates/slides') would find nothing and the
         # "Open templates folder" button would show an incomplete tree.
-        for sub in self.TEMPLATE_SUBDIRS:
+        for sub in self.USER_TEMPLATE_SUBDIRS:
             try:
                 os.makedirs(os.path.join(self.data_path, 'templates', sub),
                             exist_ok=True)
             except OSError:
                 pass  # read-only data dir: features degrade gracefully
+
+        self.SeedUserTemplates()
+
+    def SeedUserTemplates(self, force=False):
+        """Copy the templates shipped with the package into the user data dir.
+
+        With a system-wide install (.deb) the package lives in
+        /usr/local/lib/pythonX.Y/dist-packages/songpressplusplus/ and belongs to
+        root: the user can read templates/ but cannot create anything there.
+        The user data dir, on the other hand, is writable but starts out empty.
+        Seeding merges the two: after the first run ~/.Songpress++/templates/ is
+        both complete *and* writable.
+
+        This cannot be done from the .deb postinst: dpkg runs as root, before any
+        user session exists, so it neither knows which home to use (a machine may
+        have many users) nor could it create files owned by anyone but root —
+        which is exactly the problem we are trying to avoid.
+
+        Never overwrites an existing user file; idempotent (a .seeded marker
+        prevents deleted files from silently reappearing on every launch);
+        never raises.
+        """
+        if not self.data_path:
+            return 0
+        try:
+            from .TemplateSeed import seed_user_templates
+            return seed_user_templates(
+                os.path.join(self.path, 'templates'),
+                os.path.join(self.data_path, 'templates'),
+                force=force)
+        except Exception:      # pylint: disable=broad-except
+            return 0           # seeding is a convenience: never block startup
 
     def AddPath(self, filename):
         return os.path.join(self.path, filename)

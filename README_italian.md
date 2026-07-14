@@ -140,6 +140,18 @@ In caso di dipendenze mancanti:
 sudo apt-get install -f
 ```
 
+**Cartella di installazione.** Il pacchetto copia i file del programma
+nell'albero di sistema `dist-packages`:
+
+```
+/usr/local/lib/python3.13/dist-packages/songpressplusplus/
+```
+
+> **⚠️ Nota:** la versione di Python (`python3.13`) può variare a seconda del
+> sistema. La cartella appartiene a `root` ed è quindi in sola lettura per
+> l'utente: i template e i temi personali vengono salvati nella cartella dati
+> utente (vedi "Cartella dei template su Linux").
+
 ---
 
 ### Aggiornamento a una nuova versione
@@ -258,14 +270,16 @@ Con l'installazione tramite `.deb`, la cartella del pacchetto (`/usr/local/lib/p
 
 ```
 ~/.Songpress++/templates/
+├── .seeded      ← marcatore: i template sono già stati copiati
 ├── fonts/       ← font personalizzati usati da anteprima ed esportazione
-├── local_dir/   ← scheletro copiato nella cartella dati al primo avvio
 ├── slides/      ← template PowerPoint (.pptx) → esportazione presentazioni
 ├── songs/       ← template di brani (.crd) → menu "File → Nuovo da template"
 └── themes/      ← temi colore dell'editor (.ini)
 ```
 
-Le cinque sottocartelle vengono create automaticamente e sono le stesse che appaiono su Windows. Anche i **temi** dell'editor finiscono qui: `_get_themes_dir()` deriva dalla stessa radice, quindi temi e template stanno sempre insieme.
+Le quattro sottocartelle vengono create automaticamente e sono le stesse che appaiono su Windows. Anche i **temi** dell'editor finiscono qui: `_get_themes_dir()` deriva dalla stessa radice, quindi temi e template stanno sempre insieme.
+
+**Seeding al primo avvio.** Il pacchetto contiene una quinta cartella, `templates/local_dir/`, che *non* è una cartella di template: è lo **scheletro** della cartella dati utente (stessa idea di `/etc/skel`). Non viene mai ricreata nella home dell'utente: `TemplateSeed.seed_user_templates()` la salta e fonde il suo sotto-albero (`local_dir/templates/*`) direttamente in `~/.Songpress++/templates/`, insieme al resto dei template distribuiti con il pacchetto. La copia non può avvenire nel `postinst` del `.deb` (dpkg gira come `root` e non sa in quale home scrivere), quindi avviene al primo avvio **per ciascun utente**, con proprietario e permessi corretti. I file già presenti **non vengono mai sovrascritti** e il marcatore `.seeded` impedisce che i file cancellati dall'utente tornino a ripopolarsi a ogni avvio. Cancellando `.seeded` la copia viene rifatta al riavvio successivo.
 
 > **⚠️ Nota:** su Linux wxWidgets usa il layout "classico" (`~/.<NomeApp>`), quindi il nome esatto della cartella dipende dall'`AppName` impostato dall'applicazione. Per conoscere il percorso effettivo basta premere il pulsante **"Apri cartella template"**: il gestore file si apre esattamente sulla cartella in uso.
 

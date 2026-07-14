@@ -938,11 +938,16 @@ class MyPreferencesDialog(PreferencesDialog):
     # Sottocartelle di templates/ che devono sempre esistere ed essere visibili
     # quando si preme "Apri cartella template" (parità con Windows).
     #   fonts/      → font personalizzati usati nell'anteprima/esportazione
-    #   local_dir/  → scheletro copiato nella cartella dati al primo avvio
     #   slides/     → template PowerPoint (.pptx)
     #   songs/      → template di brani (.crd)
     #   themes/     → temi colore dell'editor (.ini)
-    _TEMPLATE_SUBDIRS = ('fonts', 'local_dir', 'slides', 'songs', 'themes')
+    #
+    # NON contiene local_dir/: quella è lo *scheletro* che vive dentro il
+    # pacchetto; ricrearne una copia vuota nella cartella dell'utente sarebbe un
+    # doppione inutile. Il suo contenuto (local_dir/templates/*) viene fuso
+    # direttamente nell'albero dell'utente da TemplateSeed.seed_user_templates().
+    # Allineata a Globals.USER_TEMPLATE_SUBDIRS.
+    _TEMPLATE_SUBDIRS = ('fonts', 'slides', 'songs', 'themes')
 
     @classmethod
     def _is_writable_templates_dir(cls, path):
@@ -1027,6 +1032,60 @@ class MyPreferencesDialog(PreferencesDialog):
             _(u"Cannot create a writable templates folder. Tried:\n%s")
             % '\n'.join(candidates))
 
+    def _get_templates_dir_to_open(self):
+        """Cartella mostrata nel file manager da "Apri cartella template".
+
+        Deve essere **scrivibile** — altrimenti il pulsante serve solo a
+        guardare — e deve **contenere i template distribuiti** con
+        l'applicazione, altrimenti l'utente apre una cartella vuota.
+
+        Le due cose stanno insieme grazie al *seeding*: al primo avvio
+        TemplateSeed.seed_user_templates() copia tutto il contenuto di
+        <pacchetto>/templates/ dentro la cartella dati utente
+        (~/.Songpress++/templates/ su Linux). Il pulsante apre quindi
+        _get_templates_dir(), cioè la radice scrivibile, che a quel punto
+        contiene sia gli esempi sia i file dell'utente.
+
+        La copia non può essere fatta dal postinst del .deb: dpkg gira come
+        root, non conosce la home dell'utente e i file risulterebbero di
+        proprietà di root, cioè di nuovo non scrivibili.
+
+        Il seeding è ripetuto qui (oltre che in Globals.InitDataPath) perché è
+        idempotente e a costo nullo: garantisce la cartella popolata anche se
+        l'utente aggiorna solo questo file.
+        """
+        path = self._get_templates_dir()
+        self._seed_templates_dir(path)
+        return path
+
+    @staticmethod
+    def _seed_templates_dir(user_templates):
+        """Copia i template del pacchetto in `user_templates` (mai due volte,
+        mai sovrascrivendo i file dell'utente). Silenzioso in caso di errore.
+
+        Delega a Globals.SeedUserTemplates() quando la cartella da popolare è
+        proprio la cartella dati (il caso normale con il .deb); altrimenti —
+        radice diversa, es. installazione portable/venv — chiama direttamente
+        TemplateSeed.
+        """
+        import os as _os
+        try:
+            from .TemplateSeed import seed_user_templates
+        except ImportError:
+            return 0
+
+        data_path = getattr(glb, 'data_path', None)
+        if data_path and _os.path.normpath(user_templates) == \
+                _os.path.normpath(_os.path.join(data_path, 'templates')):
+            seeder = getattr(glb, 'SeedUserTemplates', None)
+            if callable(seeder):
+                return seeder()
+
+        pkg_path = getattr(glb, 'path', None) or \
+            _os.path.dirname(_os.path.abspath(__file__))
+        return seed_user_templates(
+            _os.path.join(pkg_path, 'templates'), user_templates)
+
     def OnOpenTemplatesFolder(self, evt):
         import os as _os
         import sys as _sys
@@ -1034,7 +1093,7 @@ class MyPreferencesDialog(PreferencesDialog):
 
         path = None
         try:
-            path = self._get_templates_dir()
+            path = self._get_templates_dir_to_open()
 
             if _sys.platform == 'win32':
                 # Gestisce correttamente spazi e caratteri non ASCII nel percorso
