@@ -688,9 +688,9 @@ class MyPreferencesDialog(PreferencesDialog):
         """Restituisce la cartella templates/themes/ scrivibile.
 
         Delega a _get_templates_dir(), così temi e template vivono sempre nella
-        stessa radice (la cartella dati utente su Debian, la cartella del
-        pacchetto su Windows/venv/portable) ed è quella che il pulsante
-        "Apri cartella template" mostra all'utente.
+        stessa radice (quella del pacchetto dove è scrivibile — Windows, venv,
+        portable — altrimenti la cartella dati utente) ed è esattamente quella
+        che il pulsante "Apri cartella template" mostra all'utente.
         """
         import os as _os
         try:
@@ -707,12 +707,54 @@ class MyPreferencesDialog(PreferencesDialog):
             _os.makedirs(themes_dir, exist_ok=True)
             return themes_dir
 
-    def _theme_files(self):
+    def _theme_roots(self):
+        """Tutte le cartelle themes/ da cui leggere, in ordine di precedenza
+        crescente: prima la radice globale del pacchetto, poi quella locale
+        (dati utente), che sovrascrive la globale a parità di nome.
+
+        _get_themes_dir() restituisce solo la radice *scrivibile*: usarla da
+        sola nasconde i temi distribuiti con il pacchetto, perché la data dir
+        utente viene creata vuota da Globals.InitDataPath().
+        """
         import os as _os
-        d = self._get_themes_dir()
-        return sorted(
-            f[:-4] for f in _os.listdir(d) if f.lower().endswith('.ini')
-        )
+        roots = []
+        pkg_path = getattr(glb, 'path', None) or \
+            _os.path.dirname(_os.path.abspath(__file__))
+        roots.append(_os.path.join(pkg_path, 'templates', 'themes'))
+        try:
+            roots.append(self._get_themes_dir())
+        except OSError:
+            pass
+        # dedup preservando l'ordine (le due radici coincidono in modalità
+        # portable / venv, dove data_path punta al pacchetto stesso)
+        seen = []
+        for r in roots:
+            r = _os.path.normpath(r)
+            if r not in seen:
+                seen.append(r)
+        return seen
+
+    def _theme_files(self):
+        """Nomi dei temi disponibili, unione di radice globale e locale."""
+        import os as _os
+        names = set()
+        for d in self._theme_roots():
+            try:
+                for f in _os.listdir(d):
+                    if f.lower().endswith('.ini'):
+                        names.add(f[:-4])
+            except OSError:
+                continue  # cartella inesistente o illeggibile: la salto
+        return sorted(names, key=lambda s: s.lower())
+
+    def _find_theme_path(self, name):
+        """Percorso del file .ini del tema, dando precedenza alla radice locale."""
+        import os as _os
+        for d in reversed(self._theme_roots()):  # locale prima, poi globale
+            path = _os.path.join(d, name + '.ini')
+            if _os.path.isfile(path):
+                return path
+        return None
 
     def _refreshThemeList(self, select_name=None):
         self.themeCh.Clear()
@@ -796,9 +838,14 @@ class MyPreferencesDialog(PreferencesDialog):
     def _load_theme_file(self, name):
         import os as _os
         import configparser
-        path = _os.path.join(self._get_themes_dir(), name + '.ini')
+        path = self._find_theme_path(name)
+        if path is None:
+            return {}
         cfg = configparser.ConfigParser()
-        cfg.read(path, encoding='utf-8')
+        try:
+            cfg.read(path, encoding='utf-8')
+        except (OSError, configparser.Error):
+            return {}
         return dict(cfg['colours']) if 'colours' in cfg else {}
 
     def OnThemeLoad(self, evt):
@@ -848,11 +895,19 @@ class MyPreferencesDialog(PreferencesDialog):
             wx.YES_NO | wx.ICON_QUESTION, self
         ) == wx.YES:
             import os as _os
-            path = _os.path.join(self._get_themes_dir(), name + '.ini')
+            path = self._find_theme_path(name)
+            if path is None:
+                return
             try:
                 _os.remove(path)
-            except Exception:
-                pass
+            except OSError as e:
+                # Tema distribuito con il pacchetto (root su Debian di sistema,
+                # Program Files su Windows): non è cancellabile dall'utente.
+                wx.MessageBox(
+                    _(u"Cannot delete theme «%s»:\n%s\n\n%s") % (name, path, e),
+                    _(u"Songpress++"), wx.OK | wx.ICON_ERROR, self
+                )
+                return
             self._refreshThemeList()
             if self._on_theme_change is not None:
                 self._on_theme_change()
@@ -913,47 +968,56 @@ class MyPreferencesDialog(PreferencesDialog):
         except OSError:
             return False
 
+    def _get_user_data_dir(self):
+        """Cartella dati utente dell'applicazione.
+
+        Preferisce glb.data_path (valorizzata da Globals.InitDataPath()); se
+        non è ancora disponibile ripiega su wx.StandardPaths, che restituisce
+        %APPDATA%\\<AppName> su Windows e ~/.<appname> su Linux/macOS — cioè
+        esattamente la stessa cartella, purché wx.App.SetAppName() sia stato
+        chiamato all'avvio.
+        """
+        data_path = getattr(glb, 'data_path', None)
+        if data_path:
+            return data_path
+        return wx.StandardPaths.Get().GetUserDataDir()
+
     def _get_templates_dir(self):
-        """Restituisce la cartella templates/ scrivibile dell'utente, creando
-        tutte le sottocartelle di _TEMPLATE_SUBDIRS.
+        """Restituisce la cartella templates/ da aprire con "Apri cartella
+        template", creando tutte le sottocartelle di _TEMPLATE_SUBDIRS.
 
-        Usa gli stessi percorsi che SongpressFrame._PopulateTemplateMenu()
-        scandisce per il menu "Nuovo da template", così la cartella che si
-        apre è esattamente quella da cui l'app legge i template:
+        Criterio: l'utente si aspetta di trovare *i template di esempio*
+        distribuiti con l'applicazione, che stanno in glb.path/templates
+        (dentro il pacchetto). La cartella dati utente viene invece creata
+        vuota da Globals.InitDataPath(): aprirla mostrerebbe solo cartelle
+        deserte. Quindi:
 
-          1. glb.data_path/templates  → dati utente (preferita: sempre
-             scrivibile ed è la radice "locale" che sovrascrive quella globale);
-          2. glb.path/templates       → radice "globale" del pacchetto: usabile
-             solo nelle installazioni utente (Windows/AppData, venv, sorgenti,
-             modalità portable). Su Debian di sistema
-             (/usr/local/lib/python3.X/dist-packages/...) è di root e viene
-             scartata dal test di scrivibilità;
-          3. %APPDATA%\\Songpress++\\templates (Windows) oppure
-             ~/.Songpress++/templates (Linux/macOS) → rete di sicurezza se
-             glb.data_path non è definito.
+          1. glb.path/templates  → radice del pacchetto. È la scelta giusta
+             ovunque l'installazione appartenga all'utente: Windows
+             (%LOCALAPPDATA%\\Songpress++\\tools\\...\\site-packages\\
+             songpressplusplus\\templates, anche su unità diverse da C:),
+             venv, modalità portable, albero sorgenti. Contiene gli esempi ed
+             è scrivibile, quindi l'utente può anche aggiungerne di propri.
+          2. glb.data_path/templates → usata quando la 1 non è scrivibile:
+             è il caso dell'installazione .deb di sistema, dove il pacchetto
+             sta in /usr/lib/python3/dist-packages ed è di root.
+          3. wx.StandardPaths → rete di sicurezza se glb.data_path manca.
+
+        La lettura non cambia: _theme_roots() e
+        SongpressFrame._PopulateTemplateMenu() scandiscono comunque entrambe
+        le radici, con quella locale che sovrascrive quella globale.
         """
         import os as _os
-        import sys as _sys
 
         candidates = []
 
-        # 1. cartella dati utente dell'applicazione (radice "locale" del menu)
-        data_path = getattr(glb, 'data_path', None)
-        if data_path:
-            candidates.append(_os.path.join(data_path, 'templates'))
-
-        # 2. radice "globale" del pacchetto (scrivibile solo se non di sistema)
+        # 1. radice del pacchetto: contiene i template di esempio.
         pkg_path = getattr(glb, 'path', None) or \
             _os.path.dirname(_os.path.abspath(__file__))
         candidates.append(_os.path.join(pkg_path, 'templates'))
 
-        # 3. fallback nella home
-        if _sys.platform == 'win32':
-            base = _os.environ.get('APPDATA', _os.path.expanduser('~'))
-            candidates.append(_os.path.join(base, 'Songpress++', 'templates'))
-        else:
-            candidates.append(
-                _os.path.join(_os.path.expanduser('~'), '.Songpress++', 'templates'))
+        # 2./3. cartella dati utente: usata solo se il pacchetto è read-only.
+        candidates.append(_os.path.join(self._get_user_data_dir(), 'templates'))
 
         for path in candidates:
             if self._is_writable_templates_dir(path):
