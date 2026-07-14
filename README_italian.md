@@ -250,6 +250,32 @@ Dopo l'installazione del pacchetto `.deb`, i file del programma vengono copiati 
 /usr/local/lib/python3.13/dist-packages/songpressplusplus/
 ```
 
+### Cartella dei template su Linux
+
+Il pulsante **"Apri cartella template"** (`Strumenti → Opzioni → Generale`) apre la cartella dei template con il gestore file predefinito del desktop (tramite `xdg-open`, fornito dal pacchetto `xdg-utils`, che è una dipendenza del `.deb`).
+
+Con l'installazione tramite `.deb`, la cartella del pacchetto (`/usr/local/lib/python3.13/dist-packages/songpressplusplus/`) è di proprietà di `root` e quindi **in sola lettura** per l'utente: i template personali non possono essere salvati lì. Il percorso finale di destinazione è perciò la **cartella dati utente** (`glb.data_path`), che Songpress++ ricava da `wx.StandardPaths.GetUserDataDir()`:
+
+```
+~/.Songpress++/templates/
+├── songs/     ← template di brani (.crd) → menu "File → Nuovo da template"
+└── slides/    ← template PowerPoint (.pptx) → esportazione presentazioni
+```
+
+Le due sottocartelle vengono create automaticamente alla prima apertura.
+
+> **⚠️ Nota:** su Linux wxWidgets usa il layout "classico" (`~/.<NomeApp>`), quindi il nome esatto della cartella dipende dall'`AppName` impostato dall'applicazione. Per conoscere il percorso effettivo basta premere il pulsante **"Apri cartella template"**: il gestore file si apre esattamente sulla cartella in uso.
+
+**Ordine di risoluzione.** Songpress++ sceglie la prima cartella `templates/` **scrivibile** tra queste:
+
+1. `glb.data_path/templates/` — cartella dati utente (`~/.Songpress++/`)
+2. `glb.path/templates/` — cartella del pacchetto: usabile solo nelle installazioni da sorgenti, in un *virtualenv* o in **modalità portable**; **scartata** con il `.deb` di sistema
+3. `~/.Songpress++/templates/` — rete di sicurezza, se `glb.data_path` non è ancora inizializzato
+
+**Modalità portable.** Se accanto al pacchetto esiste un file `config.ini`, `Globals.InitDataPath()` fa coincidere la cartella dati con quella del pacchetto: in quel caso i punti 1 e 2 sono lo stesso percorso e tutto (configurazione e template) resta nella cartella del programma. Questa modalità richiede ovviamente che la cartella del programma sia scrivibile, quindi **non** è utilizzabile con l'installazione `.deb` di sistema.
+
+**Precedenza.** Il menu *"Nuovo da template"* legge da entrambe le radici (`glb.path` e `glb.data_path`): i file della cartella dati utente **hanno la precedenza** su quelli omonimi installati a livello di sistema dal pacchetto. Per personalizzare un template preinstallato è quindi sufficiente copiarlo in `~/.Songpress++/templates/songs/` e modificarlo.
+
 ## Installazione su MAC
 
 (Mai testata)
@@ -343,19 +369,19 @@ Dopo l'installazione del pacchetto `.deb`, i file del programma vengono copiati 
 
 ### Sistema operativo Windows (solo tema chiaro)
 
-![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Schermata_principale_it.png)
+![Songpress++ cambio nome e versione](src/songpressplusplus/img/GUIDE/Schermata_principale_it.png)
 
-![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Menu_contestuale_it.png)
+![Songpress++ cambio nome e versione](src/songpressplusplus/img/GUIDE/Menu_contestuale_it.png)
 
 ### Sistema operativo Linux (Debian)
 
-![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Schermata_principale_linux_brezza_it.png)
+![Songpress++ cambio nome e versione](src/songpressplusplus/img/GUIDE/Schermata_principale_linux_brezza_it.png)
 
-![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Schermata_principale_linux_brezza_scuro_it.png)
+![Songpress++ cambio nome e versione](src/songpressplusplus/img/GUIDE/Schermata_principale_linux_brezza_scuro_it.png)
 
-![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Menu_contestuale_linux_brezza_it.png)
+![Songpress++ cambio nome e versione](src/songpressplusplus/img/GUIDE/Menu_contestuale_linux_brezza_it.png)
 
-![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Menu_contestuale_linux_brezza_scuro_it.png)
+![Songpress++ cambio nome e versione](src/songpressplusplus/img/GUIDE/Menu_contestuale_linux_brezza_scuro_it.png)
 
 
 

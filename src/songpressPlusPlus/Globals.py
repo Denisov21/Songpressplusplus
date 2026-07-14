@@ -51,6 +51,17 @@ def _read_name():
 
 
 class Globals(object):
+    # Subfolders of templates/ that must always exist, both in the package
+    # (global root) and in the user data dir (local root). Kept in sync with
+    # MyPreferencesDialog._TEMPLATE_SUBDIRS: this is exactly the tree that the
+    # "Open templates folder" button reveals to the user.
+    #   fonts/      → custom fonts used by preview/export
+    #   local_dir/  → skeleton copied into the data dir on first run
+    #   slides/     → PowerPoint templates (.pptx)
+    #   songs/      → song templates (.crd)
+    #   themes/     → editor colour themes (.ini)
+    TEMPLATE_SUBDIRS = ('fonts', 'local_dir', 'slides', 'songs', 'themes')
+
     def __init__(self):
         object.__init__(self)
         current_file = os.path.abspath(__file__)
@@ -81,6 +92,17 @@ class Globals(object):
             # Preserve old config file, but don't use it
             shutil.move(old_config, os.path.join(self.data_path, "config.ini.orig"))
 
+        # Ensure the user data dir always exposes every template subfolder, even
+        # if templates/local_dir was incomplete or not shipped at all. Without
+        # them ListLocalGlobalDir('templates/slides') would find nothing and the
+        # "Open templates folder" button would show an incomplete tree.
+        for sub in self.TEMPLATE_SUBDIRS:
+            try:
+                os.makedirs(os.path.join(self.data_path, 'templates', sub),
+                            exist_ok=True)
+            except OSError:
+                pass  # read-only data dir: features degrade gracefully
+
     def AddPath(self, filename):
         return os.path.join(self.path, filename)
 
@@ -88,14 +110,26 @@ class Globals(object):
         """
         List both the local (data) and global (program) versions of a directory
 
+        Missing or unreadable directories are silently skipped: on a system-wide
+        installation (.deb) the data dir may not contain every subfolder yet, and
+        os.listdir() would raise FileNotFoundError. Same tolerant behaviour as
+        SongpressFrame._PopulateTemplateMenu().
+
         :param rel_path: relative path
-        :return: list of absolute paths of files
+        :return: list of absolute paths of files (global first, then local)
         """
         out = []
-        for f in os.listdir(os.path.join(self.path, rel_path)):
-            out.append(os.path.join(self.path, rel_path, f))
-        for f in os.listdir(os.path.join(self.data_path, rel_path)):
-            out.append(os.path.join(self.data_path, rel_path, f))
+        for root in (self.path, self.data_path):
+            if not root:
+                continue  # data_path not initialised yet
+            folder = os.path.join(root, rel_path)
+            if not os.path.isdir(folder):
+                continue
+            try:
+                for f in sorted(os.listdir(folder)):
+                    out.append(os.path.join(folder, f))
+            except OSError:
+                pass  # unreadable directory: skip it
         return out
 
     languages = {

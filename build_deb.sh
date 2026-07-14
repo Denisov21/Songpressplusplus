@@ -68,9 +68,11 @@ HOMEPAGE="https://github.com/Denisov21/Songpressplusplus"
 
 # Dipendenze runtime disponibili come pacchetti Debian/Ubuntu.
 # python3-pip serve al postinst per installare le dipendenze solo-PyPI.
+# xdg-utils fornisce xdg-open, usato per aprire la cartella dei template
+# (e in generale cartelle/file) con il gestore file predefinito del desktop.
 DEPENDS="python3 (>= 3.12), python3-pip, python3-wxgtk4.0 | python3-wxpython4, \
 python3-requests, python3-reportlab, python3-markdown, python3-mistune, \
-python3-pypdf"
+python3-pypdf, xdg-utils"
 
 # Dipendenze consigliate (installate da apt di default, ma non obbligatorie):
 #   - wl-clipboard  → fornisce wl-copy, usato per copiare l'immagine dello
@@ -508,6 +510,69 @@ if [[ -n "$SITE_PKG" ]]; then
     mkdir -p "$(dirname "$DIST_PKG")"
     mv "$SITE_PKG" "$DIST_PKG"
     rmdir "$(dirname "$SITE_PKG")" 2>/dev/null || true
+fi
+
+# ── 3b. Verifica dei template ────────────────────────────────────────────────
+# Globals.InitDataPath() popola la cartella dati utente (~/.Songpress++)
+# copiando templates/local_dir/ dal pacchetto. Se la wheel non include quella
+# cartella (hatchling la esclude se non è dichiarata in pyproject.toml, e
+# git non versiona le directory vuote), l'utente si ritrova senza
+# templates/songs e templates/slides: il menu "Nuovo da template" resta vuoto
+# e l'esportazione PowerPoint fallisce.
+echo "$OK Verifica dell'albero templates/ nel pacchetto..."
+# Individua la cartella del pacchetto Python cercando Globals.py (robusto
+# rispetto al nome effettivo del package: songpress / songpressplusplus / ...).
+PKG_DIR=$(find "$INSTALL_PREFIX" -type f -name "Globals.py" -path "*dist-packages*" \
+    -printf '%h\n' 2>/dev/null | head -n1)
+
+# Sottocartelle di templates/ che devono esistere. Devono restare allineate a
+# Globals.TEMPLATE_SUBDIRS e a MyPreferencesDialog._TEMPLATE_SUBDIRS: sono
+# esattamente quelle che l'utente vede premendo "Apri cartella template".
+TEMPLATE_SUBDIRS=(fonts local_dir slides songs themes)
+
+if [[ -z "$PKG_DIR" ]]; then
+    echo "  ⚠ Cartella del pacchetto non individuata: salto la verifica dei template."
+else
+    MISSING=0
+
+    # Radice globale: è la metà "programma" letta da ListLocalGlobalDir().
+    for SUB in "${TEMPLATE_SUBDIRS[@]}"; do
+        if [[ -d "$PKG_DIR/templates/$SUB" ]]; then
+            echo "  ✓ templates/$SUB"
+        else
+            echo "  ⚠ templates/$SUB MANCANTE nella wheel: la creo."
+            MISSING=1
+            mkdir -p "$PKG_DIR/templates/$SUB"
+            # git non versiona le cartelle vuote e dpkg-deb non le preserva:
+            # un file segnaposto garantisce che la cartella arrivi all'utente.
+            cat > "$PKG_DIR/templates/$SUB/.keep" <<'KEEP'
+# Placeholder: keeps this directory inside the package.
+# Songpress++ needs the full templates/ tree (fonts, local_dir, slides,
+# songs, themes). Safe to delete once the folder holds real files.
+KEEP
+        fi
+    done
+
+    # Scheletro copiato nella cartella dati utente (~/.Songpress++) al primo
+    # avvio da Globals.InitDataPath(): deve contenere lo stesso albero.
+    LOCAL_DIR="$PKG_DIR/templates/local_dir"
+    for SUB in "${TEMPLATE_SUBDIRS[@]}"; do
+        [[ "$SUB" == "local_dir" ]] && continue   # niente ricorsione
+        if [[ ! -d "$LOCAL_DIR/templates/$SUB" ]]; then
+            echo "  ⚠ templates/local_dir/templates/$SUB MANCANTE: la creo."
+            MISSING=1
+            mkdir -p "$LOCAL_DIR/templates/$SUB"
+            cp "$PKG_DIR/templates/$SUB/.keep" \
+               "$LOCAL_DIR/templates/$SUB/.keep" 2>/dev/null || true
+        fi
+    done
+
+    if [[ "$MISSING" -eq 1 ]]; then
+        echo "  → Le cartelle mancanti sono state create nel pacchetto, ma per"
+        echo "    renderle permanenti dichiarale in pyproject.toml, es.:"
+        echo "        [tool.hatch.build.targets.wheel.force-include]"
+        echo "        \"src/songpressplusplus/templates\" = \"songpressplusplus/templates\""
+    fi
 fi
 
 # ── 4. Desktop entry & icona ─────────────────────────────────────────────────

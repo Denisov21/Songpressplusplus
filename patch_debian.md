@@ -778,6 +778,143 @@ wl-paste --type image/png > /tmp/t.png && xdg-open /tmp/t.png
 
 ---
 
+## Patch 8 — "Apri cartella template": crash `explorer` e cartella non scrivibile
+
+**File:** `src/songpressplusplus/MyPreferencesDialog.py`,
+`src/songpressplusplus/Globals.py`, `build_deb.sh`
+
+**Problema (tre parti):**
+
+1. *Comando Windows su Linux.* `MyPreferencesDialog.OnOpenTemplatesFolder()`
+   lanciava `subprocess.Popen(['explorer', path])`, comando che su Linux non
+   esiste: premendo **Opzioni → Generale → "Apri cartella template"** compariva
+   il dialogo di errore `[Errno 2] File o directory non esistente: 'explorer'`.
+2. *Cartella di destinazione sbagliata.* La funzione puntava a
+   `templates/` **accanto al pacchetto**, cioè
+   `/usr/local/lib/python3.13/dist-packages/songpressplusplus/templates/`: con
+   l'installazione `.deb` quella cartella appartiene a `root` ed è in sola
+   lettura per l'utente, che quindi non potrebbe comunque salvarvi i propri
+   template. Peggio, `os.makedirs(..., exist_ok=True)` **non** solleva errore su
+   una cartella già esistente di root, quindi il controllo di scrivibilità non
+   scattava.
+3. *Crash su `templates/slides` mancante.* `Globals.ListLocalGlobalDir()`
+   chiamava `os.listdir()` su entrambe le radici **senza verificarne
+   l'esistenza**: se `templates/slides/` non era presente nella cartella dati
+   utente (perché `templates/local_dir/` non era stata inclusa nella wheel),
+   l'esportazione PowerPoint sollevava `FileNotFoundError`.
+
+**Fix:**
+
+1. `OnOpenTemplatesFolder()` è ora **multipiattaforma**: `os.startfile()` su
+   Windows (gestisce spazi e caratteri non ASCII e non lascia processi appesi,
+   a differenza di `Popen(['explorer', ...])`), `open` su macOS, **`xdg-open`**
+   su Linux/BSD (standard freedesktop: su KDE inoltra a Dolphin, su GNOME a
+   Nautilus), lanciato con `start_new_session=True` e output su `DEVNULL`. Se
+   `xdg-open` manca, ripiega su `wx.LaunchDefaultApplication()` e in ultima
+   istanza suggerisce `sudo apt install xdg-utils`.
+2. Nuovo `MyPreferencesDialog._get_templates_dir()`, allineato alle radici che
+   `SongpressFrame._PopulateTemplateMenu()` già scandisce: sceglie la prima
+   cartella **scrivibile** tra `glb.data_path/templates` (cartella dati utente),
+   `glb.path/templates` (pacchetto, valida solo per sorgenti/venv/portable) e
+   `~/.Songpress++/templates` (rete di sicurezza). Il nuovo helper
+   `_is_writable_templates_dir()` fa un test esplicito con
+   `os.access(d, W_OK | X_OK)`, perché `makedirs(exist_ok=True)` da solo non
+   rileva una cartella di sistema già esistente.
+3. `Globals.ListLocalGlobalDir()` salta le cartelle mancanti o illeggibili e
+   gestisce `data_path` non ancora inizializzato (stessa tolleranza di
+   `_PopulateTemplateMenu()`). `Globals.InitDataPath()` crea inoltre sempre
+   `templates/songs` e `templates/slides` dentro la cartella dati utente, anche
+   se `templates/local_dir/` è incompleta o assente.
+
+> **Percorso finale su Debian.** Con il `.deb`, la cartella aperta dal pulsante
+> è la cartella dati utente ricavata da `wx.StandardPaths.GetUserDataDir()`:
+>
+> ```
+> ~/.Songpress++/templates/
+> ├── songs/     ← template di brani (.crd) → menu "File → Nuovo da template"
+> └── slides/    ← template PowerPoint (.pptx) → esportazione presentazioni
+> ```
+>
+> I file qui presenti **hanno la precedenza** sugli omonimi installati a livello
+> di sistema dal pacchetto.
+
+> **Packaging:** `xdg-utils` (che fornisce `xdg-open`) è aggiunto tra i
+> `Depends` del `.deb`. `build_deb.sh` verifica inoltre, dopo l'installazione
+> della wheel, che `templates/local_dir/templates/{songs,slides}` e
+> `templates/{songs,slides}` esistano nel pacchetto: se mancano le crea con un
+> file segnaposto `.keep` (git non versiona le directory vuote) e stampa un
+> avviso con lo snippet `pyproject.toml` per la correzione permanente.
+
+### Verifica
+
+```bash
+python3 - <<'PY'
+import os
+BASE = "src/songpressplusplus"
+checks = [
+    ("MyPreferencesDialog.py", "def _get_templates_dir",        "Patch 8a — helper cartella template"),
+    ("MyPreferencesDialog.py", "def _is_writable_templates_dir","Patch 8b — test di scrivibilità"),
+    ("MyPreferencesDialog.py", "xdg-open",                      "Patch 8c — apertura cartella su Linux"),
+    ("Globals.py",             "if not os.path.isdir(folder):", "Patch 8d — ListLocalGlobalDir tollerante"),
+    ("Globals.py",             "'templates', 'slides'",         "Patch 8e — sottocartelle create in InitDataPath"),
+]
+for filename, needle, desc in checks:
+    path = os.path.join(BASE, filename)
+    try:
+        with open(path) as f:
+            found = needle in f.read()
+        print(f"{'✅' if found else '❌'} {desc}")
+    except FileNotFoundError:
+        print(f"⚠️  File non trovato: {path}")
+
+# 'explorer' non deve più comparire da nessuna parte
+p = os.path.join(BASE, "MyPreferencesDialog.py")
+if os.path.isfile(p):
+    bad = "'explorer'" in open(p).read()
+    print(f"{'❌' if bad else '✅'} Patch 8f — nessun residuo di 'explorer'")
+PY
+```
+
+Verifica che la dipendenza sia dichiarata nel pacchetto costruito:
+
+```bash
+grep -n "xdg-utils" build_deb.sh
+dpkg-deb -f build_deb/songpressplusplus_*.deb Depends   # deve contenere xdg-utils
+```
+
+### Applicazione sul file installato (senza ricostruire il .deb)
+
+La patch riscrive interi metodi in due file: i sorgenti sono la fonte di verità.
+
+```bash
+SRC=~/Songpress_DEFINitiVO3/SongpressPlusPlus/src/songpressplusplus
+DST=/usr/local/lib/python3.13/dist-packages/songpressplusplus
+sudo cp "$SRC/MyPreferencesDialog.py" "$DST/MyPreferencesDialog.py"
+sudo cp "$SRC/Globals.py"             "$DST/Globals.py"
+sudo apt install xdg-utils
+```
+
+### Test funzionale
+
+```bash
+# 1. xdg-open è presente?
+command -v xdg-open || sudo apt install xdg-utils
+
+# 2. quale gestore file verrebbe usato?
+xdg-mime query default inode/directory      # es. org.kde.dolphin.desktop
+
+# 3. la cartella dati utente esiste con le sue sottocartelle?
+ls -la ~/.Songpress++/templates/            # deve mostrare songs/ e slides/
+```
+
+Poi, in Songpress++: **Strumenti → Opzioni → Generale → "Apri cartella
+template"**. Deve aprirsi Dolphin (o il gestore file predefinito) su
+`~/.Songpress++/templates/`, **senza** alcun dialogo di errore. Copiando un
+file `.crd` in `songs/`, questo compare al riavvio nel menu
+**File → Nuovo da template**.
+
+---
+
 ## Verifica rapida — tutte le patch in un colpo solo
 
 ```bash
@@ -808,6 +945,11 @@ checks = [
     ("PreviewCanvas.py",       "self._on_copy_callback",                                     "Patch 7c — _OnCopyButton usa la callback"),
     ("SongpressFrame.py",      "SetCopyCallback(self.CopyAsImage)",                          "Patch 7d — callback registrata"),
     ("SongpressFrame.py",      "def _copy_bytes_wayland",                                    "Patch 7e — copia via wl-copy su Wayland"),
+    ("MyPreferencesDialog.py", "def _get_templates_dir",                                     "Patch 8a — helper cartella template"),
+    ("MyPreferencesDialog.py", "def _is_writable_templates_dir",                             "Patch 8b — test di scrivibilità"),
+    ("MyPreferencesDialog.py", "xdg-open",                                                   "Patch 8c — apertura cartella su Linux"),
+    ("Globals.py",             "if not os.path.isdir(folder):",                              "Patch 8d — ListLocalGlobalDir tollerante"),
+    ("Globals.py",             "'templates', 'slides'",                                      "Patch 8e — sottocartelle create in InitDataPath"),
 ]
 
 for filename, needle, desc in checks:

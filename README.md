@@ -249,6 +249,32 @@ After installing the `.deb` package, the program files are copied to:
 /usr/local/lib/python3.13/dist-packages/songpressplusplus/
 ```
 
+### Templates folder on Linux
+
+The **"Open templates folder"** button (`Tools → Options → General`) opens the templates folder with the desktop's default file manager (via `xdg-open`, provided by the `xdg-utils` package, which is a dependency of the `.deb`).
+
+With the `.deb` installation, the package folder (`/usr/local/lib/python3.13/dist-packages/songpressplusplus/`) is owned by `root` and therefore **read-only** for the user: personal templates cannot be saved there. The final destination path is thus the **user data folder** (`glb.data_path`), which Songpress++ obtains from `wx.StandardPaths.GetUserDataDir()`:
+
+```
+~/.Songpress++/templates/
+├── songs/     ← song templates (.crd) → "File → New from template" menu
+└── slides/    ← PowerPoint templates (.pptx) → presentation export
+```
+
+Both subfolders are created automatically the first time the folder is opened.
+
+> **⚠️ Note:** on Linux wxWidgets uses the "classic" layout (`~/.<AppName>`), so the exact folder name depends on the `AppName` set by the application. To find out the actual path, just click **"Open templates folder"**: the file manager opens on exactly the folder in use.
+
+**Resolution order.** Songpress++ picks the first **writable** `templates/` folder among these:
+
+1. `glb.data_path/templates/` — user data folder (`~/.Songpress++/`)
+2. `glb.path/templates/` — package folder: only usable for source installs, a *virtualenv* or **portable mode**; **skipped** with the system-wide `.deb`
+3. `~/.Songpress++/templates/` — safety net, in case `glb.data_path` is not initialised yet
+
+**Portable mode.** If a `config.ini` file sits next to the package, `Globals.InitDataPath()` makes the data folder coincide with the package folder: options 1 and 2 then point to the same path and everything (configuration and templates) stays inside the program folder. This obviously requires the program folder to be writable, so it is **not** usable with a system-wide `.deb` installation.
+
+**Precedence.** The *"New from template"* menu reads from both roots (`glb.path` and `glb.data_path`): files in the user data folder **take precedence** over system-wide files of the same name installed by the package. To customise a pre-installed template, simply copy it into `~/.Songpress++/templates/songs/` and edit it.
+
 ## Installation on MAC
 
 (Never tested)
@@ -342,19 +368,19 @@ After installing the `.deb` package, the program files are copied to:
 
 ### Windows operating system
 
-![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Schermata_principale_en.png)
+![Songpress++ cambio nome e versione](src/songpressplusplus/img/GUIDE/Schermata_principale_en.png)
 
-![Songpress++ menu contestuale](src/songpressPlusPlus/img/GUIDE/Menu_contestuale_en.png)
+![Songpress++ menu contestuale](src/songpressplusplus/img/GUIDE/Menu_contestuale_en.png)
 
 ### Linux operating system (Debian)
 
-![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Schermata_principale_linux_brezza_en.png)
+![Songpress++ cambio nome e versione](src/songpressplusplus/img/GUIDE/Schermata_principale_linux_brezza_en.png)
 
-![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Schermata_principale_linux_brezza_scuro_en.png)
+![Songpress++ cambio nome e versione](src/songpressplusplus/img/GUIDE/Schermata_principale_linux_brezza_scuro_en.png)
 
-![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Menu_contestuale_linux_brezza_en.png)
+![Songpress++ cambio nome e versione](src/songpressplusplus/img/GUIDE/Menu_contestuale_linux_brezza_en.png)
 
-![Songpress++ cambio nome e versione](src/songpressPlusPlus/img/GUIDE/Menu_contestuale_linux_brezza_scuro_en.png)
+![Songpress++ cambio nome e versione](src/songpressplusplus/img/GUIDE/Menu_contestuale_linux_brezza_scuro_en.png)
 
 ## Adding a new ChordPro directive (developer guide)
 

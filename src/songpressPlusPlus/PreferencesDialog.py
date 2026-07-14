@@ -1105,6 +1105,22 @@ class PreferencesDialog(wx.Dialog):
             if _pl.system() == 'Linux':
                 btnAssocAll.Disable()
                 btnUnassocAll.Disable()
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
             # Su Linux con pacchetto .deb le associazioni sono gestite dal sistema:
             # disabilita i pulsanti per evitare conflitti con /usr/share/mime
             import platform as _pl
@@ -1117,6 +1133,18 @@ class PreferencesDialog(wx.Dialog):
             bSizerFA.Add(btnApply, 0, wx.ALL, 8)
             btnApply.Bind(wx.EVT_BUTTON, self.OnApplyFileAssoc)
             self._btnApplyFileAssoc = btnApply
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
             import platform as _pl2
             if _pl2.system() == 'Linux':
                 btnApply.Disable()

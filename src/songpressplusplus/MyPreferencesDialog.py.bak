@@ -685,27 +685,37 @@ class MyPreferencesDialog(PreferencesDialog):
     _THEME_SYNTAX_KEYS = ['normal', 'chorus', 'chord', 'command', 'attr', 'comment', 'tabgrid']
 
     def _get_themes_dir(self):
-        """Restituisce la cartella templates/themes/ scrivibile.
+        """Restituisce la cartella templates/themes/ accanto al pacchetto sorgente.
 
-        Delega a _get_templates_dir(), così temi e template vivono sempre nella
-        stessa radice (la cartella dati utente su Debian, la cartella del
-        pacchetto su Windows/venv/portable) ed è quella che il pulsante
-        "Apri cartella template" mostra all'utente.
+        Usa __file__ (sempre affidabile) invece di sys.executable.
+        Fallback su APPDATA se la cartella sorgente è in sola lettura.
         """
         import os as _os
+        # questo file  →  .../src/songpress/MyPreferencesDialog.py
+        # pkg_dir      →  .../src/songpress/
+        # themes_dir   →  .../src/songpress/templates/themes/
+        pkg_dir    = _os.path.dirname(_os.path.abspath(__file__))
+        themes_dir = _os.path.join(pkg_dir, 'templates', 'themes')
         try:
-            return _os.path.join(self._get_templates_dir(), 'themes')
-        except OSError as e:
-            wx.MessageBox(
-                _(u"Cannot create themes folder:\n%s\n\n%s")
-                % (_os.path.join('templates', 'themes'), e),
-                _(u"Songpress++"), wx.OK | wx.ICON_ERROR, self
-            )
-            # Ultimo ripiego: la home, così il dialogo non resta senza cartella.
-            themes_dir = _os.path.join(
-                _os.path.expanduser('~'), '.Songpress++', 'templates', 'themes')
             _os.makedirs(themes_dir, exist_ok=True)
             return themes_dir
+        except OSError:
+            pass  # cartella sola lettura → APPDATA
+
+        import sys as _sys
+        if _sys.platform == 'win32':
+            appdata = _os.environ.get('APPDATA', _os.path.expanduser('~'))
+            themes_dir = _os.path.join(appdata, 'Songpress++', 'templates', 'themes')
+        else:
+            themes_dir = _os.path.join(_os.path.expanduser('~'), '.Songpress++', 'templates', 'themes')
+        try:
+            _os.makedirs(themes_dir, exist_ok=True)
+        except Exception as e:
+            wx.MessageBox(
+                _(u"Cannot create themes folder:\n%s\n\n%s") % (themes_dir, e),
+                _(u"Songpress++"), wx.OK | wx.ICON_ERROR, self
+            )
+        return themes_dir
 
     def _theme_files(self):
         import os as _os
@@ -880,122 +890,19 @@ class MyPreferencesDialog(PreferencesDialog):
         self.clearRecentFilesBtn.Disable()
         evt.Skip()
 
-    # Sottocartelle di templates/ che devono sempre esistere ed essere visibili
-    # quando si preme "Apri cartella template" (parità con Windows).
-    #   fonts/      → font personalizzati usati nell'anteprima/esportazione
-    #   local_dir/  → scheletro copiato nella cartella dati al primo avvio
-    #   slides/     → template PowerPoint (.pptx)
-    #   songs/      → template di brani (.crd)
-    #   themes/     → temi colore dell'editor (.ini)
-    _TEMPLATE_SUBDIRS = ('fonts', 'local_dir', 'slides', 'songs', 'themes')
-
-    @classmethod
-    def _is_writable_templates_dir(cls, path):
-        """Crea le sottocartelle di templates/ e verifica che siano scrivibili.
-
-        Non basta che makedirs() riesca: su un'installazione di sistema
-        (.deb) le cartelle esistono già ma appartengono a root, e
-        makedirs(..., exist_ok=True) ritorna senza errore pur essendo la
-        cartella in sola lettura. Serve quindi un test esplicito.
-        """
-        import os as _os
-        try:
-            # La radice deve essere creabile/scrivibile per prima.
-            _os.makedirs(path, exist_ok=True)
-            if not _os.access(path, _os.W_OK | _os.X_OK):
-                return False
-            for sub in cls._TEMPLATE_SUBDIRS:
-                d = _os.path.join(path, sub)
-                _os.makedirs(d, exist_ok=True)
-                if not _os.access(d, _os.W_OK | _os.X_OK):
-                    return False
-            return True
-        except OSError:
-            return False
-
-    def _get_templates_dir(self):
-        """Restituisce la cartella templates/ scrivibile dell'utente, creando
-        tutte le sottocartelle di _TEMPLATE_SUBDIRS.
-
-        Usa gli stessi percorsi che SongpressFrame._PopulateTemplateMenu()
-        scandisce per il menu "Nuovo da template", così la cartella che si
-        apre è esattamente quella da cui l'app legge i template:
-
-          1. glb.data_path/templates  → dati utente (preferita: sempre
-             scrivibile ed è la radice "locale" che sovrascrive quella globale);
-          2. glb.path/templates       → radice "globale" del pacchetto: usabile
-             solo nelle installazioni utente (Windows/AppData, venv, sorgenti,
-             modalità portable). Su Debian di sistema
-             (/usr/local/lib/python3.X/dist-packages/...) è di root e viene
-             scartata dal test di scrivibilità;
-          3. %APPDATA%\\Songpress++\\templates (Windows) oppure
-             ~/.Songpress++/templates (Linux/macOS) → rete di sicurezza se
-             glb.data_path non è definito.
-        """
-        import os as _os
-        import sys as _sys
-
-        candidates = []
-
-        # 1. cartella dati utente dell'applicazione (radice "locale" del menu)
-        data_path = getattr(glb, 'data_path', None)
-        if data_path:
-            candidates.append(_os.path.join(data_path, 'templates'))
-
-        # 2. radice "globale" del pacchetto (scrivibile solo se non di sistema)
-        pkg_path = getattr(glb, 'path', None) or \
-            _os.path.dirname(_os.path.abspath(__file__))
-        candidates.append(_os.path.join(pkg_path, 'templates'))
-
-        # 3. fallback nella home
-        if _sys.platform == 'win32':
-            base = _os.environ.get('APPDATA', _os.path.expanduser('~'))
-            candidates.append(_os.path.join(base, 'Songpress++', 'templates'))
-        else:
-            candidates.append(
-                _os.path.join(_os.path.expanduser('~'), '.Songpress++', 'templates'))
-
-        for path in candidates:
-            if self._is_writable_templates_dir(path):
-                return path
-
-        raise OSError(
-            _(u"Cannot create a writable templates folder. Tried:\n%s")
-            % '\n'.join(candidates))
-
     def OnOpenTemplatesFolder(self, evt):
         import os as _os
-        import sys as _sys
         import subprocess
 
-        path = None
-        try:
-            path = self._get_templates_dir()
+        # Usa lo stesso percorso di _get_themes_dir(): la cartella templates/
+        # accanto al pacchetto sorgente (AppData\Local\...\songpress\templates).
+        pkg_dir = _os.path.dirname(_os.path.abspath(__file__))
+        path = _os.path.join(pkg_dir, 'templates')
 
-            if _sys.platform == 'win32':
-                # Gestisce correttamente spazi e caratteri non ASCII nel percorso
-                # e non lascia processi appesi (a differenza di Popen(['explorer', ...])).
-                _os.startfile(path)                    # pylint: disable=no-member
-            elif _sys.platform == 'darwin':
-                subprocess.Popen(['open', path])
-            else:
-                # Linux/BSD: xdg-open è lo standard freedesktop; su KDE inoltra
-                # a kde-open/Dolphin, su GNOME a Nautilus. Fornito da xdg-utils.
-                subprocess.Popen(
-                    ['xdg-open', path],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    start_new_session=True,
-                )
-        except FileNotFoundError:
-            # xdg-open (o 'open') non installato: ripiego sul gestore
-            # predefinito di wxWidgets.
-            if not (path and wx.LaunchDefaultApplication(path)):
-                wx.MessageBox(
-                    _(u"Cannot open the templates folder:\n%s\n\n"
-                      u"On Debian/Ubuntu install the 'xdg-utils' package:\n"
-                      u"    sudo apt install xdg-utils") % (path or ''),
-                    _("Songpress++"), wx.OK | wx.ICON_ERROR, self)
+        _os.makedirs(_os.path.join(path, 'songs'), exist_ok=True)
+        _os.makedirs(_os.path.join(path, 'slides'), exist_ok=True)
+        try:
+            subprocess.Popen(['explorer', path])
         except Exception as e:
             wx.MessageBox(str(e), _("Songpress++"), wx.OK | wx.ICON_ERROR, self)
         evt.Skip()
