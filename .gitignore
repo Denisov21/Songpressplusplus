@@ -1,1 +1,33 @@
 installer/~$ spiego passo.docx
+
+# Ambienti virtuali
+/.venv/
+/.venv-build/
+
+# IDE
+/.idea/
+/.vscode/
+
+# Egg info (setuptools)
+/*.egg-info/
+
+# Build e distribuzione
+# Esclude le sottocartelle di build, non i file
+/build/*/
+/dist/
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+
+# File di log
+*.log
+
+# NSIS output (se compili dall'interno del progetto)
+/installer/*.exe
+
+# File temporanei Office / Windows
+~$*
+Thumbs.db
+Desktop.ini

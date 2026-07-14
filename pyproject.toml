@@ -1,12 +1,18 @@
 [project]
 name = "SongpressPlusPlus"
 version = "7.0.2"
-description = "Songpress++ is a free, easy to use song typeset program for Windows, that generates high-quality songbooks."
+description = "Songpress++ is a free, easy to use song typeset program for Windows and Linux, that generates high-quality songbooks."
+# Songpress++ è un fork di Songpress, scritto originariamente da Luca Allulli
+# (https://github.com/lallulli/songpress) e rilasciato sotto GNU GPL v2.
+# L'attribuzione originale è preservata negli header dei sorgenti e nel README.
 authors = [
     { name = "Denisov21" },
-    { name = "Luca Allulli" }
 ]
-license = { text = "GNU GPL v2" }
+maintainers = [
+    { name = "Denisov21" },
+]
+license = "GPL-2.0-only"
+license-files = ["license.txt"]
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -33,13 +39,22 @@ Issues = "https://github.com/Denisov21/Songpressplusplus/issues"
 "Issues original" = "https://github.com/lallulli/songpress/issues"
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
+# ── Wheel / pacchetto Linux (.deb) ──────────────────────────────────────────
 [tool.hatch.build.targets.wheel]
 packages = ["src/songpressplusplus"]
 
-# ── cx_Freeze — build eseguibile ────────────────────────────────────────────
+# Un wheel non può contenere directory vuote: le cartelle di lavoro sotto
+# templates/local_dir/templates/{fonts,songs,themes} vengono materializzate
+# tramite segnaposto .gitkeep, che qui forziamo dentro al pacchetto anche se
+# esclusi da .gitignore.
+artifacts = [
+    "src/songpressplusplus/templates/**/.gitkeep",
+]
+
+# ── cx_Freeze — build eseguibile (Windows) ──────────────────────────────────
 # Eseguire da venv dedicato per evitare inclusione di pacchetti di sistema:
 #
 #   python -m venv .venv
@@ -48,7 +63,7 @@ packages = ["src/songpressplusplus"]
 #   python -m cx_Freeze build_exe
 
 [[tool.cxfreeze.executables]]
-script = "src/main.py"
+script = "src/songpressplusplus/main.py"
 target_name = "SongpressPlusPlus.exe"
 base = "gui"
 icon = "installer/songpressplusplus.ico"
@@ -78,4 +93,3 @@ include_files = [
     ["src/songpressplusplus/xrc",       "xrc"],
     ["pyproject.toml",                  "pyproject.toml"],
 ]
-
