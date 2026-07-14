@@ -258,11 +258,14 @@ Con l'installazione tramite `.deb`, la cartella del pacchetto (`/usr/local/lib/p
 
 ```
 ~/.Songpress++/templates/
-├── songs/     ← template di brani (.crd) → menu "File → Nuovo da template"
-└── slides/    ← template PowerPoint (.pptx) → esportazione presentazioni
+├── fonts/       ← font personalizzati usati da anteprima ed esportazione
+├── local_dir/   ← scheletro copiato nella cartella dati al primo avvio
+├── slides/      ← template PowerPoint (.pptx) → esportazione presentazioni
+├── songs/       ← template di brani (.crd) → menu "File → Nuovo da template"
+└── themes/      ← temi colore dell'editor (.ini)
 ```
 
-Le due sottocartelle vengono create automaticamente alla prima apertura.
+Le cinque sottocartelle vengono create automaticamente e sono le stesse che appaiono su Windows. Anche i **temi** dell'editor finiscono qui: `_get_themes_dir()` deriva dalla stessa radice, quindi temi e template stanno sempre insieme.
 
 > **⚠️ Nota:** su Linux wxWidgets usa il layout "classico" (`~/.<NomeApp>`), quindi il nome esatto della cartella dipende dall'`AppName` impostato dall'applicazione. Per conoscere il percorso effettivo basta premere il pulsante **"Apri cartella template"**: il gestore file si apre esattamente sulla cartella in uso.
 
@@ -272,7 +275,9 @@ Le due sottocartelle vengono create automaticamente alla prima apertura.
 2. `glb.path/templates/` — cartella del pacchetto: usabile solo nelle installazioni da sorgenti, in un *virtualenv* o in **modalità portable**; **scartata** con il `.deb` di sistema
 3. `~/.Songpress++/templates/` — rete di sicurezza, se `glb.data_path` non è ancora inizializzato
 
-**Modalità portable.** Se accanto al pacchetto esiste un file `config.ini`, `Globals.InitDataPath()` fa coincidere la cartella dati con quella del pacchetto: in quel caso i punti 1 e 2 sono lo stesso percorso e tutto (configurazione e template) resta nella cartella del programma. Questa modalità richiede ovviamente che la cartella del programma sia scrivibile, quindi **non** è utilizzabile con l'installazione `.deb` di sistema.
+La verifica non si limita a `os.makedirs(exist_ok=True)`: su un'installazione di sistema le cartelle **esistono già** ma appartengono a `root`, quindi `makedirs()` non fallirebbe. Ogni candidata viene testata esplicitamente con `os.access(W_OK | X_OK)`, radice e sottocartelle comprese.
+
+**Modalità portable.** Se accanto al pacchetto esiste un file `config.ini`, `Globals.InitDataPath()` fa coincidere la cartella dati con quella del pacchetto: in quel caso i punti 1 e 2 sono lo stesso percorso e tutto (configurazione, temi e template) resta nella cartella del programma. Questa modalità richiede ovviamente che la cartella del programma sia scrivibile, quindi **non** è utilizzabile con l'installazione `.deb` di sistema.
 
 **Precedenza.** Il menu *"Nuovo da template"* legge da entrambe le radici (`glb.path` e `glb.data_path`): i file della cartella dati utente **hanno la precedenza** su quelli omonimi installati a livello di sistema dal pacchetto. Per personalizzare un template preinstallato è quindi sufficiente copiarlo in `~/.Songpress++/templates/songs/` e modificarlo.
 

@@ -257,11 +257,14 @@ With the `.deb` installation, the package folder (`/usr/local/lib/python3.13/dis
 
 ```
 ~/.Songpress++/templates/
-├── songs/     ← song templates (.crd) → "File → New from template" menu
-└── slides/    ← PowerPoint templates (.pptx) → presentation export
+├── fonts/       ← custom fonts used by preview and export
+├── local_dir/   ← skeleton copied into the data folder on first run
+├── slides/      ← PowerPoint templates (.pptx) → presentation export
+├── songs/       ← song templates (.crd) → "File → New from template" menu
+└── themes/      ← editor colour themes (.ini)
 ```
 
-Both subfolders are created automatically the first time the folder is opened.
+All five subfolders are created automatically and match the ones found on Windows. Editor **themes** live here too: `_get_themes_dir()` derives from the same root, so themes and templates always stay together.
 
 > **⚠️ Note:** on Linux wxWidgets uses the "classic" layout (`~/.<AppName>`), so the exact folder name depends on the `AppName` set by the application. To find out the actual path, just click **"Open templates folder"**: the file manager opens on exactly the folder in use.
 
@@ -271,7 +274,9 @@ Both subfolders are created automatically the first time the folder is opened.
 2. `glb.path/templates/` — package folder: only usable for source installs, a *virtualenv* or **portable mode**; **skipped** with the system-wide `.deb`
 3. `~/.Songpress++/templates/` — safety net, in case `glb.data_path` is not initialised yet
 
-**Portable mode.** If a `config.ini` file sits next to the package, `Globals.InitDataPath()` makes the data folder coincide with the package folder: options 1 and 2 then point to the same path and everything (configuration and templates) stays inside the program folder. This obviously requires the program folder to be writable, so it is **not** usable with a system-wide `.deb` installation.
+The check does not rely on `os.makedirs(exist_ok=True)` alone: on a system-wide install the folders **already exist** but are owned by `root`, so `makedirs()` would not fail. Each candidate is explicitly tested with `os.access(W_OK | X_OK)`, root and subfolders included.
+
+**Portable mode.** If a `config.ini` file sits next to the package, `Globals.InitDataPath()` makes the data folder coincide with the package folder: options 1 and 2 then point to the same path and everything (configuration, themes and templates) stays inside the program folder. This obviously requires the program folder to be writable, so it is **not** usable with a system-wide `.deb` installation.
 
 **Precedence.** The *"New from template"* menu reads from both roots (`glb.path` and `glb.data_path`): files in the user data folder **take precedence** over system-wide files of the same name installed by the package. To customise a pre-installed template, simply copy it into `~/.Songpress++/templates/songs/` and edit it.
 
