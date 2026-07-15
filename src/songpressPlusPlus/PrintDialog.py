@@ -1508,14 +1508,31 @@ class PrintManager:
                     lbl = child.GetLabel().strip()
                     if lbl in _label_map:
                         child.SetLabel(_label_map[lbl])
-            btn_print = ctrl_bar.FindWindowById(wx.ID_PRINT)
+            _preview_print_id = getattr(wx, 'ID_PREVIEW_PRINT', wx.ID_PRINT)
+            btn_print = ctrl_bar.FindWindowById(_preview_print_id)
+            if btn_print is None:
+                btn_print = ctrl_bar.FindWindowById(wx.ID_PRINT)
             if btn_print is not None:
                 btn_print.SetLabel(_("Print..."))
 
+            # Registro dei percorsi icona dei bottoni personalizzati:
+            # verranno ridimensionati tutti alla stessa misura più avanti.
+            _custom_icon_paths = {}
+
+            # Icona per il bottone «Stampa» nativo della preview bar
+            if btn_print is not None:
+                _print_icon_path = glb.AddPath('img/print_icon.png')
+                if os.path.isfile(_print_icon_path):
+                    _custom_icon_paths[btn_print] = _print_icon_path
+                    img = wx.Image(_print_icon_path, wx.BITMAP_TYPE_PNG)
+                    btn_print.SetBitmap(wx.Bitmap(img))
+                    btn_print.SetBitmapPosition(wx.LEFT)
+
             # Bottone «Impostazioni driver»
             btn_driver = wx.Button(ctrl_bar, wx.ID_ANY, _("Driver settings..."))
-            _driver_icon_path = glb.AddPath('img/option_printer24x24.png')
+            _driver_icon_path = glb.AddPath('img/option_printer.png')
             if os.path.isfile(_driver_icon_path):
+                _custom_icon_paths[btn_driver] = _driver_icon_path
                 img = wx.Image(_driver_icon_path, wx.BITMAP_TYPE_PNG)
                 btn_driver.SetBitmap(wx.Bitmap(img))
                 btn_driver.SetBitmapPosition(wx.LEFT)
@@ -1551,8 +1568,9 @@ class PrintManager:
 
             # Bottone «Opzioni di stampa»
             btn_options = wx.Button(ctrl_bar, wx.ID_ANY, _("Print options..."))
-            _icon_path  = glb.AddPath('img/productivity-expert-icon.png')
+            _icon_path  = glb.AddPath('img/print_icon.png')
             if os.path.isfile(_icon_path):
+                _custom_icon_paths[btn_options] = _icon_path
                 img = wx.Image(_icon_path, wx.BITMAP_TYPE_PNG)
                 btn_options.SetBitmap(wx.Bitmap(img))
                 btn_options.SetBitmapPosition(wx.LEFT)
@@ -1588,6 +1606,7 @@ class PrintManager:
             btn_page_setup  = wx.Button(ctrl_bar, wx.ID_ANY, _("Page setup..."))
             _page_icon_path = glb.AddPath('img/file-black-icon.png')
             if os.path.isfile(_page_icon_path):
+                _custom_icon_paths[btn_page_setup] = _page_icon_path
                 img = wx.Image(_page_icon_path, wx.BITMAP_TYPE_PNG)
                 btn_page_setup.SetBitmap(wx.Bitmap(img))
                 btn_page_setup.SetBitmapPosition(wx.LEFT)
@@ -1616,18 +1635,34 @@ class PrintManager:
 
             # Bottone «Chiudi»
             btn_close = wx.Button(ctrl_bar, wx.ID_ANY, _("Close"))
+            _close_icon_path = glb.AddPath('img/close_print_dialog.png')
+            if os.path.isfile(_close_icon_path):
+                _custom_icon_paths[btn_close] = _close_icon_path
+                img = wx.Image(_close_icon_path, wx.BITMAP_TYPE_PNG)
+                btn_close.SetBitmap(wx.Bitmap(img))
+                btn_close.SetBitmapPosition(wx.LEFT)
             btn_close.Bind(wx.EVT_BUTTON, lambda e: pf.Close())
 
-            # Nasconde il bottone Close nativo
-            native_close = ctrl_bar.FindWindowById(wx.ID_CLOSE)
-            if native_close is not None:
-                native_close.Hide()
-            else:
+            # Nasconde il bottone «Chiudi» nativo della preview control bar
+            # (altrimenti compare doppio, senza icona, accanto al nostro).
+            _native_close = None
+            try:
+                _native_close = ctrl_bar.FindWindowById(wx.ID_PREVIEW_CLOSE)
+            except AttributeError:
+                _native_close = None
+            if _native_close is None:
                 for child in ctrl_bar.GetChildren():
-                    if isinstance(child, wx.AnyButton) and \
-                            child.GetLabel().strip() in ('Close', _('Close')):
-                        child.Hide()
+                    if (isinstance(child, wx.Button)
+                            and child is not btn_close
+                            and child.GetLabel().strip() in ('Close', _('Close'))):
+                        _native_close = child
                         break
+            if _native_close is not None:
+                _native_close.Hide()
+                _cb_sizer = ctrl_bar.GetSizer()
+                if _cb_sizer:
+                    _cb_sizer.Detach(_native_close)
+
 
             # Inserisce i bottoni personalizzati nella toolbar
             # (le etichette duplex/colore sono nella status bar in basso)
@@ -1645,19 +1680,64 @@ class PrintManager:
                 sizer.Insert(ins + 2, btn_options,    0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
                 sizer.Insert(ins + 3, btn_close,      0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
 
-            # Uniforma altezza bottoni
-            ref_h = btn_options.GetBestSize().height
-            for btn in (btn_page_setup, btn_driver, btn_close):
+            # Uniforma altezza dei bottoni personalizzati a quella dei
+            # bottoni nativi della preview bar (quelli di sinistra).
+            def _native_ref_height():
+                # Prova prima il bottone «Print» nativo, poi qualunque
+                # altro bottone nativo diverso dai nostri custom.
+                _custom = (btn_page_setup, btn_driver, btn_options, btn_close)
+                ref = btn_print
+                if ref is not None and ref not in _custom:
+                    h = ref.GetBestSize().height
+                    if h > 4:
+                        return h
+                for child in ctrl_bar.GetChildren():
+                    if isinstance(child, wx.Button) and child not in _custom:
+                        h = child.GetBestSize().height
+                        if h > 4:
+                            return h
+                return btn_options.GetBestSize().height
+
+            ref_h = _native_ref_height()
+
+            # Ridimensiona tutte le icone dei bottoni custom alla stessa
+            # misura, ricavata dall'altezza dei bottoni nativi (con un
+            # margine per il bordo del bottone). Rilegge sempre dal file
+            # sorgente per non accumulare perdite di qualità.
+            _icon_cache = {}
+
+            def _apply_uniform_icons(btn_h):
+                icon_sz = int(btn_h) - 8
+                if icon_sz < 8:
+                    icon_sz = 8
+                if icon_sz > 24:
+                    icon_sz = 24
+                if _icon_cache.get('sz') == icon_sz:
+                    return
+                _icon_cache['sz'] = icon_sz
+                for _b, _p in _custom_icon_paths.items():
+                    try:
+                        im = wx.Image(_p, wx.BITMAP_TYPE_PNG)
+                        if im.GetWidth() != icon_sz or im.GetHeight() != icon_sz:
+                            im = im.Scale(icon_sz, icon_sz, wx.IMAGE_QUALITY_HIGH)
+                        _b.SetBitmap(wx.Bitmap(im))
+                        _b.SetBitmapPosition(wx.LEFT)
+                    except Exception:
+                        pass
+
+            _apply_uniform_icons(ref_h)
+            for btn in (btn_page_setup, btn_driver, btn_options, btn_close):
                 btn.SetMinSize(wx.Size(btn.GetBestSize().width, ref_h))
             ctrl_bar.Layout()
 
             def _equalize_heights():
                 try:
-                    h = btn_options.GetSize().height
+                    h = _native_ref_height()
                     if h < 4:
                         return
-                    for btn in (btn_page_setup, btn_driver, btn_close):
-                        bw = btn.GetSize().width
+                    _apply_uniform_icons(h)
+                    for btn in (btn_page_setup, btn_driver, btn_options, btn_close):
+                        bw = btn.GetBestSize().width
                         btn.SetMinSize(wx.Size(bw, h))
                         btn.SetSize(wx.Size(bw, h))
                     ctrl_bar.Layout()

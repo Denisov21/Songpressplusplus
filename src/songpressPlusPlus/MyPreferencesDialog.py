@@ -184,6 +184,10 @@ class MyPreferencesDialog(PreferencesDialog):
 
         # Themes
         self._refreshThemeList()
+        # Riallinea la lista al contenuto reale della cartella quando l'utente
+        # sta per aprire la tendina: così i temi cancellati (o aggiunti) fuori
+        # dall'app — da file manager o terminale — non restano voci fantasma.
+        self.themeCh.Bind(wx.EVT_SET_FOCUS, self._OnThemeChoiceFocus)
 
         # Show print preview
         self.showPrintPreviewCB.SetValue(getattr(self.pref, 'showPrintPreview', True))
@@ -770,6 +774,41 @@ class MyPreferencesDialog(PreferencesDialog):
         self.themeLoadBtn.Enable(has)
         self.themeDeleteBtn.Enable(has)
 
+    def _theme_names_in_list(self):
+        """Nomi attualmente mostrati nel controllo themeCh."""
+        return [self.themeCh.GetString(i) for i in range(self.themeCh.GetCount())]
+
+    def _syncThemeListFromDisk(self):
+        """Riallinea la lista temi al contenuto reale della cartella.
+
+        Serve quando un file .ini viene rimosso (o aggiunto) *esternamente*,
+        da file manager o terminale, mentre il dialogo è già aperto: in quel
+        caso _refreshThemeList() non è mai stato richiamato e la dropdown mostra
+        voci fantasma (o nasconde temi nuovi).
+
+        Ricostruisce il controllo solo se il contenuto è effettivamente
+        cambiato: nel caso normale non tocca il wx.Choice, così non interferisce
+        con l'apertura della tendina (evita il classico "il primo click non apre
+        la tendina" su Windows quando il controllo viene ricreato durante il
+        focus). Conserva, quando possibile, il tema selezionato.
+
+        Restituisce True se la lista è stata modificata.
+        """
+        disk = self._theme_files()
+        if disk == self._theme_names_in_list():
+            return False
+        prev = self.themeCh.GetStringSelection()
+        self._refreshThemeList(select_name=prev if prev in disk else None)
+        return True
+
+    def _OnThemeChoiceFocus(self, evt):
+        # Al focus (l'utente sta per aprire la tendina) riallinea al disco.
+        try:
+            self._syncThemeListFromDisk()
+        except Exception:
+            pass
+        evt.Skip()
+
     def _theme_to_dict(self):
         """Raccoglie tutti i colori dal dialogo corrente in un dict."""
         d = {}
@@ -849,15 +888,28 @@ class MyPreferencesDialog(PreferencesDialog):
         return dict(cfg['colours']) if 'colours' in cfg else {}
 
     def OnThemeLoad(self, evt):
+        # Riallinea al disco: un tema cancellato fuori dall'app non deve essere
+        # caricabile e non deve restare selezionato.
+        self._syncThemeListFromDisk()
         idx = self.themeCh.GetSelection()
         if idx == wx.NOT_FOUND:
             return
         name = self.themeCh.GetString(idx)
+        if self._find_theme_path(name) is None:
+            self._syncThemeListFromDisk()
+            wx.MessageBox(
+                _(u"Theme «%s» no longer exists.") % name,
+                _(u"Songpress++"), wx.OK | wx.ICON_INFORMATION, self
+            )
+            return
         d = self._load_theme_file(name)
         if d:
             self._apply_theme_dict(d)
 
     def OnThemeSave(self, evt):
+        # Riallinea al disco: il nome suggerito non deve venire da una voce
+        # fantasma di un tema già cancellato fuori dall'app.
+        self._syncThemeListFromDisk()
         idx = self.themeCh.GetSelection()
         current = self.themeCh.GetString(idx) if idx != wx.NOT_FOUND else u''
         dlg = wx.TextEntryDialog(self, _(u"Theme name:"), _(u"Save theme"), current)
@@ -885,10 +937,24 @@ class MyPreferencesDialog(PreferencesDialog):
                 self._on_theme_change()
 
     def OnThemeDelete(self, evt):
+        # Riallinea al disco: se il tema è già stato cancellato fuori dall'app,
+        # la voce fantasma viene rimossa qui invece di restare nella lista.
+        if self._syncThemeListFromDisk():
+            # La lista è cambiata: la selezione ora punta a un tema reale
+            # (o non c'è nulla da cancellare). Non proseguo sulla vecchia voce.
+            return
         idx = self.themeCh.GetSelection()
         if idx == wx.NOT_FOUND:
             return
         name = self.themeCh.GetString(idx)
+        if self._find_theme_path(name) is None:
+            # Sparito tra il sync e ora: riallinea e avvisa.
+            self._syncThemeListFromDisk()
+            wx.MessageBox(
+                _(u"Theme «%s» no longer exists.") % name,
+                _(u"Songpress++"), wx.OK | wx.ICON_INFORMATION, self
+            )
+            return
         if wx.MessageBox(
             _(u"Delete theme «%s»?") % name,
             _(u"Songpress++"),
