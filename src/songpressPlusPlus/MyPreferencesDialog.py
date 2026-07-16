@@ -45,6 +45,7 @@ class MyPreferencesDialog(PreferencesDialog):
         previewSong = _("#Comment\n{t:My Bonnie}\n\nMy [D]Bonnie lies [G]over the [D]ocean\noh [G]bring back my [A]Bonnie to [D]me!\n\n{soc}\n[D]Bring back, [E-]bring back,\n[A]bring back my Bonnie to [D]me!\n{eoc}\n\n{start_of_grid}\n| [A] | [D] | [Mi] |\n{end_of_grid}")
         self.editor.SetText(previewSong)
         self.editor.SetFont(self.pref.editorFace, self.pref.editorSize)
+        self.sizeCB.SetValue(str(self.pref.editorSize))
         self.editor.SetReadOnly(True)
         self.autoRemoveBlankLines.SetValue(self.pref.autoAdjustSpuriousLines)
         self.autoTab2Chordpro.SetValue(self.pref.autoAdjustTab2Chordpro)

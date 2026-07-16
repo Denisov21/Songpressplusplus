@@ -15,16 +15,25 @@ class PreferencesDialog(wx.Dialog):
 
     def __init__(self, parent, pref=None):
         wx.Dialog.__init__(self, parent, id=wx.ID_ANY, title=_(u"Songpress++ options"), pos=wx.DefaultPosition,
-                                             size=wx.Size(730, 800), style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+                                             size=wx.Size(760, 860), style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
         if pref is not None:
             self.pref = pref
 
-        self.SetSizeHints(wx.Size(730, 800), wx.DefaultSize)
+        # Dimensione minima finestra: sotto questa soglia compaiono le scrollbar
+        # nella scheda Editor (barra a destra e in basso) invece di schiacciare
+        # l'anteprima.
+        self.SetSizeHints(wx.Size(700, 640), wx.DefaultSize)
 
         bSizer10 = wx.BoxSizer(wx.VERTICAL)
 
         self.notebook = wx.Notebook(self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, 0)
-        self.general = wx.Panel(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL)
+        # Scheda "Editor": pannello scorrevole così, quando la finestra è troppo
+        # piccola per contenere tutte le righe colore + l'anteprima, compaiono le
+        # barre di scorrimento (destra = verticale, bassa = orizzontale) invece di
+        # comprimere l'anteprima.
+        self.general = wx.ScrolledWindow(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize,
+                                         wx.HSCROLL | wx.VSCROLL | wx.TAB_TRAVERSAL)
+        self.general.SetScrollRate(10, 10)
         bSizer11 = wx.BoxSizer(wx.VERTICAL)
 
         # ── Gruppo: Editor ───────────────────────────────────────────
@@ -188,6 +197,10 @@ class PreferencesDialog(wx.Dialog):
         self.m_staticText9.Wrap(-1)
         bSizer13.Add(self.m_staticText9, 0, wx.ALIGN_TOP | wx.RIGHT, 5)
         self.editor = Editor.Editor(self.general, False, self.general)
+        # Altezza minima dell'anteprima: garantisce che resti leggibile anche con
+        # molte righe di colore sopra. Se non c'è spazio a sufficienza, il pannello
+        # scorre invece di comprimerla.
+        self.editor.SetMinSize(wx.Size(300, 150))
         bSizer13.Add(self.editor, 1, wx.EXPAND)
         grpEditor.Add(bSizer13, 1, wx.EXPAND | wx.ALL, 5)
 
@@ -195,7 +208,10 @@ class PreferencesDialog(wx.Dialog):
 
         self.general.SetSizer(bSizer11)
         self.general.Layout()
-        bSizer11.Fit(self.general)
+        # FitInside (non Fit): imposta la virtual size del pannello scorrevole pari
+        # alla dimensione minima del contenuto, così le scrollbar compaiono quando
+        # la finestra è più piccola del contenuto.
+        bSizer11.FitInside(self.general)
 
         # ── Tab "Generale" ─────────────────────────────────────────
         self.general2 = wx.Panel(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL)
@@ -1121,6 +1137,42 @@ class PreferencesDialog(wx.Dialog):
             if _pl.system() == 'Linux':
                 btnAssocAll.Disable()
                 btnUnassocAll.Disable()
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
+            import platform as _pl
+            if _pl.system() == 'Linux':
+                btnAssocAll.Disable()
+                btnUnassocAll.Disable()
             # Su Linux con pacchetto .deb le associazioni sono gestite dal sistema:
             # disabilita i pulsanti per evitare conflitti con /usr/share/mime
             import platform as _pl
@@ -1133,6 +1185,33 @@ class PreferencesDialog(wx.Dialog):
             bSizerFA.Add(btnApply, 0, wx.ALL, 8)
             btnApply.Bind(wx.EVT_BUTTON, self.OnApplyFileAssoc)
             self._btnApplyFileAssoc = btnApply
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
+            import platform as _pl2
+            if _pl2.system() == 'Linux':
+                btnApply.Disable()
             import platform as _pl2
             if _pl2.system() == 'Linux':
                 btnApply.Disable()
