@@ -481,9 +481,11 @@ def _open_driver_settings(print_data, parent_hwnd=None):
     # SetSetupDialog() è stato rimosso in wxPython 4.x (Phoenix).
     pdd = wx.PageSetupDialogData(print_data)
     dlg = wx.PageSetupDialog(None, pdd)
-    if dlg.ShowModal() == wx.ID_OK:
-        print_data = wx.PrintData(dlg.GetPageSetupDialogData().GetPrintData())
-    dlg.Destroy()
+    try:
+        if dlg.ShowModal() == wx.ID_OK:
+            print_data = wx.PrintData(dlg.GetPageSetupData().GetPrintData())
+    finally:
+        dlg.Destroy()
     return print_data
 
 
@@ -1074,7 +1076,7 @@ class PrintOptionsDialog:
         self.spin_min_margin = wx.SpinCtrl(
             dlg, min=0, max=50,
             value=str(getattr(owner, '_min_margin_shrink', 5)),
-            size=(60, -1),
+            size=(90, -1),
         )
         row1.Add(self.lbl_min_margin, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         row1.Add(self.spin_min_margin, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -1108,7 +1110,7 @@ class PrintOptionsDialog:
         self.spin_blank_threshold = wx.SpinCtrl(
             dlg, min=1, max=95,
             value=str(getattr(owner, '_blank_page_threshold', 5)),
-            size=(60, -1),
+            size=(90, -1),
         )
         row2.Add(self.lbl_blank_threshold, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         row2.Add(self.spin_blank_threshold, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -1127,7 +1129,7 @@ class PrintOptionsDialog:
         self.spin_font_scale = wx.SpinCtrl(
             dlg, min=50, max=200,
             value=str(getattr(owner, '_print_font_scale', 100)),
-            size=(70, -1),
+            size=(90, -1),
         )
         box_scale.Add(lbl_scale, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
         box_scale.Add(self.spin_font_scale, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
@@ -1592,6 +1594,49 @@ class PrintManager:
                     btn_print.SetBitmap(wx.Bitmap(img))
                     btn_print.SetBitmapPosition(wx.LEFT)
 
+            # Icone per i bottoni nativi di zoom (- e +) della preview bar,
+            # e per le frecce verdi native Precedente/Successiva/
+            # Prima/Ultima pagina. Sono tutti wx.BitmapButton SENZA
+            # etichetta testuale: vanno identificati tramite gli ID nativi
+            # assegnati da wxWidgets alla control bar, non per label.
+            _minus_icon_path      = glb.AddPath('img/minus.png')
+            _plus_icon_path       = glb.AddPath('img/plus.png')
+            _prev_icon_path       = glb.AddPath('img/left.png')
+            _next_icon_path       = glb.AddPath('img/right.png')
+            _first_icon_path      = glb.AddPath('img/first_page.png')
+            _last_icon_path       = glb.AddPath('img/last_page.png')
+
+            _zoom_in_id  = getattr(wx, 'ID_PREVIEW_ZOOM_IN', 9)
+            _zoom_out_id = getattr(wx, 'ID_PREVIEW_ZOOM_OUT', 10)
+            _prev_id     = getattr(wx, 'ID_PREVIEW_PREVIOUS', 3)
+            _next_id     = getattr(wx, 'ID_PREVIEW_NEXT', 2)
+            _first_id    = getattr(wx, 'ID_PREVIEW_FIRST', 6)
+            _last_id     = getattr(wx, 'ID_PREVIEW_LAST', 7)
+
+            _nav_icon_by_id = {
+                _zoom_out_id: _minus_icon_path,
+                _zoom_in_id:  _plus_icon_path,
+                _prev_id:     _prev_icon_path,
+                _next_id:     _next_icon_path,
+                _first_id:    _first_icon_path,
+                _last_id:     _last_icon_path,
+            }
+
+            def _iter_descendants(win):
+                for ch in win.GetChildren():
+                    yield ch
+                    yield from _iter_descendants(ch)
+
+            for child in _iter_descendants(ctrl_bar):
+                if not isinstance(child, wx.AnyButton):
+                    continue
+                _icon_path = _nav_icon_by_id.get(child.GetId())
+                if _icon_path and os.path.isfile(_icon_path):
+                    _custom_icon_paths[child] = _icon_path
+                    img = wx.Image(_icon_path, wx.BITMAP_TYPE_PNG)
+                    child.SetBitmap(wx.Bitmap(img))
+                    child.SetBitmapPosition(wx.LEFT)
+
             # Bottone «Impostazioni driver»
             btn_driver = wx.Button(ctrl_bar, wx.ID_ANY, _("Driver settings..."))
             _driver_icon_path = glb.AddPath('img/option_printer.png')
@@ -1615,7 +1660,14 @@ class PrintManager:
                     except Exception:
                         hwnd = None
                 orient_before = self._print_data.GetOrientation()
-                self._print_data = _open_driver_settings(self._print_data, parent_hwnd=hwnd)
+                try:
+                    self._print_data = _open_driver_settings(self._print_data, parent_hwnd=hwnd)
+                except Exception as exc:
+                    wx.MessageBox(
+                        _("Impossibile aprire le impostazioni del driver:\n{err}").format(err=exc),
+                        _("Errore"), wx.OK | wx.ICON_ERROR, pf
+                    )
+                    return
                 orient_after  = self._print_data.GetOrientation()
                 # Aggiorna la status bar (duplex/colore/orientamento possono essere cambiati)
                 try:
