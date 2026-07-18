@@ -1224,6 +1224,11 @@ class PrintOptionsDialog:
         o._remove_blank_pages   = self.cb_remove_blank.GetValue()
         o._blank_page_threshold = self.spin_blank_threshold.GetValue()
         o._print_font_scale     = self.spin_font_scale.GetValue()
+        # Persistenza immediata (la scala non viene salvata)
+        try:
+            o._SavePageMargins()
+        except Exception:
+            pass
         if self.on_apply is not None:
             self.on_apply()
 
@@ -1280,17 +1285,32 @@ class PrintManager:
     # ── Persist ───────────────────────────────────────────────────────────────
 
     def _SavePageMargins(self):
-        """Salva margini, formato carta, orientamento e opzioni di riduzione."""
+        """Salva margini, formato carta, orientamento e TUTTE le opzioni di stampa.
+
+        NOTA: ``_print_font_scale`` (Scala %) non viene mai salvato:
+        deve ripartire sempre da 100 ad ogni avvio.
+        """
         try:
             self.config.SetPath('/PageSetup')
-            self.config.Write('margin_top',        str(self._margin_top))
-            self.config.Write('margin_bottom',     str(self._margin_bottom))
-            self.config.Write('margin_left',       str(self._margin_left))
-            self.config.Write('margin_right',      str(self._margin_right))
-            self.config.Write('paper_id',          str(self._print_data.GetPaperId()))
-            self.config.Write('orientation',       str(self._print_data.GetOrientation()))
-            self.config.Write('shrink_to_fit',     '1' if self._shrink_to_fit else '0')
-            self.config.Write('min_margin_shrink', str(self._min_margin_shrink))
+            self.config.Write('margin_top',           str(self._margin_top))
+            self.config.Write('margin_bottom',        str(self._margin_bottom))
+            self.config.Write('margin_left',          str(self._margin_left))
+            self.config.Write('margin_right',         str(self._margin_right))
+            self.config.Write('paper_id',             str(self._print_data.GetPaperId()))
+            self.config.Write('orientation',          str(self._print_data.GetOrientation()))
+            self.config.Write('shrink_to_fit',        '1' if self._shrink_to_fit else '0')
+            self.config.Write('min_margin_shrink',    str(self._min_margin_shrink))
+            # ── Opzioni del dialog «Opzioni di stampa» ────────────────────
+            self.config.Write('two_pages_per_sheet',  '1' if self._two_pages_per_sheet else '0')
+            self.config.Write('columns_per_page',     str(self._columns_per_page))
+            self.config.Write('fit_to_page',          '1' if self._fit_to_page else '0')
+            self.config.Write('no_mirror_right',      '1' if self._no_mirror_right else '0')
+            self.config.Write('remove_blank_pages',   '1' if self._remove_blank_pages else '0')
+            self.config.Write('blank_page_threshold', str(self._blank_page_threshold))
+            self.config.Write('print_options_pinned', '1' if self._print_options_pinned else '0')
+            # Scala volutamente NON salvata (reset a 100 ad ogni riapertura).
+            self.config.DeleteEntry('print_font_scale', False)
+            self.config.Flush()
         except Exception:
             pass
 
@@ -1318,6 +1338,36 @@ class PrintManager:
             min_m       = self.config.Read('min_margin_shrink')
             if min_m:
                 self._min_margin_shrink = int(min_m)
+
+            # ── Opzioni del dialog «Opzioni di stampa» ────────────────────
+            def _rb(key, current):
+                v = self.config.Read(key)
+                return (v == '1') if v else current
+
+            def _ri(key, current, lo=None, hi=None):
+                v = self.config.Read(key)
+                if not v:
+                    return current
+                try:
+                    n = int(v)
+                except ValueError:
+                    return current
+                if lo is not None and n < lo:
+                    return current
+                if hi is not None and n > hi:
+                    return current
+                return n
+
+            self._two_pages_per_sheet  = _rb('two_pages_per_sheet',  self._two_pages_per_sheet)
+            self._columns_per_page     = _ri('columns_per_page',     self._columns_per_page, 1, 2)
+            self._fit_to_page          = _rb('fit_to_page',          self._fit_to_page)
+            self._no_mirror_right      = _rb('no_mirror_right',      self._no_mirror_right)
+            self._remove_blank_pages   = _rb('remove_blank_pages',   self._remove_blank_pages)
+            self._blank_page_threshold = _ri('blank_page_threshold', self._blank_page_threshold, 1, 95)
+            self._print_options_pinned = _rb('print_options_pinned', self._print_options_pinned)
+
+            # La scala non è persistente: sempre 100% all'avvio.
+            self._print_font_scale = 100
         except Exception:
             pass
 
@@ -1508,10 +1558,24 @@ class PrintManager:
                     lbl = child.GetLabel().strip()
                     if lbl in _label_map:
                         child.SetLabel(_label_map[lbl])
+            # ATTENZIONE: wx.Window.FindWindowById è di fatto una ricerca
+            # GLOBALE (parent=None): con più PreviewFrame in vita — succede
+            # quando la preview viene ricreata dopo «OK» in Opzioni di stampa,
+            # perché la vecchia finestra è solo in attesa di distruzione —
+            # restituisce i bottoni della barra VECCHIA. Cerchiamo quindi
+            # esplicitamente solo fra i figli di questa control bar.
+            def _find_child_by_id(parent, wid):
+                if wid is None:
+                    return None
+                for ch in parent.GetChildren():
+                    if ch.GetId() == wid:
+                        return ch
+                return None
+
             _preview_print_id = getattr(wx, 'ID_PREVIEW_PRINT', wx.ID_PRINT)
-            btn_print = ctrl_bar.FindWindowById(_preview_print_id)
+            btn_print = _find_child_by_id(ctrl_bar, _preview_print_id)
             if btn_print is None:
-                btn_print = ctrl_bar.FindWindowById(wx.ID_PRINT)
+                btn_print = _find_child_by_id(ctrl_bar, wx.ID_PRINT)
             if btn_print is not None:
                 btn_print.SetLabel(_("Print..."))
 
@@ -1568,7 +1632,7 @@ class PrintManager:
 
             # Bottone «Opzioni di stampa»
             btn_options = wx.Button(ctrl_bar, wx.ID_ANY, _("Print options..."))
-            _icon_path  = glb.AddPath('img/print_icon.png')
+            _icon_path  = glb.AddPath('img/print_icon2.png')
             if os.path.isfile(_icon_path):
                 _custom_icon_paths[btn_options] = _icon_path
                 img = wx.Image(_icon_path, wx.BITMAP_TYPE_PNG)
@@ -1643,26 +1707,35 @@ class PrintManager:
                 btn_close.SetBitmapPosition(wx.LEFT)
             btn_close.Bind(wx.EVT_BUTTON, lambda e: pf.Close())
 
-            # Nasconde il bottone «Chiudi» nativo della preview control bar
+            # Rimuove il bottone «Chiudi» nativo della preview control bar
             # (altrimenti compare doppio, senza icona, accanto al nostro).
-            _native_close = None
-            try:
-                _native_close = ctrl_bar.FindWindowById(wx.ID_PREVIEW_CLOSE)
-            except AttributeError:
-                _native_close = None
-            if _native_close is None:
-                for child in ctrl_bar.GetChildren():
-                    if (isinstance(child, wx.Button)
-                            and child is not btn_close
-                            and child.GetLabel().strip() in ('Close', _('Close'))):
-                        _native_close = child
-                        break
-            if _native_close is not None:
-                _native_close.Hide()
-                _cb_sizer = ctrl_bar.GetSizer()
-                if _cb_sizer:
-                    _cb_sizer.Detach(_native_close)
+            # Si cercano TUTTI i candidati fra i figli di *questa* barra:
+            # per id wx.ID_PREVIEW_CLOSE/wx.ID_CANCEL oppure per etichetta.
+            _close_ids = set()
+            for _n in ('ID_PREVIEW_CLOSE', 'ID_CANCEL', 'ID_CLOSE'):
+                _v = getattr(wx, _n, None)
+                if _v is not None:
+                    _close_ids.add(_v)
+            _close_labels = {'Close', 'Chiudi', _('Close')}
 
+            _natives = []
+            for child in ctrl_bar.GetChildren():
+                if child is btn_close or not isinstance(child, wx.Button):
+                    continue
+                if child.GetId() in _close_ids or child.GetLabel().strip() in _close_labels:
+                    _natives.append(child)
+
+            _cb_sizer = ctrl_bar.GetSizer()
+            for _native_close in _natives:
+                try:
+                    if _cb_sizer:
+                        _cb_sizer.Detach(_native_close)
+                    _native_close.Hide()
+                    # Distruzione differita: eliminarlo subito dentro la
+                    # costruzione della barra può lasciare il sizer incoerente.
+                    wx.CallAfter(_native_close.Destroy)
+                except Exception:
+                    pass
 
             # Inserisce i bottoni personalizzati nella toolbar
             # (le etichette duplex/colore sono nella status bar in basso)

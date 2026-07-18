@@ -1739,8 +1739,43 @@ I seguenti controlli si trovano nella scheda **Formattazione** delle preferenze 
 | Non replicare (lascia metà destra vuota)             | Con 2 pagine/foglio: lascia la seconda metà vuota invece di copiare     |
 | Rimuovi pagine vuote                                 | Rimuove le pagine logiche quasi vuote dall'output di stampa              |
 | Soglia pagina vuota (%)                              | Percentuale massima di pagina occupata sotto cui la pagina viene rimossa |
+| Scala (%)                                            | Ingrandisce o riduce l'intero contenuto stampato (50–200%, predefinito 100%) |
+| 📌 Pin                                                | Mantiene aperto il dialogo dopo OK, applicando subito le modifiche all'anteprima |
 
 La direttiva `{new_page}` nel testo forza una nuova pagina logica durante la stampa. Con il layout a 2 colonne, `{column_break}` forza il salto alla colonna successiva.
+
+### Persistenza delle opzioni di stampa
+
+Tutte le impostazioni del dialogo **Opzioni di stampa** e della finestra **Imposta pagina** vengono **salvate automaticamente** e ripristinate al successivo avvio di Songpress++. Il salvataggio avviene in due momenti:
+
+- **Alla conferma con OK** nel dialogo *Opzioni di stampa* (salvataggio immediato, così le impostazioni non vanno perse in caso di chiusura anomala del programma).
+- **Alla chiusura del programma**, insieme alle altre preferenze.
+
+Il ripristino avviene **all'apertura del programma**, prima che la stampa o l'anteprima siano disponibili.
+
+I valori sono memorizzati nella sezione `/PageSetup` della configurazione utente (file `~/.Songpress++/Songpress++.ini` su Linux, registro di sistema su Windows).
+
+| Parametro salvato        | Chiave di configurazione | Valore predefinito |
+| ------------------------ | ------------------------ | ------------------ |
+| Margine superiore (mm)   | `margin_top`             | 15                 |
+| Margine inferiore (mm)   | `margin_bottom`          | 15                 |
+| Margine sinistro (mm)    | `margin_left`            | 15                 |
+| Margine destro (mm)      | `margin_right`           | 15                 |
+| Formato carta            | `paper_id`               | A4                 |
+| Orientamento             | `orientation`            | Verticale          |
+| Pagine per foglio        | `two_pages_per_sheet`    | 1 pagina           |
+| Colonne per pagina       | `columns_per_page`       | 1 colonna          |
+| Riduci se eccede la pagina | `fit_to_page`          | disattivo          |
+| Comprimi per adattare alla pagina corrente | `shrink_to_fit` | disattivo   |
+| Margine minimo per compressione automatica (mm) | `min_margin_shrink` | 5   |
+| Non replicare (metà destra vuota) | `no_mirror_right` | disattivo         |
+| Rimuovi pagine vuote     | `remove_blank_pages`     | disattivo          |
+| Soglia pagina vuota (%)  | `blank_page_threshold`   | 5                  |
+| Stato del pulsante 📌 Pin | `print_options_pinned`   | disattivo          |
+
+> **Eccezione — Scala (%)** — Il valore del campo **Scala** non viene **mai** salvato. Resta attivo per tutta la sessione di lavoro (utile per regolarlo con il dialogo «pinnato» osservando l'anteprima in tempo reale), ma a ogni riavvio di Songpress++ torna sempre a **100%**. Questo evita di ritrovarsi con stampe ingrandite o ridotte senza accorgersene, dopo aver usato la scala per un singolo brano. Anche eventuali valori residui salvati da versioni precedenti vengono rimossi dalla configurazione.
+
+> **Nota** — I valori letti dalla configurazione vengono validati: se una chiave è assente, illeggibile o fuori intervallo (ad esempio colonne diverse da 1 o 2, o soglia pagina vuota fuori dall'intervallo 1–95), viene usato il valore predefinito senza segnalazioni di errore.
 
 ### Impostazioni di stampa e spiegazioni
 

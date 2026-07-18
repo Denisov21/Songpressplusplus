@@ -1739,8 +1739,43 @@ The following controls are found in the **Formatting** tab of preferences and af
 | Don't replicate (leave right half blank)       | With 2 pages/sheet: leaves the second half blank instead of copying |
 | Remove blank pages                             | Removes nearly-empty logical pages from the print output            |
 | Blank page threshold (%)                       | Maximum page fill percentage below which a page is considered blank |
+| Scale (%)                                      | Enlarges or reduces the whole printed content (50–200%, default 100%) |
+| 📌 Pin                                          | Keeps the dialog open after OK, applying changes to the preview immediately |
 
 The `{new_page}` directive in the text forces a new logical page during printing. With the 2-column layout, `{column_break}` forces a jump to the next column.
+
+### Persistence of Print Options
+
+All settings in the **Print options** dialog and in the **Page setup** window are **saved automatically** and restored the next time Songpress++ starts. Saving happens at two moments:
+
+- **When confirming with OK** in the *Print options* dialog (immediate save, so settings are not lost if the program terminates unexpectedly).
+- **When the program is closed**, together with the other preferences.
+
+Restoring happens **when the program starts**, before printing or preview become available.
+
+Values are stored in the `/PageSetup` section of the user configuration (`~/.Songpress++/Songpress++.ini` on Linux, the system registry on Windows).
+
+| Saved parameter            | Configuration key      | Default    |
+| -------------------------- | ---------------------- | ---------- |
+| Top margin (mm)            | `margin_top`           | 15         |
+| Bottom margin (mm)         | `margin_bottom`        | 15         |
+| Left margin (mm)           | `margin_left`          | 15         |
+| Right margin (mm)          | `margin_right`         | 15         |
+| Paper size                 | `paper_id`             | A4         |
+| Orientation                | `orientation`          | Portrait   |
+| Pages per sheet            | `two_pages_per_sheet`  | 1 page     |
+| Columns per page           | `columns_per_page`     | 1 column   |
+| Shrink if exceeds page     | `fit_to_page`          | off        |
+| Shrink to fit current page | `shrink_to_fit`        | off        |
+| Min margin for auto-shrink (mm) | `min_margin_shrink` | 5       |
+| Don't replicate (right half blank) | `no_mirror_right` | off     |
+| Remove blank pages         | `remove_blank_pages`   | off        |
+| Blank page threshold (%)   | `blank_page_threshold` | 5          |
+| 📌 Pin button state         | `print_options_pinned` | off        |
+
+> **Exception — Scale (%)** — The **Scale** value is **never** saved. It stays active for the whole working session (handy when adjusting it with the dialog pinned while watching the preview), but it always returns to **100%** each time Songpress++ restarts. This prevents unnoticed enlarged or reduced printouts after the scale was used for a single song. Any leftover value stored by earlier versions is removed from the configuration as well.
+
+> **Note** — Values read from the configuration are validated: if a key is missing, unreadable, or out of range (for example a column count other than 1 or 2, or a blank page threshold outside the 1–95 range), the default value is used silently.
 
 ### Print Settings and Explanations
 
