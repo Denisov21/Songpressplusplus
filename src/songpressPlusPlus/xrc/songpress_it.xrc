@@ -248,13 +248,13 @@
         <object class="wxMenuItem" name="moveChordRight">
           <label>Sposta accordo a _destra</label>
           <accel>SHIFT+ALT+RIGHT</accel>
-          <bitmap>../img/right.png</bitmap>
+          <bitmap>../img/right_chord.png</bitmap>
           <help>Sposta l'accordo sotto il cursore di una posizione a destra</help>
         </object>
         <object class="wxMenuItem" name="moveChordLeft">
           <label>Sposta accordo a _sinistra</label>
           <accel>SHIFT+ALT+LEFT</accel>
-          <bitmap>../img/left.png</bitmap>
+          <bitmap>../img/left_chord.png</bitmap>
           <help>Sposta l'accordo sotto il cursore di una posizione a sinistra</help>
         </object>
         <object class="separator"/>

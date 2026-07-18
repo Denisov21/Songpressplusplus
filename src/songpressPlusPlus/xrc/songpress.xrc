@@ -248,13 +248,13 @@
         <object class="wxMenuItem" name="moveChordRight">
           <label>_Move chord right</label>
           <accel>SHIFT+ALT+RIGHT</accel>
-           <bitmap>../img/right.png</bitmap>
+           <bitmap>../img/right_chord.png</bitmap>
           <help>Move chord under cursor one position rightwards</help>
         </object>
         <object class="wxMenuItem" name="moveChordLeft">
           <label>Move chord _left</label>
           <accel>SHIFT+ALT+LEFT</accel>
-           <bitmap>../img/left.png</bitmap>
+           <bitmap>../img/left_chord.png</bitmap>
           <help>Move chord under cursor one position leftwards</help>
         </object>
         <object class="separator"/>
