@@ -55,7 +55,6 @@ _CHORD_INTERVALS = [
     ('sus2',  [0, 2, 7]),
     ('7',     [0, 4, 7, 10]),
     ('5',     [0, 7]),
-    ('-',     [0, 3, 7]),
     ('',      [0, 4, 7]),
 ]
 
@@ -95,11 +94,31 @@ def parse_chord(chord_str):
 
     # Ignora il basso dopo /
     rest = rest.split('/')[0].strip()
+
+    # Il '-' indica "minore" ovunque compaia nella parte estensione:
+    # sia in coda ("7-"), sia subito dopo la radice come nella notazione
+    # jazz standard ("-7", "-9", "-7b5"...), sia da solo ("-" -> triade
+    # minore). Lo rimuoviamo e abbassiamo la terza maggiore (semitono 4)
+    # a terza minore (semitono 3), lasciando invariate le altre estensioni.
+    is_minor = '-' in rest
+    if is_minor:
+        rest = rest.replace('-', '', 1)
+
     intervals = [0, 4, 7]  # default maggiore
     for suffix, ivs in _CHORD_INTERVALS:
         if rest.lower().startswith(suffix.lower()):
             intervals = ivs
             break
+
+    # Se compare una 'm' ovunque nel resto (es. "m7-", "Am-", "7m-", ma
+    # anche "maj7-"), il '-' è ridondante o contraddittorio: "m" indica
+    # già il minore, "maj" indica esplicitamente il maggiore. In entrambi
+    # i casi l'accordo è ambiguo e viene considerato non riconosciuto.
+    if is_minor and 'm' in rest.lower():
+        return None
+
+    if is_minor:
+        intervals = [3 if i == 4 else i for i in intervals]
 
     return root, intervals
 

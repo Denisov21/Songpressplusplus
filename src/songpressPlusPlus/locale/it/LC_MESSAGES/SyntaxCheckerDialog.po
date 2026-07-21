@@ -88,6 +88,12 @@ msgstr "Parentesi quadra aperta '[' non chiusa"
 msgid "Empty chord '[]'"
 msgstr "Accordo vuoto '[]'"
 
+#. Chord name inside [...] is not recognised or is contradictory (e.g. "Domaj7-")
+#. %s = chord name as written by the user
+#: SyntaxChecker.py
+msgid "Unrecognized or invalid chord '%s'"
+msgstr "Accordo non riconosciuto o non valido '%s'"
+
 #. Closing square bracket with no matching opening bracket
 #: SyntaxChecker.py
 msgid "Closing square bracket ']' without opening"
@@ -275,6 +281,12 @@ msgstr "{beats_time}: token non valido '%s' — formato atteso: accordo=battiti 
 #: SyntaxChecker.py
 msgid "{beats_time}: unrecognized chord '%s'"
 msgstr "{beats_time}: accordo non riconosciuto '%s'"
+
+#. Chord name in {taste:} is not recognised or is contradictory (e.g. "LA7maj-")
+#. %s = unrecognised chord name
+#: SyntaxChecker.py
+msgid "{taste}: unrecognized chord '%s'"
+msgstr "{taste}: accordo non riconosciuto '%s'"
 
 #. The beat count after '=' is missing entirely
 #. %s = chord name

@@ -136,7 +136,6 @@ _CHORD_INTERVALS = [
     ('sus2',  [0, 2, 7]),
     ('7',     [0, 4, 7, 10]),
     ('5',     [0, 7]),
-    ('-',     [0, 3, 7]),
     ('',      [0, 4, 7]),
 ]
 
@@ -189,6 +188,20 @@ def _parse_chord_semitones(chord_str: str):
     # Ignora il basso dopo /
     rest = rest.split('/')[0].strip()
 
+    # Il '-' indica "minore" ovunque compaia nella parte estensione:
+    # in coda ("7-"), subito dopo la radice ("-7", "-9", "-7b5") oppure
+    # da solo ("-" → triade minore).
+    is_minor = '-' in rest
+    if is_minor:
+        rest = rest.replace('-', '', 1)
+
+    # Se compare una 'm' ovunque nel resto (es. "m7-", "7m-", "maj7-"),
+    # il '-' è ridondante o contraddittorio: "m" indica già il minore,
+    # "maj" indica esplicitamente il maggiore. L'accordo è ambiguo e
+    # viene considerato non riconosciuto.
+    if is_minor and 'm' in rest.lower():
+        return None
+
     # Trova gli intervalli del tipo di accordo
     intervals = [0, 4, 7]   # default maggiore
     for suffix, ivs in _CHORD_INTERVALS:
@@ -196,7 +209,47 @@ def _parse_chord_semitones(chord_str: str):
             intervals = ivs
             break
 
+    if is_minor:
+        intervals = [3 if i == 4 else i for i in intervals]
+
     return {(root + i) % 12 for i in intervals}
+
+
+# Token ammessi tra parentesi quadre che non sono accordi
+_NON_CHORD_TOKENS = {'n.c.', 'nc', 'tacet', '%', '|', '||', '*'}
+
+
+def _check_chord_name(content: str, line_num: int, col: int,
+                      result: SyntaxCheckResult):
+    """Segnala un errore se il contenuto di [...] non è un accordo valido."""
+    name = content.strip()
+    if not name:
+        return
+    if name.lower() in _NON_CHORD_TOKENS:
+        return
+    # Token puramente simbolici (stanghette, ripetizioni, annotazioni)
+    if not re.search(r'[A-Za-z]', name):
+        return
+    if _parse_chord_semitones(name) is None:
+        result.errors.append(SyntaxError(
+            line=line_num, column=col,
+            message=_("Unrecognized or invalid chord '%s'") % name
+        ))
+
+
+def _validate_taste(cmd_value: str, line_num: int, col: int,
+                    result: SyntaxCheckResult):
+    """
+    Valida il valore di {taste: ...}: uno o più nomi di accordo
+    separati da spazi o virgole. Ogni nome deve essere riconosciuto.
+    """
+    tokens = [t for t in re.split(r'[\s,]+', cmd_value.strip()) if t]
+    for token in tokens:
+        if _parse_chord_semitones(token) is None:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_("{taste}: unrecognized chord '%s'") % token
+            ))
 
 
 def _validate_fingering(cmd_value: str, line_num: int, col: int,
@@ -374,6 +427,8 @@ def _check_square_brackets(line: str, line_num: int, result: SyntaxCheckResult):
                         line=line_num, column=i + 1,
                         message=_("Empty chord '[]'")
                     ))
+                else:
+                    _check_chord_name(content, line_num, i + 1, result)
                 i = close + 1
         elif ch == ']':
             result.errors.append(SyntaxError(
@@ -845,6 +900,10 @@ def _validate_command(content: str, line_num: int, col: int,
     # ── Validazione specifica per {fingering:} ────────────────────
     if cmd_name == "fingering" and cmd_value:
         _validate_fingering(cmd_value, line_num, col, result)
+
+    # ── Validazione specifica per {taste:} ────────────────────────
+    if cmd_name == "taste" and cmd_value:
+        _validate_taste(cmd_value, line_num, col, result)
 
     # ── Validazione specifica per {beats_time:} ─────────────────
     if cmd_name == "beats_time" and cmd_value:

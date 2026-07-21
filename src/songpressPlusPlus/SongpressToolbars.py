@@ -264,6 +264,78 @@ class SongpressToolbarsMixin:
                    ('mainToolBar', 'formatToolBar',
                     'insertToolBar', 'viewToolBar')):
             return
+        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
+        # toolbar non esistono piu', non c'e' layout da ricalcolare.
+        if getattr(self, '_mgr', None) is None:
+            return
+        if not all(getattr(self, name, None) is not None for name in
+                   ('mainToolBar', 'formatToolBar',
+                    'insertToolBar', 'viewToolBar')):
+            return
+        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
+        # toolbar non esistono piu', non c'e' layout da ricalcolare.
+        if getattr(self, '_mgr', None) is None:
+            return
+        if not all(getattr(self, name, None) is not None for name in
+                   ('mainToolBar', 'formatToolBar',
+                    'insertToolBar', 'viewToolBar')):
+            return
+        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
+        # toolbar non esistono piu', non c'e' layout da ricalcolare.
+        if getattr(self, '_mgr', None) is None:
+            return
+        if not all(getattr(self, name, None) is not None for name in
+                   ('mainToolBar', 'formatToolBar',
+                    'insertToolBar', 'viewToolBar')):
+            return
+        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
+        # toolbar non esistono piu', non c'e' layout da ricalcolare.
+        if getattr(self, '_mgr', None) is None:
+            return
+        if not all(getattr(self, name, None) is not None for name in
+                   ('mainToolBar', 'formatToolBar',
+                    'insertToolBar', 'viewToolBar')):
+            return
+        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
+        # toolbar non esistono piu', non c'e' layout da ricalcolare.
+        if getattr(self, '_mgr', None) is None:
+            return
+        if not all(getattr(self, name, None) is not None for name in
+                   ('mainToolBar', 'formatToolBar',
+                    'insertToolBar', 'viewToolBar')):
+            return
+        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
+        # toolbar non esistono piu', non c'e' layout da ricalcolare.
+        if getattr(self, '_mgr', None) is None:
+            return
+        if not all(getattr(self, name, None) is not None for name in
+                   ('mainToolBar', 'formatToolBar',
+                    'insertToolBar', 'viewToolBar')):
+            return
+        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
+        # toolbar non esistono piu', non c'e' layout da ricalcolare.
+        if getattr(self, '_mgr', None) is None:
+            return
+        if not all(getattr(self, name, None) is not None for name in
+                   ('mainToolBar', 'formatToolBar',
+                    'insertToolBar', 'viewToolBar')):
+            return
+        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
+        # toolbar non esistono piu', non c'e' layout da ricalcolare.
+        if getattr(self, '_mgr', None) is None:
+            return
+        if not all(getattr(self, name, None) is not None for name in
+                   ('mainToolBar', 'formatToolBar',
+                    'insertToolBar', 'viewToolBar')):
+            return
+        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
+        # toolbar non esistono piu', non c'e' layout da ricalcolare.
+        if getattr(self, '_mgr', None) is None:
+            return
+        if not all(getattr(self, name, None) is not None for name in
+                   ('mainToolBar', 'formatToolBar',
+                    'insertToolBar', 'viewToolBar')):
+            return
         self._tb_finalizing = True
         try:
             for tb in (self.mainToolBar, self.formatToolBar,
