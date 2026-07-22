@@ -6522,7 +6522,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             if canonical:
                 lang_code = canonical.split('_')[0].lower()  # → "it", "en", "fr"
 
-        base_dir = os.path.dirname(__file__)
+        # Frozen-aware: nella build congelata guida_*.md e img/GUIDE sono
+        # nella cartella dell'exe (glb.path), non dentro lib/songpressPlusPlus/.
+        base_dir = glb.path
         _img_guide_url = 'file:///' + os.path.abspath(os.path.join(base_dir, 'img', 'GUIDE')).replace('\\', '/').lstrip('/') + '/'
 
         # Priorità: guida_<lang>.md  →  guida.md  →  errore
@@ -7374,7 +7376,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             if canonical:
                 lang_code = canonical.split('_')[0].lower()
 
-        base_dir = os.path.dirname(__file__)
+        # Frozen-aware: nella build congelata guida_*.md e img/GUIDE sono
+        # nella cartella dell'exe (glb.path), non dentro lib/songpressPlusPlus/.
+        base_dir = glb.path
         _img_guide_url = 'file:///' + os.path.abspath(os.path.join(base_dir, 'img', 'GUIDE')).replace('\\', '/').lstrip('/') + '/'
 
         # Priorità: guida_comandi_songpress_<lang>.md → guida_comandi_songpress.md → errore
