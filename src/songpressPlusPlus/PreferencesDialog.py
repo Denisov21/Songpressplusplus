@@ -133,7 +133,9 @@ class PreferencesDialog(wx.Dialog):
         self.themeDeleteBtn = wx.Button(self.general, wx.ID_ANY, _(u"Delete"), wx.DefaultPosition, wx.Size(75, -1))
         # Icone pulsanti tema
         import os as _os
-        _icons_dir = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 'img')
+        from .Globals import glb
+        # Frozen-aware: nella build congelata img/ è nella cartella dell'exe.
+        _icons_dir = glb.AddPath('img')
         def _load_btn_icon(filename):
             path = _os.path.join(_icons_dir, filename)
             if _os.path.isfile(path):
