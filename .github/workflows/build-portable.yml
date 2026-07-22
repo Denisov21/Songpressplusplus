@@ -1,0 +1,56 @@
+name: Build portable (Windows)
+
+# Costruisce la distribuzione portabile ZIP di Songpress++ con cx_Freeze,
+# riusando lo script sanzionato installer/Build-Portable.ps1.
+#
+# Trigger:
+#   - manuale (workflow_dispatch)
+#   - push di un tag di versione v*  -> allega lo ZIP alla Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write   # necessario per creare/aggiornare la Release sui tag
+
+jobs:
+  build-portable:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+
+      - name: Build portable ZIP
+        shell: pwsh
+        run: .\installer\Build-Portable.ps1
+
+      - name: Locate artifact
+        id: artifact
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem -Path dist -Filter '*-portable.zip' | Select-Object -First 1
+          if (-not $zip) { throw "Nessuno ZIP portabile trovato in dist\" }
+          "path=$($zip.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "name=$($zip.Name)"     | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.artifact.outputs.name }}
+          path: ${{ steps.artifact.outputs.path }}
+          if-no-files-found: error
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v3
+        with:
+          files: dist/*-portable.zip
