@@ -113,9 +113,14 @@ Lo script esegue automaticamente:
 - Lettura di nome e versione da `pyproject.toml`
 - Costruzione della wheel Python con `pip` e `hatchling`
 - Installazione della wheel nell'albero del pacchetto
+- Normalizzazione del layout secondo la Debian Policy (i file vengono spostati
+  da `usr/local/` a `usr/`, i moduli in `usr/lib/python3/dist-packages`)
 - Creazione del wrapper `GDK_BACKEND=x11` per la compatibilità con Wayland
 - Creazione del symlink minuscolo `songpressplusplus` → `SongpressPlusPlus`
-- Generazione della voce nel menu applicazioni (file `.desktop`)
+- Generazione della voce nel menu applicazioni (file `.desktop`), del tipo MIME
+  `text/x-chordpro` e delle icone `hicolor`
+- Scrittura degli script `postinst`/`postrm` (aggiornamento delle cache di
+  sistema e installazione delle dipendenze solo-PyPI)
 - Produzione del file `.deb` finale nella cartella `build_deb/`
 
 Al termine vedrai (il numero di versione mostrato è solo un **esempio**, dipende da quello in `pyproject.toml`):
@@ -140,17 +145,61 @@ In caso di dipendenze mancanti:
 sudo apt-get install -f
 ```
 
+> **🌐 Serve una connessione a Internet.** Due dipendenze Python
+> (`python-pptx` e `pyshortcuts`) non esistono nei repository Debian e vengono
+> scaricate da PyPI durante l'installazione. Il `postinst` te lo segnala e
+> chiede conferma:
+>
+> ```
+> Continuare e scaricare le dipendenze ora? Richiede connessione Internet, attiva! [S/n]
+> ```
+>
+> Rispondendo `n` il pacchetto viene installato lo stesso, ma dovrai poi
+> completare a mano:
+>
+> ```bash
+> sudo pip3 install --break-system-packages python-pptx pyshortcuts
+> ```
+>
+> La domanda compare solo da terminale: installando da Discover o GDebi, o con
+> `DEBIAN_FRONTEND=noninteractive`, il download parte senza chiedere nulla.
+
 **Cartella di installazione.** Il pacchetto copia i file del programma
 nell'albero di sistema `dist-packages`:
 
 ```
-/usr/local/lib/python3.13/dist-packages/songpressplusplus/
+/usr/lib/python3/dist-packages/songpressplusplus/
 ```
 
-> **⚠️ Nota:** la versione di Python (`python3.13`) può variare a seconda del
-> sistema. La cartella appartiene a `root` ed è quindi in sola lettura per
-> l'utente: i template e i temi personali vengono salvati nella cartella dati
-> utente (vedi "Cartella dei template su Linux").
+e l'eseguibile in `/usr/bin/SongpressPlusPlus`.
+
+> **⚠️ Nota:** il percorso **non** contiene il numero di versione di Python
+> (`python3` e non `python3.13`): è l'unica directory di sistema realmente
+> presente in `sys.path` su Debian, e in questo modo il pacchetto continua a
+> funzionare anche dopo un aggiornamento di Python. La cartella appartiene a
+> `root` ed è quindi in sola lettura per l'utente: i template e i temi personali
+> vengono salvati nella cartella dati utente (vedi "Cartella dei template su
+> Linux").
+
+> **⚠️ Aggiornamento da versioni precedenti.** Fino alla 7.0.1 l'installazione
+> avveniva sotto `/usr/local/`, percorso che la Debian Policy riserva
+> all'amministratore locale. La migrazione è **automatica**: lo script
+> `preinst` del pacchetto rimuove i residui prima dello scompattamento e lo
+> segnala a schermo.
+>
+> Rimuove soltanto i file della vecchia installazione, e solo dopo aver
+> verificato con `dpkg-query` che nessun pacchetto li rivendichi; qualsiasi
+> altro contenuto di `/usr/local` resta intatto.
+>
+> Serviva perché `/usr/local/bin` precede `/usr/bin` nel `PATH` e
+> `/usr/local/lib/pythonX.Y/dist-packages` precede `/usr/lib/python3/dist-packages`
+> in `sys.path`: con i residui in posizione, l'app avrebbe continuato a caricare
+> il **codice vecchio** pur sembrando aggiornata. Per verificare quale copia è
+> effettivamente in uso:
+>
+> ```bash
+> python3 -c "import songpressplusplus, os; print(os.path.dirname(songpressplusplus.__file__))"
+> ```
 
 ---
 
@@ -208,13 +257,22 @@ songpressplusplus
 > Il wrapper installato imposta automaticamente `GDK_BACKEND=x11` per garantire
 > la compatibilità con wxPython su sistemi Wayland. Non è necessario impostare
 > la variabile manualmente.
+>
+> Il wrapper filtra inoltre dalla console tre messaggi noti e innocui di
+> GTK/wx (vedi "Note tecniche Linux"). Il filtro è mirato: errori, eccezioni e
+> traceback Python restano **sempre** visibili. Per disattivarlo e vedere
+> l'output grezzo:
+>
+> ```bash
+> SONGPRESS_VERBOSE=1 SongpressPlusPlus
+> ```
 
 ---
 
 ### Note tecniche Linux
 
 - Il pacchetto è testato su **Debian 13 / Ubuntu 24.04** con Python 3.13 e wxPython 4.2.3 GTK3
-- I messaggi GTK alla console (`gtk_image_menu_item_set_image`, `ScreenToClient`) sono innocui e non indicano errori
+- I messaggi GTK alla console (`gtk_image_menu_item_set_image`, `invalid cast from 'GtkMenuItem'`, `ScreenToClient cannot work...`) sono innocui e non indicano errori. La causa è corretta alla radice dalla **Patch 11** (vedi `patch_debian.md`), che chiama `SetBitmap()` prima di `Append()` come richiesto dalla documentazione di wxWidgets; il wrapper li filtra comunque come rete di sicurezza per i casi che la patch non copre. Nessun altro messaggio viene nascosto
 - Su sistemi Wayland il programma usa automaticamente il backend X11 tramite XWayland
 - Su Wayland, la **Copia come immagine** usa `wl-copy` (dal pacchetto `wl-clipboard`) per mettere l'immagine negli appunti, perché la clipboard di wxGTK su Wayland registra solo formati testo. Il pacchetto è un `Recommends` del `.deb`; se manca, il programma mostra un messaggio che spiega come installarlo.
 
@@ -256,17 +314,17 @@ Dopo aver eseguito i comandi, il doppio click sui file `.crd` tornerà ad usare 
 
 Dopo l'installazione del pacchetto `.deb`, i file del programma vengono copiati in:
 
-> **⚠️ Nota:** il percorso qui sotto è solo un **esempio** ed è **da verificare**: la versione di Python (`python3.13`) può variare a seconda del sistema.
+> **⚠️ Nota:** il percorso non dipende più dalla versione di Python installata (`python3`, non `python3.13`): resta valido anche dopo un aggiornamento del sistema.
 
 ```
-/usr/local/lib/python3.13/dist-packages/songpressplusplus/
+/usr/lib/python3/dist-packages/songpressplusplus/
 ```
 
 ### Cartella dei template su Linux
 
 Il pulsante **"Apri cartella template"** (`Strumenti → Opzioni → Generale`) apre la cartella dei template con il gestore file predefinito del desktop (tramite `xdg-open`, fornito dal pacchetto `xdg-utils`, che è una dipendenza del `.deb`).
 
-Con l'installazione tramite `.deb`, la cartella del pacchetto (`/usr/local/lib/python3.13/dist-packages/songpressplusplus/`) è di proprietà di `root` e quindi **in sola lettura** per l'utente: i template personali non possono essere salvati lì. Il percorso finale di destinazione è perciò la **cartella dati utente** (`glb.data_path`), che Songpress++ ricava da `wx.StandardPaths.GetUserDataDir()`:
+Con l'installazione tramite `.deb`, la cartella del pacchetto (`/usr/lib/python3/dist-packages/songpressplusplus/`) è di proprietà di `root` e quindi **in sola lettura** per l'utente: i template personali non possono essere salvati lì. Il percorso finale di destinazione è perciò la **cartella dati utente** (`glb.data_path`), che Songpress++ ricava da `wx.StandardPaths.GetUserDataDir()`:
 
 ```
 ~/.Songpress++/templates/

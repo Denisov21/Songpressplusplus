@@ -35,6 +35,26 @@ fi
 # ── Configurazione ────────────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# FIX 1: tutto il resto dello script (lettura di pyproject.toml, find su
+# src/songpressplusplus nelle patch) usa percorsi RELATIVI. Senza questo cd
+# lo script funziona solo se lanciato dalla propria cartella: da altrove le
+# patch non trovano nulla e produrrebbero un .deb non corretto, in silenzio.
+cd "$SCRIPT_DIR"
+
+# ── Helper ImageMagick ────────────────────────────────────────────────────────
+# FIX 6: su ImageMagick 7 (Debian 13/trixie in poi) il comando "convert" non
+# esiste più: si usa "magick". Qui rileviamo una volta sola quale è presente.
+if command -v magick &>/dev/null; then
+    IM() { magick "$@"; }
+    HAVE_IM=1
+elif command -v convert &>/dev/null; then
+    IM() { convert "$@"; }
+    HAVE_IM=1
+else
+    IM() { return 1; }
+    HAVE_IM=0
+fi
+
 # Legge versione e nome da pyproject.toml
 PKG_NAME=$(python3 - <<'PY'
 import tomllib
@@ -477,6 +497,94 @@ else:
     print(f"    Patch 1g già presente o testo non trovato in {path}")
 PATCH1G
 
+# ── 1h. Patch Gtk-CRITICAL sui menu: SetBitmap prima di Append ───────────────
+# La doc di wxMenuItem è esplicita: SetBitmap() va chiamato PRIMA che la voce
+# sia aggiunta al menu. Con l'ordine invertito wxGTK ha già creato un
+# GtkMenuItem semplice e poi prova a trattarlo come GtkImageMenuItem:
+#   Gtk-CRITICAL: gtk_image_menu_item_set_image: assertion
+#                 'GTK_IS_IMAGE_MENU_ITEM (image_menu_item)' failed
+#
+# Trasformazione applicata (equivalente su tutte le piattaforme: le icone
+# restano funzionanti su Windows):
+#
+#   item = menu.Append(id, testo, help)  →  item = wx.MenuItem(menu, id, testo, help)
+#   item.SetBitmap(bmp)                     item.SetBitmap(bmp)
+#                                           menu.Append(item)
+#
+# Le firme combaciano: wxMenu::Append(id, text, help, kind) e
+# wxMenuItem(parentMenu, id, text, help, kind) differiscono solo per il menu
+# in prima posizione, quindi gli argomenti si trasferiscono invariati.
+echo "$OK Patch Gtk-CRITICAL menu (SetBitmap prima di Append)..."
+"$PYTHON" - <<'PATCH1H'
+import re, subprocess, sys
+
+r = subprocess.run(["find", "src/songpressplusplus", "-name", "*.py"],
+                   capture_output=True, text=True)
+files = [f for f in r.stdout.strip().splitlines() if f]
+if not files:
+    print("    Nessun sorgente trovato, skip patch 1h.")
+    sys.exit(0)
+
+# Cattura la coppia di righe consecutive:
+#     <ind><item> = <menu>.Append(<args>)
+#     <ind><item>.SetBitmap(<bmp>)
+PAT = re.compile(
+    r'^(?P<ind>[ \t]*)(?P<item>[A-Za-z_][\w.]*)[ \t]*=[ \t]*'
+    r'(?P<menu>[A-Za-z_][\w.]*)\.Append\((?P<args>[^\n]*)\)[ \t]*$\n'
+    r'(?P=ind)(?P=item)\.SetBitmap\((?P<bmp>[^\n]*)\)[ \t]*$',
+    re.MULTILINE)
+
+def repl(m):
+    d = m.groupdict()
+    args = d['args'].strip()
+    sep = ', ' if args else ''
+    return (f"{d['ind']}{d['item']} = wx.MenuItem({d['menu']}{sep}{args})\n"
+            f"{d['ind']}{d['item']}.SetBitmap({d['bmp']})\n"
+            f"{d['ind']}{d['menu']}.Append({d['item']})")
+
+total = 0
+touched = []
+notutf8 = []
+for path in files:
+    # I sorgenti del progetto non sono tutti UTF-8 (qualcuno è latin-1).
+    # 'surrogateescape' mappa i byte non decodificabili su surrogati privati
+    # e li riscrive identici in fase di encode: il round-trip è quindi
+    # lossless per QUALSIASI byte, e i file estranei non vengono corrotti.
+    try:
+        with open(path, encoding='utf-8') as f:
+            content = f.read()
+        enc_errors = 'strict'
+    except UnicodeDecodeError:
+        with open(path, encoding='utf-8', errors='surrogateescape') as f:
+            content = f.read()
+        enc_errors = 'surrogateescape'
+        notutf8.append(path)
+
+    new, n = PAT.subn(repl, content)
+    if n:
+        with open(path, 'w', encoding='utf-8', errors=enc_errors) as f:
+            f.write(new)
+        total += n
+        touched.append(f"{path} ({n})")
+
+if notutf8:
+    print(f"    Nota: {len(notutf8)} file non sono UTF-8 validi "
+          f"(letti e riscritti byte-per-byte):")
+    for p in notutf8:
+        print(f"      - {p}")
+
+if total:
+    print(f"    Patch 1h: {total} riordini applicati")
+    for t in touched:
+        print(f"      - {t}")
+else:
+    # Non è un errore: o la patch è già stata applicata in una build
+    # precedente, o le chiamate non usano la forma su due righe consecutive
+    # (es. Append spezzato su più righe). In quel caso i Gtk-CRITICAL restano,
+    # ma il wrapper li filtra e l'app funziona ugualmente.
+    print("    Patch 1h: nessuna occorrenza (già applicata o forma diversa)")
+PATCH1H
+
 # ── 2. Build della wheel (DOPO le patch) ─────────────────────────────────────
 echo "$OK Costruzione wheel con pip + hatchling..."
 WHEEL_DIR="$BUILD_DIR/wheel"
@@ -503,14 +611,64 @@ mkdir -p "$INSTALL_PREFIX/share/mime/packages"
     --no-compile \
     "$WHEEL_FILE"
 
-# Corregge il path site-packages → dist-packages (convenzione Debian)
-SITE_PKG=$(find "$INSTALL_PREFIX" -maxdepth 5 -type d -name "site-packages" | head -n1)
-if [[ -n "$SITE_PKG" ]]; then
-    DIST_PKG="${SITE_PKG/site-packages/dist-packages}"
-    mkdir -p "$(dirname "$DIST_PKG")"
-    mv "$SITE_PKG" "$DIST_PKG"
-    rmdir "$(dirname "$SITE_PKG")" 2>/dev/null || true
+# ── 3a. Normalizzazione del layout Debian ────────────────────────────────────
+# FIX 5: la Debian Policy vieta ai pacchetti di installare file sotto
+# /usr/local (è riservata all'amministratore locale). Il pip di Debian però
+# applica lo schema "posix_local" e, anche con --prefix, deposita tutto in
+# <prefix>/local/... Qui riportiamo l'albero nella posizione corretta:
+#
+#   usr/local/lib/pythonX.Y/site-packages  →  usr/lib/python3/dist-packages
+#   usr/local/bin                          →  usr/bin
+#
+# Nota: la destinazione è python3/dist-packages SENZA numero di versione.
+# È l'unica directory di sistema realmente presente in sys.path su Debian
+# (/usr/lib/python3.13/dist-packages NON lo è) e rende il pacchetto immune
+# agli aggiornamenti di minor version di Python.
+echo "$OK Normalizzazione layout (usr/local → usr, dist-packages)..."
+
+DIST_PKG="$INSTALL_PREFIX/lib/python3/dist-packages"
+PY_PKGS_SRC=$(find "$INSTALL_PREFIX" -maxdepth 6 -type d \
+    \( -name "site-packages" -o -name "dist-packages" \) 2>/dev/null | head -n1 || true)
+
+if [[ -n "$PY_PKGS_SRC" && "$PY_PKGS_SRC" != "$DIST_PKG" ]]; then
+    mkdir -p "$DIST_PKG"
+    (
+        shopt -s dotglob nullglob
+        mv "$PY_PKGS_SRC"/* "$DIST_PKG"/ 2>/dev/null || true
+    )
+    rm -rf "$PY_PKGS_SRC"
+    # rimuove la cartella pythonX.Y ormai svuotata
+    rmdir "$(dirname "$PY_PKGS_SRC")" 2>/dev/null || true
+    echo "    Moduli Python → ${DIST_PKG#$PKG_ROOT}"
 fi
+
+# Tutto ciò che resta sotto usr/local (bin, share, ...) viene fuso in usr.
+if [[ -d "$INSTALL_PREFIX/local" ]]; then
+    ( cd "$INSTALL_PREFIX/local" && tar cf - . ) | ( cd "$INSTALL_PREFIX" && tar xf - )
+    rm -rf "$INSTALL_PREFIX/local"
+    echo "    usr/local fuso in usr e rimosso"
+fi
+
+# Controllo finale: nessun file deve più trovarsi sotto usr/local.
+if [[ -d "$INSTALL_PREFIX/local" ]]; then
+    echo "    [ATTENZIONE] usr/local ancora presente: lintian segnalerà un errore."
+fi
+
+# ── 3a-bis. Individuazione anticipata dell'eseguibile ────────────────────────
+# FIX 3: il file .desktop (passo 4) deve puntare al percorso REALE del binario.
+# Prima era cablato a /usr/local/bin: se pip cambiava schema, l'app partiva da
+# terminale ma la voce di menu no. Ora il percorso viene rilevato qui, subito
+# dopo l'installazione, e riusato sia nel .desktop sia nel wrapper (passo 6b).
+REAL_BIN=$(find "$PKG_ROOT" -path "*/bin/SongpressPlusPlus" -not -name "*_bin" | head -n1 || true)
+if [[ -n "$REAL_BIN" ]]; then
+    BIN_DIR=$(dirname "$REAL_BIN")
+    INSTALLED_BIN_DIR="${BIN_DIR#"$PKG_ROOT"}"      # es. /usr/bin
+else
+    BIN_DIR=""
+    INSTALLED_BIN_DIR="/usr/bin"
+    echo "    [ATTENZIONE] eseguibile non trovato: il .desktop userà /usr/bin."
+fi
+echo "    Eseguibile installato in: $INSTALLED_BIN_DIR"
 
 # ── 3b. Verifica dei template ────────────────────────────────────────────────
 # Globals.InitDataPath() popola la cartella dati utente (~/.Songpress++)
@@ -583,18 +741,21 @@ ICON_PNG="$SCRIPT_DIR/installer/songpressplusplus.png"
 if [[ -f "$ICON_PNG" ]]; then
     cp "$ICON_PNG" "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}.png"
 elif [[ -f "$ICON_SRC" ]]; then
-    if command -v convert &>/dev/null; then
+    if [[ "$HAVE_IM" -eq 1 ]]; then
         # Estrae solo il primo layer [0] dell'ico → PNG con nome corretto
-        convert "${ICON_SRC}[0]" -resize 64x64 \
+        IM "${ICON_SRC}[0]" -resize 64x64 \
             "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}.png" 2>/dev/null || \
-        convert "$ICON_SRC" -thumbnail 64x64 \
+        IM "$ICON_SRC" -thumbnail 64x64 \
             "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}.png" 2>/dev/null || true
     fi
 fi
 # Fallback: se convert ha prodotto file numerati (nome-0.png, nome-1.png...)
 # invece del file atteso (nome.png), usa il primo layer e rimuovi gli altri.
 if [[ ! -f "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}.png" ]]; then
-    FIRST_LAYER=$(ls "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}-"*.png 2>/dev/null | sort | head -n1)
+    # FIX 2: senza "|| true" il glob a vuoto fa fallire ls; con set -e +
+    # pipefail l'assegnamento aborte lo script PRIMA di poter stampare
+    # l'avviso "Nessuna icona trovata" più sotto.
+    FIRST_LAYER=$(ls "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}-"*.png 2>/dev/null | sort | head -n1 || true)
     if [[ -n "$FIRST_LAYER" ]]; then
         cp "$FIRST_LAYER" "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}.png"
         echo "    Icona: usato layer $FIRST_LAYER"
@@ -613,8 +774,8 @@ if [[ -f "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}.png" ]]; then
         mkdir -p "$INSTALL_PREFIX/share/icons/hicolor/${SIZE}x${SIZE}/mimetypes"
         DST_APP="$INSTALL_PREFIX/share/icons/hicolor/${SIZE}x${SIZE}/apps/${DEB_NAME}.png"
         DST_MIME="$INSTALL_PREFIX/share/icons/hicolor/${SIZE}x${SIZE}/mimetypes/${DEB_NAME}.png"
-        if command -v convert &>/dev/null; then
-            convert "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}.png" \
+        if [[ "$HAVE_IM" -eq 1 ]]; then
+            IM "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}.png" \
                 -resize "${SIZE}x${SIZE}" "$DST_APP" 2>/dev/null || \
                 cp "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}.png" "$DST_APP"
         else
@@ -655,7 +816,7 @@ Type=Application
 Name=Songpress++
 GenericName=Song Typesetter
 Comment=Genera canzonieri di alta qualità in PDF e PPTX
-Exec=env GDK_BACKEND=x11 /usr/local/bin/SongpressPlusPlus %f
+Exec=env GDK_BACKEND=x11 ${INSTALLED_BIN_DIR}/SongpressPlusPlus %f
 Icon=${DEB_NAME}
 Terminal=false
 Categories=Office;Publishing;Education;
@@ -746,6 +907,21 @@ POSTINST_HEAD
 
 # Parte 2 (heredoc quotato): logica eseguita sul sistema di destinazione.
 cat >> "$PKG_ROOT/DEBIAN/postinst" <<'POSTINST_BODY'
+
+# FIX 4: dpkg invoca il postinst anche con abort-upgrade, abort-remove e
+# abort-deconfigure. Senza questa guardia, in tutti quei casi partivano
+# comunque la domanda interattiva e il download via pip.
+case "$1" in
+    configure)
+        ;;
+    abort-upgrade|abort-remove|abort-deconfigure)
+        exit 0
+        ;;
+    *)
+        exit 0
+        ;;
+esac
+
 if command -v update-mime-database >/dev/null 2>&1; then
     update-mime-database /usr/share/mime || true
 fi
@@ -761,7 +937,44 @@ fi
 # via pip. pywin32 è escluso (solo Windows). Passo NON bloccante: se manca la
 # rete, l'installazione del pacchetto riesce comunque.
 PY=$(command -v python3 || true)
+
+# ── Avviso interattivo ────────────────────────────────────────────────────────
+# Chiede conferma prima di scaricare le dipendenze da PyPI.
+# Se il terminale non è disponibile (installazione da Discover/GDebi, apt in
+# modalità non interattiva, script automatici) NON blocca nulla: procede da solo.
+SP_SKIP=0
 if [ -n "$PY" ]; then
+    SP_ANSWER="s"
+    if [ "${DEBIAN_FRONTEND:-}" != "noninteractive" ] && [ -r /dev/tty ] && [ -w /dev/tty ]; then
+        {
+            echo ""
+            echo "=================================================================="
+            echo "  Songpress++ — È RICHIESTA UNA CONNESSIONE A INTERNET 🌐"
+            echo ""
+            echo "  Alcune dipendenze Python non esistono nei repository Debian"
+            echo "  (python-pptx, pyshortcuts) e verranno scaricate ORA via pip."
+            echo ""
+            echo "  Se rispondi No il pacchetto viene installato lo stesso, ma"
+            echo "  dovrai installare le dipendenze a mano in un secondo momento"
+            echo "  e l'applicazione potrebbe non funzionare correttamente."
+            echo "=================================================================="
+            printf "🌐  Continuare e scaricare le dipendenze ora? [S/n] "
+        } > /dev/tty
+        read SP_ANSWER < /dev/tty || SP_ANSWER="s"
+        echo "" > /dev/tty
+    fi
+
+    case "$SP_ANSWER" in
+        [nN]*)
+            SP_SKIP=1
+            echo "Songpress++: download delle dipendenze saltato su richiesta dell'utente."
+            echo "Songpress++: per installarle più tardi esegui:"
+            echo "    sudo pip3 install --break-system-packages python-pptx pyshortcuts"
+            ;;
+    esac
+fi
+
+if [ -n "$PY" ] && [ "$SP_SKIP" -eq 0 ]; then
     echo "Songpress++: controllo dipendenze PyPI (richiede una connessione a Internet)..."
     # Debian 12+/13 marca l'ambiente come "externally managed" (PEP 668):
     # serve --break-system-packages per installare a livello di sistema.
@@ -786,40 +999,166 @@ chmod 0755 "$PKG_ROOT/DEBIAN/postinst"
 cat > "$PKG_ROOT/DEBIAN/postrm" <<'POSTRM'
 #!/bin/sh
 set -e
+
+# FIX 8: il postinst aggiornava tre cache (desktop, MIME, icone) ma il postrm
+# solo una. Dopo la disinstallazione restavano il tipo MIME text/x-chordpro
+# associato a Songpress++ e l'icona nella cache hicolor: file .crd/.cho con
+# icona fantasma e associazione a un programma non più presente.
+case "$1" in
+    remove|purge|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        ;;
+    *)
+        exit 0
+        ;;
+esac
+
 if command -v update-desktop-database >/dev/null 2>&1; then
     update-desktop-database -q /usr/share/applications || true
 fi
+if command -v update-mime-database >/dev/null 2>&1; then
+    update-mime-database /usr/share/mime || true
+fi
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+    gtk-update-icon-cache -qf /usr/share/icons/hicolor || true
+fi
 POSTRM
 chmod 0755 "$PKG_ROOT/DEBIAN/postrm"
+
+# ── 5b. Script preinst: migrazione dal vecchio layout /usr/local ──────────────
+# FIX 9: fino alla 7.0.1 il pacchetto installava sotto /usr/local. Aggiornando
+# da una di quelle versioni, dpkg non riesce a rimuovere le vecchie directory
+# ("impossibile eliminare la vecchia directory ...: Directory non vuota", per
+# via dei __pycache__ generati a runtime) e i file obsoleti restano lì.
+# È un guasto silenzioso e cattivo: /usr/local/bin precede /usr/bin nel PATH e
+# /usr/local/lib/pythonX.Y/dist-packages precede /usr/lib/python3/dist-packages
+# in sys.path, quindi l'app continuerebbe a caricare il CODICE VECCHIO pur
+# sembrando aggiornata.
+#
+# Il preinst gira PRIMA dello scompattamento e ripulisce i residui, ma solo
+# dopo aver verificato con dpkg-query che nessun pacchetto li rivendichi: si
+# tocca esclusivamente ciò che è rimasto orfano.
+echo "$OK Scrittura preinst (migrazione da /usr/local)..."
+cat > "$PKG_ROOT/DEBIAN/preinst" <<'PREINST'
+#!/bin/sh
+set -e
+
+case "$1" in
+    install|upgrade)
+        ;;
+    *)
+        exit 0
+        ;;
+esac
+
+LEGACY_REMOVED=0
+
+# Rimuove un percorso solo se NON appartiene ad alcun pacchetto installato.
+# dpkg-query è un comando di sola lettura: non richiede il lock di dpkg e si
+# puo' quindi invocare senza rischi da dentro un maintainer script.
+remove_if_unowned() {
+    target="$1"
+    [ -e "$target" ] || return 0
+
+    if owner=$(dpkg-query -S "$target" 2>/dev/null); then
+        echo "Songpress++: '$target' appartiene a ${owner%%:*}: lo lascio intatto."
+        return 0
+    fi
+
+    echo "Songpress++: rimuovo residuo del vecchio layout: $target"
+    rm -rf "$target"
+    LEGACY_REMOVED=1
+}
+
+# Eseguibili e wrapper della vecchia installazione.
+for f in SongpressPlusPlus SongpressPlusPlus_bin songpressplusplus; do
+    remove_if_unowned "/usr/local/bin/$f"
+done
+
+# Moduli Python: il glob copre qualsiasi minor version (python3.11, 3.13, ...)
+# e sia il layout dist-packages sia site-packages.
+for d in /usr/local/lib/python3*/dist-packages /usr/local/lib/python3*/site-packages; do
+    [ -d "$d" ] || continue
+    remove_if_unowned "$d/songpressplusplus"
+    for info in "$d"/songpressplusplus-*.dist-info "$d"/songpressplusplus-*.egg-info; do
+        [ -e "$info" ] || continue
+        remove_if_unowned "$info"
+    done
+done
+
+# Directory rimaste vuote: rmdir fallisce (correttamente) se contengono ancora
+# qualcosa di altrui, quindi non c'e' modo di fare danni.
+if [ "$LEGACY_REMOVED" = 1 ]; then
+    for d in /usr/local/lib/python3*/dist-packages /usr/local/lib/python3*/site-packages; do
+        rmdir "$d" 2>/dev/null || true
+    done
+    for d in /usr/local/lib/python3*; do
+        rmdir "$d" 2>/dev/null || true
+    done
+    echo "Songpress++: migrazione da /usr/local completata."
+    echo "Songpress++: i file ora vivono in /usr/lib/python3/dist-packages e /usr/bin."
+fi
+
+exit 0
+PREINST
+chmod 0755 "$PKG_ROOT/DEBIAN/preinst"
 
 # ── 6. Permessi ───────────────────────────────────────────────────────────────
 echo "$OK Impostazione permessi..."
 find "$PKG_ROOT" -type d -exec chmod 0755 {} \;
 find "$PKG_ROOT" -type f -exec chmod 0644 {} \;
-# Rende eseguibili tutti i file in qualsiasi cartella bin/ (usr/bin e usr/local/bin)
+# Rende eseguibili tutti i file in qualsiasi cartella bin/
 find "$PKG_ROOT" -path "*/bin/*" -type f -exec chmod 0755 {} \;
+chmod 0755 "$PKG_ROOT/DEBIAN/preinst"
 chmod 0755 "$PKG_ROOT/DEBIAN/postinst"
 chmod 0755 "$PKG_ROOT/DEBIAN/postrm"
 
 # ── 6b. Wrapper GDK_BACKEND=x11 e symlink minuscolo ──────────────────────────
 # Fatto DOPO il passo permessi per evitare che chmod 0644 azzeri il wrapper.
-# pip --prefix installa in usr/local/bin (non usr/bin) — cerchiamo ovunque.
+# I percorsi arrivano dal passo 3a-bis, dopo la normalizzazione in /usr.
 echo "$OK Creazione wrapper GDK_BACKEND=x11..."
-REAL_BIN=$(find "$PKG_ROOT" -path "*/bin/SongpressPlusPlus" -not -name "*_bin" | head -n1)
+# REAL_BIN / BIN_DIR / INSTALLED_BIN_DIR sono già stati calcolati al passo 3a-bis
+# (servivano al .desktop): qui li riusiamo, così i due percorsi non possono
+# divergere. Rifacciamo solo il find se nel frattempo il file è sparito.
 echo "    Binario trovato: ${REAL_BIN:-(nessuno)}"
 
-if [[ -n "$REAL_BIN" ]]; then
-    BIN_DIR=$(dirname "$REAL_BIN")
-    # Percorso assoluto di installazione (es. /usr/local/bin)
-    INSTALLED_BIN_DIR="${BIN_DIR#$PKG_ROOT}"
-
+if [[ -n "$REAL_BIN" && -f "$REAL_BIN" ]]; then
     mv "$REAL_BIN" "${REAL_BIN}_bin"
 
+    # FIX 7 (rivisto): niente "2>/dev/null", che azzerava anche i traceback
+    # Python e rendeva impossibile diagnosticare un crash all'avvio. Qui si
+    # scartano SOLO tre righe note e innocue, elencate una per una; tutto il
+    # resto — errori, eccezioni, warning nuovi — arriva intatto.
+    #
+    # Il filtro è una rete di sicurezza per i casi che la patch 1h non copre
+    # (Append spezzato su più righe, chiamate generate a runtime): la
+    # correzione vera resta nel sorgente.
+    #
+    # Serve bash per la process substitution: è un pacchetto Essential, quindi
+    # sempre presente. "exec" preserva il codice di uscita dell'applicazione,
+    # che una pipeline normale avrebbe invece sostituito con quello di grep.
     cat > "$REAL_BIN" <<WRAPPER
-#!/bin/sh
+#!/bin/bash
 # Wrapper: forza backend X11 per compatibilità wxPython/Wayland
 export GDK_BACKEND=x11
-exec ${INSTALLED_BIN_DIR}/SongpressPlusPlus_bin "\$@" 2>/dev/null
+
+# SONGPRESS_VERBOSE=1 disattiva il filtro e mostra tutto (per il debug).
+if [ -n "\${SONGPRESS_VERBOSE:-}" ]; then
+    exec ${INSTALLED_BIN_DIR}/SongpressPlusPlus_bin "\$@"
+fi
+
+# Righe scartate, e perché:
+#  1) gtk_image_menu_item_set_image  → icone nei menu: GtkImageMenuItem è
+#     deprecato in GTK3 e "gtk-menu-images" è comunque off di default, quindi
+#     l'icona non sarebbe mostrata in nessun caso.
+#  2) invalid cast GtkMenuItem→GtkImageMenuItem → stessa causa, altro messaggio.
+#  3) ScreenToClient ... toplevel window is not shown → log di livello Debug
+#     di wx, emesso quando si chiedono coordinate prima di Show().
+SPP_NOISE='gtk_image_menu_item_set_image'
+SPP_NOISE="\$SPP_NOISE|invalid cast from .GtkMenuItem. to .GtkImageMenuItem."
+SPP_NOISE="\$SPP_NOISE|ScreenToClient cannot work when toplevel window is not shown"
+
+exec 2> >(grep --line-buffered -v -E "\$SPP_NOISE" >&2)
+exec ${INSTALLED_BIN_DIR}/SongpressPlusPlus_bin "\$@"
 WRAPPER
     chmod 0755 "$REAL_BIN"
     chmod 0755 "${REAL_BIN}_bin"

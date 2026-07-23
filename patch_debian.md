@@ -4,6 +4,30 @@ Questa guida elenca tutte le patch applicate al codice sorgente per la
 compatibilità con Linux/Debian, come verificarle e come applicarle manualmente
 se necessario.
 
+> **⚠️ Percorso di installazione cambiato.** Fino alle versioni precedenti il
+> pacchetto installava sotto `/usr/local/lib/python3.13/dist-packages/`. La
+> Debian Policy riserva `/usr/local` all'amministratore locale, quindi
+> `build_deb.sh` ora normalizza l'albero in:
+>
+> ```
+> /usr/lib/python3/dist-packages/songpressplusplus/   (moduli)
+> /usr/bin/SongpressPlusPlus                          (eseguibile)
+> ```
+>
+> Il percorso è **senza numero di versione di Python**: è l'unica directory di
+> sistema realmente presente in `sys.path` su Debian e rende il pacchetto
+> immune agli aggiornamenti di minor version. Tutti i comandi
+> «applicazione sul file installato» in questa guida usano il nuovo percorso.
+>
+> La migrazione dal vecchio layout è **automatica**: lo script `preinst` del
+> `.deb` rimuove i residui in `/usr/local` prima dello scompattamento, dopo aver
+> verificato con `dpkg-query` che nessun pacchetto li rivendichi.
+> Per sapere in ogni momento dove sono i file installati:
+>
+> ```bash
+> python3 -c "import songpressplusplus, os; print(os.path.dirname(songpressplusplus.__file__))"
+> ```
+
 ---
 
 ## Patch 1 — Testo nero nella finestra "Informazioni su"
@@ -76,7 +100,7 @@ PY
 
 ```bash
 sudo python3 - <<'PY'
-path = "/usr/local/lib/python3.13/dist-packages/songpressplusplus/SongpressFrame.py"
+path = "/usr/lib/python3/dist-packages/songpressplusplus/SongpressFrame.py"
 
 with open(path, "r") as f:
     content = f.read()
@@ -159,7 +183,7 @@ PY
 
 ```bash
 sudo python3 - <<'PY'
-path = "/usr/local/lib/python3.13/dist-packages/songpressplusplus/MyPreferencesDialog.py"
+path = "/usr/lib/python3/dist-packages/songpressplusplus/MyPreferencesDialog.py"
 
 with open(path, "r") as f:
     content = f.read()
@@ -288,7 +312,7 @@ PY
 
 ```bash
 sudo python3 - <<'PY'
-path = "/usr/local/lib/python3.13/dist-packages/songpressplusplus/PreferencesDialog.py"
+path = "/usr/lib/python3/dist-packages/songpressplusplus/PreferencesDialog.py"
 
 with open(path, "r") as f:
     content = f.read()
@@ -340,7 +364,7 @@ Usa la sezione **Verifica rapida** in fondo al documento (controlla Patch 4a–4
 ### Applicazione sul file installato (senza ricostruire il .deb)
 
 ```bash
-SPPY=/usr/local/lib/python3.13/dist-packages/songpressplusplus/SongpressFrame.py
+SPPY=/usr/lib/python3/dist-packages/songpressplusplus/SongpressFrame.py
 sudo sed -i \
   -e 's/SetForegroundColour(wx\.BLACK)/SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT))/g' \
   -e 's/SetBackgroundColour(wx\.WHITE)/SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW))/g' \
@@ -466,7 +490,7 @@ PY
 
 ```bash
 sudo python3 - <<'PY'
-BASE = "/usr/local/lib/python3.13/dist-packages/songpressplusplus/"
+BASE = "/usr/lib/python3/dist-packages/songpressplusplus/"
 FR = BASE + "SongpressFrame.py"
 TB = BASE + "SongpressToolbars.py"
 
@@ -614,7 +638,7 @@ PY
 
 ```bash
 sudo python3 - <<'PY'
-path = "/usr/local/lib/python3.13/dist-packages/songpressplusplus/i18n.py"
+path = "/usr/lib/python3/dist-packages/songpressplusplus/i18n.py"
 with open(path) as f:
     content = f.read()
 
@@ -741,7 +765,7 @@ copiare i due file:
 
 ```bash
 SRC=~/Songpress_DEFINitiVO3/SongpressPlusPlus/src/songpressplusplus
-DST=/usr/local/lib/python3.13/dist-packages/songpressplusplus
+DST=/usr/lib/python3/dist-packages/songpressplusplus
 sudo cp "$SRC/PreviewCanvas.py"  "$DST/PreviewCanvas.py"
 sudo cp "$SRC/SongpressFrame.py" "$DST/SongpressFrame.py"
 ```
@@ -791,7 +815,7 @@ wl-paste --type image/png > /tmp/t.png && xdg-open /tmp/t.png
    il dialogo di errore `[Errno 2] File o directory non esistente: 'explorer'`.
 2. *Cartella di destinazione sbagliata.* La funzione puntava a
    `templates/` **accanto al pacchetto**, cioè
-   `/usr/local/lib/python3.13/dist-packages/songpressplusplus/templates/`: con
+   `/usr/lib/python3/dist-packages/songpressplusplus/templates/`: con
    l'installazione `.deb` quella cartella appartiene a `root` ed è in sola
    lettura per l'utente, che quindi non potrebbe comunque salvarvi i propri
    template. Peggio, `os.makedirs(..., exist_ok=True)` **non** solleva errore su
@@ -888,7 +912,7 @@ La patch riscrive interi metodi in due file: i sorgenti sono la fonte di verità
 
 ```bash
 SRC=~/Songpress_DEFINitiVO3/SongpressPlusPlus/src/songpressplusplus
-DST=/usr/local/lib/python3.13/dist-packages/songpressplusplus
+DST=/usr/lib/python3/dist-packages/songpressplusplus
 sudo cp "$SRC/MyPreferencesDialog.py" "$DST/MyPreferencesDialog.py"
 sudo cp "$SRC/Globals.py"             "$DST/Globals.py"
 sudo apt install xdg-utils
@@ -928,7 +952,7 @@ file `.crd` in `songs/`, questo compare al riavvio nel menu
 template"** non apriva la cartella di installazione dei template, cioè
 
 ```
-/usr/local/lib/python3.13/dist-packages/songpressplusplus/templates/
+/usr/lib/python3/dist-packages/songpressplusplus/templates/
 ```
 
 ma ripiegava sulla cartella dati utente (o comunque su un percorso diverso,
@@ -965,7 +989,7 @@ i fallback e la gestione degli errori restano quelli della Patch 8.
 >
 > | Azione | Cartella |
 > |---|---|
-> | Pulsante "Apri cartella template" | `/usr/local/lib/python3.13/dist-packages/songpressplusplus/templates/` (sola lettura, contiene gli esempi distribuiti) |
+> | Pulsante "Apri cartella template" | `/usr/lib/python3/dist-packages/songpressplusplus/templates/` (sola lettura, contiene gli esempi distribuiti) |
 > | Salvataggio temi / template personali | `~/.Songpress++/templates/` (scrivibile) |
 >
 > La lettura non cambia: `_theme_roots()` e
@@ -997,7 +1021,7 @@ PY
 
 ```bash
 SRC=~/Songpress_DEFINitiVO3/SongpressPlusPlus/src/songpressplusplus
-DST=/usr/local/lib/python3.13/dist-packages/songpressplusplus
+DST=/usr/lib/python3/dist-packages/songpressplusplus
 sudo cp "$SRC/MyPreferencesDialog.py" "$DST/MyPreferencesDialog.py"
 ```
 
@@ -1005,7 +1029,7 @@ sudo cp "$SRC/MyPreferencesDialog.py" "$DST/MyPreferencesDialog.py"
 
 ```bash
 # la cartella che il pulsante deve aprire
-ls -la /usr/local/lib/python3.13/dist-packages/songpressplusplus/templates/
+ls -la /usr/lib/python3/dist-packages/songpressplusplus/templates/
 # → fonts/  local_dir/  slides/  songs/  themes/
 ```
 
@@ -1031,13 +1055,13 @@ dell'utente erano in conflitto irriducibile.
 
 | cartella | contenuto | scrivibile? |
 |---|---|---|
-| `/usr/local/lib/python3.13/dist-packages/songpressplusplus/templates/` | gli esempi distribuiti | ❌ è di `root` |
+| `/usr/lib/python3/dist-packages/songpressplusplus/templates/` | gli esempi distribuiti | ❌ è di `root` |
 | `~/.Songpress++/templates/` | vuota | ✅ |
 
 Aprire la prima → non ci si può creare nulla. Aprire la seconda → è deserta.
 Nessuna delle due è la risposta giusta, e **spostare i file in
-`templates/local_dir/` non cambierebbe nulla**: resta sotto `/usr/local`, resta
-di `root`, e per giunta `local_dir/` ha già un suo significato (è lo *scheletro*
+`templates/local_dir/` non cambierebbe nulla**: resta sotto l'albero di sistema,
+resta di `root`, e per giunta `local_dir/` ha già un suo significato (è lo *scheletro*
 `local_dir/templates/{songs,slides}` che `build_deb.sh` verifica).
 
 **Fix — seeding al primo avvio.** Si popola la cartella utente con i template
@@ -1132,7 +1156,7 @@ PY
 
 ```bash
 SRC=~/Songpress_DEFINitiVO3/SongpressPlusPlus/src/songpressplusplus
-DST=/usr/local/lib/python3.13/dist-packages/songpressplusplus
+DST=/usr/lib/python3/dist-packages/songpressplusplus
 sudo cp "$SRC/TemplateSeed.py"        "$DST/TemplateSeed.py"
 sudo cp "$SRC/MyPreferencesDialog.py" "$DST/MyPreferencesDialog.py"
 sudo cp "$SRC/Globals.py"             "$DST/Globals.py"
@@ -1161,6 +1185,126 @@ In Songpress++: **Strumenti → Opzioni → Generale → "Apri cartella template
 apre ora `~/.Songpress++/templates/`, **piena** dei template distribuiti e
 **scrivibile**: ci puoi creare i tuoi modelli, che sopravvivono agli
 aggiornamenti del `.deb` e hanno la precedenza sugli omonimi di sistema.
+
+---
+
+## Patch 11 — `Gtk-CRITICAL` sui menu: `SetBitmap` prima di `Append`
+
+**File:** tutti i sorgenti in `src/songpressplusplus/` (la patch è generica)
+
+**Problema:** all'avvio la console si riempie di messaggi come
+
+```
+(SongpressPlusPlus_bin:4662): Gtk-CRITICAL **: gtk_image_menu_item_set_image:
+    assertion 'GTK_IS_IMAGE_MENU_ITEM (image_menu_item)' failed
+(SongpressPlusPlus_bin:4662): GLib-GObject-WARNING **:
+    invalid cast from 'GtkMenuItem' to 'GtkImageMenuItem'
+```
+
+uno per ogni voce di menu con icona. La documentazione di `wxMenuItem` è
+esplicita: **`SetBitmap()` va chiamato prima che la voce venga aggiunta al
+menu**; aggiungerla senza bitmap e impostarla dopo non è garantito che
+funzioni. Con l'ordine invertito wxGTK ha già creato un `GtkMenuItem` normale
+e poi prova a trattarlo come `GtkImageMenuItem`, da cui l'assertion fallita.
+
+> Nota: su GTK3 quelle icone **non erano comunque visibili**. GTK usa
+> l'impostazione globale `gtk-menu-images` per decidere se mostrare immagini
+> nei menu, ed è disattivata di default sui desktop moderni. La patch non
+> cambia quindi nulla di visibile su Linux, mentre su Windows le icone
+> restano funzionanti.
+
+**Fix:** riordino della coppia di chiamate.
+
+```python
+# prima
+item = menu.Append(id, testo, help)
+item.SetBitmap(bmp)
+
+# dopo
+item = wx.MenuItem(menu, id, testo, help)
+item.SetBitmap(bmp)
+menu.Append(item)
+```
+
+La trasformazione è sicura perché le firme combaciano:
+`wxMenu::Append(id, text, help, kind)` e
+`wxMenuItem(parentMenu, id, text, help, kind)` differiscono solo per il menu
+in prima posizione, quindi gli argomenti si trasferiscono invariati qualunque
+essi siano.
+
+### Verifica
+
+A differenza delle altre, questa patch va verificata cercando ciò che **non**
+deve più esserci: la coppia `Append` → `SetBitmap` su righe consecutive.
+
+```bash
+python3 - <<'PY'
+import re, subprocess
+
+r = subprocess.run(["find", "src/songpressplusplus", "-name", "*.py"],
+                   capture_output=True, text=True)
+PAT = re.compile(
+    r'^(?P<ind>[ \t]*)(?P<item>[A-Za-z_][\w.]*)[ \t]*=[ \t]*'
+    r'(?P<menu>[A-Za-z_][\w.]*)\.Append\([^\n]*\)[ \t]*$\n'
+    r'(?P=ind)(?P=item)\.SetBitmap\(', re.MULTILINE)
+
+residui = 0
+for path in r.stdout.split():
+    with open(path, encoding='utf-8', errors='surrogateescape') as f:
+        n = len(PAT.findall(f.read()))
+    if n:
+        print(f"KO {path}: {n} occorrenze da riordinare")
+        residui += n
+print("OK Patch 11 - nessun SetBitmap dopo Append" if not residui
+      else f"KO Patch 11 - {residui} occorrenze residue")
+PY
+```
+
+Output atteso:
+```
+OK Patch 11 - nessun SetBitmap dopo Append
+```
+
+Controprova a runtime, che disattiva il filtro del wrapper e mostra l'output
+grezzo:
+
+```bash
+SONGPRESS_VERBOSE=1 SongpressPlusPlus 2>&1 | grep -c gtk_image_menu_item
+# atteso: 0
+```
+
+### Applicazione manuale
+
+La patch è applicata automaticamente da `build_deb.sh` (passo 1h) su tutti i
+`.py` del progetto. Per rifarla a mano è sufficiente lo stesso blocco di
+verifica con `PAT.subn()` al posto di `PAT.findall()`, oppure riordinare a
+mano le poche occorrenze che il blocco segnala.
+
+> **Nota sulle codifiche.** Non tutti i sorgenti sono UTF-8 validi (qualcuno è
+> in latin-1). La patch li legge e riscrive con `errors='surrogateescape'`, che
+> garantisce un round-trip byte-per-byte lossless: nessun file cambia
+> codifica. Per elencare i file non UTF-8:
+>
+> ```bash
+> for f in $(find src/songpressplusplus -name '*.py'); do
+>     iconv -f utf-8 -t utf-8 "$f" >/dev/null 2>&1 || echo "NON UTF-8: $f"
+> done
+> ```
+
+### Rete di sicurezza nel wrapper
+
+Se qualche chiamata sfugge alla patch (per esempio un `Append` spezzato su più
+righe), il wrapper installato scarta dalla console **solo** queste tre righe:
+
+| messaggio | perché è innocuo |
+|---|---|
+| `gtk_image_menu_item_set_image` | `GtkImageMenuItem` è deprecato in GTK3 e `gtk-menu-images` è off di default |
+| `invalid cast from 'GtkMenuItem' to 'GtkImageMenuItem'` | stessa causa, altro messaggio |
+| `ScreenToClient cannot work when toplevel window is not shown` | log di livello Debug di wx, emesso chiedendo coordinate prima di `Show()` |
+
+Non è un `2>/dev/null`: qualsiasi altro output — errori, eccezioni, traceback
+Python — passa intatto, e il codice di uscita dell'applicazione è preservato.
+`SONGPRESS_VERBOSE=1` disattiva il filtro.
 
 ---
 
@@ -1243,6 +1387,10 @@ sudo dpkg -i build_deb/songpressplusplus_*.deb
 
 - Tutte le patch sono **idempotenti**: se già presenti nel sorgente,
   lo script le rileva e non le applica due volte.
+- Poiché le patch modificano l'albero sorgente **in modo permanente**, dalla
+  seconda build in poi è normale leggere `0/3 fix` o `1/3 fix`: significa
+  "già applicata", non "fallita". Per una conferma indipendente usa la
+  sezione **Verifica rapida** qui sopra, oppure `git diff`.
 - Il `build_deb.sh` applica automaticamente tutte le patch **prima** di
   costruire la wheel (ordine: patch → wheel → install). Non è necessario
   applicare nessuna patch manualmente.
