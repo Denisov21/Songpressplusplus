@@ -1011,6 +1011,10 @@ class PreviewCanvas(object):
         """Imposta la dimensione in pixel delle icone {tempo_*} (16, 24 o 32)."""
         self.renderer.tempoIconSize = size
 
+    def SetTempoIconColour(self, colour):
+        """Imposta il colore (wx.Colour) delle icone {tempo_*}."""
+        self.renderer.tempoIconColour = colour
+
     def SetGridDisplayMode(self, mode):
         """Imposta la modalità di visualizzazione dei blocchi {start_of_grid}.
 

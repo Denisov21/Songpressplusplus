@@ -593,6 +593,8 @@ class SongpressPrintout(wx.Printout):
         r.timeDisplay     = getattr(self.frame_obj.pref, 'timeDisplay',     True)
         r.keyDisplay      = getattr(self.frame_obj.pref, 'keyDisplay',      True)
         r.tempoIconSize   = getattr(self.frame_obj.pref, 'tempoIconSize',   24)
+        if hasattr(self.frame_obj, '_getTempoIconColour'):
+            r.tempoIconColour = self.frame_obj._getTempoIconColour()
         r.gridDisplayMode = getattr(self.frame_obj.pref, 'gridDisplayMode', 'pipe')
         r.gridDefaultLabel = getattr(self.frame_obj.pref, 'gridDefaultLabel', None)
         r.gridSizeDir     = getattr(self.frame_obj.pref, 'gridSizeDir',     'both')

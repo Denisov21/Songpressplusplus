@@ -515,6 +515,10 @@ msgstr ""
 msgid "Tempo icon size"
 msgstr "Dimensione icone tempo"
 
+#: PreferencesDialog.py format tab — tempo icon colour label
+msgid "Tempo icon colour"
+msgstr "Colore icone tempo"
+
 #: PreferencesDialog.py:99
 msgid "Syntax colours"
 msgstr "Colori sintassi"

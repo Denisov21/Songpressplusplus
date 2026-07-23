@@ -17,6 +17,13 @@ from .Globals import glb   # per glb.AddPath()
 
 _ = wx.GetTranslation
 
+# Patch Debian/GTK - visibilita' delle frecce "+"/"-" degli SpinCtrl.
+# Su wxGTK (Debian/KDE) i due pulsanti freccia sono piu' larghi che su Windows:
+# una larghezza (min)size calibrata su MSW li taglia, lasciando visibile solo
+# un trattino. Su piattaforme non-MSW aggiungiamo un margine di larghezza.
+# (Stesso valore usato da _spin_size() in SongpressFrame.py.)
+_SPIN_EXTRA_WIDTH = 0 if wx.Platform == '__WXMSW__' else 46
+
 
 def N_(s):
     """Mark a string for extraction by xgettext without translating at import time."""
@@ -509,7 +516,7 @@ class MusicalSymbolDialog(wx.Dialog):
             min=6, max=144, initial=self._init_font_size,
             style=wx.SP_ARROW_KEYS,
         )
-        self._spin_size.SetMinSize(wx.Size(60, -1))
+        self._spin_size.SetMinSize(wx.Size(60 + _SPIN_EXTRA_WIDTH, -1))
         self._spin_size.Enable(self._init_scale_enabled)
         size_row.Add(self._chk_scale, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
         size_row.Add(self._spin_size, 0, wx.ALIGN_CENTER_VERTICAL)

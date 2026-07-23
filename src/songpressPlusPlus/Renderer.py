@@ -975,6 +975,8 @@ class Renderer(object):
             self.sd.notation = self.notations
         # Propaga la dimensione icone tempo al decorator
         self.sd.tempoIconSize = getattr(self, 'tempoIconSize', None)
+        # Propaga il colore icone tempo al decorator (None = colore originale del PNG)
+        self.sd.tempoIconColour = getattr(self, 'tempoIconColour', None)
         w, h = self.sd.Draw(self.song, dc)
         self.dc = None
         # Raccoglie le posizioni Y (in pixel schermo) dei page break espliciti

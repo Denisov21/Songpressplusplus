@@ -58,6 +58,27 @@ from . import ChordProDirectives
 
 _ = wx.GetTranslation
 
+# ---------------------------------------------------------------------------
+# Patch Debian/GTK - visibilita' dei pulsanti "+" / "-" degli spin control
+# ---------------------------------------------------------------------------
+# Su wxGTK (Debian/KDE) i due pulsanti freccia di wx.SpinCtrl e
+# wx.SpinCtrlDouble sono sensibilmente piu' larghi che su Windows. Imponendo
+# una larghezza fissa calibrata su MSW (es. size=(70, -1)) le frecce vengono
+# tagliate e all'utente resta visibile solo un trattino.
+# _spin_size() aggiunge un margine di larghezza sulle piattaforme non-MSW e
+# impone anche un'altezza minima coerente con quella di un wx.TextCtrl.
+_SPIN_EXTRA_WIDTH = 0 if wx.Platform == '__WXMSW__' else 46
+
+
+def _spin_size(width, height=-1):
+    """Dimensione per wx.SpinCtrl / wx.SpinCtrlDouble adattata alla piattaforma.
+
+    Su Windows restituisce la larghezza richiesta; su GTK/macOS la maggiora
+    quanto basta perche' i pulsanti "+" e "-" siano interamente visibili.
+    """
+    return (width + _SPIN_EXTRA_WIDTH, height)
+
+
 
 if platform.system() == 'Windows':
     import wx.msw
@@ -747,6 +768,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self.pref.keyDisplay = True
         if not hasattr(self.pref, 'tempoIconSize'):
             self.pref.tempoIconSize = 24
+        if not hasattr(self.pref, 'tempoIconColourHex'):
+            self.pref.tempoIconColourHex = '#000000'
         if not hasattr(self.pref, 'klavierHighlightHex'):
             self.pref.klavierHighlightHex = '#D23C3C'
         self.SetDefaultExtension(self.pref.defaultExtension)
@@ -2379,9 +2402,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         _icon_sz = getattr(self.pref, 'tempoIconSize', 24)
         _note_img = wx.Image(glb.AddPath("img/tempo_note.png"))
         _note_img = _note_img.Scale(_icon_sz, _icon_sz, wx.IMAGE_QUALITY_HIGH)
+        _note_img = self._tintImageToColour(_note_img, self._getTempoIconColour())
         note_bmp = wx.Bitmap(_note_img)
         _metro_img = wx.Image(glb.AddPath("img/metronomeWindows.png"))
         _metro_img = _metro_img.Scale(_icon_sz, _icon_sz, wx.IMAGE_QUALITY_HIGH)
+        _metro_img = self._tintImageToColour(_metro_img, self._getTempoIconColour())
         metro_bmp = wx.Bitmap(_metro_img)
 
         # ── Griglia 2×2 dentro un StaticBox ────────────────────────────
@@ -2461,6 +2486,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 self.pref.tempoDisplay = 0
             self.previewCanvas.SetTempoDisplay(self.pref.tempoDisplay)
             self.previewCanvas.SetTempoIconSize(getattr(self.pref, 'tempoIconSize', 24))
+            self.previewCanvas.SetTempoIconColour(self._getTempoIconColour())
             self._SaveTempoDisplay()
             if val:
                 self.InsertWithCaret("{tempo:%s}" % val)
@@ -2934,7 +2960,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             g.AddGrowableCol(1)
             for root in roots:
                 g.Add(wx.StaticText(gp, label=root), 0, wx.ALIGN_CENTER_VERTICAL)
-                sp = wx.SpinCtrl(gp, min=0, max=32, size=(70, -1))
+                sp = wx.SpinCtrl(gp, min=0, max=32, size=_spin_size(70))
                 sp.SetValue(1)
                 sp.SetToolTip(_(u"0 = omit this chord"))
                 g.Add(sp, 0, wx.EXPAND)
@@ -3094,7 +3120,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         # ── Riga "Tutti" — allineata a destra ──────────────────────────
         all_row = wx.BoxSizer(wx.HORIZONTAL)
         lbl_all = wx.StaticText(dlg, label=_(u"All:"))
-        spin_all = wx.SpinCtrl(dlg, min=0, max=32, size=(70, -1))
+        spin_all = wx.SpinCtrl(dlg, min=0, max=32, size=_spin_size(70))
         spin_all.SetValue(1)
         spin_all.SetToolTip(_(u"Set this value on all chords"))
         btn_apply_all = wx.Button(dlg, label=_(u"Apply to all"), size=(-1, -1))
@@ -3191,7 +3217,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             btn_reopen.SetBitmap(wx.Bitmap(_sw_img))
             btn_reopen.SetBitmapMargins(2, 0)
         spin_delay = wx.SpinCtrl(dlg, min=1, max=60,
-                                 size=(52, -1), style=wx.SP_ARROW_KEYS)
+                                 size=_spin_size(52), style=wx.SP_ARROW_KEYS)
         spin_delay.SetValue(_delay_init)
         lbl_sec = wx.StaticText(dlg, label=_(u"s"))
         spin_delay.SetToolTip(_(u"Delay in seconds before the dialog reopens (1-60)"))
@@ -3992,7 +4018,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         # Width — SpinCtrlDouble: solo interi (step=1), vuoto = non specificato
         gb.Add(wx.StaticText(d, -1, _("Width:")), pos=(0, 0), flag=wx.ALIGN_CENTER_VERTICAL)
-        txt_w = wx.SpinCtrlDouble(d, -1, "", min=0, max=9999, inc=1, size=(70, -1))
+        txt_w = wx.SpinCtrlDouble(d, -1, "", min=0, max=9999, inc=1,
+                                  size=_spin_size(70), style=wx.SP_ARROW_KEYS)
         txt_w.SetDigits(0)
         txt_w.SetValue(0)
         gb.Add(txt_w, pos=(0, 1), flag=wx.EXPAND)
@@ -4002,7 +4029,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         # Height — SpinCtrlDouble: solo interi
         gb.Add(wx.StaticText(d, -1, _("Height:")), pos=(1, 0), flag=wx.ALIGN_CENTER_VERTICAL)
-        txt_h = wx.SpinCtrlDouble(d, -1, "", min=0, max=9999, inc=1, size=(70, -1))
+        txt_h = wx.SpinCtrlDouble(d, -1, "", min=0, max=9999, inc=1,
+                                  size=_spin_size(70), style=wx.SP_ARROW_KEYS)
         txt_h.SetDigits(0)
         txt_h.SetValue(0)
         gb.Add(txt_h, pos=(1, 1), flag=wx.EXPAND)
@@ -4012,7 +4040,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         # Scale — SpinCtrlDouble: valori decimali 1–500, step 1
         gb.Add(wx.StaticText(d, -1, _("Scale:")), pos=(2, 0), flag=wx.ALIGN_CENTER_VERTICAL)
-        txt_scale = wx.SpinCtrlDouble(d, -1, "", min=1, max=500, inc=1, size=(70, -1))
+        txt_scale = wx.SpinCtrlDouble(d, -1, "", min=1, max=500, inc=1,
+                                      size=_spin_size(70), style=wx.SP_ARROW_KEYS)
         txt_scale.SetDigits(1)
         txt_scale.SetValue(100)
         gb.Add(txt_scale, pos=(2, 1), flag=wx.EXPAND)
@@ -4035,7 +4064,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         # --- Bordo ---
         hbox_border = wx.BoxSizer(wx.HORIZONTAL)
         cb_border = wx.CheckBox(d, -1, _("Border (pt):"))
-        txt_border = wx.SpinCtrlDouble(d, -1, "", min=0, max=50, inc=0.5, size=(60, -1))
+        txt_border = wx.SpinCtrlDouble(d, -1, "", min=0, max=50, inc=0.5,
+                                       size=_spin_size(60), style=wx.SP_ARROW_KEYS)
         txt_border.SetDigits(1)
         txt_border.SetValue(1)
         txt_border.Enable(False)
@@ -4053,7 +4083,13 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             ).replace(".crd", ".%s" % doc_ext))
         vbox.Add(cb_embed, 0, wx.LEFT | wx.RIGHT | wx.TOP, 8)
         lbl_embed_warn = wx.StaticText(d, -1, "")
-        lbl_embed_warn.SetForegroundColour(wx.Colour(160, 100, 0))
+        # Patch tema scuro: l'arancione scuro (160,100,0) e' illeggibile sui
+        # temi scuri (Debian/KDE Breeze Dark). Scegliamo la tinta in base alla
+        # luminosita' dello sfondo effettivo del dialogo.
+        _bg = d.GetBackgroundColour()
+        _luma = (_bg.Red() * 299 + _bg.Green() * 587 + _bg.Blue() * 114) / 1000.0
+        lbl_embed_warn.SetForegroundColour(
+            wx.Colour(255, 183, 77) if _luma < 128 else wx.Colour(160, 100, 0))
         vbox.Add(lbl_embed_warn, 0, wx.LEFT | wx.BOTTOM, 8)
 
         # --- Anteprima direttiva ---
@@ -4067,6 +4103,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         vbox.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 8)
         d.SetSizer(vbox)
         vbox.Fit(d)
+        # Il dialogo e' ridimensionabile: impedisce di rimpicciolirlo al punto
+        # da tagliare gli spin control e i pulsanti (evidente su wxGTK).
+        d.SetMinSize(d.GetSize())
 
         # --- Funzione aggiornamento anteprima ---
         def _build_options():
@@ -4620,31 +4659,35 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             wx.StaticBox(d, label=_(u"Position in document")),
             wx.VERTICAL,
         )
+        # Schemi del documento per l'anteprima di posizione.
+        # Cornice box-drawing (larghezza monospace affidabile) + interno SOLO
+        # ASCII: cosi' il bordo destro resta allineato su qualsiasi font/OS.
+        # (Prima: interno bordo 13 char ma righe 16-18, e glifi larghi
+        #  \u25ba/\u25cb/\u25cf resi a larghezza variabile su GTK -> bordo "ballerino".)
+        _SCHEMA_INNER = 16
+
+        def _schema_box(rows):
+            top = u"\u250c" + u"\u2500" * _SCHEMA_INNER + u"\u2510"
+            bot = u"\u2514" + u"\u2500" * _SCHEMA_INNER + u"\u2518"
+            body = u"\n".join(
+                u"\u2502" + r.ljust(_SCHEMA_INNER) + u"\u2502" for r in rows
+            )
+            return top + u"\n" + body + u"\n" + bot
+
+        _S_IND = u"  [o * o]"   # indicatore: o = libero, * = premuto
+        _S_CUR = u"> [o * o]"   # idem, preceduto dalla freccia del cursore
+        _S_TIT = u"  Title"
+        _S_VER = u"  Verse..."
+
         positions = [
             ('before_title', _(u"Before title"),
-             u"\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n"
-             u"\u2502  [\u25cb \u25cf \u25cb]       \u2502\n"
-             u"\u2502  Title           \u2502\n"
-             u"\u2502  Verse...        \u2502\n"
-             u"\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518"),
+             _schema_box([_S_IND, _S_TIT, _S_VER])),
             ('after_title',  _(u"After title"),
-             u"\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n"
-             u"\u2502  Title           \u2502\n"
-             u"\u2502  [\u25cb \u25cf \u25cb]       \u2502\n"
-             u"\u2502  Verse...        \u2502\n"
-             u"\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518"),
+             _schema_box([_S_TIT, _S_IND, _S_VER])),
             ('cursor',       _(u"At cursor position"),
-             u"\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n"
-             u"\u2502  Title           \u2502\n"
-             u"\u2502  Verse...        \u2502\n"
-             u"\u2502\u25ba [\u25cb \u25cf \u25cb]       \u2502\n"
-             u"\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518"),
+             _schema_box([_S_TIT, _S_VER, _S_CUR])),
             ('end_of_song',  _(u"End of song"),
-             u"\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n"
-             u"\u2502  Title           \u2502\n"
-             u"\u2502  Verse...        \u2502\n"
-             u"\u2502  [\u25cb \u25cf \u25cb]       \u2502\n"
-             u"\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518"),
+             _schema_box([_S_TIT, _S_VER, _S_IND])),
         ]
 
         rb_group = []
@@ -5071,6 +5114,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         r.timeDisplay = getattr(self.pref, 'timeDisplay', True)
         r.keyDisplay = getattr(self.pref, 'keyDisplay', True)
         r.tempoIconSize = getattr(self.pref, 'tempoIconSize', 24)
+        r.tempoIconColour = self._getTempoIconColour()
         r.gridDisplayMode = getattr(self.pref, 'gridDisplayMode', 'pipe')
         r.gridDefaultLabel = getattr(self.pref, 'gridDefaultLabel', None)
         r.gridSizeDir = getattr(self.pref, 'gridSizeDir', 'both')
@@ -8030,6 +8074,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self._SaveCustomColours()
             self.previewCanvas.SetTempoDisplay(getattr(self.pref, 'tempoDisplay', 0))
             self.previewCanvas.SetTempoIconSize(getattr(self.pref, 'tempoIconSize', 24))
+            self.previewCanvas.SetTempoIconColour(self._getTempoIconColour())
             self.previewCanvas.SetGridDisplayMode(getattr(self.pref, 'gridDisplayMode', 'pipe'))
             self.previewCanvas.SetGridDefaultLabel(getattr(self.pref, 'gridDefaultLabel', None))
             self.previewCanvas.SetGridSizeDir(getattr(self.pref, 'gridSizeDir', 'both'))
@@ -8100,6 +8145,42 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             return wx.Colour(r, g, b)
         except Exception:
             return wx.Colour(26, 26, 26)
+
+    def _getTempoIconColour(self):
+        """Restituisce wx.Colour per le icone tempo (nota/metronomo)."""
+        hex_str = getattr(self.pref, 'tempoIconColourHex', '#000000')
+        try:
+            h = hex_str.strip().lstrip('#')
+            r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+            return wx.Colour(r, g, b)
+        except Exception:
+            return wx.Colour(0, 0, 0)
+
+    def _tintImageToColour(self, img, colour):
+        """Ritinge un glifo RGBA col colore dato preservando il canale alpha.
+
+        I PNG delle icone tempo sono glifi neri su sfondo trasparente
+        (RGB 0,0,0 con alpha 0). wx.Image.SetData() riscrive solo l'RGB ma
+        puo' scartare l'alpha: senza alpha i pixel di sfondo (neri!) diventano
+        opachi e l'icona appare come un quadrato pieno. Percio' salviamo l'alpha
+        prima di SetData e lo ripristiniamo subito dopo. Le immagini senza alpha
+        NON vengono tinte, per non trasformarle in blocchi pieni."""
+        try:
+            if not img.HasAlpha():
+                return img
+            alpha = bytes(img.GetAlphaBuffer())      # snapshot dell'alpha
+            r, g, b = colour.Red(), colour.Green(), colour.Blue()
+            n = img.GetWidth() * img.GetHeight()
+            rgb = bytearray(n * 3)
+            for i in range(0, n * 3, 3):
+                rgb[i] = r
+                rgb[i + 1] = g
+                rgb[i + 2] = b
+            img.SetData(bytes(rgb))
+            img.SetAlpha(alpha)                      # ripristina l'alpha
+        except Exception:
+            pass
+        return img
 
     def _applyFingerNumColor(self):
         """Applica il colore dei numeri dita al decorator."""
@@ -8513,6 +8594,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self.previewCanvas.SetTimeDisplay(getattr(self.pref, 'timeDisplay', True))
             self.previewCanvas.SetKeyDisplay(getattr(self.pref, 'keyDisplay', True))
             self.previewCanvas.SetTempoIconSize(getattr(self.pref, 'tempoIconSize', 24))
+            self.previewCanvas.SetTempoIconColour(self._getTempoIconColour())
             self.previewCanvas.SetGridDisplayMode(getattr(self.pref, 'gridDisplayMode', 'pipe'))
             self.previewCanvas.SetGridDefaultLabel(getattr(self.pref, 'gridDefaultLabel', None))
             self.previewCanvas.SetGridSizeDir(getattr(self.pref, 'gridSizeDir', 'both'))

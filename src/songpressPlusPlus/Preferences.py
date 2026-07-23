@@ -184,6 +184,7 @@ class Preferences(object):
         self._LoadPrintOptions()
         self._LoadMultiCursor()
         self._LoadTempoIconSize()
+        self._LoadTempoIconColour()
         self._LoadWindowGeometryPref()
         self._LoadPreviewOptions()
         self._LoadGridDisplayMode()
@@ -274,6 +275,12 @@ class Preferences(object):
         self.tempoIconSize = int(v) if v in ('16', '24', '32') else 24
         self.config.SetPath('/')
 
+    def _LoadTempoIconColour(self):
+        self.config.SetPath('/Format')
+        h = self.config.Read('TempoIconColour')
+        self.tempoIconColourHex = h if h else '#000000'
+        self.config.SetPath('/')
+
     def _LoadWindowGeometryPref(self):
         self.config.SetPath('/App')
         v = self.config.Read('saveWindowGeometry')
@@ -361,6 +368,7 @@ class Preferences(object):
         self._SavePrintOptions()
         self._SaveMultiCursor()
         self._SaveTempoIconSize()
+        self._SaveTempoIconColour()
         self._SaveWindowGeometryPref()
         self._SavePreviewOptions()
         self._SaveGridDisplayMode()
@@ -497,6 +505,11 @@ class Preferences(object):
     def _SaveTempoIconSize(self):
         self.config.SetPath('/Format')
         self.config.Write('tempoIconSize', str(getattr(self, 'tempoIconSize', 24)))
+        self.config.SetPath('/')
+
+    def _SaveTempoIconColour(self):
+        self.config.SetPath('/Format')
+        self.config.Write('TempoIconColour', getattr(self, 'tempoIconColourHex', '#000000'))
         self.config.SetPath('/')
 
     def _SaveWindowGeometryPref(self):

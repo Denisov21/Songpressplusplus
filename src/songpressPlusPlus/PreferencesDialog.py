@@ -11,6 +11,12 @@ import wx
 import wx.xrc
 import wx.adv
 
+# Patch Debian/GTK - visibilita' delle frecce "+"/"-" degli SpinCtrl.
+# Su wxGTK i pulsanti freccia sono piu' larghi che su Windows: una size fissa
+# calibrata su MSW li taglia. Su piattaforme non-MSW aggiungiamo un margine.
+# (Stesso valore di _spin_size() in SongpressFrame.py.)
+_SPIN_EXTRA_WIDTH = 0 if wx.Platform == '__WXMSW__' else 46
+
 class PreferencesDialog(wx.Dialog):
 
     def __init__(self, parent, pref=None):
@@ -379,7 +385,7 @@ class PreferencesDialog(wx.Dialog):
         self.labelTitleLine.Wrap(-1)
         bSizerTitleLine.Add(self.labelTitleLine, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         self._titleSpinPanel = wx.Panel(self.formatPanel, wx.ID_ANY)
-        self.titleLineWidthSpin = wx.SpinCtrl(self._titleSpinPanel, wx.ID_ANY, "4", wx.DefaultPosition, wx.Size(60, -1), wx.SP_ARROW_KEYS, 1, 5, 4)
+        self.titleLineWidthSpin = wx.SpinCtrl(self._titleSpinPanel, wx.ID_ANY, "4", wx.DefaultPosition, wx.Size(60 + _SPIN_EXTRA_WIDTH, -1), wx.SP_ARROW_KEYS, 1, 5, 4)
         titleSpinSizer = wx.BoxSizer(wx.HORIZONTAL)
         titleSpinSizer.Add(self.titleLineWidthSpin, 0, 0, 0)
         self._titleSpinPanel.SetSizer(titleSpinSizer)
@@ -391,7 +397,7 @@ class PreferencesDialog(wx.Dialog):
         self.labelVerseBox.Wrap(-1)
         bSizerVerseBox.Add(self.labelVerseBox, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         self._verseSpinPanel = wx.Panel(self.formatPanel, wx.ID_ANY)
-        self.verseBoxWidthSpin = wx.SpinCtrl(self._verseSpinPanel, wx.ID_ANY, "1", wx.DefaultPosition, wx.Size(60, -1), wx.SP_ARROW_KEYS, 1, 5, 1)
+        self.verseBoxWidthSpin = wx.SpinCtrl(self._verseSpinPanel, wx.ID_ANY, "1", wx.DefaultPosition, wx.Size(60 + _SPIN_EXTRA_WIDTH, -1), wx.SP_ARROW_KEYS, 1, 5, 1)
         verseSpinSizer = wx.BoxSizer(wx.HORIZONTAL)
         verseSpinSizer.Add(self.verseBoxWidthSpin, 0, 0, 0)
         self._verseSpinPanel.SetSizer(verseSpinSizer)
@@ -450,6 +456,19 @@ class PreferencesDialog(wx.Dialog):
         bSizerTempoIcon.Add(self.tempoIconSize24, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         bSizerTempoIcon.Add(self.tempoIconSize32, 0, wx.ALIGN_CENTER_VERTICAL)
         grpTempo.Add(bSizerTempoIcon, 0, wx.EXPAND | wx.ALL, 5)
+
+        # Colore icone tempo ({tempo_*}) — tinta applicata ai PNG nota/metronomo
+        bSizerTempoColour = wx.BoxSizer(wx.HORIZONTAL)
+        self.labelTempoIconColour = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Tempo icon colour"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelTempoIconColour.Wrap(-1)
+        bSizerTempoColour.Add(self.labelTempoIconColour, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.tempoIconColourHexCtrl = wx.TextCtrl(self.formatPanel, wx.ID_ANY, u"#000000", wx.DefaultPosition, wx.Size(80, -1), 0)
+        bSizerTempoColour.Add(self.tempoIconColourHexCtrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.tempoIconColourBtn = wx.Button(self.formatPanel, wx.ID_ANY, _(u"Pick\u2026"), wx.DefaultPosition, wx.Size(60, -1), 0)
+        bSizerTempoColour.Add(self.tempoIconColourBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.tempoIconColourSwatch = wx.Panel(self.formatPanel, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
+        bSizerTempoColour.Add(self.tempoIconColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
+        grpTempo.Add(bSizerTempoColour, 0, wx.EXPAND | wx.ALL, 5)
 
         bSizerFormat.Add(grpTempo, 0, wx.EXPAND | wx.ALL, 8)
 
@@ -579,7 +598,7 @@ class PreferencesDialog(wx.Dialog):
             min=6, max=144, initial=24,
             style=wx.SP_ARROW_KEYS,
         )
-        self.symbolSizeSpin.SetMinSize(wx.Size(60, -1))
+        self.symbolSizeSpin.SetMinSize(wx.Size(60 + _SPIN_EXTRA_WIDTH, -1))
         szSymbol.Add(self.symbolScaleCB, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
         szSymbol.Add(self.symbolSizeSpin, 0, wx.ALIGN_CENTER_VERTICAL)
         grpSymbol.Add(szSymbol, 0, wx.ALL, 5)
@@ -621,7 +640,7 @@ class PreferencesDialog(wx.Dialog):
         bSizerDurSize = wx.BoxSizer(wx.HORIZONTAL)
         lblDurSize = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Font size (% of chord font)"), wx.DefaultPosition, wx.DefaultSize, 0)
         bSizerDurSize.Add(lblDurSize, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.durationBeatsSizeSpin = wx.SpinCtrl(self.formatPanel, wx.ID_ANY, "60", wx.DefaultPosition, wx.Size(70, -1), wx.SP_ARROW_KEYS, 30, 150, 60)
+        self.durationBeatsSizeSpin = wx.SpinCtrl(self.formatPanel, wx.ID_ANY, "60", wx.DefaultPosition, wx.Size(70 + _SPIN_EXTRA_WIDTH, -1), wx.SP_ARROW_KEYS, 30, 150, 60)
         self.durationBeatsSizeSpin.SetToolTip(_(u"Size of the beat-count number as a percentage of the chord font size (default: 60%)"))
         bSizerDurSize.Add(self.durationBeatsSizeSpin, 0, wx.ALIGN_CENTER_VERTICAL)
         grpDuration.Add(bSizerDurSize, 0, wx.EXPAND | wx.ALL, 5)
@@ -1325,6 +1344,8 @@ class PreferencesDialog(wx.Dialog):
         self.klavierHexCtrl.Bind(wx.EVT_TEXT, self.OnKlavierHexChanged)
         self.fingerNumColourBtn.Bind(wx.EVT_BUTTON, self.OnFingerNumPickColour)
         self.fingerNumHexCtrl.Bind(wx.EVT_TEXT, self.OnFingerNumHexChanged)
+        self.tempoIconColourBtn.Bind(wx.EVT_BUTTON, self.OnTempoIconColourPickColour)
+        self.tempoIconColourHexCtrl.Bind(wx.EVT_TEXT, self.OnTempoIconColourHexChanged)
         self.durationBeatsColourBtn.Bind(wx.EVT_BUTTON, self.OnDurationBeatsPickColour)
         self.durationBeatsHexCtrl.Bind(wx.EVT_TEXT, self.OnDurationBeatsHexChanged)
         self.decoBarColourBtn.Bind(wx.EVT_BUTTON, self.OnDecoBarPickColour)

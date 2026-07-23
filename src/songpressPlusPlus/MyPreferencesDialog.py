@@ -138,6 +138,13 @@ class MyPreferencesDialog(PreferencesDialog):
             self.fingerNumHexCtrl.SetValue(fn_hex)
             self.fingerNumColourSwatch.SetBackgroundColour(self._hex_to_colour(fn_hex))
 
+        # Tempo icon colour
+        ti_hex = getattr(self.pref, 'tempoIconColourHex', '#000000')
+        if hasattr(self, 'tempoIconColourHexCtrl'):
+            self.tempoIconColourHexCtrl.SetValue(ti_hex)
+            self.tempoIconColourSwatch.SetBackgroundColour(self._hex_to_colour(ti_hex))
+            self.tempoIconColourSwatch.Refresh()
+
         # Editor background colour
         bg_hex = getattr(self.pref, 'editorBgHex', '#FFFFFF')
         if hasattr(self, 'editorBgHexCtrl'):
@@ -479,6 +486,28 @@ class MyPreferencesDialog(PreferencesDialog):
             self.fingerNumHexCtrl.SetValue(self._colour_to_hex(chosen))
             self.fingerNumColourSwatch.SetBackgroundColour(chosen)
             self.fingerNumColourSwatch.Refresh()
+        dlg.Destroy()
+
+    def OnTempoIconColourHexChanged(self, evt):
+        c = self._hex_to_colour(self.tempoIconColourHexCtrl.GetValue())
+        self.tempoIconColourSwatch.SetBackgroundColour(c)
+        self.tempoIconColourSwatch.Refresh()
+        evt.Skip()
+
+    def OnTempoIconColourPickColour(self, evt):
+        current = self._hex_to_colour(self.tempoIconColourHexCtrl.GetValue())
+        data = wx.ColourData()
+        data.SetColour(current)
+        data.SetChooseFull(True)
+        self._apply_custom_colours(data, 'customColoursTempoIcon')
+        dlg = wx.ColourDialog(self, data)
+        if dlg.ShowModal() == wx.ID_OK:
+            result_data = dlg.GetColourData()
+            chosen = result_data.GetColour()
+            self._read_custom_colours(result_data, 'customColoursTempoIcon')
+            self.tempoIconColourHexCtrl.SetValue(self._colour_to_hex(chosen))
+            self.tempoIconColourSwatch.SetBackgroundColour(chosen)
+            self.tempoIconColourSwatch.Refresh()
         dlg.Destroy()
 
     def OnDurationBeatsHexChanged(self, evt):
@@ -1746,6 +1775,8 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.decoSliderBarColourHex = self.decoBarHexCtrl.GetValue().strip()
         if hasattr(self, 'fingerNumHexCtrl'):
             self.pref.fingerNumColourHex = self.fingerNumHexCtrl.GetValue().strip()
+        if hasattr(self, 'tempoIconColourHexCtrl'):
+            self.pref.tempoIconColourHex = self.tempoIconColourHexCtrl.GetValue().strip()
         if hasattr(self, 'editorBgHexCtrl'):
             self.pref.editorBgHex = self.editorBgHexCtrl.GetValue().strip()
         if hasattr(self, 'selColourHexCtrl'):

@@ -649,13 +649,16 @@ class SongDecorator(object):
                     import array
                     _bg = getattr(self, "bgColour", None)
                     _bgr = (_bg.Red(), _bg.Green(), _bg.Blue()) if _bg else (255, 255, 255)
+                    _tc = getattr(self, 'tempoIconColour', None)
+                    _tint = (_tc.Red(), _tc.Green(), _tc.Blue()) if _tc else None
                     a = array.array('B', img.GetAlphaBuffer())
                     rs = array.array('B', img.GetDataBuffer())
                     rb = bytearray(new_w * new_h * 3)
                     for i in range(new_w * new_h):
                         av = a[i] / 255.0
                         for c in range(3):
-                            rb[i * 3 + c] = int(rs[i * 3 + c] * av + _bgr[c] * (1 - av))
+                            _src = _tint[c] if _tint else rs[i * 3 + c]
+                            rb[i * 3 + c] = int(_src * av + _bgr[c] * (1 - av))
                     bg_img = wx.Image(new_w, new_h)
                     bg_img.SetData(bytes(rb))
                     bmp = wx.Bitmap(bg_img)
@@ -682,13 +685,16 @@ class SongDecorator(object):
                     import array
                     _bg = getattr(self, 'bgColour', None)
                     _bgr = (_bg.Red(), _bg.Green(), _bg.Blue()) if _bg else (255, 255, 255)
+                    _tc = getattr(self, 'tempoIconColour', None)
+                    _tint = (_tc.Red(), _tc.Green(), _tc.Blue()) if _tc else None
                     a = array.array('B', img.GetAlphaBuffer())
                     rs = array.array('B', img.GetDataBuffer())
                     rb = bytearray(new_w * new_h * 3)
                     for i in range(new_w * new_h):
                         av = a[i] / 255.0
                         for c in range(3):
-                            rb[i * 3 + c] = int(rs[i * 3 + c] * av + _bgr[c] * (1 - av))
+                            _src = _tint[c] if _tint else rs[i * 3 + c]
+                            rb[i * 3 + c] = int(_src * av + _bgr[c] * (1 - av))
                     bg_img = wx.Image(new_w, new_h)
                     bg_img.SetData(bytes(rb))
                     bmp = wx.Bitmap(bg_img)
