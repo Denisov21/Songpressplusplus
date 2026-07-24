@@ -71,8 +71,16 @@ class Globals(object):
 
     def __init__(self):
         object.__init__(self)
-        current_file = os.path.abspath(__file__)
-        self.path = os.path.dirname(current_file)
+        if getattr(sys, 'frozen', False):
+            # Build congelata (cx_Freeze): le risorse (xrc/, img/, templates/,
+            # locale/) vengono copiate da include_files nella cartella
+            # dell'eseguibile, non dentro lib/songpressPlusPlus/. Usare la dir
+            # dell'exe come radice risorse; __file__ punterebbe invece dentro
+            # lib/ dove xrc/ ecc. non esistono → wxDir::Open fallisce.
+            self.path = os.path.dirname(os.path.abspath(sys.executable))
+        else:
+            current_file = os.path.abspath(__file__)
+            self.path = os.path.dirname(current_file)
         self.data_path = None
 
     def InitDataPath(self):

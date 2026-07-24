@@ -50,6 +50,12 @@ class SongPresentation:
             self._add_slide(self.prev, '')
         self.pres.save(self.out_filename)
 
+    def __enter__(self):
+        # Il blocco `with SongPresentation(...) as c` richiede __enter__:
+        # senza, Python solleva TypeError ("does not support the context
+        # manager protocol") prima ancora di eseguire il corpo.
+        return self
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is not None:
             # Exception in progress: save what we have but signal it to the caller

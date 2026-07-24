@@ -63,13 +63,19 @@ artifacts = [
 #   python -m cx_Freeze build_exe
 
 [[tool.cxfreeze.executables]]
-script = "src/songpressplusplus/main.py"
+# Non congelare main.py direttamente: usa import relativi di pacchetto e
+# come script __main__ fallirebbe ("attempted relative import with no known
+# parent package"). Il launcher importa il package e ne chiama main().
+script = "src/spp_frozen_main.py"
 target_name = "SongpressPlusPlus.exe"
 base = "gui"
 icon = "installer/songpressplusplus.ico"
 
 [tool.cxfreeze.build_exe]
 packages = [
+    # Case identico alla cartella reale src/songpressPlusPlus: gli import
+    # Python sono case-sensitive anche su Windows.
+    "songpressPlusPlus",
     "multiprocessing",
     "idna.idnadata",
     "ssl",
@@ -92,4 +98,10 @@ include_files = [
     ["src/songpressplusplus/templates", "templates"],
     ["src/songpressplusplus/xrc",       "xrc"],
     ["pyproject.toml",                  "pyproject.toml"],
+    # File markdown della guida rapida (Help): caricati a runtime da
+    # SongpressFrame via glb.path, quindi devono stare accanto all'exe.
+    ["src/songpressplusplus/guida.md",                      "guida.md"],
+    ["src/songpressplusplus/guida_en.md",                   "guida_en.md"],
+    ["src/songpressplusplus/guida_comandi_songpress.md",    "guida_comandi_songpress.md"],
+    ["src/songpressplusplus/guida_comandi_songpress_en.md", "guida_comandi_songpress_en.md"],
 ]
