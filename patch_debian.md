@@ -1294,13 +1294,14 @@ mano le poche occorrenze che il blocco segnala.
 ### Rete di sicurezza nel wrapper
 
 Se qualche chiamata sfugge alla patch (per esempio un `Append` spezzato su più
-righe), il wrapper installato scarta dalla console **solo** queste tre righe:
+righe), il wrapper installato scarta dalla console **solo** queste quattro righe:
 
 | messaggio | perché è innocuo |
 |---|---|
 | `gtk_image_menu_item_set_image` | `GtkImageMenuItem` è deprecato in GTK3 e `gtk-menu-images` è off di default |
 | `invalid cast from 'GtkMenuItem' to 'GtkImageMenuItem'` | stessa causa, altro messaggio |
 | `ScreenToClient cannot work when toplevel window is not shown` | log di livello Debug di wx, emesso chiedendo coordinate prima di `Show()` |
+| `gtk_combo_box_text_insert ... GTK_IS_COMBO_BOX_TEXT` | emesso solo alla chiusura: wxGTK ripopola/distrugge un `ComboBox` mentre il widget GTK sottostante è già in teardown, quindi non è più un combo valido |
 
 Non è un `2>/dev/null`: qualsiasi altro output — errori, eccezioni, traceback
 Python — passa intatto, e il codice di uscita dell'applicazione è preservato.

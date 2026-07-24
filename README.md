@@ -148,10 +148,15 @@ sudo apt-get install -f
 > **🌐 An Internet connection is required.** Two Python dependencies
 > (`python-pptx` and `pyshortcuts`) are not packaged in the Debian repositories
 > and are downloaded from PyPI during installation. The `postinst` warns you and
-> asks for confirmation:
+> asks for confirmation.
+>
+> **Installer language.** The installation messages follow the system locale:
+> **Italian** on an Italian system, **English** on any other locale (English is
+> the default, so any non-Italian system is covered). On a non-Italian system
+> the prompt reads:
 >
 > ```
-> Continuare e scaricare le dipendenze ora? Richiede connessione Internet, attiva! [S/n]
+> 🌐  Continue and download the dependencies now? [Y/n]
 > ```
 >
 > Answering `n` still installs the package, but you will have to finish the job
@@ -255,7 +260,7 @@ songpressplusplus
 > The installed wrapper automatically sets `GDK_BACKEND=x11` to ensure
 > compatibility with wxPython on Wayland systems. No manual configuration is needed.
 >
-> The wrapper also filters three known, harmless GTK/wx messages out of the
+> The wrapper also filters four known, harmless GTK/wx messages out of the
 > console (see "Linux technical notes"). The filter is targeted: errors,
 > exceptions and Python tracebacks are **always** shown. To disable it and see
 > the raw output:
@@ -270,6 +275,7 @@ songpressplusplus
 
 - Tested on **Debian 13 / Ubuntu 24.04** with Python 3.13 and wxPython 4.2.3 GTK3
 - GTK console messages (`gtk_image_menu_item_set_image`, `invalid cast from 'GtkMenuItem'`, `ScreenToClient cannot work...`) are harmless and do not indicate errors. The root cause is fixed by **Patch 11** (see `patch_debian.md`), which calls `SetBitmap()` before `Append()` as required by the wxWidgets documentation; the wrapper filters them anyway as a safety net for cases the patch does not reach. No other message is hidden
+- The `gtk_combo_box_text_insert ... GTK_IS_COMBO_BOX_TEXT` critical appears **only on exit**: wxGTK repopulates/destroys a `ComboBox` while the underlying GTK widget is already being torn down, so it is no longer a valid combo. It is harmless (the app is quitting) and is filtered by the wrapper as well. With `SONGPRESS_VERBOSE=1` you can still see it, useful for debugging
 - On Wayland systems, the program automatically uses the X11 backend via XWayland
 - On Wayland, **Copy as image** uses `wl-copy` (from the `wl-clipboard` package) to place the image on the clipboard, because wxGTK's own clipboard only advertises text formats on Wayland. The package is a `Recommends` of the `.deb`; if it is missing, the program shows a message explaining how to install it.
 

@@ -24,13 +24,38 @@
 
 set -euo pipefail
 
-# ── Marcatore di stato: "V" verde ─────────────────────────────────────────────
-# Se stdout è un terminale usa il colore ANSI, altrimenti solo il carattere.
+# ── Marcatori di stato ────────────────────────────────────────
+# Se stdout è un terminale usa i colori ANSI, altrimenti solo il carattere.
+#   OK   ✔ verde   passo completato
+#   WARN ⚠ giallo  problema NON bloccante (il build prosegue)
+#   ERR  ✘ rosso   errore: lo script si ferma
+# Esportati perché li rileggono anche gli heredoc Python.
 if [[ -t 1 ]]; then
     OK=$'\e[1;32m✔\e[0m'
+    WARN=$'\e[1;33m⚠\e[0m'
+    ERR=$'\e[1;31m✘\e[0m'
 else
     OK='✔'
+    WARN='⚠'
+    ERR='✘'
 fi
+export OK WARN ERR
+
+# ── Trappola di errore ────────────────────────────────────────
+# Con "set -e" lo script muore in silenzio alla prima riga fallita: si vedrebbe
+# solo l'ultimo ✔ e nessuna spiegazione. Il trap stampa riga e comando colpevoli
+# in rosso su stderr, poi propaga il codice di uscita originale.
+_on_err() {
+    local rc=$?
+    local line=$1
+    local cmd=$2
+    echo "" >&2
+    echo "$ERR ERRORE (exit $rc) alla riga $line di ${BASH_SOURCE[0]##*/}" >&2
+    echo "$ERR    comando: $cmd" >&2
+    echo "$ERR    pacchetto NON creato." >&2
+    exit "$rc"
+}
+trap '_on_err "$LINENO" "$BASH_COMMAND"' ERR
 
 # ── Configurazione ────────────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -57,6 +82,8 @@ fi
 
 # Legge versione e nome da pyproject.toml
 PKG_NAME=$(python3 - <<'PY'
+import os as _os
+_W = _os.environ.get("WARN", "!")   # marcatore avviso ereditato da build_deb.sh
 import tomllib
 with open("pyproject.toml", "rb") as f:
     d = tomllib.load(f)
@@ -64,6 +91,8 @@ print(d["project"]["name"])
 PY
 )
 PKG_VERSION=$(python3 - <<'PY'
+import os as _os
+_W = _os.environ.get("WARN", "!")   # marcatore avviso ereditato da build_deb.sh
 import tomllib
 with open("pyproject.toml", "rb") as f:
     d = tomllib.load(f)
@@ -125,6 +154,8 @@ PYTHON="${PYTHON:-python3}"
 # ── 1b. Patch SongpressFrame.py: SetForegroundColour nella finestra About ────
 echo "$OK Patch SetForegroundColour finestra About..."
 "$PYTHON" - <<'PATCH'
+import os as _os
+_W = _os.environ.get("WARN", "!")   # marcatore avviso ereditato da build_deb.sh
 import re, sys
 
 path = None
@@ -138,7 +169,7 @@ if candidates:
     path = candidates[0]
 
 if not path:
-    print("    SongpressFrame.py non trovato, skip patch.")
+    print(f"{_W} SongpressFrame.py non trovato, skip patch.")
     sys.exit(0)
 
 with open(path, "r") as f:
@@ -171,6 +202,8 @@ PATCH
 # ── 1e. Patch SongpressFrame.py: Statistiche brano tema scuro ────────────────
 echo "$OK Patch Statistiche brano (BG sistema, stelle+verdetto, testo tema scuro)..."
 "$PYTHON" - <<'PATCH_STATS'
+import os as _os
+_W = _os.environ.get("WARN", "!")   # marcatore avviso ereditato da build_deb.sh
 import re, subprocess, sys
 
 result = subprocess.run(
@@ -179,7 +212,7 @@ result = subprocess.run(
 )
 candidates = result.stdout.strip().splitlines()
 if not candidates:
-    print("    SongpressFrame.py non trovato, skip patch.")
+    print(f"{_W} SongpressFrame.py non trovato, skip patch.")
     sys.exit(0)
 
 path = candidates[0]
@@ -301,6 +334,8 @@ PATCH_STATS
 # ── 1c. Patch PreferencesDialog.py: disabilita pulsanti assoc su Linux ───────
 echo "$OK Patch pulsanti associazione file (Linux)..."
 "$PYTHON" - <<'PATCH2'
+import os as _os
+_W = _os.environ.get("WARN", "!")   # marcatore avviso ereditato da build_deb.sh
 import subprocess, sys
 
 result = subprocess.run(
@@ -309,7 +344,7 @@ result = subprocess.run(
 )
 candidates = result.stdout.strip().splitlines()
 if not candidates:
-    print("    PreferencesDialog.py non trovato, skip patch.")
+    print(f"{_W} PreferencesDialog.py non trovato, skip patch.")
     sys.exit(0)
 
 path = candidates[0]
@@ -343,6 +378,8 @@ PATCH2
 # ── 1d. Patch MyPreferencesDialog.py: IsOk() prima di Red()/Green()/Blue() ────
 echo "$OK Patch crash colore selettore (IsOk)..."
 "$PYTHON" - <<'PATCH3'
+import os as _os
+_W = _os.environ.get("WARN", "!")   # marcatore avviso ereditato da build_deb.sh
 import subprocess, sys
 
 result = subprocess.run(
@@ -351,7 +388,7 @@ result = subprocess.run(
 )
 candidates = result.stdout.strip().splitlines()
 if not candidates:
-    print("    MyPreferencesDialog.py non trovato, skip patch.")
+    print(f"{_W} MyPreferencesDialog.py non trovato, skip patch.")
     sys.exit(0)
 
 path = candidates[0]
@@ -372,12 +409,14 @@ if old in content:
         f.write(content)
     print(f"    Patch applicata: 1/1 fix in {path}")
 else:
-    print(f"    Patch già presente o testo non trovato in {path}")
+    print(f"{_W} Patch già presente o testo non trovato in {path}")
 PATCH3
 
 # ── 1f. Patch crash _mgr al cambio lingua / chiusura ─────────────────────────
 echo "$OK Patch crash _mgr (cambio lingua / teardown)..."
 "$PYTHON" - <<'PATCH1F'
+import os as _os
+_W = _os.environ.get("WARN", "!")   # marcatore avviso ereditato da build_deb.sh
 import subprocess, sys
 
 def find(name):
@@ -389,7 +428,7 @@ def find(name):
 fr = find("SongpressFrame.py")
 tb = find("SongpressToolbars.py")
 if not fr or not tb:
-    print("    File non trovati, skip patch 1f.")
+    print(f"{_W} File non trovati, skip patch 1f.")
     sys.exit(0)
 
 with open(fr) as f: frc = f.read()
@@ -447,13 +486,15 @@ PATCH1F
 # ── 1g. Patch warning "Cannot set locale" (i18n.py) ──────────────────────────
 echo "$OK Patch warning locale mancante (i18n)..."
 "$PYTHON" - <<'PATCH1G'
+import os as _os
+_W = _os.environ.get("WARN", "!")   # marcatore avviso ereditato da build_deb.sh
 import subprocess, sys
 
 r = subprocess.run(["find", "src/songpressplusplus", "-name", "i18n.py"],
                    capture_output=True, text=True)
 c = r.stdout.strip().splitlines()
 if not c:
-    print("    i18n.py non trovato, skip patch 1g.")
+    print(f"{_W} i18n.py non trovato, skip patch 1g.")
     sys.exit(0)
 path = c[0]
 
@@ -494,7 +535,7 @@ if old in content:
         f.write(content)
     print(f"    Patch 1g: 1/1 fix applicato in {path}")
 else:
-    print(f"    Patch 1g già presente o testo non trovato in {path}")
+    print(f"{_W} Patch 1g già presente o testo non trovato in {path}")
 PATCH1G
 
 # ── 1h. Patch Gtk-CRITICAL sui menu: SetBitmap prima di Append ───────────────
@@ -516,13 +557,15 @@ PATCH1G
 # in prima posizione, quindi gli argomenti si trasferiscono invariati.
 echo "$OK Patch Gtk-CRITICAL menu (SetBitmap prima di Append)..."
 "$PYTHON" - <<'PATCH1H'
+import os as _os
+_W = _os.environ.get("WARN", "!")   # marcatore avviso ereditato da build_deb.sh
 import re, subprocess, sys
 
 r = subprocess.run(["find", "src/songpressplusplus", "-name", "*.py"],
                    capture_output=True, text=True)
 files = [f for f in r.stdout.strip().splitlines() if f]
 if not files:
-    print("    Nessun sorgente trovato, skip patch 1h.")
+    print(f"{_W} Nessun sorgente trovato, skip patch 1h.")
     sys.exit(0)
 
 # Cattura la coppia di righe consecutive:
@@ -568,10 +611,10 @@ for path in files:
         touched.append(f"{path} ({n})")
 
 if notutf8:
-    print(f"    Nota: {len(notutf8)} file non sono UTF-8 validi "
+    print(f"{_W} Nota: {len(notutf8)} file non sono UTF-8 validi "
           f"(letti e riscritti byte-per-byte):")
     for p in notutf8:
-        print(f"      - {p}")
+        print(f"{_W}   - {p}")
 
 if total:
     print(f"    Patch 1h: {total} riordini applicati")
@@ -582,7 +625,7 @@ else:
     # precedente, o le chiamate non usano la forma su due righe consecutive
     # (es. Append spezzato su più righe). In quel caso i Gtk-CRITICAL restano,
     # ma il wrapper li filtra e l'app funziona ugualmente.
-    print("    Patch 1h: nessuna occorrenza (già applicata o forma diversa)")
+    print(f"{_W} Patch 1h: nessuna occorrenza (già applicata o forma diversa)")
 PATCH1H
 
 # ── 2. Build della wheel (DOPO le patch) ─────────────────────────────────────
@@ -651,7 +694,7 @@ fi
 
 # Controllo finale: nessun file deve più trovarsi sotto usr/local.
 if [[ -d "$INSTALL_PREFIX/local" ]]; then
-    echo "    [ATTENZIONE] usr/local ancora presente: lintian segnalerà un errore."
+    echo "$WARN usr/local ancora presente: lintian segnalerà un errore."
 fi
 
 # ── 3a-bis. Individuazione anticipata dell'eseguibile ────────────────────────
@@ -666,7 +709,7 @@ if [[ -n "$REAL_BIN" ]]; then
 else
     BIN_DIR=""
     INSTALLED_BIN_DIR="/usr/bin"
-    echo "    [ATTENZIONE] eseguibile non trovato: il .desktop userà /usr/bin."
+    echo "$WARN eseguibile non trovato: il .desktop userà /usr/bin."
 fi
 echo "    Eseguibile installato in: $INSTALLED_BIN_DIR"
 
@@ -689,7 +732,7 @@ PKG_DIR=$(find "$INSTALL_PREFIX" -type f -name "Globals.py" -path "*dist-package
 TEMPLATE_SUBDIRS=(fonts local_dir slides songs themes)
 
 if [[ -z "$PKG_DIR" ]]; then
-    echo "  ⚠ Cartella del pacchetto non individuata: salto la verifica dei template."
+    echo "$WARN Cartella del pacchetto non individuata: salto la verifica dei template."
 else
     MISSING=0
 
@@ -698,7 +741,7 @@ else
         if [[ -d "$PKG_DIR/templates/$SUB" ]]; then
             echo "  ✓ templates/$SUB"
         else
-            echo "  ⚠ templates/$SUB MANCANTE nella wheel: la creo."
+            echo "$WARN templates/$SUB MANCANTE nella wheel: la creo."
             MISSING=1
             mkdir -p "$PKG_DIR/templates/$SUB"
             # git non versiona le cartelle vuote e dpkg-deb non le preserva:
@@ -717,7 +760,7 @@ KEEP
     for SUB in "${TEMPLATE_SUBDIRS[@]}"; do
         [[ "$SUB" == "local_dir" ]] && continue   # niente ricorsione
         if [[ ! -d "$LOCAL_DIR/templates/$SUB" ]]; then
-            echo "  ⚠ templates/local_dir/templates/$SUB MANCANTE: la creo."
+            echo "$WARN templates/local_dir/templates/$SUB MANCANTE: la creo."
             MISSING=1
             mkdir -p "$LOCAL_DIR/templates/$SUB"
             cp "$PKG_DIR/templates/$SUB/.keep" \
@@ -785,7 +828,7 @@ if [[ -f "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}.png" ]]; then
     done
     echo "    Icone hicolor installate (256/128/64/48)"
 else
-    echo "    [ATTENZIONE] Nessuna icona trovata!"
+    echo "$WARN Nessuna icona trovata!"
     echo "                 Metti un PNG in: installer/songpressplusplus.png"
     echo "                 (oppure installer/songpressplusplus.ico + ImageMagick)."
     echo "                 Senza icona Discover mostrerà il segnaposto '...'."
@@ -911,6 +954,30 @@ cat >> "$PKG_ROOT/DEBIAN/postinst" <<'POSTINST_BODY'
 # FIX 4: dpkg invoca il postinst anche con abort-upgrade, abort-remove e
 # abort-deconfigure. Senza questa guardia, in tutti quei casi partivano
 # comunque la domanda interattiva e il download via pip.
+# Marcatori: colorati solo se il postinst gira su un terminale.
+if [ -t 1 ]; then
+    SPP_WARN=$(printf '\033[1;33m⚠\033[0m')
+    SPP_ERR=$(printf '\033[1;31m✘\033[0m')
+else
+    SPP_WARN='⚠'
+    SPP_ERR='✘'
+fi
+
+# ── Lingua dei messaggi ───────────────────────────────────────────────────────
+# Inglese come lingua base; italiano SOLO se il locale di sistema è italiano.
+# Durante "dpkg -i" via sudo, LANG/LC_* sono di norma preservati (env_keep di
+# sudo). Da Discover / apt non interattivo spesso valgono C o POSIX: in quel
+# caso si ricade sull'inglese, che è esattamente il comportamento voluto.
+case "${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}" in
+    it | it_* | it.* | it_*.*) SPP_LANG=it ;;
+    *)                          SPP_LANG=en ;;
+esac
+
+# sppmsg ENGLISH_STRING ITALIAN_STRING → stampa la variante corretta.
+sppmsg() {
+    if [ "$SPP_LANG" = it ]; then printf '%s\n' "$2"; else printf '%s\n' "$1"; fi
+}
+
 case "$1" in
     configure)
         ;;
@@ -949,16 +1016,32 @@ if [ -n "$PY" ]; then
         {
             echo ""
             echo "=================================================================="
-            echo "  Songpress++ — È RICHIESTA UNA CONNESSIONE A INTERNET 🌐"
-            echo ""
-            echo "  Alcune dipendenze Python non esistono nei repository Debian"
-            echo "  (python-pptx, pyshortcuts) e verranno scaricate ORA via pip."
-            echo ""
-            echo "  Se rispondi No il pacchetto viene installato lo stesso, ma"
-            echo "  dovrai installare le dipendenze a mano in un secondo momento"
-            echo "  e l'applicazione potrebbe non funzionare correttamente."
+            if [ "$SPP_LANG" = it ]; then
+                echo " ⚠️ Songpress++ — È RICHIESTA UNA CONNESSIONE A INTERNET 🌐"
+                echo ""
+                echo "  Alcune dipendenze Python non esistono nei repository Debian"
+                echo "  (python-pptx, pyshortcuts) e verranno scaricate ORA via pip."
+                echo ""
+                echo "  Se rispondi No il pacchetto viene installato lo stesso, ma"
+                echo "  dovrai installare le dipendenze a mano in un secondo momento"
+                echo "  e l'applicazione potrebbe non funzionare correttamente."
+            else
+                echo " ⚠️ Songpress++ — AN INTERNET CONNECTION IS REQUIRED 🌐"
+                echo ""
+                echo "  Some Python dependencies are not available in the Debian"
+                echo "  repositories (python-pptx, pyshortcuts) and will be"
+                echo "  downloaded NOW via pip."
+                echo ""
+                echo "  If you answer No the package is still installed, but you"
+                echo "  will have to install the dependencies manually later and"
+                echo "  the application may not work correctly."
+            fi
             echo "=================================================================="
-            printf "🌐  Continuare e scaricare le dipendenze ora? [S/n] "
+            if [ "$SPP_LANG" = it ]; then
+                printf "🌐  Continuare e scaricare le dipendenze ora? [S/n] "
+            else
+                printf "🌐  Continue and download the dependencies now? [Y/n] "
+            fi
         } > /dev/tty
         read SP_ANSWER < /dev/tty || SP_ANSWER="s"
         echo "" > /dev/tty
@@ -967,15 +1050,21 @@ if [ -n "$PY" ]; then
     case "$SP_ANSWER" in
         [nN]*)
             SP_SKIP=1
-            echo "Songpress++: download delle dipendenze saltato su richiesta dell'utente."
-            echo "Songpress++: per installarle più tardi esegui:"
+            sppmsg \
+"$SPP_WARN Songpress++: dependency download skipped at the user's request." \
+"$SPP_WARN Songpress++: download delle dipendenze saltato su richiesta dell'utente."
+            sppmsg \
+"Songpress++: to install them later, run:" \
+"Songpress++: per installarle più tardi esegui:"
             echo "    sudo pip3 install --break-system-packages python-pptx pyshortcuts"
             ;;
     esac
 fi
 
 if [ -n "$PY" ] && [ "$SP_SKIP" -eq 0 ]; then
-    echo "Songpress++: controllo dipendenze PyPI (richiede una connessione a Internet)..."
+    sppmsg \
+"Songpress++: checking PyPI dependencies (requires an Internet connection)..." \
+"Songpress++: controllo dipendenze PyPI (richiede una connessione a Internet)..."
     # Debian 12+/13 marca l'ambiente come "externally managed" (PEP 668):
     # serve --break-system-packages per installare a livello di sistema.
     BSP=""
@@ -985,11 +1074,17 @@ if [ -n "$PY" ] && [ "$SP_SKIP" -eq 0 ]; then
     echo "$PIP_DEPS" | while IFS=: read PIP_NAME MOD_NAME; do
         [ -z "$PIP_NAME" ] && continue
         if "$PY" -c "import $MOD_NAME" >/dev/null 2>&1; then
-            echo "Songpress++: dipendenza '$PIP_NAME' già presente."
+            sppmsg \
+"Songpress++: dependency '$PIP_NAME' already present." \
+"Songpress++: dipendenza '$PIP_NAME' già presente."
         else
-            echo "Songpress++: installo '$PIP_NAME' via pip..."
+            sppmsg \
+"Songpress++: installing '$PIP_NAME' via pip..." \
+"Songpress++: installo '$PIP_NAME' via pip..."
             "$PY" -m pip install $BSP --root-user-action=ignore --no-warn-script-location "$PIP_NAME" \
-                || echo "Songpress++: [ATTENZIONE] non sono riuscito a installare '$PIP_NAME'. Fallo a mano con:  sudo pip3 install $BSP $PIP_NAME"
+                || sppmsg \
+"$SPP_ERR Songpress++: could not install '$PIP_NAME'. Do it manually with:  sudo pip3 install $BSP $PIP_NAME" \
+"$SPP_ERR Songpress++: non sono riuscito a installare '$PIP_NAME'. Fallo a mano con:  sudo pip3 install $BSP $PIP_NAME"
         fi
     done
 fi
@@ -1153,9 +1248,14 @@ fi
 #  2) invalid cast GtkMenuItem→GtkImageMenuItem → stessa causa, altro messaggio.
 #  3) ScreenToClient ... toplevel window is not shown → log di livello Debug
 #     di wx, emesso quando si chiedono coordinate prima di Show().
+#  4) gtk_combo_box_text_insert ... GTK_IS_COMBO_BOX_TEXT → emesso SOLO alla
+#     chiusura dell'app: wxGTK ripopola/distrugge un ComboBox mentre il widget
+#     GTK sottostante è già in fase di teardown, quindi non è più un combo
+#     valido. È innocuo (l'app sta uscendo) e appare una sola volta all'uscita.
 SPP_NOISE='gtk_image_menu_item_set_image'
 SPP_NOISE="\$SPP_NOISE|invalid cast from .GtkMenuItem. to .GtkImageMenuItem."
 SPP_NOISE="\$SPP_NOISE|ScreenToClient cannot work when toplevel window is not shown"
+SPP_NOISE="\$SPP_NOISE|gtk_combo_box_text_insert"
 
 exec 2> >(grep --line-buffered -v -E "\$SPP_NOISE" >&2)
 exec ${INSTALLED_BIN_DIR}/SongpressPlusPlus_bin "\$@"
@@ -1169,7 +1269,7 @@ WRAPPER
     ln -sf "${INSTALLED_BIN_DIR}/SongpressPlusPlus" "$BIN_DIR/songpressplusplus" || true
     echo "    Symlink creato: $BIN_DIR/songpressplusplus"
 else
-    echo "    [ATTENZIONE] Binario non trovato. Struttura bin:"
+    echo "$WARN Binario non trovato. Struttura bin:"
     find "$PKG_ROOT" -name "bin" -type d -exec ls -la {} \; || true
 fi
 
@@ -1180,7 +1280,7 @@ echo "$OK Costruzione del pacchetto .deb..."
 if command -v fakeroot &>/dev/null; then
     fakeroot dpkg-deb --build "$PKG_ROOT" "$DEB_FILE"
 else
-    echo "    [ATTENZIONE] fakeroot non trovato."
+    echo "$WARN fakeroot non trovato."
     dpkg-deb --build "$PKG_ROOT" "$DEB_FILE"
 fi
 

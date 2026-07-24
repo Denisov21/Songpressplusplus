@@ -148,10 +148,15 @@ sudo apt-get install -f
 > **🌐 Serve una connessione a Internet.** Due dipendenze Python
 > (`python-pptx` e `pyshortcuts`) non esistono nei repository Debian e vengono
 > scaricate da PyPI durante l'installazione. Il `postinst` te lo segnala e
-> chiede conferma:
+> chiede conferma.
+>
+> **Lingua dell'installazione.** I messaggi seguono il locale di sistema:
+> **italiano** su un sistema in italiano, **inglese** su qualsiasi altro locale
+> (l'inglese è la lingua predefinita, quindi copre ogni sistema non italiano).
+> Su un sistema italiano la domanda è:
 >
 > ```
-> Continuare e scaricare le dipendenze ora? Richiede connessione Internet, attiva! [S/n]
+> 🌐  Continuare e scaricare le dipendenze ora? [S/n]
 > ```
 >
 > Rispondendo `n` il pacchetto viene installato lo stesso, ma dovrai poi
@@ -258,7 +263,7 @@ songpressplusplus
 > la compatibilità con wxPython su sistemi Wayland. Non è necessario impostare
 > la variabile manualmente.
 >
-> Il wrapper filtra inoltre dalla console tre messaggi noti e innocui di
+> Il wrapper filtra inoltre dalla console quattro messaggi noti e innocui di
 > GTK/wx (vedi "Note tecniche Linux"). Il filtro è mirato: errori, eccezioni e
 > traceback Python restano **sempre** visibili. Per disattivarlo e vedere
 > l'output grezzo:
@@ -273,6 +278,7 @@ songpressplusplus
 
 - Il pacchetto è testato su **Debian 13 / Ubuntu 24.04** con Python 3.13 e wxPython 4.2.3 GTK3
 - I messaggi GTK alla console (`gtk_image_menu_item_set_image`, `invalid cast from 'GtkMenuItem'`, `ScreenToClient cannot work...`) sono innocui e non indicano errori. La causa è corretta alla radice dalla **Patch 11** (vedi `patch_debian.md`), che chiama `SetBitmap()` prima di `Append()` come richiesto dalla documentazione di wxWidgets; il wrapper li filtra comunque come rete di sicurezza per i casi che la patch non copre. Nessun altro messaggio viene nascosto
+- Il critical `gtk_combo_box_text_insert ... GTK_IS_COMBO_BOX_TEXT` compare **solo alla chiusura**: wxGTK ripopola/distrugge un `ComboBox` mentre il widget GTK sottostante è già in fase di teardown, quindi non è più un combo valido. È innocuo (l'app sta uscendo) ed è filtrato anch'esso dal wrapper. Con `SONGPRESS_VERBOSE=1` lo rivedi comunque, utile in debug
 - Su sistemi Wayland il programma usa automaticamente il backend X11 tramite XWayland
 - Su Wayland, la **Copia come immagine** usa `wl-copy` (dal pacchetto `wl-clipboard`) per mettere l'immagine negli appunti, perché la clipboard di wxGTK su Wayland registra solo formati testo. Il pacchetto è un `Recommends` del `.deb`; se manca, il programma mostra un messaggio che spiega come installarlo.
 
