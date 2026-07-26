@@ -500,7 +500,7 @@
           <help>Modifica il carattere e il colore del testo dalla posizione del cursore o nella selezione</help>
         </object>
         <object class="wxMenuItem" name="chordFont">
-          <label>Carattere: a_ccordo...</label>
+          <label>Carattere: A_ccordo...</label>
           <accel></accel>
           <bitmap>../img/font3.png</bitmap>
           <help>Modifica il carattere e il colore degli accordi dalla posizione del cursore o nella selezione</help>

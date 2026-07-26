@@ -51,6 +51,8 @@ SPPLUSPLUS_DIRECTIVES = {
     'sop', 'eop',                             # S++ – alias non ufficiali
     # Formattazione proprietaria
     'linespacing', 'chordtopspacing',         # S++ – non in spec
+    'chordbold', 'chorditalic', 'chordunderline',   # S++ – stile accordo
+    'textbold', 'textitalic', 'textunderline',      # S++ – stile testo
     # Diagrammi/tastiera proprietari
     'taste', 'fingering',                     # S++ – estensioni S++
 }
@@ -95,6 +97,8 @@ DIRECTIVES = [
     'transpose',
     # ── Formattazione Songpress++ 🔧 ──────────────────────────────────────────
     'linespacing', 'chordtopspacing',
+    'chordbold', 'chorditalic', 'chordunderline',
+    'textbold', 'textitalic', 'textunderline',
     # ── Alias ufficiali ChordPro ✅ ───────────────────────────────────────────
     't', 'st', 'c', 'ci', 'cb', 'np',
     'soc', 'eoc', 'sov', 'eov', 'sob', 'eob', 'sot', 'eot',

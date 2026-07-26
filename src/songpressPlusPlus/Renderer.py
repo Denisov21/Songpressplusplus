@@ -342,13 +342,21 @@ class Renderer(object):
         if type == SongText.comment:
             text = "(" + text + ")"
             format = self.format.comment
+            font = format.wxFont
         elif type == SongText.chord:
             format = self.format.chord
             if self.sf.showChords == 1:
                 self.currentBlock.chords.append(translateChord(text, self.notation, self.notation))
+            font = self._styled_font(format.wxFont, self._chord_bold,
+                                     self._chord_italic, self._chord_underline)
         else:
             format = self.format
-        t = SongText(text, format.wxFont, type, format.color)
+            if type == SongText.text:
+                font = self._styled_font(format.wxFont, self._text_bold,
+                                         self._text_italic, self._text_underline)
+            else:
+                font = format.wxFont
+        t = SongText(text, font, type, format.color)
         if type == SongText.chord and self._pending_duration:
             # Associa la durata in battiti all'accordo corrispondente.
             # Prima cerca per nome accordo (case-insensitive), poi usa
@@ -418,6 +426,35 @@ class Renderer(object):
     def GetState(self):
         return None if self.currentBlock is None else self.currentBlock.type
 
+    @staticmethod
+    def _style_flag(a):
+        """Interpreta il valore di una direttiva di stile booleana.
+
+        {chordbold}  -> a is None      -> False (reset al default)
+        {chordbold:1}-> a == '1'       -> True
+        {chordbold:0}-> a == '0'       -> False
+        """
+        if a is None:
+            return False
+        return a.strip().lower() not in ('', '0', 'false', 'no', 'off')
+
+    def _styled_font(self, font, bold, italic, underline):
+        """Restituisce una copia di `font` con lo stile richiesto.
+
+        Se nessun flag è attivo restituisce il font originale (nessuna copia),
+        così da non toccare l'oggetto potenzialmente condiviso dal formato.
+        """
+        if not (bold or italic or underline):
+            return font
+        f = wx.Font(font)   # copia
+        if bold:
+            f.SetWeight(wx.FONTWEIGHT_BOLD)
+        if italic:
+            f.SetStyle(wx.FONTSTYLE_ITALIC)
+        if underline:
+            f.SetUnderlined(True)
+        return f
+
     def Render(self, text, dc, fromLine = -1, toLine = -1):
         self.text = text
         self.dc = dc
@@ -445,6 +482,11 @@ class Renderer(object):
         # {linespacing} successivo (sulla stessa riga o prima degli accordi) alteri
         # retroattivamente il formato già in uso per la riga con duration_beats.
         self._beats_time_format_snapshot = None
+        # Stato stile inline (grassetto/corsivo/sottolineato) per accordi e testo.
+        # Attivato da {chordbold:1}/{textbold:1}... e ripristinato dalla forma
+        # vuota {chordbold}/{textbold}. Applicato al wx.Font in AddText().
+        self._chord_bold = self._chord_italic = self._chord_underline = False
+        self._text_bold  = self._text_italic  = self._text_underline  = False
 
         self.song.columns = self.columns
         self.song.columnHeight = self.columnHeight
@@ -879,6 +921,18 @@ class Renderer(object):
                             self.sf.chorus.chord.color = color
                         except BreakException:
                             pass
+                    elif cmd == 'chordbold':
+                        self._chord_bold = self._style_flag(self.GetAttribute())
+                    elif cmd == 'chorditalic':
+                        self._chord_italic = self._style_flag(self.GetAttribute())
+                    elif cmd == 'chordunderline':
+                        self._chord_underline = self._style_flag(self.GetAttribute())
+                    elif cmd == 'textbold':
+                        self._text_bold = self._style_flag(self.GetAttribute())
+                    elif cmd == 'textitalic':
+                        self._text_italic = self._style_flag(self.GetAttribute())
+                    elif cmd == 'textunderline':
+                        self._text_underline = self._style_flag(self.GetAttribute())
                     elif cmd == 'chordtopspacing':
                         try:
                             a = self.GetAttribute()

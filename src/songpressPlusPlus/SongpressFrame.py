@@ -7914,6 +7914,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
     def OnTextFont(self, evt):
         data = wx.FontData()
+        data.EnableEffects(True)
         data.SetInitialFont(self.pref.format.wxFont)
         data.SetColour(self.pref.format.color)
 
@@ -7925,12 +7926,24 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             face = font.GetFaceName()
             size = font.GetPointSize()
             color = retData.GetColour().GetAsString(wx.C2S_HTML_SYNTAX)
-            s = f"{{textfont:{face}}}{{textsize:{size}}}{{textcolour:{color}}}|"
-            s += "{textfont}{textsize}{textcolour}"
-            self.InsertWithCaret(s)
+            bold      = font.GetWeight() >= wx.FONTWEIGHT_BOLD
+            italic    = font.GetStyle()  == wx.FONTSTYLE_ITALIC
+            underline = font.GetUnderlined()
+
+            opening = f"{{textfont:{face}}}{{textsize:{size}}}{{textcolour:{color}}}"
+            closing = "{textfont}{textsize}{textcolour}"
+            if bold:
+                opening += "{textbold:1}";      closing = "{textbold}" + closing
+            if italic:
+                opening += "{textitalic:1}";    closing = "{textitalic}" + closing
+            if underline:
+                opening += "{textunderline:1}"; closing = "{textunderline}" + closing
+
+            self.InsertWithCaret(opening + "|" + closing)
 
     def OnChordFont(self, evt):
         data = wx.FontData()
+        data.EnableEffects(True)
         data.SetInitialFont(self.pref.format.wxFont)
         data.SetColour(self.pref.format.color)
 
@@ -7942,9 +7955,26 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             face = font.GetFaceName()
             size = font.GetPointSize()
             color = retData.GetColour().GetAsString(wx.C2S_HTML_SYNTAX)
-            s = f"{{chordfont:{face}}}{{chordsize:{size}}}{{chordcolour:{color}}}|"
-            s += "{chordfont}{chordsize}{chordcolour}"
-            self.InsertWithCaret(s)
+            bold      = font.GetWeight() >= wx.FONTWEIGHT_BOLD
+            italic    = font.GetStyle()  == wx.FONTSTYLE_ITALIC
+            underline = font.GetUnderlined()
+
+            opening = f"{{chordfont:{face}}}{{chordsize:{size}}}{{chordcolour:{color}}}"
+            closing = "{chordfont}{chordsize}{chordcolour}"
+            if bold:
+                opening += "{chordbold:1}";      closing = "{chordbold}" + closing
+            if italic:
+                opening += "{chorditalic:1}";    closing = "{chorditalic}" + closing
+            if underline:
+                opening += "{chordunderline:1}"; closing = "{chordunderline}" + closing
+
+            # Le direttive chord* stilano solo gli accordi tra [..]. Racchiude
+            # quindi il cursore/selezione in [ ] così ciò che si digita è un
+            # accordo vero e lo stile è visibile subito nell'anteprima. Non
+            # aggiunge le parentesi se la selezione ne contiene già.
+            sel = self.text.GetSelectedText() or ""
+            caret = "|" if "[" in sel else "[|]"
+            self.InsertWithCaret(opening + caret + closing)
 
     def OnTranspose(self, evt):
         sel = self.text.GetSelectedText()

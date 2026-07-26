@@ -83,9 +83,11 @@ _KNOWN_COMMANDS = {
     "column_break", "colb",
     # Text formatting
     "textsize", "textfont", "textcolour", "textcolor",
+    "textbold", "textitalic", "textunderline",
     "linespacing", "chordtopspacing",
     # Chord formatting
     "chordsize", "chordfont", "chordcolour", "chordcolor",
+    "chordbold", "chorditalic", "chordunderline",
     # Musical indications
     "tempo", "tempo_m", "tempo_s", "tempo_sp", "tempo_c", "tempo_cp",
     "tempo_label",
@@ -705,6 +707,8 @@ def _validate_command(content: str, line_num: int, col: int,
         # Formattazione testo/accordo: senza valore = reset al default
         "textsize", "textfont", "textcolour", "textcolor",
         "chordsize", "chordfont", "chordcolour", "chordcolor",
+        "textbold", "textitalic", "textunderline",
+        "chordbold", "chorditalic", "chordunderline",
         "linespacing", "chordtopspacing",
         # Sezioni con etichetta opzionale
         "start_of_verse", "end_of_verse", "sov", "eov",
@@ -722,6 +726,8 @@ def _validate_command(content: str, line_num: int, col: int,
 
     _REQUIRES_NUMERIC_VALUE = {
         "textsize", "chordsize",
+        "textbold", "textitalic", "textunderline",
+        "chordbold", "chorditalic", "chordunderline",
         "linespacing", "chordtopspacing",
         "capo",
         "tempo", "tempo_m", "tempo_s", "tempo_sp", "tempo_c", "tempo_cp",

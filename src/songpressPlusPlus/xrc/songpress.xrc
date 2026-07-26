@@ -500,7 +500,7 @@
           <help>Modify text font and color from cursor position or in selection</help>
         </object>
         <object class="wxMenuItem" name="chordFont">
-          <label>C_hord font...</label>
+          <label>C_hord Font...</label>
           <accel></accel>
           <bitmap>../img/font3.png</bitmap>
           <help>Modify chord font and color from cursor position or in selection</help>
