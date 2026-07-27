@@ -1,4 +1,4 @@
-# -*- coding: iso-8859-1 -*-
+# -*- coding: utf-8 -*-
 ###############################################################
 # Name:             Transpose.py
 # Purpose:     Transposing services
@@ -12,8 +12,22 @@
 
 import re
 import math
+import unicodedata
 
 import wx
+
+
+def _nfc(s):
+    """Normalizza a Unicode NFC.
+
+    Serve a rendere il confronto degli accordi indipendente dalla codifica
+    dell'accento: 'Ré' con 'é' precomposto (U+00E9, NFC) e 'Ré' con
+    'e' + accento combinante (U+0301, NFD) sono visivamente identici ma
+    diversi come stringa. Senza questa normalizzazione le radici accentate
+    (Ré francese; Dó/Ré/Fá/Lá portoghesi) non venivano riconosciute quando
+    provenienti da file salvati in NFD (frequente su macOS / cross-platform).
+    """
+    return unicodedata.normalize('NFC', s) if s else s
 
 
 _ = wx.GetTranslation
@@ -24,10 +38,12 @@ class Notation(object):
         object.__init__(self)
         self.id = id
         self.descv = desc
-        self.chords = chords
+        # Normalizza le radici a NFC, cosi' il dizionario di lookup e' coerente
+        # a prescindere da come e' salvato il file sorgente.
+        self.chords = [_nfc(k) for k in chords]
         self.chordDict = {}
         i = 0
-        for k in chords:
+        for k in self.chords:
             self.chordDict[k.upper()] = i
             i += 1
         self.repl = [(re.compile(x[0]), x[1]) for x in repl]
@@ -45,7 +61,7 @@ class Notation(object):
         return self.chords[pos]
 
     def Chord2Ord(self, chord):
-        return self.chordDict[chord.upper()]
+        return self.chordDict[_nfc(chord).upper()]
 
     def __AlterationStandard(self, a, rs):
         for r in rs:
@@ -114,8 +130,8 @@ itUcNotation = Notation(
 
 frNotation = Notation(
     "frNotation",
-    _(u"French (Do R� Mi... Si)"),
-    ['Do', u'R�', 'Mi', 'Fa', 'Sol', 'La', 'Si'],
+    _(u"French (Do Ré Mi... Si)"),
+    ['Do', u'Ré', 'Mi', 'Fa', 'Sol', 'La', 'Si'],
     [
         (r'maj7', '7+'),
         (r'sus4', '4'),
@@ -128,8 +144,8 @@ frNotation = Notation(
 
 ptNotation = Notation(
     "ptNotation",
-    _(u"Portuguese (D� R� Mi... Si)"),
-    [u'D�', u'R�', 'Mi', u'F�', 'Sol', u'L�', 'Si'],
+    _(u"Portuguese (Dó Ré Mi... Si)"),
+    [u'Dó', u'Ré', 'Mi', u'Fá', 'Sol', u'Lá', 'Si'],
     [
         (r'maj7', '7+'),
         (r'sus4', '4'),
@@ -388,6 +404,11 @@ referenceVector = [0.65713162540630443, 0.0, 0.037841466800806009, 0.0, 0.0, 0.0
 
 
 def splitChord(c, locNotation=enNotation):
+    # Normalizza a NFC PRIMA di qualunque confronto/indicizzazione: le radici
+    # delle notazioni sono in NFC, e senza questo passaggio una 'é' in NFD non
+    # combacia con 'Ré' e l'accordo verrebbe lasciato passare intatto. La
+    # normalizzazione allinea anche gli indici usati sotto (len(k), c[len(k)]).
+    c = _nfc(c)
     # Nashville e Roman definiscono SplitChord per gestire gradi multi-carattere
     # e alterazioni prefisse; le altre notazioni usano il loop standard.
     if hasattr(locNotation, 'SplitChord'):
