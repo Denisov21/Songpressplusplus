@@ -104,6 +104,17 @@ PY
 DEB_NAME=$(echo "$PKG_NAME" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
 DEB_VERSION="$PKG_VERSION"
 DEB_ARCH="all"
+# ID applicazione AppStream in formato reverse-DNS.
+# AppStream 1.0 vuole un <id> reverse-DNS: un id "corto" come "songpressplusplus"
+# fa emettere ad "appstreamcli validate" il warning "cid-is-not-rdns". La
+# convenzione per i progetti ospitati su GitHub e':
+#   io.github.<utente-in-minuscolo>.<progetto>
+# NB: il file metainfo DEVE chiamarsi "<APP_ID>.metainfo.xml", altrimenti scatta
+#     anche "metainfo-filename-cid-mismatch". Il .desktop, l'icona e il tipo MIME
+#     restano invece con nome "$DEB_NAME": non serve rinominarli, perche' il
+#     collegamento avviene tramite <launchable type="desktop-id">, che continua a
+#     puntare a "${DEB_NAME}.desktop". Cosi' le associazioni file non cambiano.
+APP_ID="io.github.denisov21.songpressplusplus"
 # NB: il campo Maintainer DEVE essere nel formato "Nome <email>",
 #     altrimenti Discover/GDebi mostrano "Autore sconosciuto".
 #     Cambia l'email se ne hai una tua; questa noreply di GitHub è valida.
@@ -874,10 +885,10 @@ DESKTOP
 # (es. "songpressplusplus_7") e nessuna icona.
 echo "$OK Creazione AppStream metainfo..."
 mkdir -p "$INSTALL_PREFIX/share/metainfo"
-cat > "$INSTALL_PREFIX/share/metainfo/${DEB_NAME}.metainfo.xml" <<METAINFO
+cat > "$INSTALL_PREFIX/share/metainfo/${APP_ID}.metainfo.xml" <<METAINFO
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>${DEB_NAME}</id>
+  <id>${APP_ID}</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>${LICENSE}</project_license>
   <name>Songpress++</name>

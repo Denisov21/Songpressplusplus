@@ -206,6 +206,51 @@ and the executable into `/usr/bin/SongpressPlusPlus`.
 
 ---
 
+### Graphical installation (double-click)
+
+Double-clicking a `.deb` file in a desktop environment (e.g. KDE Plasma) normally opens **Discover**. However, Discover's PackageKit backend handles **local** `.deb` files poorly when they have external dependencies and a `postinst` that downloads packages from PyPI/apt (like this one): it often fails to resolve the package's `Depends:`, so the installation stops halfway or does not start at all.
+
+For a reliable graphical installation, use a **dedicated installer** that resolves dependencies. On Debian 13 (trixie) the package is **`gdebi`** (the GUI; `gdebi-core` is the command-line version only):
+
+```bash
+sudo apt install gdebi
+```
+
+> **Note:** older Debian versions also shipped `qapt-deb-installer` (QApt, the native Qt/KDE installer), but it has been **removed** from the repositories as of trixie; likewise `gdebi-kde` no longer has an installable package. Use `gdebi`.
+
+Then, in Dolphin: right-click the `.deb` → _Open With…_ → choose "GDebi Package Installer", ticking the option to always use it for this file type. On the next double-click the `.deb` will be installed through a graphical dialog that resolves dependencies on its own.
+
+> **Note:** GDebi's GUI is GTK-based, so on KDE it pulls in a few small GTK dependencies and looks slightly less native, but it works correctly. If it misbehaves, use the terminal `apt` method below, which is the most reliable.
+
+> **✅ Alternatively (more robust): `apt` from the terminal.** Use `apt` instead of `dpkg`, so it resolves dependencies automatically from the repositories:
+>
+> ```bash
+> sudo apt install ./songpressplusplus_7.0.2_all.deb
+> ```
+>
+> The `./` prefix (or a full path) is **mandatory**: without at least one `/` in the name, `apt` treats the argument as the name of a package to look up in the repositories and returns "unable to locate package". If you are not in the `.deb`'s folder, pass the full path, e.g. `sudo apt install ~/…/build_deb/songpressplusplus_7.0.2_all.deb`.
+
+> **ℹ️ "Unknown author" and "License: Unknown" in Discover's file preview.** When you open the **preview of a `.deb` file**, Discover reads only the `DEBIAN/control` file and derives the "Author" and "License" fields from **AppStream** metadata (`metainfo.xml`), not from `control`. That metadata is indexed **only after installation** and an AppStream cache refresh, so on the file preview it always shows as "Unknown". **This is not a defect of the package:** the fields are present (`Maintainer` in `control`, license in `metainfo.xml` and in `/usr/share/doc/<pkg>/copyright`). After installation, Discover's _Installed_ section shows the author and license. To force a cache refresh:
+>
+> ```bash
+> sudo appstreamcli refresh --force
+> ```
+
+> **AppStream ID (reverse-DNS).** The package uses the AppStream identifier
+> `io.github.denisov21.songpressplusplus`, in reverse-DNS form as required by
+> AppStream 1.0. The metadata file is installed accordingly at
+> `/usr/share/metainfo/io.github.denisov21.songpressplusplus.metainfo.xml`.
+> The `.desktop` file, the icon and the MIME type keep the short name
+> `songpressplusplus` instead: the link between component and application is made
+> through `<launchable type="desktop-id">`, so the file associations do not
+> change. To check that the metadata is valid:
+>
+> ```bash
+> appstreamcli validate /usr/share/metainfo/io.github.denisov21.songpressplusplus.metainfo.xml
+> ```
+
+---
+
 ### Upgrading to a new version
 
 #### 1. Update the version in `pyproject.toml`
