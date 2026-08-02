@@ -1163,6 +1163,11 @@ msgstr "Ritardo in secondi prima della riapertura del dialogo (1-60)"
 msgid "s"
 msgstr "s"
 
+#: SongpressFrame.py — beats_time dialog reopen countdown status
+#, python-format
+msgid "Beats_time: reopening in %d s…"
+msgstr "Beats_time: riapertura tra %d s…"
+
 #: SongpressFrame.py — status bar indicator: intellisense active
 msgid "Intellisense"
 msgstr "Intellisense"
