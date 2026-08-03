@@ -2700,6 +2700,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         """
         import re
 
+        # Se c'è un conto alla rovescia di riapertura in corso (pulsante "OK +"),
+        # annullalo: stiamo già riaprendo il dialogo adesso.
+        self._CancelBeatsReopenCountdown()
+
         stc         = self.text
         total_lines = stc.GetLineCount()
         n_sel       = stc.GetSelections()   # numero di cursori/selezioni attivi
@@ -2782,32 +2786,33 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                         _selected_line_indices.append(ln)
             _selected_line_indices.sort()
 
-            # Raccoglie accordi unici (ordine di prima apparizione) dalle righe selezionate
-            _seen_roots = []
-            for ln in _selected_line_indices:
-                for r in _roots_at(ln):
-                    if r not in _seen_roots:
-                        _seen_roots.append(r)
-            all_roots = _seen_roots
-
-            # Costruisce per ogni riga selezionata la lista di roots propria
-            # (usata da _do_insert per applicare per-riga nella modalità selezione)
-            _sel_line_roots = {}
+            # Raccoglie gli accordi di OGNI riga selezionata come gruppo a sé
+            # (duplicati inclusi, in ordine left→right). Ogni riga diventa una
+            # scheda del Notebook, come nel multicursore: separazione visiva
+            # netta tra le righe. La direttiva {beats_time} è POSIZIONALE, quindi
+            # NON si deduplica per nome.
+            _sel_line_roots  = {}   # line_idx -> lista roots della riga (con duplicati)
+            _sel_chord_lines = []   # indici riga (top→bottom), uno per gruppo/scheda
+            _per_line_roots  = []   # roots di ciascuna riga, stesso ordine di _sel_chord_lines
             for ln in _selected_line_indices:
                 roots = _roots_at(ln)
                 if roots:
                     _sel_line_roots[ln] = roots
+                    _sel_chord_lines.append(ln)
+                    _per_line_roots.append(roots)
 
-            per_cursor_roots       = [all_roots]
-            _all_same              = True
-            cursor_positions       = []   # non usato in modalità selezione
-            per_cursor_chord_lines = []   # non usato in modalità selezione
+            per_cursor_roots       = _per_line_roots if _per_line_roots else [[]]
+            all_roots              = per_cursor_roots[0]
+            _all_same              = all(r == per_cursor_roots[0] for r in per_cursor_roots)
+            cursor_positions       = []                    # non usato in modalità selezione
+            per_cursor_chord_lines = list(_sel_chord_lines) # per l'evidenziazione nell'editor
 
         # ════════════════════════════════════════════════════════════════
         # MODALITÀ CURSORE: comportamento originale
         # ════════════════════════════════════════════════════════════════
         else:
-            _sel_line_roots = None   # non in modalità selezione
+            _sel_line_roots  = None   # non in modalità selezione
+            _sel_chord_lines = None   # non in modalità selezione
 
             # Helper: data una riga del cursore, trova il TESTO della riga con accordi
             # Priorità: riga corrente → successiva → precedente
@@ -2957,13 +2962,15 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 sw = None
                 gp = parent
             g = wx.FlexGridSizer(cols=2, hgap=8, vgap=6)
-            g.AddGrowableCol(1)
+            # Colonna degli spin NON espandibile: le caselle restano compatte
+            # (larghezza fissa) invece di allargarsi per tutta la larghezza del
+            # dialogo, come nelle tab del multicursore.
             for root in roots:
                 g.Add(wx.StaticText(gp, label=root), 0, wx.ALIGN_CENTER_VERTICAL)
                 sp = wx.SpinCtrl(gp, min=0, max=32, size=_spin_size(70))
                 sp.SetValue(1)
                 sp.SetToolTip(_(u"0 = omit this chord"))
-                g.Add(sp, 0, wx.EXPAND)
+                g.Add(sp, 0, wx.ALIGN_CENTER_VERTICAL)
                 _spin_list.append((root, sp))
             if use_scroll:
                 sw.SetSizer(g)
@@ -2975,9 +2982,16 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         # ── Griglia: singola se sequenze identiche, Notebook se eterogenee ──
         # spin_lists è una lista di liste: una per ogni "tab" (o una sola se uniforme)
         # spin_list (compatibilità con il resto del codice) = prima tab
-        MAX_CURSOR_TABS = 5
+        # In modalità selezione ogni riga di accordi è un gruppo → una scheda.
+        MAX_CURSOR_TABS = 8 if _has_range_sel else 5
 
-        if n_sel <= 1 or _all_same:
+        # Usa il Notebook quando ci sono più gruppi eterogenei (più cursori nel
+        # multicursore, o più righe di accordi nella selezione).
+        _use_notebook = (len(per_cursor_roots) > 1) and (not _all_same)
+        # Etichetta delle schede a seconda della modalità
+        _tab_word = _(u"Row") if _has_range_sel else _(u"Cursor")
+
+        if not _use_notebook:
             # Caso semplice: un'unica griglia
             grid_widget, spin_list = _make_grid(dlg, all_roots)
             if isinstance(grid_widget, wx.ScrolledWindow):
@@ -3008,13 +3022,16 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                     )
                     sl = []
                 page.SetSizer(page_sizer)
-                nb.AddPage(page, _(u"Cursor %d") % (idx + 1))
+                nb.AddPage(page, u"%s %d" % (_tab_word, idx + 1))
                 spin_lists.append(sl)
             if len(per_cursor_roots) > MAX_CURSOR_TABS:
-                lbl_trunc = wx.StaticText(
-                    dlg,
-                    label=u"⚠ " + (_(u"Showing first %d cursors of %d") % (MAX_CURSOR_TABS, n_sel))
-                )
+                if _has_range_sel:
+                    _trunc_txt = _(u"Showing first %d rows of %d") % (
+                        MAX_CURSOR_TABS, len(per_cursor_roots))
+                else:
+                    _trunc_txt = _(u"Showing first %d cursors of %d") % (
+                        MAX_CURSOR_TABS, n_sel)
+                lbl_trunc = wx.StaticText(dlg, label=u"⚠ " + _trunc_txt)
                 lbl_trunc.SetForegroundColour(wx.Colour(160, 100, 0))
                 outer.Add(lbl_trunc, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 4)
             outer.Add(nb, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
@@ -3149,9 +3166,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 page.GetSizer().Add(lp, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
                 page.Layout()
                 _preview_labels.append(lp)
-            # Separatore e anteprima globale (cursore 1) sotto il notebook
+            # Separatore e anteprima globale (prima scheda) sotto il notebook
             outer.Add(wx.StaticLine(dlg), 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
-            lbl_preview_title = wx.StaticText(dlg, label=_(u"Preview (cursor 1):"))
+            lbl_preview_title = wx.StaticText(
+                dlg, label=_(u"Preview (%s 1):") % _tab_word.lower())
             outer.Add(lbl_preview_title, 0, wx.LEFT | wx.RIGHT, 10)
             lbl_preview = wx.StaticText(dlg, label=u"",
                                         style=wx.ST_NO_AUTORESIZE | wx.ST_ELLIPSIZE_END)
@@ -3265,7 +3283,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                     directive = u"{beats_time: %s}" % u" ".join(parts) if parts else u"{beats_time: }"
                     lp.SetLabel(directive)
                     lp.GetParent().Layout()
-            # Anteprima principale (sempre aggiornata con la prima tab / tab unica)
+            # Anteprima principale (prima scheda / griglia unica)
             parts = _build_parts(spin_lists[0])
             directive = u"{beats_time: %s}" % u" ".join(parts) if parts else u"{beats_time: }"
             lbl_preview.SetLabel(directive)
@@ -3289,28 +3307,44 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             """
             bt_pat = re.compile(r'^\s*\{beats_time[^}]*\}', re.IGNORECASE)
 
-            # ── Costruisce la mappa accordo→valore dallo SpinList ──────────
-            spin_val = {root: sp.GetValue() for root, sp in spin_lists[0]}
-            _all_zero = all(v == 0 for v in spin_val.values()) if spin_val else False
-            _default_val = 0 if _all_zero else 1
-
-            def _build_directive_for_roots(roots):
-                """Costruisce {beats_time: X=N Y=N} per una lista di roots."""
-                parts = []
-                for r in roots:
-                    v = spin_val.get(r, _default_val)
-                    if v > 0:
-                        parts.append(u"%s=%d" % (r, v))
-                return u"{beats_time: %s}" % u" ".join(parts) if parts else u"{beats_time: }"
-
             # ── MODALITÀ SELEZIONE ──────────────────────────────────────
             if _has_range_sel and _sel_line_roots:
+                # Ogni riga di accordi ha la propria scheda (o, se le righe sono
+                # identiche / è una sola, un'unica griglia). Costruiamo la mappa
+                # riga → spin_list corrispondente:
+                #   • Notebook: la scheda i-esima corrisponde alla i-esima riga
+                #     (stesso ordine top→bottom di _sel_chord_lines);
+                #   • griglia unica: la stessa spin_list vale per tutte le righe.
+                _line_pairs = {}
+                if _use_notebook:
+                    for i, ln in enumerate(_sel_chord_lines):
+                        _line_pairs[ln] = spin_lists[i] if i < len(spin_lists) else None
+                else:
+                    for ln in _sel_chord_lines:
+                        _line_pairs[ln] = spin_lists[0]
+
+                def _directive_from_pairs(pairs, roots):
+                    """Direttiva posizionale dalla spin_list della riga.
+                    Se la riga è oltre il limite delle schede (pairs None),
+                    assegna 1 battito a ciascun accordo come default."""
+                    parts = []
+                    if pairs is not None:
+                        for root, sp in pairs:
+                            v = sp.GetValue()
+                            if v > 0:
+                                parts.append(u"%s=%d" % (root, v))
+                    else:
+                        parts = [u"%s=1" % r for r in roots]
+                    return (u"{beats_time: %s}" % u" ".join(parts)
+                            if parts else u"{beats_time: }")
+
                 # Agisce bottom→top per non invalidare gli offset delle righe superiori
                 sorted_lines = sorted(_sel_line_roots.keys(), reverse=True)
                 with undo_action(stc):
                     for chord_idx in sorted_lines:
-                        roots = _sel_line_roots[chord_idx]
-                        directive = _build_directive_for_roots(roots)
+                        directive = _directive_from_pairs(
+                            _line_pairs.get(chord_idx),
+                            _sel_line_roots.get(chord_idx, []))
                         prev_idx = chord_idx - 1
                         if prev_idx >= 0 and bt_pat.match(stc.GetLine(prev_idx).rstrip(u"\r\n")):
                             # Sostituisce la direttiva esistente
@@ -3319,12 +3353,32 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                             stc.SetSelection(line_start, line_end)
                             stc.ReplaceSelection(directive)
                         else:
-                            target_idx = chord_idx
-                            while target_idx > 0 and stc.GetLine(target_idx - 1).strip() == u"":
-                                target_idx -= 1
-                            insert_pos = stc.PositionFromLine(target_idx)
+                            # Inserisce la direttiva direttamente SOPRA la riga
+                            # degli accordi, senza scavalcare eventuali righe
+                            # vuote: così la direttiva resta incollata agli
+                            # accordi e l'eventuale riga vuota di separazione
+                            # paragrafo rimane sopra la direttiva.
+                            insert_pos = stc.PositionFromLine(chord_idx)
                             stc.SetSelection(insert_pos, insert_pos)
                             stc.ReplaceSelection(directive + u"\n")
+
+                # Gli eventi EVT_STC_CHANGE dell'editor sono differiti e vengono
+                # processati DOPO _do_insert: a quel punto undo_action ha già
+                # ripristinato la selezione originale, così TextUpdated rieffettua
+                # il refresh usando la selezione corrente e (col debounce)
+                # l'anteprima resta bloccata sul solo testo selezionato.
+                # Per questo azzeriamo la selezione e forziamo il refresh sul
+                # brano INTERO in un wx.CallAfter, cioè dopo che tutti gli eventi
+                # differiti (ripristino selezione + EVT_STC_CHANGE) sono passati:
+                # così quest'ultimo refresh vince la corsa del debounce.
+                def _finalize_preview():
+                    try:
+                        stc.SetEmptySelection(stc.GetCurrentPos())
+                        self.previewCanvas.Refresh(
+                            self._get_display_text(ignore_selection=True))
+                    except Exception:
+                        pass
+                wx.CallAfter(_finalize_preview)
                 return
 
             # ── MODALITÀ CURSORE (comportamento originale) ──────────────
@@ -3367,12 +3421,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                         stc.SetSelection(line_start, line_end)
                         stc.ReplaceSelection(directive)
                     else:
-                        # Risale sopra eventuali righe vuote che precedono gli accordi,
-                        # così la direttiva viene inserita senza creare riga vuota visiva.
-                        target_idx = chord_idx
-                        while target_idx > 0 and stc.GetLine(target_idx - 1).strip() == u"":
-                            target_idx -= 1
-                        insert_pos = stc.PositionFromLine(target_idx)
+                        # Inserisce la direttiva direttamente SOPRA la riga degli
+                        # accordi, senza scavalcare eventuali righe vuote: così la
+                        # direttiva resta incollata agli accordi e l'eventuale riga
+                        # vuota di separazione paragrafo rimane sopra la direttiva.
+                        insert_pos = stc.PositionFromLine(chord_idx)
                         stc.SetSelection(insert_pos, insert_pos)
                         stc.ReplaceSelection(directive + u"\n")
 
@@ -3509,9 +3562,64 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             _do_insert()
         dlg.Destroy()
         if result == ID_OK_REOPEN:
-            _reopen_ms = int(self.config.Read('beatsTimeReopenDelay', u'5'))
-            _reopen_ms = max(1, min(60, _reopen_ms)) * 1000
-            wx.CallLater(_reopen_ms, self.OnInsertBeatsTime, None)
+            _reopen_s = int(self.config.Read('beatsTimeReopenDelay', u'5'))
+            _reopen_s = max(1, min(60, _reopen_s))
+            self._StartBeatsReopenCountdown(_reopen_s)
+
+    # ------------------------------------------------------------------
+    # Conto alla rovescia per la riapertura del dialogo Beats_time ("OK +")
+    # ------------------------------------------------------------------
+    def _StartBeatsReopenCountdown(self, seconds):
+        """Mostra nella status bar un conto alla rovescia di `seconds` secondi,
+        poi riapre il dialogo Beats_time (pulsante "OK +").
+
+        Usa wx.CallLater a passi di 1 s per aggiornare il campo 0 della status
+        bar; alla fine chiama OnInsertBeatsTime, che a sua volta annulla ogni
+        countdown residuo prima di riaprirsi.
+        """
+        # Un eventuale countdown precedente viene annullato: ne resta uno solo.
+        self._CancelBeatsReopenCountdown()
+
+        # Ferma il timer che pulisce la status bar, così non cancella il
+        # conto alla rovescia a metà.
+        _st = getattr(self, '_statusTimer', None)
+        if _st is not None and _st.IsRunning():
+            _st.Stop()
+
+        self._beatsReopenRemaining = max(1, int(seconds))
+        self._BeatsReopenTick()
+
+    def _BeatsReopenTick(self):
+        """Un passo del conto alla rovescia: aggiorna la status bar oppure,
+        a zero, riapre il dialogo."""
+        remaining = getattr(self, '_beatsReopenRemaining', 0)
+
+        if remaining <= 0:
+            self._beatsReopenCaller = None
+            if getattr(self, 'statusBar', None):
+                self.statusBar.SetStatusText(u"", 0)
+            self.OnInsertBeatsTime(None)
+            return
+
+        if getattr(self, 'statusBar', None):
+            self.statusBar.SetStatusText(
+                _(u"Beats_time: reopening in %d s…") % remaining, 0)
+
+        self._beatsReopenRemaining = remaining - 1
+        self._beatsReopenCaller = wx.CallLater(1000, self._BeatsReopenTick)
+
+    def _CancelBeatsReopenCountdown(self):
+        """Annulla un conto alla rovescia di riapertura eventualmente in corso
+        e ripulisce il messaggio nella status bar."""
+        caller = getattr(self, '_beatsReopenCaller', None)
+        if caller is not None:
+            try:
+                if caller.IsRunning():
+                    caller.Stop()
+            except Exception:
+                pass
+            self._beatsReopenCaller = None
+        self._beatsReopenRemaining = 0
 
     def OnInsertMusicalSymbol(self, evt):
         """Apre la Symbol Map musicale e inserisce il carattere scelto nel cursore."""
@@ -4966,27 +5074,19 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
     def _get_display_text(self, ignore_selection=False):
         """Restituisce il testo del documento con i comandi # {...} rimossi.
-        Se è attiva una selezione (non vuota e non multiriga singola-selezione
-        col cursore), restituisce solo il testo selezionato, così l'anteprima
-        mostra esattamente ciò che verrà stampato.
+        L'anteprima mostra SEMPRE il brano intero, anche quando nell'editor è
+        attiva una selezione (comportamento richiesto).
         Aggiorna anche la directory del documento nel renderer, in modo che
         i percorsi relativi di {image: ...} vengono risolti correttamente.
         Quando showChords == 0 (Nessun accordo) e le relative preferenze sono
         attive, rimuove anche i blocchi {start_chord}, {start_bridge},
         {start_of_grid} con il loro contenuto.
 
-        ignore_selection=True: usa sempre il testo completo del documento,
-        ignorando la selezione corrente. Da usare quando il refresh è causato
-        da una modifica alle opzioni (e non da una selezione volontaria
-        dell'utente), per evitare che una selezione residua da Trova/Sostituisci
-        faccia mostrare nell'anteprima solo il testo trovato.
+        Il parametro ignore_selection è mantenuto per compatibilità con i
+        chiamanti, ma non ha più effetto: il testo completo è usato in ogni caso.
         """
         self.previewCanvas.SetDocumentDir(self.document)
-        start, end = self.text.GetSelection()
-        if not ignore_selection and start != end:
-            raw = self.text.GetTextRange(start, end)
-        else:
-            raw = self.text.GetText()
+        raw = self.text.GetText()
         text = self._strip_hash_commands(raw)
         if getattr(self.pref.format, 'showChords', 2) == 0:
             text = self._strip_nochords_blocks(text)

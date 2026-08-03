@@ -1375,3 +1375,7 @@ msgstr "Diteggiatura primo accordo"
 #: SongpressFrame.py — OnInsertTime dialog title
 msgid "Time signature"
 msgstr "Indicazione del tempo"
+
+#: SongpressFrame.py OnInsertBeatsTime selection tab label
+msgid "Row"
+msgstr "Riga"
