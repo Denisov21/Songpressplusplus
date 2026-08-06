@@ -85,7 +85,7 @@ Descrizione di ogni file e cartella presente nel progetto.
 
 | File | Descrizione |
 | ---- | ----------- |
-| `SongpressFrame.py` | Finestra principale dell'applicazione. Gestisce il layout generale, la barra dei menu, la toolbar e il coordinamento tra editor e anteprima. |
+| `SongpressFrame.py` | Finestra principale dell'applicazione. Gestisce il layout generale, la barra dei menu, la toolbar e il coordinamento tra editor e anteprima. Include il comando **Filigrana…** (aggiungi/rimuovi/configura la filigrana su anteprima, stampa ed export); `DrawOnDC` la disegna dietro al contenuto negli export basati su DC. |
 | `SongpressToolbars.py` | Mixin `SongpressToolbarsMixin` che raccoglie la costruzione delle tre `AuiToolBar` di Songpress++: *Standard* (nuovo/apri/salva, stampa, modifica, copia come immagine, verifica sintassi, opzioni), *Format* (scelta font, etichette strofe, slider accordi, toggle anteprima) e *Insert* (tutti i comandi di inserimento: titolo, sottotitolo, accordo, ritornello, strofa, commento, interruzioni, blocchi, tempo, tonalità, durata, tastiere, immagini, simboli musicali, interlinea). Ereditato da `SongpressFrame` ed attivato tramite `self._BuildToolbars()`. |
 | `ChordProDirectives.py` | Unico punto di definizione delle direttive ChordPro e Songpress++ per l'intellisense dell'editor. Espone tre costanti: `DIRECTIVES` (lista ordinata completa mostrata nel popup di completamento), `SPPLUSPLUS_DIRECTIVES` (set delle direttive esclusive Songpress++, icona 🔧), `DIRECTIVES_NO_VALUE` (set delle direttive senza valore, chiuse con `}` direttamente). Importato da `SongpressFrame` tramite `from . import ChordProDirectives`. Per aggiungere o rimuovere una direttiva è sufficiente modificare questo file. |
 | `SDIMainFrame.py` | Frame base SDI (Single Document Interface) da cui `SongpressFrame` eredita. Fornisce la struttura base della finestra con supporto per apertura/salvataggio file. SetMinSize(wx.Size(370, 520)) |
@@ -96,7 +96,8 @@ Descrizione di ogni file e cartella presente nel progetto.
 | ---- | ----------- |
 | `Editor.py` | Componente editor di testo. Gestisce l'immissione del testo ChordPro, la colorazione sintattica e le interazioni con la tastiera. |
 | `Renderer.py` | Motore di rendering principale. Converte il testo ChordPro in output grafico per l'anteprima e la stampa. |
-| `PreviewCanvas.py` | Canvas wxPython che mostra l'anteprima formattata della canzone in tempo reale mentre si modifica. |
+| `PreviewCanvas.py` | Canvas wxPython che mostra l'anteprima formattata della canzone in tempo reale mentre si modifica. Disegna anche la filigrana **dietro** al brano quando abilitata (metodo `SetWatermark(cfg)`), così non ne oscura il testo. |
+| `Watermark.py` | **Filigrana (watermark)** condivisa da anteprima, stampa ed esportazione. Espone `draw_watermark(dc, w, h, cfg)` che disegna un testo diagonale **dietro** al brano (per non oscurarne il testo) su qualsiasi `wx.DC` (schermo, PNG, SVG, EMF, EPS, stampante/CUPS, metafile); la trasparenza è **simulata** sfumando il colore verso il bianco del foglio, perché `SVGFileDC`/`PostScriptDC` non supportano l'alpha. Contiene anche `WatermarkDialog` (abilita/disabilita, testo, opacità, angolo, dimensione, colore, modalità mosaico). Usato da `SongpressFrame.DrawOnDC`, `PreviewCanvas`, `PrintDialog` e `PdfExporter`; impostazioni persistite nelle preferenze (attributi `watermark*`). Comando menu **File → Filigrana…**. |
 | `SongTokenizer.py` | Tokenizer del formato ChordPro. Analizza il testo e lo scompone in token (accordi, comandi, testo) interpretabili dal renderer. |
 | `Tokenizer.py` | Tokenizer generico di supporto, usato da `SongTokenizer` o da altri moduli di parsing. |
 | `SongBoxes.py` | Definisce le "box" (blocchi grafici) che compongono il layout di una canzone: strofe, ritornelli, sezioni accordi, ecc. |
@@ -117,8 +118,8 @@ Descrizione di ogni file e cartella presente nel progetto.
 | ---- | ----------- |
 | `SongbookExporter.py` | Esporta una raccolta di canzoni come songbook PDF. Genera copertina, un brano per pagina (o più se lungo), indice finale con numero di pagina. Supporta: modalità 2 pagine per foglio, impostazione margini e formato carta, voci dell'indice cliccabili (link PDF interni), risoluzione automatica delle immagini `{image:}` relative alla cartella del file sorgente. |
 | `CanzonatorDialog.py` | Dialogo "Canzonatore": unisce più file ChordPro (`.crd`, `.cho`, `.chordpro`, `.chopro`, `.pro`, `.tab`, `.cpm`) in un unico file, con separatore `{new_page}` o riga vuota. Supporta riordino della lista, doppio clic per aprire i file nell'editor, scelta encoding output (UTF-8 / Latin-1) e dialogo di completamento con link cliccabili al file e alla cartella di destinazione. |
-| `PdfExporter.py` | Esporta la canzone (o il canzoniere) in formato PDF. |
-| `PrintDialog.py` | Dialogo per la configurazione della stampa: numero di pagine per foglio, colonne per pagina, scala e opzioni di layout. Usato da `SongpressFrame` prima di avviare la stampa o l'anteprima di stampa. |
+| `PdfExporter.py` | Esporta la canzone (o il canzoniere) in formato PDF. Applica la filigrana quando abilitata: su Linux/macOS tramite `SongpressPrintout` (CUPS), sul path Windows/reportlab disegnandola dietro al contenuto del bitmap di ogni segmento. |
+| `PrintDialog.py` | Contiene `SongpressPrintout` (`wx.Printout`), il mixin `PrintManager` e il dialogo di configurazione della stampa: numero di pagine per foglio, colonne per pagina, scala e opzioni di layout. Usato da `SongpressFrame` prima di avviare la stampa o l'anteprima di stampa. `SongpressPrintout` disegna anche la filigrana (se abilitata) **dietro** al contenuto di ogni pagina, coprendo così sia la stampa sia l'export PDF via CUPS. |
 
 ### Preferenze e impostazioni
 
@@ -228,6 +229,7 @@ I file `.mo` sono le versioni **compilate** dei `.po`, lette a runtime da wxPyth
 | `SyntaxCheckerDialog.po` / `.mo` | `SyntaxCheckerDialog.py` |
 | `Transpose.po` / `.mo` | `Transpose.py` |
 | `TransposeDialog.po` / `.mo` | `TransposeDialog.py` / `MyTransposeDialog.py` |
+| `Watermark.po` / `.mo` | `Watermark.py` — dialogo filigrana: titolo, abilitazione, testo, opacità, angolo, dimensione, colore, mosaico e nota informativa. |
 
 ### File `.pot` (template POT)
 
