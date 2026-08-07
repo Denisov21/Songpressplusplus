@@ -106,6 +106,7 @@ class PreviewCanvas(object):
         self._showPageIndicator = True
         self._greyBackground    = True
         self._debounceEnabled   = True   # se False: ridisegno immediato ad ogni tasto
+        self._watermark_cfg     = None   # config filigrana (None = disattivata)
 
         # Dimensioni foglio e margini correnti in mm (aggiornate da SetPageSizeMm /
         # SetPageMarginsMm). Default A4 portrait con margini 15mm.
@@ -516,6 +517,19 @@ class PreviewCanvas(object):
 
         # Applica zoom
         dc.SetUserScale(self._zoom_factor, self._zoom_factor)
+
+        # Filigrana DIETRO al brano (non oscura il testo, che viene disegnato
+        # sopra). Dimensioniamo con l'ultimo (w, h) noto: al primo paint puo'
+        # mancare, ma il paint successivo la mostra correttamente. Il brano
+        # viene poi renderizzato sopra.
+        cfg = getattr(self, '_watermark_cfg', None)
+        if (cfg and cfg.get('enabled') and cfg.get('showInPreview', True)
+                and self._last_h > 0):
+            try:
+                from . import Watermark
+                Watermark.draw_watermark(dc, self._last_w, self._last_h, cfg)
+            except Exception:
+                pass
 
         # Render nella zona virtuale scalata
         w, h = self.renderer.Render(self.text, dc)
@@ -981,6 +995,14 @@ class PreviewCanvas(object):
     def SetChordsBelow(self, below):
         self.renderer.SetChordsBelow(below)
 
+    def SetWatermark(self, cfg):
+        """Imposta la configurazione filigrana da mostrare in anteprima.
+
+        `cfg` e' un dict (vedi Watermark.DEFAULTS). La filigrana viene disegnata
+        DIETRO al brano, cosi' non oscura il testo.
+        """
+        self._watermark_cfg = dict(cfg) if cfg else None
+
     def SetShowPageBreakLines(self, show):
         """Mostra o nasconde la linea di interruzione di pagina nell'anteprima."""
         self._showPageBreakLines = show
@@ -1386,6 +1408,15 @@ class _FullscreenPreviewFrame(wx.Frame):
         if not text.strip():
             return
         dc.SetUserScale(self._zoom, self._zoom)
+        # Filigrana dietro al brano (non oscura il testo)
+        cfg = getattr(self.owner, '_watermark_cfg', None)
+        if (cfg and cfg.get('enabled') and cfg.get('showInPreview', True)
+                and self.owner._last_h > 0):
+            try:
+                from . import Watermark
+                Watermark.draw_watermark(dc, self.owner._last_w, self.owner._last_h, cfg)
+            except Exception:
+                pass
         w, h = self.owner.renderer.Render(text, dc)
         self.owner._last_w = w    # aggiorna così Fit funziona correttamente
         self.owner._last_h = h

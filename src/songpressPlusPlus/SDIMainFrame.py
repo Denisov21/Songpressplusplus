@@ -9,7 +9,7 @@ It expects to find some menu elements, characterized by their XRC name:
     - exit
     - about
 """
-
+# Gestisce anhce il comando File Salva solo in caso di modifiche al file
 ###############################################################
 # Name:             SDIMainFrame.py
 # Purpose:     Abstract class for SDI Main Frames
@@ -263,6 +263,12 @@ class SDIMainFrame(object):
         """Set the modified flag, if main document is modified"""
         self.modified = m
         self.UpdateTitle()
+        # Aggiorna anche lo stato del comando Salva (pulsante e voce di menu):
+        # la sottoclasse definisce UpdateSave() che abilita/disabilita il Salva
+        # in base a self.modified. Senza questa chiamata il flag cambiava (e il
+        # titolo mostrava '*') ma il comando Salva restava disabilitato.
+        if hasattr(self, 'UpdateSave'):
+            self.UpdateSave()
 
     def UpdateTitle(self):
         """Updates form title; to be called when the filename or the modified status changes"""

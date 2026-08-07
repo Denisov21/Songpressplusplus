@@ -117,6 +117,12 @@
           <accel></accel>
           <help>Imposta dimensione e orientamento del foglio</help>
         </object>
+        <object class="wxMenuItem" name="watermark">
+          <label>_Filigrana...</label>
+          <accel></accel>
+          <bitmap>../img/watermark.png</bitmap>
+          <help>Aggiungi o rimuovi una filigrana su stampa ed esportazioni</help>
+        </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="insertPageBreak">
           <label>Interruzione di  _pagina</label>

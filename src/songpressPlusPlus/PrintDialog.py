@@ -951,6 +951,10 @@ class SongpressPrintout(wx.Printout):
         ml, mt, mr, mb = self._margin_du
         pw, ph         = self.GetPageSizePixels()
 
+        # Filigrana DIETRO al contenuto: disegnata prima, cosi' il testo che
+        # segue non viene oscurato. Copre stampa ed export PDF Linux/macOS (CUPS).
+        self._draw_watermark(dc, pw, ph)
+
         if self.two_pages_per_sheet:
             left_idx  = (page - 1) * 2
             right_idx = left_idx + 1
@@ -977,6 +981,23 @@ class SongpressPrintout(wx.Printout):
             self._render_logical_page(dc, page_idx, ml, mt)
 
         return True
+
+    def _draw_watermark(self, dc, pw, ph):
+        """Disegna la filigrana sull'intero foglio (se abilitata nelle pref).
+
+        Copre sia la stampa sia l'export PDF su Linux/macOS (che passa da qui
+        tramite wx.PRINT_MODE_FILE / CUPS).
+        """
+        if not getattr(self.frame_obj.pref, 'watermarkEnabled', False):
+            return
+        try:
+            from . import Watermark
+            dc.SetUserScale(1.0, 1.0)
+            dc.SetDeviceOrigin(0, 0)
+            Watermark.draw_watermark(
+                dc, pw, ph, self.frame_obj._GetWatermarkConfig())
+        except Exception:
+            pass
 
 
 # ══════════════════════════════════════════════════════════════════════════════

@@ -128,6 +128,20 @@ def _render_segment_to_png(frame_obj, seg_text, scale, avail_w_px, avail_h_px):
     dc.SetUserScale(fit_scale, fit_scale)
     dc.SetBackground(wx.WHITE_BRUSH)
     dc.Clear()
+    # Filigrana DIETRO al contenuto (path PDF Windows/reportlab): la disegniamo
+    # prima del brano, cosi' non lo oscura. Sul path Linux/macOS la filigrana la
+    # disegna gia' SongpressPrintout. La disegniamo a scala 1:1 sul bitmap, poi
+    # ripristiniamo la scala di fit per renderizzare il brano sopra.
+    if getattr(frame_obj.pref, 'watermarkEnabled', False):
+        try:
+            from . import Watermark
+            dc.SetUserScale(1.0, 1.0)
+            Watermark.draw_watermark(
+                dc, bmp.GetWidth(), bmp.GetHeight(),
+                frame_obj._GetWatermarkConfig())
+        except Exception:
+            pass
+        dc.SetUserScale(fit_scale, fit_scale)
     dec_draw = _make_decorator()
     dec_draw.showKlavier = False
     r2 = Renderer(frame_obj.pref.format, dec_draw, frame_obj.pref.notations)

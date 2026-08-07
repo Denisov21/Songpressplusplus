@@ -340,6 +340,19 @@
             <property name="shortcut"></property>
             <property name="unchecked_bitmap"></property>
           </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap">Load From File; ../img/printPreview.png</property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Add or remove a watermark on printed and exported output</property>
+            <property name="id">ID_WATERMARK</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">&amp;Watermark...</property>
+            <property name="name">watermark</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
           <object class="separator" expanded="false">
             <property name="name">m_separator_pagebreak</property>
             <property name="permission">none</property>

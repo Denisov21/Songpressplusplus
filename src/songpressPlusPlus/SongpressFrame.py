@@ -772,6 +772,23 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self.pref.tempoIconColourHex = '#000000'
         if not hasattr(self.pref, 'klavierHighlightHex'):
             self.pref.klavierHighlightHex = '#D23C3C'
+        # Filigrana (watermark): stampata ed esportata (vedi Watermark.py)
+        if not hasattr(self.pref, 'watermarkEnabled'):
+            self.pref.watermarkEnabled = False
+        if not hasattr(self.pref, 'watermarkText'):
+            self.pref.watermarkText = 'DRAFT'
+        if not hasattr(self.pref, 'watermarkOpacity'):
+            self.pref.watermarkOpacity = 12
+        if not hasattr(self.pref, 'watermarkAngle'):
+            self.pref.watermarkAngle = 45
+        if not hasattr(self.pref, 'watermarkSizePct'):
+            self.pref.watermarkSizePct = 100
+        if not hasattr(self.pref, 'watermarkTile'):
+            self.pref.watermarkTile = False
+        if not hasattr(self.pref, 'watermarkColourHex'):
+            self.pref.watermarkColourHex = '#000000'
+        if not hasattr(self.pref, 'watermarkShowInPreview'):
+            self.pref.watermarkShowInPreview = True
         self.SetDefaultExtension(self.pref.defaultExtension)
         self.statusBar = self.frame.GetStatusBar()
         if self.statusBar:
@@ -827,6 +844,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         # Callback diretta per il pulsante "copia" della toolbar anteprima:
         # chiama CopyAsImage senza passare per gli eventi wx (più affidabile).
         self.previewCanvas.SetCopyCallback(self.CopyAsImage)
+        # Filigrana iniziale in anteprima (se abilitata nelle preferenze)
+        self.previewCanvas.SetWatermark(self._GetWatermarkConfig())
         self._mgr.AddPane(
             self.text,
             aui.AuiPaneInfo()
@@ -956,6 +975,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self._showPageBreakLines = True
         self._showColumnBreakLines = True
         self._showDurationBeats = True
+        self._watermarkMenuId = xrc.XRCID('watermark')
         self._showPageBreakLinesMenuId = xrc.XRCID('showPageBreakLines')
         self._showColumnBreakLinesMenuId = xrc.XRCID('showColumnBreakLines')
         self._showDurationBeatsMenuId = xrc.XRCID('showDurationBeats')
@@ -1414,6 +1434,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         Bind(self.OnPrint, 'print')
         Bind(self.OnPrintPreview, 'printPreview')
         Bind(self.OnPageSetup, 'pageSetup')
+        Bind(self.OnWatermark, 'watermark')
         Bind(self.OnUndo, 'undo')
         Bind(self.OnRedo, 'redo')
         Bind(self.OnCut, 'cut')
@@ -5229,6 +5250,19 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         r.columns = columns
         r.columnHeight = 0  # nessun limite di altezza per colonna nell'export
         start, end = self.text.GetSelection()
+        # Filigrana (watermark): va disegnata DIETRO al testo perche' non lo
+        # oscuri. Per posizionarla serve la dimensione del brano: la misuriamo
+        # con un pass senza filigrana (guardia _wm_measuring anti-ricorsione),
+        # disegniamo la filigrana sul dc reale, poi renderizziamo il brano sopra.
+        # Copre tutti gli export basati su DC: PNG/SVG/EMF/EPS e copy-as-image.
+        if getattr(self.pref, 'watermarkEnabled', False) and not getattr(self, '_wm_measuring', False):
+            self._wm_measuring = True
+            try:
+                mw, mh = self.ComputeRenderedSize()
+            finally:
+                self._wm_measuring = False
+            from . import Watermark
+            Watermark.draw_watermark(dc, mw, mh, self._GetWatermarkConfig())
         if start == end:
             w, h = r.Render(song_text, dc)
         else:
@@ -8529,6 +8563,44 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
     def OnLabelVerses(self, evt):
         self.pref.labelVerses = not self.pref.labelVerses
         self.CheckLabelVerses()
+
+    def _GetWatermarkConfig(self):
+        """Restituisce la configurazione filigrana corrente come dict."""
+        return {
+            'enabled':   getattr(self.pref, 'watermarkEnabled', False),
+            'text':      getattr(self.pref, 'watermarkText', 'DRAFT'),
+            'opacity':   getattr(self.pref, 'watermarkOpacity', 12),
+            'angle':     getattr(self.pref, 'watermarkAngle', 45),
+            'sizePct':   getattr(self.pref, 'watermarkSizePct', 100),
+            'tile':      getattr(self.pref, 'watermarkTile', False),
+            'colourHex': getattr(self.pref, 'watermarkColourHex', '#000000'),
+            'showInPreview': getattr(self.pref, 'watermarkShowInPreview', True),
+        }
+
+    def OnWatermark(self, evt):
+        """Aggiungi/rimuovi/configura la filigrana (anteprima, stampa, export)."""
+        from . import Watermark
+        old = self._GetWatermarkConfig()
+        dlg = Watermark.WatermarkDialog(self.frame, old)
+        if dlg.ShowModal() == wx.ID_OK:
+            cfg = dlg.GetConfig()
+            self.pref.watermarkEnabled   = cfg['enabled']
+            self.pref.watermarkText      = cfg['text']
+            self.pref.watermarkOpacity   = cfg['opacity']
+            self.pref.watermarkAngle     = cfg['angle']
+            self.pref.watermarkSizePct   = cfg['sizePct']
+            self.pref.watermarkTile      = cfg['tile']
+            self.pref.watermarkColourHex = cfg['colourHex']
+            self.pref.watermarkShowInPreview = cfg['showInPreview']
+            self.pref.Save()
+            # Rifletti subito la filigrana nell'anteprima
+            self.previewCanvas.SetWatermark(self._GetWatermarkConfig())
+            self.previewCanvas.Refresh(self._get_display_text())
+            # Se qualcosa e' cambiato, segna il documento come modificato
+            # cosi' il comando File -> Salva si attiva.
+            if cfg != old:
+                self.SetModified()
+        dlg.Destroy()
 
     def _OnPreviewClick(self, line_number):
         """Callback dal doppio-click sull'anteprima.

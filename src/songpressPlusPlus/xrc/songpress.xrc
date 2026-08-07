@@ -117,6 +117,12 @@
           <accel></accel>
           <help>Set paper size and orientation</help>
         </object>
+        <object class="wxMenuItem" name="watermark">
+          <label>_Watermark...</label>
+          <accel></accel>
+          <bitmap>../img/printPreview.png</bitmap>
+          <help>Add or remove a watermark on printed and exported output</help>
+        </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="insertPageBreak">
           <label>Page _break</label>
