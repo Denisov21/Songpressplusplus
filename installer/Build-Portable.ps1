@@ -1,4 +1,4 @@
-###############################################################
+﻿###############################################################
 # Build-Portable.ps1
 # Crea una distribuzione portabile ZIP di Songpress++
 # usando cx_Freeze in un venv dedicato.
@@ -55,17 +55,25 @@ $Python = Join-Path $VenvDir 'Scripts\python.exe'
 
 Write-Host "[2/6] Installazione dipendenze (può richiedere alcuni minuti)..." -ForegroundColor Yellow
 
+# Le specifiche di versione vanno tenute come elementi di un array e passate
+# con lo splatting (@Deps): la continuazione con backtick di stringhe
+# contenenti '<' e ',' non viene analizzata correttamente da Windows
+# PowerShell 5.1 ("The '<' operator is reserved for future use").
+$Deps = @(
+    'cx_Freeze'
+    'wxPython>=4.2.4,<5.0.0'
+    'requests>=2.32.4,<3.0.0'
+    'python-pptx>=1.0.2,<2.0.0'
+    'pyshortcuts>=1.9.5,<2.0.0'
+    'reportlab>=4.0.0,<5.0.0'
+    'pypdf>=6.0.0,<7.0.0'
+    'markdown>=3.4,<4.0.0'
+    'mistune>=3.0.0,<4.0.0'
+    'pywin32>=308'
+)
+
 & $Pip install --upgrade pip --quiet
-& $Pip install --quiet `
-    cx_Freeze `
-    "wxPython>=4.2.4,<5.0.0" `
-    "requests>=2.32.4,<3.0.0" `
-    "python-pptx>=1.0.2,<2.0.0" `
-    "pyshortcuts>=1.9.5,<2.0.0" `
-    "reportlab>=4.0.0,<5.0.0" `
-    "pypdf>=6.0.0,<7.0.0" `
-    "markdown>=3.4,<4.0.0" `
-    "mistune>=3.0.0,<4.0.0"
+& $Pip install --quiet @Deps
 
 if ($LASTEXITCODE -ne 0) { throw "pip install fallito (codice $LASTEXITCODE)" }
 Write-Host "    Dipendenze installate." -ForegroundColor Green
@@ -74,12 +82,20 @@ Write-Host "    Dipendenze installate." -ForegroundColor Green
 
 Write-Host "[3/6] Esecuzione cx_Freeze build_exe..." -ForegroundColor Yellow
 
+# cx_Freeze deve poter importare il package 'songpressPlusPlus' (elencato in
+# [tool.cxfreeze.build_exe] packages): va reso individuabile aggiungendo src/
+# a PYTHONPATH, altrimenti il finder fallisce con "No module named ...".
+$SrcDir      = Join-Path $ProjectRoot 'src'
+$OldPyPath   = $env:PYTHONPATH
+$env:PYTHONPATH = if ($OldPyPath) { "$SrcDir;$OldPyPath" } else { $SrcDir }
+
 Push-Location $ProjectRoot
 try {
     & $Python -m cx_Freeze build_exe
     if ($LASTEXITCODE -ne 0) { throw "cx_Freeze fallito (codice $LASTEXITCODE)" }
 } finally {
     Pop-Location
+    $env:PYTHONPATH = $OldPyPath
 }
 Write-Host "    Build completata." -ForegroundColor Green
 
@@ -94,7 +110,7 @@ Write-Host "    Cartella build: $($BuildOutput.FullName)"
 
 Write-Host "[4/6] Verifica cartella templates\fonts..." -ForegroundColor Yellow
 
-$SrcFonts  = Join-Path $ProjectRoot 'src\songpress\templates\fonts'
+$SrcFonts  = Join-Path $ProjectRoot 'src\songpressPlusPlus\templates\fonts'
 $DestFonts = Join-Path $BuildOutput.FullName 'templates\fonts'
 
 if (Test-Path $SrcFonts) {

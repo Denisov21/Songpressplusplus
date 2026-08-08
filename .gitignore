@@ -8,8 +8,8 @@ installer/~$ spiego passo.docx
 /.idea/
 /.vscode/
 
-# Egg info (setuptools)
-/*.egg-info/
+# Egg info (setuptools / cx_Freeze) — a qualsiasi profondità (es. src/)
+*.egg-info/
 
 # Build e distribuzione
 # Esclude le sottocartelle di build, non i file
