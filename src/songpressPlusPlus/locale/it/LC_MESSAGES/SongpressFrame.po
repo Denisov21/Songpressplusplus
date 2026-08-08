@@ -1042,8 +1042,8 @@ msgstr ""
 
 #: SongpressFrame.py — multicursor tab label
 #, python-format
-msgid "Cursor %d"
-msgstr "Cursore %d"
+msgid "Cursor"
+msgstr "Cursore"
 
 #: SongpressFrame.py — PDF import error
 #, python-format
