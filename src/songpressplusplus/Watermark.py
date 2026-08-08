@@ -171,7 +171,7 @@ class WatermarkDialog(wx.Dialog):
         main.Add(self.chkEnabled, 0, wx.ALL, pad)
 
         # Mostra anche nell'anteprima Songpress (stampa/export non ne dipendono)
-        self.chkPreview = wx.CheckBox(self, label=_("Show in Songpress preview"))
+        self.chkPreview = wx.CheckBox(self, label=_("Show in Songpress preview++"))
         self.chkPreview.SetValue(bool(self._cfg.get('showInPreview', True)))
         main.Add(self.chkPreview, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, pad)
 
@@ -225,7 +225,7 @@ class WatermarkDialog(wx.Dialog):
             self,
             label=_("The watermark is always applied in print and in exported\n"
                     "files (PNG, SVG, EMF, EPS, PDF). Enable \"Show in Songpress\n"
-                    "preview\" to see it in the editor too. It is drawn behind\n"
+                    "preview++\" to see it in the editor too. It is drawn behind\n"
                     "the song, so it never covers the text."))
         note.SetForegroundColour(wx.Colour(110, 110, 110))
         main.Add(note, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, pad)

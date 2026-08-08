@@ -26,8 +26,8 @@ msgid "Enable watermark"
 msgstr "Abilita filigrana"
 
 #: src/songpress/Watermark.py:173
-msgid "Show in Songpress preview"
-msgstr "Mostra nell'anteprima Songpress"
+msgid "Show in Songpress preview++"
+msgstr "Mostra nell'Anteprima Songpress++"
 
 #: src/songpress/Watermark.py:181
 msgid "Text:"
@@ -57,10 +57,10 @@ msgstr "Affianca (ripeti sulla pagina)"
 msgid ""
 "The watermark is always applied in print and in exported\n"
 "files (PNG, SVG, EMF, EPS, PDF). Enable \"Show in Songpress\n"
-"preview\" to see it in the editor too. It is drawn behind\n"
+"preview++\" to see it in the editor too. It is drawn behind\n"
 "the song, so it never covers the text."
 msgstr ""
 "La filigrana è sempre applicata in stampa e nei file\n"
 "esportati (PNG, SVG, EMF, EPS, PDF). Attiva «Mostra\n"
-"nell'anteprima Songpress» per vederla anche nell'editor.\n"
+"nell'Anteprima Songpress++» per vederla anche nell'editor.\n"
 "È disegnata dietro al brano, quindi non copre mai il testo."
