@@ -5032,12 +5032,16 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.text.AutoChangeMode(True)
         self.text.New()
         self.text.AutoChangeMode(False)
+        # Un documento nuovo non ha filigrana finche' non se ne aggiunge una.
+        self._apply_watermark_cfg(dict(self._WATERMARK_DEFAULTS))
         self.UpdateEverything()
 
     def Open(self):
         self.text.AutoChangeMode(True)
         self.text.Open()
         self.text.AutoChangeMode(False)
+        # Ripristina la filigrana salvata nel documento (direttiva {watermark:}).
+        self._load_watermark_from_document()
         self.UpdateEverything()
         self.AutoAdjust(0, self.text.GetLength())
 
@@ -8577,24 +8581,160 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             'showInPreview': getattr(self.pref, 'watermarkShowInPreview', True),
         }
 
+    # ------------------------------------------------------------------
+    # Filigrana per-documento: la config viaggia dentro il .crd come
+    # direttiva {watermark: ...}. Il Renderer la ignora (metadato), quindi
+    # non compare nell'anteprima/stampa come testo, ma configura la filigrana.
+    # ------------------------------------------------------------------
+
+    _WATERMARK_DEFAULTS = {
+        'enabled': False, 'text': 'DRAFT', 'opacity': 12, 'angle': 45,
+        'sizePct': 100, 'tile': False, 'colourHex': '#000000',
+        'showInPreview': True,
+    }
+
+    def _watermark_cfg_to_directive(self, cfg):
+        """Serializza la config filigrana in una direttiva ChordPro su una riga.
+
+        Il campo `text` e' messo per ULTIMO cosi' il suo valore puo' contenere
+        anche '=' o ';' senza rompere il parsing. Le graffe nel testo vengono
+        neutralizzate per non chiudere la direttiva.
+        """
+        txt = str(cfg.get('text', '') or '')
+        txt = txt.replace('{', '(').replace('}', ')').replace('\r', ' ').replace('\n', ' ')
+        return ('{watermark: enabled=%d; opacity=%d; angle=%d; sizePct=%d; '
+                'tile=%d; showInPreview=%d; colourHex=%s; text=%s}') % (
+            1 if cfg.get('enabled') else 0,
+            int(cfg.get('opacity', 12)),
+            int(cfg.get('angle', 45)),
+            int(cfg.get('sizePct', 100)),
+            1 if cfg.get('tile') else 0,
+            1 if cfg.get('showInPreview', True) else 0,
+            str(cfg.get('colourHex', '#000000')),
+            txt,
+        )
+
+    def _parse_watermark_directive(self, text):
+        """Estrae la direttiva {watermark: ...} dal testo. None se assente."""
+        import re
+        if not text:
+            return None
+        m = re.search(r'\{\s*watermark\s*:([^}\n]*)\}', text, re.IGNORECASE)
+        if not m:
+            return None
+        body = m.group(1)
+        # Il campo `text` e' l'ultimo: valore libero fino a fine direttiva.
+        tm = re.search(r'\btext\s*=\s*(.*)$', body, re.IGNORECASE)
+        if tm:
+            text_val = tm.group(1).strip()
+            head = body[:tm.start()]          # gli altri campi stanno qui
+        else:
+            text_val = 'DRAFT'
+            head = body
+
+        def _get(key, default):
+            mm = re.search(r'\b' + key + r'\s*=\s*([^;]+)', head, re.IGNORECASE)
+            return mm.group(1).strip() if mm else default
+
+        def _int(key, d):
+            try:
+                return int(float(_get(key, d)))
+            except (TypeError, ValueError):
+                return d
+
+        def _bool(key, d):
+            v = _get(key, None)
+            if v is None:
+                return d
+            return v.strip().lower() in ('1', 'true', 'yes', 'on')
+
+        return {
+            'enabled':       _bool('enabled', False),
+            'text':          text_val if text_val != '' else 'DRAFT',
+            'opacity':       max(2,   min(100, _int('opacity', 12))),
+            'angle':         max(-90, min(90,  _int('angle', 45))),
+            'sizePct':       max(20,  min(300, _int('sizePct', 100))),
+            'tile':          _bool('tile', False),
+            'colourHex':     _get('colourHex', '#000000') or '#000000',
+            'showInPreview': _bool('showInPreview', True),
+        }
+
+    def _apply_watermark_cfg(self, cfg):
+        """Applica una config filigrana in memoria e all'anteprima."""
+        self.pref.watermarkEnabled       = cfg['enabled']
+        self.pref.watermarkText          = cfg['text']
+        self.pref.watermarkOpacity       = cfg['opacity']
+        self.pref.watermarkAngle         = cfg['angle']
+        self.pref.watermarkSizePct       = cfg['sizePct']
+        self.pref.watermarkTile          = cfg['tile']
+        self.pref.watermarkColourHex     = cfg['colourHex']
+        self.pref.watermarkShowInPreview = cfg['showInPreview']
+        self.previewCanvas.SetWatermark(self._GetWatermarkConfig())
+        # Ridisegna SEMPRE l'anteprima: senza questo, quando la filigrana viene
+        # caricata all'apertura del file (Open -> _load_watermark_from_document)
+        # il canvas riceve la nuova config ma non viene ripristinato, quindi la
+        # filigrana non compare finche' non si tocca altro. Il refresh eventuale
+        # scatenato dal caricamento del testo avviene PRIMA che la config sia
+        # impostata, percio' serve forzarlo qui.
+        try:
+            self.previewCanvas.Refresh(self._get_display_text())
+        except Exception:
+            pass
+
+    def _load_watermark_from_document(self):
+        """Legge la filigrana dalla direttiva del documento (o la disabilita)."""
+        cfg = self._parse_watermark_directive(self.text.GetText())
+        if cfg is None:
+            cfg = dict(self._WATERMARK_DEFAULTS)   # nessuna direttiva -> niente filigrana
+        self._apply_watermark_cfg(cfg)
+
+    def _write_watermark_to_document(self, cfg):
+        """Inserisce/aggiorna/rimuove la direttiva {watermark:} nel testo del .crd.
+
+        - filigrana abilitata con testo non vuoto -> direttiva in testa (o
+          aggiornata sul posto se gia' presente);
+        - altrimenti -> l'eventuale direttiva esistente viene rimossa, cosi'
+          il file resta pulito.
+        """
+        import re
+        stc = self.text
+        old = stc.GetText()
+        rx = re.compile(r'^[ \t]*\{\s*watermark\s*:[^}\n]*\}[ \t]*\r?\n?',
+                        re.IGNORECASE | re.MULTILINE)
+
+        if cfg.get('enabled') and (cfg.get('text') or '').strip():
+            directive = self._watermark_cfg_to_directive(cfg) + '\n'
+            if rx.search(old):
+                new = rx.sub(directive, old, count=1)
+            else:
+                new = directive + old
+        else:
+            new = rx.sub('', old, count=1)
+
+        if new != old:
+            pos = stc.GetCurrentPos()
+            delta = len(new) - len(old)
+            stc.BeginUndoAction()
+            stc.SetText(new)
+            stc.EndUndoAction()
+            # Riallinea grossolanamente il cursore (la direttiva sta in testa).
+            new_pos = pos + delta if pos > 0 else pos
+            stc.GotoPos(max(0, min(stc.GetLength(), new_pos)))
+
     def OnWatermark(self, evt):
-        """Aggiungi/rimuovi/configura la filigrana (anteprima, stampa, export)."""
+        """Aggiungi/rimuovi/configura la filigrana (anteprima, stampa, export).
+
+        La configurazione viene salvata DENTRO il documento .crd come direttiva
+        {watermark: ...}, cosi' ogni brano ha la propria filigrana e la ritrova
+        alla riapertura del file.
+        """
         from . import Watermark
         old = self._GetWatermarkConfig()
         dlg = Watermark.WatermarkDialog(self.frame, old)
         if dlg.ShowModal() == wx.ID_OK:
             cfg = dlg.GetConfig()
-            self.pref.watermarkEnabled   = cfg['enabled']
-            self.pref.watermarkText      = cfg['text']
-            self.pref.watermarkOpacity   = cfg['opacity']
-            self.pref.watermarkAngle     = cfg['angle']
-            self.pref.watermarkSizePct   = cfg['sizePct']
-            self.pref.watermarkTile      = cfg['tile']
-            self.pref.watermarkColourHex = cfg['colourHex']
-            self.pref.watermarkShowInPreview = cfg['showInPreview']
-            self.pref.Save()
-            # Rifletti subito la filigrana nell'anteprima
-            self.previewCanvas.SetWatermark(self._GetWatermarkConfig())
+            self._apply_watermark_cfg(cfg)            # memoria + anteprima
+            self._write_watermark_to_document(cfg)    # persiste nel .crd
             self.previewCanvas.Refresh(self._get_display_text())
             # Se qualcosa e' cambiato, segna il documento come modificato
             # cosi' il comando File -> Salva si attiva.

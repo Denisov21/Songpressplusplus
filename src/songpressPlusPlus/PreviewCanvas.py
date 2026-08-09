@@ -508,6 +508,13 @@ class PreviewCanvas(object):
             self._UpdatePageLabel(0)
             return
 
+        # La filigrana puo' essere disegnata solo se conosciamo gia' la
+        # dimensione del brano (self._last_h), che pero' viene calcolata solo
+        # AL TERMINE di questo paint. Ricordiamo se la dimensione era gia' nota
+        # all'inizio: se non lo era e la filigrana e' attiva, in coda al metodo
+        # forzeremo un secondo paint per mostrarla (vedi fine di OnPaint).
+        _had_size = self._last_h > 0
+
         # PrepareDC ha già impostato l'origine device in base allo scroll (X e Y).
         # Aggiungiamo margin_h all'origine X corrente SENZA annullare lo scroll:
         # GetDeviceOrigin() restituisce l'offset impostato da PrepareDC, a cui
@@ -547,6 +554,17 @@ class PreviewCanvas(object):
 
         # Aggiorna label pagina
         self._UpdatePageLabel(h)
+
+        # Se la filigrana e' attiva ma NON ha potuto disegnarsi perche' la
+        # dimensione del brano non era ancora nota (tipico al primo paint dopo
+        # l'apertura di un file), ora che _last_h e' valido forziamo un unico
+        # ulteriore repaint. Alla ripittura _had_size sara' True, quindi non si
+        # innesca alcun ciclo infinito.
+        _cfg = getattr(self, '_watermark_cfg', None)
+        _wm_active = bool(_cfg and _cfg.get('enabled')
+                          and _cfg.get('showInPreview', True))
+        if _wm_active and not _had_size and h > 0:
+            wx.CallAfter(self.panel.Refresh)
 
     # -----------------------------------------------------------------------
     # Zoom

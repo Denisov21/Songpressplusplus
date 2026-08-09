@@ -57,9 +57,14 @@ class Decorator(SongDecorator):
         self.dc.SetFont(font)
         baseWidth, baseHeight = self.dc.GetTextExtent("0")
         if block.type == block.verse:
-            # Nessun margine per blocchi che contengono solo commenti {c:}
+            # Nessun margine (nessuna etichetta) se il blocco non ha testo
+            # visibile: vuoto, soli spazi, o soli commenti {c:} / righe '#...'.
             all_texts = [t for line in block.boxes for t in line.boxes]
-            if all_texts and all(t.type == SongText.comment for t in all_texts):
+            visible = [t for t in all_texts
+                       if t.type != SongText.comment
+                       and (t.text or '').strip() != ''
+                       and not (t.text or '').strip().startswith('#')]
+            if not visible:
                 block.SetMargin(0, 0, 0, 0)
                 return
             text = block.label if block.label is not None else ''
@@ -102,10 +107,15 @@ class Decorator(SongDecorator):
             self.dc.SetTextForeground(wx.BLACK)
 
         if block.type != block.title and len(block.boxes) > 0:
-            # Non mostrare numero se il blocco contiene solo commenti {c:}
+            # Non mostrare il numero se il blocco non ha testo visibile:
+            # vuoto, soli spazi, o soli commenti {c:} / righe '#...'.
             if block.type == block.verse:
                 all_texts = [t for line in block.boxes for t in line.boxes]
-                if all_texts and all(t.type == SongText.comment for t in all_texts):
+                visible = [t for t in all_texts
+                           if t.type != SongText.comment
+                           and (t.text or '').strip() != ''
+                           and not (t.text or '').strip().startswith('#')]
+                if not visible:
                     return
             font = block.format.wxFont
             self.dc.SetFont(font)

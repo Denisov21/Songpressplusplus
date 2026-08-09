@@ -91,6 +91,25 @@ class Renderer(object):
     def EndBlock(self):
         if self.currentBlock is not None:
             self.EndLine()
+            # Rete di sicurezza: scarta i blocchi verse auto-numerati (label
+            # is None) privi di contenuto visibile (vuoti, soli spazi, soli
+            # commenti {c:} o righe '#...'). Senza questo un blocco strofa senza
+            # testo verrebbe comunque numerato dal decorator, disegnando un
+            # riquadro "1" dove non c'e' testo. I blocchi con label esplicita
+            # (es. {row}/RowSpacer con label "") NON vengono toccati.
+            blk = self.currentBlock
+            if blk.type == SongBlock.verse and blk.label is None:
+                def _visible(t):
+                    s = (t.text or '').strip()
+                    return (t.type != SongText.comment
+                            and s != '' and not s.startswith('#'))
+                if not any(_visible(t) for line in blk.boxes for t in line.boxes):
+                    # Annulla l'incremento dei contatori cosi' la numerazione
+                    # delle strofe reali resta corretta (1, 2, 3, ...).
+                    self.song.labelCount -= 1
+                    self.song.verseCount -= 1
+                    self.currentBlock = None
+                    return
             if self.sf.showChords == 1:
                 current = self.currentBlock.chords
                 found = False
@@ -337,6 +356,15 @@ class Renderer(object):
             self.BeginBlock(SongBlock.title)
             self.format = self.sf.title
         else:
+            # Non aprire una nuova strofa (numerata) per testo di soli spazi
+            # quando non c'e' un blocco aperto: i tab/spazi tra direttive inline
+            # come '{tempo:}\t\t{time:...}\t{key:...}' vengono tokenizzati come
+            # testo e creerebbero una strofa fantasma numerata "1" davanti al
+            # sottotitolo. Dentro un blocco gia' aperto gli spazi restano validi.
+            if (self.currentBlock is None
+                    and type != SongText.chord
+                    and (text is None or text.strip() == '')):
+                return
             self.BeginVerse()
         self.BeginLine()
         if type == SongText.comment:
@@ -547,6 +575,19 @@ class Renderer(object):
 
             self.tkz = SongTokenizer(l)
             empty = True
+            # Riga di commento ChordPro '#...': va ignorata come una riga vuota
+            # (chiude il blocco corrente) a prescindere da come SongTokenizer
+            # classifichi '#' non seguito da spazio. Le direttive '# {..}' sono
+            # gia' rimosse a monte da _strip_hash_commands, quindi qui '#...' e'
+            # sempre un commento libero: non deve generare testo ne' una strofa
+            # numerata (era la causa del riquadro "1" vuoto subito dopo il titolo).
+            if l.lstrip().startswith('#'):
+                self.EndLine()
+                if state in (SongBlock.verse, SongBlock.title):
+                    self.EndBlock()
+                elif state == SongBlock.chorus:
+                    self.ChorusVSkip()
+                continue
             for tok in self.tkz:
                 state = self.GetState()
                 t = tok.token
@@ -647,7 +688,7 @@ class Renderer(object):
                     # non visualizzati nell'anteprima, ignorati silenziosamente.
                     elif cmd in ('sorttitle', 'keywords', 'topic', 'collection',
                                  'language', 'pagetype', 'columns', 'meta',
-                                 'transpose', 'duration'):
+                                 'transpose', 'duration', 'watermark'):
                         self.GetAttribute()   # consuma il token `:valore` senza usarlo
                     elif cmd == 'new_song':
                         # Inizio nuovo brano nello stesso documento:
