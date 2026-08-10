@@ -40,6 +40,7 @@ Songpress++ utilizza il formato **ChordPro** esteso. I comandi sono racchiusi tr
    - [copyright](#copyright)
    - [key](#key)
    - [capo](#capo)
+   - [watermark](#watermark)
 5. [Impaginazione](#5-impaginazione)
    - [new_page / np](#new_page--np)
    - [column_break / colb](#column_break--colb)
@@ -549,6 +550,31 @@ Indica la posizione del **capotasto** (barrè). Il valore N è il numero del tas
 ```chordpro
 {capo: 3}
 ```
+
+---
+
+### `watermark`
+
+**Sintassi:** `{watermark: enabled=1; opacity=12; angle=45; sizePct=100; tile=0; showInPreview=1; colourHex=#000000; text=DRAFT}`
+
+Filigrana **per-documento**, esclusiva di Songpress++. La configurazione viaggia dentro il file `.crd` come singola direttiva, così ogni brano ha la propria filigrana e la ritrova alla riapertura. Di norma **non si scrive a mano**: si imposta dalla finestra *Filigrana* (menu), che genera e aggiorna automaticamente la direttiva. La filigrana viene disegnata **dietro** al brano, quindi non ne copre mai il testo.
+
+| Chiave | Valori | Default | Descrizione |
+|---|---|---|---|
+| `enabled` | `0` / `1` | `0` | Attiva o disattiva la filigrana. |
+| `opacity` | `2`–`100` | `12` | Intensità in percentuale (valori alti = più scura). |
+| `angle` | `-90`–`90` | `45` | Inclinazione in gradi. |
+| `sizePct` | `20`–`300` | `100` | Scala della dimensione del carattere in percentuale. |
+| `tile` | `0` / `1` | `0` | `0` = una filigrana centrata; `1` = ripetuta a mosaico sulla pagina. |
+| `showInPreview` | `0` / `1` | `1` | Mostra la filigrana anche nell'anteprima Songpress++ (stampa ed export non dipendono da questo flag). |
+| `colourHex` | `#RRGGBB` | `#000000` | Colore della filigrana. |
+| `text` | testo libero | `DRAFT` | Testo della filigrana (es. `BOZZA`, `COPIA`). **Deve essere l'ultima chiave** (il suo valore può contenere anche `=` e `;`). |
+
+```chordpro
+{watermark: enabled=1; opacity=12; angle=45; sizePct=100; tile=0; showInPreview=1; colourHex=#000000; text=DRAFT}
+```
+
+> La filigrana è applicata **sempre** in stampa e nei file esportati (PNG, SVG, EMF, EPS, PDF) quando `enabled=1`. Nell'anteprima compare solo se anche `showInPreview=1`. Disattivandola dalla finestra *Filigrana*, la direttiva viene rimossa dal file. È previsto un solo blocco `{watermark:}` per documento.
 
 ---
 
@@ -1275,6 +1301,7 @@ Accessibile da **Formato → Indicazione di tempo** (o clic sull'indicazione nel
 | `{copyright: ...}` | — | Metadati | Testo copyright |
 | `{key: ...}` | — | Metadati | Tonalità della canzone |
 | `{capo: N}` | — | Metadati | Posizione del capotasto |
+| `{watermark: ...}` | — | Filigrana | Filigrana per-documento (testo, opacità, angolo, colore…) — di norma impostata dal menu |
 | `{new_page}` | `{np}` | Impaginazione | Salto di pagina |
 | `{column_break}` | `{colb}` | Impaginazione | Salto di colonna |
 | `{tempo: N[,M]}` | — | Musicale | Tempo in BPM (semiminima); M = modalità visualizzazione (0/1/2/3/−1) |

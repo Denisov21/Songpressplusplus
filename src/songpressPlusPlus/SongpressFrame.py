@@ -5208,6 +5208,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.UpdateSave()
 
     def TextUpdated(self):
+        # Rileva una direttiva {watermark:} digitata o modificata a mano
+        # nell'editor e allinea filigrana, anteprima e stato del dialogo prima
+        # di ridisegnare. Senza questo, una direttiva scritta a mano non veniva
+        # rilevata (veniva letta solo all'apertura del file).
+        self._sync_watermark_from_document()
         self.previewCanvas.Refresh(self._get_display_text())
 
     # self.UpdateEverything()
@@ -8687,6 +8692,31 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         if cfg is None:
             cfg = dict(self._WATERMARK_DEFAULTS)   # nessuna direttiva -> niente filigrana
         self._apply_watermark_cfg(cfg)
+
+    def _sync_watermark_from_document(self):
+        """Allinea filigrana e canvas alla direttiva presente nel testo.
+
+        Usato a ogni modifica del testo (TextUpdated) per intercettare una
+        direttiva {watermark:} scritta o modificata a mano nell'editor. NON
+        ridisegna l'anteprima: il refresh lo esegue il chiamante. Aggiorna
+        self.pref.* cosi' anche il dialogo Filigrana rispecchia lo stato reale.
+        Ritorna True se qualcosa e' cambiato.
+        """
+        cfg = self._parse_watermark_directive(self.text.GetText())
+        if cfg is None:
+            cfg = dict(self._WATERMARK_DEFAULTS)
+        if cfg == self._GetWatermarkConfig():
+            return False   # gia' allineato: nessun lavoro da fare
+        self.pref.watermarkEnabled       = cfg['enabled']
+        self.pref.watermarkText          = cfg['text']
+        self.pref.watermarkOpacity       = cfg['opacity']
+        self.pref.watermarkAngle         = cfg['angle']
+        self.pref.watermarkSizePct       = cfg['sizePct']
+        self.pref.watermarkTile          = cfg['tile']
+        self.pref.watermarkColourHex     = cfg['colourHex']
+        self.pref.watermarkShowInPreview = cfg['showInPreview']
+        self.previewCanvas.SetWatermark(self._GetWatermarkConfig())
+        return True
 
     def _write_watermark_to_document(self, cfg):
         """Inserisce/aggiorna/rimuove la direttiva {watermark:} nel testo del .crd.

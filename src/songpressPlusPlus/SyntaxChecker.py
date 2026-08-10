@@ -78,6 +78,8 @@ _KNOWN_COMMANDS = {
     "pagetype", "columns", "meta",
     # Transpose (ChordPro 6, consumed silently)
     "transpose",
+    # Watermark — Songpress++ (metadato per-documento, consumato senza render)
+    "watermark",
     # Page / column layout
     "new_page", "np",
     "column_break", "colb",
@@ -701,6 +703,8 @@ def _validate_command(content: str, line_num: int, col: int,
         # Metadati estesi: richiedono un valore (non ha senso scriverli vuoti)
         "sorttitle", "keywords", "topic", "collection", "language",
         "meta",
+        # Watermark S++: porta sempre la config (text=...; ...)
+        "watermark",
     }
 
     _OPTIONAL_VALUE = {

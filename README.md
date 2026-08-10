@@ -86,6 +86,11 @@ sudo apt install python3 python3-pip python3-venv fakeroot dpkg imagemagick
 
 ### Building the .deb package
 
+> **🌐 An Internet connection is required.** During the build the script creates
+> the Python wheel using `pip` and `hatchling`: if the build backend and its
+> dependencies are not already in `pip`'s cache, they are downloaded from PyPI.
+> Without a network connection, building the package may fail.
+
 The `build_deb.sh` script is located in the project root, next to `pyproject.toml`.
 
 #### 1. Enter the project folder

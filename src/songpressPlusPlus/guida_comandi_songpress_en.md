@@ -40,6 +40,7 @@ Songpress++ uses the extended **ChordPro** format. Commands are enclosed in curl
    - [copyright](#copyright)
    - [key](#key)
    - [capo](#capo)
+   - [watermark](#watermark)
 5. [Page layout](#5-page-layout)
    - [new_page / np](#new_page--np)
    - [column_break / colb](#column_break--colb)
@@ -549,6 +550,31 @@ Indicates the **capo** position (barre). N is the fret number. Displayed in the 
 ```chordpro
 {capo: 3}
 ```
+
+---
+
+### `watermark`
+
+**Syntax:** `{watermark: enabled=1; opacity=12; angle=45; sizePct=100; tile=0; showInPreview=1; colourHex=#000000; text=DRAFT}`
+
+**Per-document** watermark, exclusive to Songpress++. The configuration travels inside the `.crd` file as a single directive, so each song keeps its own watermark and gets it back when reopened. You normally **don't type it by hand**: set it from the *Watermark* dialog (menu), which generates and updates the directive automatically. The watermark is drawn **behind** the song, so it never covers the text.
+
+| Key | Values | Default | Description |
+|---|---|---|---|
+| `enabled` | `0` / `1` | `0` | Enables or disables the watermark. |
+| `opacity` | `2`–`100` | `12` | Intensity as a percentage (higher = darker). |
+| `angle` | `-90`–`90` | `45` | Tilt in degrees. |
+| `sizePct` | `20`–`300` | `100` | Font size scale as a percentage. |
+| `tile` | `0` / `1` | `0` | `0` = a single centred watermark; `1` = tiled across the page. |
+| `showInPreview` | `0` / `1` | `1` | Also show the watermark in the Songpress++ preview (print and export do not depend on this flag). |
+| `colourHex` | `#RRGGBB` | `#000000` | Watermark colour. |
+| `text` | free text | `DRAFT` | Watermark text (e.g. `PROOF`, `COPY`). **Must be the last key** (its value may contain `=` and `;`). |
+
+```chordpro
+{watermark: enabled=1; opacity=12; angle=45; sizePct=100; tile=0; showInPreview=1; colourHex=#000000; text=DRAFT}
+```
+
+> The watermark is **always** applied in print and in exported files (PNG, SVG, EMF, EPS, PDF) when `enabled=1`. In the preview it appears only if `showInPreview=1` as well. Disabling it from the *Watermark* dialog removes the directive from the file. Only one `{watermark:}` block is allowed per document.
 
 ---
 
@@ -1277,6 +1303,7 @@ Accessible from **Format → Tempo indication** (or by clicking the indication i
 | `{copyright: ...}` | — | Metadata | Copyright text |
 | `{key: ...}` | — | Metadata | Song key |
 | `{capo: N}` | — | Metadata | Capo position |
+| `{watermark: ...}` | — | Watermark | Per-document watermark (text, opacity, angle, colour…) — usually set from the menu |
 | `{new_page}` | `{np}` | Layout | Page break |
 | `{column_break}` | `{colb}` | Layout | Column break |
 | `{tempo: N[,M]}` | — | Musical | Tempo in BPM (quarter note); M = display mode (0/1/2/3/−1) |

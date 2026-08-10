@@ -66,6 +66,41 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # patch non trovano nulla e produrrebbero un .deb non corretto, in silenzio.
 cd "$SCRIPT_DIR"
 
+# ── Conferma: serve una connessione a Internet ────────────────────────────────
+# Il pacchetto prodotto, durante l'installazione (postinst), scarica via pip/apt
+# le dipendenze non presenti nei repository Debian (python-pptx, pyshortcuts, ...).
+# Avvisiamo l'utente PRIMA di iniziare, così può annullare senza aver toccato nulla.
+#   - Con -y / --yes (o SPP_ASSUME_YES=1) la domanda viene saltata: utile in CI.
+#   - Se stdin non è un terminale e manca -y, meglio fermarsi che proseguire alla cieca.
+ASSUME_YES="${SPP_ASSUME_YES:-0}"
+for _arg in "$@"; do
+    case "$_arg" in
+        -y|--yes) ASSUME_YES=1 ;;
+    esac
+done
+
+if [[ "$ASSUME_YES" != "1" ]]; then
+    echo ""
+    echo "$WARN La creazione del pacchetto .deb richiede una connessione a Internet."
+    echo "    pip scarica da PyPI i componenti necessari a costruire la wheel"
+    echo "    (hatchling e le dipendenze di build)."
+    echo ""
+    if [[ -t 0 ]]; then
+        read -r -p "🌐 Vuoi continuare? [S/N] " _risposta || _risposta=""
+    else
+        echo "$ERR stdin non interattivo e nessun -y/--yes: interrompo." >&2
+        exit 1
+    fi
+    case "${_risposta,,}" in
+        s|si|sì) ;;                       # S, s, Si, sì, ...
+        *)
+            echo "$ERR Operazione annullata dall'utente. Pacchetto NON creato."
+            exit 1
+            ;;
+    esac
+    echo ""
+fi
+
 # ── Helper ImageMagick ────────────────────────────────────────────────────────
 # FIX 6: su ImageMagick 7 (Debian 13/trixie in poi) il comando "convert" non
 # esiste più: si usa "magick". Qui rileviamo una volta sola quale è presente.
@@ -153,6 +188,7 @@ pyshortcuts:pyshortcuts"
 BUILD_DIR="$SCRIPT_DIR/build_deb"
 PKG_ROOT="$BUILD_DIR/${DEB_NAME}_${DEB_VERSION}"
 INSTALL_PREFIX="$PKG_ROOT/usr"
+
 
 # ── Pulizia precedente build ──────────────────────────────────────────────────
 echo "$OK Pulizia build precedente..."

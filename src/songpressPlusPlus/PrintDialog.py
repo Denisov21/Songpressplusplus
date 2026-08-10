@@ -541,11 +541,39 @@ class SongpressPrintout(wx.Printout):
         self._seg_verse_start   = {}     # seg_idx -> (verseCount, labelCount, chorusCount)
         self._col_w_du          = None
         self._gap_du            = None
+        # Dimensione pagina in device-unit COERENTE con dc.GetPPI(): calcolata
+        # una sola volta in _ensure_layout e riusata in _render_logical_page e
+        # OnPrintPage, così tutti i calcoli restano nello stesso frame.
+        self._page_w_du         = None
+        self._page_h_du         = None
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
     def _mm_to_du(self, mm, ppi):
         return int(mm * ppi / 25.4)
+
+    def _page_size_du(self, ppi_x, ppi_y):
+        """Dimensione pagina (larghezza, altezza) in device-unit coerenti con `ppi`.
+
+        FIX Linux (wxGTK)
+        ─────────────────
+        Su GTK, in anteprima di stampa, GetPageSizePixels() restituisce i pixel
+        a risoluzione STAMPANTE, mentre dc.GetPPI() (usato per margini e scala)
+        restituisce i DPI dello SCHERMO. Mescolare le due unità falsava altezza
+        utile, numero di pagine, «colonne per pagina» e «pagine per foglio».
+
+        Ricaviamo quindi la dimensione dalla misura in mm (GetPageSizeMM(),
+        indipendente dalla risoluzione) usando gli STESSI ppi del resto del
+        layout. Fallback ai pixel nativi se la misura in mm non è disponibile.
+        """
+        try:
+            w_mm, h_mm = self.GetPageSizeMM()
+        except Exception:
+            w_mm, h_mm = 0, 0
+        if w_mm and h_mm:
+            return (int(round(w_mm * ppi_x / 25.4)),
+                    int(round(h_mm * ppi_y / 25.4)))
+        return self.GetPageSizePixels()
 
     @staticmethod
     def _split_on_new_page(text):
@@ -611,8 +639,16 @@ class SongpressPrintout(wx.Printout):
         if self._page_offsets is not None:
             return
 
-        pw, ph   = self.GetPageSizePixels()
         ppi_x, ppi_y = dc.GetPPI()
+        # Su wxGTK usiamo la dimensione derivata dai mm (coerente con GetPPI);
+        # su Windows/macOS manteniamo il valore nativo per non alterarne il
+        # comportamento (che lì è già corretto).
+        if wx.Platform == '__WXGTK__':
+            pw, ph = self._page_size_du(ppi_x, ppi_y)
+        else:
+            pw, ph = self.GetPageSizePixels()
+        # Memorizza per riuso coerente in _render_logical_page e OnPrintPage.
+        self._page_w_du, self._page_h_du = pw, ph
 
         ml = self._mm_to_du(self.frame_obj._margin_left,   ppi_x)
         mr = self._mm_to_du(self.frame_obj._margin_right,  ppi_x)
@@ -914,24 +950,101 @@ class SongpressPrintout(wx.Printout):
         if dc:
             self._ensure_layout(dc)
 
+    def _preview_fit_scale(self, dc):
+        """Fattore di adattamento per l'ANTEPRIMA wxGTK.
+
+        In anteprima wxGTK il DC su cui disegna il printout è la bitmap della
+        pagina GIÀ RIMPICCIOLITA per entrare nella finestra di preview, mentre
+        il layout e i posizionamenti (SetDeviceOrigin) sono calcolati in
+        device-unit ricavate dai mm a risoluzione schermo
+        (self._page_w_du / self._page_h_du), che sono più grandi della bitmap.
+        Manca cioè il fattore standard `dc.GetSize() / dimensione_pagina` che il
+        codice di stampa wx applica proprio per gestire lo zoom dell'anteprima.
+        Senza correzione le due colonne e la riga di separazione «sforano» a
+        destra e il centro cade oltre metà foglio.
+
+        Restituisce (kx, ky) = dimensione REALE del DC / dimensione pagina in du,
+        da moltiplicare alle coordinate/scala device in fase di disegno: così
+        colonne e separatore rientrano e restano centrati.
+
+        Attivo SOLO in anteprima e SOLO su wxGTK. In stampa reale
+        (IsPreview() == False) e su Windows/macOS restituisce (1.0, 1.0)
+        → nessun effetto, nessuna regressione.
+        """
+        try:
+            if wx.Platform != '__WXGTK__' or not self.IsPreview():
+                return 1.0, 1.0
+            dcw, dch = dc.GetSize()
+            pw = self._page_w_du or dcw
+            ph = self._page_h_du or dch
+            kx = (dcw / pw) if pw else 1.0
+            ky = (dch / ph) if ph else 1.0
+            # Applichiamo solo una RIDUZIONE (anteprima). Scarti trascurabili
+            # (~1) o valori anomali (≤0) non toccano nulla, per sicurezza.
+            if not (0.0 < kx < 0.999):
+                kx = 1.0
+            if not (0.0 < ky < 0.999):
+                ky = 1.0
+            return kx, ky
+        except Exception:
+            return 1.0, 1.0
+
     def _render_logical_page(self, dc, logical_page_idx, origin_x, origin_y):
         if logical_page_idx >= len(self._page_offsets):
             return
 
         seg_idx, y_offset_px = self._page_offsets[logical_page_idx]
         ml, mt, mr, mb       = self._margin_du
-        usable_h_du          = self.GetPageSizePixels()[1] - mt - mb
+        usable_h_du          = self._page_h_du - mt - mb
         full_song, _ = self._song_info  # sel_text già incluso in self._segments
 
         seg_text = self._segments[seg_idx]
 
-        dc.SetClippingRegion(
-            origin_x, origin_y,
-            self._col_w_du if self.two_pages_per_sheet else self._usable_w_du,
-            usable_h_du,
+        col_w_du = self._col_w_du if self.two_pages_per_sheet else self._usable_w_du
+
+        # FIX Linux (wxGTK) — «2 pagine per foglio» non divideva a metà
+        # ────────────────────────────────────────────────────────────────
+        # Impostiamo PRIMA la trasformazione (origine device + scala) e SOLO
+        # DOPO la regione di clip, espressa in coordinate LOGICHE relative alla
+        # nuova origine. Su wxGTK impostare il clip mentre l'origine è ancora a
+        # (0,0) e cambiarla subito dopo faceva "seguire" il clip allo
+        # spostamento dell'origine: per la pagina di DESTRA (origin_x grande)
+        # la regione di clip finiva fuori dalla metà utile e il testo non
+        # restava confinato → le due metà si sovrapponevano e il foglio non
+        # appariva diviso a metà.
+        #
+        # Con quest'ordine la regione risultante in coordinate device è
+        # identica a prima su Windows/macOS (dove l'origine ambiente è già
+        # l'identità), quindi il comportamento lì non cambia; su GTK diventa
+        # corretto perché il clip viene calcolato con la trasformazione finale.
+        #
+        # FIX Linux (wxGTK) — anteprima: adattamento alla bitmap di preview.
+        # kx/ky valgono 1.0 in stampa reale e su Windows/macOS (nessun effetto);
+        # in anteprima GTK rimpiccioliscono origine device e scala così la
+        # colonna rientra nella bitmap più piccola e resta al posto giusto.
+        # NB: il blocco di clip qui sotto NON va toccato — è in coordinate
+        # LOGICHE e il fattore k, portato dalla SetUserScale, si semplifica:
+        # l'estensione device del clip resta col_w_du * kx, coerente con
+        # l'origine e con il separatore.
+        kx, ky = self._preview_fit_scale(dc)
+        dc.SetDeviceOrigin(
+            int(round(origin_x * kx)),
+            int(round((origin_y - y_offset_px * self._scale_y) * ky)),
         )
-        dc.SetDeviceOrigin(origin_x, origin_y - int(y_offset_px * self._scale_y))
-        dc.SetUserScale(self._scale_x, self._scale_y)
+        dc.SetUserScale(self._scale_x * kx, self._scale_y * ky)
+
+        # Clip in coordinate logiche (verrà composto con origine/scala correnti):
+        #   x: 0 .. larghezza colonna / scale_x
+        #   y: y_offset .. y_offset + altezza utile / scale_y
+        # → in device equivale esattamente a
+        #   (origin_x, origin_y, col_w_du, usable_h_du).
+        sx = self._scale_x if self._scale_x else 1.0
+        sy = self._scale_y if self._scale_y else 1.0
+        clip_x = 0
+        clip_y = int(y_offset_px)
+        clip_w = int(math.ceil(col_w_du / sx))
+        clip_h = int(math.ceil(usable_h_du / sy))
+        dc.SetClippingRegion(clip_x, clip_y, clip_w, clip_h)
 
         r = self._make_renderer()
         vc, lc, cc = self._seg_verse_start.get(seg_idx, (0, 0, 0))
@@ -940,16 +1053,16 @@ class SongpressPrintout(wx.Printout):
         r.initialChorusCount = cc
         r.Render(seg_text, dc)
 
+        dc.DestroyClippingRegion()
         dc.SetUserScale(1.0, 1.0)
         dc.SetDeviceOrigin(0, 0)
-        dc.DestroyClippingRegion()
 
     def OnPrintPage(self, page):
         dc = self.GetDC()
         self._ensure_layout(dc)
 
         ml, mt, mr, mb = self._margin_du
-        pw, ph         = self.GetPageSizePixels()
+        pw, ph         = self._page_w_du, self._page_h_du
 
         # Filigrana DIETRO al contenuto: disegnata prima, cosi' il testo che
         # segue non viene oscurato. Copre stampa ed export PDF Linux/macOS (CUPS).
@@ -967,9 +1080,47 @@ class SongpressPrintout(wx.Printout):
             right_x  = ml + self._col_w_du + self._gap_du
             center_x = ml + self._col_w_du + self._gap_du // 2
 
-            dc.SetPen(wx.Pen(wx.Colour(180, 180, 180), 1, wx.PENSTYLE_DOT))
-            dc.DrawLine(center_x, mt, center_x, ph - mb)
-            dc.SetPen(wx.NullPen)
+            # ── Separatore centrale ────────────────────────────────────────
+            # center_x / mt / (ph - mb) sono in DEVICE-UNIT: le STESSE unita'
+            # che _render_logical_page passa a SetDeviceOrigin per collocare le
+            # due colonne. Vanno quindi disegnate nel frame DEVICE nativo del DC.
+            #
+            # FIX Linux (wxGTK) — linea non centrata (ne' orizzontale ne' verticale)
+            # ─────────────────────────────────────────────────────────────────────
+            # In ANTEPRIMA wxGTK lascia sul DC una trasformazione «ambiente»:
+            #   • SetUserScale  = zoom di anteprima (device stampante -> preview)
+            #   • SetDeviceOrigin = offset di centratura della pagina
+            # Le colonne non ne risentono perche' _render_logical_page sovrascrive
+            # scala e origine. La linea, invece, disegnata "cosi' com'e'", veniva
+            # interpretata in quel frame ambiente: con coordinate in pixel-schermo
+            # (valori piccoli) finiva in alto a sinistra e accorciata -> non
+            # centrata ne in orizzontale ne in verticale.
+            # Su Windows/macOS l'ambiente e' gia' l'identita', quindi lì e' un no-op.
+            #
+            # Azzeriamo scala e origine (salvando/ripristinando lo stato) così la
+            # linea usa lo stesso frame device delle colonne su ogni piattaforma.
+            #
+            # In anteprima wxGTK moltiplichiamo le coordinate per lo STESSO
+            # fattore (kx, ky) applicato alle colonne in _render_logical_page:
+            # così il separatore rientra nella bitmap di preview e cade
+            # esattamente a metà (center_x * kx = larghezza_DC / 2), restando
+            # nel gap tra le due colonne. In stampa reale e su Windows/macOS
+            # kx = ky = 1.0 → nessun cambiamento.
+            kx, ky = self._preview_fit_scale(dc)
+            cx = int(round(center_x * kx))
+            y0 = int(round(mt * ky))
+            y1 = int(round((ph - mb) * ky))
+            _sx0, _sy0 = dc.GetUserScale()
+            _org0      = dc.GetDeviceOrigin()
+            try:
+                dc.SetUserScale(1.0, 1.0)
+                dc.SetDeviceOrigin(0, 0)
+                dc.SetPen(wx.Pen(wx.Colour(180, 180, 180), 1, wx.PENSTYLE_DOT))
+                dc.DrawLine(cx, y0, cx, y1)
+                dc.SetPen(wx.NullPen)
+            finally:
+                dc.SetUserScale(_sx0, _sy0)
+                dc.SetDeviceOrigin(_org0.x, _org0.y)
 
             self._render_logical_page(dc, left_idx,  left_x,  mt)
             if right_idx is not None:
@@ -987,17 +1138,61 @@ class SongpressPrintout(wx.Printout):
 
         Copre sia la stampa sia l'export PDF su Linux/macOS (che passa da qui
         tramite wx.PRINT_MODE_FILE / CUPS).
+
+        FIX Linux/anteprima
+        ───────────────────
+        La filigrana DEVE essere tracciata nello STESSO sistema di coordinate
+        «foglio» usato per i margini (self._margin_du) e per la linea di
+        separazione 2-pagine, cioe' con la scala/origine AMBIENTE che wx ha
+        gia' impostato sul DC per la pagina corrente.
+
+        La versione precedente forzava qui SetUserScale(1,1) e
+        SetDeviceOrigin(0,0). In stampa reale la scala ambiente e' l'identita',
+        quindi non si notava nulla; ma sul backend GTK l'anteprima applica al
+        DC una scala device->schermo (es. ~0.16 a 600 dpi). Azzerandola, la
+        filigrana veniva disegnata a piena risoluzione stampante (pw x ph in
+        pixel «grandi») su un DC di anteprima molto piu' piccolo: il centro del
+        testo finiva ben oltre l'area visibile e la filigrana risultava
+        «invisibile». Ora NON tocchiamo la trasformazione: disegniamo nello
+        stesso frame del separatore, che su Linux funziona correttamente.
+
+        Salviamo/ripristiniamo comunque scala e origine, cosi' questo metodo
+        non lascia stato residuo sul DC condiviso (evita effetti collaterali
+        sulla riga separatrice quando la filigrana e' attiva in 2-pagine).
         """
         if not getattr(self.frame_obj.pref, 'watermarkEnabled', False):
             return
         try:
             from . import Watermark
-            dc.SetUserScale(1.0, 1.0)
-            dc.SetDeviceOrigin(0, 0)
-            Watermark.draw_watermark(
-                dc, pw, ph, self.frame_obj._GetWatermarkConfig())
+            cfg = self.frame_obj._GetWatermarkConfig()
+        except Exception:
+            return
+
+        # ── Stato ambiente del DC (impostato da wx per questa pagina) ──────────
+        try:
+            _sx, _sy = dc.GetUserScale()
+        except Exception:
+            _sx, _sy = 1.0, 1.0
+        try:
+            _org = dc.GetDeviceOrigin()
+            _ox, _oy = _org.x, _org.y
+        except Exception:
+            _ox, _oy = 0, 0
+
+        try:
+            # NB: nessun SetUserScale/SetDeviceOrigin qui. Disegniamo nel frame
+            # «foglio» ambiente (identita' in stampa, scala di zoom in anteprima
+            # GTK): e' lo stesso frame in cui sono validi pw/ph e i margini.
+            Watermark.draw_watermark(dc, pw, ph, cfg)
         except Exception:
             pass
+        finally:
+            # Ripristino difensivo dello stato ambiente.
+            try:
+                dc.SetUserScale(_sx, _sy)
+                dc.SetDeviceOrigin(_ox, _oy)
+            except Exception:
+                pass
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1031,6 +1226,30 @@ class PrintOptionsDialog:
 
         self.dlg.SetSizerAndFit(self._outer)
         self.dlg.CentreOnParent()
+
+    # ── Helper ────────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _make_spin(parent, vmin, vmax, value, width=90):
+        """Crea un wx.SpinCtrl senza tagliare i pulsanti +/-.
+
+        FIX Linux (wxGTK)
+        ─────────────────
+        Su wxGTK le frecce +/- fanno parte del controllo e richiedono una
+        larghezza minima propria (che dipende dal tema GTK/Qt). Imporre una
+        `size` fissa troppo piccola (es. 90 px) le taglia: si vedeva solo su
+        Linux, perché su Windows/macOS quella larghezza basta.
+
+        Qui NON forziamo la size in costruzione: lasciamo che il controllo
+        calcoli la sua best size (che INCLUDE le frecce) e imponiamo come
+        larghezza minima il massimo tra quella desiderata e la best size.
+        Così su Linux i pulsanti restano interi e su Windows/macOS la
+        larghezza voluta è comunque rispettata.
+        """
+        sp = wx.SpinCtrl(parent, min=vmin, max=vmax, value=str(value))
+        best = sp.GetBestSize()
+        sp.SetMinSize(wx.Size(max(width, best.width), best.height))
+        return sp
 
     # ── Costruzione UI ────────────────────────────────────────────────────────
 
@@ -1096,10 +1315,8 @@ class PrintOptionsDialog:
         self.lbl_min_margin = wx.StaticText(
             dlg, label=_("Min margin for auto-shrink (mm):")
         )
-        self.spin_min_margin = wx.SpinCtrl(
-            dlg, min=0, max=50,
-            value=str(getattr(owner, '_min_margin_shrink', 5)),
-            size=(90, -1),
+        self.spin_min_margin = self._make_spin(
+            dlg, 0, 50, getattr(owner, '_min_margin_shrink', 5),
         )
         row1.Add(self.lbl_min_margin, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         row1.Add(self.spin_min_margin, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -1130,10 +1347,8 @@ class PrintOptionsDialog:
 
         row2 = wx.BoxSizer(wx.HORIZONTAL)
         self.lbl_blank_threshold = wx.StaticText(dlg, label=_("Blank page threshold (%):"))
-        self.spin_blank_threshold = wx.SpinCtrl(
-            dlg, min=1, max=95,
-            value=str(getattr(owner, '_blank_page_threshold', 5)),
-            size=(90, -1),
+        self.spin_blank_threshold = self._make_spin(
+            dlg, 1, 95, getattr(owner, '_blank_page_threshold', 5),
         )
         row2.Add(self.lbl_blank_threshold, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         row2.Add(self.spin_blank_threshold, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -1149,10 +1364,8 @@ class PrintOptionsDialog:
             wx.StaticBox(dlg, label=_("Scale")), wx.HORIZONTAL
         )
         lbl_scale = wx.StaticText(dlg, label=_("Scale (%):"))
-        self.spin_font_scale = wx.SpinCtrl(
-            dlg, min=50, max=200,
-            value=str(getattr(owner, '_print_font_scale', 100)),
-            size=(90, -1),
+        self.spin_font_scale = self._make_spin(
+            dlg, 50, 200, getattr(owner, '_print_font_scale', 100),
         )
         box_scale.Add(lbl_scale, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
         box_scale.Add(self.spin_font_scale, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)

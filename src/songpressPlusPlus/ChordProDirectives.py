@@ -38,6 +38,7 @@ SPPLUSPLUS_DIRECTIVES = {
     'arranger',                                # S++ – non in spec ufficiale
     'keywords', 'topic', 'collection',        # S++ – non in spec ufficiale
     'language',                                # S++ – non in spec ufficiale
+    'watermark',                               # S++ – filigrana per-documento
     # Varianti tempo proprietarie
     'tempo_label',                             # S++ – indicazione agogica
     'tempo_m', 'tempo_s', 'tempo_sp',
@@ -73,6 +74,7 @@ DIRECTIVES = [
     'beats_time',                                      # S++ esclusivo
     'ccli',                                            # non in spec
     'keywords', 'topic', 'collection', 'language',    # non in spec
+    'watermark',                                       # S++ – filigrana per-documento
     'tempo_m', 'tempo_s', 'tempo_sp', 'tempo_c', 'tempo_cp',
     'tempo_label',                                     # S++ – indicazione agogica
     # ── Struttura ufficiale ChordPro ✅ ───────────────────────────────────────
