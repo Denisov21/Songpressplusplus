@@ -2,7 +2,7 @@
 # Name:         TemplateSeed.py
 # Purpose:      Popola la cartella template dell'utente copiandovi, al primo
 #               avvio, tutti i template distribuiti con il pacchetto.
-# Modified by:  Denisov21
+# Create by:  Denisov21
 # License:      GNU GPL v2
 ##############################################################
 """Seeding della cartella template dell'utente.
