@@ -110,7 +110,7 @@ Write-Host "    Cartella build: $($BuildOutput.FullName)"
 
 Write-Host "[5/6] Verifica cartella templates\fonts..." -ForegroundColor Yellow
 
-$SrcFonts  = Join-Path $ProjectRoot 'src\songpress\templates\fonts'
+$SrcFonts  = Join-Path $ProjectRoot 'src\songpressplusplus\templates\fonts'
 $DestFonts = Join-Path $BuildOutput.FullName 'templates\fonts'
 
 if (Test-Path $SrcFonts) {
