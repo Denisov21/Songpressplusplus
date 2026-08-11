@@ -1,0 +1,69 @@
+# Italian translations for Songpress++ — ChordPro import (glued chords)
+# Copyright (C) 2026 Denisov21
+# This file is distributed under the same license as Songpress++ (GNU GPL v2).
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: songpressplusplus\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-12 00:00+0200\n"
+"PO-Revision-Date: 2026-07-12 00:00+0200\n"
+"Last-Translator: Denisov21\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. Titolo dei dialoghi della funzione
+#: SongpressFrame.py
+msgid "Convert glued chords"
+msgstr "Converti accordi attaccati"
+
+#. Status bar: conversione riuscita
+#: SongpressFrame.py
+#, python-format
+msgid "%d chords converted to ChordPro"
+msgstr "%d accordi convertiti in ChordPro"
+
+#. Status bar: documento (o selezione) vuoto
+#: SongpressFrame.py
+msgid "Nothing to convert: the text is empty"
+msgstr "Niente da convertire: il testo è vuoto"
+
+#. Status bar: accordi già racchiusi tra parentesi quadre
+#: SongpressFrame.py
+msgid "Nothing to convert: chords are already in ChordPro format"
+msgstr "Niente da convertire: gli accordi sono già in formato ChordPro"
+
+#. Dialogo: nessun accordo attaccato riconosciuto con la notazione corrente.
+#. %(desc)s = descrizione della notazione, %(example)s = esempio generato
+#. con le radici effettive di quella notazione.
+#: SongpressFrame.py
+#, python-format
+msgid ""
+"No glued chords were found using the %(desc)s notation.\n"
+"\n"
+"Chords must be attached to the lyrics, e.g. %(example)s\n"
+"\n"
+"If the song uses a different notation, change it in Options > General > "
+"Default notation."
+msgstr ""
+"Nessun accordo attaccato al testo è stato trovato con la notazione %(desc)s.\n"
+"\n"
+"Gli accordi devono essere attaccati alle parole, ad esempio %(example)s\n"
+"\n"
+"Se il brano usa un'altra notazione, cambiala in Opzioni > Generale > "
+"Notazione predefinita."
+
+#. Dialogo: nessuna notazione disponibile nelle preferenze
+#: SongpressFrame.py
+msgid "No chord notation is available. Check Options > General."
+msgstr "Nessuna notazione degli accordi disponibile. Controlla Opzioni > Generale."
+
+#. Dialogo: eccezione imprevista durante la conversione
+#: SongpressFrame.py
+#, python-format
+msgid "Cannot convert chords: %s"
+msgstr "Impossibile convertire gli accordi: %s"

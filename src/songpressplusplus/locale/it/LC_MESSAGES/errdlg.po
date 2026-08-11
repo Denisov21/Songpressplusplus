@@ -1,0 +1,61 @@
+# Songpress++ — Error Dialog translations
+# Copyright (C) 2026 Denisov21
+# License: GNU GPL v2
+#
+# Translators:
+# Denisov21, 2026
+msgid ""
+msgstr ""
+"Project-Id-Version: songpress\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-25 00:00+0200\n"
+"PO-Revision-Date: 2026-04-25 00:00+0200\n"
+"Last-Translator: Denisov21\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: errdlg.py
+msgid "Unexpected error"
+msgstr "Errore imprevisto"
+
+#: errdlg.py
+msgid ""
+"An unexpected error occurred in {prog}.\n"
+"Click \"Send error report\" to notify the developer,\n"
+"or \"Close\" to continue (the program may be unstable)."
+msgstr ""
+"Si è verificato un errore imprevisto in {prog}.\n"
+"Clicca su «Invia rapporto d'errore» per notificare lo sviluppatore,\n"
+"oppure su «Chiudi» per continuare (il programma potrebbe essere instabile)."
+
+#: errdlg.py
+msgid "Error traceback:"
+msgstr "Traceback dell'errore:"
+
+#: errdlg.py
+msgid "Force close"
+msgstr "Forza chiusura"
+
+#: errdlg.py
+msgid "Force immediate application shutdown"
+msgstr "Forza la chiusura immediata dell'applicazione"
+
+#: errdlg.py
+msgid "Copy"
+msgstr "Copia"
+
+#: errdlg.py
+msgid "Copy error message to clipboard"
+msgstr "Copia il messaggio di errore negli appunti"
+
+#: errdlg.py
+msgid "Send error report"
+msgstr "Invia rapporto d'errore"
+
+#: errdlg.py
+msgid "Close"
+msgstr "Chiudi"

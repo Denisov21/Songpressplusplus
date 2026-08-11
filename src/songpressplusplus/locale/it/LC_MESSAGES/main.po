@@ -1,0 +1,28 @@
+# Italian translations for main.py — Songpress++
+# Copyright (C) Denisov21
+# This file is distributed under the same license as the Songpress++ package.
+#
+# Translators:
+# Denisov21, 2026
+msgid ""
+msgstr ""
+"Project-Id-Version: songpress++\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-10 00:00+0200\n"
+"PO-Revision-Date: 2026-05-10 00:00+0200\n"
+"Last-Translator: Denisov21\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.9\n"
+
+#: main.py — single-instance error dialog, title line
+msgid "Cannot open file:"
+msgstr "Impossibile aprire il file:"
+
+#: main.py — single-instance error dialog, body line
+msgid "The file does not exist or is not accessible."
+msgstr "Il file non esiste o non è accessibile."

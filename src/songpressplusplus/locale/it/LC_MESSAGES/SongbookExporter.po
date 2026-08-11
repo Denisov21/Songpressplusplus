@@ -1,0 +1,153 @@
+# Italian translations for SongbookExporter.py
+# Traduzioni italiane per SongbookExporter.py
+# Copyright (C) 2026 Denisov21
+# License: GNU GPL v2
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Songpress++\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-27\n"
+"PO-Revision-Date: 2026-04-27\n"
+"Last-Translator: Denisov21\n"
+"Language: it\n"
+"Language-Team: Italian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# ── Titolo dialogo ──────────────────────────────────────────────────────────
+msgid "Create Songbook PDF"
+msgstr "Crea Songbook PDF"
+
+# ── Etichette griglia ───────────────────────────────────────────────────────
+msgid "Songs folder:"
+msgstr "Cartella brani:"
+
+msgid "Save PDF as:"
+msgstr "Salva PDF come:"
+
+msgid "Songbook title:"
+msgstr "Titolo Songbook:"
+
+msgid "Author / Group:"
+msgstr "Autore / Gruppo:"
+
+msgid "Year:"
+msgstr "Anno:"
+
+msgid "Extensions:"
+msgstr "Estensioni:"
+
+# ── Pulsanti ────────────────────────────────────────────────────────────────
+msgid "Browse..."
+msgstr "Sfoglia..."
+
+msgid "Page settings:"
+msgstr "Impostazioni pagina:"
+
+msgid "Page setup..."
+msgstr "Imposta pagina..."
+
+msgid "Print options..."
+msgstr "Opzioni di stampa..."
+
+# ── Checkbox ────────────────────────────────────────────────────────────────
+msgid "Clickable index entries (PDF links)"
+msgstr "Voci indice cliccabili (link PDF)"
+
+msgid "Show page numbers"
+msgstr "Mostra numeri di pagina"
+
+msgid "Print 2 pages per sheet"
+msgstr "Stampa 2 pagine per foglio"
+
+# ── Dialoghi file ───────────────────────────────────────────────────────────
+msgid "Choose the songs folder"
+msgstr "Scegli la cartella dei brani"
+
+msgid "Save Songbook PDF"
+msgstr "Salva Songbook PDF"
+
+msgid "PDF files (*.pdf)|*.pdf|All files (*.*)|*.*"
+msgstr "File PDF (*.pdf)|*.pdf|Tutti i file (*.*)|*.*"
+
+# ── Dialogo opzioni di stampa ───────────────────────────────────────────────
+msgid "Print options"
+msgstr "Opzioni di stampa"
+
+# ── Validazione ─────────────────────────────────────────────────────────────
+msgid "Please select a valid songs folder."
+msgstr "Selezionare una cartella brani valida."
+
+msgid "Please select the output PDF file."
+msgstr "Selezionare il file PDF di destinazione."
+
+msgid "Select at least one file extension."
+msgstr "Selezionare almeno un'estensione file."
+
+# ── Controlli ridondanti in create_songbook() ────────────────────────────────
+msgid "Please select a valid folder."
+msgstr "Selezionare una cartella valida."
+
+# ── Messaggi di errore ──────────────────────────────────────────────────────
+msgid ""
+"The 'reportlab' library is not installed.\n"
+"Run: pip install reportlab"
+msgstr ""
+"La libreria 'reportlab' non è installata.\n"
+"Eseguire: pip install reportlab"
+
+msgid "Missing library"
+msgstr "Libreria mancante"
+
+msgid ""
+"No songs found in the folder.\n"
+"Check the selected extensions."
+msgstr ""
+"Nessun brano trovato nella cartella.\n"
+"Verificare le estensioni selezionate."
+
+msgid "Empty folder"
+msgstr "Cartella vuota"
+
+msgid "Error"
+msgstr "Errore"
+
+# ── Barra di avanzamento ────────────────────────────────────────────────────
+msgid "Creating Songbook"
+msgstr "Creazione Songbook in corso"
+
+msgid "Initializing..."
+msgstr "Inizializzazione..."
+
+#. Messaggio mostrato durante l'elaborazione di ogni brano
+msgid "Processing: %s"
+msgstr "Elaborazione: %s"
+
+# ── Testo generato nel PDF ──────────────────────────────────────────────────
+msgid "Index"
+msgstr "Indice"
+
+#. Numero di brani in copertina, es. "14 songs"
+msgid "%d songs"
+msgstr "%d brani"
+
+# ── Messaggio di completamento ──────────────────────────────────────────────
+#. %d = numero brani inclusi, %s = percorso file PDF
+msgid ""
+"Songbook exported successfully!\n"
+"\n"
+"%d songs included.\n"
+"\n"
+"%s"
+msgstr ""
+"Songbook esportato con successo!\n"
+"\n"
+"%d brani inclusi.\n"
+"\n"
+"%s"
+
+msgid "Songbook created"
+msgstr "Songbook creato"

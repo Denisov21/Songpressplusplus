@@ -1,0 +1,58 @@
+# Italian translation for CopyAIBeatsPrompt.py
+# Songpress++ – Denisov21
+# Copyright (C) 2026 Denisov21
+# License: GNU GPL v2
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Songpress++\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-10\n"
+"PO-Revision-Date: 2026-05-11 20:57+0200\n"
+"Last-Translator: Denisov21\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.9\n"
+
+msgid ""
+"No song file is open.\n"
+"Please open a song file before copying the prompt."
+msgstr ""
+"Nessun file canzone aperto.\n"
+"Apri il file della canzone prima di copiare il prompt."
+
+msgid "Copy IA {beats_time} prompt"
+msgstr "Copia prompt IA per {beats_time}"
+
+msgid ""
+"Prompt copied to the clipboard!\n"
+"\n"
+"Paste it into the AI terminal and replace the PDF name if necessary."
+msgstr ""
+"Prompt copiato negli appunti!\n"
+"\n"
+"Incollalo nel terminale dell'IA e sostituisci il nome del PDF se necessario."
+
+msgid "Cannot access the clipboard."
+msgstr "Impossibile accedere agli appunti."
+
+msgid "Error"
+msgstr "Errore"
+
+msgid "Copy &AI beats_time prompt"
+msgstr "Copia prompt &AI per beats_time"
+
+msgid "Copy a ready-to-paste AI prompt to add beats_time directives using a PDF score"
+msgstr "Copia negli appunti il prompt per l'IA per aggiungere i beats_time usando uno spartito PDF"
+
+msgid ""
+"Add beats_time to {crd} using the score {pdf}.\n"
+"The quarter note equals 1 beat (♩). The beats_time must be written before the chord line, example:\n"
+"`{{beats_time: DO=2 SOL=2 RE-=2 LA-=2}}` / `[DO]Luce nel [SOL]cielo`"
+msgstr ""
+"Aggiungi beats_time a {crd} usando lo spartito {pdf}.\n"
+"La semiminima vale 1 battito (♩). Il beats_time va scritto prima della riga con gli accordi, esempio:\n"
+"`{{beats_time: DO=2 SOL=2 RE-=2 LA-=2}}` / `[DO]Luce nel [SOL]cielo`"
