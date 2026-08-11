@@ -187,6 +187,7 @@ class Preferences(object):
         self._LoadTempoIconColour()
         self._LoadWindowGeometryPref()
         self._LoadPreviewOptions()
+        self._LoadWatermarkPrefs()
         self._LoadGridDisplayMode()
         self._LoadDurationBeats()
         self._LoadMusicalSymbol()
@@ -305,6 +306,37 @@ class Preferences(object):
         self.liveDriverPoll = bool(int(v)) if v != '' else True
         self.config.SetPath('/')
 
+    def _LoadWatermarkPrefs(self):
+        """Carica SOLO le preferenze di stile della filigrana mostrate nel
+        pannello: opacita', angolo, dimensione, colore e mosaico (Affianca).
+
+        Le chiavi 'enabled', 'text' e 'showInPreview' NON vengono persistite
+        qui: restano per-documento. Il risultato e' esposto in
+        self.watermarkStyle, un dict con le sole chiavi di stile, utile per
+        inizializzare i valori di default del WatermarkDialog.
+        """
+        def _int(v, default):
+            try:
+                return int(v)
+            except (TypeError, ValueError):
+                return default
+        self.config.SetPath('/Watermark')
+        opacity = _int(self.config.Read('opacity'), 12)
+        angle   = _int(self.config.Read('angle'), 45)
+        sizePct = _int(self.config.Read('sizePct'), 100)
+        h       = self.config.Read('colourHex')
+        colourHex = h if h else '#000000'
+        v = self.config.Read('tile')
+        tile = bool(int(v)) if v != '' else False
+        self.config.SetPath('/')
+        self.watermarkStyle = {
+            'opacity':   max(2,   min(100, opacity)),
+            'angle':     max(-90, min(90,  angle)),
+            'sizePct':   max(20,  min(300, sizePct)),
+            'colourHex': colourHex,
+            'tile':      tile,
+        }
+
     def _LoadGridDisplayMode(self):
         """Carica la modalità di visualizzazione del blocco {start_of_grid}.
 
@@ -371,6 +403,7 @@ class Preferences(object):
         self._SaveTempoIconColour()
         self._SaveWindowGeometryPref()
         self._SavePreviewOptions()
+        self._SaveWatermarkPrefs()
         self._SaveGridDisplayMode()
         self._SaveDurationBeats()
         self._SaveMusicalSymbol()
@@ -526,6 +559,18 @@ class Preferences(object):
         self.config.Write('previewMinSize',    '1' if getattr(self, 'previewMinSize',    True) else '0')
         self.config.Write('guideViewer',           getattr(self, 'guideViewer', 'auto'))
         self.config.Write('liveDriverPoll',        '1' if getattr(self, 'liveDriverPoll', True) else '0')
+        self.config.SetPath('/')
+
+    def _SaveWatermarkPrefs(self):
+        """Salva SOLO opacita', angolo, dimensione, colore e mosaico (Affianca).
+        Non tocca 'enabled', 'text' e 'showInPreview' (per-documento)."""
+        ws = getattr(self, 'watermarkStyle', {})
+        self.config.SetPath('/Watermark')
+        self.config.Write('opacity',   str(int(ws.get('opacity',   12))))
+        self.config.Write('angle',     str(int(ws.get('angle',     45))))
+        self.config.Write('sizePct',   str(int(ws.get('sizePct',   100))))
+        self.config.Write('colourHex',     str(ws.get('colourHex', '#000000')))
+        self.config.Write('tile', '1' if ws.get('tile', False) else '0')
         self.config.SetPath('/')
 
     def _SaveGridDisplayMode(self):

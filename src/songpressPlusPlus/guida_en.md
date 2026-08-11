@@ -1902,6 +1902,50 @@ On Windows, color detection uses three sources in cascade, each activated only i
 
 ---
 
+## Watermark 🖊
+
+The **Watermark** command (*File* menu) overlays a diagonal caption on the song (for example *DRAFT*, *SAMPLE*, *PROOF*) drawn **behind** the text, so it never covers the content. The watermark is **always applied in print and in every exported format** (PNG, SVG, EMF, EPS, PDF) and, optionally, in the Songpress++ preview too.
+
+### Dialog
+
+| Field | Default | Description |
+| ----- | ------- | ----------- |
+| Enable watermark | ☐ off | Turns the watermark on or off for the current song. When unchecked, all other fields are disabled |
+| Show in Songpress preview++ | ✅ on | If on, the watermark also appears in the preview panel; print and export apply it regardless of this option |
+| Text | `DRAFT` | Watermark text. May contain spaces and symbols; if empty, no watermark is drawn |
+| Opacity (%) | 12 | Caption intensity, from 2 to 100. **Higher = darker**. Transparency is simulated by blending the colour toward the white of the sheet, so the result is identical in every format (including SVG and EPS, which have no alpha support) |
+| Angle (°) | 45 | Caption tilt, from −90 to +90 degrees |
+| Size (%) | 100 | Font scale, from 20 to 300 |
+| Colour | black | Watermark colour (before the blend toward white produced by opacity) |
+| Tile (repeat over the page) | ☐ off | When off, a single centred caption; when on, the caption is tiled across the whole page |
+
+### Where the settings are stored
+
+The watermark configuration is **per-document**: it is written at the top of the `.crd` file as a `{watermark: …}` directive, so each song keeps its own watermark and restores it when reopened.
+
+The **style fields** — opacity, angle, size, colour and tile — are additionally stored as **global preferences**: the last combination used becomes the default for new songs (or songs without a directive). The *Enable*, *Text* and *Show in preview* fields instead stay tied to the individual document.
+
+### The `{watermark:}` directive
+
+The directive is handled automatically by the dialog, but it can also be typed or edited by hand in the editor: watermark, preview and dialog state realign on their own. The `text=` field is always **last**, so it may contain `=` and `;` without breaking parsing; braces in the text are neutralised.
+
+```chordpro
+{watermark: enabled=1; opacity=12; angle=45; sizePct=100; tile=0; showInPreview=1; colourHex=#000000; text=DRAFT}
+```
+
+| Key | Values | Meaning |
+| --- | ------ | ------- |
+| `enabled` | 0 / 1 | Watermark active |
+| `opacity` | 2–100 | Intensity (higher = darker) |
+| `angle` | −90…90 | Tilt in degrees |
+| `sizePct` | 20–300 | Font scale as a percentage |
+| `tile` | 0 / 1 | 0 = single centred caption; 1 = tiled repeat |
+| `showInPreview` | 0 / 1 | Also show the watermark in the preview |
+| `colourHex` | `#RRGGBB` | Caption colour |
+| `text` | free text | Watermark text (always the last field) |
+
+---
+
 ## Create Songbook PDF
 
 The **Create Songbook PDF** function (*File → Create Songbook PDF…*) generates a complete PDF document from all ChordPro songs in a selected folder.

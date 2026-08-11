@@ -1902,6 +1902,50 @@ Su Windows il rilevamento del colore usa tre fonti in cascata, ognuna attivata s
 
 ---
 
+## Filigrana (watermark) 🖊
+
+Il comando **Filigrana** (menu *File*) sovrappone al brano una scritta diagonale (per esempio *DRAFT*, *BOZZA*, *COPIA OMAGGIO*) disegnata **dietro** al testo, così non ne copre mai il contenuto. La filigrana viene applicata **sempre in stampa e in tutti i formati esportati** (PNG, SVG, EMF, EPS, PDF) e, se lo si desidera, anche nell'anteprima di Songpress++.
+
+### Finestra di dialogo
+
+| Campo | Predefinito | Descrizione |
+| ----- | ----------- | ----------- |
+| Abilita filigrana | ☐ disattivo | Attiva o disattiva la filigrana per il brano corrente. Con la casella deselezionata tutti gli altri campi sono disabilitati |
+| Mostra nell'anteprima Songpress++ | ✅ attivo | Se attivo, la filigrana compare anche nel pannello di anteprima; stampa ed export la applicano comunque, indipendentemente da questa opzione |
+| Testo | `DRAFT` | Testo della filigrana. Può contenere spazi e simboli; se vuoto, la filigrana non viene disegnata |
+| Opacità (%) | 12 | Intensità della scritta, da 2 a 100. Valori **alti = più scuro**. La trasparenza è simulata fondendo il colore verso il bianco del foglio, così il risultato è identico su ogni formato (anche SVG ed EPS, che non supportano l'alpha) |
+| Angolo (°) | 45 | Inclinazione della scritta, da −90 a +90 gradi |
+| Dimensione (%) | 100 | Scala del carattere, da 20 a 300 |
+| Colore | nero | Colore della filigrana (prima della fusione verso il bianco data dall'opacità) |
+| Affianca (ripeti sulla pagina) | ☐ disattivo | Se disattivo, un'unica scritta centrata; se attivo, la scritta è ripetuta a mosaico su tutta la pagina |
+
+### Dove vengono salvate le impostazioni
+
+La configurazione della filigrana è **per-documento**: viene scritta all'inizio del file `.crd` come direttiva `{watermark: …}`, così ogni brano conserva la propria filigrana e la ritrova alla riapertura.
+
+I **campi di stile** — opacità, angolo, dimensione, colore e mosaico — vengono inoltre memorizzati come **preferenze globali**: l'ultima combinazione usata diventa il valore predefinito per i brani nuovi (o privi di direttiva). I campi *Abilita*, *Testo* e *Mostra nell'anteprima* restano invece legati al singolo documento.
+
+### Direttiva `{watermark:}`
+
+La direttiva viene gestita automaticamente dal dialogo, ma può anche essere scritta o modificata a mano nell'editor: filigrana, anteprima e stato del dialogo si allineano da soli. Il campo `text=` è sempre **l'ultimo**, così può contenere `=` e `;` senza rompere il parsing; le graffe nel testo vengono neutralizzate.
+
+```chordpro
+{watermark: enabled=1; opacity=12; angle=45; sizePct=100; tile=0; showInPreview=1; colourHex=#000000; text=DRAFT}
+```
+
+| Chiave | Valori | Significato |
+| ------ | ------ | ----------- |
+| `enabled` | 0 / 1 | Filigrana attiva |
+| `opacity` | 2–100 | Intensità (alto = più scuro) |
+| `angle` | −90…90 | Inclinazione in gradi |
+| `sizePct` | 20–300 | Scala del carattere in percentuale |
+| `tile` | 0 / 1 | 0 = scritta unica centrata; 1 = mosaico ripetuto |
+| `showInPreview` | 0 / 1 | Mostra la filigrana anche nell'anteprima |
+| `colourHex` | `#RRGGBB` | Colore della scritta |
+| `text` | testo libero | Testo della filigrana (sempre l'ultimo campo) |
+
+---
+
 ## Crea Songbook PDF
 
 La funzione **Crea Songbook PDF** (menu *File → Crea Songbook PDF…*) genera un documento PDF completo da tutti i brani ChordPro presenti in una cartella selezionata.

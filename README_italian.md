@@ -86,11 +86,6 @@ sudo apt install python3 python3-pip python3-venv fakeroot dpkg imagemagick
 
 ### Creazione del pacchetto .deb
 
-> **🌐 Serve una connessione a Internet.** Durante la build lo script costruisce
-> la wheel Python con `pip` e `hatchling`: se il backend di build e le dipendenze
-> non sono già nella cache di `pip`, vengono scaricati da PyPI. Senza rete la
-> creazione del pacchetto può fallire.
-
 Lo script `build_deb.sh` si trova nella root del progetto, accanto a `pyproject.toml`.
 
 #### 1. Entra nella cartella del progetto
@@ -237,10 +232,17 @@ Dopodiché, in Dolphin: tasto destro sul `.deb` → _Apri con…_ → scegli "Pr
 >
 > Il prefisso `./` (o un percorso completo) è **obbligatorio**: senza almeno una `/` nel nome, `apt` interpreta l'argomento come il nome di un pacchetto da cercare nei repository e restituisce "impossibile trovare il pacchetto". Se non sei nella cartella del `.deb`, passa il percorso completo, ad esempio `sudo apt install ~/…/build_deb/songpressplusplus_7.0.2_all.deb`.
 
-> **ℹ️ "Autore sconosciuto" e "Licenza: Sconosciuta" nell'anteprima di Discover.** Aprendo l'**anteprima di un file `.deb`**, Discover legge solo il file `DEBIAN/control` e ricava i campi "Autore" e "Licenza" dai metadati **AppStream** (`metainfo.xml`), non dal `control`. Quei metadati vengono indicizzati **solo dopo l'installazione** e un refresh della cache AppStream, perciò sull'anteprima del file compaiono sempre come "Sconosciuto". **Non è un difetto del pacchetto:** i campi sono presenti (`Maintainer` nel `control`, licenza in `metainfo.xml` e in `/usr/share/doc/<pkg>/copyright`). Dopo l'installazione, nella sezione _Installati_ di Discover l'app mostra autore e licenza. Per forzare l'aggiornamento della cache:
+> **ℹ️ "Autore sconosciuto" e "Licenza: Sconosciuta" in Discover.** Discover ricava i campi "Autore" e "Licenza" dai metadati **AppStream** (`metainfo.xml`), non dal `DEBIAN/control` (che non ha un campo licenza e riporta solo il `Maintainer`). Ne derivano due conseguenze:
+>
+> - Un `.deb` **non ancora installato** non è nel pool AppStream (che indicizza i `metainfo.xml` dei pacchetti *installati*, non quelli racchiusi dentro un file `.deb`), quindi finché non installi Discover non ha da dove leggere questi campi. Non è un difetto del pacchetto: i dati ci sono (`Maintainer` nel `control`, licenza in `metainfo.xml` e in `/usr/share/doc/<pkg>/copyright`) e diventano visibili dopo l'installazione **a patto che** valgano le due condizioni qui sotto.
+> - **Perché l'app compaia nella sezione _Installati_ di Discover** (con autore e licenza) il `metainfo.xml` deve soddisfare due condizioni, entrambe già gestite da `build_deb.sh`:
+>   1. **Deve passare `appstreamcli validate` senza errori.** Un errore di questo tipo fa **scartare in silenzio** l'intero componente, quindi l'app non compare nemmeno dopo l'installazione (alcune segnalazioni di `validate` sono invece solo pedanti e non bloccano). Esempio insidioso: `<icon type="local">` non è valido in un file *metainfo* — lì sono ammessi solo `stock` e `remote` (`local`/`cached` appartengono ai metadati di catalogo generati dalla distro). Lo script usa `<icon type="stock">`.
+>   2. **Deve contenere un `<pkgname>` uguale al campo `Package:` del `.deb`.** Un `.deb` costruito localmente non passa mai dal generatore di cataloghi AppStream di una distribuzione — il passaggio che di norma inietta questo tag — perciò Discover non può collegare il pacchetto installato al componente, e l'app resta invisibile in _Installati_ anche se il componente è nel pool. Lo script aggiunge `<pkgname>songpressplusplus</pkgname>`.
+>
+> Il `postinst` esegue automaticamente `appstreamcli refresh-cache --force`, così autore e licenza compaiono subito dopo `apt install`. Per forzare un refresh manuale (es. dopo aver modificato i metadati a mano):
 >
 > ```bash
-> sudo appstreamcli refresh --force
+> sudo appstreamcli refresh-cache --force
 > ```
 
 > **ID AppStream (reverse-DNS).** Il pacchetto usa l'identificatore AppStream

@@ -772,21 +772,27 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self.pref.tempoIconColourHex = '#000000'
         if not hasattr(self.pref, 'klavierHighlightHex'):
             self.pref.klavierHighlightHex = '#D23C3C'
-        # Filigrana (watermark): stampata ed esportata (vedi Watermark.py)
+        # Filigrana (watermark): stampata ed esportata (vedi Watermark.py).
+        # I campi di STILE (opacita', angolo, dimensione, colore, mosaico) sono
+        # preferenze globali persistite in Preferences.py come pref.watermarkStyle;
+        # enabled/text/showInPreview restano invece per-documento (nel .crd).
+        _wstyle = getattr(self.pref, 'watermarkStyle', None)
+        if not isinstance(_wstyle, dict):
+            _wstyle = {}
         if not hasattr(self.pref, 'watermarkEnabled'):
             self.pref.watermarkEnabled = False
         if not hasattr(self.pref, 'watermarkText'):
             self.pref.watermarkText = 'DRAFT'
         if not hasattr(self.pref, 'watermarkOpacity'):
-            self.pref.watermarkOpacity = 12
+            self.pref.watermarkOpacity = _wstyle.get('opacity', 12)
         if not hasattr(self.pref, 'watermarkAngle'):
-            self.pref.watermarkAngle = 45
+            self.pref.watermarkAngle = _wstyle.get('angle', 45)
         if not hasattr(self.pref, 'watermarkSizePct'):
-            self.pref.watermarkSizePct = 100
+            self.pref.watermarkSizePct = _wstyle.get('sizePct', 100)
         if not hasattr(self.pref, 'watermarkTile'):
-            self.pref.watermarkTile = False
+            self.pref.watermarkTile = _wstyle.get('tile', False)
         if not hasattr(self.pref, 'watermarkColourHex'):
-            self.pref.watermarkColourHex = '#000000'
+            self.pref.watermarkColourHex = _wstyle.get('colourHex', '#000000')
         if not hasattr(self.pref, 'watermarkShowInPreview'):
             self.pref.watermarkShowInPreview = True
         self.SetDefaultExtension(self.pref.defaultExtension)
@@ -5033,7 +5039,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.text.New()
         self.text.AutoChangeMode(False)
         # Un documento nuovo non ha filigrana finche' non se ne aggiunge una.
-        self._apply_watermark_cfg(dict(self._WATERMARK_DEFAULTS))
+        self._apply_watermark_cfg(self._watermark_defaults())
         self.UpdateEverything()
 
     def Open(self):
@@ -8598,6 +8604,35 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         'showInPreview': True,
     }
 
+    def _watermark_defaults(self):
+        """Config filigrana 'vuota' (disabilitata) ma con i campi di STILE
+        inizializzati dalle preferenze globali salvate (pref.watermarkStyle).
+
+        Cosi' un brano nuovo o senza direttiva {watermark:} parte senza
+        filigrana, ma quando l'utente apre il dialogo ritrova opacita',
+        angolo, dimensione, colore e mosaico impostati l'ultima volta.
+        """
+        cfg = dict(self._WATERMARK_DEFAULTS)
+        style = getattr(self.pref, 'watermarkStyle', None)
+        if isinstance(style, dict):
+            for k in ('opacity', 'angle', 'sizePct', 'colourHex', 'tile'):
+                if k in style:
+                    cfg[k] = style[k]
+        return cfg
+
+    def _save_watermark_style_prefs(self, cfg):
+        """Persiste le sole preferenze di STILE della filigrana come default
+        globali (Preferences.py -> /Watermark). enabled/text/showInPreview
+        NON vengono toccati: restano per-documento nel .crd."""
+        self.pref.watermarkStyle = {
+            'opacity':   int(cfg.get('opacity', 12)),
+            'angle':     int(cfg.get('angle', 45)),
+            'sizePct':   int(cfg.get('sizePct', 100)),
+            'colourHex': str(cfg.get('colourHex', '#000000')),
+            'tile':      bool(cfg.get('tile', False)),
+        }
+        self.pref.Save()
+
     def _watermark_cfg_to_directive(self, cfg):
         """Serializza la config filigrana in una direttiva ChordPro su una riga.
 
@@ -8690,7 +8725,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         """Legge la filigrana dalla direttiva del documento (o la disabilita)."""
         cfg = self._parse_watermark_directive(self.text.GetText())
         if cfg is None:
-            cfg = dict(self._WATERMARK_DEFAULTS)   # nessuna direttiva -> niente filigrana
+            cfg = self._watermark_defaults()       # nessuna direttiva -> niente filigrana
         self._apply_watermark_cfg(cfg)
 
     def _sync_watermark_from_document(self):
@@ -8704,7 +8739,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         """
         cfg = self._parse_watermark_directive(self.text.GetText())
         if cfg is None:
-            cfg = dict(self._WATERMARK_DEFAULTS)
+            cfg = self._watermark_defaults()
         if cfg == self._GetWatermarkConfig():
             return False   # gia' allineato: nessun lavoro da fare
         self.pref.watermarkEnabled       = cfg['enabled']
@@ -8765,6 +8800,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             cfg = dlg.GetConfig()
             self._apply_watermark_cfg(cfg)            # memoria + anteprima
             self._write_watermark_to_document(cfg)    # persiste nel .crd
+            self._save_watermark_style_prefs(cfg)     # stile -> preferenze globali
             self.previewCanvas.Refresh(self._get_display_text())
             # Se qualcosa e' cambiato, segna il documento come modificato
             # cosi' il comando File -> Salva si attiva.
