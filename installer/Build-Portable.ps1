@@ -23,7 +23,8 @@ $DistDir     = Join-Path $ProjectRoot 'dist'
 
 # Legge la versione da pyproject.toml senza dipendenze esterne
 $TomlPath    = Join-Path $ProjectRoot 'pyproject.toml'
-$VersionLine = Select-String -Path $TomlPath -Pattern '^version\s*=\s*"(.+)"' | Select-Object -First 1
+if (-not (Test-Path $TomlPath)) { throw "pyproject.toml non trovato in $ProjectRoot" }
+$VersionLine = Select-String -Path $TomlPath -Pattern '^\s*version\s*=\s*"([^"]+)"' | Select-Object -First 1
 if (-not $VersionLine) { throw "Impossibile leggere la versione da pyproject.toml" }
 $Version     = $VersionLine.Matches[0].Groups[1].Value
 
@@ -44,6 +45,7 @@ Write-Host ""
 if (-not (Test-Path $VenvDir)) {
     Write-Host "[1/6] Creazione venv..." -ForegroundColor Yellow
     python -m venv $VenvDir
+    if ($LASTEXITCODE -ne 0) { throw "Creazione venv fallita (codice $LASTEXITCODE)" }
 } else {
     Write-Host "[1/6] Venv esistente, riutilizzo." -ForegroundColor Green
 }
@@ -51,11 +53,16 @@ if (-not (Test-Path $VenvDir)) {
 $Pip    = Join-Path $VenvDir 'Scripts\pip.exe'
 $Python = Join-Path $VenvDir 'Scripts\python.exe'
 
+if (-not (Test-Path $Python)) { throw "python.exe non trovato nel venv: $Python" }
+
 # ── 2. Dipendenze ────────────────────────────────────────────────────────────
 
 Write-Host "[2/6] Installazione dipendenze (può richiedere alcuni minuti)..." -ForegroundColor Yellow
 
-& $Pip install --upgrade pip --quiet
+# NB: pip si aggiorna via 'python -m pip', altrimenti su Windows pip.exe è in uso -> Access denied
+& $Python -m pip install --upgrade pip --quiet
+if ($LASTEXITCODE -ne 0) { throw "Upgrade di pip fallito (codice $LASTEXITCODE)" }
+
 & $Pip install --quiet `
     cx_Freeze `
     "wxPython>=4.2.4,<5.0.0" `
@@ -74,6 +81,11 @@ Write-Host "    Dipendenze installate." -ForegroundColor Green
 
 Write-Host "[3/6] Esecuzione cx_Freeze build_exe..." -ForegroundColor Yellow
 
+# Pulizia della build precedente per evitare di raccogliere output stantii
+if (Test-Path $BuildDir) {
+    Remove-Item -Path $BuildDir -Recurse -Force
+}
+
 Push-Location $ProjectRoot
 try {
     & $Python -m cx_Freeze build_exe
@@ -85,14 +97,18 @@ Write-Host "    Build completata." -ForegroundColor Green
 
 # ── 4. Individua la cartella build prodotta ───────────────────────────────────
 
-# cx_Freeze crea build\exe.<platform>-<pyver>\ o build\<exename>\
-$BuildOutput = Get-ChildItem -Path $BuildDir -Directory | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-if (-not $BuildOutput) { throw "Cartella build non trovata in $BuildDir" }
+Write-Host "[4/6] Individuazione cartella build..." -ForegroundColor Yellow
+
+# cx_Freeze crea build\exe.<platform>-<pyver>\
+if (-not (Test-Path $BuildDir)) { throw "Cartella build non trovata in $BuildDir" }
+$BuildOutput = Get-ChildItem -Path $BuildDir -Directory -Filter 'exe.*' |
+    Sort-Object LastWriteTime -Descending | Select-Object -First 1
+if (-not $BuildOutput) { throw "Nessuna cartella 'exe.*' trovata in $BuildDir" }
 Write-Host "    Cartella build: $($BuildOutput.FullName)"
 
 # ── 5. Copia fonts in templates\fonts (se non già inclusi da cx_Freeze) ──────
 
-Write-Host "[4/6] Verifica cartella templates\fonts..." -ForegroundColor Yellow
+Write-Host "[5/6] Verifica cartella templates\fonts..." -ForegroundColor Yellow
 
 $SrcFonts  = Join-Path $ProjectRoot 'src\songpress\templates\fonts'
 $DestFonts = Join-Path $BuildOutput.FullName 'templates\fonts'
@@ -109,7 +125,7 @@ if (Test-Path $SrcFonts) {
 
 # ── 6. Crea ZIP ───────────────────────────────────────────────────────────────
 
-Write-Host "[5/6] Creazione archivio ZIP..." -ForegroundColor Yellow
+Write-Host "[6/6] Creazione archivio ZIP..." -ForegroundColor Yellow
 
 if (-not (Test-Path $DistDir)) {
     New-Item -ItemType Directory -Path $DistDir -Force | Out-Null
@@ -117,7 +133,10 @@ if (-not (Test-Path $DistDir)) {
 
 if (Test-Path $ZipPath) { Remove-Item $ZipPath -Force }
 
-Compress-Archive -Path $BuildOutput.FullName -DestinationPath $ZipPath -CompressionLevel Optimal
+# Si comprime il CONTENUTO della cartella build (con \*), così dopo l'estrazione
+# Songpress++.exe è nella root della cartella estratta.
+Compress-Archive -Path (Join-Path $BuildOutput.FullName '*') `
+                 -DestinationPath $ZipPath -CompressionLevel Optimal
 
 $SizeMB = [math]::Round((Get-Item $ZipPath).Length / 1MB, 1)
 Write-Host "    ZIP creato: $ZipName ($SizeMB MB)" -ForegroundColor Green
