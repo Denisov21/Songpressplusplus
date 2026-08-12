@@ -18,18 +18,21 @@ class SongPresentation:
     def __init__(self, template, out_filename):
         self.pres = Presentation(template)
         self.layout = self.pres.slide_layouts[3]
+        if len(list(self.layout.placeholders)) < 3:
+            raise ValueError(
+                "Il template ha meno di 3 placeholder nel layout 3: "
+                "impossibile generare le slide."
+            )
         self.prev = None
         self.out_filename = out_filename
 
-    def _add_slide(self, cur, next):
+    def _add_slide(self, cur, nxt):
         slide = self.pres.slides.add_slide(self.layout)
         ph = list(slide.placeholders)
-        if len(ph) < 3:
-            return   # template has fewer placeholders than expected; skip silently
         t1 = ph[1]
         t2 = ph[2]
         t1.text = cur
-        t2.text = next
+        t2.text = nxt
 
     def _add_empty_slide(self):
         self.pres.slides.add_slide(self.layout)
@@ -49,6 +52,12 @@ class SongPresentation:
         if self.prev is not None:
             self._add_slide(self.prev, '')
         self.pres.save(self.out_filename)
+
+    def __enter__(self):
+        # Il blocco `with SongPresentation(...) as c` richiede __enter__:
+        # senza, Python solleva TypeError ("does not support the context
+        # manager protocol") prima ancora di eseguire il corpo.
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is not None:
@@ -77,7 +86,7 @@ def to_presentation(lines, output_file, template_file):
 if __name__ == '__main__':
     if len(sys.argv) != 4:
         print("Usage: songimpress.py SONG_FILE OUTPUT_PRESENTATION TEMPLATE_PRESENTATION")
-        exit(1)
+        sys.exit(1)
 
-    with open(sys.argv[1]) as f:
+    with open(sys.argv[1], encoding='utf-8') as f:
         to_presentation(f, sys.argv[2], sys.argv[3])

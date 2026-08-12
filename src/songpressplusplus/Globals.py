@@ -147,29 +147,54 @@ class Globals(object):
 
     def ListLocalGlobalDir(self, rel_path):
         """
-        List both the local (data) and global (program) versions of a directory
+        List both the local (data) and global (program) versions of a directory.
 
-        Missing or unreadable directories are silently skipped: on a system-wide
-        installation (.deb) the data dir may not contain every subfolder yet, and
-        os.listdir() would raise FileNotFoundError. Same tolerant behaviour as
-        SongpressFrame._PopulateTemplateMenu().
+        I file con lo stesso nome vengono restituiti UNA volta sola: la copia
+        *locale* (cartella dati utente) prevale su quella *globale* (pacchetto).
+        È il comportamento che i chiamanti si aspettano — cfr.
+        SongpressFrame._BuildNewFromTemplateMenu(), che implementava già a mano
+        l'identica logica "i file utente sovrascrivono gli omonimi globali".
+
+        Senza questa de-duplicazione ogni template distribuito con il pacchetto e
+        poi copiato nella cartella dati utente dal seeding
+        (TemplateSeed.seed_user_templates) comparirebbe *due volte* nei selettori
+        come il dialogo "Esporta come PowerPoint": è il bug dei template
+        duplicati.
+
+        Le cartelle mancanti o illeggibili vengono ignorate silenziosamente: con
+        un'installazione di sistema (.deb) la cartella dati può non contenere
+        ancora ogni sottocartella e os.listdir() solleverebbe FileNotFoundError.
 
         :param rel_path: relative path
-        :return: list of absolute paths of files (global first, then local)
+        :return: lista di percorsi assoluti, uno per nome file distinto, ordinata
+                 per nome (case-insensitive); a parità di nome vince la copia
+                 locale.
         """
-        out = []
+        found = {}            # nome_file_lower -> percorso assoluto
+        seen_folders = set()  # cartelle già visitate (realpath)
+        # Prima la globale, poi la locale: iterando in quest'ordine la copia
+        # locale, assegnata per ultima, sovrascrive quella globale per ogni nome
+        # file condiviso.
         for root in (self.path, self.data_path):
             if not root:
                 continue  # data_path not initialised yet
             folder = os.path.join(root, rel_path)
             if not os.path.isdir(folder):
                 continue
+            # In modalità portable self.data_path == self.path, quindi le due
+            # root risolvono alla stessa cartella: senza questo controllo la
+            # scorreremmo due volte inutilmente (la de-duplicazione per nome la
+            # renderebbe comunque innocua).
+            real = os.path.realpath(folder)
+            if real in seen_folders:
+                continue
+            seen_folders.add(real)
             try:
                 for f in sorted(os.listdir(folder)):
-                    out.append(os.path.join(folder, f))
+                    found[f.lower()] = os.path.join(folder, f)
             except OSError:
                 pass  # unreadable directory: skip it
-        return out
+        return [found[k] for k in sorted(found)]
 
     languages = {
         'en': "English",
