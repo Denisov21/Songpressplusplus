@@ -72,7 +72,8 @@ if ($LASTEXITCODE -ne 0) { throw "Upgrade di pip fallito (codice $LASTEXITCODE)"
     "reportlab>=4.0.0,<5.0.0" `
     "pypdf>=6.0.0,<7.0.0" `
     "markdown>=3.4,<4.0.0" `
-    "mistune>=3.0.0,<4.0.0"
+    "mistune>=3.0.0,<4.0.0" `
+    "pywin32>=308; sys_platform == 'win32'"
 
 if ($LASTEXITCODE -ne 0) { throw "pip install fallito (codice $LASTEXITCODE)" }
 Write-Host "    Dipendenze installate." -ForegroundColor Green

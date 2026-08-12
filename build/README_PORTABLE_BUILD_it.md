@@ -78,33 +78,56 @@ Lo script esegue automaticamente questi passi:
 
 | Passo | Operazione |
 |-------|-----------|
-| 1 | Crea `.venv-build\` nella radice del progetto (solo al primo avvio) |
-| 1b | Aggiorna pip nel venv (solo al primo avvio) |
-| 2 | Installa cx_Freeze + tutte le dipendenze nel venv isolato |
-| 3 | Esegue `cx_Freeze build_exe` usando la configurazione in `pyproject.toml` |
-| 4 | Copia `templates\fonts\` nella cartella build se non già inclusa |
-| 5 | Comprime in `dist\Songpress++-<versione>-portable.zip` |
+| 1 | Crea `.venv-build\` nella radice del progetto (solo al primo avvio; poi riutilizzato) |
+| 2 | Aggiorna pip e installa cx_Freeze + tutte le dipendenze pinnate (a ogni esecuzione) |
+| 3 | Rimuove la cartella `build\` precedente, poi esegue `cx_Freeze build_exe` usando la configurazione in `pyproject.toml` |
+| 4 | Individua la cartella build prodotta (`build\exe.*`) |
+| 5 | Copia `templates\fonts\` nella cartella build se non già inclusa |
+| 6 | Comprime il **contenuto** della build in `dist\Songpress++-<versione>-portable.zip` |
+
+> **Nota su pip:** l'aggiornamento di pip e l'installazione delle dipendenze
+> vengono eseguiti a **ogni** avvio, non solo al primo. Se i pacchetti sono già
+> presenti, pip li segnala come soddisfatti e non scarica nulla.
+
+### Dipendenze installate (pinnate)
+
+Lo script installa cx_Freeze più i seguenti pacchetti nel venv isolato:
+
+| Pacchetto | Vincolo di versione |
+|-----------|---------------------|
+| wxPython | `>=4.2.4,<5.0.0` |
+| requests | `>=2.32.4,<3.0.0` |
+| python-pptx | `>=1.0.2,<2.0.0` |
+| pyshortcuts | `>=1.9.5,<2.0.0` |
+| reportlab | `>=4.0.0,<5.0.0` |
+| pypdf | `>=6.0.0,<7.0.0` |
+| markdown | `>=3.4,<4.0.0` |
+| mistune | `>=3.0.0,<4.0.0` |
+| pywin32 | `>=308` (solo Windows, `sys_platform == 'win32'`) |
 
 ---
 
 ## Output
 
+L'archivio memorizza il **contenuto** della cartella build, quindi dopo
+l'estrazione `Songpress++.exe` si trova nella radice della cartella estratta
+(nello ZIP non c'è il livello intermedio `exe.win-amd64-3.12\`):
+
 ```
 dist/
-└── Songpress++-3.0.1-portable.zip
-    └── exe.win-amd64-3.12\      ← cartella da estrarre e distribuire
-        ├── Songpress++.exe
-        ├── python3xx.dll
-        ├── wx/
-        ├── img/
-        ├── locale/
-        ├── templates/
-        │   ├── songs/
-        │   ├── slides/
-        │   ├── themes/
-        │   └── fonts/
-        ├── xrc/
-        └── pyproject.toml
+└── Songpress++-3.0.1-portable.zip   ← estrai e distribuisci
+    ├── Songpress++.exe
+    ├── python3xx.dll
+    ├── wx/
+    ├── img/
+    ├── locale/
+    ├── templates/
+    │   ├── songs/
+    │   ├── slides/
+    │   ├── themes/
+    │   └── fonts/
+    ├── xrc/
+    └── pyproject.toml
 ```
 
 ---
@@ -190,6 +213,9 @@ Questo avviso non blocca la build; l'aggiornamento è facoltativo.
 ---
 
 ### Ripartire da zero (venv + build)
+
+Lo script rimuove già la cartella `build\` a ogni avvio, quindi per una
+ricompilazione pulita basta eliminare il venv:
 
 ```powershell
 Remove-Item -Recurse -Force .venv-build, build

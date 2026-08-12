@@ -78,33 +78,56 @@ The script automatically performs these steps:
 
 | Step | Operation |
 |------|-----------|
-| 1 | Creates `.venv-build\` in the project root (first run only) |
-| 1b | Upgrades pip inside the venv (first run only) |
-| 2 | Installs cx_Freeze + all dependencies into the isolated venv |
-| 3 | Runs `cx_Freeze build_exe` using the configuration in `pyproject.toml` |
-| 4 | Copies `templates\fonts\` into the build folder if not already included |
-| 5 | Compresses into `dist\Songpress++-<version>-portable.zip` |
+| 1 | Creates `.venv-build\` in the project root (first run only; reused afterwards) |
+| 2 | Upgrades pip and installs cx_Freeze + all pinned dependencies (every run) |
+| 3 | Removes any previous `build\` folder, then runs `cx_Freeze build_exe` using the configuration in `pyproject.toml` |
+| 4 | Locates the produced build folder (`build\exe.*`) |
+| 5 | Copies `templates\fonts\` into the build folder if not already included |
+| 6 | Compresses the build **contents** into `dist\Songpress++-<version>-portable.zip` |
+
+> **Note on pip:** the pip upgrade and the dependency install run on **every**
+> execution, not only the first one. When the packages are already present pip
+> simply reports them as satisfied and downloads nothing.
+
+### Installed dependencies (pinned)
+
+The script installs cx_Freeze plus the following packages into the isolated venv:
+
+| Package | Version constraint |
+|---------|--------------------|
+| wxPython | `>=4.2.4,<5.0.0` |
+| requests | `>=2.32.4,<3.0.0` |
+| python-pptx | `>=1.0.2,<2.0.0` |
+| pyshortcuts | `>=1.9.5,<2.0.0` |
+| reportlab | `>=4.0.0,<5.0.0` |
+| pypdf | `>=6.0.0,<7.0.0` |
+| markdown | `>=3.4,<4.0.0` |
+| mistune | `>=3.0.0,<4.0.0` |
+| pywin32 | `>=308` (Windows only, `sys_platform == 'win32'`) |
 
 ---
 
 ## Output
 
+The archive stores the **contents** of the build folder, so after extraction
+`Songpress++.exe` sits in the root of the extracted folder (there is no
+intermediate `exe.win-amd64-3.12\` level inside the ZIP):
+
 ```
 dist/
-└── Songpress++-3.0.1-portable.zip
-    └── exe.win-amd64-3.12\      ← folder to extract and distribute
-        ├── Songpress++.exe
-        ├── python3xx.dll
-        ├── wx/
-        ├── img/
-        ├── locale/
-        ├── templates/
-        │   ├── songs/
-        │   ├── slides/
-        │   ├── themes/
-        │   └── fonts/
-        ├── xrc/
-        └── pyproject.toml
+└── Songpress++-3.0.1-portable.zip   ← extract and distribute
+    ├── Songpress++.exe
+    ├── python3xx.dll
+    ├── wx/
+    ├── img/
+    ├── locale/
+    ├── templates/
+    │   ├── songs/
+    │   ├── slides/
+    │   ├── themes/
+    │   └── fonts/
+    ├── xrc/
+    └── pyproject.toml
 ```
 
 ---
@@ -190,6 +213,9 @@ This warning does not block the build; upgrading is optional.
 ---
 
 ### Start from scratch (venv + build)
+
+The script already removes the `build\` folder on every run, so a clean rebuild
+only requires deleting the venv:
 
 ```powershell
 Remove-Item -Recurse -Force .venv-build, build
