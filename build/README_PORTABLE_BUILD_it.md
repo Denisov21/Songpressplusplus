@@ -25,7 +25,7 @@ Songpressplusplus/
 ├── installer/
 │   └── Build-Portable.ps1   ← script da eseguire
 ├── src/
-│   └── songpress/
+│   └── songpressplusplus/
 │       ├── img/
 │       ├── locale/
 │       ├── templates/
