@@ -11,10 +11,13 @@ Descrizione di ogni file e cartella presente nel progetto.
 | `src/` | Codice sorgente dell'applicazione (vedi dettaglio sotto). |
 | `installer/` | File per la creazione dell'installer. |
 | `build/` | Output di compilazione e packaging. |
+| `build_deb/` | Output della build del pacchetto **Debian/Ubuntu** (`.deb`) per Linux. Contiene la struttura di packaging (`DEBIAN/control`, gerarchia `usr/`, ecc.) e gli artefatti generati durante la creazione del pacchetto. |
 | `dist/` | Distribuzione finale: contiene i file pronti per la distribuzione (es. eseguibili PyInstaller, archivi). |
 | `.venv-build/` | Ambiente virtuale Python dedicato alla build/packaging (es. PyInstaller). Separato dall'ambiente di sviluppo principale. |
 | `.idea/` | Configurazione IDE (PyCharm). |
 | `.git/` | Repository Git. |
+| `.github/` | Configurazione GitHub: workflow di **GitHub Actions** (CI/CD), eventuali template per issue e pull request e altri file di automazione del repository. |
+| `TOOLS UTILY/` | Raccolta di **strumenti di utilità** e script di supporto standalone (sviluppo, manutenzione, packaging, pulizia installazioni), non facenti parte del codice dell'applicazione (vedi dettaglio sotto). |
 
 ---
 
@@ -36,7 +39,6 @@ Descrizione di ogni file e cartella presente nel progetto.
 | `README.md` | Documentazione principale del progetto in inglese. |
 | `README_italian.md` | Documentazione principale del progetto in italiano. |
 | `struttura_progetto_it.md` | Questo file. Descrizione di ogni file e cartella del progetto. |
-| `guida_associazioni_file.md` | Guida alla verifica e sistemazione delle associazioni file su Windows. Copre: verifica del registro, correzione manuale tramite PowerShell, separazione tra cartella programma (`%LOCALAPPDATA%`) e dati utente (`%APPDATA%`), test di avvio con log diagnostico, reinstallazione pulita e uso della scheda "Associazioni file" in Songpress++. |
 | `Elenco programmi, pacchetti Python e versioni.md` | Elenco dei programmi, pacchetti Python e versioni utilizzate. |
 | `guida.md` | Guida utente completa di Songpress++ in italiano. Documenta comandi ChordPro supportati, sintassi delle direttive, funzionalità dell'editor e dell'anteprima. |
 | `guida_en.md` | Versione inglese della guida utente completa (`guida.md`). |
@@ -50,16 +52,48 @@ Descrizione di ogni file e cartella presente nel progetto.
 | `license.txt` | Testo completo della licenza del progetto. |
 | `license.txt.tpl` | Template usato per generare `license.txt`. |
 
-### Script di supporto
+---
+
+## Contenuto di `TOOLS UTILY/`
+
+Strumenti di utilità e script di supporto standalone, **non** parte del codice dell'applicazione: servono durante sviluppo, manutenzione, packaging e pulizia delle installazioni. Vanno eseguiti singolarmente, di norma dalla cartella del progetto.
+
+### Script Python (GUI / CLI)
 
 | File | Descrizione |
 | ---- | ----------- |
-| `sync_deps.py` | Sincronizza automaticamente versione app e dipendenze da `pyproject.toml` a `src/install_check.vbs`. Eseguire dopo ogni modifica al toml: `python sync_deps.py` |
-| `menu_sorter.py` | Strumento standalone wxPython per l'ordinamento alfabetico delle voci di menu nei file **XRC** (wxWidgets) e **FBP** (wxFormBuilder). Carica il file, mostra i menu trovati in un pannello a sinistra e, per il menu selezionato, elenca i gruppi di voci (separati da separatori) con checkbox individuali per scegliere quali ordinare. Supporta "Ordina selezionati", "Ordina tutti" e salvataggio con backup automatico (`.bak`). I colori dell'interfaccia sono personalizzabili tramite `menu_sorter_colors.json` e un dialogo opzioni integrato. Eseguibile direttamente: `python menu_sorter.py` |
+| `sync_deps.py` | Sincronizza automaticamente versione app e dipendenze da `pyproject.toml` a `src/install_check.vbs`. Eseguire dopo ogni modifica al toml: `python sync_deps.py`. |
+| `menu_sorter.py` | Strumento standalone wxPython per l'ordinamento alfabetico delle voci di menu nei file **XRC** (wxWidgets) e **FBP** (wxFormBuilder). Carica il file, mostra i menu trovati in un pannello a sinistra e, per il menu selezionato, elenca i gruppi di voci (separati da separatori) con checkbox individuali per scegliere quali ordinare. Supporta "Ordina selezionati", "Ordina tutti" e salvataggio con backup automatico (`.bak`). I colori dell'interfaccia sono personalizzabili tramite `menu_sorter_colors.json` e un dialogo opzioni integrato. Eseguibile direttamente: `python menu_sorter.py`. |
 | `menu_sorter_colors.json` | File di configurazione JSON dei colori dell'interfaccia di `menu_sorter.py`. Sovrascrive i valori predefiniti per le chiavi: `DARK_BG`, `PANEL_BG`, `ACCENT`, `ACCENT_LIGHT`, `TEXT_MAIN`, `TEXT_DIM`, `SUCCESS`, `WARNING`. Generato automaticamente dal dialogo Opzioni di `menu_sorter.py`; modificabile anche manualmente. |
-| `fix_songpress_assoc.reg` | ~~Script del Registro di Windows per correggere l'associazione dei file `.crd` a Songpress++.~~ **Obsoleto** — le associazioni vengono ora gestite correttamente dal NSIS installer e dal tool `songpress_cleanup.py`. Può essere eliminato. |
 | `songpress_cleanup.py` | Tool standalone con GUI (tkinter) per la pulizia completa di installazioni Songpress++ attuali o precedenti. Scansiona cartelle, sottocartelle, collegamenti e chiavi di registro su tutte le unità disponibili, mostra i risultati in una tabella interattiva e permette di eliminarli selettivamente (cartelle → cestino, chiavi registro → eliminazione definitiva). Include il pulsante **Ripristina associazioni** per reimpostare le associazioni file `.crd .pro .chopro .chordpro .cho .tab` senza reinstallare. Nessuna dipendenza esterna — solo librerie standard Windows. |
+| `find_unused.py` | Strumento per individuare elementi **non utilizzati** nel progetto (es. funzioni, import, moduli o risorse mai referenziati), utile per ripulire il codice da parti morte prima di release/refactoring. |
+
+### Documentazione dei tool
+
+| File | Descrizione |
+| ---- | ----------- |
 | `songpress_cleanup.md` | Documentazione di `songpress_cleanup.py`: avvio, funzionalità, strategia di ricerca cartelle, scansione in due fasi, chiavi di registro controllate. |
+| `find_unused_guida.md` | Guida a `find_unused.py`: modalità d'uso, opzioni e interpretazione dei risultati. |
+| `guida_associazioni_file.md` | Guida alla verifica e sistemazione delle associazioni file su Windows. Copre: verifica del registro, correzione manuale tramite PowerShell, separazione tra cartella programma (`%LOCALAPPDATA%`) e dati utente (`%APPDATA%`), test di avvio con log diagnostico, reinstallazione pulita e uso della scheda "Associazioni file" in Songpress++. |
+
+### Script del Registro di Windows
+
+| File | Descrizione |
+| ---- | ----------- |
+| `fix_songpress_associations.reg` | ~~Script del Registro di Windows per correggere l'associazione dei file `.crd` (e affini) a Songpress++.~~ **Obsoleto** — le associazioni vengono ora gestite correttamente dal NSIS installer e dal tool `songpress_cleanup.py` (pulsante *Ripristina associazioni*). Conservato solo per riferimento. |
+
+### Sottocartelle di `TOOLS UTILY/`
+
+| Cartella | Descrizione |
+| -------- | ----------- |
+| `fix2/` | Fix per l'**icona di Songpress++** su Windows (script batch + guida). Vedi dettaglio sotto. |
+
+#### Contenuto di `fix2/`
+
+| File | Descrizione |
+| ---- | ----------- |
+| `fix_icona_songpress.bat` | Script batch di Windows per correggere/ripristinare l'**icona** dei file e/o dei collegamenti di Songpress++ (es. rigenerazione della cache delle icone e/o sistemazione della chiave `DefaultIcon` nel registro), utile quando Windows mostra l'icona sbagliata o generica. |
+| `fix_icona_songpress.md` | Documentazione di `fix_icona_songpress.bat`: causa del problema, uso dello script e verifica del risultato. |
 
 ---
 

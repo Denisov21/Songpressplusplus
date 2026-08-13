@@ -572,7 +572,10 @@ class Editor(StyledTextCtrl):
         menu = wx.Menu()
 
         import os
-        _img_dir = os.path.join(os.path.dirname(__file__), 'img')
+        from .Globals import glb
+        # Usa glb (frozen-aware) invece di __file__: nella build congelata
+        # img/ è nella cartella dell'exe, non dentro lib/songpressPlusPlus/.
+        _img_dir = glb.AddPath('img')
         img = lambda name: os.path.join(_img_dir, name)
 
         # Recupera le preferenze di visibilità (default True se non presenti)

@@ -31,3 +31,6 @@ __pycache__/
 ~$*
 Thumbs.db
 Desktop.ini
+
+# File di backup
+*.bak

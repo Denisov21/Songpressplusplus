@@ -6715,7 +6715,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             if canonical:
                 lang_code = canonical.split('_')[0].lower()  # → "it", "en", "fr"
 
-        base_dir = os.path.dirname(__file__)
+        # Frozen-aware: nella build congelata guida_*.md e img/GUIDE sono
+        # nella cartella dell'exe (glb.path), non dentro lib/songpressplusplus/.
+        base_dir = glb.path
         _img_guide_url = 'file:///' + os.path.abspath(os.path.join(base_dir, 'img', 'GUIDE')).replace('\\', '/').lstrip('/') + '/'
 
         # Priorità: guida_<lang>.md  →  guida.md  →  errore
@@ -6753,7 +6755,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         )
         if getattr(self.pref, 'guideMarkdownImgPath', False):
             # Typora: percorso assoluto relativo alla root del progetto
-            md_text = _guide_pat.sub(r'\1../src/songpressPlusPlus/img/GUIDE/', md_text)
+            md_text = _guide_pat.sub(r'\1../src/songpressplusplus/img/GUIDE/', md_text)
         else:
             # App: percorso relativo al file .md in src/songpress/
             md_text = _guide_pat.sub(lambda m: m.group(1) + _img_guide_url, md_text)
@@ -7567,7 +7569,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             if canonical:
                 lang_code = canonical.split('_')[0].lower()
 
-        base_dir = os.path.dirname(__file__)
+        # Frozen-aware: nella build congelata guida_*.md e img/GUIDE sono
+        # nella cartella dell'exe (glb.path), non dentro lib/songpressplusplus/.
+        base_dir = glb.path
         _img_guide_url = 'file:///' + os.path.abspath(os.path.join(base_dir, 'img', 'GUIDE')).replace('\\', '/').lstrip('/') + '/'
 
         # Priorità: guida_comandi_songpress_<lang>.md → guida_comandi_songpress.md → errore
@@ -7603,7 +7607,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             r'(!\[[^\]]*\]\()(?:[^()]*?/)?img/GUIDE/'
         )
         if getattr(self.pref, 'guideMarkdownImgPath', False):
-            md_text = _guide_pat.sub(r'\1../src/songpressPlusPlus/img/GUIDE/', md_text)
+            md_text = _guide_pat.sub(r'\1../src/songpressplusplus/img/GUIDE/', md_text)
         else:
             md_text = _guide_pat.sub(lambda m: m.group(1) + _img_guide_url, md_text)
 

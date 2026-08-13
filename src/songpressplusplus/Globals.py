@@ -19,18 +19,52 @@ from importlib.metadata import version, PackageNotFoundError
 import wx
 
 
+def _candidate_pyproject_paths():
+    """Percorsi in cui cercare pyproject.toml, in ordine di priorità.
+
+    - Build congelata (cx_Freeze): il file viene copiato *accanto*
+      all'eseguibile tramite include_files. __file__ punta invece dentro lib/
+      e risalendo di tre livelli non lo si raggiunge: era la ragione per cui
+      la versione ripiegava su "dev" e il nome su "Songpress++".
+    - Checkout sorgente / editable install: pyproject.toml sta tre livelli
+      sopra questo file (src/<package>/Globals.py → radice del repo).
+    """
+    paths = []
+    if getattr(sys, 'frozen', False):
+        paths.append(os.path.join(
+            os.path.dirname(os.path.abspath(sys.executable)), 'pyproject.toml'))
+    paths.append(os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        'pyproject.toml'))
+    return paths
+
+
+def _read_pyproject():
+    """Carica il primo pyproject.toml leggibile; None se nessuno disponibile."""
+    try:
+        import tomllib
+    except ModuleNotFoundError:
+        return None  # < Python 3.11: tomllib assente (requires-python >=3.12)
+    for _toml_path in _candidate_pyproject_paths():
+        try:
+            with open(_toml_path, 'rb') as f:
+                return tomllib.load(f)
+        except (OSError, tomllib.TOMLDecodeError):
+            continue
+    return None
+
+
 def _read_version():
     try:
         return version("songpressplusplus")
     except PackageNotFoundError:
         pass
-    try:
-        import tomllib
-        _toml_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'pyproject.toml')
-        with open(_toml_path, 'rb') as f:
-            return tomllib.load(f)['project']['version']
-    except Exception:
-        pass
+    data = _read_pyproject()
+    if data is not None:
+        try:
+            return data['project']['version']
+        except (KeyError, TypeError):
+            pass
     return "dev"
 
 
@@ -40,13 +74,12 @@ def _read_name():
         return metadata("songpressplusplus")['Name']
     except Exception:
         pass
-    try:
-        import tomllib
-        _toml_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'pyproject.toml')
-        with open(_toml_path, 'rb') as f:
-            return tomllib.load(f)['project']['name']
-    except Exception:
-        pass
+    data = _read_pyproject()
+    if data is not None:
+        try:
+            return data['project']['name']
+        except (KeyError, TypeError):
+            pass
     return "Songpress++"
 
 
@@ -71,8 +104,16 @@ class Globals(object):
 
     def __init__(self):
         object.__init__(self)
-        current_file = os.path.abspath(__file__)
-        self.path = os.path.dirname(current_file)
+        if getattr(sys, 'frozen', False):
+            # Build congelata (cx_Freeze): le risorse (xrc/, img/, templates/,
+            # locale/) vengono copiate da include_files nella cartella
+            # dell'eseguibile, non dentro lib/songpressPlusPlus/. Usare la dir
+            # dell'exe come radice risorse; __file__ punterebbe invece dentro
+            # lib/ dove xrc/ ecc. non esistono → wxDir::Open fallisce.
+            self.path = os.path.dirname(os.path.abspath(sys.executable))
+        else:
+            current_file = os.path.abspath(__file__)
+            self.path = os.path.dirname(current_file)
         self.data_path = None
 
     def InitDataPath(self):

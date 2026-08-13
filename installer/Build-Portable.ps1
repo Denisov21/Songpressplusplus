@@ -1,4 +1,4 @@
-###############################################################
+﻿###############################################################
 # Build-Portable.ps1
 # Crea una distribuzione portabile ZIP di Songpress++
 # usando cx_Freeze in un venv dedicato.
@@ -23,8 +23,7 @@ $DistDir     = Join-Path $ProjectRoot 'dist'
 
 # Legge la versione da pyproject.toml senza dipendenze esterne
 $TomlPath    = Join-Path $ProjectRoot 'pyproject.toml'
-if (-not (Test-Path $TomlPath)) { throw "pyproject.toml non trovato in $ProjectRoot" }
-$VersionLine = Select-String -Path $TomlPath -Pattern '^\s*version\s*=\s*"([^"]+)"' | Select-Object -First 1
+$VersionLine = Select-String -Path $TomlPath -Pattern '^version\s*=\s*"(.+)"' | Select-Object -First 1
 if (-not $VersionLine) { throw "Impossibile leggere la versione da pyproject.toml" }
 $Version     = $VersionLine.Matches[0].Groups[1].Value
 
@@ -45,7 +44,6 @@ Write-Host ""
 if (-not (Test-Path $VenvDir)) {
     Write-Host "[1/6] Creazione venv..." -ForegroundColor Yellow
     python -m venv $VenvDir
-    if ($LASTEXITCODE -ne 0) { throw "Creazione venv fallita (codice $LASTEXITCODE)" }
 } else {
     Write-Host "[1/6] Venv esistente, riutilizzo." -ForegroundColor Green
 }
@@ -53,27 +51,29 @@ if (-not (Test-Path $VenvDir)) {
 $Pip    = Join-Path $VenvDir 'Scripts\pip.exe'
 $Python = Join-Path $VenvDir 'Scripts\python.exe'
 
-if (-not (Test-Path $Python)) { throw "python.exe non trovato nel venv: $Python" }
-
 # ── 2. Dipendenze ────────────────────────────────────────────────────────────
 
 Write-Host "[2/6] Installazione dipendenze (può richiedere alcuni minuti)..." -ForegroundColor Yellow
 
-# NB: pip si aggiorna via 'python -m pip', altrimenti su Windows pip.exe è in uso -> Access denied
-& $Python -m pip install --upgrade pip --quiet
-if ($LASTEXITCODE -ne 0) { throw "Upgrade di pip fallito (codice $LASTEXITCODE)" }
+# Le specifiche di versione vanno tenute come elementi di un array e passate
+# con lo splatting (@Deps): la continuazione con backtick di stringhe
+# contenenti '<' e ',' non viene analizzata correttamente da Windows
+# PowerShell 5.1 ("The '<' operator is reserved for future use").
+$Deps = @(
+    'cx_Freeze'
+    'wxPython>=4.2.4,<5.0.0'
+    'requests>=2.32.4,<3.0.0'
+    'python-pptx>=1.0.2,<2.0.0'
+    'pyshortcuts>=1.9.5,<2.0.0'
+    'reportlab>=4.0.0,<5.0.0'
+    'pypdf>=6.0.0,<7.0.0'
+    'markdown>=3.4,<4.0.0'
+    'mistune>=3.0.0,<4.0.0'
+    'pywin32>=308'
+)
 
-& $Pip install --quiet `
-    cx_Freeze `
-    "wxPython>=4.2.4,<5.0.0" `
-    "requests>=2.32.4,<3.0.0" `
-    "python-pptx>=1.0.2,<2.0.0" `
-    "pyshortcuts>=1.9.5,<2.0.0" `
-    "reportlab>=4.0.0,<5.0.0" `
-    "pypdf>=6.0.0,<7.0.0" `
-    "markdown>=3.4,<4.0.0" `
-    "mistune>=3.0.0,<4.0.0" `
-    "pywin32>=308; sys_platform == 'win32'"
+& $Python -m pip install --upgrade pip --quiet
+& $Pip install --quiet @Deps
 
 if ($LASTEXITCODE -ne 0) { throw "pip install fallito (codice $LASTEXITCODE)" }
 Write-Host "    Dipendenze installate." -ForegroundColor Green
@@ -82,10 +82,12 @@ Write-Host "    Dipendenze installate." -ForegroundColor Green
 
 Write-Host "[3/6] Esecuzione cx_Freeze build_exe..." -ForegroundColor Yellow
 
-# Pulizia della build precedente per evitare di raccogliere output stantii
-if (Test-Path $BuildDir) {
-    Remove-Item -Path $BuildDir -Recurse -Force
-}
+# cx_Freeze deve poter importare il package 'songpressPlusPlus' (elencato in
+# [tool.cxfreeze.build_exe] packages): va reso individuabile aggiungendo src/
+# a PYTHONPATH, altrimenti il finder fallisce con "No module named ...".
+$SrcDir      = Join-Path $ProjectRoot 'src'
+$OldPyPath   = $env:PYTHONPATH
+$env:PYTHONPATH = if ($OldPyPath) { "$SrcDir;$OldPyPath" } else { $SrcDir }
 
 Push-Location $ProjectRoot
 try {
@@ -93,23 +95,20 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "cx_Freeze fallito (codice $LASTEXITCODE)" }
 } finally {
     Pop-Location
+    $env:PYTHONPATH = $OldPyPath
 }
 Write-Host "    Build completata." -ForegroundColor Green
 
 # ── 4. Individua la cartella build prodotta ───────────────────────────────────
 
-Write-Host "[4/6] Individuazione cartella build..." -ForegroundColor Yellow
-
-# cx_Freeze crea build\exe.<platform>-<pyver>\
-if (-not (Test-Path $BuildDir)) { throw "Cartella build non trovata in $BuildDir" }
-$BuildOutput = Get-ChildItem -Path $BuildDir -Directory -Filter 'exe.*' |
-    Sort-Object LastWriteTime -Descending | Select-Object -First 1
-if (-not $BuildOutput) { throw "Nessuna cartella 'exe.*' trovata in $BuildDir" }
+# cx_Freeze crea build\exe.<platform>-<pyver>\ o build\<exename>\
+$BuildOutput = Get-ChildItem -Path $BuildDir -Directory | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+if (-not $BuildOutput) { throw "Cartella build non trovata in $BuildDir" }
 Write-Host "    Cartella build: $($BuildOutput.FullName)"
 
 # ── 5. Copia fonts in templates\fonts (se non già inclusi da cx_Freeze) ──────
 
-Write-Host "[5/6] Verifica cartella templates\fonts..." -ForegroundColor Yellow
+Write-Host "[4/6] Verifica cartella templates\fonts..." -ForegroundColor Yellow
 
 $SrcFonts  = Join-Path $ProjectRoot 'src\songpressplusplus\templates\fonts'
 $DestFonts = Join-Path $BuildOutput.FullName 'templates\fonts'
@@ -126,7 +125,7 @@ if (Test-Path $SrcFonts) {
 
 # ── 6. Crea ZIP ───────────────────────────────────────────────────────────────
 
-Write-Host "[6/6] Creazione archivio ZIP..." -ForegroundColor Yellow
+Write-Host "[5/6] Creazione archivio ZIP..." -ForegroundColor Yellow
 
 if (-not (Test-Path $DistDir)) {
     New-Item -ItemType Directory -Path $DistDir -Force | Out-Null
@@ -134,10 +133,7 @@ if (-not (Test-Path $DistDir)) {
 
 if (Test-Path $ZipPath) { Remove-Item $ZipPath -Force }
 
-# Si comprime il CONTENUTO della cartella build (con \*), così dopo l'estrazione
-# Songpress++.exe è nella root della cartella estratta.
-Compress-Archive -Path (Join-Path $BuildOutput.FullName '*') `
-                 -DestinationPath $ZipPath -CompressionLevel Optimal
+Compress-Archive -Path $BuildOutput.FullName -DestinationPath $ZipPath -CompressionLevel Optimal
 
 $SizeMB = [math]::Round((Get-Item $ZipPath).Length / 1MB, 1)
 Write-Host "    ZIP creato: $ZipName ($SizeMB MB)" -ForegroundColor Green
