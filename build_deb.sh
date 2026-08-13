@@ -29,17 +29,43 @@ set -euo pipefail
 #   OK   ✔ verde   passo completato
 #   WARN ⚠ giallo  problema NON bloccante (il build prosegue)
 #   ERR  ✘ rosso   errore: lo script si ferma
+#   NET  🌐 ciano  operazione che richiede la rete (download da PyPI, ecc.)
 # Esportati perché li rileggono anche gli heredoc Python.
 if [[ -t 1 ]]; then
     OK=$'\e[1;32m✔\e[0m'
     WARN=$'\e[1;33m⚠\e[0m'
     ERR=$'\e[1;31m✘\e[0m'
+    NET=$'\e[1;36m🌐\e[0m'
 else
     OK='✔'
     WARN='⚠'
     ERR='✘'
+    NET='🌐'
 fi
-export OK WARN ERR
+export OK WARN ERR NET
+
+# ── Icone di sezione ──────────────────────────────────────────
+# NON sono livelli di stato come OK/WARN/ERR/NET: sono icone decorative usate
+# solo nel riepilogo conclusivo. Essendo emoji già a colori non hanno ANSI.
+DONE='✅'
+PKG='📦'
+export DONE PKG
+
+# ── Lingua dei messaggi di build ──────────────────────────────
+# Inglese come lingua base; italiano SOLO se il locale di sistema è italiano.
+# Stessa logica del postinst, così i messaggi di creazione del .deb e quelli
+# di installazione parlano la stessa lingua. Forzabile con SPP_BUILD_LANG=it|en.
+case "${SPP_BUILD_LANG:-${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}}" in
+    it | it_* | it.* | it_*.*) BUILD_LANG=it ;;
+    *)                          BUILD_LANG=en ;;
+esac
+export BUILD_LANG
+
+# bmsg ENGLISH_STRING ITALIAN_STRING → stampa la variante corretta (con newline).
+# Per i messaggi solo verso stderr si usa: bmsg "en" "it" >&2
+bmsg() {
+    if [ "$BUILD_LANG" = it ]; then printf '%s\n' "$2"; else printf '%s\n' "$1"; fi
+}
 
 # ── Trappola di errore ────────────────────────────────────────
 # Con "set -e" lo script muore in silenzio alla prima riga fallita: si vedrebbe
@@ -50,9 +76,12 @@ _on_err() {
     local line=$1
     local cmd=$2
     echo "" >&2
-    echo "$ERR ERRORE (exit $rc) alla riga $line di ${BASH_SOURCE[0]##*/}" >&2
-    echo "$ERR    comando: $cmd" >&2
-    echo "$ERR    pacchetto NON creato." >&2
+    bmsg "$ERR ERROR (exit $rc) at line $line of ${BASH_SOURCE[0]##*/}" \
+         "$ERR ERRORE (exit $rc) alla riga $line di ${BASH_SOURCE[0]##*/}" >&2
+    bmsg "$ERR    command: $cmd" \
+         "$ERR    comando: $cmd" >&2
+    bmsg "$ERR    package NOT created." \
+         "$ERR    pacchetto NON creato." >&2
     exit "$rc"
 }
 trap '_on_err "$LINENO" "$BASH_COMMAND"' ERR
@@ -81,20 +110,32 @@ done
 
 if [[ "$ASSUME_YES" != "1" ]]; then
     echo ""
-    echo "$WARN La creazione del pacchetto .deb richiede una connessione a Internet."
-    echo "    pip scarica da PyPI i componenti necessari a costruire la wheel"
-    echo "    (hatchling e le dipendenze di build)."
+    echo "=================================================================="
+    bmsg "Songpress++ — AN INTERNET CONNECTION IS REQUIRED $NET" \
+         "Songpress++ — È RICHIESTA UNA CONNESSIONE A INTERNET $NET"
+    echo ""
+    bmsg "Building the .deb package requires an Internet connection." \
+         "La creazione del pacchetto .deb richiede una connessione a Internet."
+    bmsg "    pip downloads from PyPI the components needed to build the wheel" \
+         "    pip scarica da PyPI i componenti necessari a costruire la wheel"
+    bmsg "    (hatchling and the build dependencies)." \
+         "    (hatchling e le dipendenze di build)."
+    echo "=================================================================="
     echo ""
     if [[ -t 0 ]]; then
-        read -r -p "🌐 Vuoi continuare? [S/N] " _risposta || _risposta=""
+        _prompt=$(bmsg "$NET Do you want to continue? [Y/N] " \
+                       "$NET Vuoi continuare? [S/N] ")
+        read -r -p "$_prompt" _risposta || _risposta=""
     else
-        echo "$ERR stdin non interattivo e nessun -y/--yes: interrompo." >&2
+        bmsg "$ERR stdin is not interactive and no -y/--yes given: aborting." \
+             "$ERR stdin non interattivo e nessun -y/--yes: interrompo." >&2
         exit 1
     fi
     case "${_risposta,,}" in
-        s|si|sì) ;;                       # S, s, Si, sì, ...
+        s|si|sì|y|yes) ;;                 # S, s, Si, sì / Y, y, Yes
         *)
-            echo "$ERR Operazione annullata dall'utente. Pacchetto NON creato."
+            bmsg "$ERR Operation cancelled by the user. Package NOT created." \
+                 "$ERR Operazione annullata dall'utente. Pacchetto NON creato."
             exit 1
             ;;
     esac
@@ -191,7 +232,8 @@ INSTALL_PREFIX="$PKG_ROOT/usr"
 
 
 # ── Pulizia precedente build ──────────────────────────────────────────────────
-echo "$OK Pulizia build precedente..."
+bmsg "$OK Cleaning previous build..." \
+     "$OK Pulizia build precedente..."
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
@@ -199,7 +241,8 @@ PYTHON="${VIRTUAL_ENV:+$VIRTUAL_ENV/bin/python3}"
 PYTHON="${PYTHON:-python3}"
 
 # ── 1b. Patch SongpressFrame.py: SetForegroundColour nella finestra About ────
-echo "$OK Patch SetForegroundColour finestra About..."
+bmsg "$OK Patch SetForegroundColour About window..." \
+     "$OK Patch SetForegroundColour finestra About..."
 "$PYTHON" - <<'PATCH'
 import os as _os
 _W = _os.environ.get("WARN", "!")   # marcatore avviso ereditato da build_deb.sh
@@ -247,7 +290,8 @@ print(f"    Patch applicata: {count}/3 fix in {path}")
 PATCH
 
 # ── 1e. Patch SongpressFrame.py: Statistiche brano tema scuro ────────────────
-echo "$OK Patch Statistiche brano (BG sistema, stelle+verdetto, testo tema scuro)..."
+bmsg "$OK Patch Song statistics (system BG, stars+verdict, dark-theme text)..." \
+     "$OK Patch Statistiche brano (BG sistema, stelle+verdetto, testo tema scuro)..."
 "$PYTHON" - <<'PATCH_STATS'
 import os as _os
 _W = _os.environ.get("WARN", "!")   # marcatore avviso ereditato da build_deb.sh
@@ -379,7 +423,8 @@ print(f"    Patch 1e: {count}/{len(fixes)} fix applicati in {path}")
 PATCH_STATS
 
 # ── 1c. Patch PreferencesDialog.py: disabilita pulsanti assoc su Linux ───────
-echo "$OK Patch pulsanti associazione file (Linux)..."
+bmsg "$OK Patch file-association buttons (Linux)..." \
+     "$OK Patch pulsanti associazione file (Linux)..."
 "$PYTHON" - <<'PATCH2'
 import os as _os
 _W = _os.environ.get("WARN", "!")   # marcatore avviso ereditato da build_deb.sh
@@ -423,7 +468,8 @@ print(f"    Patch applicata: {count}/3 fix in {path}")
 PATCH2
 
 # ── 1d. Patch MyPreferencesDialog.py: IsOk() prima di Red()/Green()/Blue() ────
-echo "$OK Patch crash colore selettore (IsOk)..."
+bmsg "$OK Patch colour-picker crash (IsOk)..." \
+     "$OK Patch crash colore selettore (IsOk)..."
 "$PYTHON" - <<'PATCH3'
 import os as _os
 _W = _os.environ.get("WARN", "!")   # marcatore avviso ereditato da build_deb.sh
@@ -460,7 +506,8 @@ else:
 PATCH3
 
 # ── 1f. Patch crash _mgr al cambio lingua / chiusura ─────────────────────────
-echo "$OK Patch crash _mgr (cambio lingua / teardown)..."
+bmsg "$OK Patch _mgr crash (language switch / teardown)..." \
+     "$OK Patch crash _mgr (cambio lingua / teardown)..."
 "$PYTHON" - <<'PATCH1F'
 import os as _os
 _W = _os.environ.get("WARN", "!")   # marcatore avviso ereditato da build_deb.sh
@@ -531,7 +578,8 @@ print(f"    Patch 1f: {count}/3 fix applicati")
 PATCH1F
 
 # ── 1g. Patch warning "Cannot set locale" (i18n.py) ──────────────────────────
-echo "$OK Patch warning locale mancante (i18n)..."
+bmsg "$OK Patch missing-locale warning (i18n)..." \
+     "$OK Patch warning locale mancante (i18n)..."
 "$PYTHON" - <<'PATCH1G'
 import os as _os
 _W = _os.environ.get("WARN", "!")   # marcatore avviso ereditato da build_deb.sh
@@ -602,7 +650,8 @@ PATCH1G
 # Le firme combaciano: wxMenu::Append(id, text, help, kind) e
 # wxMenuItem(parentMenu, id, text, help, kind) differiscono solo per il menu
 # in prima posizione, quindi gli argomenti si trasferiscono invariati.
-echo "$OK Patch Gtk-CRITICAL menu (SetBitmap prima di Append)..."
+bmsg "$OK Patch Gtk-CRITICAL menu (SetBitmap before Append)..." \
+     "$OK Patch Gtk-CRITICAL menu (SetBitmap prima di Append)..."
 "$PYTHON" - <<'PATCH1H'
 import os as _os
 _W = _os.environ.get("WARN", "!")   # marcatore avviso ereditato da build_deb.sh
@@ -676,7 +725,8 @@ else:
 PATCH1H
 
 # ── 2. Build della wheel (DOPO le patch) ─────────────────────────────────────
-echo "$OK Costruzione wheel con pip + hatchling..."
+bmsg "$OK Building wheel with pip + hatchling..." \
+     "$OK Costruzione wheel con pip + hatchling..."
 WHEEL_DIR="$BUILD_DIR/wheel"
 mkdir -p "$WHEEL_DIR"
 
@@ -689,7 +739,8 @@ WHEEL_FILE=$(ls "$WHEEL_DIR"/*.whl | head -n1)
 echo "    Wheel: $WHEEL_FILE"
 
 # ── 3. Installazione nell'albero del pacchetto ────────────────────────────────
-echo "$OK Installazione nell'albero del pacchetto..."
+bmsg "$OK Installing into the package tree..." \
+     "$OK Installazione nell'albero del pacchetto..."
 mkdir -p "$INSTALL_PREFIX/share/applications"
 mkdir -p "$INSTALL_PREFIX/share/pixmaps"
 mkdir -p "$INSTALL_PREFIX/share/mime/packages"
@@ -714,7 +765,8 @@ mkdir -p "$INSTALL_PREFIX/share/mime/packages"
 # È l'unica directory di sistema realmente presente in sys.path su Debian
 # (/usr/lib/python3.13/dist-packages NON lo è) e rende il pacchetto immune
 # agli aggiornamenti di minor version di Python.
-echo "$OK Normalizzazione layout (usr/local → usr, dist-packages)..."
+bmsg "$OK Normalising layout (usr/local → usr, dist-packages)..." \
+     "$OK Normalizzazione layout (usr/local → usr, dist-packages)..."
 
 DIST_PKG="$INSTALL_PREFIX/lib/python3/dist-packages"
 PY_PKGS_SRC=$(find "$INSTALL_PREFIX" -maxdepth 6 -type d \
@@ -729,19 +781,22 @@ if [[ -n "$PY_PKGS_SRC" && "$PY_PKGS_SRC" != "$DIST_PKG" ]]; then
     rm -rf "$PY_PKGS_SRC"
     # rimuove la cartella pythonX.Y ormai svuotata
     rmdir "$(dirname "$PY_PKGS_SRC")" 2>/dev/null || true
-    echo "    Moduli Python → ${DIST_PKG#$PKG_ROOT}"
+    bmsg "    Python modules → ${DIST_PKG#$PKG_ROOT}" \
+         "    Moduli Python → ${DIST_PKG#$PKG_ROOT}"
 fi
 
 # Tutto ciò che resta sotto usr/local (bin, share, ...) viene fuso in usr.
 if [[ -d "$INSTALL_PREFIX/local" ]]; then
     ( cd "$INSTALL_PREFIX/local" && tar cf - . ) | ( cd "$INSTALL_PREFIX" && tar xf - )
     rm -rf "$INSTALL_PREFIX/local"
-    echo "    usr/local fuso in usr e rimosso"
+    bmsg "    usr/local merged into usr and removed" \
+         "    usr/local fuso in usr e rimosso"
 fi
 
 # Controllo finale: nessun file deve più trovarsi sotto usr/local.
 if [[ -d "$INSTALL_PREFIX/local" ]]; then
-    echo "$WARN usr/local ancora presente: lintian segnalerà un errore."
+    bmsg "$WARN usr/local still present: lintian will report an error." \
+         "$WARN usr/local ancora presente: lintian segnalerà un errore."
 fi
 
 # ── 3a-bis. Individuazione anticipata dell'eseguibile ────────────────────────
@@ -756,9 +811,11 @@ if [[ -n "$REAL_BIN" ]]; then
 else
     BIN_DIR=""
     INSTALLED_BIN_DIR="/usr/bin"
-    echo "$WARN eseguibile non trovato: il .desktop userà /usr/bin."
+    bmsg "$WARN executable not found: the .desktop will use /usr/bin." \
+         "$WARN eseguibile non trovato: il .desktop userà /usr/bin."
 fi
-echo "    Eseguibile installato in: $INSTALLED_BIN_DIR"
+bmsg "    Executable installed in: $INSTALLED_BIN_DIR" \
+     "    Eseguibile installato in: $INSTALLED_BIN_DIR"
 
 # ── 3b. Verifica dei template ────────────────────────────────────────────────
 # Globals.InitDataPath() popola la cartella dati utente (~/.Songpress++)
@@ -767,7 +824,8 @@ echo "    Eseguibile installato in: $INSTALLED_BIN_DIR"
 # git non versiona le directory vuote), l'utente si ritrova senza
 # templates/songs e templates/slides: il menu "Nuovo da template" resta vuoto
 # e l'esportazione PowerPoint fallisce.
-echo "$OK Verifica dell'albero templates/ nel pacchetto..."
+bmsg "$OK Checking the templates/ tree in the package..." \
+     "$OK Verifica dell'albero templates/ nel pacchetto..."
 # Individua la cartella del pacchetto Python cercando Globals.py (robusto
 # rispetto al nome effettivo del package: songpress / songpressplusplus / ...).
 PKG_DIR=$(find "$INSTALL_PREFIX" -type f -name "Globals.py" -path "*dist-packages*" \
@@ -779,7 +837,8 @@ PKG_DIR=$(find "$INSTALL_PREFIX" -type f -name "Globals.py" -path "*dist-package
 TEMPLATE_SUBDIRS=(fonts local_dir slides songs themes)
 
 if [[ -z "$PKG_DIR" ]]; then
-    echo "$WARN Cartella del pacchetto non individuata: salto la verifica dei template."
+    bmsg "$WARN Package folder not found: skipping template check." \
+         "$WARN Cartella del pacchetto non individuata: salto la verifica dei template."
 else
     MISSING=0
 
@@ -788,7 +847,8 @@ else
         if [[ -d "$PKG_DIR/templates/$SUB" ]]; then
             echo "  ✓ templates/$SUB"
         else
-            echo "$WARN templates/$SUB MANCANTE nella wheel: la creo."
+            bmsg "$WARN templates/$SUB MISSING in the wheel: creating it." \
+                 "$WARN templates/$SUB MANCANTE nella wheel: la creo."
             MISSING=1
             mkdir -p "$PKG_DIR/templates/$SUB"
             # git non versiona le cartelle vuote e dpkg-deb non le preserva:
@@ -807,7 +867,8 @@ KEEP
     for SUB in "${TEMPLATE_SUBDIRS[@]}"; do
         [[ "$SUB" == "local_dir" ]] && continue   # niente ricorsione
         if [[ ! -d "$LOCAL_DIR/templates/$SUB" ]]; then
-            echo "$WARN templates/local_dir/templates/$SUB MANCANTE: la creo."
+            bmsg "$WARN templates/local_dir/templates/$SUB MISSING: creating it." \
+                 "$WARN templates/local_dir/templates/$SUB MANCANTE: la creo."
             MISSING=1
             mkdir -p "$LOCAL_DIR/templates/$SUB"
             cp "$PKG_DIR/templates/$SUB/.keep" \
@@ -816,15 +877,18 @@ KEEP
     done
 
     if [[ "$MISSING" -eq 1 ]]; then
-        echo "  → Le cartelle mancanti sono state create nel pacchetto, ma per"
-        echo "    renderle permanenti dichiarale in pyproject.toml, es.:"
+        bmsg "  → The missing folders were created in the package, but to" \
+             "  → Le cartelle mancanti sono state create nel pacchetto, ma per"
+        bmsg "    make them permanent by declaring them in pyproject.toml, e.g.:" \
+             "    renderle permanenti dichiarale in pyproject.toml, es.:"
         echo "        [tool.hatch.build.targets.wheel.force-include]"
         echo "        \"src/songpressplusplus/templates\" = \"songpressplusplus/templates\""
     fi
 fi
 
 # ── 4. Desktop entry & icona ─────────────────────────────────────────────────
-echo "$OK Creazione .desktop e icona..."
+bmsg "$OK Creating .desktop and icon..." \
+     "$OK Creazione .desktop e icona..."
 
 ICON_SRC="$SCRIPT_DIR/installer/songpressplusplus.ico"
 ICON_PNG="$SCRIPT_DIR/installer/songpressplusplus.png"
@@ -848,7 +912,8 @@ if [[ ! -f "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}.png" ]]; then
     FIRST_LAYER=$(ls "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}-"*.png 2>/dev/null | sort | head -n1 || true)
     if [[ -n "$FIRST_LAYER" ]]; then
         cp "$FIRST_LAYER" "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}.png"
-        echo "    Icona: usato layer $FIRST_LAYER"
+        bmsg "    Icon: used layer $FIRST_LAYER" \
+             "    Icona: usato layer $FIRST_LAYER"
     fi
 fi
 # Rimuove sempre i layer numerati residui
@@ -873,12 +938,17 @@ if [[ -f "$INSTALL_PREFIX/share/pixmaps/${DEB_NAME}.png" ]]; then
         fi
         cp "$DST_APP" "$DST_MIME" 2>/dev/null || true
     done
-    echo "    Icone hicolor installate (256/128/64/48)"
+    bmsg "    hicolor icons installed (256/128/64/48)" \
+         "    Icone hicolor installate (256/128/64/48)"
 else
-    echo "$WARN Nessuna icona trovata!"
-    echo "                 Metti un PNG in: installer/songpressplusplus.png"
-    echo "                 (oppure installer/songpressplusplus.ico + ImageMagick)."
-    echo "                 Senza icona Discover mostrerà il segnaposto '...'."
+    bmsg "$WARN No icon found!" \
+         "$WARN Nessuna icona trovata!"
+    bmsg "                 Put a PNG in: installer/songpressplusplus.png" \
+         "                 Metti un PNG in: installer/songpressplusplus.png"
+    bmsg "                 (or installer/songpressplusplus.ico + ImageMagick)." \
+         "                 (oppure installer/songpressplusplus.ico + ImageMagick)."
+    bmsg "                 Without an icon Discover shows the '...' placeholder." \
+         "                 Senza icona Discover mostrerà il segnaposto '...'."
 fi
 
 # File XML tipo MIME per estensioni ChordPro
@@ -919,19 +989,20 @@ DESKTOP
 # È ciò che Discover usa per la scheda del pacchetto: nome leggibile,
 # icona, autore e licenza. Senza questo file mostra il nome del file
 # (es. "songpressplusplus_7") e nessuna icona.
-echo "$OK Creazione AppStream metainfo..."
+bmsg "$OK Creating AppStream metainfo..." \
+     "$OK Creazione AppStream metainfo..."
 mkdir -p "$INSTALL_PREFIX/share/metainfo"
 cat > "$INSTALL_PREFIX/share/metainfo/${APP_ID}.metainfo.xml" <<METAINFO
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
   <id>${APP_ID}</id>
+  <pkgname>${DEB_NAME}</pkgname>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>${LICENSE}</project_license>
   <name>Songpress++</name>
   <developer id="io.github.denisov21">
     <name>${AUTHOR_NAME}</name>
   </developer>
-  <developer_name>${AUTHOR_NAME}</developer_name>
   <summary>Song typesetting program that generates high-quality songbooks</summary>
   <description>
     <p>
@@ -941,7 +1012,6 @@ cat > "$INSTALL_PREFIX/share/metainfo/${APP_ID}.metainfo.xml" <<METAINFO
   </description>
   <launchable type="desktop-id">${DEB_NAME}.desktop</launchable>
   <icon type="stock">${DEB_NAME}</icon>
-  <icon type="local">/usr/share/pixmaps/${DEB_NAME}.png</icon>
   <url type="homepage">${HOMEPAGE}</url>
   <categories>
     <category>Office</category>
@@ -952,7 +1022,8 @@ cat > "$INSTALL_PREFIX/share/metainfo/${APP_ID}.metainfo.xml" <<METAINFO
 METAINFO
 
 # ── 4. File DEBIAN/control ────────────────────────────────────────────────────
-echo "$OK Scrittura DEBIAN/control..."
+bmsg "$OK Writing DEBIAN/control..." \
+     "$OK Scrittura DEBIAN/control..."
 mkdir -p "$PKG_ROOT/DEBIAN"
 
 INSTALLED_SIZE=$(du -sk "$INSTALL_PREFIX" | awk '{print $1}')
@@ -973,7 +1044,8 @@ CONTROL
 
 # ── 4c. File copyright (DEP-5) ───────────────────────────────────────────────
 # Convenzione Debian: la licenza sta in /usr/share/doc/<pkg>/copyright.
-echo "$OK Scrittura copyright (DEP-5)..."
+bmsg "$OK Writing copyright (DEP-5)..." \
+     "$OK Scrittura copyright (DEP-5)..."
 DOC_DIR="$INSTALL_PREFIX/share/doc/${DEB_NAME}"
 mkdir -p "$DOC_DIR"
 cat > "$DOC_DIR/copyright" <<COPYRIGHT
@@ -1005,9 +1077,11 @@ cat >> "$PKG_ROOT/DEBIAN/postinst" <<'POSTINST_BODY'
 if [ -t 1 ]; then
     SPP_WARN=$(printf '\033[1;33m⚠\033[0m')
     SPP_ERR=$(printf '\033[1;31m✘\033[0m')
+    SPP_NET=$(printf '\033[1;36m🌐\033[0m')
 else
     SPP_WARN='⚠'
     SPP_ERR='✘'
+    SPP_NET='🌐'
 fi
 
 # ── Lingua dei messaggi ───────────────────────────────────────────────────────
@@ -1045,6 +1119,9 @@ fi
 if command -v gtk-update-icon-cache >/dev/null 2>&1; then
     gtk-update-icon-cache -qf /usr/share/icons/hicolor || true
 fi
+if command -v appstreamcli >/dev/null 2>&1; then
+    appstreamcli refresh-cache --force >/dev/null 2>&1 || true
+fi
 
 # ── Installa le dipendenze Python presenti solo su PyPI (non nei repo Debian) ──
 # python-pptx e pyshortcuts non sono pacchettizzati in Debian: si installano
@@ -1064,7 +1141,7 @@ if [ -n "$PY" ]; then
             echo ""
             echo "=================================================================="
             if [ "$SPP_LANG" = it ]; then
-                echo " ⚠️ Songpress++ — È RICHIESTA UNA CONNESSIONE A INTERNET 🌐"
+                echo "Songpress++ — È RICHIESTA UNA CONNESSIONE A INTERNET $SPP_NET"
                 echo ""
                 echo "  Alcune dipendenze Python non esistono nei repository Debian"
                 echo "  (python-pptx, pyshortcuts) e verranno scaricate ORA via pip."
@@ -1073,7 +1150,7 @@ if [ -n "$PY" ]; then
                 echo "  dovrai installare le dipendenze a mano in un secondo momento"
                 echo "  e l'applicazione potrebbe non funzionare correttamente."
             else
-                echo " ⚠️ Songpress++ — AN INTERNET CONNECTION IS REQUIRED 🌐"
+                echo "Songpress++ — AN INTERNET CONNECTION IS REQUIRED $SPP_NET"
                 echo ""
                 echo "  Some Python dependencies are not available in the Debian"
                 echo "  repositories (python-pptx, pyshortcuts) and will be"
@@ -1085,9 +1162,9 @@ if [ -n "$PY" ]; then
             fi
             echo "=================================================================="
             if [ "$SPP_LANG" = it ]; then
-                printf "🌐  Continuare e scaricare le dipendenze ora? [S/n] "
+                printf "$SPP_NET  Continuare e scaricare le dipendenze ora? [S/n] "
             else
-                printf "🌐  Continue and download the dependencies now? [Y/n] "
+                printf "$SPP_NET  Continue and download the dependencies now? [Y/n] "
             fi
         } > /dev/tty
         read SP_ANSWER < /dev/tty || SP_ANSWER="s"
@@ -1163,6 +1240,9 @@ fi
 if command -v gtk-update-icon-cache >/dev/null 2>&1; then
     gtk-update-icon-cache -qf /usr/share/icons/hicolor || true
 fi
+if command -v appstreamcli >/dev/null 2>&1; then
+    appstreamcli refresh-cache --force >/dev/null 2>&1 || true
+fi
 POSTRM
 chmod 0755 "$PKG_ROOT/DEBIAN/postrm"
 
@@ -1179,7 +1259,8 @@ chmod 0755 "$PKG_ROOT/DEBIAN/postrm"
 # Il preinst gira PRIMA dello scompattamento e ripulisce i residui, ma solo
 # dopo aver verificato con dpkg-query che nessun pacchetto li rivendichi: si
 # tocca esclusivamente ciò che è rimasto orfano.
-echo "$OK Scrittura preinst (migrazione da /usr/local)..."
+bmsg "$OK Writing preinst (migration from /usr/local)..." \
+     "$OK Scrittura preinst (migrazione da /usr/local)..."
 cat > "$PKG_ROOT/DEBIAN/preinst" <<'PREINST'
 #!/bin/sh
 set -e
@@ -1245,7 +1326,8 @@ PREINST
 chmod 0755 "$PKG_ROOT/DEBIAN/preinst"
 
 # ── 6. Permessi ───────────────────────────────────────────────────────────────
-echo "$OK Impostazione permessi..."
+bmsg "$OK Setting permissions..." \
+     "$OK Impostazione permessi..."
 find "$PKG_ROOT" -type d -exec chmod 0755 {} \;
 find "$PKG_ROOT" -type f -exec chmod 0644 {} \;
 # Rende eseguibili tutti i file in qualsiasi cartella bin/
@@ -1257,11 +1339,13 @@ chmod 0755 "$PKG_ROOT/DEBIAN/postrm"
 # ── 6b. Wrapper GDK_BACKEND=x11 e symlink minuscolo ──────────────────────────
 # Fatto DOPO il passo permessi per evitare che chmod 0644 azzeri il wrapper.
 # I percorsi arrivano dal passo 3a-bis, dopo la normalizzazione in /usr.
-echo "$OK Creazione wrapper GDK_BACKEND=x11..."
+bmsg "$OK Creating GDK_BACKEND=x11 wrapper..." \
+     "$OK Creazione wrapper GDK_BACKEND=x11..."
 # REAL_BIN / BIN_DIR / INSTALLED_BIN_DIR sono già stati calcolati al passo 3a-bis
 # (servivano al .desktop): qui li riusiamo, così i due percorsi non possono
 # divergere. Rifacciamo solo il find se nel frattempo il file è sparito.
-echo "    Binario trovato: ${REAL_BIN:-(nessuno)}"
+bmsg "    Binary found: ${REAL_BIN:-(none)}" \
+     "    Binario trovato: ${REAL_BIN:-(nessuno)}"
 
 if [[ -n "$REAL_BIN" && -f "$REAL_BIN" ]]; then
     mv "$REAL_BIN" "${REAL_BIN}_bin"
@@ -1309,36 +1393,47 @@ exec ${INSTALLED_BIN_DIR}/SongpressPlusPlus_bin "\$@"
 WRAPPER
     chmod 0755 "$REAL_BIN"
     chmod 0755 "${REAL_BIN}_bin"
-    echo "    Wrapper creato: $REAL_BIN → ${INSTALLED_BIN_DIR}/SongpressPlusPlus_bin"
+    bmsg "    Wrapper created: $REAL_BIN → ${INSTALLED_BIN_DIR}/SongpressPlusPlus_bin" \
+         "    Wrapper creato: $REAL_BIN → ${INSTALLED_BIN_DIR}/SongpressPlusPlus_bin"
 
     # Symlink minuscolo: songpressplusplus → SongpressPlusPlus
     # Nota: chmod su symlink non è supportato, il target eredita i permessi
     ln -sf "${INSTALLED_BIN_DIR}/SongpressPlusPlus" "$BIN_DIR/songpressplusplus" || true
-    echo "    Symlink creato: $BIN_DIR/songpressplusplus"
+    bmsg "    Symlink created: $BIN_DIR/songpressplusplus" \
+         "    Symlink creato: $BIN_DIR/songpressplusplus"
 else
-    echo "$WARN Binario non trovato. Struttura bin:"
+    bmsg "$WARN Binary not found. bin structure:" \
+         "$WARN Binario non trovato. Struttura bin:"
     find "$PKG_ROOT" -name "bin" -type d -exec ls -la {} \; || true
 fi
 
 # ── 7. Costruzione del .deb ───────────────────────────────────────────────────
 DEB_FILE="$BUILD_DIR/${DEB_NAME}_${DEB_VERSION}_${DEB_ARCH}.deb"
-echo "$OK Costruzione del pacchetto .deb..."
+bmsg "$OK Building the .deb package..." \
+     "$OK Costruzione del pacchetto .deb..."
 
 if command -v fakeroot &>/dev/null; then
     fakeroot dpkg-deb --build "$PKG_ROOT" "$DEB_FILE"
 else
-    echo "$WARN fakeroot non trovato."
+    bmsg "$WARN fakeroot not found." \
+         "$WARN fakeroot non trovato."
     dpkg-deb --build "$PKG_ROOT" "$DEB_FILE"
 fi
 
 echo ""
-echo "✅  Pacchetto creato: $DEB_FILE"
+bmsg "$DONE  Package created: $DEB_FILE" \
+     "$DONE  Pacchetto creato: $DEB_FILE"
 echo ""
-echo "📦  Per installarlo:"
+bmsg "$PKG  To install it:" \
+     "$PKG  Per installarlo:"
 echo "   sudo dpkg -i \"$DEB_FILE\""
 echo "   sudo apt-get install -f"
 echo ""
-echo "🌐  NOTA: l'installazione richiede una connessione a Internet."
-echo "    Durante il postinst vengono scaricate via pip le dipendenze non"
-echo "    presenti nei repository Debian (python-pptx, pyshortcuts) e via apt"
-echo "    quelle di sistema mancanti. Senza rete l'app potrebbe non partire."
+bmsg "$NET  NOTE: installation requires an Internet connection." \
+     "$NET  NOTA: l'installazione richiede una connessione a Internet."
+bmsg "    During postinst, pip downloads the dependencies not" \
+     "    Durante il postinst vengono scaricate via pip le dipendenze non"
+bmsg "    present in the Debian repositories (python-pptx, pyshortcuts), and via apt" \
+     "    presenti nei repository Debian (python-pptx, pyshortcuts) e via apt"
+bmsg "    the missing system ones. Without a network the app may not start." \
+     "    quelle di sistema mancanti. Senza rete l'app potrebbe non partire."
