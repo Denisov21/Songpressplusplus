@@ -1,5 +1,5 @@
 """
-DEVE ESSERE NELLA CARTELLA PRINCIPALE!!! deve essere a fianco di 'pyproject.toml'
+DEVE ESSERE NELLA CARTELLA PRINCIPALE!!!
 
 
 sync_deps.py — Sincronizza le dipendenze da pyproject.toml a install_check.vbs
@@ -18,25 +18,9 @@ Aggiorna automaticamente:
 """
 
 import re
-import os
 import sys
 import argparse
 from pathlib import Path
-
-# --- Colori ANSI -----------------------------------------------------------
-# Su Windows 10+ questa chiamata abilita l'interpretazione dei codici ANSI.
-if os.name == "nt":
-    os.system("")
-
-RED = "\033[91m"
-GREEN = "\033[92m"
-YELLOW = "\033[93m"
-RESET = "\033[0m"
-
-ERR = f"{RED}\u2717{RESET}"    # ✗ rossa  -> errore
-OK = f"{GREEN}\u2713{RESET}"   # ✓ verde  -> ok
-WARN = f"{YELLOW}\u26A0{RESET}"  # ⚠ gialla -> attenzione
-# ---------------------------------------------------------------------------
 
 try:
     import tomllib
@@ -44,8 +28,8 @@ except ImportError:
     try:
         import tomli as tomllib
     except ImportError:
-        print(f"{ERR} Errore: installa 'tomli' oppure usa Python >= 3.11")
-        print("    pip install tomli")
+        print("Errore: installa 'tomli' oppure usa Python >= 3.11")
+        print("  pip install tomli")
         sys.exit(1)
 
 
@@ -81,7 +65,7 @@ def sync_requirements(req_path, deps_raw):
     """
     content = "\n".join(deps_raw) + "\n"
     Path(req_path).write_text(content, encoding="utf-8")
-    print(f"  {OK} '{req_path}' aggiornato.")
+    print(f"  '{req_path}' aggiornato.")
 
 
 def sync(toml_path, vbs_path, req_path=None):
@@ -96,12 +80,12 @@ def sync(toml_path, vbs_path, req_path=None):
     for raw in raw_deps:
         parsed = parse_dep(raw)
         if parsed is None:
-            print(f"  {WARN} ATTENZIONE: dipendenza non parsabile, ignorata: {raw!r}")
+            print(f"  ATTENZIONE: dipendenza non parsabile, ignorata: {raw!r}")
             continue
         deps.append(parsed)
 
     if not deps:
-        print(f"{ERR} Nessuna dipendenza trovata nel toml.")
+        print("Nessuna dipendenza trovata nel toml.")
         sys.exit(1)
 
     n = len(deps) - 1
@@ -142,13 +126,13 @@ def sync(toml_path, vbs_path, req_path=None):
     )
 
     Path(vbs_path).write_text(vbs_text, encoding="utf-8")
-    print(f"  {OK} '{vbs_path}' aggiornato.")
+    print(f"  '{vbs_path}' aggiornato.")
 
     # 5. requirements.txt (opzionale)
     if req_path is not None and req_path.exists():
         sync_requirements(req_path, raw_deps)
     elif req_path is not None:
-        print(f"  {WARN} ATTENZIONE: '{req_path}' non trovato, saltato.")
+        print(f"  ATTENZIONE: '{req_path}' non trovato, saltato.")
 
 
 def main():
@@ -163,15 +147,15 @@ def main():
     req_path  = Path(args.req) if args.req else None
 
     if not toml_path.exists():
-        print(f"{ERR} Errore: '{toml_path}' non trovato.")
+        print(f"Errore: '{toml_path}' non trovato.")
         sys.exit(1)
     if not vbs_path.exists():
-        print(f"{ERR} Errore: '{vbs_path}' non trovato.")
+        print(f"Errore: '{vbs_path}' non trovato.")
         sys.exit(1)
 
-    print(f"Sincronizzazione: {toml_path} \u2192 {vbs_path}, {req_path}")
+    print(f"Sincronizzazione: {toml_path} → {vbs_path}, {req_path}")
     sync(toml_path, vbs_path, req_path)
-    print(f"{OK} Fatto.")
+    print("Fatto.")
 
 
 if __name__ == "__main__":
