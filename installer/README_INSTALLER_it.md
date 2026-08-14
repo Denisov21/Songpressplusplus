@@ -132,41 +132,34 @@ amministratore per qualsiasi scrittura. Songpress++ scarica e aggiorna i propri 
 a runtime tramite `uv`: se installato in `Program Files`, queste operazioni fallirebbero
 silenziosamente o causerebbero errori di accesso negato.
 
-Usare sempre i percorsi predefiniti proposti dall'installer (`%LOCALAPPDATA%` per
-l'installazione standard, `%DESKTOP%` per quella portabile), che non richiedono privilegi
-elevati.
+Usare sempre il percorso predefinito proposto dall'installer (`%LOCALAPPDATA%`),
+che non richiede privilegi elevati.
 
 ## Percorsi di installazione
 
 | Cosa | Percorso |
 |------|----------|
-| Applicazione (standard) | `%LOCALAPPDATA%\Songpress++\bin\SongPressPlusPlus.exe` |
-| Applicazione (portabile) | `%DESKTOP%\Songpress++\bin\SongPressPlusPlus.exe` |
-| Template canzoni (standard) | `%APPDATA%\Songpress++\templates\songs\` |
-| Template slide (standard) | `%APPDATA%\Songpress++\templates\slides\` |
-| Font (standard) | `%APPDATA%\Songpress++\templates\fonts\` |
-| Template canzoni (portabile) | `<cartella installazione>\templates\songs\` |
-| Template slide (portabile) | `<cartella installazione>\templates\slides\` |
-| Font (portabile) | `<cartella installazione>\templates\fonts\` |
+| Applicazione | `%LOCALAPPDATA%\Songpress++\bin\SongPressPlusPlus.exe` |
+| Template canzoni | `%APPDATA%\Songpress++\templates\songs\` |
+| Template slide | `%APPDATA%\Songpress++\templates\slides\` |
+| Font | `%APPDATA%\Songpress++\templates\fonts\` |
 
 L'intera cartella `templates\` (incluse tutte le sottocartelle: `songs`, `slides`, `fonts`
 e qualsiasi aggiunta futura) viene copiata ricorsivamente dall'albero del pacchetto uv
-nella destinazione corretta durante l'installazione.
-
-- **Installazione standard**: `%APPDATA%\Songpress++\templates\`
-- **Installazione portabile**: `<cartella installazione>\templates\` (accanto all'exe)
+in `%APPDATA%\Songpress++\templates\` durante l'installazione.
 
 In fase di disinstallazione viene chiesto se eliminare la cartella dati (default: No).
 
 ## Opzioni della pagina di installazione
 
+Songpress++ viene installato sempre in `%LOCALAPPDATA%\Songpress++` e crea le
+scorciatoie nel menu Start. La pagina delle opzioni permette di configurare:
+
 | Opzione | Default | Descrizione |
 |---------|---------|-------------|
-| **Installazione standard** | ✔ | Installa in `%LOCALAPPDATA%\Songpress++`, crea scorciatoie nel menu Start |
-| **Installazione portabile** | — | Installa in `%DESKTOP%\Songpress++`, nessuna voce nel registro né scorciatoie |
 | **Associa estensioni** | ✔ | Associa `.crd .pro .chopro .chordpro .cho .tab` a Songpress++ |
 | **Verifica connessione** | ✔ | Testa la connessione Internet prima di scaricare i pacchetti |
-| **Collegamento sul Desktop** | ✔ | Crea un collegamento `.lnk` sul Desktop (solo installazione standard) |
+| **Collegamento sul Desktop** | ✔ | Crea un collegamento `.lnk` sul Desktop |
 
 La lingua dell'installer (italiano/inglese) viene selezionata all'avvio.
 

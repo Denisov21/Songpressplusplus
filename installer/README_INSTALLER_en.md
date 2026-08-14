@@ -131,41 +131,34 @@ privileges for any write operation. Songpress++ downloads and updates its packag
 runtime via `uv`: if installed in `Program Files`, these operations would fail silently
 or produce access-denied errors.
 
-Always use the default paths suggested by the installer (`%LOCALAPPDATA%` for the
-standard installation, `%DESKTOP%` for the portable one), which require no elevated
-privileges.
+Always use the default path suggested by the installer (`%LOCALAPPDATA%`), which
+requires no elevated privileges.
 
 ## Install paths
 
 | What | Path |
 |------|------|
-| Application (standard) | `%LOCALAPPDATA%\Songpress++\bin\SongPressPlusPlus.exe` |
-| Application (portable) | `%DESKTOP%\Songpress++\bin\SongPressPlusPlus.exe` |
-| Song templates (standard) | `%APPDATA%\Songpress++\templates\songs\` |
-| Slides templates (standard) | `%APPDATA%\Songpress++\templates\slides\` |
-| Fonts (standard) | `%APPDATA%\Songpress++\templates\fonts\` |
-| Song templates (portable) | `<install folder>\templates\songs\` |
-| Slides templates (portable) | `<install folder>\templates\slides\` |
-| Fonts (portable) | `<install folder>\templates\fonts\` |
+| Application | `%LOCALAPPDATA%\Songpress++\bin\SongPressPlusPlus.exe` |
+| Song templates | `%APPDATA%\Songpress++\templates\songs\` |
+| Slides templates | `%APPDATA%\Songpress++\templates\slides\` |
+| Fonts | `%APPDATA%\Songpress++\templates\fonts\` |
 
 The entire `templates\` folder (including all subfolders: `songs`, `slides`, `fonts`
 and any future additions) is copied recursively from the uv package tree
-into the correct destination at install time.
-
-- **Standard install**: `%APPDATA%\Songpress++\templates\`
-- **Portable install**: `<install folder>\templates\` (next to the exe)
+into `%APPDATA%\Songpress++\templates\` at install time.
 
 On uninstall the user is asked whether to delete the data folder (default: No).
 
 ## Installer page options
 
+Songpress++ is always installed to `%LOCALAPPDATA%\Songpress++` and creates Start
+menu shortcuts. The options page lets you configure:
+
 | Option | Default | Description |
 |--------|---------|-------------|
-| **Standard installation** | ✔ | Installs to `%LOCALAPPDATA%\Songpress++`, creates Start menu shortcuts |
-| **Portable installation** | — | Installs to `%DESKTOP%\Songpress++`, no registry entries or shortcuts |
 | **Associate extensions** | ✔ | Associates `.crd .pro .chopro .chordpro .cho .tab` with Songpress++ |
 | **Check connection** | ✔ | Tests the Internet connection before downloading packages |
-| **Desktop shortcut** | ✔ | Creates a `.lnk` shortcut on the Desktop (standard install only) |
+| **Desktop shortcut** | ✔ | Creates a `.lnk` shortcut on the Desktop |
 
 The installer language (Italian/English) is selected at startup.
 
