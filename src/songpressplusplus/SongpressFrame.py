@@ -5467,21 +5467,33 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             return
         text = replaceTitles(self.text.GetTextOrSelection(), '---')
         text = removeChordPro(text).strip()
-        if text != '':
-            template_rel = os.path.join('templates', 'slides')
-            template_paths = [f for f in glb.ListLocalGlobalDir(template_rel) if f[-5:].upper() == '.PPTX']
-            template_names = [os.path.split(f)[1][:-5] for f in template_paths]
-            mld = MyListDialog(
+        if text == '':
+            d = wx.MessageDialog(
                 self.frame,
-                _("Please select a template for your PowerPoint presentation:"),
-                _("Export as PowerPoint"),
-                template_names,
-            )
-            if mld.ShowModal() == wx.ID_OK:
-                output_file = self.AskExportFileName(_("PPTX presentation"), "pptx")
-                if output_file is not None:
-                    i = mld.GetSelectedIndex()
+                _("There is nothing to export: the song is empty."),
+                "Songpress++", wx.OK | wx.ICON_INFORMATION)
+            d.ShowModal()
+            return
+        template_rel = os.path.join('templates', 'slides')
+        template_paths = [f for f in glb.ListLocalGlobalDir(template_rel) if f[-5:].upper() == '.PPTX']
+        template_names = [os.path.split(f)[1][:-5] for f in template_paths]
+        mld = MyListDialog(
+            self.frame,
+            _("Please select a template for your PowerPoint presentation:"),
+            _("Export as PowerPoint"),
+            template_names,
+        )
+        if mld.ShowModal() == wx.ID_OK:
+            output_file = self.AskExportFileName(_("PPTX presentation"), "pptx")
+            if output_file is not None:
+                i = mld.GetSelectedIndex()
+                try:
                     songimpress.to_presentation(text.splitlines(), output_file, template_paths[i])
+                except ValueError as e:
+                    # Il messaggio del ValueError e' gia' tradotto (creato con _())
+                    d = wx.MessageDialog(self.frame, str(e), "Songpress++",
+                                         wx.OK | wx.ICON_WARNING)
+                    d.ShowModal()
 
     def OnUpdateUI(self, evt):
         self.UpdateEverything()

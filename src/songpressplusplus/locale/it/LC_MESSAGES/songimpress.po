@@ -1,0 +1,51 @@
+# Italian translations for songimpress package.
+# Copyright (C) 2026 Denisov21
+# This file is distributed under the same license as the songimpress package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: songimpress 1.0\n"
+"Report-Msgid-Bugs-To: webmaster@roma21.it\n"
+"POT-Creation-Date: 2026-08-14 19:37+0000\n"
+"PO-Revision-Date: 2026-08-14 21:40+0200\n"
+"Last-Translator: Denisov21\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.9\n"
+
+#: songimpress.py:32
+#, python-brace-format
+msgid ""
+"The template has no slide layout at index {index}: unable to generate the "
+"slides."
+msgstr ""
+"Il template non ha un layout di slide all'indice {index}: impossibile "
+"generare le slide."
+
+#: songimpress.py:45
+#, python-brace-format
+msgid ""
+"Layout {index} of the template lacks the required text placeholders (idx "
+"{idx}): unable to generate the slides."
+msgstr ""
+"Nel layout {index} del modello mancano i segnaposto di testo richiesti (idx "
+"{idx}): impossibile generare le diapositive."
+
+#: songimpress.py:81
+msgid "No text to convert: the input contains no song lines."
+msgstr "Nessun testo da convertire: l'input non contiene righe di canto."
+
+#: songimpress.py:117
+msgid ""
+"Usage: songimpress.py SONG_FILE OUTPUT_PRESENTATION TEMPLATE_PRESENTATION"
+msgstr ""
+"Uso: songimpress.py FILE_CANZONI PRESENTAZIONE_OUTPUT PRESENTAZIONE_TEMPLATE"
+
+#: SongpressFrame.py:5473
+msgid "There is nothing to export: the song is empty."
+msgstr "Non c'è nulla da esportare: il brano è vuoto."

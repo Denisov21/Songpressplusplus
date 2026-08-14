@@ -259,6 +259,7 @@ I file `.mo` sono le versioni **compilate** dei `.po`, lette a runtime da wxPyth
 | `SongbookExporter.po` / `.mo` | `SongbookExporter.py`, `CanzonatorDialog.py` |
 | `SongpressToolbars.po` / `.mo` | `SongpressToolbars.py` — etichette e tooltip delle tre toolbar (Standard, Format, Insert). |
 | `SongpressFrame.po` / `.mo` | `SongpressFrame.py` |
+| `songimpress.po` / `.mo` | `songimpress.py` — importazione/integrazione con il formato SongImpress (LibreOffice Impress): messaggi ed etichette localizzati. |
 | `ChordProDirectives.po` / `.mo` | `ChordProDirectives.py` — nessuna stringa localizzata al momento; file predisposto per future traduzioni dei nomi delle direttive o dei commenti. (Non serve a nulla `ChordProDirectives.po` / `.mo`!) |
 | `SyntaxCheckerDialog.po` / `.mo` | `SyntaxCheckerDialog.py` |
 | `Transpose.po` / `.mo` | `Transpose.py` |

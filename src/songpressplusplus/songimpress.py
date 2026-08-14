@@ -11,28 +11,50 @@
 
 import sys
 
+import wx
 from pptx import Presentation
+
+_ = wx.GetTranslation
+
+# Layout usato per le slide dei canti, e gli idx dei placeholder delle due
+# aree di testo al suo interno (riga corrente / riga successiva).
+LAYOUT_INDEX = 3
+BODY_IDX = (1, 2)
 
 
 class SongPresentation:
     def __init__(self, template, out_filename):
         self.pres = Presentation(template)
-        self.layout = self.pres.slide_layouts[3]
-        if len(list(self.layout.placeholders)) < 3:
-            raise ValueError(
-                "Il template ha meno di 3 placeholder nel layout 3: "
-                "impossibile generare le slide."
-            )
+
+        layouts = self.pres.slide_layouts
+        if len(layouts) <= LAYOUT_INDEX:
+            raise ValueError(_(
+                "The template has no slide layout at index {index}: "
+                "unable to generate the slides."
+            ).format(index=LAYOUT_INDEX))
+        self.layout = layouts[LAYOUT_INDEX]
+
+        # Convalida per idx del placeholder, non per posizione nella lista: le
+        # due aree di testo devono essere davvero presenti, altrimenti il testo
+        # finirebbe silenziosamente nel placeholder sbagliato (es. piè di pagina
+        # o data) oppure solleverebbe IndexError.
+        available = {ph.placeholder_format.idx for ph in self.layout.placeholders}
+        missing = [i for i in BODY_IDX if i not in available]
+        if missing:
+            raise ValueError(_(
+                "Layout {index} of the template lacks the required text "
+                "placeholders (idx {idx}): unable to generate the slides."
+            ).format(index=LAYOUT_INDEX,
+                     idx=', '.join(str(i) for i in missing)))
+
         self.prev = None
         self.out_filename = out_filename
 
     def _add_slide(self, cur, nxt):
         slide = self.pres.slides.add_slide(self.layout)
-        ph = list(slide.placeholders)
-        t1 = ph[1]
-        t2 = ph[2]
-        t1.text = cur
-        t2.text = nxt
+        ph = slide.placeholders          # accesso per idx, non per posizione nella lista
+        ph[BODY_IDX[0]].text = cur
+        ph[BODY_IDX[1]].text = nxt
 
     def _add_empty_slide(self):
         self.pres.slides.add_slide(self.layout)
@@ -51,6 +73,13 @@ class SongPresentation:
     def close(self):
         if self.prev is not None:
             self._add_slide(self.prev, '')
+        # Nessuna slide prodotta: l'input era vuoto o conteneva solo righe
+        # bianche. Non salviamo un file a 0 slide (PowerPoint lo rifiuterebbe):
+        # segnaliamo l'errore al chiamante.
+        if len(self.pres.slides) == 0:
+            raise ValueError(_(
+                "No text to convert: the input contains no song lines."
+            ))
         self.pres.save(self.out_filename)
 
     def __enter__(self):
@@ -61,14 +90,14 @@ class SongPresentation:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is not None:
-            # Exception in progress: save what we have but signal it to the caller
+            # Eccezione in corso: salva ciò che abbiamo ma segnalala al chiamante
             try:
                 if self.prev is not None:
                     self._add_slide(self.prev, '')
                 self.pres.save(self.out_filename)
             except Exception:
                 pass
-            return False   # re-raise the original exception
+            return False   # rilancia l'eccezione originale
         self.close()
         return False
 
@@ -85,7 +114,7 @@ def to_presentation(lines, output_file, template_file):
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:
-        print("Usage: songimpress.py SONG_FILE OUTPUT_PRESENTATION TEMPLATE_PRESENTATION")
+        print(_("Usage: songimpress.py SONG_FILE OUTPUT_PRESENTATION TEMPLATE_PRESENTATION"))
         sys.exit(1)
 
     with open(sys.argv[1], encoding='utf-8') as f:
