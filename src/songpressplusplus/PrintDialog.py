@@ -1040,9 +1040,23 @@ class SongpressPrintout(wx.Printout):
         #   (origin_x, origin_y, col_w_du, usable_h_du).
         sx = self._scale_x if self._scale_x else 1.0
         sy = self._scale_y if self._scale_y else 1.0
-        clip_x = 0
+        # FIX — bordo sinistro dei box-commento ({comment_box}) tagliato.
+        # Il SongDecorator disegna la cornice del box a
+        #     x = (bordo sx del testo) - padding      (padding = 2 px LOGICI)
+        # quindi per il box più a sinistra il bordo cade a x ≈ -2, cioè appena
+        # dentro il margine. La regione di clip è anch'essa in coordinate
+        # LOGICHE: partendo da x=0 tagliava via quel bordo. (Dividere il pad per
+        # sx era sbagliato: in stampa sx≈6 → pad=1, che non copre il -2.)
+        # Spostiamo il lato SINISTRO del clip a un x negativo fisso (in unità
+        # logiche) sufficiente a contenere padding + spessore pen, lasciando
+        # INVARIATO il bordo destro (clip_x + clip_w costante): essenziale per la
+        # modalità «2 pagine per foglio», dove il clip confina la colonna destra.
+        # Lo sconfino a sinistra ricade nel margine (colonna sx) o nel gap tra le
+        # colonne (colonna dx), quindi non è mai visibile.
+        BOX_LEFT_PAD = 4  # px logici: padding box (2) + pen (1) + margine
+        clip_x = -BOX_LEFT_PAD
         clip_y = int(y_offset_px)
-        clip_w = int(math.ceil(col_w_du / sx))
+        clip_w = int(math.ceil(col_w_du / sx)) + BOX_LEFT_PAD
         clip_h = int(math.ceil(usable_h_du / sy))
         dc.SetClippingRegion(clip_x, clip_y, clip_w, clip_h)
 
