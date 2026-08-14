@@ -77,11 +77,14 @@ When done, you will see (the version number shown is only an **example** — it 
 
 ### Structure of the `build_deb/` folder
 
-When the build finishes, the `build_deb/` folder contains three items (the
+When the build finishes, the `build_deb/` folder contains the two documentation
+files (this guide and its Italian counterpart) plus three generated items (the
 version number — `7.0.0` here — depends on `pyproject.toml`):
 
 ```
 build_deb/
+├── DEB_INSTALLATION.md               ← this guide (English)
+├── INSTALLAZIONE_DEB.md              ← Italian guide
 ├── songpressplusplus_7.0.0/          ← package staging tree
 │   ├── DEBIAN/                        ← metadata and maintainer scripts
 │   │   ├── control                    ← name, version, Depends, Maintainer…
@@ -115,7 +118,9 @@ What they are and what they are for:
 > **Note:** the two folders (`songpressplusplus_<version>/` and `wheel/`) can be
 > safely deleted after the build — they are regenerated every time `build_deb.sh`
 > runs. Keep only the `.deb` file if you want to archive or distribute that
-> version.
+> version. At the start of each run `build_deb.sh` removes **only** these
+> generated artifacts (staging tree, `wheel/`, and any previous `.deb`): the
+> documentation files living in `build_deb/` are left untouched.
 
 ---
 
@@ -156,6 +161,22 @@ sudo apt-get install -f
 >
 > The prompt only appears on a terminal: when installing from Discover or GDebi,
 > or with `DEBIAN_FRONTEND=noninteractive`, the download starts unattended.
+
+> **Status markers during installation.** While it handles the dependencies the
+> `postinst` prints the same colour-coded markers used by the build script:
+> `🌐` marks a network operation (download from PyPI), `✔` a completed step (a
+> dependency already present or just installed), `⚠` a non-fatal problem (the
+> download skipped at your request), and `✘` an error (a dependency could not be
+> installed — the message shows how to finish by hand). The colours appear only
+> on a terminal; from Discover/GDebi, or when the output is redirected to a file,
+> the plain symbols are used. A successful run looks roughly like this:
+>
+> ```
+> 🌐 Songpress++: checking PyPI dependencies (requires an Internet connection)...
+> ✔ Songpress++: dependency 'python-pptx' already present.
+> 🌐 Songpress++: installing 'pyshortcuts' via pip...
+> ✔ Songpress++: 'pyshortcuts' installed.
+> ```
 
 **Installation folder.** The package installs the program files into the system
 `dist-packages` tree:

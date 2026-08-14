@@ -77,11 +77,14 @@ Al termine vedrai (il numero di versione mostrato è solo un **esempio**, dipend
 
 ### Struttura della cartella `build_deb/`
 
-Al termine della build, la cartella `build_deb/` contiene tre elementi (il
-numero di versione — qui `7.0.0` — dipende da `pyproject.toml`):
+Al termine della build, la cartella `build_deb/` contiene i due file di
+documentazione (questa guida e la sua versione inglese) più tre elementi
+generati (il numero di versione — qui `7.0.0` — dipende da `pyproject.toml`):
 
 ```
 build_deb/
+├── INSTALLAZIONE_DEB.md              ← questa guida (italiano)
+├── DEB_INSTALLATION.md               ← guida inglese
 ├── songpressplusplus_7.0.0/          ← albero di staging del pacchetto
 │   ├── DEBIAN/                        ← metadati e script di manutenzione
 │   │   ├── control                    ← nome, versione, Depends, Maintainer…
@@ -115,7 +118,10 @@ Cosa sono e a cosa servono:
 > **Nota:** le due cartelle (`songpressplusplus_<versione>/` e `wheel/`) possono
 > essere cancellate senza problemi dopo la build — vengono rigenerate a ogni
 > esecuzione di `build_deb.sh`. Conserva solo il file `.deb` se vuoi archiviare
-> o distribuire quella versione.
+> o distribuire quella versione. All'inizio di ogni esecuzione `build_deb.sh`
+> rimuove **soltanto** questi artefatti generati (albero di staging, `wheel/` e
+> gli eventuali `.deb` precedenti): i file di documentazione presenti in
+> `build_deb/` restano intatti.
 
 ---
 
@@ -156,6 +162,23 @@ sudo apt-get install -f
 >
 > La domanda compare solo da terminale: installando da Discover o GDebi, o con
 > `DEBIAN_FRONTEND=noninteractive`, il download parte senza chiedere nulla.
+
+> **Marcatori di stato durante l'installazione.** Mentre gestisce le dipendenze
+> il `postinst` stampa gli stessi marcatori colorati usati dallo script di build:
+> `🌐` indica un'operazione di rete (download da PyPI), `✔` un passo completato
+> (dipendenza già presente o appena installata), `⚠` un problema non fatale (il
+> download saltato su tua richiesta) e `✘` un errore (una dipendenza non è stata
+> installata — il messaggio spiega come completare a mano). I colori compaiono
+> solo da terminale; da Discover/GDebi, o quando l'output è rediretto su file,
+> vengono usati i simboli semplici. Un'esecuzione riuscita ha più o meno questo
+> aspetto:
+>
+> ```
+> 🌐 Songpress++: controllo dipendenze PyPI (richiede una connessione a Internet)...
+> ✔ Songpress++: dipendenza 'python-pptx' già presente.
+> 🌐 Songpress++: installo 'pyshortcuts' via pip...
+> ✔ Songpress++: 'pyshortcuts' installato.
+> ```
 
 **Cartella di installazione.** Il pacchetto copia i file del programma
 nell'albero di sistema `dist-packages`:

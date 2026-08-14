@@ -59,6 +59,14 @@ In sintesi: `Avvio SONGPRESS2.vbs` è la versione di sviluppo/debug, `Avvio SONG
 
 ## Installazione su Linux
 
+> **🔑 Privilegi di root necessari.** L'installazione su Linux Debian richiede i
+> privilegi di root (amministratore): i comandi di installazione, rimozione e
+> aggiornamento del pacchetto vanno eseguiti con `sudo` (oppure come utente
+> `root`). Serve perché il pacchetto scrive in cartelle di sistema
+> (`/usr/lib/python3/dist-packages/`, `/usr/bin/`, `/usr/share/`) e, in fase di
+> `postinst`, installa le dipendenze Python di sistema. La sola **creazione** del
+> `.deb` con `build_deb.sh`, invece, non richiede root.
+
 ### Prerequisiti
 
 Assicurati di avere installati i seguenti pacchetti:

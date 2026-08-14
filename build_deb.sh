@@ -234,8 +234,17 @@ INSTALL_PREFIX="$PKG_ROOT/usr"
 # ── Pulizia precedente build ──────────────────────────────────────────────────
 bmsg "$OK Cleaning previous build..." \
      "$OK Pulizia build precedente..."
-rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
+# rm -rf "$BUILD_DIR" 
+# Pulizia MIRATA: si rimuovono SOLO gli artefatti generati dalle build
+# precedenti (albero del pacchetto, wheel, .deb). NON si cancella l'intera
+# cartella build_deb/, perché contiene anche la documentazione versionata
+# (DEB_INSTALLATION.md, INSTALLAZIONE_DEB.md) che va preservata.
+# I glob non protetti si espandono al literal se non trovano nulla: rm -rf/-f
+# lo ignorano senza errore, quindi non serve nullglob.
+rm -rf "$BUILD_DIR/${DEB_NAME}_"*   # alberi <nome>_<versione> di build passate
+rm -rf "$BUILD_DIR/wheel"           # WHEEL_DIR (vedi passo 2)
+rm -f  "$BUILD_DIR/"*.deb           # pacchetti .deb prodotti in precedenza
 
 PYTHON="${VIRTUAL_ENV:+$VIRTUAL_ENV/bin/python3}"
 PYTHON="${PYTHON:-python3}"
@@ -1073,12 +1082,17 @@ cat >> "$PKG_ROOT/DEBIAN/postinst" <<'POSTINST_BODY'
 # FIX 4: dpkg invoca il postinst anche con abort-upgrade, abort-remove e
 # abort-deconfigure. Senza questa guardia, in tutti quei casi partivano
 # comunque la domanda interattiva e il download via pip.
-# Marcatori: colorati solo se il postinst gira su un terminale.
+# Marcatori: colorati solo se il postinst gira su un terminale. Stessi
+# significati e stessi colori usati in build_deb.sh:
+#   OK  ✔ verde  passo completato   NET  🌐 ciano  operazione di rete
+#   WARN ⚠ giallo problema non fatale  ERR ✘ rosso  errore
 if [ -t 1 ]; then
+    SPP_OK=$(printf '\033[1;32m✔\033[0m')
     SPP_WARN=$(printf '\033[1;33m⚠\033[0m')
     SPP_ERR=$(printf '\033[1;31m✘\033[0m')
     SPP_NET=$(printf '\033[1;36m🌐\033[0m')
 else
+    SPP_OK='✔'
     SPP_WARN='⚠'
     SPP_ERR='✘'
     SPP_NET='🌐'
@@ -1187,8 +1201,8 @@ fi
 
 if [ -n "$PY" ] && [ "$SP_SKIP" -eq 0 ]; then
     sppmsg \
-"Songpress++: checking PyPI dependencies (requires an Internet connection)..." \
-"Songpress++: controllo dipendenze PyPI (richiede una connessione a Internet)..."
+"$SPP_NET Songpress++: checking PyPI dependencies (requires an Internet connection)..." \
+"$SPP_NET Songpress++: controllo dipendenze PyPI (richiede una connessione a Internet)..."
     # Debian 12+/13 marca l'ambiente come "externally managed" (PEP 668):
     # serve --break-system-packages per installare a livello di sistema.
     BSP=""
@@ -1199,16 +1213,23 @@ if [ -n "$PY" ] && [ "$SP_SKIP" -eq 0 ]; then
         [ -z "$PIP_NAME" ] && continue
         if "$PY" -c "import $MOD_NAME" >/dev/null 2>&1; then
             sppmsg \
-"Songpress++: dependency '$PIP_NAME' already present." \
-"Songpress++: dipendenza '$PIP_NAME' già presente."
+"$SPP_OK Songpress++: dependency '$PIP_NAME' already present." \
+"$SPP_OK Songpress++: dipendenza '$PIP_NAME' già presente."
         else
             sppmsg \
-"Songpress++: installing '$PIP_NAME' via pip..." \
-"Songpress++: installo '$PIP_NAME' via pip..."
-            "$PY" -m pip install $BSP --root-user-action=ignore --no-warn-script-location "$PIP_NAME" \
-                || sppmsg \
+"$SPP_NET Songpress++: installing '$PIP_NAME' via pip..." \
+"$SPP_NET Songpress++: installo '$PIP_NAME' via pip..."
+            # if/then/else invece di "|| ...": con "set -e" il comando testato da
+            # if può fallire senza abortire, e così mostriamo OK solo a esito buono.
+            if "$PY" -m pip install $BSP --root-user-action=ignore --no-warn-script-location "$PIP_NAME"; then
+                sppmsg \
+"$SPP_OK Songpress++: '$PIP_NAME' installed." \
+"$SPP_OK Songpress++: '$PIP_NAME' installato."
+            else
+                sppmsg \
 "$SPP_ERR Songpress++: could not install '$PIP_NAME'. Do it manually with:  sudo pip3 install $BSP $PIP_NAME" \
 "$SPP_ERR Songpress++: non sono riuscito a installare '$PIP_NAME'. Fallo a mano con:  sudo pip3 install $BSP $PIP_NAME"
+            fi
         fi
     done
 fi

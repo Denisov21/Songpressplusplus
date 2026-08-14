@@ -59,6 +59,14 @@ In summary: `Avvio SONGPRESS2.vbs` is the development/debug version, `Avvio SONG
 
 ## Installation on Linux
 
+> **🔑 Root privileges required.** Installing on Linux Debian requires root
+> (administrator) privileges: the commands to install, remove and upgrade the
+> package must be run with `sudo` (or as the `root` user). This is needed because
+> the package writes to system directories
+> (`/usr/lib/python3/dist-packages/`, `/usr/bin/`, `/usr/share/`) and, during
+> `postinst`, installs the system-wide Python dependencies. **Building** the
+> `.deb` with `build_deb.sh`, by contrast, does not require root.
+
 ### Prerequisites
 
 Make sure the following packages are installed on your system:
