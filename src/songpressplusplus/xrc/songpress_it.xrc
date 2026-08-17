@@ -619,6 +619,22 @@
           <help>Controlla la sintassi ChordPro del documento (parentesi, comandi)</help>
           <bitmap>../img/syntaxCheck.png</bitmap>
         </object>
+        <object class="wxMenuItem" name="spellCheck">
+          <label>Controllo _ortografico...</label>
+          <accel>F6</accel>
+          <bitmap>../img/SpellChecker.png</bitmap>
+          <help>Controlla l'ortografia del testo del brano (gli accordi vengono ignorati)</help>
+        </object>
+        <object class="wxMenuItem" name="spellLive">
+          <label>Sottolineatura ortografica _live</label>
+          <help>Sottolinea le parole errate durante la digitazione</help>
+          <checkable>1</checkable>
+        </object>
+        <object class="wxMenuItem" name="spellOptions">
+          <label>O_pzioni ortografia...</label>
+          <help>Lingua predefinita, ondina all'avvio, dizionario personale</help>
+          <bitmap>../img/SpellCheckerSetting.png</bitmap>
+        </object>
         <object class="wxMenuItem" name="songStatistics">
           <label>_Statistiche brano...</label>
           <accel>F8</accel>

@@ -130,7 +130,7 @@ depends on platform and Python version):
 
 ```
 dist/
-└── Songpress++-8.0.0-portable.zip   ← extract and distribute
+└── Songpress++-8.0.1-portable.zip   ← extract and distribute
     └── exe.win-amd64-3.12/          ← intermediate level created by Compress-Archive
         ├── Songpress++.exe
         ├── python3xx.dll
@@ -194,7 +194,7 @@ The version in the ZIP filename is read automatically from `pyproject.toml`:
 
 ```toml
 [project]
-version = "8.0.0"   ← update here, everything else is automatic
+version = "8.0.1"   ← update here, everything else is automatic
 ```
 
 ---
@@ -227,13 +227,13 @@ Useful for generating a ZIP on demand, e.g. to test a change.
 
 ### Automatic run on version tags (`v*`)
 
-When you push a tag starting with `v` (e.g. `v8.0.0`), the workflow runs on its
+When you push a tag starting with `v` (e.g. `v8.0.1`), the workflow runs on its
 own, builds the ZIP and **automatically attaches it to the corresponding GitHub
 Release**:
 
 ```bash
-git tag v8.0.0
-git push origin v8.0.0
+git tag v8.0.1
+git push origin v8.0.1
 ```
 
 > **⚠️ Note:** the tag's version number should match the one in

@@ -97,7 +97,7 @@ class PreviewCanvas(object):
             sd = SongDecorator()
         self.main_panel = wx.Window(parent)
         if minSizeEnabled:
-            self.main_panel.SetMinSize(wx.Size(370, 520))
+            self.main_panel.SetMinSize(wx.Size(370, 530))
         self._zoom_factor = _ZOOM_DEFAULT
         self._debounce_timer = None     # wx.CallLater attivo (o None)
         self._pending_text   = ""       # testo in attesa di refresh
@@ -127,6 +127,10 @@ class PreviewCanvas(object):
         # Callback chiamata al clic sul pulsante "copia" della toolbar.
         # signature: callback() senza argomenti (di norma SongpressFrame.CopyAsImage).
         self._on_copy_callback = None
+        # Callback chiamata al clic sul pulsante "aggiorna anteprima" della toolbar.
+        # signature: callback() -> str  — restituisce il testo corrente dell'editor.
+        # Impostata da SongpressFrame con SetRefreshCallback().
+        self._on_refresh_callback = None
         # Se False il doppio-click non fa nulla (disabilitato da opzioni)
         self._dblClickFocusEnabled = True
 
@@ -160,6 +164,15 @@ class PreviewCanvas(object):
             )
             btn_copy.SetToolTip(_("Copy formatted song to clipboard"))
             tb_sizer.Add(btn_copy, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 4)
+
+            # Pulsante "Aggiorna anteprima" (accanto alla copia)
+            btn_refresh = wx.BitmapButton(
+                toolbar, wx.ID_ANY,
+                self._load_refresh_bitmap(16),
+                style=wx.BORDER_NONE,
+            )
+            btn_refresh.SetToolTip(_("Refresh preview"))
+            tb_sizer.Add(btn_refresh, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 2)
 
             tb_sizer.Add(wx.StaticLine(toolbar, style=wx.LI_VERTICAL), 0,
                          wx.EXPAND | wx.LEFT | wx.RIGHT, 4)
@@ -253,6 +266,7 @@ class PreviewCanvas(object):
 
             # Bind toolbar
             btn_copy.Bind(wx.EVT_BUTTON,       self._OnCopyButton)
+            btn_refresh.Bind(wx.EVT_BUTTON,    self._OnRefreshButton)
             btn_zoom_out.Bind(wx.EVT_BUTTON,   lambda e: self._ZoomBy(-_ZOOM_STEP))
             btn_zoom_in.Bind(wx.EVT_BUTTON,    lambda e: self._ZoomBy(+_ZOOM_STEP))
             btn_zoom_reset.Bind(wx.EVT_BUTTON, lambda e: self._SetZoom(_ZOOM_DEFAULT))
@@ -338,6 +352,24 @@ class PreviewCanvas(object):
         # Fallback: icona disegnata nel colore-testo corrente
         return PreviewCanvas._make_copy_bitmap(
             wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNTEXT), px)
+
+    @staticmethod
+    def _load_refresh_bitmap(px=16):
+        """Carica l'icona 'aggiorna anteprima' dal PNG del progetto
+        (img/update_previewer.png), scalata a px×px se necessario.
+
+        Se il file non è caricabile per qualunque motivo, ripiega sull'icona
+        di sistema ART_REDO, così il pulsante resta comunque usabile.
+        """
+        try:
+            img = wx.Image(glb.AddPath('img/update_previewer.png'))
+            if img.IsOk():
+                if img.GetWidth() != px or img.GetHeight() != px:
+                    img = img.Scale(px, px, wx.IMAGE_QUALITY_HIGH)
+                return wx.Bitmap(img)
+        except Exception:
+            pass
+        return wx.ArtProvider.GetBitmap(wx.ART_REDO, wx.ART_TOOLBAR, (px, px))
 
     @staticmethod
     def _make_copy_bitmap(colour, px=16):
@@ -652,6 +684,32 @@ class PreviewCanvas(object):
         ev.SetEventObject(self.link)
         self.main_panel.GetEventHandler().ProcessEvent(ev)
 
+    def _OnRefreshButton(self, evt):
+        """Clic sul pulsante 'aggiorna anteprima': forza il ridisegno immediato."""
+        self._ForceRefreshNow()
+
+    def _ForceRefreshNow(self):
+        """Rilegge il testo fresco dall'editor (se è registrata la callback) e
+        ridisegna subito, ignorando il debounce.
+
+        Passa da self.Refresh(text) così vengono ricalcolati anche
+        renderer.columns in base ai {column_break}; poi annulla l'eventuale
+        timer di debounce e chiama _DoRefresh() per disegnare senza attesa.
+        """
+        cb = getattr(self, '_on_refresh_callback', None)
+        if callable(cb):
+            try:
+                self.Refresh(cb())          # aggiorna _pending_text + layout colonne
+            except Exception:
+                pass
+        if self._debounce_timer is not None:
+            try:
+                self._debounce_timer.Stop()
+            except Exception:
+                pass
+            self._debounce_timer = None
+        self._DoRefresh()
+
     def _OnMouseWheel(self, evt):
         if evt.ControlDown():
             rot = evt.GetWheelRotation()
@@ -816,6 +874,15 @@ class PreviewCanvas(object):
         di copia senza dipendere dal routing/propagazione degli eventi wx.
         """
         self._on_copy_callback = callback
+
+    def SetRefreshCallback(self, callback):
+        """Registra la callback eseguita al clic sul pulsante "aggiorna anteprima".
+
+        callback() -> str  — restituisce il testo corrente dell'editor (di norma
+        SongpressFrame._get_display_text). Serve a rileggere il testo fresco
+        quando l'utente forza manualmente l'aggiornamento dell'anteprima.
+        """
+        self._on_refresh_callback = callback
 
     # -----------------------------------------------------------------------
     # Hit-test preciso sui SongBox
@@ -1274,13 +1341,13 @@ class PreviewCanvas(object):
         """Imposta (True) o rimuove (False) la dimensione minima del pannello anteprima.
 
         Quando abilitato il pannello non puo' essere ridimensionato al di sotto
-        di 370x520 px, ne' all'avvio ne' trascinando il separatore AUI.
+        di 370x530 px, ne' all'avvio ne' trascinando il separatore AUI.
         Quando disabilitato il pannello non ha vincoli di dimensione minima.
         La modifica e' immediata; per avere effetto al prossimo avvio sull'AUI
         manager occorre che SongpressFrame chiami .MinSize() sul pane.
         """
         if bool(enabled):
-            self.main_panel.SetMinSize(wx.Size(370, 520))
+            self.main_panel.SetMinSize(wx.Size(370, 530))
         else:
             self.main_panel.SetMinSize(wx.Size(-1, -1))
         parent = self.main_panel.GetParent()
@@ -1321,6 +1388,18 @@ class _FullscreenPreviewFrame(wx.Frame):
         btn_close = wx.Button(toolbar, wx.ID_ANY, _("Exit full screen (Esc / F11)"),
                               style=wx.BORDER_SIMPLE)
         tb_sz.Add(btn_close, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4)
+
+        # Copia + Aggiorna anteprima (riusano le icone del canvas principale)
+        btn_copy_fs = wx.BitmapButton(toolbar, wx.ID_ANY,
+            PreviewCanvas._load_copy_bitmap(16), style=wx.BORDER_NONE)
+        btn_copy_fs.SetToolTip(_("Copy formatted song to clipboard"))
+        btn_refresh_fs = wx.BitmapButton(toolbar, wx.ID_ANY,
+            PreviewCanvas._load_refresh_bitmap(16), style=wx.BORDER_NONE)
+        btn_refresh_fs.SetToolTip(_("Refresh Preview Songpress++"))
+        tb_sz.Add(btn_copy_fs,    0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 4)
+        tb_sz.Add(btn_refresh_fs, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 2)
+        tb_sz.Add(wx.StaticLine(toolbar, style=wx.LI_VERTICAL), 0,
+                  wx.EXPAND | wx.LEFT | wx.RIGHT, 4)
 
         # Zoom out/slider/in nella finestra fullscreen
         btn_zm = wx.BitmapButton(toolbar, wx.ID_ANY,
@@ -1369,6 +1448,8 @@ class _FullscreenPreviewFrame(wx.Frame):
 
         # ── Bind ─────────────────────────────────────────────────────────
         btn_close.Bind(wx.EVT_BUTTON,  self._OnClose)
+        btn_copy_fs.Bind(wx.EVT_BUTTON,    self._OnCopy)
+        btn_refresh_fs.Bind(wx.EVT_BUTTON, self._OnRefresh)
         btn_zm.Bind(wx.EVT_BUTTON,     lambda e: self._ZoomBy(-_ZOOM_STEP))
         btn_zp.Bind(wx.EVT_BUTTON,     lambda e: self._ZoomBy(+_ZOOM_STEP))
         btn_fit.Bind(wx.EVT_BUTTON,    self._OnFit)
@@ -1384,6 +1465,17 @@ class _FullscreenPreviewFrame(wx.Frame):
 
         self._zoom = owner._zoom_factor
         self.SetSize(wx.GetDisplaySize())
+
+    # ── Copia / Aggiorna ──────────────────────────────────────────────────
+
+    def _OnCopy(self, evt):
+        """Copia negli appunti dalla finestra fullscreen (riusa la logica owner)."""
+        self.owner._OnCopyButton(None)
+
+    def _OnRefresh(self, evt):
+        """Aggiorna l'anteprima: rilegge il testo fresco e ridisegna la finestra."""
+        self.owner._ForceRefreshNow()
+        self._panel.Refresh()
 
     # ── Zoom helpers ──────────────────────────────────────────────────────
 

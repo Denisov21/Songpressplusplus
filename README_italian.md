@@ -134,17 +134,17 @@ Lo script esegue automaticamente:
 Al termine vedrai (il numero di versione mostrato è solo un **esempio**, dipende da quello in `pyproject.toml`):
 
 ```
-✅  Pacchetto creato: build_deb/songpressplusplus_7.0.2_all.deb
+✅  Pacchetto creato: build_deb/songpressplusplus_8.0.1_all.deb
 ```
 
 ---
 
 ### Installazione del pacchetto .deb
 
-> **⚠️ Nota:** il numero di versione (`7.0.2`) è solo un **esempio** ed è **da verificare**: usa quello effettivamente prodotto dallo script, mostrato a schermo al termine della build.
+> **⚠️ Nota:** il numero di versione (`8.0.1`) è solo un **esempio** ed è **da verificare**: usa quello effettivamente prodotto dallo script, mostrato a schermo al termine della build.
 
 ```bash
-sudo dpkg -i "build_deb/songpressplusplus_7.0.2_all.deb"
+sudo dpkg -i "build_deb/songpressplusplus_8.0.1_all.deb"
 ```
 
 In caso di dipendenze mancanti:
@@ -235,10 +235,10 @@ Dopodiché, in Dolphin: tasto destro sul `.deb` → _Apri con…_ → scegli "Pr
 > **✅ In alternativa (più robusto): `apt` da terminale.** Usa `apt` invece di `dpkg`, così risolve automaticamente le dipendenze dai repository:
 >
 > ```bash
-> sudo apt install ./songpressplusplus_7.0.2_all.deb
+> sudo apt install ./songpressplusplus_8.0.1_all.deb
 > ```
 >
-> Il prefisso `./` (o un percorso completo) è **obbligatorio**: senza almeno una `/` nel nome, `apt` interpreta l'argomento come il nome di un pacchetto da cercare nei repository e restituisce "impossibile trovare il pacchetto". Se non sei nella cartella del `.deb`, passa il percorso completo, ad esempio `sudo apt install ~/…/build_deb/songpressplusplus_7.0.2_all.deb`.
+> Il prefisso `./` (o un percorso completo) è **obbligatorio**: senza almeno una `/` nel nome, `apt` interpreta l'argomento come il nome di un pacchetto da cercare nei repository e restituisce "impossibile trovare il pacchetto". Se non sei nella cartella del `.deb`, passa il percorso completo, ad esempio `sudo apt install ~/…/build_deb/songpressplusplus_8.0.1_all.deb`.
 
 > **ℹ️ "Autore sconosciuto" e "Licenza: Sconosciuta" in Discover.** Discover ricava i campi "Autore" e "Licenza" dai metadati **AppStream** (`metainfo.xml`), non dal `DEBIAN/control` (che non ha un campo licenza e riporta solo il `Maintainer`). Ne derivano due conseguenze:
 >
@@ -274,7 +274,7 @@ Dopodiché, in Dolphin: tasto destro sul `.deb` → _Apri con…_ → scegli "Pr
 
 ```toml
 [project]
-version = "7.0.2"   # ← modifica questo numero
+version = "8.0.1"   # ← modifica questo numero
 ```
 
 #### 2. Rimuovi la versione installata, ricostruisci e reinstalla
@@ -288,7 +288,7 @@ Al termine dello script, `build_deb/` conterrà il nuovo `.deb` con il numero
 di versione aggiornato. Installalo con il comando suggerito a schermo, ad esempio:
 
 ```bash
-sudo dpkg -i "build_deb/songpressplusplus_7.0.2_all.deb"
+sudo dpkg -i "build_deb/songpressplusplus_8.0.1_all.deb"
 ```
 
 > **Suggerimento:** non è necessario ricordare il numero di versione esatto —

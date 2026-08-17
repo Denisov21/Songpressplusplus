@@ -34,3 +34,4 @@ Desktop.ini
 
 # File di backup
 *.bak
+*.bak[0-9]*

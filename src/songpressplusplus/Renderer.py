@@ -251,9 +251,15 @@ class Renderer(object):
         if rows is None:
             return
         mode = getattr(self, 'gridDisplayMode', 'pipe')
-        font = self.format.wxFont
-        chord_font  = self.format.chord.wxFont
-        chord_color = self.format.chord.color
+        # Il font della griglia NON deve ereditare lo stile del blocco precedente:
+        # EndBlock() non ripristina self.format, quindi dopo un {end_chorus} (o
+        # qualsiasi blocco) self.format e' ancora quello del ritornello (grassetto)
+        # e la griglia CODA finirebbe in grassetto. Usiamo un formato base neutro
+        # derivato da self.sf, come fa gia' EndTab() nel ripristino.
+        grid_fmt = ParagraphFormat(self.sf)
+        font = grid_fmt.wxFont
+        chord_font  = grid_fmt.chord.wxFont
+        chord_color = grid_fmt.chord.color
         label = getattr(self, '_grid_label', _("Grid"))
         beats_rows = getattr(self, '_grid_beats_rows', None) or None
         box = SongGridBox(rows, display_mode=mode, font=font, label=label,

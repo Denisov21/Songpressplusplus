@@ -1165,6 +1165,93 @@ Vengono riconosciute anche alterazioni (`#`, `b`, `♯`, `♭`), qualità (`-`, 
 - **Controlla sintassi** (`Strumenti › Controllo sintassi`, <kbd>F7</kbd>) — analizza il testo e segnala le direttive non riconosciute o malformate, con la possibilità di navigare direttamente all'errore.
 
 
+### Controllo ortografico (<kbd>F6</kbd>)
+
+Songpress++ integra un **controllo ortografico** basato sul motore **Hunspell** (tramite la libreria PyEnchant) che analizza **solo il testo cantato**: gli accordi tra `[ ]` e le direttive tra `{ }` vengono ignorati, così un nome di accordo o una direttiva non viene mai segnalato come errore. Sono ignorate anche le parole che contengono cifre.
+
+Il controllo ortografico è accessibile da tre comandi del menu **Strumenti**:
+
+| Comando | Scorciatoia | Funzione |
+| --- | --- | --- |
+| **Controllo ortografico…** | <kbd>F6</kbd> | Apre il dialogo di correzione che scorre gli errori uno per uno |
+| **Sottolineatura ortografica live** | — | Attiva/disattiva l'**ondina rossa** sotto le parole errate, aggiornata mentre si digita |
+| **Opzioni ortografia…** | — | Lingua predefinita, ondina all'avvio, colore, dizionario personale, installazione dizionari |
+
+#### Accordi in mezzo alle parole (`sal[LA-]varmi`)
+
+Nel formato ChordPro un accordo può cadere **in mezzo a una parola**. Per impostazione predefinita Songpress++ **ricompone** la parola prima di controllarla, trattando l'accordo come invisibile:
+
+```chordpro
+sal[LA-]varmi     →  controllato come «salvarmi»
+can[DO]-tare      →  controllato come «cantare»
+```
+
+I trattini `-` e gli underscore `_` di sillabazione o giunzione vengono rimossi durante la ricomposizione. Al contrario, un accordo **preceduto o seguito da uno spazio** separa due parole distinte (`Quando [Am]arrivi` → «Quando», «arrivi»).
+
+Questo comportamento è regolato dalla casella **«Unisci le parole spezzate dagli accordi inline»** nelle *Opzioni ortografia…*. Disattivandola si torna al comportamento classico, in cui un accordo interno spezza la parola in due token (`sal` + `varmi`) generando falsi errori.
+
+#### Dialogo di correzione (<kbd>F6</kbd>)
+
+Il dialogo **Controllo ortografia** funziona come quello dei principali word processor: mostra una parola errata alla volta, con l'elenco dei suggerimenti e il numero di errori ancora da correggere. La parola corrispondente viene selezionata e resa visibile nell'editor.
+
+| Pulsante | Azione |
+| --- | --- |
+| **Ignora** | Salta questa occorrenza |
+| **Ignora tutto** | Ignora tutte le occorrenze della parola per la sessione corrente |
+| **Aggiungi al dizionario** | Salva la parola nel dizionario personale (in modo permanente) |
+| **Cambia** | Sostituisce con il suggerimento selezionato (o con il testo digitato nel campo) |
+| **Cambia tutto** | Sostituisce tutte le occorrenze della parola |
+| **Chiudi** | Chiude il dialogo |
+
+Il campo **lingua** in fondo al dialogo permette di cambiare al volo la lingua di controllo. È possibile correggere la parola anche **a mano**, digitandola nel campo di testo prima di premere *Cambia*; un doppio clic su un suggerimento equivale a *Cambia*. Se il documento non contiene errori, compare direttamente il messaggio di controllo completato, senza aprire il dialogo.
+
+#### Ondina rossa live
+
+Con la **sottolineatura live** attiva, le parole non riconosciute vengono sottolineate da un'ondina (rossa per impostazione predefinita) che si aggiorna automaticamente mentre si scrive, con un breve ritardo (~350 ms) per non rallentare la digitazione. Il colore dell'ondina è personalizzabile nelle *Opzioni ortografia…*.
+
+#### Opzioni ortografia
+
+Il pannello **Opzioni ortografia…** raccoglie tutte le impostazioni:
+
+| Opzione | Descrizione |
+| --- | --- |
+| **Abilita controllo ortografico** | Interruttore generale della funzione |
+| **Lingua predefinita** | Lingua usata all'avvio e dall'ondina live |
+| **Sottolinea le parole errate all'avvio** | Accende automaticamente l'ondina live all'apertura del programma |
+| **Unisci le parole spezzate dagli accordi inline** | Ricompone parole come `sal[LA-]varmi` (vedi sopra) |
+| **Colore sottolineatura** | Colore dell'ondina (default rosso) |
+
+Le impostazioni vengono salvate e mantenute tra una sessione e l'altra.
+
+#### Dizionario personale
+
+Le parole aggiunte con **Aggiungi al dizionario** vengono salvate, una per riga, in un semplice file di testo modificabile anche a mano:
+
+| Sistema | Percorso |
+| --- | --- |
+| **Linux/Debian** | `~/.config/songpress/user_dict.txt` |
+| **Windows** | `%APPDATA%\Songpress\user_dict.txt` |
+| **macOS** | `~/Library/Application Support/Songpress/user_dict.txt` |
+
+Dal pannello *Opzioni ortografia…* i pulsanti **Apri…** e **Svuota** permettono rispettivamente di aprire il file nell'editor di sistema o di azzerarlo.
+
+#### Installazione dei dizionari
+
+Il motore ha bisogno dei dizionari **Hunspell** (coppie di file `.aff` + `.dic`) per ciascuna lingua.
+
+- **Su Linux/Debian** conviene installare i dizionari di sistema, ad esempio:
+  ```
+  sudo apt install hunspell-it hunspell-en-us
+  ```
+- **Su Windows** i dizionari non sono presenti nel sistema: si installano direttamente dal programma con il pulsante **Installa dizionari…** (nelle *Opzioni ortografia…*).
+
+La finestra **Installa dizionari** mostra le lingue già installate e quelle scaricabili, e scarica le coppie `.aff`/`.dic` da repository open source (principalmente il progetto **LibreOffice**). La nuova lingua è utilizzabile **subito, senza riavviare** il programma. I dizionari scaricati dall'utente possono essere rimossi con **Disinstalla**; i dizionari di sistema, contrassegnati come *[system]*, non vengono mai toccati.
+
+Lingue disponibili nel catalogo: italiano, inglese (US/UK), spagnolo, portoghese (PT/BR), tedesco, olandese, polacco, russo, danese, ceco, ungherese, greco, croato, sloveno, rumeno e latino.
+
+> **Nota — motore non disponibile** — Il controllo ortografico richiede la libreria **PyEnchant** (`pip install pyenchant`). Se non è installata, la funzione viene disattivata senza bloccare il programma: al primo utilizzo compare un avviso con le istruzioni per installarla.
+
+
 ### Copia prompt IA per beats_time (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>)
 
 **Strumenti › Copia prompt IA per beats_time**

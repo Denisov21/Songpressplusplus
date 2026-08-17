@@ -619,6 +619,22 @@
           <help>Check ChordPro syntax of the document (brackets, commands)</help>
           <bitmap>../img/syntaxCheck.png</bitmap>
         </object>
+        <object class="wxMenuItem" name="spellCheck">
+          <label>S_pell check...</label>
+          <accel>F6</accel>
+          <bitmap>../img/SpellChecker.png</bitmap>
+          <help>Check spelling of the song lyrics (chords are ignored)</help>
+        </object>
+        <object class="wxMenuItem" name="spellLive">
+          <label>Live spell _underline</label>
+          <help>Underline misspelled words while typing</help>
+          <checkable>1</checkable>
+        </object>
+        <object class="wxMenuItem" name="spellOptions">
+          <label>Spell check o_ptions...</label>
+          <help>Default language, live underline at startup, personal dictionary</help>
+          <bitmap>../img/SpellCheckerSetting.png</bitmap>
+        </object>
         <object class="wxMenuItem" name="songStatistics">
           <label>Song _Statistics...</label>
           <accel>F8</accel>

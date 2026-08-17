@@ -1165,6 +1165,93 @@ Accidentals (`#`, `b`, `♯`, `♭`), qualities (`-`, `m`, `M`, `min`, `maj`, `d
 - **Check syntax** (`Tools › Syntax check`, <kbd>F7</kbd>) — analyzes the text and reports unrecognized or malformed directives, with the ability to navigate directly to the error.
 
 
+### Spell Check (<kbd>F6</kbd>)
+
+Songpress++ includes a **spell checker** based on the **Hunspell** engine (via the PyEnchant library) that checks **only the sung lyrics**: chords inside `[ ]` and directives inside `{ }` are skipped, so a chord name or a directive is never flagged as an error. Words containing digits are ignored as well.
+
+Spell checking is available through three commands in the **Tools** menu:
+
+| Command | Shortcut | Function |
+| --- | --- | --- |
+| **Spell check…** | <kbd>F6</kbd> | Opens the correction dialog that steps through errors one by one |
+| **Live spell underline** | — | Toggles the **red squiggle** under misspelled words, updated as you type |
+| **Spell check options…** | — | Default language, underline at startup, colour, personal dictionary, dictionary installation |
+
+#### Chords Inside Words (`sal[LA-]varmi`)
+
+In the ChordPro format a chord can fall **in the middle of a word**. By default Songpress++ **reassembles** the word before checking it, treating the chord as invisible:
+
+```chordpro
+sal[LA-]varmi     →  checked as “salvarmi”
+can[DO]-tare      →  checked as “cantare”
+```
+
+Hyphens `-` and underscores `_` used for syllabification or joining are removed during reassembly. Conversely, a chord **preceded or followed by a space** separates two distinct words (`When [Am]arriving` → “When”, “arriving”).
+
+This behaviour is controlled by the **“Merge words split by inline chords”** checkbox in *Spell check options…*. Turning it off restores the classic behaviour, in which an inline chord splits the word into two tokens (`sal` + `varmi`), producing false errors.
+
+#### Correction Dialog (<kbd>F6</kbd>)
+
+The **Spell check** dialog works like the one in mainstream word processors: it shows one misspelled word at a time, with a list of suggestions and the number of errors still to correct. The matching word is selected and scrolled into view in the editor.
+
+| Button | Action |
+| --- | --- |
+| **Ignore** | Skips this occurrence |
+| **Ignore all** | Ignores every occurrence of the word for the current session |
+| **Add to dictionary** | Saves the word to the personal dictionary (permanently) |
+| **Change** | Replaces it with the selected suggestion (or with the text typed in the field) |
+| **Change all** | Replaces every occurrence of the word |
+| **Close** | Closes the dialog |
+
+The **language** field at the bottom of the dialog lets you switch the checking language on the fly. You can also correct the word **by hand**, typing it in the text field before pressing *Change*; double-clicking a suggestion is equivalent to *Change*. If the document contains no errors, the “spell check complete” message appears directly, without opening the dialog.
+
+#### Live Red Squiggle
+
+With **live underlining** enabled, unrecognized words are underlined by a squiggle (red by default) that updates automatically as you type, with a short delay (~350 ms) so it does not slow down typing. The squiggle colour is customizable in *Spell check options…*.
+
+#### Spell Check Options
+
+The **Spell check options…** panel gathers all settings:
+
+| Option | Description |
+| --- | --- |
+| **Enable spell checking** | Master switch for the feature |
+| **Default language** | Language used at startup and by the live squiggle |
+| **Underline misspelled words at startup** | Turns the live squiggle on automatically when the program opens |
+| **Merge words split by inline chords** | Reassembles words such as `sal[LA-]varmi` (see above) |
+| **Underline colour** | Squiggle colour (red by default) |
+
+Settings are saved and persist between sessions.
+
+#### Personal Dictionary
+
+Words added with **Add to dictionary** are saved, one per line, in a plain text file that can also be edited by hand:
+
+| System | Path |
+| --- | --- |
+| **Linux/Debian** | `~/.config/songpress/user_dict.txt` |
+| **Windows** | `%APPDATA%\Songpress\user_dict.txt` |
+| **macOS** | `~/Library/Application Support/Songpress/user_dict.txt` |
+
+From the *Spell check options…* panel the **Open…** and **Empty** buttons let you open the file in the system editor or clear it, respectively.
+
+#### Installing Dictionaries
+
+The engine needs **Hunspell** dictionaries (pairs of `.aff` + `.dic` files) for each language.
+
+- **On Linux/Debian** it is best to install the system dictionaries, for example:
+  ```
+  sudo apt install hunspell-it hunspell-en-us
+  ```
+- **On Windows** the dictionaries are not present in the system: install them directly from the program with the **Install dictionaries…** button (in *Spell check options…*).
+
+The **Install dictionaries** window shows the already-installed languages and those available to download, and downloads the `.aff`/`.dic` pairs from open-source repositories (mainly the **LibreOffice** project). The new language is usable **immediately, without restarting** the program. Dictionaries downloaded by the user can be removed with **Uninstall**; system dictionaries, marked as *[system]*, are never touched.
+
+Languages available in the catalog: Italian, English (US/UK), Spanish, Portuguese (PT/BR), German, Dutch, Polish, Russian, Danish, Czech, Hungarian, Greek, Croatian, Slovenian, Romanian, and Latin.
+
+> **Note — engine not available** — Spell checking requires the **PyEnchant** library (`pip install pyenchant`). If it is not installed, the feature is disabled without blocking the program: on first use a message appears with instructions for installing it.
+
+
 ### Copy AI beats_time Prompt (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>)
 
 **Tools › Copy AI beats_time prompt**

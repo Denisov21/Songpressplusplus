@@ -134,7 +134,7 @@ The script automatically performs the following steps:
 When done, you will see (the version number shown is only an **example** — it depends on the one in `pyproject.toml`):
 
 ```
-✅  Pacchetto creato: build_deb/songpressplusplus_7.0.2_all.deb
+✅  Pacchetto creato: build_deb/songpressplusplus_8.0.1_all.deb
 ```
 
 ---
@@ -144,7 +144,7 @@ When done, you will see (the version number shown is only an **example** — it 
 > **⚠️ Note:** the version number (`7.0.2`) is only an **example** and **must be verified**: use the one actually produced by the script, shown on screen at the end of the build.
 
 ```bash
-sudo dpkg -i "build_deb/songpressplusplus_7.0.2_all.deb"
+sudo dpkg -i "build_deb/songpressplusplus_8.0.1_all.deb"
 ```
 
 If any dependencies are missing:
@@ -233,10 +233,10 @@ Then, in Dolphin: right-click the `.deb` → _Open With…_ → choose "GDebi Pa
 > **✅ Alternatively (more robust): `apt` from the terminal.** Use `apt` instead of `dpkg`, so it resolves dependencies automatically from the repositories:
 >
 > ```bash
-> sudo apt install ./songpressplusplus_7.0.2_all.deb
+> sudo apt install ./songpressplusplus_8.0.1_all.deb
 > ```
 >
-> The `./` prefix (or a full path) is **mandatory**: without at least one `/` in the name, `apt` treats the argument as the name of a package to look up in the repositories and returns "unable to locate package". If you are not in the `.deb`'s folder, pass the full path, e.g. `sudo apt install ~/…/build_deb/songpressplusplus_7.0.2_all.deb`.
+> The `./` prefix (or a full path) is **mandatory**: without at least one `/` in the name, `apt` treats the argument as the name of a package to look up in the repositories and returns "unable to locate package". If you are not in the `.deb`'s folder, pass the full path, e.g. `sudo apt install ~/…/build_deb/songpressplusplus_8.0.1_all.deb`.
 
 > **ℹ️ "Unknown author" and "License: Unknown" in Discover.** Discover takes the "Author" and "License" fields from **AppStream** metadata (`metainfo.xml`), not from `DEBIAN/control` (which has no license field and only a `Maintainer`). Two consequences follow:
 >
@@ -272,7 +272,7 @@ Then, in Dolphin: right-click the `.deb` → _Open With…_ → choose "GDebi Pa
 
 ```toml
 [project]
-version = "7.0.2"   # ← change this number
+version = "8.0.1"   # ← change this number
 ```
 
 #### 2. Remove the installed version, rebuild and reinstall
@@ -286,7 +286,7 @@ When the script finishes, `build_deb/` will contain the new `.deb` with the
 updated version number. Install it using the command printed by the script, for example:
 
 ```bash
-sudo dpkg -i "build_deb/songpressplusplus_7.0.2_all.deb"
+sudo dpkg -i "build_deb/songpressplusplus_8.0.1_all.deb"
 ```
 
 > **Tip:** you don't need to remember the exact version number —

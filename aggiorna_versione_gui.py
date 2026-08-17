@@ -295,6 +295,10 @@ APP_COPYRIGHT = "Copyright (C) 2024-2026  Denisov21"
 LANGUAGES = {"it": "Italiano", "en": "English"}
 DEFAULT_LANG = "it"
 
+# Valore predefinito della preferenza "cursore sui pulsanti disabilitati"
+# (una checkbox salvata nel JSON). Usato anche dal pulsante di ripristino.
+DEFAULT_CURSOR_ON_DISABLED = True
+
 # Limiti (in punti) per la dimensione del testo scelta dall'utente.
 MIN_FONT_SIZE = 9
 MAX_FONT_SIZE = 18
@@ -374,6 +378,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "btn_scan": "Analizza / Anteprima",
         "btn_select_all": "Seleziona tutto",
         "btn_deselect_all": "Deseleziona tutto",
+        "btn_save_sel": "Salva selezione",
+        "btn_restore_sel": "Ripristina selezione",
+        "sel_saved": "Stato delle caselle salvato in {path}.",
+        "sel_restored": "Stato delle caselle ripristinato ({n} caselle).",
+        "sel_none_saved": "Nessuno stato delle caselle salvato nel file JSON.",
+        "sel_no_rows": "Esegui prima «Analizza / Anteprima».",
+        "sel_nothing_to_save": "Niente da salvare: esegui prima "
+                               "«Analizza / Anteprima».",
         "chk_backup": "Crea backup .bak",
         "btn_apply": "Applica modifiche",
         "frame_occurrences": "Occorrenze trovate",
@@ -389,6 +401,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
                            "Fido — Aa Bb 0123",
         "btn_save": "Salva",
         "btn_cancel": "Annulla",
+        "btn_restore_defaults": "Ripristina predefiniti",
+        "prefs_restored": "Valori predefiniti ripristinati (premi «Salva» "
+                          "per scriverli nel file JSON).",
         "prefs_saved": "Preferenze salvate in {path}.",
         "prefs_error": "Impossibile salvare le preferenze: {exc}",
         # tipologie (kind)
@@ -495,6 +510,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "btn_scan": "Analyse / Preview",
         "btn_select_all": "Select all",
         "btn_deselect_all": "Deselect all",
+        "btn_save_sel": "Save selection",
+        "btn_restore_sel": "Restore selection",
+        "sel_saved": "Checkbox state saved to {path}.",
+        "sel_restored": "Checkbox state restored ({n} checkboxes).",
+        "sel_none_saved": "No checkbox state saved in the JSON file.",
+        "sel_no_rows": "Run \"Analyse / Preview\" first.",
+        "sel_nothing_to_save": "Nothing to save: run \"Analyse / Preview\" "
+                               "first.",
         "chk_backup": "Create .bak backup",
         "btn_apply": "Apply changes",
         "frame_occurrences": "Occurrences found",
@@ -510,6 +533,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
                            "— Aa Bb 0123",
         "btn_save": "Save",
         "btn_cancel": "Cancel",
+        "btn_restore_defaults": "Restore defaults",
+        "prefs_restored": "Default values restored (press \"Save\" to write "
+                          "them to the JSON file).",
         "prefs_saved": "Preferences saved to {path}.",
         "prefs_error": "Could not save preferences: {exc}",
         # kinds
@@ -675,6 +701,12 @@ def _launch_gui() -> None:
             default_size = tkfont.nametofont("TkDefaultFont").actual("size")
             if not isinstance(default_size, int) or default_size <= 0:
                 default_size = 10
+            # Valori predefiniti dell'applicazione (usati dal pulsante
+            # "Ripristina predefiniti" nella finestra Opzioni).
+            self.default_family = str(default_family)
+            self.default_size = max(MIN_FONT_SIZE,
+                                    min(int(default_size), MAX_FONT_SIZE))
+            self.default_cursor_disabled = DEFAULT_CURSOR_ON_DISABLED
             prefs = load_prefs()
             # Lingua salvata (se valida), altrimenti quella predefinita.
             lang_pref = prefs.get("language")
@@ -689,7 +721,7 @@ def _launch_gui() -> None:
                                  min(self.pref_size, MAX_FONT_SIZE))
             # Preferenza: cambiare il cursore sui pulsanti disabilitati?
             self.pref_cursor_disabled = bool(
-                prefs.get("cursor_on_disabled", True))
+                prefs.get("cursor_on_disabled", DEFAULT_CURSOR_ON_DISABLED))
             self._apply_fonts()
 
             # Cursore da mostrare sui controlli disabilitati (non cliccabili).
@@ -903,14 +935,21 @@ def _launch_gui() -> None:
             if (new_w, new_h) != (cur_w, cur_h):
                 self.geometry(f"{new_w}x{new_h}")
 
+        def _update_prefs_file(self, updates: dict[str, Any]) -> Path:
+            """Aggiorna SOLO le chiavi indicate nel file JSON, preservando le
+            altre (es. lo stato delle caselle salvato separatamente)."""
+            data = load_prefs()
+            data.update(updates)
+            return save_prefs(data)
+
         def _save_current_prefs(self, announce: bool = True) -> None:
             """Scrive le preferenze correnti nel file JSON accanto allo script."""
             try:
-                path = save_prefs({"language": self.lang,
-                                   "font_family": self.pref_family,
-                                   "font_size": self.pref_size,
-                                   "cursor_on_disabled":
-                                       self.pref_cursor_disabled})
+                path = self._update_prefs_file(
+                    {"language": self.lang,
+                     "font_family": self.pref_family,
+                     "font_size": self.pref_size,
+                     "cursor_on_disabled": self.pref_cursor_disabled})
                 if announce:
                     self._log(self.t("prefs_saved", path=path.name), "ok")
             except OSError as exc:
@@ -979,9 +1018,23 @@ def _launch_gui() -> None:
                 self._save_current_prefs()
                 win.destroy()
 
+            def _restore_defaults() -> None:
+                # Riporta i controlli del dialog ai valori predefiniti
+                # (font, dimensione e la checkbox del cursore). Le modifiche
+                # non vengono scritte sul JSON finché non si preme "Salva",
+                # così "Annulla" continua a poterle scartare.
+                fam_var.set(self.default_family)
+                size_var.set(str(self.default_size))
+                cursor_var.set(self.default_cursor_disabled)
+                _update_preview()
+                self._log(self.t("prefs_restored"), "info")
+
             btns = ttk.Frame(win)
-            btns.grid(row=4, column=0, columnspan=2, sticky="e",
+            btns.grid(row=4, column=0, columnspan=2, sticky="ew",
                       padx=12, pady=(10, 12))
+            # A sinistra: ripristino dei predefiniti. A destra: Salva/Annulla.
+            ttk.Button(btns, text=self.t("btn_restore_defaults"),
+                       command=_restore_defaults).pack(side="left")
             ttk.Button(btns, text=self.t("btn_cancel"),
                        command=win.destroy).pack(side="right", padx=(6, 0))
             ttk.Button(btns, text=self.t("btn_save"),
@@ -1113,6 +1166,14 @@ def _launch_gui() -> None:
                                                                  padx=(12, 4))
             ttk.Button(act, text=self.t("btn_deselect_all"),
                        command=lambda: self._set_all(False)).pack(side="left")
+            self.save_sel_btn = ttk.Button(
+                act, text=self.t("btn_save_sel"),
+                command=self._save_selection, state="disabled")
+            self.save_sel_btn.pack(side="left", padx=(12, 4))
+            self.restore_sel_btn = ttk.Button(
+                act, text=self.t("btn_restore_sel"),
+                command=self._restore_selection, state="disabled")
+            self.restore_sel_btn.pack(side="left")
             self.backup_var = tk.BooleanVar(value=True)
             ttk.Checkbutton(act, text=self.t("chk_backup"),
                             variable=self.backup_var).pack(side="left", padx=16)
@@ -1276,6 +1337,9 @@ def _launch_gui() -> None:
             self.row_vars.clear()
             self.file_enabled.clear()
             self.file_children.clear()
+            if hasattr(self, "save_sel_btn"):
+                self.save_sel_btn.configure(state="disabled")
+            self._update_restore_state()
 
         def _scan(self) -> None:
             if not self.files:
@@ -1327,6 +1391,8 @@ def _launch_gui() -> None:
             if n_dep:
                 self._log(self.t("excluded_dep", n=n_dep), "warn")
             self.apply_btn.configure(state="normal")
+            self.save_sel_btn.configure(state="normal")
+            self._update_restore_state()
 
         def _add_row(self, c: Candidate, new_v: str) -> None:
             var = tk.BooleanVar(value=c.selected)
@@ -1367,6 +1433,93 @@ def _launch_gui() -> None:
             state = "normal" if enabled else "disabled"
             for _var, cb in self.file_children.get(name, []):
                 cb.configure(state=state)
+
+        # ---------- salva / ripristina lo stato delle caselle --------------
+        def _collect_checkbox_state(self) -> dict[str, Any]:
+            """Raccoglie lo stato attuale di tutte le caselle in un dict.
+
+            Le righe sono salvate per posizione (indice progressivo dentro
+            ogni file): così lo stato resta valido anche dopo un cambio di
+            versione, quando cambia il testo ma non l'ordine delle occorrenze.
+            """
+            per_file_rows: dict[str, list[bool]] = {}
+            for c, var in self.row_vars:
+                per_file_rows.setdefault(c.file_name, []).append(
+                    bool(var.get()))
+            files_state: dict[str, Any] = {}
+            for name, rows in per_file_rows.items():
+                enabled_var = self.file_enabled.get(name)
+                files_state[name] = {
+                    "enabled": bool(enabled_var.get()) if enabled_var
+                    else True,
+                    "rows": rows,
+                }
+            return {"backup": bool(self.backup_var.get()),
+                    "files": files_state}
+
+        def _save_selection(self) -> None:
+            """Salva nel JSON lo stato corrente di tutte le caselle."""
+            if not self.row_vars:
+                self._log(self.t("sel_nothing_to_save"), "warn")
+                return
+            try:
+                path = self._update_prefs_file(
+                    {"checkbox_state": self._collect_checkbox_state()})
+            except OSError as exc:
+                self._log(self.t("prefs_error", exc=exc), "err")
+                return
+            self._log(self.t("sel_saved", path=path.name), "ok")
+            self._update_restore_state()
+
+        def _restore_selection(self) -> None:
+            """Riapplica alle righe correnti lo stato salvato nel JSON."""
+            if not self.row_vars:
+                self._log(self.t("sel_no_rows"), "warn")
+                return
+            state = load_prefs().get("checkbox_state")
+            if not isinstance(state, dict):
+                self._log(self.t("sel_none_saved"), "warn")
+                return
+            files_state = state.get("files")
+            if not isinstance(files_state, dict):
+                files_state = {}
+
+            # Casella di backup globale.
+            if isinstance(state.get("backup"), bool):
+                self.backup_var.set(state["backup"])
+
+            # Caselle di riga, riapplicate per posizione dentro ogni file.
+            idx: dict[str, int] = {}
+            applied = 0
+            for c, var in self.row_vars:
+                i = idx.get(c.file_name, 0)
+                idx[c.file_name] = i + 1
+                fs = files_state.get(c.file_name)
+                if isinstance(fs, dict):
+                    rows = fs.get("rows")
+                    if (isinstance(rows, list) and i < len(rows)
+                            and isinstance(rows[i], bool)):
+                        var.set(rows[i])
+                        applied += 1
+
+            # Master-checkbox per file (+ propagazione ai figli).
+            for name, enabled_var in self.file_enabled.items():
+                fs = files_state.get(name)
+                if isinstance(fs, dict) and isinstance(fs.get("enabled"), bool):
+                    enabled_var.set(fs["enabled"])
+                    self._toggle_file(name)
+
+            self._log(self.t("sel_restored", n=applied), "ok")
+
+        def _update_restore_state(self) -> None:
+            """Abilita «Ripristina selezione» solo se c'è uno stato salvato
+            e sono presenti delle righe da aggiornare."""
+            if not hasattr(self, "restore_sel_btn"):
+                return
+            has_saved = isinstance(load_prefs().get("checkbox_state"), dict)
+            enabled = has_saved and bool(self.row_vars)
+            self.restore_sel_btn.configure(
+                state="normal" if enabled else "disabled")
 
         # ---------- applica ------------------------------------------------
         def _apply(self) -> None:

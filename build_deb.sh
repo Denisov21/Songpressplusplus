@@ -206,16 +206,23 @@ HOMEPAGE="https://github.com/Denisov21/Songpressplusplus"
 # python3-pip serve al postinst per installare le dipendenze solo-PyPI.
 # xdg-utils fornisce xdg-open, usato per aprire la cartella dei template
 # (e in generale cartelle/file) con il gestore file predefinito del desktop.
+# python3-enchant è il binding PyEnchant nei repo Debian/Ubuntu (tira come
+# dipendenza libenchant-2-2 con il backend hunspell): è il motore del
+# controllo ortografico.
 DEPENDS="python3 (>= 3.12), python3-pip, python3-wxgtk4.0 | python3-wxpython4, \
 python3-requests, python3-reportlab, python3-markdown, python3-mistune, \
-python3-pypdf, xdg-utils"
+python3-pypdf, python3-enchant, xdg-utils"
 
 # Dipendenze consigliate (installate da apt di default, ma non obbligatorie):
 #   - wl-clipboard  → fornisce wl-copy, usato per copiare l'immagine dello
 #                     spartito negli appunti su sessioni Wayland (la clipboard
 #                     immagine di wxGTK su Wayland registra solo testo).
 #     Su X11 non serve. Se manca, l'app avvisa come installarlo.
-RECOMMENDS="wl-clipboard"
+#   - hunspell-it, hunspell-en-us → dizionari per il controllo ortografico.
+#     Sono solo "consigliati": l'app può scaricare altri dizionari da sola
+#     (Opzioni ortografia → Installa dizionari...), ma averli di sistema dà
+#     subito italiano e inglese senza download.
+RECOMMENDS="wl-clipboard, hunspell-it, hunspell-en-us"
 
 # Dipendenze che NON esistono nei repo Debian: si installano via pip nel postinst.
 # Formato: "nome_pip:nome_modulo_import" (uno per riga).

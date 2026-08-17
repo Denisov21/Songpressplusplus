@@ -699,6 +699,11 @@ class Editor(StyledTextCtrl):
         _EOT = frozenset(['EOT', 'END_OF_TAB'])
         _SOG = frozenset(['SOG', 'START_OF_GRID', 'GRID'])
         _EOG = frozenset(['EOG', 'END_OF_GRID'])
+        # Varianti di apertura/chiusura del ritornello (grassetto): forme standard
+        # ChordPro + alias 'start_chorus'/'end_chorus'. NB: NON includere il bare
+        # 'CHORUS', che in ChordPro e' il richiamo {chorus} (non apre un blocco).
+        _SOC = frozenset(['SOC', 'START_OF_CHORUS', 'START_CHORUS'])
+        _EOC = frozenset(['EOC', 'END_OF_CHORUS', 'END_CHORUS'])
 
         while (changedBold and ln < lc) or start < end:
             self.StartStyling(start)
@@ -713,10 +718,12 @@ class Editor(StyledTextCtrl):
                     t = self.chorusToken
                 self.SetStyling(n, self.tokenStyle[t])
                 if t == SongTokenizer.commandToken:
-                    cmd = tok.content.upper()
-                    if cmd == 'SOC' or cmd == 'START_OF_CHORUS':
+                    # Togli l'eventuale etichetta dopo ':' (es. {start_of_grid:CODA})
+                    # cosi' il comando resta confrontabile con gli insiemi sotto.
+                    cmd = tok.content.upper().split(':', 1)[0].strip()
+                    if cmd in _SOC:
                         bold = True
-                    elif cmd == 'EOC' or cmd == 'END_OF_CHORUS':
+                    elif cmd in _EOC:
                         bold = False
                     elif cmd in _SOT or cmd in _SOG:
                         in_tg = True

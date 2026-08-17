@@ -1,6 +1,6 @@
 [project]
 name = "SongpressPlusPlus"
-version = "8.0.0"
+version = "8.0.1"
 description = "Songpress++ is a free, easy to use song typeset program for Windows and Linux, that generates high-quality songbooks."
 # Songpress++ è un fork di Songpress, scritto originariamente da Luca Allulli
 # (https://github.com/lallulli/songpress) e rilasciato sotto GNU GPL v2.
@@ -24,6 +24,7 @@ dependencies = [
     "pypdf>=5.4.0,<7.0.0",
     "markdown>=3.4,<4.0.0",
     "mistune>=3.0.0,<4.0.0",
+    "pyenchant>=3.2.0,<4.0.0",
     "pywin32>=308; sys_platform == 'win32'",
 ]
 
@@ -87,10 +88,29 @@ packages = [
     "markdown",
     "mistune",
     "pypdf",
+    # enchant (PyEnchant): motore del controllo ortografico. Su Windows il wheel
+    # include la DLL enchant + il backend hunspell + i dizionari inglesi, tutto
+    # sotto enchant/data/mingw64/ (bin/*.dll, lib/enchant-2/, share/enchant/).
+    # pyenchant cerca la DLL in <cartella_del_package>/data/mingw64/bin (vedi
+    # enchant/_enchant.py). Verificato che cx_Freeze, con enchant in
+    # zip_exclude_packages (sotto), copia l'INTERA sottocartella data/ in
+    # lib/enchant/data/ — quindi la DLL viene trovata senza altri accorgimenti.
+    "enchant",
     "win32print",
     "win32api",
 ]
 excludes = ["numpy", "tkinter"]
+# enchant carica le sue DLL/dizionari da file su disco (via ctypes): non deve
+# finire compresso dentro library.zip, altrimenti non trova enchant.dll.
+# Con questo, cx_Freeze lo estrae in lib/enchant/ (con la sua cartella data/).
+zip_exclude_packages = ["enchant"]
+
+# Rete di sicurezza (normalmente NON necessaria): se una versione di cx_Freeze
+# non copiasse la cartella dati di enchant, decommenta e regola il percorso al
+# tuo venv, cosi' le DLL vengono incluse esplicitamente.
+# include_files = [
+#     [".venv/Lib/site-packages/enchant/data", "lib/enchant/data"],
+# ]
 include_msvcr = true
 include_files = [
     ["src/songpressplusplus/img",       "img"],

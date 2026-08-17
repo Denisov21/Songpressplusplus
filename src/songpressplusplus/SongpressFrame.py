@@ -55,6 +55,7 @@ from .PrintDialog import SongpressPrintout, PrintManager
 from .CopyAIBeatsPrompt import CopyAIBeatsPromptMixin
 from .SongpressToolbars import SongpressToolbarsMixin
 from . import ChordProDirectives
+from .SpellChecker import SpellManager
 
 _ = wx.GetTranslation
 
@@ -843,6 +844,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.text.Bind(wx.EVT_KEY_DOWN, self.OnTextKeyDown, self.text)
         self.text.Bind(wx.stc.EVT_STC_AUTOCOMP_SELECTION, self._OnIntellisenseSelection, self.text)
         self._RegisterIntellisenseImages()
+        # Controllo ortografico (motore + ondina live + preferenze).
+        # Legge la lingua di default e l'eventuale ondina all'avvio da wx.Config.
+        self.speller = SpellManager(self, lang="it_IT")
         # Other objects
         self.previewCanvas = PreviewCanvas(self.frame, self.pref.format, self.pref.notations, self.pref.decorator)
         # Registra la callback doppio-click: naviga alla riga sorgente nell'editor
@@ -850,6 +854,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         # Callback diretta per il pulsante "copia" della toolbar anteprima:
         # chiama CopyAsImage senza passare per gli eventi wx (più affidabile).
         self.previewCanvas.SetCopyCallback(self.CopyAsImage)
+        # Callback per il pulsante "aggiorna anteprima": rilegge il testo
+        # corrente dell'editor e forza il ridisegno immediato.
+        self.previewCanvas.SetRefreshCallback(lambda: self._get_display_text())
         # Filigrana iniziale in anteprima (se abilitata nelle preferenze)
         self.previewCanvas.SetWatermark(self._GetWatermarkConfig())
         self._mgr.AddPane(
@@ -865,9 +872,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 .Movable(False)
                 .PaneBorder(False)
         )
-        _preview_min = wx.Size(370, 520) if getattr(self.pref, 'previewMinSize', True) else wx.Size(-1, -1)
+        _preview_min = wx.Size(370, 530) if getattr(self.pref, 'previewMinSize', True) else wx.Size(-1, -1)
         self.AddPane(self.previewCanvas.main_panel,
-                     aui.AuiPaneInfo().Right().BestSize(370, 520).MinSize(_preview_min),
+                     aui.AuiPaneInfo().Right().BestSize(370, 530).MinSize(_preview_min),
                      _('Songpress++ Preview'), 'preview')
         self.previewCanvas.main_panel.Bind(wx.adv.EVT_HYPERLINK, self.OnCopyAsImage, self.previewCanvas.link)
 
@@ -974,6 +981,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.wholeSongMenuId = xrc.XRCID('wholeSong')
         self.chordsAboveMenuId = xrc.XRCID('chordsAbove')
         self.chordsBelowMenuId = xrc.XRCID('chordsBelow')
+        self.spellLiveMenuId = xrc.XRCID('spellLive')
         if platform.system() != 'Windows':
             self.menuBar.GetMenu(0).FindItemById(self.exportMenuId).GetSubMenu().Delete(self.exportAsEmfMenuId)
         self._LocalizeClipboardMenuLabel()
@@ -993,6 +1001,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self._lastFindDown  = True
         self.CheckLabelVerses()
         self.CheckChordsPosition()
+        # allinea la spunta "ondina live" all'eventuale attivazione all'avvio
+        self.menuBar.Check(self.spellLiveMenuId, self.speller.is_live())
         self.SetFont()
         self.text.SetFont(self.pref.editorFace, self.pref.editorSize)
         self.text.SetBgColour(getattr(self.pref, 'editorBgHex', '#FFFFFF'))
@@ -1531,6 +1541,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         # --- Verifica sintattica ---
         Bind(self.OnSyntaxCheck, 'syntaxCheck')
         Bind(self.OnSongStatistics, 'songStatistics')
+        # --- Controllo ortografico ---
+        Bind(self.OnSpellCheck, 'spellCheck')
+        Bind(self.OnSpellLive, 'spellLive')
+        Bind(self.OnSpellOptions, 'spellOptions')
         self.frame.Bind(EVT_SYNTAX_GOTO, self.OnSyntaxGoto)
         # --- Riavvia applicazione ---
         Bind(self.OnRestart, 'restart')
@@ -1739,6 +1753,29 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         dlg = SyntaxCheckerDialog(self.frame, result)
         dlg.ShowModal()
         dlg.Destroy()
+
+    # ------------------------------------------------------------------
+    # Controllo ortografico
+    # ------------------------------------------------------------------
+
+    def OnSpellCheck(self, evt):
+        """Apre il dialogo di controllo ortografico (batch, stile Word).
+
+        Gli accordi [..] e le direttive {..} vengono ignorati: viene
+        controllato solo il testo cantato.
+        """
+        self.speller.open_dialog()
+
+    def OnSpellLive(self, evt):
+        """Attiva/disattiva l'ondina rossa live sotto le parole errate."""
+        on = self.speller.toggle_live()
+        self.menuBar.Check(self.spellLiveMenuId, on)
+
+    def OnSpellOptions(self, evt):
+        """Apre le preferenze ortografia (lingua, ondina all'avvio, dizionario)."""
+        self.speller.open_preferences()
+        # riallinea la spunta del menu "ondina live" allo stato effettivo
+        self.menuBar.Check(self.spellLiveMenuId, self.speller.is_live())
 
     # ------------------------------------------------------------------
     # Song statistics
@@ -3854,8 +3891,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             for suffix, intervals in _CHORD_INTERVALS:
                 if rest.lower().startswith(suffix.lower()):
                     ivs = intervals; break
-            # Restituisce i nomi nella notazione corrente
-            return [_semi_to_note((root + i) % 12) for i in ivs]
+            # Restituisce coppie (nome_nota, semitono 0-11) nell'ordine
+            # dell'accordo (fondamentale, terza, quinta...). Il semitono serve
+            # per l'eventuale ordinamento "come sulla tastiera".
+            return [(_semi_to_note((root + i) % 12), (root + i) % 12)
+                    for i in ivs]
 
         # ── Costruisce il dialog ──────────────────────────────────────
         dlg = wx.Dialog(self.frame, title=_(u"First chord fingering"),
@@ -3888,6 +3928,15 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
               u"(1=thumb  2=index  3=middle  4=ring  5=little)\n"
               u"Leave '\u2014' for fingers not used."))
         vbox.Add(lbl_info, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        # Casella: ordina le note come appaiono sulla tastiera (da sinistra a
+        # destra, cioè per semitono crescente Do, Do#, Re ... Si). Attiva di
+        # default. Quando è disattivata, le note seguono l'ordine dell'accordo
+        # (fondamentale, terza, quinta...).
+        cb_order = wx.CheckBox(
+            dlg, -1, _(u"Order notes as on the keyboard (left to right)"))
+        cb_order.SetValue(True)
+        vbox.Add(cb_order, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
         # Pannello contenitore per la griglia — viene ricostruita dinamicamente
         grid_panel = wx.Panel(dlg, -1)
@@ -4019,7 +4068,15 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             _refresh_kbd()
 
         def _rebuild_grid(notes):
-            """Distrugge e ricrea la griglia nel grid_panel con le note date."""
+            """Distrugge e ricrea la griglia nel grid_panel con le note date.
+
+            Conserva la diteggiatura già scelta per le note che restano: così
+            il semplice cambio d'ordine (o una piccola modifica dell'accordo)
+            non azzera i numeri delle dita già impostati.
+            """
+            # Salva le selezioni correnti per nome-nota, prima di distruggere.
+            prev_sel = {lbl.GetLabel(): ch.GetSelection()
+                        for lbl, ch in note_rows}
             note_rows.clear()
             # Rimuovi tutti i figli esistenti
             for child in grid_panel.GetChildren():
@@ -4038,7 +4095,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             for note in notes:
                 lbl = wx.StaticText(grid_panel, -1, note)
                 ch  = wx.Choice(grid_panel, -1, choices=finger_choices)
-                ch.SetSelection(0)
+                ch.SetSelection(prev_sel.get(note, 0))
                 ch.Bind(wx.EVT_CHOICE, _update_preview)
                 fgs.Add(lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 4)
                 fgs.Add(ch,  0, wx.ALIGN_CENTER_VERTICAL)
@@ -4050,7 +4107,12 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         def _on_chord_change(e=None):
             chord = txt_chord.GetValue().strip()
-            notes = chord_semitones(chord) if chord else []
+            pairs = chord_semitones(chord) if chord else []  # [(nome, semitono)]
+            # Se la casella è attiva, ordina come sulla tastiera: semitono
+            # crescente = da sinistra a destra (Do, Do#, Re ... Si).
+            if cb_order.GetValue():
+                pairs = sorted(pairs, key=lambda p: p[1])
+            notes = [name for name, _semi in pairs]
             current_notes.clear()
             current_notes.extend(notes)
             _rebuild_grid(notes)
@@ -4062,6 +4124,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         txt_chord.Bind(wx.EVT_TEXT, _on_chord_change)
         rb_right.Bind(wx.EVT_RADIOBUTTON, lambda e: (_update_preview(), _refresh_kbd()))
         rb_left.Bind(wx.EVT_RADIOBUTTON,  lambda e: (_update_preview(), _refresh_kbd()))
+        # Cambiare l'ordinamento ricostruisce la griglia mantenendo le dita già scelte
+        cb_order.Bind(wx.EVT_CHECKBOX, _on_chord_change)
 
         vbox.Fit(dlg)
         dlg.CentreOnParent()
@@ -6627,6 +6691,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             ("pypdf",           "pypdf",        ""),
             ("markdown",        "markdown",     ""),
             ("mistune",         "mistune",      ""),
+            ("PyEnchant",       "enchant",      _("Spell checker")),
             ("pywin32",         "win32print",   _("Windows only")),
         ]
 
@@ -8884,12 +8949,12 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         """
         enabled = getattr(self.pref, 'previewMinSize', True)
         if enabled:
-            min_sz = wx.Size(370, 520)
+            min_sz = wx.Size(370, 530)
         else:
             min_sz = wx.Size(-1, -1)
         # Aggiorna il pane AUI
         pane = self._mgr.GetPane('preview')
-        pane.BestSize(370, 520).MinSize(min_sz)
+        pane.BestSize(370, 530).MinSize(min_sz)
         # Aggiorna anche il wx.Window sottostante (doppio vincolo)
         self.previewCanvas.main_panel.SetMinSize(min_sz)
 

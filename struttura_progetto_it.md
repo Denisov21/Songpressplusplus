@@ -183,6 +183,12 @@ Strumenti di utilità e script di supporto standalone, **non** parte del codice 
 | `MusicalSymbolDialog.py` | Dialogo modale per scegliere e inserire simboli musicali Unicode (U+1D100–U+1D1FF e altri) nell'editor. Organizza i simboli in schede tematiche (note, pause, alterazioni, dinamiche, ecc.) con griglia di selezione, anteprima del glifo e descrizione. Carica automaticamente font SMP dalla cartella `fonts/` (FreeSerif, Bravura, Noto Music) tramite `wx.Font.AddPrivateFont`; espone `get_smp_faces()` usata da `SongDecorator` per il rendering GDI+. |
 | `SyntaxCheckerDialog.py` | Dialogo che mostra l'elenco degli errori rilevati da `SyntaxChecker`. Permette di navigare direttamente alla riga errata nell'editor con un doppio clic. |
 
+### Controllo ortografico
+
+| File | Descrizione |
+| ---- | ----------- |
+| `SpellChecker.py` | Modulo completo di **controllo ortografico** basato su **PyEnchant/Hunspell**, con import "morbido" di `enchant` (se manca, l'app non va in crash). Filtra accordi e direttive ChordPro dal testo da controllare (`iter_words(merge_chords=True)`) e gestisce un **dizionario personale cross-platform** (Debian + Windows) e i percorsi `ENCHANT_CONFIG_DIR`/dizionari utente scrivibili. Espone: `SpellSettings` (lingua, avvio con ondina live, colore, persistenza impostazioni); `SpellChecker` (motore: `check`, `suggest`, `add`, `ignore_session`, `errors_in`); `LiveHighlighter` (**ondina rossa live** su Scintilla/`StyledTextCtrl` con refresh differito); `SpellCheckDialog` (dialogo "Controllo ortografia" stile Word: ignora, ignora tutto, aggiungi, cambia, cambia tutto, cambio lingua); `SpellPrefsDialog` (opzioni: lingua, ondina all'avvio, colore, gestione dizionario personale); `DictInstallerDialog` (installazione/rimozione dizionari con download automatico dai dizionari LibreOffice, utile soprattutto su Windows); `SpellManager` (façade integrata in `SongpressFrame`: dialogo `spellCheck` con F6, toggle ondina live `spellLive`, preferenze e installer dizionari). |
+
 ### Trasposizione e normalizzazione
 
 | File | Descrizione |
@@ -260,6 +266,7 @@ I file `.mo` sono le versioni **compilate** dei `.po`, lette a runtime da wxPyth
 | `SongpressToolbars.po` / `.mo` | `SongpressToolbars.py` — etichette e tooltip delle tre toolbar (Standard, Format, Insert). |
 | `SongpressFrame.po` / `.mo` | `SongpressFrame.py` |
 | `songimpress.po` / `.mo` | `songimpress.py` — importazione/integrazione con il formato SongImpress (LibreOffice Impress): messaggi ed etichette localizzati. |
+| `spellcheck.po` / `.mo` | `SpellChecker.py` — controllo ortografico: dialogo stile Word, opzioni ortografia, installer dizionari e messaggi correlati (il nome del catalogo è `spellcheck`, diverso dal nome del modulo). |
 | `ChordProDirectives.po` / `.mo` | `ChordProDirectives.py` — nessuna stringa localizzata al momento; file predisposto per future traduzioni dei nomi delle direttive o dei commenti. (Non serve a nulla `ChordProDirectives.po` / `.mo`!) |
 | `SyntaxCheckerDialog.po` / `.mo` | `SyntaxCheckerDialog.py` |
 | `Transpose.po` / `.mo` | `Transpose.py` |

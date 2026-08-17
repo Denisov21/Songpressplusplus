@@ -1379,3 +1379,7 @@ msgstr "Indicazione del tempo"
 #: SongpressFrame.py OnInsertBeatsTime selection tab label
 msgid "Row"
 msgstr "Riga"
+
+#: SongpressFrame.py — keyboard note ordering option
+msgid "Order notes as on the keyboard (left to right)"
+msgstr "Ordina le note come sulla tastiera (da sinistra a destra)"

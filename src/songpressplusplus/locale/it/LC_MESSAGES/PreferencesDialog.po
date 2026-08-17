@@ -305,12 +305,12 @@ msgid "When enabled, double-clicking on any word or chord in the preview moves t
 msgstr "Se abilitato, il doppio clic su una parola o un accordo nell'anteprima sposta il cursore alla riga corrispondente nell'editor."
 
 #: PreferencesDialog.py
-msgid "Set minimum size for the preview panel at startup (370×520)"
-msgstr "Imposta la dimensione minima del pannello anteprima all'avvio (370×520)"
+msgid "Set minimum size for the preview panel at startup (370×530)"
+msgstr "Imposta la dimensione minima del pannello anteprima all'avvio (370×530)"
 
 #: PreferencesDialog.py
-msgid "When enabled, the preview panel cannot be resized below 370×520 pixels. This prevents the panel from appearing too small when the application starts."
-msgstr "Se abilitato, il pannello anteprima non può essere ridimensionato al di sotto di 370×520 pixel. In questo modo il pannello non appare troppo piccolo all'avvio."
+msgid "When enabled, the preview panel cannot be resized below 370×530 pixels. This prevents the panel from appearing too small when the application starts."
+msgstr "Se abilitato, il pannello anteprima non può essere ridimensionato al di sotto di 370×530 pixel. In questo modo il pannello non appare troppo piccolo all'avvio."
 
 #: PreferencesDialog.py guide viewer group title
 msgid "Quick guide"

@@ -1031,19 +1031,6 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap">Load From File; ../img/beats.png</property>
-            <property name="checked">0</property>
-            <property name="enabled">1</property>
-            <property name="help">Insert ChordPro directive to set beat duration of chords (e.g. 1, 2, 4)</property>
-            <property name="id">ID_INSERT_DURATION</property>
-            <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">&amp;Duration {beats_time:}...</property>
-            <property name="name">insertDuration</property>
-            <property name="permission">none</property>
-            <property name="shortcut">CTRL+SHIFT+D</property>
-            <property name="unchecked_bitmap"></property>
-          </object>
-          <object class="wxMenuItem" expanded="false">
             <property name="bitmap">Load From File; ../img/key.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
@@ -1054,6 +1041,19 @@
             <property name="name">insertKey</property>
             <property name="permission">none</property>
             <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap">Load From File; ../img/beats.png</property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert ChordPro directive to set beat duration of chords (e.g. 1, 2, 4)</property>
+            <property name="id">ID_INSERT_DURATION</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">&amp;Duration {beats_time:}...</property>
+            <property name="name">insertDuration</property>
+            <property name="permission">none</property>
+            <property name="shortcut">CTRL+SHIFT+D</property>
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
@@ -1443,6 +1443,58 @@
             <property name="name">syntaxCheck</property>
             <property name="permission">none</property>
             <property name="shortcut">F7</property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap">Load From File; ../Desktop/TESTsongpressplusplusTEST/src/songpressplusplus/img/SpellChecker.png</property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Check spelling of the song lyrics (chords are ignored)</property>
+            <property name="id">ID_SPELL_CHECK</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">S&amp;pell check...</property>
+            <property name="name">spellCheck</property>
+            <property name="permission">none</property>
+            <property name="shortcut">F6</property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap"></property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Underline misspelled words while typing</property>
+            <property name="id">ID_SPELL_LIVE</property>
+            <property name="kind">wxITEM_CHECK</property>
+            <property name="label">Live spell &amp;underline</property>
+            <property name="name">spellLive</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap">Load From File; ../img/SpellCheckerSetting.png</property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Default language, live underline at startup, personal dictionary</property>
+            <property name="id">ID_SPELL_OPTIONS</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">Spell check o&amp;ptions...</property>
+            <property name="name">spellOptions</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap">Load From File; ../img/statistics.png</property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Show song statistics and difficulty rating (chords, structure, words)</property>
+            <property name="id">ID_SONG_STATISTICS</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">Song &amp;Statistics...</property>
+            <property name="name">songStatistics</property>
+            <property name="permission">none</property>
+            <property name="shortcut">F8</property>
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="separator" expanded="false">
