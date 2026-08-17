@@ -1257,17 +1257,86 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         # La chiamata e' idempotente: OnClose la richiamera' come no-op.
         self._StopSingleInstanceServer()
 
-        # --- Avvia la nuova istanza ---
-        if wx.Platform == '__WXMSW__':
-            subprocess.Popen(cmd)
-        else:
-            # start_new_session=True: la nuova istanza viene detachata in una
-            # nuova sessione, cosi' sopravvive alla chiusura del processo
-            # corrente anche quando Songpress++ e' stato lanciato da un
-            # terminale (evita l'eventuale SIGHUP alla chiusura del padre).
-            subprocess.Popen(cmd, start_new_session=True)
+        # --- Avvia la nuova istanza (detachata dallo scope corrente) ---
+        self._SpawnDetached(cmd)
 
         wx.CallAfter(self.frame.Close)
+
+    def _SpawnDetached(self, cmd):
+        """Avvia *cmd* come processo indipendente che sopravvive alla chiusura
+        di Songpress++.
+
+        Su Windows: Popen normale.
+
+        Su Linux/macOS ci sono due scenari con esigenze OPPOSTE:
+
+        * Avvio dal MENU del desktop (KDE/GNOME): l'app non ha terminale di
+          controllo e gira come processo principale di uno *scope* systemd
+          transitorio (app-*.scope). setsid crea una nuova sessione ma NON
+          cambia il cgroup: la nuova istanza resta nello stesso scope della
+          vecchia e, quando questa esce e lo scope viene distrutto, systemd
+          uccide tutto cio' che resta nel cgroup — compresa la nuova istanza.
+          Qui serve avviarla in uno scope NUOVO e indipendente con
+          `systemd-run --user --scope`, che evade dal cgroup morente ed eredita
+          l'ambiente del chiamante (DISPLAY, WAYLAND_DISPLAY, DBUS…), quindi la
+          GUI parte regolarmente.
+
+        * Avvio da TERMINALE: l'app HA un terminale di controllo. Il semplice
+          setsid basta gia' (nessuno scope da distruggere) e passare da
+          systemd-run e' non solo inutile ma dannoso: dal terminale l'app puo'
+          avere argv[0]/cwd relativi e la nuova istanza non partirebbe. Quindi
+          in presenza di un tty usiamo il detach classico.
+
+        Discriminante affidabile fra i due casi: la presenza di un terminale di
+        controllo. Le GUI lanciate dal menu non ne hanno uno; quelle da shell
+        si'. Fallback al detach classico se systemd-run manca o fallisce.
+        """
+        import shutil
+
+        if wx.Platform == '__WXMSW__':
+            subprocess.Popen(cmd)
+            return
+
+        # --- Linux / macOS ---
+        # systemd-run SOLO per l'avvio da menu (nessun tty): e' il caso che
+        # provoca il bug. Con un tty (avvio da terminale) usa il detach classico.
+        if not self._HasControllingTty():
+            xdg = os.environ.get('XDG_RUNTIME_DIR', '')
+            have_user_systemd = bool(xdg) and os.path.isdir(os.path.join(xdg, 'systemd'))
+            systemd_run = shutil.which('systemd-run') if have_user_systemd else None
+            if systemd_run:
+                scope_cmd = [
+                    systemd_run, '--user', '--scope', '--quiet', '--collect', '--',
+                ] + cmd
+                try:
+                    # start_new_session: stacca systemd-run anche da noi; quando
+                    # usciamo viene reparentato all'init/user-manager e tiene in
+                    # vita il nuovo scope, indipendente da quello morente.
+                    subprocess.Popen(scope_cmd, start_new_session=True)
+                    return
+                except Exception:
+                    pass  # fallback qui sotto
+
+        # Detach classico: caso terminale, e fallback ovunque manchi systemd-run
+        # o non ci sia uno scope systemd da cui evadere.
+        subprocess.Popen(cmd, start_new_session=True)
+
+    @staticmethod
+    def _HasControllingTty():
+        """True se il processo e' collegato a un terminale (avvio da shell).
+
+        Le applicazioni lanciate dal menu del desktop hanno stdin/stdout/stderr
+        collegati al journal o a /dev/null, non a un tty: quindi qui torna False
+        e riconosciamo l'avvio da menu. Da terminale almeno uno dei tre fd e' un
+        tty e torna True.
+        """
+        for fd in (0, 1, 2):
+            try:
+                if os.isatty(fd):
+                    return True
+            except OSError:
+                pass
+        return False
 
     def _SaveTempoDisplay(self):
         """Salva le modalità di visualizzazione di tempo, misura e tonalità nel config."""
