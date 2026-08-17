@@ -1239,7 +1239,34 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             # --- 2/3. Modalita' sviluppo (Thonny, uv run, python -m) ---
             cmd = [sys.executable] + sys.argv
 
-        subprocess.Popen(cmd)
+        # --- Rilascia il server single-instance PRIMA di avviare la nuova
+        #     istanza -------------------------------------------------------
+        # Il controllo di istanza singola e' un server socket in ascolto su
+        # 127.0.0.1:47833 (vedi SDIMainFrame). Al riavvio la nuova istanza fa
+        # _TrySendToExistingInstance('__RAISE__'): se il vecchio server e'
+        # ancora in ascolto quando la nuova istanza controlla, la trova
+        # occupata, considera Songpress++ gia' in esecuzione, inoltra
+        # '__RAISE__' ed esce subito (sys.exit(0)) senza aprire nulla. Poi la
+        # vecchia si chiude -> nessuna finestra riaperta.
+        #
+        # Chiudiamo quindi il server QUI, in modo sincrono nel processo
+        # corrente, cosi' la porta 47833 e' gia' libera quando la nuova istanza
+        # esegue il proprio controllo. Elimina la race condition su tutte le
+        # piattaforme senza dipendere dai tempi. SO_REUSEADDR sul bind della
+        # nuova istanza gestisce l'eventuale stato TIME_WAIT della porta.
+        # La chiamata e' idempotente: OnClose la richiamera' come no-op.
+        self._StopSingleInstanceServer()
+
+        # --- Avvia la nuova istanza ---
+        if wx.Platform == '__WXMSW__':
+            subprocess.Popen(cmd)
+        else:
+            # start_new_session=True: la nuova istanza viene detachata in una
+            # nuova sessione, cosi' sopravvive alla chiusura del processo
+            # corrente anche quando Songpress++ e' stato lanciato da un
+            # terminale (evita l'eventuale SIGHUP alla chiusura del padre).
+            subprocess.Popen(cmd, start_new_session=True)
+
         wx.CallAfter(self.frame.Close)
 
     def _SaveTempoDisplay(self):

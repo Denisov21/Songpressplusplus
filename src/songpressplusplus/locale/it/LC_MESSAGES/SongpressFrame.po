@@ -1383,3 +1383,7 @@ msgstr "Riga"
 #: SongpressFrame.py — keyboard note ordering option
 msgid "Order notes as on the keyboard (left to right)"
 msgstr "Ordina le note come sulla tastiera (da sinistra a destra)"
+
+#: SongpressFrame.py — dependencies dialog "Note" column
+msgid "Spell checker"
+msgstr "Controllo ortografico"
