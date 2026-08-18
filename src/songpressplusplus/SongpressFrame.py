@@ -1237,7 +1237,16 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             cmd = [installed_exe]
         else:
             # --- 2/3. Modalita' sviluppo (Thonny, uv run, python -m) ---
-            cmd = [sys.executable] + sys.argv
+            argv = list(sys.argv)
+            # Rendi assoluto argv[0] se e' un file relativo: il comando di
+            # riavvio non deve dipendere dal cwd. Serve in particolare quando la
+            # nuova istanza parte dal ramo systemd-run (avvio detachato senza
+            # tty, es. `songpress++ >log 2>&1 </dev/null &`), dove il cwd non e'
+            # garantito. Se argv[0] non e' un file su disco (es. nome di modulo)
+            # viene lasciato invariato.
+            if argv and os.path.isfile(argv[0]):
+                argv[0] = os.path.abspath(argv[0])
+            cmd = [sys.executable] + argv
 
         # --- Rilascia il server single-instance PRIMA di avviare la nuova
         #     istanza -------------------------------------------------------

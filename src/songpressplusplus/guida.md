@@ -1511,7 +1511,18 @@ Si apre da **Strumenti → Opzioni…** (titolo della finestra: *Opzioni Songpre
 | **OK** | Salva tutte le preferenze (`Preferences.Save()`) e chiude la finestra. |
 | **Annulla** | Chiude senza salvare. Le anteprime interattive (colori sintassi, sfondo editor…) vengono comunque scartate. |
 
-> **Riavvio** — Cambiare la **lingua dell'interfaccia** è l'unica opzione che richiede il riavvio. Alla conferma appare un messaggio con due pulsanti: **OK** (applica al prossimo avvio) e **Riavvia ora** (riavvia subito Songpress++). Tutte le altre opzioni hanno effetto immediato.
+> **Riavvio di Songpress++** — Alcune impostazioni hanno effetto solo dopo il riavvio; in pratica l'unica è la **lingua dell'interfaccia**. Songpress++ è in grado di riavviarsi da solo: salva le preferenze, chiude la finestra corrente e si riapre automaticamente. Ci sono due modi per avviarlo:
+>
+> - **Cambio lingua.** Quando si sceglie una lingua diversa (campo **Lingua**, gruppo *Canzone* qui sotto) e si conferma, appare un messaggio con due pulsanti: **OK** (la nuova lingua verrà applicata al prossimo avvio) e **Riavvia ora** (riavvia subito Songpress++, applicando immediatamente la lingua).
+> - **Menu File → «Riavvia Songpress++».** Voce di riavvio rapido, disponibile in qualsiasi momento senza dover chiudere e riaprire a mano (si può mostrare/nascondere dal gruppo *Generale* qui sotto).
+>
+> Il riavvio automatico funziona sia che Songpress++ sia stato avviato dal menu del desktop, sia da terminale. Tutte le altre opzioni hanno effetto immediato, senza riavvio.
+
+> **Nota tecnica (Linux) — come avviene il riavvio automatico.** Per far sopravvivere la nuova istanza alla chiusura di quella vecchia, Songpress++ sceglie il metodo di avvio in base a *come* è stato lanciato, distinguendo i casi dalla presenza di un terminale di controllo (tty):
+>
+> - **Menu del desktop (KDE/GNOME, nessun tty)** — l'app gira in uno *scope* systemd transitorio che verrebbe distrutto alla sua uscita, uccidendo il processo figlio; la nuova istanza viene quindi avviata in uno scope nuovo e indipendente con `systemd-run --user --scope` (e con `argv[0]` reso assoluto). → riapre.
+> - **Terminale interattivo (tty)** — basta il detach classico (`setsid`, cioè `start_new_session`): non c'è alcuno scope da distruggere. → riapre come prima.
+> - **Terminale con flussi rediretti** (es. `songpress++ >log 2>&1 </dev/null &`, nessun tty) — si usa il ramo `systemd-run`; grazie ad `argv[0]` assoluto il riavvio regge anche se la directory di lavoro cambia.
 
 ---
 
@@ -1535,7 +1546,7 @@ Si apre da **Strumenti → Opzioni…** (titolo della finestra: *Opzioni Songpre
 | **Abilita intellisense direttive (Ctrl+Spazio)** | ✓ | Attiva il completamento automatico delle direttive ChordPro nell'editor. |
 | **Abilita multicursore (Alt+Clic, Ctrl+D)** | ☐ | Alt+Clic aggiunge un cursore; Ctrl+D seleziona l'occorrenza successiva della parola corrente. |
 | **Istanza singola: apri i file nella finestra esistente** | ✓ | I file aperti da Esplora risorse o da riga di comando riutilizzano la finestra già aperta. Vedi il capitolo *Modalità istanza singola*. |
-| **Mostra «Riavvia Songpress++» nel menu File** | ✓ | Aggiunge la voce di riavvio rapido al menu File. |
+| **Mostra «Riavvia Songpress++» nel menu File** | ✓ | Aggiunge al menu **File** la voce **Riavvia Songpress++**, per un riavvio rapido senza chiudere e riaprire a mano (vedi il riquadro *Riavvio di Songpress++* più sopra). |
 | **Mostra messaggi di debug (percorso salvataggio temi)** | ☐ | Mostra popup diagnostici (es. il percorso in cui viene salvato un tema). Utile solo per diagnosi. |
 | **Salva dimensione e posizione della finestra all'uscita** | ✓ | Ripristina geometria della finestra al successivo avvio. |
 | **Sostituisci gli spazi con «_» nei nomi dei file salvati** | ☐ | Gli spazi nel nome del file (non nel percorso) diventano underscore in salvataggio ed esportazione. |

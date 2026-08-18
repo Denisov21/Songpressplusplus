@@ -1511,7 +1511,18 @@ Opened from **Tools → Options…** (window title: *Songpress++ options*). It i
 | **OK** | Saves all preferences (`Preferences.Save()`) and closes the window. |
 | **Cancel** | Closes without saving. Interactive previews (syntax colours, editor background…) are discarded. |
 
-> **Restart** — Changing the **interface language** is the only option that requires a restart. On confirmation a message appears with two buttons: **OK** (applied at next launch) and **Restart now** (restarts Songpress++ immediately). Every other option takes effect at once.
+> **Restarting Songpress++** — Some settings only take effect after a restart; in practice the only one is the **interface language**. Songpress++ can restart itself: it saves the preferences, closes the current window and reopens automatically. There are two ways to trigger it:
+>
+> - **Language change.** When you pick a different language (**Language** field, *Song* group below) and confirm, a message appears with two buttons: **OK** (the new language is applied at the next launch) and **Restart now** (restarts Songpress++ immediately, applying the language right away).
+> - **File menu → 'Restart Songpress++'.** A quick-restart item, available at any time without having to close and reopen the app manually (it can be shown/hidden from the *General* group below).
+>
+> The automatic restart works whether Songpress++ was launched from the desktop menu or from a terminal. Every other option takes effect at once, without a restart.
+
+> **Technical note (Linux) — how the automatic restart works.** To make the new instance survive the exit of the old one, Songpress++ picks the launch method based on *how* it was started, telling the cases apart by the presence of a controlling terminal (tty):
+>
+> - **Desktop menu (KDE/GNOME, no tty)** — the app runs inside a transient systemd *scope* that would be torn down on its exit, killing the child process; the new instance is therefore started in a fresh, independent scope with `systemd-run --user --scope` (and with `argv[0]` made absolute). → reopens.
+> - **Interactive terminal (tty)** — the classic detach is enough (`setsid`, i.e. `start_new_session`): there is no scope to tear down. → reopens as before.
+> - **Terminal with redirected streams** (e.g. `songpress++ >log 2>&1 </dev/null &`, no tty) — the `systemd-run` branch is used; thanks to the absolute `argv[0]` the restart holds even if the working directory changes.
 
 ---
 
@@ -1535,7 +1546,7 @@ Opened from **Tools → Options…** (window title: *Songpress++ options*). It i
 | **Enable directive intellisense (Ctrl+Space)** | ✓ | Auto-completion of ChordPro directives in the editor. |
 | **Enable multi-cursor (Alt+Click, Ctrl+D)** | ☐ | Alt+Click adds a cursor; Ctrl+D selects the next occurrence of the current word. |
 | **Single instance: open files in the existing window** | ✓ | Files opened from Explorer or the command line reuse the existing window. See *Single instance mode*. |
-| **Show 'Restart Songpress++' in the File menu** | ✓ | Adds a quick-restart item to the File menu. |
+| **Show 'Restart Songpress++' in the File menu** | ✓ | Adds a **Restart Songpress++** item to the **File** menu, for a quick restart without closing and reopening the app manually (see the *Restarting Songpress++* box above). |
 | **Show debug messages (theme save path)** | ☐ | Shows diagnostic popups (e.g. where a theme file was written). Troubleshooting only. |
 | **Save window size and position on exit** | ✓ | Restores the window geometry at the next launch. |
 | **Replace spaces with '_' in saved file names** | ☐ | Whitespace in the file name (not the folder path) becomes an underscore when saving or exporting. |
