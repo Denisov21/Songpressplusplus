@@ -70,6 +70,8 @@ $Deps = @(
     'markdown>=3.4,<4.0.0'
     'mistune>=3.0.0,<4.0.0'
     'pywin32>=308'
+    'pyenchant>=3.2.0,<4.0.0'
+
 )
 
 & $Python -m pip install --upgrade pip --quiet
