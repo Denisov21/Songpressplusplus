@@ -139,6 +139,44 @@ In caso di dipendenze mancanti:
 sudo apt-get install -f
 ```
 
+> **✅ Oppure, con barra di avanzamento.** Installando con `apt` invece di
+> `dpkg` viene mostrata una barra di avanzamento durante l'installazione e le
+> dipendenze vengono risolte in automatico (così il passo separato
+> `apt-get install -f` non serve):
+>
+> ```bash
+> sudo apt install "build_deb/songpressplusplus_8.0.2_all.deb"
+> ```
+>
+> Il percorso contiene una `/`, quindi `apt` lo riconosce come file locale e non
+> come nome di pacchetto da cercare nei repository. Se non sei nella cartella del
+> `.deb`, passa il percorso completo.
+
+> **🔎 Quale dei due metodi scegliere?** I due comandi lavorano a livelli
+> diversi: `dpkg` è lo strumento di **basso livello** (installa il singolo `.deb`
+> e basta, **senza** risolvere le dipendenze), mentre `apt` è quello di **alto
+> livello** (installa il `.deb` **e** scarica dai repository le dipendenze
+> mancanti).
+>
+> **`dpkg -i` + `apt-get install -f`**
+> - ✔ Massimo controllo e trasparenza: `dpkg` installa in modo deterministico
+>   proprio quel file, e la fase di scompattamento funziona anche offline.
+> - ✘ Sono **due passaggi**: se dimentichi `apt-get install -f` il pacchetto
+>   resta in stato incoerente (fra un comando e l'altro `dpkg` segnala errore, ed
+>   è normale). Nessuna barra di avanzamento.
+>
+> **`apt install "…deb"`**
+> - ✔ **Un solo comando**, dipendenze risolte in automatico (il passo
+>   `apt-get install -f` non serve) e barra di avanzamento; non lascia mai il
+>   sistema in stato incoerente.
+> - ✘ Richiede l'accesso ai repository e il percorso deve contenere una `/`
+>   (`./` o percorso completo), altrimenti `apt` cerca un pacchetto con quel nome.
+>
+> **Nota:** la scelta riguarda **solo** le dipendenze Debian dei repository. Le
+> due dipendenze solo-PyPI (`python-pptx`, `pyshortcuts`) sono gestite in
+> entrambi i casi dal `postinst`, che le scarica da PyPI: la connessione a
+> Internet serve comunque. Il risultato finale installato è identico.
+
 > **🌐 Serve una connessione a Internet.** Due dipendenze Python
 > (`python-pptx` e `pyshortcuts`) non esistono nei repository Debian e vengono
 > scaricate da PyPI durante l'installazione. Il `postinst` te lo segnala e
