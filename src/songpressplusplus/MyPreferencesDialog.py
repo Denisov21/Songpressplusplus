@@ -1908,12 +1908,20 @@ class MyPreferencesDialog(PreferencesDialog):
         l = self.GetLanguage()
         if l is not None and l != lang:
             msg = _("Language settings will be applied when you restart Songpress++.")
-            d = wx.MessageDialog(
+            # YES = riavvia ora, NO = riavvia più tardi (predefinito con NO_DEFAULT).
+            # SetEscapeId(wx.ID_NONE) fa ignorare del tutto la pressione di ESC,
+            # così l'utente deve scegliere esplicitamente uno dei due pulsanti.
+            # Serve la versione *generica* del dialogo: il MessageDialog nativo
+            # (GtkMessageDialog su KDE/GTK) non rispetta SetEscapeId, perché ESC
+            # lo gestisce direttamente GTK. GenericMessageDialog è una wx.Dialog
+            # vera e propria e onora ID_NONE.
+            d = wx.GenericMessageDialog(
                 self, msg, _("Songpress++"),
-                wx.OK | wx.CANCEL | wx.ICON_INFORMATION,
+                wx.YES_NO | wx.NO_DEFAULT | wx.ICON_INFORMATION,
             )
-            d.SetOKCancelLabels(_("OK"), _("Restart now"))
-            if d.ShowModal() == wx.ID_CANCEL:
+            d.SetEscapeId(wx.ID_NONE)
+            d.SetYesNoLabels(_("Restart now"), _("Restart later"))
+            if d.ShowModal() == wx.ID_YES:
                 self._restart_requested = True
         # Se il pin è attivo: applica il callback senza chiudere il dialogo
         if self._pinned:

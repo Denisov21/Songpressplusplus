@@ -72,20 +72,20 @@ Lo script esegue automaticamente:
 Al termine vedrai (il numero di versione mostrato è solo un **esempio**, dipende da quello in `pyproject.toml`):
 
 ```
-✅  Pacchetto creato: build_deb/songpressplusplus_8.0.1_all.deb
+✅  Pacchetto creato: build_deb/songpressplusplus_8.0.2_all.deb
 ```
 
 ### Struttura della cartella `build_deb/`
 
 Al termine della build, la cartella `build_deb/` contiene i due file di
 documentazione (questa guida e la sua versione inglese) più tre elementi
-generati (il numero di versione — qui `8.0.1` — dipende da `pyproject.toml`):
+generati (il numero di versione — qui `8.0.2` — dipende da `pyproject.toml`):
 
 ```
 build_deb/
 ├── INSTALLAZIONE_DEB.md              ← questa guida (italiano)
 ├── DEB_INSTALLATION.md               ← guida inglese
-├── songpressplusplus_8.0.1/          ← albero di staging del pacchetto
+├── songpressplusplus_8.0.2/          ← albero di staging del pacchetto
 │   ├── DEBIAN/                        ← metadati e script di manutenzione
 │   │   ├── control                    ← nome, versione, Depends, Maintainer…
 │   │   ├── preinst                    ← rimozione dei residui in /usr/local
@@ -96,8 +96,8 @@ build_deb/
 │       ├── lib/python3/dist-packages/songpressplusplus/   ← codice del programma
 │       └── share/                     ← .desktop, MIME, icone hicolor, metainfo
 ├── wheel/                            ← wheel Python intermedia (.whl)
-│   └── songpressplusplus-8.0.1-py3-none-any.whl
-└── songpressplusplus_8.0.1_all.deb   ← pacchetto finale da installare
+│   └── songpressplusplus-8.0.2-py3-none-any.whl
+└── songpressplusplus_8.0.2_all.deb   ← pacchetto finale da installare
 ```
 
 Cosa sono e a cosa servono:
@@ -127,10 +127,10 @@ Cosa sono e a cosa servono:
 
 ## Installazione del pacchetto `.deb`
 
-> **⚠️ Nota:** il numero di versione (`8.0.1`) è solo un **esempio** ed è **da verificare**: usa quello effettivamente prodotto dallo script, mostrato a schermo al termine della build.
+> **⚠️ Nota:** il numero di versione (`8.0.2`) è solo un **esempio** ed è **da verificare**: usa quello effettivamente prodotto dallo script, mostrato a schermo al termine della build.
 
 ```bash
-sudo dpkg -i "build_deb/songpressplusplus_8.0.1_all.deb"
+sudo dpkg -i "build_deb/songpressplusplus_8.0.2_all.deb"
 ```
 
 In caso di dipendenze mancanti:
@@ -230,10 +230,10 @@ Dopodiché, in Dolphin: tasto destro sul `.deb` → _Apri con…_ → scegli "Pr
 > **✅ In alternativa (più robusto): `apt` da terminale.** Usa `apt` invece di `dpkg`, così risolve automaticamente le dipendenze dai repository:
 >
 > ```bash
-> sudo apt install ./songpressplusplus_8.0.1_all.deb
+> sudo apt install ./songpressplusplus_8.0.2_all.deb
 > ```
 >
-> Il prefisso `./` (o un percorso completo) è **obbligatorio**: senza almeno una `/` nel nome, `apt` interpreta l'argomento come il nome di un pacchetto da cercare nei repository e restituisce "impossibile trovare il pacchetto". Se non sei nella cartella del `.deb`, passa il percorso completo, ad esempio `sudo apt install ~/…/build_deb/songpressplusplus_8.0.1_all.deb`.
+> Il prefisso `./` (o un percorso completo) è **obbligatorio**: senza almeno una `/` nel nome, `apt` interpreta l'argomento come il nome di un pacchetto da cercare nei repository e restituisce "impossibile trovare il pacchetto". Se non sei nella cartella del `.deb`, passa il percorso completo, ad esempio `sudo apt install ~/…/build_deb/songpressplusplus_8.0.2_all.deb`.
 
 ---
 
@@ -243,7 +243,7 @@ Dopodiché, in Dolphin: tasto destro sul `.deb` → _Apri con…_ → scegli "Pr
 
 ```toml
 [project]
-version = "8.0.1"   # ← modifica questo numero
+version = "8.0.2"   # ← modifica questo numero
 ```
 
 ### 2. Rimuovi la versione installata, ricostruisci e reinstalla
@@ -257,7 +257,7 @@ Al termine dello script, `build_deb/` conterrà il nuovo `.deb` con il numero
 di versione aggiornato. Installalo con il comando suggerito a schermo, ad esempio:
 
 ```bash
-sudo dpkg -i "build_deb/songpressplusplus_8.0.1_all.deb"
+sudo dpkg -i "build_deb/songpressplusplus_8.0.2_all.deb"
 ```
 
 > **Suggerimento:** non è necessario ricordare il numero di versione esatto —

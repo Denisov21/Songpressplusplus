@@ -72,20 +72,20 @@ The script automatically performs the following steps:
 When done, you will see (the version number shown is only an **example** — it depends on the one in `pyproject.toml`):
 
 ```
-✅  Pacchetto creato: build_deb/songpressplusplus_8.0.1_all.deb
+✅  Pacchetto creato: build_deb/songpressplusplus_8.0.2_all.deb
 ```
 
 ### Structure of the `build_deb/` folder
 
 When the build finishes, the `build_deb/` folder contains the two documentation
 files (this guide and its Italian counterpart) plus three generated items (the
-version number — `8.0.1` here — depends on `pyproject.toml`):
+version number — `8.0.2` here — depends on `pyproject.toml`):
 
 ```
 build_deb/
 ├── DEB_INSTALLATION.md               ← this guide (English)
 ├── INSTALLAZIONE_DEB.md              ← Italian guide
-├── songpressplusplus_8.0.1/          ← package staging tree
+├── songpressplusplus_8.0.2/          ← package staging tree
 │   ├── DEBIAN/                        ← metadata and maintainer scripts
 │   │   ├── control                    ← name, version, Depends, Maintainer…
 │   │   ├── preinst                    ← removes /usr/local leftovers
@@ -96,8 +96,8 @@ build_deb/
 │       ├── lib/python3/dist-packages/songpressplusplus/   ← program code
 │       └── share/                     ← .desktop, MIME, hicolor icons, metainfo
 ├── wheel/                            ← intermediate Python wheel (.whl)
-│   └── songpressplusplus-8.0.1-py3-none-any.whl
-└── songpressplusplus_8.0.1_all.deb   ← final package to install
+│   └── songpressplusplus-8.0.2-py3-none-any.whl
+└── songpressplusplus_8.0.2_all.deb   ← final package to install
 ```
 
 What they are and what they are for:
@@ -126,10 +126,10 @@ What they are and what they are for:
 
 ## Installing the `.deb` package
 
-> **⚠️ Note:** the version number (`8.0.1`) is only an **example** and **must be verified**: use the one actually produced by the script, shown on screen at the end of the build.
+> **⚠️ Note:** the version number (`8.0.2`) is only an **example** and **must be verified**: use the one actually produced by the script, shown on screen at the end of the build.
 
 ```bash
-sudo dpkg -i "build_deb/songpressplusplus_8.0.1_all.deb"
+sudo dpkg -i "build_deb/songpressplusplus_8.0.2_all.deb"
 ```
 
 If any dependencies are missing:
@@ -226,10 +226,10 @@ Then, in Dolphin: right-click the `.deb` → _Open With…_ → choose "GDebi Pa
 > **✅ Alternatively (more robust): `apt` from the terminal.** Use `apt` instead of `dpkg`, so it resolves dependencies automatically from the repositories:
 >
 > ```bash
-> sudo apt install ./songpressplusplus_8.0.1_all.deb
+> sudo apt install ./songpressplusplus_8.0.2_all.deb
 > ```
 >
-> The `./` prefix (or a full path) is **mandatory**: without at least one `/` in the name, `apt` treats the argument as the name of a package to look up in the repositories and returns "unable to locate package". If you are not in the `.deb`'s folder, pass the full path, e.g. `sudo apt install ~/…/build_deb/songpressplusplus_8.0.1_all.deb`.
+> The `./` prefix (or a full path) is **mandatory**: without at least one `/` in the name, `apt` treats the argument as the name of a package to look up in the repositories and returns "unable to locate package". If you are not in the `.deb`'s folder, pass the full path, e.g. `sudo apt install ~/…/build_deb/songpressplusplus_8.0.2_all.deb`.
 
 ---
 
@@ -239,7 +239,7 @@ Then, in Dolphin: right-click the `.deb` → _Open With…_ → choose "GDebi Pa
 
 ```toml
 [project]
-version = "8.0.1"   # ← change this number
+version = "8.0.2"   # ← change this number
 ```
 
 ### 2. Remove the installed version, rebuild and reinstall
@@ -253,7 +253,7 @@ When the script finishes, `build_deb/` will contain the new `.deb` with the
 updated version number. Install it using the command printed by the script, for example:
 
 ```bash
-sudo dpkg -i "build_deb/songpressplusplus_8.0.1_all.deb"
+sudo dpkg -i "build_deb/songpressplusplus_8.0.2_all.deb"
 ```
 
 > **Tip:** you don't need to remember the exact version number — you can use

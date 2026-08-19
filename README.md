@@ -67,6 +67,21 @@ In summary: `Avvio SONGPRESS2.vbs` is the development/debug version, `Avvio SONG
 > `postinst`, installs the system-wide Python dependencies. **Building** the
 > `.deb` with `build_deb.sh`, by contrast, does not require root.
 
+> **ℹ️ No compilation, but Internet is required in both phases.** On Linux the
+> only installation method is the `.deb` package, and wxPython is **never
+> compiled**: it uses the **system** wxPython (`python3-wxgtk4.0`, resolved
+> automatically by `apt`). An Internet connection is nonetheless required in
+> **both phases**:
+> - **Building the `.deb`** (`build_deb.sh`): `pip` downloads `hatchling` and the
+>   build dependencies from PyPI to build Songpress++'s pure-Python wheel only
+>   (not wxPython/wxWidgets).
+> - **Installing the `.deb`**: `postinst` downloads two pure-Python dependencies
+>   missing from the Debian repositories (`python-pptx`, `pyshortcuts`) from
+>   PyPI, and `apt` resolves the system ones (wxPython included).
+>
+> Neither phase compiles wxPython/wxWidgets. Requirement: **Python ≥ 3.12**
+> (declared in the `.deb`'s `Depends`, so `apt` verifies it automatically).
+
 ### Prerequisites
 
 Make sure the following packages are installed on your system:
@@ -95,6 +110,13 @@ sudo apt install python3 python3-pip python3-venv fakeroot dpkg imagemagick
 ### Building the .deb package
 
 The `build_deb.sh` script is located in the project root, next to `pyproject.toml`.
+
+> **🌐 An Internet connection is required.** Building the `.deb` downloads
+> `hatchling` and the build dependencies from PyPI via `pip` to build
+> Songpress++'s pure-Python wheel (wxPython is **not** touched here: it comes
+> from `apt` at install time). The script warns you and asks for confirmation
+> before starting; the prompt can be skipped with `-y`/`--yes` or
+> `SPP_ASSUME_YES=1` (useful in CI).
 
 #### 1. Enter the project folder
 
@@ -134,17 +156,17 @@ The script automatically performs the following steps:
 When done, you will see (the version number shown is only an **example** — it depends on the one in `pyproject.toml`):
 
 ```
-✅  Pacchetto creato: build_deb/songpressplusplus_8.0.1_all.deb
+✅  Pacchetto creato: build_deb/songpressplusplus_8.0.2_all.deb
 ```
 
 ---
 
 ### Installing the .deb package
 
-> **⚠️ Note:** the version number (`7.0.2`) is only an **example** and **must be verified**: use the one actually produced by the script, shown on screen at the end of the build.
+> **⚠️ Note:** the version number (`8.0.2`) is only an **example** and **must be verified**: use the one actually produced by the script, shown on screen at the end of the build.
 
 ```bash
-sudo dpkg -i "build_deb/songpressplusplus_8.0.1_all.deb"
+sudo dpkg -i "build_deb/songpressplusplus_8.0.2_all.deb"
 ```
 
 If any dependencies are missing:
@@ -152,6 +174,14 @@ If any dependencies are missing:
 ```bash
 sudo apt-get install -f
 ```
+
+> **✅ Or, with a progress bar.** Installing with `apt` instead of `dpkg` shows
+> a progress bar during installation and resolves dependencies automatically
+> (so the separate `apt-get install -f` step is not needed):
+>
+> ```bash
+> sudo apt install "build_deb/songpressplusplus_8.0.2_all.deb"
+> ```
 
 > **🌐 An Internet connection is required.** Two Python dependencies
 > (`python-pptx` and `pyshortcuts`) are not packaged in the Debian repositories
@@ -218,6 +248,14 @@ and the executable into `/usr/bin/SongpressPlusPlus`.
 
 Double-clicking a `.deb` file in a desktop environment (e.g. KDE Plasma) normally opens **Discover**. However, Discover's PackageKit backend handles **local** `.deb` files poorly when they have external dependencies and a `postinst` that downloads packages from PyPI/apt (like this one): it often fails to resolve the package's `Depends:`, so the installation stops halfway or does not start at all.
 
+> **🌐 An Internet connection is required for the graphical install too.**
+> Whatever tool you use (GDebi, Discover), installation runs the same
+> `postinst`, which downloads the pure-Python dependencies (`python-pptx`,
+> `pyshortcuts`) from PyPI, while `apt` resolves the system ones (wxPython
+> included). In a GUI the confirmation prompt **does not appear**
+> (non-interactive frontend): the download starts automatically. Without a
+> network the app may not start.
+
 For a reliable graphical installation, use a **dedicated installer** that resolves dependencies. On Debian 13 (trixie) the package is **`gdebi`** (the GUI; `gdebi-core` is the command-line version only):
 
 ```bash
@@ -233,10 +271,10 @@ Then, in Dolphin: right-click the `.deb` → _Open With…_ → choose "GDebi Pa
 > **✅ Alternatively (more robust): `apt` from the terminal.** Use `apt` instead of `dpkg`, so it resolves dependencies automatically from the repositories:
 >
 > ```bash
-> sudo apt install ./songpressplusplus_8.0.1_all.deb
+> sudo apt install ./songpressplusplus_8.0.2_all.deb
 > ```
 >
-> The `./` prefix (or a full path) is **mandatory**: without at least one `/` in the name, `apt` treats the argument as the name of a package to look up in the repositories and returns "unable to locate package". If you are not in the `.deb`'s folder, pass the full path, e.g. `sudo apt install ~/…/build_deb/songpressplusplus_8.0.1_all.deb`.
+> The `./` prefix (or a full path) is **mandatory**: without at least one `/` in the name, `apt` treats the argument as the name of a package to look up in the repositories and returns "unable to locate package". If you are not in the `.deb`'s folder, pass the full path, e.g. `sudo apt install ~/…/build_deb/songpressplusplus_8.0.2_all.deb`.
 
 > **ℹ️ "Unknown author" and "License: Unknown" in Discover.** Discover takes the "Author" and "License" fields from **AppStream** metadata (`metainfo.xml`), not from `DEBIAN/control` (which has no license field and only a `Maintainer`). Two consequences follow:
 >
@@ -272,7 +310,7 @@ Then, in Dolphin: right-click the `.deb` → _Open With…_ → choose "GDebi Pa
 
 ```toml
 [project]
-version = "8.0.1"   # ← change this number
+version = "8.0.2"   # ← change this number
 ```
 
 #### 2. Remove the installed version, rebuild and reinstall
@@ -286,7 +324,7 @@ When the script finishes, `build_deb/` will contain the new `.deb` with the
 updated version number. Install it using the command printed by the script, for example:
 
 ```bash
-sudo dpkg -i "build_deb/songpressplusplus_8.0.1_all.deb"
+sudo dpkg -i "build_deb/songpressplusplus_8.0.2_all.deb"
 ```
 
 > **Tip:** you don't need to remember the exact version number —
@@ -320,7 +358,7 @@ songpressplusplus
 > The installed wrapper automatically sets `GDK_BACKEND=x11` to ensure
 > compatibility with wxPython on Wayland systems. No manual configuration is needed.
 >
-> The wrapper also filters four known, harmless GTK/wx messages out of the
+> The wrapper also filters five known, harmless GTK/wx messages out of the
 > console (see "Linux technical notes"). The filter is targeted: errors,
 > exceptions and Python tracebacks are **always** shown. To disable it and see
 > the raw output:
@@ -336,6 +374,7 @@ songpressplusplus
 - Tested on **Debian 13 / Ubuntu 24.04** with Python 3.13 and wxPython 4.2.3 GTK3
 - GTK console messages (`gtk_image_menu_item_set_image`, `invalid cast from 'GtkMenuItem'`, `ScreenToClient cannot work...`) are harmless and do not indicate errors. The root cause is fixed by **Patch 11** (see `patch_debian.md`), which calls `SetBitmap()` before `Append()` as required by the wxWidgets documentation; the wrapper filters them anyway as a safety net for cases the patch does not reach. No other message is hidden
 - The `gtk_combo_box_text_insert ... GTK_IS_COMBO_BOX_TEXT` critical appears **only on exit**: wxGTK repopulates/destroys a `ComboBox` while the underlying GTK widget is already being torn down, so it is no longer a valid combo. It is harmless (the app is quitting) and is filtered by the wrapper as well. With `SONGPRESS_VERBOSE=1` you can still see it, useful for debugging
+- The `for_size smaller than min-size (29 < 30) ... owner GtkSpinButton` warning is a **layout-measurement** message: the `entry` node of the `GtkSpinButton` (the `wxSpinCtrl` widgets) has a `min-height` of 30px in the Breeze-GTK theme but is allocated 29px. The 1px discrepancy is purely cosmetic — the widget is drawn correctly — and depends on the theme/display scaling, not on the code. Filtered by the wrapper; visible again with `SONGPRESS_VERBOSE=1`
 - On Wayland systems, the program automatically uses the X11 backend via XWayland
 - On Wayland, **Copy as image** uses `wl-copy` (from the `wl-clipboard` package) to place the image on the clipboard, because wxGTK's own clipboard only advertises text formats on Wayland. The package is a `Recommends` of the `.deb`; if it is missing, the program shows a message explaining how to install it.
 

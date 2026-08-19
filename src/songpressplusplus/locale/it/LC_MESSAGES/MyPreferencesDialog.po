@@ -169,6 +169,10 @@ msgid "Restart now"
 msgstr "Riavvia ora"
 
 #: MyPreferencesDialog.py
+msgid "Restart later"
+msgstr "Riavvia più tardi"
+
+#: MyPreferencesDialog.py
 msgid "OK"
 msgstr "OK"
 

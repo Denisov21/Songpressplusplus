@@ -131,7 +131,7 @@ l'estrazione `Songpress++.exe` si trova dentro una sottocartella
 
 ```
 dist/
-└── Songpress++-8.0.1-portable.zip   ← estrai e distribuisci
+└── Songpress++-8.0.2-portable.zip   ← estrai e distribuisci
     └── exe.win-amd64-3.12/          ← livello intermedio creato da Compress-Archive
         ├── Songpress++.exe
         ├── python3xx.dll
@@ -195,7 +195,7 @@ La versione nel nome del ZIP viene letta automaticamente da `pyproject.toml`:
 
 ```toml
 [project]
-version = "8.0.1"   ← aggiorna qui, il resto è automatico
+version = "8.0.2"   ← aggiorna qui, il resto è automatico
 ```
 
 ---
@@ -228,13 +228,13 @@ Utile per generare uno ZIP al volo, ad esempio per provare una modifica.
 
 ### Avvio automatico su tag di versione (`v*`)
 
-Quando pubblichi un tag che inizia con `v` (es. `v8.0.1`), il workflow parte da
+Quando pubblichi un tag che inizia con `v` (es. `v8.0.2`), il workflow parte da
 solo, costruisce lo ZIP e **lo allega automaticamente alla Release** di GitHub
 corrispondente:
 
 ```bash
-git tag v8.0.1
-git push origin v8.0.1
+git tag v8.0.2
+git push origin v8.0.2
 ```
 
 > **⚠️ Nota:** il numero di versione del tag dovrebbe coincidere con quello in

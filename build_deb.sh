@@ -1411,10 +1411,16 @@ fi
 #     chiusura dell'app: wxGTK ripopola/distrugge un ComboBox mentre il widget
 #     GTK sottostante è già in fase di teardown, quindi non è più un combo
 #     valido. È innocuo (l'app sta uscendo) e appare una sola volta all'uscita.
+#  5) for_size smaller than min-size ... owner GtkSpinButton → avviso di
+#     misurazione del layout: il nodo "entry" del GtkSpinButton (i wxSpinCtrl)
+#     ha min-height 30px nel tema Breeze-GTK ma riceve 29px. Discrepanza di 1px,
+#     puramente cosmetica: il widget viene disegnato correttamente. Dipende dal
+#     tema/scaling, non dal codice.
 SPP_NOISE='gtk_image_menu_item_set_image'
 SPP_NOISE="\$SPP_NOISE|invalid cast from .GtkMenuItem. to .GtkImageMenuItem."
 SPP_NOISE="\$SPP_NOISE|ScreenToClient cannot work when toplevel window is not shown"
 SPP_NOISE="\$SPP_NOISE|gtk_combo_box_text_insert"
+SPP_NOISE="\$SPP_NOISE|for_size smaller than min-size"
 
 exec 2> >(grep --line-buffered -v -E "\$SPP_NOISE" >&2)
 exec ${INSTALLED_BIN_DIR}/SongpressPlusPlus_bin "\$@"
@@ -1456,6 +1462,10 @@ bmsg "$PKG  To install it:" \
      "$PKG  Per installarlo:"
 echo "   sudo dpkg -i \"$DEB_FILE\""
 echo "   sudo apt-get install -f"
+echo ""
+bmsg "$PKG  Or, with a progress bar (also resolves dependencies automatically):" \
+     "$PKG  Oppure, con barra di avanzamento (risolve anche le dipendenze da sola):"
+echo "   sudo apt install \"$DEB_FILE\""
 echo ""
 bmsg "$NET  NOTE: installation requires an Internet connection." \
      "$NET  NOTA: l'installazione richiede una connessione a Internet."
