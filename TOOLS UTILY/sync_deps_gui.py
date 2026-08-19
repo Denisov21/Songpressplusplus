@@ -58,11 +58,16 @@ ABOUT_DESCRIPTION = (
     "\n"
     "Guida rapida:\n"
     "  1. Indica la Cartella progetto (o lascia quella corrente): "
-    "pyproject.toml e i due target vengono trovati in automatico.\n"
+    "pyproject.toml e i due target vengono trovati in automatico e un "
+    "messaggio nel log indica quali file sono stati trovati o mancano.\n"
     "  2. Spunta i target da aggiornare.\n"
     "  3. Usa \u201cSolo anteprima\u201d per vedere le modifiche senza "
     "scrivere.\n"
     "  4. Premi Sincronizza; il log mostra cosa è stato cambiato.\n"
+    "\n"
+    "\u201cMostra differenze\u201d confronta le versioni delle dipendenze tra\n"
+    "pyproject.toml e Build-Portable.ps1 senza scrivere nulla (le voci extra\n"
+    "del PS1, es. cx_Freeze, sono segnalate come \u201csolo in PS1\u201d).\n"
     "\n"
     "Marker di piattaforma (es. pywin32; sys_platform=='win32') vengono\n"
     "valutati: le voci non-Windows sono escluse da VBS e PS1."
@@ -365,6 +370,112 @@ def run_sync(toml_path, targets, preview=False):
     return log
 
 
+def diff_ps1_versions(toml_path, ps1_path):
+    """
+    Confronta le versioni delle dipendenze tra pyproject.toml e l'array
+    $Deps di Build-Portable.ps1 (i marker vengono valutati per Windows, come
+    fa la sincronizzazione). Non modifica nulla: restituisce solo righe di log.
+
+    Per ogni dipendenza segnala uno di questi stati:
+      - coincide          : stessa specifica in entrambi
+      - diversa           : specifica differente (mostra pyproject | PS1)
+      - solo in pyproject : presente in pyproject ma assente dal PS1
+      - solo in PS1       : voce extra del PS1 (es. cx_Freeze), non in pyproject
+      - marker non-Windows: esclusa su Windows dal marker di pyproject
+    """
+    log = []
+    _version, raw_deps = load_pyproject(toml_path)
+
+    # pyproject: nome normalizzato -> spec Windows (marker rimosso) o None se
+    # esclusa su Windows; disp conserva il nome con il case originale.
+    pyproj = {}
+    disp = {}
+    order = []
+    for d in raw_deps:
+        parsed = split_requirement(d)
+        if parsed is None:
+            continue
+        n = dep_name(d)
+        pyproj[n] = windows_spec(parsed)
+        disp[n] = parsed["name"]
+        order.append(n)
+
+    # PS1: estrae l'array $Deps = @( '...' '...' ) e mappa nome -> voce.
+    ps1_text = Path(ps1_path).read_text(encoding="utf-8")
+    m = re.search(r'\$Deps\s*=\s*@\((.*?)\n[ \t]*\)', ps1_text, re.DOTALL)
+    if not m:
+        return ["Errore: blocco '$Deps = @(...)' non trovato in "
+                "Build-Portable.ps1."]
+    ps1_entries = [e.strip() for e in re.findall(r"'([^']*)'", m.group(1))]
+    ps1_map = {dep_name(e): e for e in ps1_entries}
+    for e in ps1_entries:
+        n = dep_name(e)
+        if n not in disp:
+            p = split_requirement(e)
+            disp[n] = p["name"] if p else e
+
+    log.append(f"pyproject          : {toml_path}")
+    log.append(f"Build-Portable.ps1 : {ps1_path}")
+    log.append("Confronto versioni dipendenze (marker valutati per Windows)")
+    log.append("")
+
+    n_equal = n_diff = n_only_py = n_only_ps1 = n_excluded = 0
+
+    # ordine: prima le dipendenze di pyproject, poi le voci extra del PS1.
+    names = list(order)
+    for n in ps1_map:
+        if n not in pyproj:
+            names.append(n)
+
+    ABSENT = object()
+    for n in names:
+        py_spec = pyproj.get(n, ABSENT)
+        ps1_entry = ps1_map.get(n)
+        name = disp.get(n, n)
+
+        # esclusa su Windows dal marker di pyproject
+        if py_spec is None:
+            if ps1_entry is not None:
+                log.append(f"    {name:<16} marker non-Windows: presente nel "
+                           f"PS1 ({ps1_entry}), andrebbe rimossa.")
+            else:
+                log.append(f"    {name:<16} marker non-Windows: assente da "
+                           f"entrambi, ok.")
+            n_excluded += 1
+            continue
+
+        # solo in pyproject (mancante nel PS1)
+        if py_spec is not ABSENT and ps1_entry is None:
+            log.append(f"    {name:<16} solo in pyproject: '{py_spec}' "
+                       f"(assente dal PS1).")
+            n_only_py += 1
+            continue
+
+        # solo nel PS1 (voce extra, es. cx_Freeze)
+        if py_spec is ABSENT and ps1_entry is not None:
+            log.append(f"    {name:<16} solo in PS1: '{ps1_entry}' "
+                       f"(voce extra, non in pyproject).")
+            n_only_ps1 += 1
+            continue
+
+        # presente in entrambi: confronto della specifica
+        if py_spec == ps1_entry:
+            log.append(f"    {name:<16} coincide: '{py_spec}'.")
+            n_equal += 1
+        else:
+            log.append(f"    {name:<16} diversa: pyproject '{py_spec}'  |  "
+                       f"PS1 '{ps1_entry}'.")
+            n_diff += 1
+
+    log.append("")
+    log.append(f"Riepilogo: {n_diff} diverse, {n_equal} coincidono, "
+               f"{n_only_py} solo in pyproject, {n_only_ps1} solo in PS1, "
+               f"{n_excluded} escluse (non-Windows).")
+    if n_diff == 0 and n_only_py == 0 and n_excluded == 0:
+        log.append("Nessuna differenza rilevante: PS1 allineato a pyproject.")
+    return log
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 #  GUI
 # ─────────────────────────────────────────────────────────────────────────────
@@ -399,6 +510,30 @@ def classify_log_line(line):
     if low.startswith("scritto:"):
         return "ok", s
     if "[anteprima]" in low:
+        return "muted", s
+    # messaggio automatico di ricerca file (pyproject/vbs/ps1)
+    if low.startswith("ricerca file"):
+        return "head", s
+    if low.startswith("trovato:") or low.startswith("tutti i file trovati"):
+        return "ok", s
+    if low.startswith("mancante:") or low.startswith("alcuni file"):
+        return "warn", s
+    # righe del confronto versioni (pulsante "Mostra differenze").
+    # Il riepilogo e le intestazioni vanno controllati per primi: contengono
+    # sottostringhe (es. "solo in pyproject") che matcherebbero le righe di voce.
+    if low.startswith("riepilogo") or "nessuna differenza" in low:
+        return "ok", s
+    if low.startswith("build-portable.ps1") or low.startswith("confronto vers"):
+        return "head", s
+    if "marker non-windows" in low:
+        return "warn", s
+    if "diversa:" in low:
+        return "change", s
+    if "solo in pyproject" in low:
+        return "add", s
+    if "solo in ps1" in low:
+        return "info", s
+    if "coincide:" in low:
         return "muted", s
     if low.startswith("fatto") or "anteprima completata" in low:
         return "ok", s
@@ -444,6 +579,10 @@ class SyncFrame(wx.Frame):
         grid.AddGrowableCol(1, 1)
 
         self.rows = {}
+        # Stato "trovato/mancante" dell'ultima ricerca file, per non ridisegnare
+        # il log a ogni tasto: il messaggio automatico compare solo quando lo
+        # stato cambia davvero (None = mai calcolato, così la prima volta stampa).
+        self._last_found = None
         self._add_row(grid, "Cartella progetto", "root",
                       with_check=False, picker="dir")
         self._add_row(grid, "pyproject.toml", "toml", with_check=False)
@@ -457,6 +596,12 @@ class SyncFrame(wx.Frame):
         self.chk_preview = wx.CheckBox(panel, label="Solo anteprima (non scrive)")
         opt.Add(self.chk_preview, 0, wx.ALIGN_CENTER_VERTICAL)
         opt.AddStretchSpacer()
+        btn_diff = wx.Button(panel, label="Mostra differenze")
+        btn_diff.SetToolTip("Confronta le versioni delle dipendenze tra "
+                            "pyproject.toml e Build-Portable.ps1 (non scrive).")
+        btn_diff.Bind(wx.EVT_BUTTON, self.on_diff)
+        opt.Add(btn_diff, 0)
+        opt.Add((8, 0))
         btn_sync = wx.Button(panel, label="Sincronizza")
         btn_sync.Bind(wx.EVT_BUTTON, self.on_sync)
         opt.Add(btn_sync, 0)
@@ -538,6 +683,48 @@ class SyncFrame(wx.Frame):
         root = Path(toml_path).parent
         self._set_path("vbs", root / "src" / "install_check.vbs")
         self._set_path("ps1", root / "installer" / "Build-Portable.ps1")
+        self._report_paths_status()
+
+    def _report_paths_status(self):
+        """
+        Mostra automaticamente nel log quali dei tre file del progetto sono
+        stati trovati (pyproject.toml, install_check.vbs, Build-Portable.ps1).
+
+        Per non ridisegnare il log a ogni carattere digitato, il messaggio
+        viene (ri)stampato solo quando lo stato trovato/mancante cambia rispetto
+        alla volta precedente: così, digitando un percorso, il messaggio compare
+        nell'istante in cui i file iniziano (o smettono) di essere trovati.
+        """
+        checks = [
+            ("pyproject.toml", "toml"),
+            ("install_check.vbs", "vbs"),
+            ("Build-Portable.ps1", "ps1"),
+        ]
+        paths = {key: self.rows[key]["txt"].GetValue().strip()
+                 for _, key in checks}
+        state = tuple(bool(paths[key]) and Path(paths[key]).is_file()
+                      for _, key in checks)
+
+        if state == self._last_found:
+            return
+        self._last_found = state
+
+        lines = ["Ricerca file del progetto:"]
+        for (label, key), found in zip(checks, state):
+            p = paths[key]
+            if found:
+                lines.append(f"    trovato: {label:<20} -> {p}")
+            else:
+                where = p if p else "(percorso vuoto)"
+                lines.append(f"    mancante: {label:<19} {where}")
+        lines.append("")
+        if all(state):
+            lines.append("Tutti i file trovati: pronto per "
+                         "\u201cMostra differenze\u201d o \u201cSincronizza\u201d.")
+        else:
+            lines.append("Alcuni file non sono stati trovati: verifica la "
+                         "Cartella progetto (deve contenere pyproject.toml).")
+        self._render_log(lines)
 
     # --- browse -------------------------------------------------------------
     def on_browse(self, key):
@@ -582,6 +769,27 @@ class SyncFrame(wx.Frame):
                 self.log.AppendText(prefix + text + "\n")
         self.log.SetDefaultStyle(wx.TextAttr(LOG_STYLE["plain"][0]))
         self.log.ShowPosition(0)
+
+    # --- diff versioni ------------------------------------------------------
+    def on_diff(self, _evt):
+        """Confronta le versioni delle dipendenze pyproject.toml <-> PS1.
+
+        È di sola lettura: non serve spuntare il target PS1 e non scrive nulla.
+        """
+        toml_path = Path(self.rows["toml"]["txt"].GetValue().strip())
+        ps1_path = Path(self.rows["ps1"]["txt"].GetValue().strip())
+        if not toml_path.exists():
+            self._error(f"pyproject.toml non trovato: {toml_path}")
+            return
+        if not ps1_path.exists():
+            self._error(f"Build-Portable.ps1 non trovato: {ps1_path}")
+            return
+        try:
+            log = diff_ps1_versions(toml_path, ps1_path)
+        except Exception as exc:  # noqa: BLE001
+            self._error(f"Errore durante il confronto: {exc}")
+            return
+        self._render_log(log)
 
     # --- sync ---------------------------------------------------------------
     def on_sync(self, _evt):
