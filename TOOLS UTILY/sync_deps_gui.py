@@ -212,7 +212,12 @@ def build_deps_block(deps_parsed):
 
 
 def sync_vbs_text(vbs_text, version, raw_deps):
-    """Aggiorna il testo del VBS. Restituisce (nuovo_testo, messaggi)."""
+    """Aggiorna il testo del VBS. Restituisce (nuovo_testo, messaggi).
+
+    Se dopo gli aggiornamenti il testo coincide con l'originale, restituisce
+    l'originale intatto e lo segnala (no-op): nulla verra' riscritto.
+    """
+    original = vbs_text
     msgs = []
     deps_parsed = []  # tuple (pip_name, ver_min, ver_max)
     for raw in raw_deps:
@@ -257,6 +262,9 @@ def sync_vbs_text(vbs_text, version, raw_deps):
     vbs_text = re.sub(r'(For i = 0 To )\d+', rf'\g<1>{n}', vbs_text)
 
     msgs.append(f"    VBS: {len(deps_parsed)} dipendenze, indice max {n}.")
+    if vbs_text == original:
+        msgs.append("    VBS: gia' allineato, nessuna modifica.")
+        return original, msgs
     return vbs_text, msgs
 
 
@@ -264,6 +272,15 @@ def sync_ps1_text(ps1_text, raw_deps):
     """
     Aggiorna il blocco $Deps = @(...) preservando le voci extra
     (non presenti in pyproject). Restituisce (nuovo_testo, messaggi).
+
+    Preservazione della struttura:
+      - se l'elenco risultante coincide con quello gia' presente, restituisce
+        il testo ORIGINALE intatto (nessuna riscrittura del blocco: riga vuota,
+        indentazione e fine-riga restano esattamente com'erano);
+      - se invece qualcosa cambia, riscrive solo l'elenco delle voci mantenendo
+        il testo che precede la prima voce e quello che segue l'ultima, cosi'
+        un'eventuale riga vuota prima della ')' e la ')' stessa restano al loro
+        posto.
     """
     msgs = []
     m = re.search(r'(\$Deps\s*=\s*@\()(.*?)(\n[ \t]*\))', ps1_text, re.DOTALL)
@@ -271,7 +288,11 @@ def sync_ps1_text(ps1_text, raw_deps):
         return ps1_text, ["    PS1: blocco '$Deps = @(...)' non trovato, saltato."]
 
     head, body, tail = m.group(1), m.group(2), m.group(3)
-    existing = re.findall(r"'([^']*)'", body)
+
+    # posizioni esatte delle voci quotate: servono per conservare il testo che
+    # le precede (indentazione iniziale) e che le segue (es. riga vuota finale).
+    quotes = list(re.finditer(r"'([^']*)'", body))
+    existing = [q.group(1) for q in quotes]
 
     indent_m = re.search(r'\n([ \t]+)\S', body)
     indent = indent_m.group(1) if indent_m else "    "
@@ -286,6 +307,7 @@ def sync_ps1_text(ps1_text, raw_deps):
 
     used = set()
     new_entries = []
+    changes = []  # descrizioni delle modifiche effettive alle voci
 
     for e in existing:
         n = dep_name(e)
@@ -293,10 +315,10 @@ def sync_ps1_text(ps1_text, raw_deps):
             spec = pyproj[n]
             used.add(n)
             if spec is None:
-                msgs.append(f"    PS1: rimosso {e.strip()} (marker non-Windows).")
+                changes.append(f"    PS1: rimosso {e.strip()} (marker non-Windows).")
                 continue
             if spec != e.strip():
-                msgs.append(f"    PS1: aggiornato {e.strip()} -> {spec}")
+                changes.append(f"    PS1: aggiornato {e.strip()} -> {spec}")
             new_entries.append(spec)
         else:
             new_entries.append(e)  # extra preservato (es. cx_Freeze)
@@ -307,17 +329,37 @@ def sync_ps1_text(ps1_text, raw_deps):
             spec = pyproj.get(n)
             used.add(n)
             if spec is None:
-                msgs.append(f"    PS1: saltato {d.strip()} (marker non-Windows).")
+                changes.append(f"    PS1: saltato {d.strip()} (marker non-Windows).")
                 continue
             new_entries.append(spec)
-            msgs.append(f"    PS1: aggiunto {spec}")
+            changes.append(f"    PS1: aggiunto {spec}")
 
     kept_extra = [e for e in existing if dep_name(e) not in pyproj]
+
+    # --- no-op: elenco risultante identico all'attuale -> non tocco nulla e
+    #     restituisco il testo originale byte-per-byte.
+    if new_entries == existing:
+        if kept_extra:
+            msgs.append(f"    PS1: preservate voci extra: {', '.join(kept_extra)}")
+        msgs.append("    PS1: gia' allineato, nessuna modifica.")
+        return ps1_text, msgs
+
+    # --- ricostruzione: preservo cio' che sta prima della prima voce e dopo
+    #     l'ultima (indentazione iniziale ed eventuale riga vuota prima di ')').
+    if quotes:
+        leading = body[:quotes[0].start()]
+        trailing = body[quotes[-1].end():]
+        sep = "\n" + indent
+        new_body = leading + sep.join(f"'{ent}'" for ent in new_entries) + trailing
+    else:
+        # array originariamente vuoto: layout normalizzato di default
+        new_body = "\n" + "\n".join(f"{indent}'{ent}'" for ent in new_entries) + "\n"
+
+    new_text = ps1_text[:m.start()] + head + new_body + tail + ps1_text[m.end():]
+
+    msgs.extend(changes)
     if kept_extra:
         msgs.append(f"    PS1: preservate voci extra: {', '.join(kept_extra)}")
-
-    new_body = "\n" + "\n".join(f"{indent}'{ent}'" for ent in new_entries)
-    new_text = ps1_text[:m.start()] + head + new_body + tail + ps1_text[m.end():]
     msgs.append(f"    PS1: {len(new_entries)} voci totali nell'array $Deps.")
     return new_text, msgs
 
@@ -347,10 +389,13 @@ def run_sync(toml_path, targets, preview=False):
     p = targets.get("vbs")
     if p:
         if p.exists():
-            new_text, msgs = sync_vbs_text(p.read_text(encoding="utf-8"),
-                                           version, raw_deps)
+            original = p.read_text(encoding="utf-8")
+            new_text, msgs = sync_vbs_text(original, version, raw_deps)
             log.extend(msgs)
-            write(p, new_text)
+            if new_text == original:
+                log.append(f"  invariato (non riscritto): {p}")
+            else:
+                write(p, new_text)
         else:
             log.append(f"  ATTENZIONE: VBS non trovato: {p}")
 
@@ -358,9 +403,13 @@ def run_sync(toml_path, targets, preview=False):
     p = targets.get("ps1")
     if p:
         if p.exists():
-            new_text, msgs = sync_ps1_text(p.read_text(encoding="utf-8"), raw_deps)
+            original = p.read_text(encoding="utf-8")
+            new_text, msgs = sync_ps1_text(original, raw_deps)
             log.extend(msgs)
-            write(p, new_text)
+            if new_text == original:
+                log.append(f"  invariato (non riscritto): {p}")
+            else:
+                write(p, new_text)
         else:
             log.append(f"  ATTENZIONE: PS1 non trovato: {p}")
 
@@ -509,6 +558,8 @@ def classify_log_line(line):
         return "warn", s
     if low.startswith("scritto:"):
         return "ok", s
+    if low.startswith("invariato") or "gia' allineato" in low or "già allineato" in low:
+        return "muted", s
     if "[anteprima]" in low:
         return "muted", s
     # messaggio automatico di ricerca file (pyproject/vbs/ps1)
