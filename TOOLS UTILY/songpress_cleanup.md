@@ -11,6 +11,13 @@ python songpress_cleanup.py
 
 Nessuna dipendenza esterna — usa solo librerie standard Windows. Richiede Python su Windows.
 
+## Barra dei menu
+
+La finestra dispone di una barra dei menu:
+
+- **File → Esci** — chiude il programma (scorciatoia <kbd>Ctrl</kbd>+<kbd>Q</kbd>). È equivalente al pulsante **Chiudi** presente nella barra dei bottoni.
+- **? → Crediti** — mostra nome, autore, anno e la licenza del programma (vedi [Licenza](#licenza)).
+
 ## Cosa fa
 
 - Scansiona automaticamente all'avvio tutti i percorsi e le chiavi di registro
@@ -101,6 +108,12 @@ In aggiunta, la scansione profonda trova `Songpress++` in qualsiasi percorso arb
 | `Software\Classes\.sng` | Associazione `.sng` |
 
 Dopo l'eliminazione viene notificata la shell (`SHChangeNotify`) per aggiornare le associazioni file.
+
+## Licenza
+
+Distribuito secondo i termini della **GNU General Public License, versione 2 — e solo la versione 2 (GPL-2.0-only)**, come pubblicata dalla Free Software Foundation. Il programma è fornito **senza alcuna garanzia**.
+
+Autore: **Denisov21** (2026). La stessa informazione è consultabile dalla voce di menu **? → Crediti**.
 
 ---
 *Questo file è codificato UTF-8 senza BOM.*

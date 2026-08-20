@@ -26,6 +26,12 @@ from typing import Union
 ItemPath = Union[str, tuple[str, str]]
 CleanupItem = tuple[str, str, ItemPath, str, bool]
 
+# --- Metadati applicazione ---
+APP_NAME    = "Songpress++ Cleanup Tool"
+APP_AUTHOR  = "Denisov21"
+APP_YEAR    = "2026"
+APP_LICENSE = "GNU General Public License, versione 2 (GPL-2.0-only)"
+
 # --- Percorsi da controllare ---
 def expand(path: str) -> str:
     return os.path.expandvars(path)
@@ -693,8 +699,45 @@ class CleanupApp(tk.Tk):
         super().__init__()
         self.title("Songpress++ — Pulizia installazione")
         self.resizable(False, False)
+        self._build_menubar()
         self._build_ui()
         self._scan()
+
+    # ── barra dei menu ──
+    def _build_menubar(self):
+        menubar = tk.Menu(self)
+
+        # Menu «File»
+        file_menu = tk.Menu(menubar, tearoff=False)
+        file_menu.add_command(label="Esci", accelerator="Ctrl+Q",
+                              command=self.destroy)
+        menubar.add_cascade(label="File", menu=file_menu)
+
+        # Menu «?»
+        help_menu = tk.Menu(menubar, tearoff=False)
+        help_menu.add_command(label="Crediti", command=self._show_credits)
+        menubar.add_cascade(label="?", menu=help_menu)
+
+        self.config(menu=menubar)
+        # Scorciatoia da tastiera per uscire
+        self.bind_all("<Control-q>", lambda e: self.destroy())
+        self.bind_all("<Control-Q>", lambda e: self.destroy())
+
+    def _show_credits(self):
+        messagebox.showinfo(
+            "Crediti",
+            f"{APP_NAME}\n\n"
+            f"Autore:   {APP_AUTHOR}  ({APP_YEAR})\n"
+            f"Licenza:  {APP_LICENSE}\n\n"
+            "Rimuove (nel cestino) cartelle e chiavi di registro\n"
+            "lasciate da installazioni attuali o precedenti di\n"
+            "Songpress++.\n\n"
+            "Questo programma è software libero: puoi ridistribuirlo\n"
+            "e/o modificarlo secondo i termini della GNU General Public\n"
+            "License, versione 2 — e solo la versione 2 (GPL-2.0-only),\n"
+            "come pubblicata dalla Free Software Foundation.\n\n"
+            "Il programma è distribuito nella speranza che sia utile,\n"
+            "ma SENZA ALCUNA GARANZIA. Vedi la GNU GPL v2 per i dettagli.")
 
     def _build_ui(self):
         # Titolo

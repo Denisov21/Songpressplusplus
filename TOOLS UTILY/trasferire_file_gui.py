@@ -37,6 +37,11 @@ from tkinter import ttk, filedialog, messagebox, scrolledtext
 
 PKG_NAMES = ("songpressplusplus", "songpress")
 
+# ── Metadati applicazione ───────────────────────────────────────────────────────
+APP_NAME    = "Trasferisci file — Songpress++"
+APP_AUTHOR  = "Denisov21"
+APP_LICENSE = "GNU General Public License, versione 2 (GPL-2.0-only)"
+
 # Suffisso backup: <nomefile>.bak-YYYYMMDD-HHMMSS
 _BAK_RE = re.compile(r"\.bak-\d{8}-\d{6}$")
 
@@ -375,6 +380,8 @@ class App(ttk.Frame):
         master.rowconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
 
+        self._build_menubar(master)
+
         self.src_var  = tk.StringVar()
         self.dest_var = tk.StringVar()
         self.dry_var  = tk.BooleanVar(value=False)
@@ -462,6 +469,46 @@ class App(ttk.Frame):
         self.dest_combo.bind("<Return>", lambda e: self.on_verify())
 
         self.on_verify()
+
+    # ── barra dei menu ──
+    def _build_menubar(self, master):
+        menubar = tk.Menu(master)
+
+        # Menu «File»
+        file_menu = tk.Menu(menubar, tearoff=False)
+        file_menu.add_command(label="Esci", accelerator="Ctrl+Q",
+                              command=self._on_exit)
+        menubar.add_cascade(label="File", menu=file_menu)
+
+        # Menu «?»
+        help_menu = tk.Menu(menubar, tearoff=False)
+        help_menu.add_command(label="Crediti", command=self._show_credits)
+        menubar.add_cascade(label="?", menu=help_menu)
+
+        master.config(menu=menubar)
+        # Scorciatoia da tastiera per uscire
+        master.bind_all("<Control-q>", lambda e: self._on_exit())
+        master.bind_all("<Control-Q>", lambda e: self._on_exit())
+
+    def _on_exit(self):
+        self.master.destroy()
+
+    def _show_credits(self):
+        messagebox.showinfo(
+            "Crediti",
+            f"{APP_NAME}\n\n"
+            "Interfaccia grafica per trasferire file (con backup)\n"
+            "nel pacchetto Songpress++ di sistema.\n\n"
+            f"Autore:   {APP_AUTHOR}\n"
+            f"Licenza:  {APP_LICENSE}\n\n"
+            "Questo programma è software libero: puoi ridistribuirlo\n"
+            "e/o modificarlo secondo i termini della GNU General Public\n"
+            "License, versione 2 — e solo la versione 2 (GPL-2.0-only),\n"
+            "come pubblicata dalla Free Software Foundation.\n\n"
+            "Il programma è distribuito nella speranza che sia utile,\n"
+            "ma SENZA ALCUNA GARANZIA; senza neppure la garanzia\n"
+            "implicita di COMMERCIABILITÀ o IDONEITÀ PER UN\n"
+            "PARTICOLARE SCOPO. Vedi la GNU GPL v2 per i dettagli.")
 
     # ── helper UI ──
     def _priv_desc(self, mode):

@@ -105,7 +105,7 @@ class MenuInfo:
 # Parser XRC
 # ──────────────────────────────────────────────────────────────────────────────
 
-def parse_xrc(filepath: str) -> Tuple[List[MenuInfo], ET.ElementTree]:
+def parse_xrc(filepath: str) -> "Tuple[List[MenuInfo], ET.ElementTree[ET.Element]]":
     tree = ET.parse(filepath)
     root = tree.getroot()
     menus: List[MenuInfo] = []
@@ -240,7 +240,7 @@ def display_label_fbp(el) -> str:
 # Parser FBP
 # ──────────────────────────────────────────────────────────────────────────────
 
-def parse_fbp(filepath: str) -> Tuple[List[MenuInfo], ET.ElementTree]:
+def parse_fbp(filepath: str) -> "Tuple[List[MenuInfo], ET.ElementTree[ET.Element]]":
     """
     wxFormBuilder usa XML con struttura <object class="wxMenuBar"> /
     <object class="wxMenu"> / <object class="wxMenuItem"> / <object class="separator">
@@ -333,7 +333,7 @@ def apply_sort_fbp(menu_info: MenuInfo, group_indices: List[int]):
 # Salvataggio con backup
 # ──────────────────────────────────────────────────────────────────────────────
 
-def save_tree(filepath: str, tree: ET.ElementTree):
+def save_tree(filepath: str, tree: "ET.ElementTree[ET.Element]"):
     backup = filepath + ".bak"
     shutil.copy2(filepath, backup)
 
@@ -454,7 +454,7 @@ class MainFrame(wx.Frame):
         self.SetMinSize((700, 500))
         self._filepath: str | None = None
         self._menus: List[MenuInfo] = []
-        self._tree: ET.ElementTree | None = None
+        self._tree: "ET.ElementTree[ET.Element] | None" = None
         self._file_type: str | None = None
 
         self._build_ui()
@@ -478,10 +478,10 @@ class MainFrame(wx.Frame):
         item_exit = file_menu.Append(wx.ID_EXIT, "Esci\tAlt+F4", "Chiudi il programma")
         menubar.Append(file_menu, "&File")
 
-        # Menu Guida
+        # Menu ?
         help_menu = wx.Menu()
         item_credits = help_menu.Append(wx.ID_ABOUT, "Crediti…", "Informazioni sull'autore")
-        menubar.Append(help_menu, "&Guida")
+        menubar.Append(help_menu, "&?")
 
         self.SetMenuBar(menubar)
 
@@ -818,7 +818,12 @@ class MainFrame(wx.Frame):
             "Autore: Denisov21  (2026)\n\n"
             "Strumento per l'ordinamento alfabetico\n"
             "delle voci di menu nei file XRC e FBP\n"
-            "utilizzati con wxWidgets / wxFormBuilder."
+            "utilizzati con wxWidgets / wxFormBuilder.\n\n"
+            "Licenza: GNU General Public License,\n"
+            "versione 2 — e solo la versione 2 (GPL-2.0-only),\n"
+            "come pubblicata dalla Free Software Foundation.\n\n"
+            "Questo programma è distribuito SENZA ALCUNA\n"
+            "GARANZIA. Vedi la GNU GPL v2 per i dettagli."
         )
         wx.MessageBox(msg, "Crediti", wx.ICON_INFORMATION | wx.OK, self)
 
