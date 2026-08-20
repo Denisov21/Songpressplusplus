@@ -22,6 +22,7 @@ Copyright (C) 2026 Denisov21  <progetto Songpress++>
 Licenza: GNU General Public License versione 2 (solo) — vedi il menu ?.
 """
 
+import json
 import re
 from pathlib import Path
 
@@ -68,6 +69,10 @@ ABOUT_DESCRIPTION = (
     "\u201cMostra differenze\u201d confronta le versioni delle dipendenze tra\n"
     "pyproject.toml e Build-Portable.ps1 senza scrivere nulla (le voci extra\n"
     "del PS1, es. cx_Freeze, sono segnalate come \u201csolo in PS1\u201d).\n"
+    "\n"
+    "File \u203a Preferenze: scegli la dimensione del testo (9\u201318) e il\n"
+    "carattere del log; le scelte sono salvate in un file JSON accanto allo\n"
+    "script (sync_deps_gui.prefs.json) e riapplicate a ogni avvio.\n"
     "\n"
     "Marker di piattaforma (es. pywin32; sys_platform=='win32') vengono\n"
     "valutati: le voci non-Windows sono escluse da VBS e PS1."
@@ -530,7 +535,7 @@ def diff_ps1_versions(toml_path, ps1_path):
 # ─────────────────────────────────────────────────────────────────────────────
 
 #  Colori e simboli del log
-LOG_STYLE = {
+LOG_STYLE_LIGHT = {
     "ok":      (wx.Colour(0x1A, 0x7F, 0x37), "\u2713"),  # ✓ verde
     "warn":    (wx.Colour(0xB0, 0x6A, 0x00), "!"),        # ! ambra
     "error":   (wx.Colour(0xC0, 0x2B, 0x2B), "\u2717"),  # ✗ rosso
@@ -541,6 +546,81 @@ LOG_STYLE = {
     "muted":   (wx.Colour(0x88, 0x88, 0x88), "\u25CB"),  # ○ grigio chiaro
     "plain":   (wx.Colour(0x33, 0x33, 0x33), ""),
 }
+
+# Retrocompatibilità: alcuni riferimenti storici usano LOG_STYLE.
+LOG_STYLE = LOG_STYLE_LIGHT
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  PREFERENZE (tema, dimensione testo, carattere) + persistenza JSON
+# ─────────────────────────────────────────────────────────────────────────────
+
+PREFS_FILENAME = "sync_deps_gui.prefs.json"
+
+FONT_SIZE_MIN = 9
+FONT_SIZE_MAX = 18
+
+DEFAULT_FONT_SIZE = 10        # int
+DEFAULT_FONT_FAMILY = ""      # str ("" = monospazio predefinito)
+
+DEFAULT_PREFS = {
+    "font_size": DEFAULT_FONT_SIZE,      # tra FONT_SIZE_MIN e FONT_SIZE_MAX
+    "font_family": DEFAULT_FONT_FAMILY,  # "" oppure face name del carattere
+}
+
+
+def prefs_path():
+    """File JSON delle preferenze, salvato ACCANTO a questo script."""
+    try:
+        base = Path(__file__).resolve().parent
+    except NameError:  # __file__ assente (es. ambiente interattivo)
+        base = Path.cwd()
+    return base / PREFS_FILENAME
+
+
+def load_prefs():
+    """Carica le preferenze dal JSON con default e validazione (clamp)."""
+    raw = {}
+    try:
+        parsed = json.loads(prefs_path().read_text(encoding="utf-8"))
+        if isinstance(parsed, dict):
+            raw = parsed
+    except (OSError, ValueError):
+        pass  # file assente o non valido -> si usano i default
+
+    # font_size: intero nell'intervallo consentito, altrimenti default
+    size = DEFAULT_FONT_SIZE
+    val = raw.get("font_size", DEFAULT_FONT_SIZE)
+    if isinstance(val, (int, float, str)):
+        try:
+            size = int(val)
+        except ValueError:
+            size = DEFAULT_FONT_SIZE
+    size = max(FONT_SIZE_MIN, min(FONT_SIZE_MAX, size))
+
+    # font_family: stringa, altrimenti stringa vuota
+    family = raw.get("font_family", DEFAULT_FONT_FAMILY)
+    if not isinstance(family, str):
+        family = DEFAULT_FONT_FAMILY
+
+    return {"font_size": size, "font_family": family}
+
+
+def save_prefs(prefs):
+    """Salva le preferenze nel JSON, creando la cartella se necessario."""
+    path = prefs_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    data = {k: prefs.get(k, DEFAULT_PREFS[k]) for k in DEFAULT_PREFS}
+    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n",
+                    encoding="utf-8")
+
+
+def build_log_font(family, size_pt):
+    """Font del log: face 'family' (o monospazio predefinito) a 'size_pt' punti."""
+    info = wx.FontInfo(int(size_pt)).Family(wx.FONTFAMILY_TELETYPE)
+    if family:
+        info = info.FaceName(family)
+    return wx.Font(info)
 
 
 def classify_log_line(line):
@@ -599,15 +679,91 @@ def classify_log_line(line):
     return "plain", s
 
 
+class PreferencesDialog(wx.Dialog):
+    """Finestra Preferenze: dimensione testo e carattere del log.
+
+    get_prefs() restituisce un dict con le chiavi font_size/font_family.
+    """
+
+    MONO_DEFAULT_LABEL = "(monospazio predefinito)"
+
+    def __init__(self, parent, prefs):
+        super().__init__(parent, title="Preferenze",
+                         style=wx.DEFAULT_DIALOG_STYLE)
+
+        outer = wx.BoxSizer(wx.VERTICAL)
+        grid = wx.FlexGridSizer(rows=2, cols=2, vgap=10, hgap=12)
+        grid.AddGrowableCol(1, 1)
+
+        # Dimensione testo
+        grid.Add(wx.StaticText(self, label="Dimensione testo:"), 0,
+                 wx.ALIGN_CENTER_VERTICAL)
+        self.sp_size = wx.SpinCtrl(self, min=FONT_SIZE_MIN, max=FONT_SIZE_MAX,
+                                   initial=int(prefs.get("font_size", 10)))
+        grid.Add(self.sp_size, 0)
+
+        # Carattere
+        grid.Add(wx.StaticText(self, label="Carattere:"), 0,
+                 wx.ALIGN_CENTER_VERTICAL)
+        faces = self._available_faces()
+        self.ch_font = wx.Choice(self, choices=faces)
+        cur_face = prefs.get("font_family", "") or self.MONO_DEFAULT_LABEL
+        self.ch_font.SetSelection(faces.index(cur_face)
+                                  if cur_face in faces else 0)
+        grid.Add(self.ch_font, 0, wx.EXPAND)
+
+        outer.Add(grid, 1, wx.EXPAND | wx.ALL, 14)
+
+        hint = wx.StaticText(
+            self,
+            label="Le preferenze vengono salvate e riapplicate all'avvio.")
+        hint.SetForegroundColour(wx.Colour(0x77, 0x77, 0x77))
+        outer.Add(hint, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 14)
+
+        btns = self.CreateButtonSizer(wx.OK | wx.CANCEL)
+        if btns:
+            outer.Add(btns, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
+
+        self.SetSizerAndFit(outer)
+        self.Centre()
+
+    def _available_faces(self):
+        try:
+            faces = sorted(set(wx.FontEnumerator.GetFacenames()))
+        except Exception:  # noqa: BLE001
+            faces = []
+        return [self.MONO_DEFAULT_LABEL] + faces
+
+    def get_prefs(self):
+        face = self.ch_font.GetStringSelection()
+        if face == self.MONO_DEFAULT_LABEL:
+            face = ""
+        return {
+            "font_size": int(self.sp_size.GetValue()),
+            "font_family": face,
+        }
+
+
 class SyncFrame(wx.Frame):
     def __init__(self):
         super().__init__(None, title="Sync deps — Songpress++",
                          size=(880, 620))
         self.SetMinSize((640, 420))
 
-        # Barra dei menu: File > Esci
+        # Preferenze (tema, dimensione testo, carattere) da file JSON.
+        self.prefs = load_prefs()
+        # Palette log corrente (impostata da _apply_appearance); default chiaro.
+        self.log_style = LOG_STYLE_LIGHT
+        # Ultime righe mostrate: servono per ridisegnare il log quando cambia
+        # il tema o il carattere senza rilanciare l'operazione.
+        self._last_lines = []
+
+        # Barra dei menu: File > Preferenze… / Esci
         menubar = wx.MenuBar()
         file_menu = wx.Menu()
+        prefs_item = file_menu.Append(wx.ID_PREFERENCES, "Preferenze…\tCtrl+,",
+                                      "Dimensione testo e carattere del log")
+        file_menu.AppendSeparator()
         exit_item = file_menu.Append(wx.ID_EXIT, "Esci\tCtrl+Q",
                                      "Chiudi il programma")
         menubar.Append(file_menu, "&File")
@@ -618,6 +774,7 @@ class SyncFrame(wx.Frame):
         menubar.Append(help_menu, "&?")
 
         self.SetMenuBar(menubar)
+        self.Bind(wx.EVT_MENU, self.on_prefs, prefs_item)
         self.Bind(wx.EVT_MENU, self.on_exit, exit_item)
         self.Bind(wx.EVT_MENU, self.on_about, about_item)
 
@@ -671,6 +828,9 @@ class SyncFrame(wx.Frame):
 
         self._prefill_from_cwd()
         self.Centre()
+
+        # Applica dimensione/carattere del log dalle preferenze salvate.
+        self._apply_appearance()
 
     # --- costruzione righe --------------------------------------------------
     def _add_row(self, grid, label, key, with_check=True, picker="file"):
@@ -808,18 +968,50 @@ class SyncFrame(wx.Frame):
 
     # --- log colorato -------------------------------------------------------
     def _render_log(self, lines):
+        self._last_lines = list(lines)
+        style = getattr(self, "log_style", LOG_STYLE)
+        font = getattr(self, "log_font", None)
+
+        def _attr(colour):
+            attr = wx.TextAttr(colour)
+            if font is not None:
+                attr.SetFont(font)
+            return attr
+
         self.log.SetValue("")
         for line in lines:
             level, text = classify_log_line(line)
-            colour, symbol = LOG_STYLE[level]
-            self.log.SetDefaultStyle(wx.TextAttr(colour))
+            colour, symbol = style[level]
+            self.log.SetDefaultStyle(_attr(colour))
             if text == "":
                 self.log.AppendText("\n")
             else:
                 prefix = f"{symbol}  " if symbol else "   "
                 self.log.AppendText(prefix + text + "\n")
-        self.log.SetDefaultStyle(wx.TextAttr(LOG_STYLE["plain"][0]))
+        self.log.SetDefaultStyle(_attr(style["plain"][0]))
         self.log.ShowPosition(0)
+
+    # --- aspetto (carattere del log) ----------------------------------------
+    def _apply_appearance(self):
+        """Applica dimensione e carattere correnti al log e ridisegna."""
+        self.log_font = build_log_font(self.prefs.get("font_family", ""),
+                                       self.prefs.get("font_size", 10))
+        self.log.SetFont(self.log_font)
+        self.log.Refresh()
+        self._render_log(self._last_lines)
+
+    def on_prefs(self, _evt):
+        dlg = PreferencesDialog(self, self.prefs)
+        try:
+            if dlg.ShowModal() == wx.ID_OK:
+                self.prefs = dlg.get_prefs()
+                try:
+                    save_prefs(self.prefs)
+                except OSError as exc:  # noqa: BLE001
+                    self._error(f"Impossibile salvare le preferenze: {exc}")
+                self._apply_appearance()
+        finally:
+            dlg.Destroy()
 
     # --- diff versioni ------------------------------------------------------
     def on_diff(self, _evt):
