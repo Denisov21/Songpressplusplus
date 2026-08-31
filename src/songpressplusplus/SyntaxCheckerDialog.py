@@ -19,7 +19,7 @@ class SyntaxCheckerDialog(wx.Dialog):
 
     If there are no errors, a success message is displayed.
     If there are errors, they are listed with line, column and description.
-    Double-clicking an error (or pressing Go to error) moves the editor
+    Double-clicking an error (or pressing Go to line) moves the editor
     to the corresponding line (requires the caller to bind OnGoToError).
     """
 
@@ -100,7 +100,7 @@ class SyntaxCheckerDialog(wx.Dialog):
             self._fit_btn.Bind(wx.EVT_BUTTON, self._on_fit_width)
             btn_sizer.Add(self._fit_btn, 0, wx.RIGHT, 8)
 
-            self._goto_btn = wx.Button(panel, label=_("Go to error"))
+            self._goto_btn = wx.Button(panel, label=_("Go to line"))
             self._goto_btn.Bind(wx.EVT_BUTTON, self._on_goto)
             btn_sizer.Add(self._goto_btn, 0, wx.RIGHT, 8)
             self._goto_btn.Enable(False)

@@ -865,6 +865,8 @@ Il controllo sintassi integrato (`Strumenti → Controlla sintassi`) segnala gli
 | Battiti mancanti | `{beats_time: Sol=}` | valore mancante |
 | Battiti non interi o ≤ 0 | `{beats_time: Sol=0}`, `Sol=1.5` | deve essere intero positivo |
 
+> **Nota** — «Accordo non riconosciuto» è segnalato come **avvertimento** (⚠️), non come errore bloccante: i battiti non vengono applicati a quell'accordo, ma la composizione del brano prosegue. Vedi la sezione *Controllo sintassi* per la distinzione tra errori e avvertimenti.
+
 ### `{beats_time}` e `{linespacing}` — come interagiscono le distanze
 
 Quando si usa `{beats_time}` insieme a `{linespacing}`, è importante capire a quale **coppia accordo+testo** si applica lo spazio extra.
@@ -1245,7 +1247,25 @@ Vengono riconosciute anche alterazioni (`#`, `b`, `♯`, `♭`), qualità (`-`, 
 
 ### Controllo sintassi
 
-- **Controlla sintassi** (`Strumenti › Controllo sintassi`, <kbd>F7</kbd>) — analizza il testo e segnala le direttive non riconosciute o malformate, con la possibilità di navigare direttamente all'errore.
+**Controlla sintassi** (`Strumenti › Controllo sintassi`, <kbd>F7</kbd>) analizza il testo ChordPro e segnala accordi, direttive e parentesi che non risultano corretti. Il risultato compare in una finestra dedicata.
+
+I problemi rilevati sono distinti in due livelli di gravità, indicati nella colonna **Tipo** con un'icona:
+
+| Tipo | Icona | Significato |
+| ---- | ----- | ----------- |
+| **Errore** | ❌ | Problema strutturale o valore non valido, da correggere: parentesi non chiusa, comando sconosciuto, valore numerico mancante o malformato, token nel formato sbagliato, ecc. |
+| **Avvertimento** | ⚠️ | Segnalazione **non bloccante**: tipicamente un **accordo non riconosciuto** (es. `[(FA)]`, `{taste: Xyz}`, `{beats_time: Xyz=2}`, `{fingering: Xyz …}`). Il brano si compone comunque, ma vale la pena verificare che la notazione sia intenzionale. |
+
+La finestra dei risultati mostra una tabella con le colonne **Tipo**, **Riga**, **Colonna** e **Descrizione**. Il colore di sfondo riassume l'esito a colpo d'occhio:
+
+- **verde** — nessun problema;
+- **giallo** — solo avvertimenti;
+- **arancione** — almeno un errore.
+
+L'intestazione riporta il conteggio (ad esempio *«Trovato 1 avvertimento:»* oppure *«Trovati 2 errori e 1 avvertimento:»*). Due pulsanti aiutano la consultazione:
+
+- **Vai alla riga** (o doppio clic su una riga) — sposta il cursore dell'editor alla riga e colonna del problema selezionato;
+- **Adatta larghezza** — allarga la finestra in modo che la colonna *Descrizione* mostri per intero il messaggio più lungo.
 
 
 ### Controllo ortografico (<kbd>F6</kbd>)

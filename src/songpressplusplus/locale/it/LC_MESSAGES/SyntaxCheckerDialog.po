@@ -40,10 +40,10 @@ msgstr "Adatta larghezza"
 msgid "Resize the dialog so the Description column fits the longest text"
 msgstr "Ridimensiona il dialog in modo che la colonna Descrizione contenga il testo più lungo"
 
-#. Button: navigate to the selected error
-#: SyntaxCheckerDialog.py:62
-msgid "Go to error"
-msgstr "Vai all'errore"
+#. Button: move the editor cursor to the selected issue's line
+#: SyntaxCheckerDialog.py
+msgid "Go to line"
+msgstr "Vai alla riga"
 
 #. Button: close the dialog
 #: SyntaxCheckerDialog.py:68

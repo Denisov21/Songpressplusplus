@@ -858,6 +858,8 @@ The built-in syntax checker (*Tools → Check syntax*) reports errors in the val
 | Missing beat count | `{beats_time: G=}` | missing beat count |
 | Non-integer or ≤ 0 beats | `{beats_time: G=0}`, `G=1.5` | must be a positive integer |
 
+> **Note** — “Unrecognised chord” is reported as a **warning** (⚠️), not a blocking error: the beat count is not applied to that chord, but the song still renders. See the *Syntax Check* section for the distinction between errors and warnings.
+
 ### `{beats_time}` and `{linespacing}` — How Spacing Interacts
 
 When using `{beats_time}` together with `{linespacing}`, it is important to understand which **chord+text pair** the extra space applies to.
@@ -1238,7 +1240,25 @@ Accidentals (`#`, `b`, `♯`, `♭`), qualities (`-`, `m`, `M`, `min`, `maj`, `d
 
 ### Syntax Check
 
-- **Check syntax** (`Tools › Syntax check`, <kbd>F7</kbd>) — analyzes the text and reports unrecognized or malformed directives, with the ability to navigate directly to the error.
+**Check syntax** (`Tools › Syntax check`, <kbd>F7</kbd>) analyzes the ChordPro text and reports chords, directives and brackets that are not correct. The result appears in a dedicated window.
+
+Detected issues are split into two severity levels, shown in the **Type** column with an icon:
+
+| Type | Icon | Meaning |
+| ---- | ---- | ------- |
+| **Error** | ❌ | A structural problem or invalid value that must be fixed: an unclosed bracket, an unknown command, a missing or malformed numeric value, a token in the wrong format, etc. |
+| **Warning** | ⚠️ | A **non-blocking** notice: typically an **unrecognized chord** (e.g. `[(FA)]`, `{taste: Xyz}`, `{beats_time: Xyz=2}`, `{fingering: Xyz …}`). The song still renders, but it is worth checking that the notation is intentional. |
+
+The results window shows a table with the **Type**, **Line**, **Column** and **Description** columns. The background colour summarizes the outcome at a glance:
+
+- **green** — no issues;
+- **yellow** — warnings only;
+- **orange** — at least one error.
+
+The header reports the count (for example *“Found 1 warning:”* or *“Found 2 errors and 1 warning:”*). Two buttons help you review the results:
+
+- **Go to line** (or double-click a row) — moves the editor cursor to the line and column of the selected issue;
+- **Fit width** — widens the window so the *Description* column shows the longest message in full.
 
 
 ### Spell Check (<kbd>F6</kbd>)
