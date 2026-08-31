@@ -58,10 +58,48 @@ _CHORD_INTERVALS = [
     ('',      [0, 4, 7]),
 ]
 
-# Tasti bianchi nell'ottava (semitoni)
+# Tasti bianchi nell'ottava (semitoni), ordinati DO RE MI FA SOL LA SI
 _WHITE_KEYS = [0, 2, 4, 5, 7, 9, 11]
-# Tasti neri: semitono -> indice spazio tra i bianchi
+# Tasti neri: semitono -> indice spazio tra i bianchi (layout di default da DO)
 _BLACK_KEYS = {1: 0, 3: 1, 6: 3, 8: 4, 10: 5}
+
+
+def _keyboard_layout(start_semi):
+    """
+    Costruisce il layout dei tasti di una tastiera che parte dal semitono
+    `start_semi` (deve essere un tasto bianco: DO RE MI FA SOL LA SI).
+
+    Restituisce:
+        white_order : lista di semitoni bianchi, da sinistra a destra
+        black_map   : dict {semitono_nero: indice_gap} dei neri visibili
+
+    Di norma la tastiera ha 7 tasti bianchi. Se però la partenza è diversa da
+    DO o FA, una finestra di 7 bianchi "taglierebbe" un tasto nero (se ne
+    vedrebbero solo 4): in quel caso si aggiunge un OTTAVO tasto bianco in
+    fondo — l'ottava della nota iniziale, es. SI...SI — così il nero tagliato
+    ricompare e tutte e 12 le note dell'ottava tornano rappresentabili.
+    Il tasto nero recuperato si posiziona automaticamente nell'ultimo spazio.
+    """
+    if start_semi not in _WHITE_KEYS:
+        start_semi = 0  # fallback su DO
+    idx = _WHITE_KEYS.index(start_semi)
+    white_order = _WHITE_KEYS[idx:] + _WHITE_KEYS[:idx]   # 7 bianchi
+
+    def _count_blacks(order):
+        return sum(1 for i in range(len(order) - 1)
+                   if (order[i + 1] - order[i]) % 12 == 2)
+
+    # Se mancano dei neri (partenza diversa da DO/FA), aggiunge l'ottava in fondo
+    if _count_blacks(white_order) < 5:
+        white_order = white_order + [white_order[0]]     # 8 bianchi: ...nota iniziale
+
+    black_map = {}
+    for gap_idx in range(len(white_order) - 1):           # spazi tra i bianchi
+        left = white_order[gap_idx]
+        right = white_order[gap_idx + 1]
+        if (right - left) % 12 == 2:                      # semitono in mezzo -> nero
+            black_map[(left + 1) % 12] = gap_idx
+    return white_order, black_map
 
 
 def parse_chord(chord_str):
@@ -170,6 +208,31 @@ def _note_name_to_semitone(note_str):
     return None
 
 
+def start_note_to_semitone(note_str):
+    """
+    Converte la nota di partenza nel semitono da passare come `start_note` a
+    draw_keyboard / draw_*_section.
+
+    Accetta:
+      - un intero già in forma di semitono (0-11): restituito se è un tasto
+        bianco, altrimenti 0;
+      - un nome di nota naturale, italiano (DO..SI) o inglese (C..B).
+
+    Per note alterate, valori non riconosciuti o None restituisce 0 (DO), così
+    il chiamante può passare direttamente l'input dell'utente senza validarlo.
+    """
+    if isinstance(note_str, bool):
+        return 0
+    if isinstance(note_str, int):
+        return note_str if note_str in _WHITE_KEYS else 0
+    if note_str is None:
+        return 0
+    semi = _note_name_to_semitone(str(note_str))
+    if semi is None or semi not in _WHITE_KEYS:
+        return 0
+    return semi
+
+
 def parse_fingering(fingering_str):
     """
     Parsa la stringa del comando {fingering: ...}.
@@ -212,6 +275,58 @@ def parse_fingering(fingering_str):
     return chord_name, finger_map, hand
 
 
+def parse_start_note(fingering_str):
+    """
+    Estrae la nota di partenza da un eventuale token 'start=<nota>' presente
+    nella direttiva (es. "DO start=SI" o "Am hand=R start=Fa").
+
+    Restituisce il semitono (0-11) del primo tasto bianco, oppure None se il
+    token è assente. Restituendo None (e non 0) il chiamante può distinguere
+    "nessun override" da "parti esplicitamente da DO", e quindi ricadere sul
+    default globale quando il token manca.
+
+    Il token è ignorato da parse_fingering (che considera solo 'hand=' e
+    'numero='), quindi le due funzioni convivono senza interferenze.
+    """
+    for token in fingering_str.strip().split():
+        m = re.match(r'^start=(.+)$', token, re.IGNORECASE)
+        if m:
+            return start_note_to_semitone(m.group(1))
+    return None
+
+
+def parse_octave_both(fingering_str):
+    """
+    Estrae dall'eventuale token 'octave=...' se, nelle tastiere a 8 tasti, la
+    nota iniziale (presente a entrambe le estremità) vada evidenziata su tutte
+    e due le ottave o solo sulla prima.
+
+    Valori riconosciuti:
+        octave=both              -> True  (entrambe le estremità)
+        octave=one|single|first  -> False (solo quella di sinistra)
+
+    Restituisce True/False, oppure None se il token è assente (il chiamante
+    usa il proprio default).
+    """
+    for token in fingering_str.strip().split():
+        m = re.match(r'^octave=(both|one|single|first)$', token, re.IGNORECASE)
+        if m:
+            return m.group(1).lower() == 'both'
+    return None
+
+
+def keyboard_has_octave_key(start_note):
+    """
+    True se la tastiera che parte da `start_note` usa 8 tasti bianchi, cioè
+    aggiunge l'ottava della nota iniziale in fondo (partenza diversa da DO/FA).
+    Solo in questo caso la scelta 'evidenzia su entrambe le ottave' ha effetto.
+    Accetta un semitono intero o un nome di nota (vedi start_note_to_semitone).
+    """
+    semi = start_note_to_semitone(start_note)
+    white_order, _ = _keyboard_layout(semi)
+    return len(white_order) == 8
+
+
 def keyboard_header_height(dc, label_font, chord_name, hand=None):
     """
     Restituisce l'altezza totale dello spazio necessario sopra la tastiera
@@ -247,7 +362,8 @@ def keyboard_header_height(dc, label_font, chord_name, hand=None):
 
 def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
                   label_font=None, highlight_color=None, finger_map=None,
-                  finger_num_color=None, hand=None):
+                  finger_num_color=None, hand=None, start_note=0,
+                  highlight_octave_both=True):
     """
     Disegna una tastiera di un'ottava su dc.
 
@@ -255,16 +371,31 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
     highlight_color  : wx.Colour per i tasti evidenziati (default rosso).
     finger_map       : dict {semitono: numero_dito}.
     hand             : 'R' = mano destra, 'L' = mano sinistra, None = non mostrato.
+    start_note       : semitono (0-11) del primo tasto bianco a sinistra
+                       (default 0 = DO). Deve essere un tasto bianco; usare
+                       start_note_to_semitone() per convertire un nome di nota.
+    highlight_octave_both : nelle tastiere a 8 tasti (partenza != DO/FA) la
+                       nota iniziale compare a entrambe le estremità. Se True
+                       (default) viene evidenziata su entrambe; se False solo
+                       su quella di sinistra. Ininfluente nei layout a 7 tasti.
     """
     if highlight_color is None:
         highlight_color = wx.Colour(210, 60, 60)
     if finger_map is None:
         finger_map = {}
 
-    white_w = w // 7
+    # Layout dei tasti in funzione della nota di partenza (7 bianchi, oppure
+    # 8 se la partenza aggiunge l'ottava in fondo per recuperare il nero tagliato)
+    white_order, black_map = _keyboard_layout(start_note)
+    n_white = len(white_order)
+
+    # I tasti si distribuiscono nello stesso ingombro `w`: con 8 tasti risultano
+    # un po' più stretti, ma la larghezza totale della tastiera resta invariata,
+    # così l'impaginazione (a capo, centratura, anteprima) non cambia.
+    white_w = w // n_white
     black_w = max(4, int(white_w * 0.55))
     black_h = int(h * 0.62)
-    kbd_w   = white_w * 7
+    kbd_w   = white_w * n_white
 
     # ── Sfondo e bordo esterno ────────────────────────────────────
     dc.SetBrush(wx.WHITE_BRUSH)
@@ -272,9 +403,14 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
     dc.DrawRectangle(x, y, kbd_w, h)
 
     # ── Tasti bianchi ─────────────────────────────────────────────
-    for i, semi in enumerate(_WHITE_KEYS):
+    for i, semi in enumerate(white_order):
         kx = x + i * white_w
-        if semi in highlighted_keys:
+        hl = semi in highlighted_keys
+        # In layout a 8 tasti l'ultimo tasto è l'ottava del primo: se non si
+        # vuole l'evidenziazione doppia, non evidenziare il duplicato in fondo.
+        if hl and not highlight_octave_both and n_white == 8 and i == n_white - 1:
+            hl = False
+        if hl:
             dc.SetBrush(wx.Brush(highlight_color))
         else:
             dc.SetBrush(wx.WHITE_BRUSH)
@@ -282,7 +418,7 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
         dc.DrawRectangle(kx, y, white_w, h)
 
     # ── Tasti neri ────────────────────────────────────────────────
-    for semi, gap_idx in _BLACK_KEYS.items():
+    for semi, gap_idx in black_map.items():
         kx = x + gap_idx * white_w + white_w - black_w // 2
         if semi in highlighted_keys:
             dc.SetBrush(wx.Brush(highlight_color))
@@ -302,14 +438,20 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
         dc.SetFont(finger_font)
 
         for semi, finger_num in finger_map.items():
+            # Determina se il tasto è visibile nella finestra corrente e di che tipo
+            if semi in black_map:
+                is_black = True
+            elif semi in white_order:
+                is_black = False
+            else:
+                continue  # nota fuori dalla finestra di 7 bianchi: non disegnabile
+
             label = str(finger_num)
             lw, lh = dc.GetTextExtent(label)
 
-            is_black = semi in _BLACK_KEYS
-
             if is_black:
                 # Tasto nero: numero nella parte bassa del tasto nero
-                gap_idx = _BLACK_KEYS[semi]
+                gap_idx = black_map[semi]
                 kx = x + gap_idx * white_w + white_w - black_w // 2
                 cx = kx + black_w // 2
                 cy = y + black_h - lh - 2
@@ -317,7 +459,7 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
                 dc.SetTextForeground(finger_num_color if finger_num_color else wx.WHITE)
             else:
                 # Tasto bianco: numero nella parte bassa del tasto
-                white_idx = _WHITE_KEYS.index(semi)
+                white_idx = white_order.index(semi)
                 kx = x + white_idx * white_w
                 cx = kx + white_w // 2
                 cy = y + h - lh - 3
@@ -367,7 +509,8 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
 
 def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
                          pen_scale=1.0, notations=None, highlight_color=None,
-                         finger_num_color=None, content_w=None):
+                         finger_num_color=None, content_w=None, start_note=0,
+                         highlight_octave_both=True):
     """
     Disegna tutte le tastiere in klavier_list in fondo alla canzone.
     Ogni elemento può essere una stringa accordo semplice ("Am")
@@ -436,6 +579,15 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
         if chord_name is None:
             continue
 
+        # Nota di partenza: token 'start=' della direttiva se presente,
+        # altrimenti il default passato dal chiamante (impostazione globale).
+        entry_start = parse_start_note(entry)
+        eff_start = entry_start if entry_start is not None else start_note
+
+        # Evidenziazione ottava doppia: token 'octave=' se presente, altrimenti default
+        entry_oct = parse_octave_both(entry)
+        eff_oct = entry_oct if entry_oct is not None else highlight_octave_both
+
         normalized = _normalize_chord(chord_name, notations)
         keys = get_chord_keys(normalized)
         if keys is None:
@@ -453,6 +605,8 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
             finger_map=finger_map,
             finger_num_color=finger_num_color,
             hand=hand,
+            start_note=eff_start,
+            highlight_octave_both=eff_oct,
         )
         cur_x += kbd_w + padding_x
         max_drawn_x = max(max_drawn_x, cur_x)
@@ -464,7 +618,8 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
 
 def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
                            pen_scale=1.0, notations=None, highlight_color=None,
-                           finger_num_color=None, content_w=None):
+                           finger_num_color=None, content_w=None, start_note=0,
+                           highlight_octave_both=True):
     """
     Identico a draw_klavier_section ma destinato alle tastiere {fingering:}.
     Non mostra titolo di sezione.
@@ -513,6 +668,15 @@ def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
         if chord_name is None:
             continue
 
+        # Nota di partenza: token 'start=' della direttiva se presente,
+        # altrimenti il default passato dal chiamante (impostazione globale).
+        entry_start = parse_start_note(entry)
+        eff_start = entry_start if entry_start is not None else start_note
+
+        # Evidenziazione ottava doppia: token 'octave=' se presente, altrimenti default
+        entry_oct = parse_octave_both(entry)
+        eff_oct = entry_oct if entry_oct is not None else highlight_octave_both
+
         normalized = _normalize_chord(chord_name, notations)
         keys = get_chord_keys(normalized)
         if keys is None:
@@ -530,6 +694,8 @@ def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
             finger_map=finger_map,
             finger_num_color=finger_num_color,
             hand=hand,
+            start_note=eff_start,
+            highlight_octave_both=eff_oct,
         )
         cur_x += kbd_w + padding_x
         max_drawn_x = max(max_drawn_x, cur_x)

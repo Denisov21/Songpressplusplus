@@ -1002,19 +1002,31 @@ class Renderer(object):
                     elif cmd == 'linespacing':
                         try:
                             a = self.GetAttribute()
+                            rel = False
                             if a is None:
                                 spacing = self.starting_sf.lineSpacing
+                                rel = getattr(self.starting_sf,
+                                              'lineSpacingRel', False)
                             else:
                                 a = a.strip()
+                                # Formato: "{linespacing: N}" oppure "{linespacing: N rel}".
+                                # Con 'rel' i beats_time non aggiungono altezza al passo
+                                # di riga: vengono disegnati dentro lo spazio del
+                                # linespacing (misurato da accordo a testo, esclusi i beats).
+                                toks = a.split()
+                                rel = any(t.lower() == 'rel' for t in toks[1:])
                                 try:
-                                    spacing = int(a)
+                                    spacing = int(toks[0]) if toks else int(a)
                                 except (TypeError, ValueError):
                                     raise BreakException()
                             # Aggiorna i template sf (verranno ereditati dai blocchi successivi).
                             self.sf.lineSpacing = spacing
+                            self.sf.lineSpacingRel = rel
                             self.sf.chorus.lineSpacing = spacing
+                            self.sf.chorus.lineSpacingRel = rel
                             for v in self.sf.verse:
                                 v.lineSpacing = spacing
+                                v.lineSpacingRel = rel
                             # Aggiorna self.format IN-PLACE (non sostituendo l'oggetto):
                             # SongBlock.format punta direttamente a self.format, quindi
                             # sostituire self.format con un nuovo ParagraphFormat lascerebbe
@@ -1022,8 +1034,10 @@ class Renderer(object):
                             # Modificando l'oggetto esistente, SongBlock.format si aggiorna
                             # automaticamente poiché punta allo stesso oggetto.
                             self.format.lineSpacing = spacing
+                            self.format.lineSpacingRel = rel
                             if self._beats_time_format_snapshot is not None:
                                 self._beats_time_format_snapshot.lineSpacing = spacing
+                                self._beats_time_format_snapshot.lineSpacingRel = rel
                         except BreakException:
                             pass
                     elif cmd == 'taste':

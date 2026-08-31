@@ -185,6 +185,7 @@ Sets the **line spacing** between text lines of the song from the point where th
 
 ```chordpro
 {linespacing: 13}
+{linespacing: 13 rel}
 ```
 
 ### Parameter — linespacing
@@ -193,13 +194,16 @@ Sets the **line spacing** between text lines of the song from the point where th
 | --------------- | ------------------------------------------------------------------------------ |
 | `0`             | Removes extra space between lines (default value in the insertion dialog)      |
 | positive number | Adds vertical space between lines (in typographic points)                      |
+| `N rel`         | Relative mode: the N px exclude the beat-number band (`{beats_time}`)          |
 
 ### Usage Notes — linespacing
 
 - The directive can be inserted anywhere in the song; it affects subsequent lines.
 - Typical values range between `10` and `20` depending on the font and size used.
 - Useful for adjusting text density in print, especially with two-column layout or two-pages-per-sheet format.
+- **`rel` mode** — with `{beats_time}` active, the row of beat numbers above the chords normally adds to the line pitch. Adding `rel` (`{linespacing: 13 rel}`), that band is not counted: the N px are measured from the chord row to the text row, excluding the beats, which are drawn inside the `linespacing` gap. See the *"`{beats_time}` and `{linespacing}` — How Spacing Interacts"* section for details.
 - **Global scope** — `{linespacing}` propagates throughout the entire song from the point of insertion, even across page breaks (`{new_page}`). If the directive is used multiple times, each occurrence overwrites the previous value; the last `{linespacing}` in the file determines the line spacing for the rest of the song.
+- **Coexistence with `{new_page}` on the same line** — Placing both directives on the same line is allowed and works correctly, in either order:
 - **Coexistence with `{new_page}` on the same line** — Placing both directives on the same line is allowed and works correctly, in either order:
   ```chordpro
   {new_page} {linespacing:15}
@@ -600,6 +604,8 @@ Without a label (uses the default «Part»):
 
 The keyboard (klavier) displays the keys corresponding to the specified chord, highlighted with the color set in preferences.
 
+Both the `{taste:}` and `{fingering:}` directives accept the `start=` (keyboard start note) and `octave=` (octave highlighting) options described below; their insertion dialogs offer the **Start note**, **Highlight note on both octaves** and **Uppercase chord** controls.
+
 ![Songpress++ Chord Key Color Option](./img/GUIDE/accordi_3_en.png)
 
 ### First Chord Fingering — `{fingering:}`
@@ -614,6 +620,7 @@ The `{fingering:}` directive is a variant of the klavier keyboard designed to sh
 {fingering: G 2=G 1=B 3=D}
 {fingering: Am hand=R 3=La 1=Mi 2=Do}
 {fingering: Am hand=L}
+{fingering: B hand=R start=B 1=B 2=D# 3=F#}
 ```
 
 The `finger=note` part is optional. The `hand=` token is also optional and can appear anywhere after the chord name. Numbers correspond to the fingers of the hand:
@@ -635,12 +642,53 @@ The `finger=note` part is optional. The `hand=` token is also optional and can a
 
 The label appears centered below the keyboard in grey italics. If the `hand=` token is absent, no label is shown. The value is case-insensitive (`hand=r` and `hand=R` are equivalent).
 
+**Keyboard start note (`start=`):**
+
+By default the keyboard starts from **C**. With the optional `start=Note` token you can make it start from another natural note, given in English notation (`C D E F G A B`) or Italian notation (`Do Re Mi Fa Sol La Si`). The token can appear anywhere after the chord name and is case-insensitive.
+
+```chordpro
+{taste: B start=B}
+{fingering: B hand=R start=B 1=B 2=D# 3=F#}
+```
+
+| Start            | White keys | Black keys |
+| ---------------- | ---------- | ---------- |
+| `C` or `F`       | 7          | 5 (all)    |
+| any other note   | 8          | 5 (all)    |
+
+Starting from C or F the keyboard shows the canonical 7 white keys. Starting from any other note, a 7-key window would "cut off" a black key: Songpress++ therefore **automatically adds an eighth white key at the end** — the octave of the start note (e.g. `B … B`) — so that all 12 pitches of the octave remain representable and every chord note can be highlighted. The overall width of the diagram is unchanged: with 8 keys they are simply a little narrower.
+
+Only natural notes (white keys) are allowed; an altered or unrecognized value falls back to C.
+
+**Octave highlighting (`octave=`):**
+
+On 8-key keyboards the start note appears at **both ends**. If that note is part of the chord, by default it is highlighted at both (the natural behavior of an "octave-to-octave" view). With the `octave=one` token it is highlighted **only** on the left one.
+
+| Value         | Effect                                                    |
+| ------------- | --------------------------------------------------------- |
+| `octave=both` | Highlight the start note on both octaves (default)        |
+| `octave=one`  | Highlight only the left start note                        |
+
+The token only has an effect on 8-key layouts (start other than C/F); otherwise it is ignored.
+
+```chordpro
+{fingering: B hand=R start=B octave=one 1=B 2=D# 3=F#}
+```
+
 Notes can be written in Italian notation (`Do`, `Re`, `Mi`, `Fa`, `Sol`, `La`, `Si`, with `#` for sharps) or English notation (`C`, `D`, `E`, `F`, `G`, `A`, `B`).
 
 > **Note on notation** — The insertion dialog and the finger grid follow the **default notation** set in Songpress++ preferences (*Options → Default notation*). Note names shown in the grid and written into the generated directive change automatically according to the selected notation: with American notation you will see `A, C#, E`; with Italian `La, Do#, Mi`; with German `A, Cis, E`, and so on. Chord recognition in the *Chord* field also respects the current notation. Nashville and Roman notations are not supported for fingering.
 
 **Inserting from the menu:** *Insert → Other → First chord fingering {fingering:}*
-A dialog opens that automatically shows the notes of the chord and lets you assign a finger to each one using a drop-down menu, as well as select the hand (Right / Left / None).
+A dialog opens that automatically shows the notes of the chord and lets you:
+
+- assign a finger to each note using a drop-down menu;
+- select the hand (Right / Left / None);
+- choose the keyboard **Start note** from the drop-down of the same name;
+- enable **Highlight note on both octaves** (only enabled when the start note produces 8 keys);
+- enable **Uppercase chord** (on by default): always writes the chord name in uppercase in the directive. Chord recognition is case-insensitive anyway, so `Am` → `AM` is still A minor.
+
+When enabled, the *Show keyboard preview* box at the bottom of the dialog reflects all these choices in real time. The *Chord keys* dialog (`{taste:}`) offers the same **Start note**, **Highlight note on both octaves** and **Uppercase chord** controls.
 
 **Finger number color:**
 The color of the numbers displayed on the keys is set in *Options → Format → Chords and tempo → Finger number colour*. The default is near-black (`#1A1A1A`); on black keys the number appears in white to ensure contrast.
@@ -883,6 +931,34 @@ The rule is straightforward: `{linespacing}` acts on the gap between the current
 ```
 
 > **Technical note** — Internally, `{beats_time}` and `{linespacing}` use separate structures: the former acts on `SongText` tokens (individual chord tokens), the latter on the `ParagraphFormat` of the block. They do not overwrite each other.
+
+#### Relative mode `{linespacing: N rel}` — excluding the beat band
+
+Normally the beat numbers occupy a band **above** the chords that adds to the overall spacing: two lines with `{beats_time}` therefore end up farther apart than two lines without, even at the same `{linespacing}`. If you want the line spacing to stay **constant** regardless of the presence of beats, add the `rel` flag:
+
+```chordpro
+{linespacing: 13 rel}
+```
+
+With `rel`, the number band is **not** counted in the line pitch: the N px are measured from the chord row to the text row, and the beats are drawn **inside** the `linespacing` gap instead of adding to it.
+
+```text
+── {linespacing: 13} (normal) ───────────────────────────────
+   Previous line text
+        ↕  13 pt + beat-number height     ← the band adds up
+   4    2    2    4
+  DO  SOL  LA-   FA
+  Current line text
+
+── {linespacing: 13 rel} ────────────────────────────────────
+   Previous line text
+        ↕  13 pt                          ← the numbers sit inside
+   4    2    2    4                          this gap
+  DO  SOL  LA-   FA
+  Current line text
+```
+
+> **Warning:** since the beats occupy the `linespacing` gap, a value of `N` smaller than the height of the numbers may bring them very close to the text of the line above. Choose `N` so that it comfortably contains the beat band. On lines **without** `{beats_time}`, `rel` mode makes no difference.
 
 ### Image Directive
 

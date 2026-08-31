@@ -848,14 +848,18 @@ Red text
 
 ### `linespacing`
 
-**Syntax:** `{linespacing: N}` or as an attribute in `{start_of_grid}`
+**Syntax:** `{linespacing: N}` or `{linespacing: N rel}`, or as an attribute in `{start_of_grid}`
 
 Sets the **extra spacing** in pixels between text lines. When used as an attribute of `{start_of_grid}`, it applies only to that grid block.
 
 ```chordpro
 {linespacing: 6}
+{linespacing: 13 rel}
 ```
 
+**`rel` option** (relative mode): with `{beats_time}` active, the beat numbers form a band above the chords that normally **adds** to the line pitch. Adding `rel`, that band is **not** counted: the N px are measured from the chord row to the text row, excluding the beats, which are drawn inside the `linespacing` gap. Useful to keep the line spacing constant between lines with and without beats. If N is smaller than the height of the numbers, they may come very close to the text of the line above.
+
+---
 ---
 
 ## 8. Chord formatting
@@ -933,14 +937,20 @@ The diagram is displayed in the preview (if the "Show guitar diagrams" option is
 
 ### `taste`
 
-**Syntax:** `{taste: ChordName}`
+**Syntax:** `{taste: ChordName [start=Note] [octave=both|one]}`
 
 Shows the **piano keyboard** with the chord notes highlighted (Klavier function). It is the keyboard equivalent of `define`. The keyboard is rendered graphically with the pressed keys coloured.
 
 ```chordpro
 {taste: Cmaj7}
 {taste: Am}
+{taste: B start=B}
 ```
+
+**Options:**
+
+- `start=Note` — keyboard start note (a natural note, `C..B` or `Do..Si`). Default: `C`. Starting from a note other than `C`/`F` adds an eighth white key at the end (the octave of the start note) so that all black keys are shown.
+- `octave=both|one` — on 8-key keyboards the start note appears at both ends: `both` (default) highlights it on both, `one` only on the left one. Has no effect with `start=C`/`F`.
 
 > The colour of the highlighted keys is configurable in *Preferences → Format → Klavier key colour*.
 
@@ -948,16 +958,23 @@ Shows the **piano keyboard** with the chord notes highlighted (Klavier function)
 
 ### `fingering`
 
-**Syntax:** `{fingering: ChordName N=Note [N=Note ...]}`
+**Syntax:** `{fingering: ChordName [hand=R|L] [start=Note] [octave=both|one] N=Note [N=Note ...]}`
 
 Shows the **piano keyboard** of a chord with **numbered fingering**: the finger number is displayed above each pressed key. Extends `{taste}` by adding a finger→note map.
 
-The format is: chord name, followed by `finger_number=note` pairs (e.g. `1=C`, `2=E`, `3=G`). The KlavierRenderer interprets the map and draws the numbers on the keys. The colour of the numbers is configurable in preferences.
+The format is: chord name, followed by `finger_number=note` pairs (e.g. `1=C`, `2=E`, `3=G`) and the optional `hand=`, `start=`, `octave=` tokens (in any order). The KlavierRenderer interprets the map and draws the numbers on the keys. The colour of the numbers is configurable in preferences.
 
 ```chordpro
 {fingering: Am 1=C 2=E 3=A}
 {fingering: C 1=E 2=G 3=C}
+{fingering: B hand=R start=B 1=B 2=D# 3=F#}
 ```
+
+**Options** (shared with `{taste}`, plus `hand=`):
+
+- `hand=R|L` — shows the hand label (right/left) below the keyboard. Case-insensitive.
+- `start=Note` — keyboard start note; see `{taste}`.
+- `octave=both|one` — highlighting of the start note on 8-key keyboards; see `{taste}`.
 
 > The `{taste}` and `{fingering}` commands use the same internal list (`klavier_list`): they can coexist freely in the same file.
 

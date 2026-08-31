@@ -50,15 +50,66 @@ msgstr "Vai all'errore"
 msgid "Close"
 msgstr "Chiudi"
 
-#. Error list header — singular
-#: SyntaxCheckerDialog.py:96
-msgid "Found 1 syntax error:"
-msgstr "Trovato 1 errore sintattico:"
+#. Error list header — only errors, singular
+#: SyntaxCheckerDialog.py
+msgid "Found 1 error:"
+msgstr "Trovato 1 errore:"
 
-#. Error list header — plural
-#: SyntaxCheckerDialog.py:98
-msgid "Found {count} syntax errors:"
-msgstr "Trovati {count} errori sintattici:"
+#. Error list header — only errors, plural
+#: SyntaxCheckerDialog.py
+msgid "Found {n} errors:"
+msgstr "Trovati {n} errori:"
+
+#. Error list header — only warnings, singular
+#: SyntaxCheckerDialog.py
+msgid "Found 1 warning:"
+msgstr "Trovato 1 avvertimento:"
+
+#. Error list header — only warnings, plural
+#: SyntaxCheckerDialog.py
+msgid "Found {n} warnings:"
+msgstr "Trovati {n} avvertimenti:"
+
+#. Error list header — mixed errors and warnings (total is always >= 2)
+#. {errors} = errors fragment, {warnings} = warnings fragment
+#: SyntaxCheckerDialog.py
+msgid "Found {errors} and {warnings}:"
+msgstr "Trovati {errors} e {warnings}:"
+
+#. Fragment used inside the mixed header — one error
+#: SyntaxCheckerDialog.py
+msgid "1 error"
+msgstr "1 errore"
+
+#. Fragment used inside the mixed header — N errors
+#: SyntaxCheckerDialog.py
+msgid "{n} errors"
+msgstr "{n} errori"
+
+#. Fragment used inside the mixed header — one warning
+#: SyntaxCheckerDialog.py
+msgid "1 warning"
+msgstr "1 avvertimento"
+
+#. Fragment used inside the mixed header — N warnings
+#: SyntaxCheckerDialog.py
+msgid "{n} warnings"
+msgstr "{n} avvertimenti"
+
+#. Column header: severity (error or warning)
+#: SyntaxCheckerDialog.py
+msgid "Type"
+msgstr "Tipo"
+
+#. Severity label in the Type column — a real error
+#: SyntaxCheckerDialog.py
+msgid "Error"
+msgstr "Errore"
+
+#. Severity label in the Type column — a warning
+#: SyntaxCheckerDialog.py
+msgid "Warning"
+msgstr "Avvertimento"
 
 #. Column header: line number
 #: SyntaxCheckerDialog.py:111
@@ -331,3 +382,33 @@ msgstr "{duration}: il valore dei minuti '%s' è fuori intervallo (0-59)"
 #: SyntaxChecker.py
 msgid "{duration}: invalid format '%s' — expected mm:ss or hh:mm:ss (e.g. '3:45' or '1:02:30')"
 msgstr "{duration}: formato non valido '%s' — atteso mm:ss o hh:mm:ss (es. '3:45' oppure '1:02:30')"
+
+# -----------------------------------------------------------------------
+# Opzioni tastiera start= / octave= (comuni a {taste:} e {fingering:})
+# -----------------------------------------------------------------------
+#: SyntaxChecker.py
+msgid "%s: unrecognized start note '%s'"
+msgstr "%s: nota di partenza non riconosciuta '%s'"
+
+#: SyntaxChecker.py
+msgid "%s: start note '%s' must be a natural note (Do Re Mi Fa Sol La Si)"
+msgstr "%s: la nota di partenza '%s' deve essere una nota naturale (Do Re Mi Fa Sol La Si)"
+
+#: SyntaxChecker.py
+msgid "%s: 'octave' must be both or one, got '%s'"
+msgstr "%s: 'octave' deve essere both o one, trovato '%s'"
+
+#: SyntaxChecker.py
+msgid "%s: 'start' specified more than once"
+msgstr "%s: 'start' specificato più di una volta"
+
+#: SyntaxChecker.py
+msgid "%s: 'octave' specified more than once"
+msgstr "%s: 'octave' specificato più di una volta"
+
+# -----------------------------------------------------------------------
+# Opzione {linespacing: N rel} (modalità relativa, esclude i beats_time)
+# -----------------------------------------------------------------------
+#: SyntaxChecker.py
+msgid "Command '{linespacing:}' requires N or 'N rel', got: '%s'"
+msgstr "Comando '{linespacing:}' richiede N o 'N rel', trovato: '%s'"

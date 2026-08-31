@@ -8,7 +8,7 @@
 ##############################################################
 
 import wx
-from .SyntaxChecker import SyntaxCheckResult
+from .SyntaxChecker import SyntaxCheckResult, SEVERITY_WARNING
 
 _ = wx.GetTranslation
 
@@ -138,12 +138,30 @@ class SyntaxCheckerDialog(wx.Dialog):
         sizer.Add(hbox, 1, wx.EXPAND | wx.ALL, 6)
 
     def _build_error_list(self, panel, sizer):
-        panel.SetBackgroundColour(wx.Colour(255, 180, 140))  # arancione-rosso chiaro
-        count = len(self._result.errors)
-        if count == 1:
-            header_text = _("Found 1 syntax error:")
+        n_err = self._result.error_count
+        n_warn = self._result.warning_count
+
+        # Colore di sfondo: arancione se ci sono errori veri,
+        # giallo se ci sono solo avvertimenti.
+        if n_err > 0:
+            panel.SetBackgroundColour(wx.Colour(255, 180, 140))  # arancione-rosso chiaro
         else:
-            header_text = _("Found {count} syntax errors:").format(count=count)
+            panel.SetBackgroundColour(wx.Colour(255, 224, 130))  # giallo (solo avvertimenti)
+
+        # Intestazione: forme dedicate singolare/plurale così l'accordo
+        # participio/numero resta corretto anche in italiano. Nel caso misto
+        # il totale è sempre >= 2, quindi "Trovati" (plurale) è sempre giusto.
+        if n_err > 0 and n_warn > 0:
+            err_frag = _("1 error") if n_err == 1 else _("{n} errors").format(n=n_err)
+            warn_frag = _("1 warning") if n_warn == 1 else _("{n} warnings").format(n=n_warn)
+            header_text = _("Found {errors} and {warnings}:").format(
+                errors=err_frag, warnings=warn_frag)
+        elif n_err > 0:
+            header_text = (_("Found 1 error:") if n_err == 1
+                           else _("Found {n} errors:").format(n=n_err))
+        else:
+            header_text = (_("Found 1 warning:") if n_warn == 1
+                           else _("Found {n} warnings:").format(n=n_warn))
 
         header = wx.StaticText(panel, label=header_text)
         header.SetForegroundColour(wx.Colour(0, 0, 0))
@@ -157,14 +175,29 @@ class SyntaxCheckerDialog(wx.Dialog):
             panel,
             style=wx.LC_REPORT | wx.LC_SINGLE_SEL | wx.BORDER_SUNKEN
         )
-        self._list.InsertColumn(0, _("Line"),        width=60)
-        self._list.InsertColumn(1, _("Column"),      width=70)
-        self._list.InsertColumn(2, _("Description"), width=-1)  # si espande automaticamente
+
+        # Icone per la colonna "Tipo" (16x16).
+        img_list = wx.ImageList(16, 16)
+        self._img_error = img_list.Add(
+            wx.ArtProvider.GetBitmap(wx.ART_ERROR, wx.ART_LIST, (16, 16)))
+        self._img_warning = img_list.Add(
+            wx.ArtProvider.GetBitmap(wx.ART_WARNING, wx.ART_LIST, (16, 16)))
+        self._list.AssignImageList(img_list, wx.IMAGE_LIST_SMALL)
+
+        self._list.InsertColumn(0, _("Type"),        width=120)
+        self._list.InsertColumn(1, _("Line"),        width=60)
+        self._list.InsertColumn(2, _("Column"),      width=70)
+        self._list.InsertColumn(3, _("Description"), width=-1)  # si espande automaticamente
 
         for err in self._result.errors:
-            idx = self._list.InsertItem(self._list.GetItemCount(), str(err.line))
-            self._list.SetItem(idx, 1, str(err.column))
-            self._list.SetItem(idx, 2, err.message)
+            if err.severity == SEVERITY_WARNING:
+                img, sev_label = self._img_warning, _("Warning")
+            else:
+                img, sev_label = self._img_error, _("Error")
+            idx = self._list.InsertItem(self._list.GetItemCount(), sev_label, img)
+            self._list.SetItem(idx, 1, str(err.line))
+            self._list.SetItem(idx, 2, str(err.column))
+            self._list.SetItem(idx, 3, err.message)
 
         self._list.Bind(wx.EVT_LIST_ITEM_SELECTED,  self._on_item_selected)
         self._list.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self._on_goto)
@@ -179,10 +212,12 @@ class SyntaxCheckerDialog(wx.Dialog):
     def _on_list_resize(self, event):
         """Keeps the Description column filling the remaining list width."""
         total = self._list.GetClientSize().width
-        fixed = self._list.GetColumnWidth(0) + self._list.GetColumnWidth(1)
+        fixed = (self._list.GetColumnWidth(0)
+                 + self._list.GetColumnWidth(1)
+                 + self._list.GetColumnWidth(2))
         remaining = total - fixed
         if remaining > 0:
-            self._list.SetColumnWidth(2, remaining)
+            self._list.SetColumnWidth(3, remaining)
         event.Skip()
 
     def _on_fit_width(self, _event):
@@ -201,15 +236,17 @@ class SyntaxCheckerDialog(wx.Dialog):
             if w > max_desc_px:
                 max_desc_px = w
 
-        col0_w = self._list.GetColumnWidth(0)
-        col1_w = self._list.GetColumnWidth(1)
+        col0_w = self._list.GetColumnWidth(0)   # Type
+        col1_w = self._list.GetColumnWidth(1)   # Line
+        col2_w = self._list.GetColumnWidth(2)   # Column
+        fixed_cols_w = col0_w + col1_w + col2_w
         # cell padding (~ 8 px) + vertical scrollbar + list border
         desc_col_w   = max_desc_px + 8
         scrollbar_w  = wx.SystemSettings.GetMetric(wx.SYS_VSCROLL_X)
         list_chrome  = scrollbar_w + 4   # 2 px border each side
         dialog_extra = 32                # outer margins (10+10) + panel border
 
-        needed_w = col0_w + col1_w + desc_col_w + list_chrome + dialog_extra
+        needed_w = fixed_cols_w + desc_col_w + list_chrome + dialog_extra
         target_w = max(needed_w, 550)    # never shrink below the minimum
 
         _cur_w, cur_h = self.GetSize()
@@ -217,8 +254,8 @@ class SyntaxCheckerDialog(wx.Dialog):
             return
         self.SetSize(target_w, cur_h)
         # Let the Description column fill the new list width
-        list_inner = target_w - dialog_extra - list_chrome - col0_w - col1_w
-        self._list.SetColumnWidth(2, max(list_inner, desc_col_w))
+        list_inner = target_w - dialog_extra - list_chrome - fixed_cols_w
+        self._list.SetColumnWidth(3, max(list_inner, desc_col_w))
         self.Layout()
 
     def _on_item_selected(self, event):

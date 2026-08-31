@@ -185,6 +185,7 @@ Imposta l'**interlinea** tra le righe di testo della canzone dal punto in cui vi
 
 ```chordpro
 {linespacing: 13}
+{linespacing: 13 rel}
 ```
 
 ### Parametro — linespacing
@@ -193,13 +194,23 @@ Imposta l'**interlinea** tra le righe di testo della canzone dal punto in cui vi
 | ---------------- | ------------------------------------------------------------------------------------ |
 | `0`              | Elimina lo spazio extra tra le righe (valore predefinito nella finestra di dialogo)  |
 | numero positivo  | Aggiunge spazio verticale tra le righe (in punti tipografici)                        |
+| `N rel`          | Modalità relativa: gli N px escludono la banda dei numeri di battito (`{beats_time}`) |
 
 ### Note d'uso — linespacing
 
 - La direttiva può essere inserita in qualsiasi punto della canzone; agisce sulle righe successive.
 - I valori tipici sono compresi tra `10` e `20` a seconda del font e della dimensione utilizzati.
 - Utile per regolare la densità del testo in stampa, specialmente con layout a due colonne o formato due pagine per foglio.
+- **Modalità `rel`** — con `{beats_time}` attivo, la fila di numeri di battito sopra gli accordi normalmente si aggiunge al passo di riga. Aggiungendo `rel` (`{linespacing: 13 rel}`), quella banda non viene conteggiata: gli N px sono misurati dalla riga accordi alla riga di testo, escludendo i battiti, che vengono disegnati dentro lo spazio del `linespacing`. Vedi la sezione *«`{beats_time}` e `{linespacing}` — come interagiscono le distanze»* per i dettagli.
 - **Scope globale** — `{linespacing}` si propaga per tutta la canzone a partire dal punto di inserimento, attraversando anche le interruzioni di pagina (`{new_page}`). Se la direttiva viene usata più volte, ogni occorrenza sovrascrive il valore precedente; l'ultima `{linespacing}` presente nel file determina l'interlinea per il resto del brano.
+- **Coesistenza con `{new_page}` sulla stessa riga** — È consentito e funziona correttamente scrivere le due direttive sulla stessa riga, in entrambi gli ordini:
+  ```chordpro
+  {new_page} {linespacing:15}
+  {linespacing:15} {new_page}
+  ```
+  Il parser le processa in sequenza da sinistra a destra. In entrambi i casi il nuovo valore di interlinea viene aggiornato nel formato globale prima che venga costruito il blocco della pagina successiva, quindi le righe della nuova pagina adottano regolarmente il valore specificato. Non vi è alcuna differenza di comportamento tra i due ordini.
+
+---
 - **Coesistenza con `{new_page}` sulla stessa riga** — È consentito e funziona correttamente scrivere le due direttive sulla stessa riga, in entrambi gli ordini:
   ```chordpro
   {new_page} {linespacing:15}
@@ -600,6 +611,8 @@ Senza etichetta (usa il default «Part»):
 
 La tastiera (klavier) visualizza i tasti corrispondenti all'accordo specificato, evidenziati con il colore impostato nelle preferenze.
 
+Entrambe le direttive `{taste:}` e `{fingering:}` accettano le opzioni `start=` (nota di partenza della tastiera) e `octave=` (evidenziazione dell'ottava) descritte più avanti; le rispettive finestre di inserimento offrono i controlli **Nota di partenza**, **Evidenzia la nota su entrambe le ottave** e **Accordo in maiuscolo**.
+
 ![Songpress++ Opzione colore tasti accordi](./img/GUIDE/accordi_3_it.png)
 
 ### Diteggiatura del primo accordo — `{fingering:}`
@@ -614,6 +627,7 @@ La direttiva `{fingering:}` è una variante della tastiera klavier pensata per i
 {fingering: G 2=Sol 1=Si 3=Re}
 {fingering: Am hand=R 3=Do 1=Mi 2=La}
 {fingering: Am hand=L}
+{fingering: Si hand=R start=Si 1=Si 2=Re# 3=Fa#}
 ```
 
 La parte `dito=nota` è opzionale. Il token `hand=` è anch'esso opzionale e può comparire in qualsiasi posizione dopo il nome dell'accordo. I numeri corrispondono alle dita:
@@ -635,12 +649,53 @@ La parte `dito=nota` è opzionale. Il token `hand=` è anch'esso opzionale e pu�
 
 L'etichetta compare centrata sotto la tastiera, in corsivo grigio. Se il token `hand=` è assente, non viene visualizzata alcuna etichetta. Il valore è case-insensitive (`hand=r` equivale a `hand=R`).
 
+**Nota di partenza della tastiera (`start=`):**
+
+Per impostazione predefinita la tastiera parte dal **DO**. Con il token opzionale `start=Nota` è possibile farla partire da un'altra nota naturale, indicata in notazione italiana (`Do Re Mi Fa Sol La Si`) o inglese (`C D E F G A B`). Il token può comparire in qualsiasi posizione dopo il nome dell'accordo ed è insensibile alle maiuscole.
+
+```chordpro
+{taste: Si start=Si}
+{fingering: Si hand=R start=Si 1=Si 2=Re# 3=Fa#}
+```
+
+| Partenza          | Tasti bianchi | Tasti neri  |
+| ----------------- | ------------- | ----------- |
+| `DO` o `FA`       | 7             | 5 (tutti)   |
+| ogni altra nota   | 8             | 5 (tutti)   |
+
+Partendo da DO o FA la tastiera mostra i canonici 7 tasti bianchi. Partendo da qualsiasi altra nota, una finestra di soli 7 tasti "taglierebbe" un tasto nero: per questo Songpress++ **aggiunge automaticamente un ottavo tasto bianco in fondo** — l'ottava della nota iniziale (es. `Si … Si`) — così tutti e 12 i suoni dell'ottava restano rappresentabili e ogni nota dell'accordo può essere evidenziata. La larghezza complessiva del diagramma resta invariata: con 8 tasti risultano semplicemente un po' più stretti.
+
+Sono ammesse solo note naturali (tasti bianchi); un valore alterato o non riconosciuto fa ricadere la partenza su DO.
+
+**Evidenziazione dell'ottava (`octave=`):**
+
+Nelle tastiere a 8 tasti la nota iniziale compare a **entrambe le estremità**. Se quella nota fa parte dell'accordo, per impostazione predefinita viene evidenziata su tutte e due (comportamento naturale di una vista "ottava-ottava"). Con il token `octave=one` viene evidenziata **solo** su quella di sinistra.
+
+| Valore        | Effetto                                                        |
+| ------------- | -------------------------------------------------------------- |
+| `octave=both` | Evidenzia la nota iniziale su entrambe le ottave (predefinito) |
+| `octave=one`  | Evidenzia solo la nota iniziale a sinistra                     |
+
+Il token ha effetto solo nei layout a 8 tasti (partenza diversa da DO/FA); negli altri casi è ignorato.
+
+```chordpro
+{fingering: Si hand=R start=Si octave=one 1=Si 2=Re# 3=Fa#}
+```
+
 Le note si scrivono in notazione italiana (`Do`, `Re`, `Mi`, `Fa`, `Sol`, `La`, `Si`, con `#` per i diesis) o inglese (`C`, `D`, `E`, `F`, `G`, `A`, `B`).
 
 > **Nota sulla notazione** — Il dialogo di inserimento e la griglia delle dita rispettano la **notazione predefinita** impostata nelle preferenze di Songpress++ (*Opzioni → Notazione predefinita*). I nomi delle note mostrati nella griglia e scritti nella direttiva generata cambiano automaticamente in base alla notazione scelta: con notazione Americana si vedrà `A, C#, E`; con Italiana `La, Do#, Mi`; con Tedesca `A, Cis, E`, e così via. Anche il riconoscimento degli accordi digitati nel campo *Accordo* segue la notazione corrente. Le notazioni Nashville e Romana non sono supportate per la diteggiatura.
 
 **Inserimento dal menu:** *Inserisci → Altro → Diteggiatura primo accordo {fingering:}*
-Si apre una finestra che mostra automaticamente le note dell'accordo e permette di assegnare un dito a ciascuna con un menu a tendina, nonché di selezionare la mano (Destra / Sinistra / Nessuna indicazione).
+Si apre una finestra che mostra automaticamente le note dell'accordo e permette di:
+
+- assegnare un dito a ciascuna nota con un menu a tendina;
+- selezionare la mano (Destra / Sinistra / Nessuna indicazione);
+- scegliere la **Nota di partenza** della tastiera dal menu a tendina omonimo;
+- attivare **Evidenzia la nota su entrambe le ottave** (abilitata solo quando la partenza genera 8 tasti);
+- attivare **Accordo in maiuscolo** (attiva per impostazione predefinita): scrive il nome dell'accordo sempre in maiuscolo nella direttiva. Il riconoscimento dell'accordo è comunque insensibile alle maiuscole, quindi `Am` → `AM` resta La minore.
+
+Se attiva, la casella *Mostra anteprima tastiera* in fondo alla finestra riflette in tempo reale tutte queste scelte. La finestra *Tasti accordo* (`{taste:}`) offre gli stessi controlli **Nota di partenza**, **Evidenzia la nota su entrambe le ottave** e **Accordo in maiuscolo**.
 
 **Colore dei numeri delle dita:**
 Il colore dei numeri visualizzati sui tasti si imposta in *Opzioni → Formattazione → Accordi e tempo → Colore numeri diteggiatura*. Per impostazione predefinita è quasi nero (`#1A1A1A`); su tasti neri il numero appare in bianco per garantire il contrasto.
@@ -883,6 +938,34 @@ Il `linespacing` si inserisce **tra** i blocchi riga — ovvero tra il fondo del
 ```
 
 > **Nota tecnica** — Internamente, `{beats_time}` e `{linespacing}` usano formati separati: il primo agisce sui `SongText` (i singoli token accordo), il secondo sul `ParagraphFormat` del blocco. Non si sovrascrivono a vicenda.
+
+#### Modalità relativa `{linespacing: N rel}` — escludere la banda dei battiti
+
+Di norma i numeri di battito occupano una fascia **sopra** gli accordi che si somma allo spazio complessivo: due righe con `{beats_time}` risultano quindi più distanti di due righe senza, anche a parità di `{linespacing}`. Se vuoi che l'interlinea resti **costante** indipendentemente dalla presenza dei battiti, aggiungi il flag `rel`:
+
+```chordpro
+{linespacing: 13 rel}
+```
+
+Con `rel`, la banda dei numeri **non** viene conteggiata nel passo di riga: gli N px sono misurati dalla riga degli accordi alla riga di testo, e i battiti vengono disegnati **dentro** lo spazio del `linespacing` invece di aggiungersi.
+
+```text
+── {linespacing: 13} (normale) ──────────────────────────────
+   Testo riga precedente
+        ↕  13 pt + altezza numeri battito   ← la banda si somma
+   4    2    2    4
+  DO  SOL  LA-   FA
+  Testo riga corrente
+
+── {linespacing: 13 rel} ────────────────────────────────────
+   Testo riga precedente
+        ↕  13 pt                            ← i numeri stanno dentro
+   4    2    2    4                            questo spazio
+  DO  SOL  LA-   FA
+  Testo riga corrente
+```
+
+> **Attenzione:** poiché i battiti occupano lo spazio del `linespacing`, un valore di `N` più piccolo dell'altezza dei numeri può farli avvicinare molto al testo della riga superiore. Scegli `N` in modo che contenga comodamente la fascia dei battiti. Sulle righe **senza** `{beats_time}` la modalità `rel` non produce alcuna differenza.
 
 ### Direttiva immagine
 

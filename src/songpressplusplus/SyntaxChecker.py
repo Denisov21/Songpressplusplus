@@ -23,12 +23,18 @@ def _(s):
         return s
 
 
+# Livelli di gravità di un problema rilevato.
+SEVERITY_ERROR = "error"       # errore vero e proprio (blocca / notazione errata)
+SEVERITY_WARNING = "warning"   # avvertimento (probabile, ma non necessariamente errato)
+
+
 @dataclass
 class SyntaxError:
-    """Represents a single detected syntax error."""
+    """Represents a single detected syntax error or warning."""
     line: int          # line number (1-based)
     column: int        # column position in the line (1-based)
     message: str       # error description
+    severity: str = SEVERITY_ERROR   # SEVERITY_ERROR oppure SEVERITY_WARNING
 
 
 @dataclass
@@ -39,6 +45,19 @@ class SyntaxCheckResult:
     @property
     def is_valid(self) -> bool:
         return len(self.errors) == 0
+
+    @property
+    def error_count(self) -> int:
+        return sum(1 for e in self.errors if e.severity == SEVERITY_ERROR)
+
+    @property
+    def warning_count(self) -> int:
+        return sum(1 for e in self.errors if e.severity == SEVERITY_WARNING)
+
+    @property
+    def has_errors(self) -> bool:
+        """True se è presente almeno un problema di gravità 'error'."""
+        return self.error_count > 0
 
 
 # Known ChordPro commands (standard + Songpress++ extensions)
@@ -223,6 +242,68 @@ def _parse_chord_semitones(chord_str: str):
 _NON_CHORD_TOKENS = {'n.c.', 'nc', 'tacet', '%', '|', '||', '*'}
 
 
+# ── Opzioni tastiera comuni a {taste:} e {fingering:} ────────────────────────
+# Note naturali (tasti bianchi) ammesse come nota di partenza (start=)
+_WHITE_SEMITONES = {0, 2, 4, 5, 7, 9, 11}   # Do Re Mi Fa Sol La Si
+# Valori ammessi per octave=
+_OCTAVE_VALUES = {'both', 'one', 'single', 'first'}
+
+
+def _validate_kbd_option(token: str, line_num: int, col: int,
+                         result: SyntaxCheckResult, seen: set,
+                         directive: str) -> bool:
+    """
+    Valida un token opzione della tastiera comune a {taste:} e {fingering:}:
+        start=<nota naturale>   → nota di partenza (Do..Si / C..B)
+        octave=<both|one>       → evidenziazione dell'ottava (layout a 8 tasti)
+
+    Restituisce True se il token È un'opzione riconosciuta (start=/octave=),
+    così il chiamante non lo tratta come accordo/nota; False altrimenti.
+    Gli eventuali errori vengono aggiunti a `result`; `seen` rileva i duplicati.
+    `directive` è l'etichetta usata nei messaggi (es. "{taste}" o "{fingering}").
+    """
+    # ── start=<nota> ──────────────────────────────────────────────
+    m = re.match(r'^start=(.*)$', token, re.IGNORECASE)
+    if m:
+        if 'start' in seen:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_("%s: 'start' specified more than once") % directive))
+        seen.add('start')
+        val = m.group(1)
+        semi = _note_to_semitone(val)
+        if semi is None:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_("%s: unrecognized start note '%s'") % (directive, val)))
+        elif semi not in _WHITE_SEMITONES:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_(
+                    "%s: start note '%s' must be a natural note "
+                    "(Do Re Mi Fa Sol La Si)") % (directive, val)))
+        return True
+
+    # ── octave=<both|one|single|first> ────────────────────────────
+    m = re.match(r'^octave=(.*)$', token, re.IGNORECASE)
+    if m:
+        if 'octave' in seen:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_("%s: 'octave' specified more than once") % directive))
+        seen.add('octave')
+        val = m.group(1)
+        if val.lower() not in _OCTAVE_VALUES:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_(
+                    "%s: 'octave' must be both or one, got '%s'"
+                ) % (directive, val)))
+        return True
+
+    return False
+
+
 def _check_chord_name(content: str, line_num: int, col: int,
                       result: SyntaxCheckResult):
     """Segnala un errore se il contenuto di [...] non è un accordo valido."""
@@ -237,22 +318,30 @@ def _check_chord_name(content: str, line_num: int, col: int,
     if _parse_chord_semitones(name) is None:
         result.errors.append(SyntaxError(
             line=line_num, column=col,
-            message=_("Unrecognized or invalid chord '%s'") % name
+            message=_("Unrecognized or invalid chord '%s'") % name,
+            severity=SEVERITY_WARNING
         ))
 
 
 def _validate_taste(cmd_value: str, line_num: int, col: int,
                     result: SyntaxCheckResult):
     """
-    Valida il valore di {taste: ...}: uno o più nomi di accordo
-    separati da spazi o virgole. Ogni nome deve essere riconosciuto.
+    Valida il valore di {taste: ...}: un nome di accordo (o più, separati da
+    spazi/virgole) più le eventuali opzioni tastiera start= / octave=.
+    Ogni nome di accordo deve essere riconosciuto.
     """
     tokens = [t for t in re.split(r'[\s,]+', cmd_value.strip()) if t]
+    kbd_opts_seen = set()
     for token in tokens:
+        # Opzioni tastiera (start=, octave=): validate e non trattare come accordo
+        if _validate_kbd_option(token, line_num, col, result,
+                                kbd_opts_seen, "{taste}"):
+            continue
         if _parse_chord_semitones(token) is None:
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
-                message=_("{taste}: unrecognized chord '%s'") % token
+                message=_("{taste}: unrecognized chord '%s'") % token,
+                severity=SEVERITY_WARNING
             ))
 
 
@@ -281,14 +370,16 @@ def _validate_fingering(cmd_value: str, line_num: int, col: int,
     if chord_semitones is None:
         result.errors.append(SyntaxError(
             line=line_num, column=col,
-            message=_("{fingering}: unrecognized chord '%s'") % chord_name
+            message=_("{fingering}: unrecognized chord '%s'") % chord_name,
+            severity=SEVERITY_WARNING
         ))
         return   # senza accordo valido non ha senso continuare
 
-    # Parsa le assegnazioni dito=nota (e il token hand= opzionale)
+    # Parsa le assegnazioni dito=nota (e i token hand=, start=, octave= opzionali)
     used_fingers = {}   # finger_num → nota_str
     used_semitones = {} # semitono → finger_num
     hand_seen = False
+    kbd_opts_seen = set()   # per start= / octave= (rileva duplicati)
 
     for token in parts[1:]:
         # ── Token hand=R / hand=L ────────────────────────────────
@@ -309,6 +400,12 @@ def _validate_fingering(cmd_value: str, line_num: int, col: int,
                 ))
             hand_seen = True
             continue
+
+        # ── Opzioni tastiera start= / octave= ────────────────────
+        if _validate_kbd_option(token, line_num, col, result,
+                                kbd_opts_seen, "{fingering}"):
+            continue
+
         m = re.match(r'^(\d+)=(.+)$', token)
         if not m:
             result.errors.append(SyntaxError(
@@ -790,6 +887,28 @@ def _validate_command(content: str, line_num: int, col: int,
         # M = display mode (-1, 0, 1, 2, 3)
 
         value_to_check = cmd_value
+
+        # ── {linespacing: N} oppure {linespacing: N rel} ──────────────
+        # 'rel' = i beats_time non aggiungono altezza al passo di riga.
+        if cmd_name == "linespacing" and cmd_value.strip():
+            toks = cmd_value.split()
+            ok = False
+            try:
+                float(toks[0])
+                extra = toks[1:]
+                ok = (len(extra) == 0) or (
+                    len(extra) == 1 and extra[0].lower() == "rel")
+            except (ValueError, IndexError):
+                ok = False
+            if not ok:
+                result.errors.append(SyntaxError(
+                    line=line_num, column=col,
+                    message=_(
+                        "Command '{linespacing:}' requires N or 'N rel', got: '%s'"
+                    ) % cmd_value
+                ))
+                return
+            value_to_check = None   # già validato: salta il controllo numerico generico
 
         if cmd_name == "tempo" and ',' in cmd_value:
 

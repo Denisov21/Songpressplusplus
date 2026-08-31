@@ -848,13 +848,16 @@ Testo in rosso
 
 ### `linespacing`
 
-**Sintassi:** `{linespacing: N}` oppure come attributo in `{start_of_grid}`
+**Sintassi:** `{linespacing: N}` oppure `{linespacing: N rel}`, oppure come attributo in `{start_of_grid}`
 
 Imposta la **spaziatura extra** in pixel tra le righe di testo. Quando usato come attributo di `{start_of_grid}`, si applica solo a quel blocco griglia.
 
 ```chordpro
 {linespacing: 6}
+{linespacing: 13 rel}
 ```
+
+**Opzione `rel`** (modalità relativa): con `{beats_time}` attivo, i numeri di battito formano una banda sopra gli accordi che di norma si **aggiunge** al passo di riga. Aggiungendo `rel`, quella banda **non** viene conteggiata: gli N px sono misurati dalla riga accordi alla riga di testo, escludendo i beats, che vengono disegnati dentro lo spazio del `linespacing`. Utile per mantenere l'interlinea costante tra righe con e senza battiti. Se N è più piccolo dell'altezza dei numeri, questi possono avvicinarsi molto al testo della riga superiore.
 
 ---
 
@@ -933,14 +936,20 @@ Il diagramma viene visualizzato nell'anteprima (se l'opzione "Mostra diagrammi c
 
 ### `taste`
 
-**Sintassi:** `{taste: NomeAccordo}`
+**Sintassi:** `{taste: NomeAccordo [start=Nota] [octave=both|one]}`
 
 Mostra la **tastiera di pianoforte** con le note dell'accordo evidenziate (funzione Klavier). È l'equivalente pianistico di `define`. La tastiera viene renderizzata graficamente con i tasti premuti colorati.
 
 ```chordpro
 {taste: Cmaj7}
 {taste: Am}
+{taste: Si start=Si}
 ```
+
+**Opzioni:**
+
+- `start=Nota` — nota di partenza della tastiera (nota naturale, `Do..Si` o `C..B`). Predefinito: `Do`. Partendo da una nota diversa da `Do`/`Fa` viene aggiunto un ottavo tasto bianco in fondo (l'ottava della nota iniziale) per mostrare tutti i tasti neri.
+- `octave=both|one` — nelle tastiere a 8 tasti la nota iniziale compare a entrambe le estremità: `both` (predefinito) la evidenzia su entrambe, `one` solo su quella di sinistra. Ininfluente con `start=Do`/`Fa`.
 
 > Il colore dei tasti evidenziati è configurabile in *Preferenze → Formato → Colore tasti Klavier*.
 
@@ -948,16 +957,23 @@ Mostra la **tastiera di pianoforte** con le note dell'accordo evidenziate (funzi
 
 ### `fingering`
 
-**Sintassi:** `{fingering: NomeAccordo N=Nota [N=Nota ...]}`
+**Sintassi:** `{fingering: NomeAccordo [hand=R|L] [start=Nota] [octave=both|one] N=Nota [N=Nota ...]}`
 
 Mostra la **tastiera di pianoforte** di un accordo con la **diteggiatura numerata**: sopra ogni tasto premuto viene visualizzato il numero del dito corrispondente. Estende `{taste}` aggiungendo una mappa dito→nota.
 
-Il formato è: nome dell'accordo, seguito da coppie `numero_dito=nota_italiana` (es. `1=Do`, `2=Mi`, `3=Sol`). Il KlavierRenderer interpreta la mappa e disegna i numeri sui tasti. Il colore dei numeri è configurabile nelle preferenze.
+Il formato è: nome dell'accordo, seguito da coppie `numero_dito=nota` (es. `1=Do`, `2=Mi`, `3=Sol`) e dai token opzionali `hand=`, `start=`, `octave=` (in qualsiasi ordine). Il KlavierRenderer interpreta la mappa e disegna i numeri sui tasti. Il colore dei numeri è configurabile nelle preferenze.
 
 ```chordpro
 {fingering: Am 1=Do 2=Mi 3=La}
 {fingering: C 1=Mi 2=Sol 3=Do}
+{fingering: Si hand=R start=Si 1=Si 2=Re# 3=Fa#}
 ```
+
+**Opzioni** (comuni a `{taste}`, più `hand=`):
+
+- `hand=R|L` — mostra l'etichetta della mano (destra/sinistra) sotto la tastiera. Case-insensitive.
+- `start=Nota` — nota di partenza della tastiera; vedi `{taste}`.
+- `octave=both|one` — evidenziazione della nota iniziale nelle tastiere a 8 tasti; vedi `{taste}`.
 
 > I comandi `{taste}` e `{fingering}` utilizzano la stessa lista interna (`klavier_list`): possono coesistere liberamente nello stesso file.
 

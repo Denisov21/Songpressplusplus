@@ -79,6 +79,11 @@ class ParagraphFormat(FontFormat):
         self.textSpacing = 1 if ff is None else ff.textSpacing
         self.chordTopSpacing = 0 if ff is None else ff.chordTopSpacing
         self.lineSpacing = 0 if ff is None else ff.lineSpacing
+        # Modalità "relativa" del linespacing ({linespacing: N rel}): quando True,
+        # i beats_time non aggiungono altezza al passo di riga (vengono disegnati
+        # dentro lo spazio del linespacing). getattr per retro-compatibilità con
+        # eventuali formati serializzati/vecchi privi dell'attributo.
+        self.lineSpacingRel = False if ff is None else getattr(ff, 'lineSpacingRel', False)
         self.chord = FontFormat(ff.chord) if ff is not None else FontFormat()
         self.comment = FontFormat(ff.comment) if ff is not None else FontFormat()
         if ff is None:

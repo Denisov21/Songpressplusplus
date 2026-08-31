@@ -12,7 +12,7 @@
 import wx
 from .SongFormat import *
 from .SongBoxes import *
-from .KlavierRenderer import draw_klavier_section
+from .KlavierRenderer import draw_klavier_section, start_note_to_semitone
 from .GuitarDiagramRenderer import draw_guitar_diagram_section
 from .Globals import glb as _glb
 from .MusicalSymbolDialog import get_smp_faces as _get_smp_faces
@@ -58,6 +58,13 @@ class SongDecorator(object):
         self.klavierHighlightColor = None
         # Colour for finger number labels on klavier keys (wx.Colour or None = auto contrast)
         self.fingerNumColor = None
+        # Nota del primo tasto (a sinistra) dei diagrammi klavier.
+        # Accetta un intero semitono (0=DO) oppure un nome di nota ("SI", "B"...).
+        # Solo i tasti bianchi (DO RE MI FA SOL LA SI) sono validi; qualsiasi
+        # altro valore ripiega su DO. Nota: solo DO e FA mostrano tutti e 5 i
+        # tasti neri; le altre note ne mostrano 4 (la finestra di 7 bianchi
+        # taglia un tasto nero).
+        self.klavierStartNote = 0
         # Whether to show beat count above chords ({beats_time} directive)
         self.showDurationBeats = True
         # Modalità visualizzazione battiti: 'number' | 'dots' | 'both'
@@ -269,6 +276,15 @@ class SongDecorator(object):
             # Ripristina font per il Pass 2
             if line.boxes:
                 self.dc.SetFont(line.boxes[0].font)
+
+        # ── Modalità linespacing "rel" ({linespacing: N rel}) ─────────────────
+        # Quando attiva, i beats_time NON contribuiscono all'altezza né al passo
+        # di riga: PostDrawLine li disegna comunque appena sopra l'accordo, ma
+        # finiscono dentro lo spazio del linespacing invece di aggiungersi. In
+        # pratica gli N px sono misurati dalla riga accordi alla riga di testo,
+        # escludendo la banda dei beats.
+        if beatsExtraH and getattr(line.parent.format, 'lineSpacingRel', False):
+            beatsExtraH = 0
         # ────────────────────────────────────────────────────────────────────────
 
         chordsBelow = self.s.chordsBelow
@@ -912,6 +928,7 @@ class SongDecorator(object):
                     self.klavierHighlightColor,
                     finger_num_color=self.fingerNumColor,
                     content_w=content_w,
+                    start_note=start_note_to_semitone(self.klavierStartNote),
                 )
                 current_extra_h += h + 20
                 # Se il klavier è più largo del testo, memorizza la larghezza extra

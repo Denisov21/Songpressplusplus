@@ -3890,19 +3890,93 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
     def OnInsertKlavierChord(self, evt):
         """Inserts the {taste:<chord>} directive for a chord keyboard display (klavier)."""
-        d = wx.TextEntryDialog(
-            self.frame,
-            _("Enter the chord name (e.g. C, G, Am, D7):"), 
-            _("Chord keys"),
-            "",
-        )
-        if d.ShowModal() == wx.ID_OK:
-            chord = d.GetValue().strip()
+        # ── Nomi delle note di partenza nella notazione corrente ──────
+        _cur_notation = self.pref.notations[0] if self.pref.notations else None
+        _it_notation = None
+        for _n in self.pref.notations:
+            if hasattr(_n, 'id') and ('it' in _n.id.lower() or 'italian' in _n.id.lower()):
+                _it_notation = _n
+                break
+        _IT_12 = ['Do', 'Do#', 'Re', 'Re#', 'Mi', 'Fa',
+                  'Fa#', 'Sol', 'Sol#', 'La', 'La#', 'Si']
+
+        def _semi_to_note(semi):
+            it_name = _IT_12[semi % 12]
+            if _cur_notation is None or _it_notation is None:
+                return it_name
+            try:
+                return translateChord(it_name, _it_notation, _cur_notation)
+            except Exception:
+                return it_name
+
+        # Tasti bianchi (semitoni): DO RE MI FA SOL LA SI
+        _WHITE_SEMIS = [0, 2, 4, 5, 7, 9, 11]
+
+        dlg = wx.Dialog(self.frame, title=_(u"Chord keys"),
+                        style=wx.DEFAULT_DIALOG_STYLE)
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        vbox.Add(wx.StaticText(
+            dlg, -1, _(u"Enter the chord name (e.g. C, G, Am, D7):")),
+            0, wx.ALL, 10)
+        txt_chord = wx.TextCtrl(dlg, -1, u"", size=(180, -1))
+        vbox.Add(txt_chord, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+
+        # Nota di partenza della tastiera (DO = comportamento standard).
+        # Solo DO e FA mostrano tutti e 5 i tasti neri; le altre note
+        # aggiungono un ottavo tasto (l'ottava) in fondo.
+        hbox_start = wx.BoxSizer(wx.HORIZONTAL)
+        hbox_start.Add(wx.StaticText(dlg, -1, _(u"Start note:")),
+                       0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        ch_start = wx.Choice(dlg, -1,
+                             choices=[_semi_to_note(s) for s in _WHITE_SEMIS])
+        ch_start.SetSelection(0)   # DO
+        hbox_start.Add(ch_start, 0)
+        vbox.Add(hbox_start, 0, wx.ALL, 10)
+
+        # Casella: nelle tastiere a 8 tasti la nota iniziale compare a entrambe
+        # le estremità. Attiva = evidenzia su entrambe le ottave (default);
+        # disattiva = solo quella di sinistra. Ha effetto solo con 8 tasti.
+        cb_octave = wx.CheckBox(
+            dlg, -1, _(u"Highlight note on both octaves"))
+        cb_octave.SetValue(True)
+        vbox.Add(cb_octave, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        def _sync_octave_cb(e=None):
+            has8 = KlavierRenderer.keyboard_has_octave_key(
+                _WHITE_SEMIS[ch_start.GetSelection()])
+            cb_octave.Enable(has8)
+        _sync_octave_cb()
+        ch_start.Bind(wx.EVT_CHOICE, _sync_octave_cb)
+
+        # Casella: nome accordo sempre in maiuscolo (attiva di default).
+        cb_upper = wx.CheckBox(dlg, -1, _(u"Uppercase chord"))
+        cb_upper.SetValue(True)
+        vbox.Add(cb_upper, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        btn_sizer = dlg.CreateButtonSizer(wx.OK | wx.CANCEL)
+        vbox.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 8)
+        dlg.SetSizer(vbox)
+        vbox.Fit(dlg)
+        dlg.CentreOnParent()
+
+        if dlg.ShowModal() == wx.ID_OK:
+            chord = txt_chord.GetValue().strip()
             if chord:
-                self.InsertWithCaret("{taste:%s}" % chord)
+                if cb_upper.GetValue():
+                    chord = chord.upper()
+                start_sel = ch_start.GetSelection()
+                start_semi = _WHITE_SEMIS[start_sel]
+                if start_sel > 0:   # diverso da DO: aggiunge il token start=
+                    chord = u"%s start=%s" % (chord, _semi_to_note(start_semi))
+                # octave=one solo se la casella è disattivata e il layout è a 8 tasti
+                if (KlavierRenderer.keyboard_has_octave_key(start_semi)
+                        and not cb_octave.GetValue()):
+                    chord = u"%s octave=one" % chord
+                self.InsertWithCaret(u"{taste:%s}" % chord)
             else:
-                self.InsertWithCaret("{taste:|}")
-        d.Destroy()
+                self.InsertWithCaret(u"{taste:|}")
+        dlg.Destroy()
 
     def OnInsertDefine(self, evt):
         """Inserts the {define:} directive for a guitar chord diagram."""
@@ -4015,6 +4089,13 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         hbox_chord.Add(txt_chord, 0)
         vbox.Add(hbox_chord, 0, wx.ALL, 10)
 
+        # Casella: inserisce il nome dell'accordo sempre in maiuscolo (attiva
+        # di default). Riguarda solo il nome dell'accordo; i token hand=,
+        # start=, N=nota restano invariati.
+        cb_upper = wx.CheckBox(dlg, -1, _(u"Uppercase chord"))
+        cb_upper.SetValue(True)
+        vbox.Add(cb_upper, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
         # Mano destra / sinistra
         hbox_hand = wx.BoxSizer(wx.HORIZONTAL)
         hbox_hand.Add(wx.StaticText(dlg, -1, _(u"Hand:")),
@@ -4025,6 +4106,29 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         hbox_hand.Add(rb_right, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
         hbox_hand.Add(rb_left,  0, wx.ALIGN_CENTER_VERTICAL)
         vbox.Add(hbox_hand, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        # ── Nota di partenza della tastiera ───────────────────────────
+        # DO = comportamento standard (mostra tutti e 5 i tasti neri, come
+        # anche FA). Le altre note mostrano 4 neri: la finestra di 7 tasti
+        # bianchi taglia un tasto nero, e un'eventuale nota dell'accordo su
+        # quel tasto non potrà essere evidenziata.
+        _WHITE_SEMIS = [0, 2, 4, 5, 7, 9, 11]   # DO RE MI FA SOL LA SI
+        hbox_start = wx.BoxSizer(wx.HORIZONTAL)
+        hbox_start.Add(wx.StaticText(dlg, -1, _(u"Start note:")),
+                       0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        ch_start = wx.Choice(dlg, -1,
+                             choices=[_semi_to_note(s) for s in _WHITE_SEMIS])
+        ch_start.SetSelection(0)   # DO
+        hbox_start.Add(ch_start, 0, wx.ALIGN_CENTER_VERTICAL)
+        vbox.Add(hbox_start, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        # Casella: nelle tastiere a 8 tasti la nota iniziale è a entrambe le
+        # estremità. Attiva (default) = evidenzia su entrambe le ottave;
+        # disattiva = solo quella di sinistra. Ha effetto solo con 8 tasti.
+        cb_octave = wx.CheckBox(
+            dlg, -1, _(u"Highlight note on both octaves"))
+        cb_octave.SetValue(True)
+        vbox.Add(cb_octave, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
         # Istruzione
         lbl_info = wx.StaticText(
@@ -4095,6 +4199,16 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 chord_name = chord
                 finger_map = {}
 
+            # Nota di partenza dalla direttiva (None -> DO)
+            start_semi = KlavierRenderer.parse_start_note(inner)
+            if start_semi is None:
+                start_semi = 0
+
+            # Evidenziazione ottava doppia dalla direttiva (None -> entrambe)
+            oct_both = KlavierRenderer.parse_octave_both(inner)
+            if oct_both is None:
+                oct_both = True
+
             keys = KlavierRenderer.get_chord_keys(chord_name)
             if keys is None:
                 return
@@ -4130,6 +4244,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 highlight_color, finger_map=finger_map,
                 finger_num_color=finger_num_color,
                 hand=None,
+                start_note=start_semi,
+                highlight_octave_both=oct_both,
             )
 
         kbd_panel.Bind(wx.EVT_PAINT, _draw_kbd_preview)
@@ -4160,8 +4276,19 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             chord = txt_chord.GetValue().strip()
             if not chord:
                 return u"{fingering: }"
+            if cb_upper.GetValue():
+                chord = chord.upper()
             hand = u"R" if rb_right.GetValue() else u"L"
             parts = [chord, u"hand=%s" % hand]
+            # Nota di partenza: aggiunta solo se diversa da DO
+            start_sel = ch_start.GetSelection()
+            start_semi = _WHITE_SEMIS[start_sel]
+            if start_sel > 0:
+                parts.append(u"start=%s" % _semi_to_note(start_semi))
+            # octave=one solo se casella disattivata e layout a 8 tasti
+            if (KlavierRenderer.keyboard_has_octave_key(start_semi)
+                    and not cb_octave.GetValue()):
+                parts.append(u"octave=one")
             for i, (lbl, ch) in enumerate(note_rows):
                 sel = ch.GetSelection()
                 if sel > 0:
@@ -4213,10 +4340,13 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         def _on_chord_change(e=None):
             chord = txt_chord.GetValue().strip()
             pairs = chord_semitones(chord) if chord else []  # [(nome, semitono)]
-            # Se la casella è attiva, ordina come sulla tastiera: semitono
-            # crescente = da sinistra a destra (Do, Do#, Re ... Si).
+            # Se la casella è attiva, ordina come sulla tastiera da sinistra a
+            # destra. L'ordine visivo dipende dalla nota di partenza: la prima
+            # a sinistra è quella iniziale, quindi si ordina per distanza da
+            # essa, cioè (semitono - partenza) mod 12.
             if cb_order.GetValue():
-                pairs = sorted(pairs, key=lambda p: p[1])
+                start_semi = _WHITE_SEMIS[ch_start.GetSelection()]
+                pairs = sorted(pairs, key=lambda p: (p[1] - start_semi) % 12)
             notes = [name for name, _semi in pairs]
             current_notes.clear()
             current_notes.extend(notes)
@@ -4229,6 +4359,20 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         txt_chord.Bind(wx.EVT_TEXT, _on_chord_change)
         rb_right.Bind(wx.EVT_RADIOBUTTON, lambda e: (_update_preview(), _refresh_kbd()))
         rb_left.Bind(wx.EVT_RADIOBUTTON,  lambda e: (_update_preview(), _refresh_kbd()))
+
+        def _on_start_change(e=None):
+            # La casella "entrambe le ottave" ha effetto solo con 8 tasti
+            has8 = KlavierRenderer.keyboard_has_octave_key(
+                _WHITE_SEMIS[ch_start.GetSelection()])
+            cb_octave.Enable(has8)
+            # Cambiando la partenza cambia anche l'ordine "come sulla tastiera":
+            # ricostruisce la griglia (conserva le dita già scelte) e l'anteprima.
+            _on_chord_change()
+
+        _on_start_change()   # stato iniziale della casella
+        ch_start.Bind(wx.EVT_CHOICE, _on_start_change)
+        cb_octave.Bind(wx.EVT_CHECKBOX, lambda e: (_update_preview(), _refresh_kbd()))
+        cb_upper.Bind(wx.EVT_CHECKBOX, lambda e: (_update_preview(), _refresh_kbd()))
         # Cambiare l'ordinamento ricostruisce la griglia mantenendo le dita già scelte
         cb_order.Bind(wx.EVT_CHECKBOX, _on_chord_change)
 
@@ -8639,6 +8783,15 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         row.Add(txt, 1, wx.EXPAND)
         vbox.Add(row, 0, wx.EXPAND | wx.ALL, 10)
 
+        # Casella: inserisce l'accordo in maiuscolo. Non attiva di default;
+        # la scelta viene ricordata tra le riaperture del dialogo (come il pin).
+        cb_upper = wx.CheckBox(dlg, -1, _(u"Uppercase chord"))
+        cb_upper.SetValue(getattr(self, '_chord_uppercase', False))
+        cb_upper.Bind(
+            wx.EVT_CHECKBOX,
+            lambda e: setattr(self, '_chord_uppercase', cb_upper.GetValue()))
+        vbox.Add(cb_upper, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
         # Bottoni: [📌] [OK] [Annulla]
         btn_pin    = wx.Button(dlg, wx.ID_ANY,
                                PIN_ON if self._chord_dialog_pinned else PIN_OFF,
@@ -8661,6 +8814,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         def _insert():
             chord = txt.GetValue().strip()
             if chord:
+                if cb_upper.GetValue():
+                    chord = chord.upper()
                 self.InsertWithCaret("[%s]" % chord)
             else:
                 self.InsertWithCaret("[|]")
