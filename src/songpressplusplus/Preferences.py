@@ -203,11 +203,17 @@ class Preferences(object):
         self._LoadSuggestTitleAsFilename()
         self._LoadToolbarVis()
         self._LoadToolbarIconSize()
+        self._LoadChordUppercase()
 
     def _LoadKlavierColour(self):
         self.config.SetPath('/KlavierColour')
         h = self.config.Read('highlightHex')
         self.klavierHighlightHex = h if h else '#D23C3C'
+        v = self.config.Read('scalePct')
+        try:
+            self.klavierScalePct = max(50, min(int(v), 200)) if v != '' else 100
+        except ValueError:
+            self.klavierScalePct = 100
         self.config.SetPath('/')
 
     def _LoadFingerNumColour(self):
@@ -419,11 +425,13 @@ class Preferences(object):
         self._SaveSuggestTitleAsFilename()
         self._SaveToolbarVis()
         self._SaveToolbarIconSize()
+        self._SaveChordUppercase()
         self.config.Flush()
 
     def _SaveKlavierColour(self):
         self.config.SetPath('/KlavierColour')
         self.config.Write('highlightHex', getattr(self, 'klavierHighlightHex', '#D23C3C'))
+        self.config.Write('scalePct', str(getattr(self, 'klavierScalePct', 100)))
         self.config.SetPath('/')
 
     def _SaveFingerNumColour(self):
@@ -522,6 +530,18 @@ class Preferences(object):
     def _SaveIntellisense(self):
         self.config.SetPath('/Editor')
         self.config.Write('intellisense', '1' if getattr(self, 'intellisense', True) else '0')
+        self.config.SetPath('/')
+
+    def _LoadChordUppercase(self):
+        """Stato della casella 'Accordo in maiuscolo' del dialogo Inserisci accordo."""
+        self.config.SetPath('/Editor')
+        v = self.config.Read('chordUppercase')
+        self.chordUppercase = bool(int(v)) if v != '' else False
+        self.config.SetPath('/')
+
+    def _SaveChordUppercase(self):
+        self.config.SetPath('/Editor')
+        self.config.Write('chordUppercase', '1' if getattr(self, 'chordUppercase', False) else '0')
         self.config.SetPath('/')
 
     def _SavePrintOptions(self):

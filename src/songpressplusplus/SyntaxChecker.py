@@ -186,6 +186,11 @@ def _parse_chord_semitones(chord_str: str):
     che ne fanno parte, oppure None se l'accordo non è riconosciuto.
     """
     s = chord_str.strip()
+    # Accordo tra parentesi tonde, es. '(Do)' o '(La7/Do#)': è una notazione
+    # valida (accordo di passaggio/facoltativo). Le parentesi non fanno parte
+    # del nome, quindi le rimuoviamo prima di analizzarlo.
+    if len(s) >= 2 and s.startswith('(') and s.endswith(')'):
+        s = s[1:-1].strip()
     sl = s.lower()
     root = None
     rest = ''
@@ -506,6 +511,9 @@ def check(text: str) -> SyntaxCheckResult:
         _check_square_brackets(line, line_num, result)
         _check_curly_braces(line, line_num, result)
 
+    # Passata multi-riga: coerenza {beats_time:} ↔ riga di accordi.
+    _check_beats_time_coherence(lines, result)
+
     return result
 
 
@@ -764,6 +772,157 @@ def _validate_beats_time(cmd_value: str, line_num: int, col: int,
                     "{beats_time}: beat count for '%s' must be a positive integer, got '%s'"
                 ) % (chord_part, beats_part)
             ))
+
+
+# ── Coerenza {beats_time:} ↔ riga di accordi ─────────────────────────────────
+#
+#
+# La sequenza di accordi nella direttiva deve coincidere, in numero e ordine,
+# con quella degli accordi [..] della riga di testo associata. Le parentesi
+# tonde vengono ignorate nel confronto, così '[(Do)]' equivale a '[Do]' e
+# '(Do)=2' equivale a 'Do=2'. Il confronto è inoltre insensibile a maiuscole/
+# minuscole. In caso di discordanza viene emesso un errore.
+
+# Per emettere un avvertimento anziché un errore, basta cambiare la costante:
+_BEATS_TIME_COHERENCE_SEVERITY = SEVERITY_ERROR
+
+_BEATS_TIME_RE = re.compile(r'\{\s*beats_time\s*:([^}]*)\}', re.IGNORECASE)
+
+
+def _normalize_chord_token(tok: str) -> str:
+    """Normalizza un accordo per il confronto: rimuove le parentesi tonde e gli
+    spazi, e riduce a minuscolo. '(Do)', 'DO' e 'do' diventano tutti 'do'."""
+    return tok.replace('(', '').replace(')', '').strip().lower()
+
+
+def _is_real_chord_token(name: str) -> bool:
+    """True se il contenuto di [..] va considerato un accordo (e non una
+    stanghetta '|', 'N.C.', '%', ecc.). Riproduce il criterio di
+    _check_chord_name così i due controlli restano coerenti."""
+    n = name.strip()
+    if not n:
+        return False
+    if n.lower() in _NON_CHORD_TOKENS:
+        return False
+    if not re.search(r'[A-Za-z]', n):   # token puramente simbolici: | || % *
+        return False
+    return True
+
+
+def _extract_inline_chords(line: str):
+    """Estrae, nell'ordine di comparsa, gli accordi [..] di una riga di testo,
+    scartando stanghette e token non-accordo. Restituisce i nomi grezzi."""
+    chords = []
+    for m in re.finditer(r'\[([^\]]*)\]', line):
+        content = m.group(1).strip()
+        if _is_real_chord_token(content):
+            chords.append(content)
+    return chords
+
+
+def _beats_time_chords(value: str):
+    """Estrae, nell'ordine di comparsa, i nomi accordo dai token
+    'accordo=battiti' del valore di {beats_time:}."""
+    names = []
+    for token in value.split():
+        chord_part = token.partition('=')[0].strip()
+        if chord_part:
+            names.append(chord_part)
+    return names
+
+
+def _report_beats_time_mismatch(result, line_num, col,
+                                bt_chords, text_chords, text_line_no):
+    """Compone e registra il messaggio di discordanza più informativo:
+    se cambia il numero di accordi lo segnala; se il numero coincide,
+    indica la prima posizione che differisce."""
+    bt_str  = ' '.join(bt_chords)   if bt_chords   else '—'
+    txt_str = ' '.join(text_chords) if text_chords else '—'
+
+    if len(bt_chords) != len(text_chords):
+        msg = _(
+            "{beats_time}: chord sequence does not match line %d — "
+            "{beats_time} lists %d chord(s) [%s] but the line has %d [%s]"
+        ) % (text_line_no,
+             len(bt_chords), bt_str,
+             len(text_chords), txt_str)
+    else:
+        pos = next(
+            (k for k in range(len(bt_chords))
+             if _normalize_chord_token(bt_chords[k])
+                != _normalize_chord_token(text_chords[k])),
+            0)
+        msg = _(
+            "{beats_time}: chord %d does not match line %d — "
+            "{beats_time} has '%s', the text has '%s'  ([%s] vs [%s])"
+        ) % (pos + 1, text_line_no,
+             bt_chords[pos], text_chords[pos],
+             bt_str, txt_str)
+
+    result.errors.append(SyntaxError(
+        line=line_num, column=col, message=msg,
+        severity=_BEATS_TIME_COHERENCE_SEVERITY))
+
+
+def _check_beats_time_coherence(lines, result: SyntaxCheckResult):
+    """Passata multi-riga: per ogni {beats_time:} confronta la sua sequenza di
+    accordi con quella della riga di accordi associata (la prima riga di
+    contenuto successiva che contenga almeno un accordo [..]). Le parentesi
+    tonde e le maiuscole/minuscole sono ignorate nel confronto.
+
+    Se prima di trovare una riga di accordi si incontra un altro {beats_time:}
+    o la fine del testo, la direttiva viene lasciata stare (nessun errore):
+    non c'è una "seconda riga" da confrontare."""
+    n = len(lines)
+
+    # Righe effettive: rimuovi i commenti inline e marca le righe di commento
+    # (None) così da saltarle, coerentemente con check().
+    effective = []
+    for raw in lines:
+        if raw.lstrip().startswith('#'):
+            effective.append(None)
+        else:
+            effective.append(_strip_inline_comment(raw))
+
+    for idx in range(n):
+        eff = effective[idx]
+        if eff is None:
+            continue
+        m = _BEATS_TIME_RE.search(eff)
+        if not m:
+            continue
+
+        bt_chords = _beats_time_chords(m.group(1))
+        if not bt_chords:
+            continue   # valore vuoto/malformato: già gestito da _validate_beats_time
+
+        # Cerca la riga di accordi associata.
+        text_idx = None
+        for j in range(idx + 1, n):
+            ej = effective[j]
+            if ej is None or ej.strip() == '':
+                continue
+            if _BEATS_TIME_RE.search(ej):
+                break   # nuovo gruppo beats_time: la corrente non ha riga di accordi
+            if _extract_inline_chords(ej):
+                text_idx = j
+                break
+            # riga di contenuto senza accordi (lyric semplice, altra direttiva):
+            # continua a cercare la vera riga di accordi
+
+        if text_idx is None:
+            continue   # nessuna riga di accordi da confrontare: non segnalare
+
+        text_chords = _extract_inline_chords(effective[text_idx])
+
+        bt_norm  = [_normalize_chord_token(c) for c in bt_chords]
+        txt_norm = [_normalize_chord_token(c) for c in text_chords]
+        if bt_norm == txt_norm:
+            continue   # coerenti
+
+        _report_beats_time_mismatch(
+            result, idx + 1, m.start() + 1,
+            bt_chords, text_chords, text_idx + 1)
 
 
 def _validate_command(content: str, line_num: int, col: int,

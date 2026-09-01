@@ -280,6 +280,14 @@ msgid "Intro chords label"
 msgstr "Etichetta accordi introduzione"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
+msgid "Use the chords from the first line"
+msgstr "Usa gli accordi della prima riga"
+
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
+msgid "(no chords found in the first line)"
+msgstr "(nessun accordo trovato nella prima riga)"
+
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Bridge"
 msgstr "Bridge"
 

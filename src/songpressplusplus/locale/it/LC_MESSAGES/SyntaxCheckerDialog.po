@@ -351,6 +351,24 @@ msgstr "{beats_time}: numero di battiti mancante per l'accordo '%s'"
 msgid "{beats_time}: beat count for '%s' must be a positive integer, got '%s'"
 msgstr "{beats_time}: i battiti per '%s' devono essere un intero positivo, trovato '%s'"
 
+#. Coherence check: the number of chords in {beats_time:} differs from the
+#. number of inline chords in the associated lyric line.
+#. First %d = lyric line number, second %d = chords in {beats_time},
+#. first %s = beats_time chord list, third %d = chords in the line,
+#. second %s = line chord list
+#: SyntaxChecker.py
+msgid "{beats_time}: chord sequence does not match line %d — {beats_time} lists %d chord(s) [%s] but the line has %d [%s]"
+msgstr "{beats_time}: la sequenza di accordi non corrisponde alla riga %d — {beats_time} elenca %d accordi [%s] ma la riga ne ha %d [%s]"
+
+#. Coherence check: same number of chords, but one position differs between
+#. {beats_time:} and the associated lyric line.
+#. First %d = position (1-based), second %d = lyric line number,
+#. first %s = beats_time chord, second %s = line chord,
+#. third %s = beats_time chord list, fourth %s = line chord list
+#: SyntaxChecker.py
+msgid "{beats_time}: chord %d does not match line %d — {beats_time} has '%s', the text has '%s'  ([%s] vs [%s])"
+msgstr "{beats_time}: l'accordo %d non corrisponde alla riga %d — {beats_time} ha '%s', il testo ha '%s'  ([%s] vs [%s])"
+
 # -----------------------------------------------------------------------
 # SyntaxChecker.py — {duration} validation
 # -----------------------------------------------------------------------

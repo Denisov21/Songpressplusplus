@@ -2471,18 +2471,90 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self.InsertWithCaret("{start_chorus:%s}\n|\n{end_chorus}\n" % label)
 
     def OnInsertChordBlock(self, evt):
-        """Insert an intro chord block: {start_chord} ... {end_chord}"""
+        """Insert an intro chord block: {start_chord} ... {end_chord}
+
+        Se la checkbox "Usa gli accordi della prima riga" è attiva, il blocco
+        viene precompilato con gli accordi tra parentesi quadre [..] trovati
+        nella prima riga del documento che ne contiene; altrimenti resta vuoto
+        (cursore nel blocco) come in origine.
+        """
+        import re
+
         default = _("Intro")
-        label = wx.GetTextFromUser(
-            _("Enter a label for the intro chords, or press Cancel to use '%s'.") % default,
-            _("Intro chords label"),
-            default,
-            self.frame,
-        )
-        if label.strip():
-            self.InsertWithCaret("{start_chord:%s}\n|\n{end_chord}\n" % label)
+
+        # ── Accordi della prima riga con parentesi quadre ─────────────────
+        # Scorre il documento dall'alto e restituisce gli accordi [..] della
+        # prima riga che ne contiene almeno uno.
+        def _first_line_chords():
+            for i in range(self.text.GetLineCount()):
+                raw = re.findall(r'\[([^\]]+)\]', self.text.GetLine(i))
+                chords = [c.strip() for c in raw if c.strip()]
+                if chords:
+                    return chords
+            return []
+
+        first_chords = _first_line_chords()
+        chord_line = ' '.join('[%s]' % c for c in first_chords)
+
+        # ── Dialogo: etichetta + checkbox ─────────────────────────────────
+        dlg = wx.Dialog(self.frame, title=_("Intro chords label"))
+        vbox = wx.BoxSizer(wx.VERTICAL)
+
+        vbox.Add(
+            wx.StaticText(dlg, -1,
+                _("Enter a label for the intro chords, or press Cancel to use '%s'.") % default),
+            0, wx.ALL, 10)
+
+        txt = wx.TextCtrl(dlg, -1, default)
+        vbox.Add(txt, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+
+        cb_first = wx.CheckBox(dlg, -1, _("Use the chords from the first line"))
+        vbox.Add(cb_first, 0, wx.LEFT | wx.TOP, 10)
+
+        # Anteprima degli accordi rilevati (o avviso se la prima riga non ne ha).
+        # NB: niente Enable(False) per "sbiadire" il testo: su tema scuro il
+        # controllo disabilitato diventa illeggibile. Uso il corsivo per
+        # distinguere l'anteprima e i colori di sistema del tema (WINDOWTEXT per
+        # gli accordi, GRAYTEXT per l'avviso), che restano leggibili ovunque.
+        hint = wx.StaticText(dlg, -1,
+            chord_line if first_chords else _("(no chords found in the first line)"))
+        _hint_font = hint.GetFont()
+        _hint_font.SetStyle(wx.FONTSTYLE_ITALIC)
+        hint.SetFont(_hint_font)
+        if first_chords:
+            hint.SetForegroundColour(
+                wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT))
         else:
-            self.InsertWithCaret("{start_chord}\n|\n{end_chord}\n")
+            cb_first.Enable(False)
+            hint.SetForegroundColour(
+                wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT))
+        vbox.Add(hint, 0, wx.LEFT | wx.BOTTOM, 10)
+
+        btn_sizer = dlg.CreateButtonSizer(wx.OK | wx.CANCEL)
+        vbox.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 10)
+
+        dlg.SetSizer(vbox)
+        vbox.Fit(dlg)
+        dlg.SetMinSize((360, -1))
+        txt.SetFocus()
+        txt.SelectAll()
+
+        if dlg.ShowModal() != wx.ID_OK:
+            dlg.Destroy()
+            return
+
+        label = txt.GetValue()
+        use_first = cb_first.IsChecked() and bool(first_chords)
+        dlg.Destroy()
+
+        # Con la checkbox attiva il corpo del blocco contiene gli accordi della
+        # prima riga; altrimenti "|" (segnaposto del cursore nel blocco vuoto).
+        body = chord_line if use_first else "|"
+
+        if label.strip():
+            self.InsertWithCaret("{start_chord:%s}\n%s\n{end_chord}\n" % (label, body))
+        else:
+            self.InsertWithCaret("{start_chord}\n%s\n{end_chord}\n" % body)
 
     def OnInsertBridge(self, evt):
         """Insert a bridge block: {start_bridge} ... {end_bridge}"""
@@ -8783,13 +8855,15 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         row.Add(txt, 1, wx.EXPAND)
         vbox.Add(row, 0, wx.EXPAND | wx.ALL, 10)
 
-        # Casella: inserisce l'accordo in maiuscolo. Non attiva di default;
-        # la scelta viene ricordata tra le riaperture del dialogo (come il pin).
+        # Casella: inserisce l'accordo in maiuscolo. Non attiva di default.
+        # Lo stato è salvato nelle preferenze (self.pref.chordUppercase), quindi
+        # viene ricordato sia tra le riaperture del dialogo sia tra i riavvii
+        # dell'app (Preferences.Save() è chiamato in OnClose).
         cb_upper = wx.CheckBox(dlg, -1, _(u"Uppercase chord"))
-        cb_upper.SetValue(getattr(self, '_chord_uppercase', False))
+        cb_upper.SetValue(getattr(self.pref, 'chordUppercase', False))
         cb_upper.Bind(
             wx.EVT_CHECKBOX,
-            lambda e: setattr(self, '_chord_uppercase', cb_upper.GetValue()))
+            lambda e: setattr(self.pref, 'chordUppercase', cb_upper.GetValue()))
         vbox.Add(cb_upper, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
         # Bottoni: [📌] [OK] [Annulla]
