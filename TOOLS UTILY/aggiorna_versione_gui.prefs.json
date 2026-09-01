@@ -1,0 +1,129 @@
+{
+  "checkbox_state": {
+    "backup": true,
+    "files": {
+      "pyproject.toml": {
+        "enabled": true,
+        "rows": [
+          true
+        ]
+      },
+      "README.md": {
+        "enabled": true,
+        "rows": [
+          true,
+          false,
+          true,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      "README_italian.md": {
+        "enabled": true,
+        "rows": [
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      "build/README_PORTABLE_BUILD_en.md": {
+        "enabled": true,
+        "rows": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      "build/README_PORTABLE_BUILD_it.md": {
+        "enabled": true,
+        "rows": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      "build_deb/INSTALLAZIONE_DEB.md": {
+        "enabled": true,
+        "rows": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      "build_deb/DEB_INSTALLATION.md": {
+        "enabled": true,
+        "rows": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          false,
+          true,
+          true,
+          true,
+          true
+        ]
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 [project]
 name = "SongpressPlusPlus"
-version = "8.0.2"
+version = "8.0.4"
 description = "Songpress++ is a free, easy to use song typeset program for Windows and Linux, that generates high-quality songbooks."
 # Songpress++ è un fork di Songpress, scritto originariamente da Luca Allulli
 # (https://github.com/lallulli/songpress) e rilasciato sotto GNU GPL v2.

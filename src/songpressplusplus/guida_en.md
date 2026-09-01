@@ -128,6 +128,31 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 
 > **Note on bridge** — Both forms are supported: `{start_bridge}`/`{end_bridge}` (Songpress++ form, insertable from the menu) and `{start_of_bridge}`/`{end_of_bridge}` (standard ChordPro form, with abbreviations `{sob}`/`{eob}`). The two forms are equivalent and interchangeable.
 
+### Inserting the Intro/Chord Block — `{start_chord}` / `{end_chord}`
+
+The intro/chord block insertion command opens the **Intro chords label** dialog:
+
+- **Label** — the text field proposes «Intro» as the default value. Confirming with *OK* inserts `{start_chord:Label}`; leaving the field empty inserts `{start_chord}` with no label; pressing *Cancel* aborts the insertion.
+- **Use the chords from the first line** — optional checkbox. When selected, the body of the block is **pre-filled with the square-bracket chords `[..]` found in the first line of the document that contains at least one**. The detected chords are shown as a preview (in italics) below the checkbox.
+
+If no line in the document contains square-bracket chords, the checkbox is **disabled** and the preview is replaced by the notice *«no chords found in the first line»*.
+
+With the checkbox off (or when there are no usable chords) the block is inserted empty, with the caret placed inside it:
+
+```chordpro
+{start_chord:Intro}
+|
+{end_chord}
+```
+
+With the checkbox on and, for example, `[Am] [F] [G] [C]` in the first usable line, the block is inserted already filled in:
+
+```chordpro
+{start_chord:Intro}
+[Am] [F] [G] [C]
+{end_chord}
+```
+
 ### Page and Column Breaks
 
 | Directive        | Alias    | Std | Menu | Description                                     |
