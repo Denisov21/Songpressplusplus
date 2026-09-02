@@ -12,7 +12,7 @@
         "enabled": true,
         "rows": [
           true,
-          false,
+          true,
           true,
           true,
           false,
@@ -27,7 +27,7 @@
         "enabled": true,
         "rows": [
           true,
-          true,
+          false,
           true,
           true,
           false,
@@ -125,5 +125,10 @@
         ]
       }
     }
-  }
+  },
+  "language": "it",
+  "font_family": "Segoe UI",
+  "font_size": 9,
+  "cursor_on_disabled": true,
+  "show_icons": true
 }

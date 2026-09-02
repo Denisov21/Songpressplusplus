@@ -36,11 +36,13 @@ import json
 import os
 import re
 import shutil
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from functools import partial
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  LOGICA PURA (indipendente dalla GUI, così è testabile senza display)
@@ -282,6 +284,60 @@ def apply_to_text(text: str, candidates: list[Candidate],
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+#  Rimozione dei backup .bak (spostamento nel cestino, dove possibile)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def trash_available() -> bool:
+    """True se sappiamo spostare i file nel cestino di sistema.
+
+    È implementato lo standard freedesktop.org (cestino XDG), quindi solo su
+    Linux.  Altrove i .bak vengono eliminati definitivamente, previo avviso.
+    """
+    return sys.platform.startswith("linux")
+
+
+def send_to_trash(path: Path) -> None:
+    """Sposta `path` nel cestino XDG (~/.local/share/Trash).
+
+    Segue la specifica freedesktop.org: crea il file in ``files/`` e il relativo
+    ``.trashinfo`` in ``info/``.  Solleva un'eccezione (OSError o shutil.Error)
+    se l'operazione non riesce, così il chiamante può segnalarlo.
+    """
+    data_home = (os.environ.get("XDG_DATA_HOME")
+                 or os.path.expanduser("~/.local/share"))
+    trash = Path(data_home) / "Trash"
+    files_dir = trash / "files"
+    info_dir = trash / "info"
+    files_dir.mkdir(parents=True, exist_ok=True)
+    info_dir.mkdir(parents=True, exist_ok=True)
+
+    # Nome di destinazione univoco (gestisco eventuali collisioni).
+    dest = files_dir / path.name
+    info = info_dir / (path.name + ".trashinfo")
+    n = 1
+    while dest.exists() or info.exists():
+        dest = files_dir / f"{path.stem}.{n}{path.suffix}"
+        info = info_dir / f"{path.stem}.{n}{path.suffix}.trashinfo"
+        n += 1
+
+    deletion_date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    info.write_text(
+        "[Trash Info]\n"
+        f"Path={quote(str(path.resolve()))}\n"
+        f"DeletionDate={deletion_date}\n",
+        encoding="utf-8")
+    try:
+        shutil.move(str(path), str(dest))
+    except (OSError, shutil.Error):
+        # Ripristino: rimuovo il .trashinfo orfano e rilancio l'errore.
+        try:
+            info.unlink()
+        except OSError:
+            pass
+        raise
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 #  GUI (Tkinter)
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -294,6 +350,30 @@ APP_COPYRIGHT = "Copyright (C) 2024-2026  Denisov21"
 # Lingue disponibili nell'interfaccia (codice -> nome mostrato nel selettore).
 LANGUAGES = {"it": "Italiano", "en": "English"}
 DEFAULT_LANG = "it"
+
+# Icone (glifi Unicode) mostrate a fianco del testo dei pulsanti. Per restare a
+# libreria standard NON si usano file immagine: alcuni glifi sono emoji
+# (sfoglia/cerca/salva/cestina), altri semplici dingbat quasi sempre presenti
+# nei font di sistema (spunte, frecce). All'avvio un test verifica quali glifi
+# il font sa disegnare: quelli non disponibili vengono semplicemente omessi, in
+# modo da non mostrare quadratini "tofu". Vedi App._probe_icons() / App._ic().
+ICONS = {
+    "browse": "📂",
+    "scan": "🔍",
+    "select_all": "☑",
+    "deselect_all": "☐",
+    "save_sel": "💾",
+    "restore_sel": "↩",
+    "remove_bak": "🗑",
+    "apply": "✔",
+    "save": "💾",
+    "cancel": "✖",
+    "restore_defaults": "⟲",
+    "close": "✖",
+}
+
+# Valore predefinito della preferenza "mostra icone sui pulsanti".
+DEFAULT_SHOW_ICONS = True
 
 # Valore predefinito della preferenza "cursore sui pulsanti disabilitati"
 # (una checkbox salvata nel JSON). Usato anche dal pulsante di ripristino.
@@ -387,6 +467,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "sel_nothing_to_save": "Niente da salvare: esegui prima "
                                "«Analizza / Anteprima».",
         "chk_backup": "Crea backup .bak",
+        "btn_remove_bak": "Rimuovi i backup .bak",
         "btn_apply": "Applica modifiche",
         "frame_occurrences": "Occorrenze trovate",
         "frame_log": "Log",
@@ -396,6 +477,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "opt_font_family": "Tipo di carattere:",
         "opt_font_size": "Dimensione:",
         "opt_cursor": "Cambia il cursore sui pulsanti disabilitati",
+        "opt_show_icons": "Mostra le icone sui pulsanti",
         "opt_preview": "Anteprima:",
         "opt_preview_text": "Ma la volpe, col suo balzo, raggiunse il quieto "
                            "Fido — Aa Bb 0123",
@@ -471,6 +553,25 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "confirm_msg": "Applicare la versione {new} a {n} occorrenze "
                       "in {files} file?",
         "confirm_backup": "\n\nVerrà creato un backup .bak di ogni file.",
+        # rimozione backup .bak
+        "rmbak_none_title": "Nessun backup",
+        "rmbak_none_msg": "Non ci sono file .bak da rimuovere.",
+        "rmbak_no_project": "Carica prima un progetto: nessun file da "
+                            "controllare.",
+        "rmbak_confirm_title": "Conferma rimozione backup",
+        "rmbak_confirm_trash": "Stai per spostare nel cestino {n} file .bak:"
+                               "\n\n{names}\n\nVuoi procedere?",
+        "rmbak_confirm_delete": "ATTENZIONE: il cestino non è disponibile su "
+                                "questo sistema.\nStai per ELIMINARE "
+                                "DEFINITIVAMENTE {n} file .bak:\n\n{names}\n\n"
+                                "L'operazione non è reversibile. Procedere?",
+        "rmbak_done_title": "Backup rimossi",
+        "rmbak_done_trash": "{n} file .bak spostati nel cestino.",
+        "rmbak_done_delete": "{n} file .bak eliminati definitivamente.",
+        "rmbak_done_errors": "{n} file non rimossi (vedi il log).",
+        "log_bak_trashed": "Cestinato: {name}",
+        "log_bak_deleted": "Eliminato: {name}",
+        "log_bak_error": "Impossibile rimuovere {name}: {exc}",
         "log_backup": "Backup: {name}",
         "log_write_error": "ERRORE scrivendo {name}: {exc}",
         "write_error_title": "Errore di scrittura",
@@ -519,6 +620,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "sel_nothing_to_save": "Nothing to save: run \"Analyse / Preview\" "
                                "first.",
         "chk_backup": "Create .bak backup",
+        "btn_remove_bak": "Remove .bak backups",
         "btn_apply": "Apply changes",
         "frame_occurrences": "Occurrences found",
         "frame_log": "Log",
@@ -528,6 +630,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "opt_font_family": "Font family:",
         "opt_font_size": "Size:",
         "opt_cursor": "Change the cursor on disabled buttons",
+        "opt_show_icons": "Show icons on buttons",
         "opt_preview": "Preview:",
         "opt_preview_text": "The quick brown fox jumps over the lazy dog "
                            "— Aa Bb 0123",
@@ -601,6 +704,25 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "confirm_msg": "Apply version {new} to {n} occurrences "
                       "in {files} files?",
         "confirm_backup": "\n\nA .bak backup of every file will be created.",
+        # .bak backup removal
+        "rmbak_none_title": "No backups",
+        "rmbak_none_msg": "There are no .bak files to remove.",
+        "rmbak_no_project": "Load a project first: there are no files to "
+                            "check.",
+        "rmbak_confirm_title": "Confirm backup removal",
+        "rmbak_confirm_trash": "You are about to move {n} .bak files to the "
+                               "trash:\n\n{names}\n\nDo you want to proceed?",
+        "rmbak_confirm_delete": "WARNING: the trash is not available on this "
+                                "system.\nYou are about to PERMANENTLY DELETE "
+                                "{n} .bak files:\n\n{names}\n\nThis cannot be "
+                                "undone. Proceed?",
+        "rmbak_done_title": "Backups removed",
+        "rmbak_done_trash": "{n} .bak files moved to the trash.",
+        "rmbak_done_delete": "{n} .bak files permanently deleted.",
+        "rmbak_done_errors": "{n} files not removed (see the log).",
+        "log_bak_trashed": "Moved to trash: {name}",
+        "log_bak_deleted": "Deleted: {name}",
+        "log_bak_error": "Could not remove {name}: {exc}",
         "log_backup": "Backup: {name}",
         "log_write_error": "ERROR writing {name}: {exc}",
         "write_error_title": "Write error",
@@ -722,7 +844,15 @@ def _launch_gui() -> None:
             # Preferenza: cambiare il cursore sui pulsanti disabilitati?
             self.pref_cursor_disabled = bool(
                 prefs.get("cursor_on_disabled", DEFAULT_CURSOR_ON_DISABLED))
+            # Preferenza: mostrare le icone sui pulsanti?
+            self.pref_show_icons = bool(
+                prefs.get("show_icons", DEFAULT_SHOW_ICONS))
             self._apply_fonts()
+
+            # Quali glifi-icona il font corrente sa disegnare (per non mostrare
+            # quadratini su sistemi senza emoji). Dipende dai font: va calcolato
+            # dopo _apply_fonts().
+            self._icon_glyphs = self._probe_icons()
 
             # Cursore da mostrare sui controlli disabilitati (non cliccabili).
             self._disabled_cursor = self._resolve_disabled_cursor()
@@ -746,6 +876,47 @@ def _launch_gui() -> None:
             """Etichetta tradotta della tipologia di occorrenza."""
             return self.t(f"kind_{kind}")
 
+        # ---------- icone dei pulsanti -------------------------------------
+        def _probe_icons(self) -> dict[str, str]:
+            """Rileva quali glifi di ICONS il font corrente sa disegnare.
+
+            Euristica: un glifo assente viene reso con la stessa larghezza del
+            carattere-sentinella U+FFFF (il quadratino "tofu"). Se la larghezza
+            del glifo differisce, il font ha una forma propria e lo teniamo;
+            altrimenti lo omettiamo, così sui sistemi senza emoji i pulsanti
+            restano solo testuali invece di mostrare quadratini.
+            """
+            probe = tkfont.Font(font=self.font_default)
+            try:
+                miss = probe.measure("\uFFFF")
+            except tk.TclError:
+                miss = 0
+            usable: dict[str, str] = {}
+            for name, glyph in ICONS.items():
+                keep = False
+                try:
+                    w = probe.measure(glyph)
+                    # Scarto sia il "tofu" singolo (w == miss) sia il doppio
+                    # riquadro (w == 2*miss) con cui certi Tk rendono le emoji
+                    # non supportate.
+                    if w > 0 and (miss <= 0 or (w != miss and w != 2 * miss)):
+                        keep = True
+                except tk.TclError:
+                    keep = False
+                usable[name] = glyph if keep else ""
+            return usable
+
+        def _ic(self, name: str) -> str:
+            """Prefisso-icona per il testo di un pulsante.
+
+            Restituisce "glifo  " (spaziatura inclusa) oppure "" se le icone
+            sono disattivate o il glifo non è disegnabile dal font corrente.
+            """
+            if not self.pref_show_icons:
+                return ""
+            glyph = self._icon_glyphs.get(name, "")
+            return f"{glyph}  " if glyph else ""
+
         # ---------- cambio lingua ------------------------------------------
         def _on_language_change(self, *_evt: object) -> None:
             disp = self.lang_var.get()
@@ -760,12 +931,21 @@ def _launch_gui() -> None:
             if code == self.lang:
                 return
             self.lang = code
-            # Memorizzo lo stato da ripristinare dopo la ricostruzione.
+            self._rebuild_ui()
+            self._log(self.t("lang_changed", lang=LANGUAGES[self.lang]), "info")
+            # Memorizzo la lingua scelta nelle preferenze (senza log extra).
+            self._save_current_prefs(announce=False)
+
+        def _rebuild_ui(self) -> None:
+            """Ricostruisce l'interfaccia preservando lo stato corrente.
+
+            Usato al cambio lingua e quando si attivano/disattivano le icone:
+            in entrambi i casi va ridisegnato il testo di tutti i pulsanti.
+            """
             keep_new = self.new_var.get()
             keep_backup = self.backup_var.get()
             had_preview = bool(self.row_vars)
 
-            # Ricostruisco tutta l'interfaccia nella nuova lingua.
             for w in self.winfo_children():
                 w.destroy()
             self.row_vars.clear()
@@ -781,9 +961,6 @@ def _launch_gui() -> None:
                 self.cur_var.set(self.current_version)
             if keep_new:
                 self.new_var.set(keep_new)
-            self._log(self.t("lang_changed", lang=LANGUAGES[self.lang]), "info")
-            # Memorizzo la lingua scelta nelle preferenze (senza log extra).
-            self._save_current_prefs(announce=False)
             if had_preview and self.files:
                 self._scan()
 
@@ -846,7 +1023,7 @@ def _launch_gui() -> None:
             txt.insert("1.0", _LICENSE_NOTICE.get(self.lang, GPL2_NOTICE_EN))
             txt.configure(state="disabled")
 
-            ttk.Button(win, text=self.t("btn_close"),
+            ttk.Button(win, text=self._ic("close") + self.t("btn_close"),
                        command=win.destroy).pack(pady=(0, 12))
             win.bind("<Escape>", lambda _e: win.destroy())
 
@@ -886,7 +1063,7 @@ def _launch_gui() -> None:
             _add_swatch(9, C_WARN, self.t("colors_log_warn"))
             _add_swatch(10, C_ERR, self.t("colors_log_err"))
 
-            ttk.Button(win, text=self.t("btn_close"),
+            ttk.Button(win, text=self._ic("close") + self.t("btn_close"),
                        command=win.destroy).grid(
                 row=11, column=0, columnspan=2, pady=(10, 12))
             win.bind("<Escape>", lambda _e: win.destroy())
@@ -949,7 +1126,8 @@ def _launch_gui() -> None:
                     {"language": self.lang,
                      "font_family": self.pref_family,
                      "font_size": self.pref_size,
-                     "cursor_on_disabled": self.pref_cursor_disabled})
+                     "cursor_on_disabled": self.pref_cursor_disabled,
+                     "show_icons": self.pref_show_icons})
                 if announce:
                     self._log(self.t("prefs_saved", path=path.name), "ok")
             except OSError as exc:
@@ -968,6 +1146,7 @@ def _launch_gui() -> None:
             fam_var = tk.StringVar(value=self.pref_family)
             size_var = tk.StringVar(value=str(self.pref_size))
             cursor_var = tk.BooleanVar(value=self.pref_cursor_disabled)
+            icons_var = tk.BooleanVar(value=self.pref_show_icons)
 
             ttk.Label(win, text=self.t("opt_font_family")).grid(
                 row=0, column=0, sticky="w", padx=12, pady=(12, 4))
@@ -985,13 +1164,17 @@ def _launch_gui() -> None:
                             variable=cursor_var).grid(
                 row=2, column=0, columnspan=2, sticky="w", padx=12, pady=(8, 4))
 
+            ttk.Checkbutton(win, text=self.t("opt_show_icons"),
+                            variable=icons_var).grid(
+                row=3, column=0, columnspan=2, sticky="w", padx=12, pady=(0, 4))
+
             ttk.Label(win, text=self.t("opt_preview")).grid(
-                row=3, column=0, sticky="nw", padx=12, pady=(8, 4))
+                row=4, column=0, sticky="nw", padx=12, pady=(8, 4))
             preview_font = tkfont.Font(family=self.pref_family,
                                        size=self.pref_size)
             tk.Label(win, text=self.t("opt_preview_text"), font=preview_font,
                      anchor="w", justify="left", relief="groove",
-                     padx=8, pady=8).grid(row=3, column=1, sticky="ew",
+                     padx=8, pady=8).grid(row=4, column=1, sticky="ew",
                                           padx=12, pady=(8, 4))
 
             def _update_preview(*_a: object) -> None:
@@ -1009,14 +1192,20 @@ def _launch_gui() -> None:
                     size = int(size_var.get())
                 except ValueError:
                     return
+                icons_changed = icons_var.get() != self.pref_show_icons
                 self.pref_family = fam_var.get()
                 self.pref_size = min(max(size, MIN_FONT_SIZE), MAX_FONT_SIZE)
                 self.pref_cursor_disabled = cursor_var.get()
+                self.pref_show_icons = icons_var.get()
                 self._apply_fonts()
                 self._refresh_disabled_cursors()
                 self._fit_to_content()
                 self._save_current_prefs()
                 win.destroy()
+                # Le icone sono impresse nel testo dei pulsanti: se la
+                # preferenza è cambiata, ricostruisco l'interfaccia.
+                if icons_changed:
+                    self._rebuild_ui()
 
             def _restore_defaults() -> None:
                 # Riporta i controlli del dialog ai valori predefiniti
@@ -1026,18 +1215,21 @@ def _launch_gui() -> None:
                 fam_var.set(self.default_family)
                 size_var.set(str(self.default_size))
                 cursor_var.set(self.default_cursor_disabled)
+                icons_var.set(DEFAULT_SHOW_ICONS)
                 _update_preview()
                 self._log(self.t("prefs_restored"), "info")
 
             btns = ttk.Frame(win)
-            btns.grid(row=4, column=0, columnspan=2, sticky="ew",
+            btns.grid(row=5, column=0, columnspan=2, sticky="ew",
                       padx=12, pady=(10, 12))
             # A sinistra: ripristino dei predefiniti. A destra: Salva/Annulla.
-            ttk.Button(btns, text=self.t("btn_restore_defaults"),
+            ttk.Button(btns,
+                       text=self._ic("restore_defaults")
+                       + self.t("btn_restore_defaults"),
                        command=_restore_defaults).pack(side="left")
-            ttk.Button(btns, text=self.t("btn_cancel"),
+            ttk.Button(btns, text=self._ic("cancel") + self.t("btn_cancel"),
                        command=win.destroy).pack(side="right", padx=(6, 0))
-            ttk.Button(btns, text=self.t("btn_save"),
+            ttk.Button(btns, text=self._ic("save") + self.t("btn_save"),
                        command=_save).pack(side="right")
             win.bind("<Escape>", lambda _e: win.destroy())
 
@@ -1127,7 +1319,7 @@ def _launch_gui() -> None:
             ttk.Label(top, textvariable=self.dir_var, foreground="#444",
                       width=60, anchor="w").grid(row=0, column=1, sticky="w",
                                                  padx=(4, 8))
-            ttk.Button(top, text=self.t("btn_browse"),
+            ttk.Button(top, text=self._ic("browse") + self.t("btn_browse"),
                        command=self._choose_dir).grid(row=0, column=2)
 
             ttk.Label(top, text=self.t("lbl_current")).grid(
@@ -1158,28 +1350,38 @@ def _launch_gui() -> None:
             # ---- barra azioni ---------------------------------------------
             act = ttk.Frame(self)
             act.pack(fill="x", **pad)
-            self.scan_btn = ttk.Button(act, text=self.t("btn_scan"),
-                                       command=self._scan)
+            self.scan_btn = ttk.Button(
+                act, text=self._ic("scan") + self.t("btn_scan"),
+                command=self._scan)
             self.scan_btn.pack(side="left")
-            ttk.Button(act, text=self.t("btn_select_all"),
-                       command=lambda: self._set_all(True)).pack(side="left",
-                                                                 padx=(12, 4))
-            ttk.Button(act, text=self.t("btn_deselect_all"),
+            ttk.Button(act,
+                       text=self._ic("select_all") + self.t("btn_select_all"),
+                       command=lambda: self._set_all(True)).pack(
+                side="left", padx=(12, 4))
+            ttk.Button(act,
+                       text=self._ic("deselect_all")
+                       + self.t("btn_deselect_all"),
                        command=lambda: self._set_all(False)).pack(side="left")
             self.save_sel_btn = ttk.Button(
-                act, text=self.t("btn_save_sel"),
+                act, text=self._ic("save_sel") + self.t("btn_save_sel"),
                 command=self._save_selection, state="disabled")
             self.save_sel_btn.pack(side="left", padx=(12, 4))
             self.restore_sel_btn = ttk.Button(
-                act, text=self.t("btn_restore_sel"),
+                act, text=self._ic("restore_sel") + self.t("btn_restore_sel"),
                 command=self._restore_selection, state="disabled")
             self.restore_sel_btn.pack(side="left")
             self.backup_var = tk.BooleanVar(value=True)
             ttk.Checkbutton(act, text=self.t("chk_backup"),
                             variable=self.backup_var).pack(side="left", padx=16)
-            self.apply_btn = ttk.Button(act, text=self.t("btn_apply"),
-                                        command=self._apply, state="disabled")
+            self.apply_btn = ttk.Button(
+                act, text=self._ic("apply") + self.t("btn_apply"),
+                command=self._apply, state="disabled")
             self.apply_btn.pack(side="right")
+            # Pulsante per rimuovere i backup .bak (a sinistra di «Applica»).
+            self.rmbak_btn = ttk.Button(
+                act, text=self._ic("remove_bak") + self.t("btn_remove_bak"),
+                command=self._remove_backups)
+            self.rmbak_btn.pack(side="right", padx=(0, 12))
 
             # ---- area anteprima (lista scrollabile di checkbox) -----------
             mid = ttk.LabelFrame(self, text=self.t("frame_occurrences"))
@@ -1581,6 +1783,81 @@ def _launch_gui() -> None:
                 self.t("done_msg", occ=changed_occ, files=changed_files,
                        new=new_v))
             self._scan()  # rigenera l'anteprima sullo stato aggiornato
+
+        # ---------- rimozione dei backup .bak ------------------------------
+        def _display_path(self, p: Path) -> str:
+            """Percorso da mostrare: relativo alla cartella progetto se
+            possibile, altrimenti solo il nome del file."""
+            if self.project_dir is not None:
+                try:
+                    return p.relative_to(self.project_dir).as_posix()
+                except ValueError:
+                    pass
+            return p.name
+
+        def _remove_backups(self) -> None:
+            """Rimuove i file .bak creati dallo strumento, previo avviso.
+
+            Su Linux i file vengono spostati nel cestino (specifica
+            freedesktop.org); altrove, non essendo disponibile il cestino,
+            vengono eliminati definitivamente ma solo dopo un avviso esplicito.
+            """
+            if not self.files:
+                self._log(self.t("rmbak_no_project"), "warn")
+                messagebox.showinfo(self.t("rmbak_none_title"),
+                                    self.t("rmbak_no_project"), parent=self)
+                return
+
+            # Raccolgo i .bak corrispondenti ai file gestiti (senza duplicati).
+            baks: list[Path] = []
+            seen: set[Path] = set()
+            for fs in self.files.values():
+                bak = fs.path.with_suffix(fs.path.suffix + ".bak")
+                rb = bak.resolve()
+                if bak.is_file() and rb not in seen:
+                    seen.add(rb)
+                    baks.append(bak)
+
+            if not baks:
+                self._log(self.t("rmbak_none_msg"), "info")
+                messagebox.showinfo(self.t("rmbak_none_title"),
+                                    self.t("rmbak_none_msg"), parent=self)
+                return
+
+            # Avviso con l'elenco esatto dei file, prima di toccare qualcosa.
+            names = "\n".join(self._display_path(b) for b in baks)
+            to_trash = trash_available()
+            key = "rmbak_confirm_trash" if to_trash else "rmbak_confirm_delete"
+            if not messagebox.askyesno(
+                    self.t("rmbak_confirm_title"),
+                    self.t(key, n=len(baks), names=names),
+                    icon="warning", default="no", parent=self):
+                return
+
+            trashed = deleted = errors = 0
+            for b in baks:
+                try:
+                    if to_trash:
+                        send_to_trash(b)
+                        trashed += 1
+                        self._log(self.t("log_bak_trashed",
+                                         name=self._display_path(b)), "ok")
+                    else:
+                        b.unlink()
+                        deleted += 1
+                        self._log(self.t("log_bak_deleted",
+                                         name=self._display_path(b)), "ok")
+                except (OSError, shutil.Error) as exc:
+                    errors += 1
+                    self._log(self.t("log_bak_error",
+                                     name=self._display_path(b), exc=exc),
+                              "err")
+
+            done_key = "rmbak_done_trash" if to_trash else "rmbak_done_delete"
+            msg = self.t(done_key, n=trashed if to_trash else deleted)
+            if errors:
+                msg += "\n" + self.t("rmbak_done_errors", n=errors)
+            messagebox.showinfo(self.t("rmbak_done_title"), msg, parent=self)
 
     App().mainloop()
 
