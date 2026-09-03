@@ -904,3 +904,7 @@ msgstr "Icone grandi nella barra degli strumenti (21×21 pixel, 1,3× più grand
 #: PreferencesDialog.py — General tab, toolbar icon size: standard tooltip
 msgid "Standard toolbar icon size (16×16 pixels)."
 msgstr "Dimensione standard delle icone della barra degli strumenti (16×16 pixel)."
+
+
+
+

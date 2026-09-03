@@ -177,6 +177,7 @@ class Preferences(object):
         self._LoadKlavierColour()
         self._LoadFingerNumColour()
         self._LoadContextMenu()
+        self._LoadSpellCheck()
         self._LoadEditorBg()
         self._LoadSelColour()
         self._LoadCaretColour()
@@ -242,6 +243,18 @@ class Preferences(object):
         self.cmSelectAll    = rb('selectAll')
         v = self.config.Read('showIcons')
         self.cmShowIcons = bool(int(v)) if v != '' else True
+        self.config.SetPath('/')
+
+    def _LoadSpellCheck(self):
+        # Opzioni del controllo ortografico gestite dalle Preferenze generali.
+        # 'showButtonIcons' e' la stessa chiave usata in precedenza dal dialogo
+        # "Opzioni controllo ortografico", cosi' l'eventuale scelta e' mantenuta.
+        self.config.SetPath('/SpellCheck')
+        v = self.config.Read('showButtonIcons')
+        if v == '':
+            self.showSpellButtonIcons = True
+        else:
+            self.showSpellButtonIcons = v.strip().lower() in ('1', 'true', 'yes')
         self.config.SetPath('/')
 
     def _LoadEditorBg(self):
@@ -399,6 +412,7 @@ class Preferences(object):
         self._SaveKlavierColour()
         self._SaveFingerNumColour()
         self._SaveContextMenu()
+        self._SaveSpellCheck()
         self._SaveEditorBg()
         self._SaveSelColour()
         self._SaveCaretColour()
@@ -454,6 +468,12 @@ class Preferences(object):
         self.config.Write('copyTextOnly',          '1' if getattr(self, 'cmCopyTextOnly',          True) else '0')
         self.config.Write('selectAll',    '1' if getattr(self, 'cmSelectAll',    True) else '0')
         self.config.Write('showIcons',    '1' if getattr(self, 'cmShowIcons',    True) else '0')
+        self.config.SetPath('/')
+
+    def _SaveSpellCheck(self):
+        self.config.SetPath('/SpellCheck')
+        self.config.Write('showButtonIcons',
+                          '1' if getattr(self, 'showSpellButtonIcons', True) else '0')
         self.config.SetPath('/')
 
     def _SaveEditorBg(self):

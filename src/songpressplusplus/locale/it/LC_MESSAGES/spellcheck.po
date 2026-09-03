@@ -149,3 +149,7 @@ msgstr ""
 
 msgid "Spell check complete. No errors found."
 msgstr "Controllo ortografico completato. Nessun errore trovato."
+
+
+msgid "Show icons next to buttons"
+msgstr "Mostra icone accanto ai pulsanti"

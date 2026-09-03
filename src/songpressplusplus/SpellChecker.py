@@ -653,16 +653,71 @@ class LiveHighlighter(object):
 # ---------------------------------------------------------------------------
 # Dialogo "Controllo ortografia" in stile Word (batch, scorre gli errori)
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Icone dei pulsanti del dialogo (cartella img/ dell'app)
+# ---------------------------------------------------------------------------
+# Nome file -> pulsante:
+#   minus_checked.png        -> Ignora / Ignora tutto  (salta la parola)
+#   minus_checked_all.png    -> Ignora tutto  (salta la parola)
+#   plus_checked.png         -> Aggiungi al dizionario
+#   substitution_checked.png -> Cambia / Cambia tutto   (sostituisci)
+#   substitution_checked_all.png -> Cambia tutto   (sostituisci)
+_ICON_CACHE = {}
+
+
+def _button_icon(name):
+    """Restituisce un wx.Bitmap 16x16 per un pulsante, o wx.NullBitmap.
+
+    Cerca prima con il meccanismo standard dell'app (Globals.glb.AddPath),
+    poi ripiega su una cartella 'img/' accanto al modulo (dev) o all'exe
+    (build "frozen"). Non solleva mai eccezioni: se l'icona manca, il
+    pulsante resta senza immagine.
+    """
+    if name in _ICON_CACHE:
+        return _ICON_CACHE[name]
+
+    path = None
+    try:
+        from .Globals import glb          # meccanismo standard di Songpress
+        cand = glb.AddPath('img/' + name)
+        if cand and os.path.isfile(cand):
+            path = cand
+    except Exception:
+        path = None
+
+    if path is None:
+        if getattr(sys, 'frozen', False):
+            base = os.path.dirname(sys.executable)
+        else:
+            base = os.path.dirname(os.path.abspath(__file__))
+        cand = os.path.join(base, 'img', name)
+        if os.path.isfile(cand):
+            path = cand
+
+    bmp = wx.NullBitmap
+    if path:
+        try:
+            img = wx.Image(path, wx.BITMAP_TYPE_PNG)
+            if img.IsOk():
+                bmp = wx.Bitmap(img)
+        except Exception:
+            bmp = wx.NullBitmap
+
+    _ICON_CACHE[name] = bmp
+    return bmp
+
+
 class SpellCheckDialog(wx.Dialog):
     """Scorre gli errori uno per uno con Ignora / Ignora tutto / Aggiungi /
     Cambia / Cambia tutto. Applica le sostituzioni direttamente sul controllo
     Scintilla passato come 'target'."""
 
-    def __init__(self, parent, checker, target_stc):
+    def __init__(self, parent, checker, target_stc, show_icons=True):
         wx.Dialog.__init__(self, parent, title=_tr("Spell check"),
                            style=wx.DEFAULT_DIALOG_STYLE)
         self.checker = checker
         self.stc = target_stc
+        self.show_icons = show_icons
         self._errors = []       # lista di (word, start, end) in offset CARATTERE
         self._idx = 0
         self._ignored_all = set()
@@ -728,6 +783,12 @@ class SpellCheckDialog(wx.Dialog):
 
         self.SetSizerAndFit(outer)
 
+        # icone accanto ai pulsanti (opzione in Preferenze -> Controllo
+        # ortografico). Va fatto DOPO SetSizerAndFit: applica i bitmap e
+        # ridimensiona il dialogo per i pulsanti diventati piu' larghi.
+        if self.show_icons:
+            self._apply_button_icons()
+
         self.btnIgnore.Bind(wx.EVT_BUTTON, self._on_ignore)
         self.btnIgnoreAll.Bind(wx.EVT_BUTTON, self._on_ignore_all)
         self.btnAdd.Bind(wx.EVT_BUTTON, self._on_add)
@@ -735,6 +796,33 @@ class SpellCheckDialog(wx.Dialog):
         self.btnChangeAll.Bind(wx.EVT_BUTTON, self._on_change_all)
         self.btnClose.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_CLOSE))
         self.lstSuggest.Bind(wx.EVT_LISTBOX_DCLICK, self._on_change)
+
+    def _apply_button_icons(self):
+        """Mette un'icona 16x16 accanto ai pulsanti d'azione.
+
+        Se un'icona manca (file non trovato) il relativo pulsante resta solo
+        testo: _button_icon() ritorna wx.NullBitmap e SetBitmap la ignora.
+        """
+        mapping = (
+            (self.btnIgnore,    'minus_checked.png'),
+            (self.btnIgnoreAll, 'minus_checked_all.png'),
+            (self.btnAdd,       'plus_checked.png'),
+            (self.btnChange,    'substitution_checked.png'),
+            (self.btnChangeAll, 'substitution_checked_all.png'),
+        )
+        for btn, icon in mapping:
+            bmp = _button_icon(icon)
+            if bmp and bmp.IsOk():
+                btn.SetBitmap(bmp)
+                # icona a sinistra dell'etichetta, con un piccolo margine
+                try:
+                    btn.SetBitmapMargins(4, 0)
+                except Exception:
+                    pass
+        # ricalcola la disposizione: i pulsanti ora sono piu' larghi
+        sizer = self.GetSizer()
+        if sizer is not None:
+            sizer.Fit(self)
 
     # -- logica -------------------------------------------------------------
     def _collect_errors(self):
@@ -877,10 +965,14 @@ class SpellPrefsDialog(wx.Dialog):
     vengono salvate in wx.Config tramite SpellSettings.
     """
 
-    def __init__(self, parent, settings, available_langs, pwl_path):
+    def __init__(self, parent, settings, available_langs, pwl_path, pref=None):
         wx.Dialog.__init__(self, parent, title=_tr("Spell check options"),
                            style=wx.DEFAULT_DIALOG_STYLE)
         self.settings = settings
+        # Preferenze generali (Preferences): qui vive l'opzione "icone accanto
+        # ai pulsanti", la stessa presente nella scheda Preferenze -> Controllo
+        # ortografico. Le due caselle restano quindi sincronizzate.
+        self.pref = pref
         self.pwl_path = pwl_path
 
         outer = wx.BoxSizer(wx.VERTICAL)
@@ -930,6 +1022,18 @@ class SpellPrefsDialog(wx.Dialog):
                                                  SpellSettings.DEFAULT_COLOUR)))
         col_row.Add(self.cpColour, 0, wx.ALIGN_CENTER_VERTICAL)
         box.Add(col_row, 0, wx.ALL, 6)
+
+        # icone accanto ai pulsanti del dialogo di controllo (Ignora /
+        # Aggiungi / Cambia ...). Legata a Preferences.showSpellButtonIcons:
+        # e' la stessa opzione della scheda Preferenze -> Controllo ortografico.
+        self.cbShowIcons = wx.CheckBox(
+            self, label=_tr("Show icons next to buttons"))
+        self.cbShowIcons.SetValue(
+            getattr(self.pref, 'showSpellButtonIcons', True))
+        self.cbShowIcons.SetToolTip(_tr(
+            "Show a small icon next to the Ignore / Add to dictionary / "
+            "Change buttons in the spell check dialog."))
+        box.Add(self.cbShowIcons, 0, wx.ALL, 6)
 
         outer.Add(box, 0, wx.EXPAND | wx.ALL, 10)
 
@@ -992,6 +1096,13 @@ class SpellPrefsDialog(wx.Dialog):
         self.settings.merge_chords = self.cbMerge.GetValue()
         self.settings.colour = colour_to_str(self.cpColour.GetColour())
         self.settings.save()
+        # icone pulsanti -> preferenza globale (sincronizzata con Preferenze)
+        if self.pref is not None:
+            self.pref.showSpellButtonIcons = self.cbShowIcons.GetValue()
+            try:
+                self.pref.Save()
+            except Exception:
+                pass
         evt.Skip()   # lascia proseguire la chiusura con ID_OK
 
     # -- dizionario personale ----------------------------------------------
@@ -1260,7 +1371,13 @@ class SpellManager(object):
                           _tr("Spell check"), wx.OK | wx.ICON_INFORMATION,
                           self.frame)
             return
-        dlg = SpellCheckDialog(self.frame, self.checker, self.stc)
+        # l'opzione "icone accanto ai pulsanti" vive nelle Preferenze generali
+        # (Preferences.showSpellButtonIcons). Fallback a True se assente.
+        pref = getattr(getattr(self, 'owner', None), 'pref', None) \
+            or getattr(self.frame, 'pref', None)
+        show_icons = getattr(pref, 'showSpellButtonIcons', True) if pref else True
+        dlg = SpellCheckDialog(self.frame, self.checker, self.stc,
+                               show_icons=show_icons)
         dlg.ShowModal()
         dlg.Destroy()
         if self.highlighter:
@@ -1303,7 +1420,9 @@ class SpellManager(object):
         pwl = self.checker.pwl if self.checker else user_dict_path()
         was_enabled = self.settings.enabled
 
-        dlg = SpellPrefsDialog(self.frame, self.settings, langs, pwl)
+        pref = getattr(getattr(self, 'owner', None), 'pref', None) \
+            or getattr(self.frame, 'pref', None)
+        dlg = SpellPrefsDialog(self.frame, self.settings, langs, pwl, pref=pref)
         if dlg.ShowModal() == wx.ID_OK:
             # 1) on/off globale
             if self.settings.enabled and self.checker is None and is_available():
