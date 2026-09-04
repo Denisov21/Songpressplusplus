@@ -1051,7 +1051,7 @@ class SpellPrefsDialog(wx.Dialog):
 
         # installer dizionari (attivo anche senza lingue: serve proprio a quello)
         self.btnInstallDicts = wx.Button(
-            self, label=_tr("Install dictionaries..."))
+            self, label=_tr("Manage dictionaries..."))
         outer.Add(self.btnInstallDicts, 0,
                   wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
@@ -1149,7 +1149,7 @@ class DictInstallerDialog(wx.Dialog):
     """
 
     def __init__(self, parent, on_installed=None):
-        wx.Dialog.__init__(self, parent, title=_tr("Install dictionaries"),
+        wx.Dialog.__init__(self, parent, title=_tr("Manage dictionaries"),
                            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
         self.on_installed = on_installed
 
@@ -1236,19 +1236,19 @@ class DictInstallerDialog(wx.Dialog):
         label = AVAILABLE_DICTS[code][1] if code in AVAILABLE_DICTS else code
         if wx.MessageBox(
                 _tr("Remove the '%s' dictionary?") % label,
-                _tr("Install dictionaries"),
+                _tr("Manage dictionaries"),
                 wx.YES_NO | wx.ICON_QUESTION, self) != wx.YES:
             return
         if remove_dictionary(code):
             wx.MessageBox(_tr("'%s' removed.") % label,
-                          _tr("Install dictionaries"),
+                          _tr("Manage dictionaries"),
                           wx.OK | wx.ICON_INFORMATION, self)
             if self.on_installed:
                 self.on_installed(code)   # il manager ricrea il checker
             self._refresh_lists()
         else:
             wx.MessageBox(_tr("Could not remove '%s'.") % label,
-                          _tr("Install dictionaries"),
+                          _tr("Manage dictionaries"),
                           wx.OK | wx.ICON_ERROR, self)
 
     def _on_install(self, _evt):
@@ -1258,7 +1258,7 @@ class DictInstallerDialog(wx.Dialog):
         code, label = self._avail[sel]
 
         prog = wx.ProgressDialog(
-            _tr("Install dictionaries"),
+            _tr("Manage dictionaries"),
             _tr("Downloading %s...") % label,
             maximum=100, parent=self,
             style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE)
@@ -1282,7 +1282,7 @@ class DictInstallerDialog(wx.Dialog):
         if ok:
             wx.MessageBox(
                 _tr("'%s' installed successfully.") % label,
-                _tr("Install dictionaries"),
+                _tr("Manage dictionaries"),
                 wx.OK | wx.ICON_INFORMATION, self)
             if self.on_installed:
                 self.on_installed(code)
@@ -1290,7 +1290,7 @@ class DictInstallerDialog(wx.Dialog):
         else:
             wx.MessageBox(
                 _tr("Could not install '%s'.\n\n%s") % (label, err or ""),
-                _tr("Install dictionaries"),
+                _tr("Manage dictionaries"),
                 wx.OK | wx.ICON_ERROR, self)
 
 

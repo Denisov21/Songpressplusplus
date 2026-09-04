@@ -86,14 +86,14 @@ msgstr "Apri..."
 msgid "Empty"
 msgstr "Svuota"
 
-msgid "Install dictionaries..."
-msgstr "Installa dizionari..."
+msgid "Manage dictionaries..."
+msgstr "Gestisci dizionari..."
 
 msgid "Remove all words from the personal dictionary?"
 msgstr "Rimuovere tutte le parole dal dizionario personale?"
 
-msgid "Install dictionaries"
-msgstr "Installa dizionari"
+msgid "Manage dictionaries"
+msgstr "Gestisci dizionari"
 
 msgid "Spell checking engine not available."
 msgstr "Motore di controllo ortografico non disponibile."
