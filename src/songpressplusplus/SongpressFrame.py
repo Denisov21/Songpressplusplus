@@ -959,6 +959,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         self.BindMyMenu()
         self._BuildNewFromTemplateMenu()
+        # Rigenera il sottomenu "Nuovo da template" a ogni apertura del menu
+        # File, così template aggiunti/rinominati/eliminati compaiono subito,
+        # senza dover riavviare l'applicazione.
+        self.frame.Bind(wx.EVT_MENU_OPEN, self._OnMenuOpen)
         self.frame.Bind(EVT_TEXT_CHANGED, self.OnTextChanged)
         self.frame.Bind(wx.EVT_CHAR_HOOK, self._OnGlobalCharHook)
         self.exportMenuId = xrc.XRCID('export')
@@ -1658,6 +1662,22 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
     # Template "Nuovo da template"
     # ------------------------------------------------------------------
 
+    def _OnMenuOpen(self, evt):
+        """Rigenera il sottomenu 'Nuovo da template' quando si apre il menu File.
+
+        Il menu viene ricostruito leggendo di nuovo la cartella templates/songs,
+        così i template aggiunti, rinominati o eliminati compaiono subito
+        nell'elenco senza dover riavviare l'applicazione. Il rebuild è limitato
+        all'apertura del menu File per non pesare sulle altre aperture di menu.
+        """
+        try:
+            menu = evt.GetMenu()
+            if menu is not None and menu is self.menuBar.GetMenu(0):
+                self._BuildNewFromTemplateMenu()
+        except Exception:
+            pass  # una scansione fallita non deve impedire l'apertura del menu
+        evt.Skip()
+
     def _BuildNewFromTemplateMenu(self):
         """Popola dinamicamente il sottomenu 'Nuovo da template'
         con i file .crd trovati in templates/songs.
@@ -1668,7 +1688,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         Se una delle due non esiste viene ignorata silenziosamente.
         I file utente sovrascrivono omonimi globali (stessa logica
         di ListLocalGlobalDir, ma senza crash su cartella mancante).
-        Viene chiamato una sola volta durante l'inizializzazione.
+        Viene chiamato all'avvio e a ogni apertura del menu File
+        (vedi _OnMenuOpen), così l'elenco resta sempre aggiornato.
         """
         template_rel = os.path.join('templates', 'songs')
         search_roots = [glb.path]
@@ -1704,7 +1725,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             # Sottomenu non trovato nell'XRC: niente da fare
             return
 
-        # Svuota eventuali voci residue
+        # Svuota eventuali voci residue. Prima rimuove gli handler EVT_MENU
+        # legati alle voci precedenti: la ricostruzione avviene a ogni apertura
+        # del menu File, quindi senza questo unbind i binding si accumulerebbero.
+        for old_id in getattr(self, '_template_paths', {}):
+            self.frame.Unbind(wx.EVT_MENU, id=old_id)
         for old_item in submenu.GetMenuItems():
             submenu.Delete(old_item)
 

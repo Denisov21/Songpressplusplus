@@ -1620,6 +1620,36 @@ Uncheck *Single instance* if you need to:
 > **Note — startup.log** — Every single-instance event is logged in `%LOCALAPPDATA%\Songpress++\startup.log` (Windows) or `~/.Songpress++/startup.log` (Linux/macOS). The log records the config path read, the value of the `singleinstance` key, whether an existing instance was found, and whether the file was forwarded successfully. This is the first place to look when troubleshooting multiple-window behaviour.
 
 ---
+## New from template — creating a song from a model
+
+**File → New from template** opens a submenu listing the available song templates (`.crd` files). Picking one loads its content into a **new document**, ready to customise.
+
+### How to use it
+
+1. Open **File → New from template**.
+2. Choose a template from the list (sorted alphabetically by name).
+3. The template's content is placed into a **new, untitled document**, exactly like **New**: the title bar shows *Untitled* and the song is marked as «modified».
+4. The first **Save** behaves like **Save As**: you choose the name and location.
+
+The template file is **never overwritten**: the one you pick is only the starting point of the new song.
+
+### Where templates come from
+
+Templates are the `.crd` files inside `templates/songs`. Songpress++ looks in two folders:
+
+- **package** — the `templates/songs` shipped with the application (the sample templates);
+- **user** — the `templates/songs` inside the user data folder, where you put your own.
+
+When two files share the same name, the **user copy wins**. If no template is found, the menu shows the disabled entry **(no template available)**.
+
+### Adding or editing a template
+
+- **Add your own**: drop a `.crd` file into the user templates folder. The quickest way is **Tools → Options → General → Open templates folder**, then go into `songs/` and copy your file there (or use *Save As* straight into it). The file name is what shows up in the menu.
+- **Edit an existing one**: open it, change it and save. The changes are used immediately, because the template's content is re-read from the file every time you select it.
+
+> **The list refreshes itself.** The submenu is rebuilt every time you open the **File** menu: templates added, renamed or deleted show up **right away**, without restarting the application. The *Open templates folder* button opens exactly the user folder the app reads from, so whatever you add or edit there becomes available at once.
+
+---
 ## Options Window — Complete Reference
 
 Opened from **Tools → Options…** (window title: *Songpress++ options*). It is a resizable tabbed dialog (minimum size 730 × 800 px).
@@ -1662,12 +1692,13 @@ Opened from **Tools → Options…** (window title: *Songpress++ options*). It i
 | Command / option | Default | Description |
 | ---------------- | :-----: | ----------- |
 | **Clear recent files** (button) | — | Empties the recent-files list. The removal happens when you confirm with OK. |
-| **Open templates folder** (button) | — | Opens the `templates/` folder (also used for colour themes) in the system file manager. |
+| **Open templates folder** (button) | — | Opens the **user** templates folder (`templates/`, also used for colour themes) in the system file manager — the same one the app reads from. `.crd` files placed in `songs/` appear under *File → New from template* (see the *New from template* chapter). |
 | **Enable 'Save' button only when the song is modified** | ✓ | Save (menu and toolbar) stays greyed out until there are unsaved changes. |
 | **Enable directive intellisense (Ctrl+Space)** | ✓ | Auto-completion of ChordPro directives in the editor. |
 | **Enable multi-cursor (Alt+Click, Ctrl+D)** | ☐ | Alt+Click adds a cursor; Ctrl+D selects the next occurrence of the current word. |
 | **Single instance: open files in the existing window** | ✓ | Files opened from Explorer or the command line reuse the existing window. See *Single instance mode*. |
 | **Show 'Restart Songpress++' in the File menu** | ✓ | Adds a **Restart Songpress++** item to the **File** menu, for a quick restart without closing and reopening the app manually (see the *Restarting Songpress++* box above). |
+| **Show the full file path in the title bar** | ☐ | Shows the **complete path** of the open file (e.g. `C:\Songs\ballad.crd`) in the title bar instead of just its name. For a new, unsaved song it still shows *Untitled*. The leading asterisk that marks unsaved changes is unaffected. |
 | **Show debug messages (theme save path)** | ☐ | Shows diagnostic popups (e.g. where a theme file was written). Troubleshooting only. |
 | **Save window size and position on exit** | ✓ | Restores the window geometry at the next launch. |
 | **Replace spaces with '_' in saved file names** | ☐ | Whitespace in the file name (not the folder path) becomes an underscore when saving or exporting. |

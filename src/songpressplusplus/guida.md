@@ -1627,6 +1627,36 @@ Deseleziona *Istanza singola* se hai bisogno di:
 > **Nota — startup.log** — Ogni evento legato all'istanza singola viene registrato in `%LOCALAPPDATA%\Songpress++\startup.log` (Windows) oppure `~/.Songpress++/startup.log` (Linux/macOS). Il log registra il percorso del config letto, il valore della chiave `singleinstance`, se è stata trovata un'istanza esistente e se il file è stato inoltrato con successo. È il primo posto dove cercare in caso di comportamento anomalo con più finestre.
 
 ---
+## Nuovo da template — creare un brano da un modello
+
+**File → Nuovo da template** apre un sottomenu con l'elenco dei modelli di canzone disponibili (file `.crd`). Scegliendone uno, il suo contenuto viene caricato in un **nuovo documento**, pronto da personalizzare.
+
+### Come si usa
+
+1. Apri **File → Nuovo da template**.
+2. Scegli un modello dall'elenco (ordinato alfabeticamente per nome).
+3. Il contenuto del modello viene inserito in un **documento nuovo e senza nome**, esattamente come con **Nuovo**: la barra del titolo mostra *Untitled* e il brano risulta «modificato».
+4. Il primo **Salva** si comporta come **Salva con nome**: decidi tu nome e posizione.
+
+Il file del modello **non viene mai sovrascritto**: quello che scegli è solo il punto di partenza del nuovo brano.
+
+### Da dove arrivano i modelli
+
+I modelli sono i file `.crd` contenuti in `templates/songs`. Songpress++ guarda in due cartelle:
+
+- **pacchetto** — `templates/songs` distribuita con l'applicazione (i modelli di esempio);
+- **utente** — `templates/songs` nella cartella dati dell'utente, dove metti i tuoi.
+
+A parità di nome file, **vince la copia utente**. Se non viene trovato alcun modello, il menu mostra la voce disabilitata **(nessun modello disponibile)**.
+
+### Aggiungere o modificare un modello
+
+- **Aggiungerne uno tuo**: metti un file `.crd` nella cartella modelli utente. La via più rapida è **Strumenti → Opzioni → Generale → Apri cartella modelli**, poi entra in `songs/` e copiaci il file (oppure usa *Salva con nome* direttamente lì). Il nome del file è quello che comparirà nel menu.
+- **Modificarne uno esistente**: aprilo, modificalo e salvalo. Le modifiche vengono usate immediatamente, perché il contenuto del modello viene riletto dal file ogni volta che lo selezioni.
+
+> **L'elenco si aggiorna da solo.** Il sottomenu viene rigenerato a ogni apertura del menu **File**: i modelli aggiunti, rinominati o eliminati compaiono **subito**, senza dover riavviare l'applicazione. Il pulsante *Apri cartella modelli* apre proprio la cartella utente che l'app rilegge, così ciò che aggiungi o modifichi lì diventa immediatamente disponibile.
+
+---
 ## Finestra Opzioni — riferimento completo
 
 Si apre da **Strumenti → Opzioni…** (titolo della finestra: *Opzioni Songpress++*). È un dialogo a schede ridimensionabile (dimensione minima 730 × 800 px).
@@ -1669,12 +1699,13 @@ Si apre da **Strumenti → Opzioni…** (titolo della finestra: *Opzioni Songpre
 | Comando / opzione | Predefinito | Descrizione |
 | ----------------- | :---------: | ----------- |
 | **Cancella file recenti** (pulsante) | — | Svuota l'elenco dei file recenti. La cancellazione avviene alla conferma con OK. |
-| **Apri cartella modelli** (pulsante) | — | Apre nel file manager di sistema la cartella `templates/` usata anche per i temi dei colori. |
+| **Apri cartella modelli** (pulsante) | — | Apre nel file manager di sistema la cartella modelli **utente** (`templates/`, usata anche per i temi dei colori) — la stessa che l'app rilegge. I file `.crd` messi in `songs/` compaiono in *File → Nuovo da template* (vedi il capitolo *Nuovo da template*). |
 | **Abilita il pulsante «Salva» solo quando la canzone è modificata** | ✓ | Il comando Salva (menu e toolbar) resta disabilitato finché non ci sono modifiche non salvate. |
 | **Abilita intellisense direttive (Ctrl+Spazio)** | ✓ | Attiva il completamento automatico delle direttive ChordPro nell'editor. |
 | **Abilita multicursore (Alt+Clic, Ctrl+D)** | ☐ | Alt+Clic aggiunge un cursore; Ctrl+D seleziona l'occorrenza successiva della parola corrente. |
 | **Istanza singola: apri i file nella finestra esistente** | ✓ | I file aperti da Esplora risorse o da riga di comando riutilizzano la finestra già aperta. Vedi il capitolo *Modalità istanza singola*. |
 | **Mostra «Riavvia Songpress++» nel menu File** | ✓ | Aggiunge al menu **File** la voce **Riavvia Songpress++**, per un riavvio rapido senza chiudere e riaprire a mano (vedi il riquadro *Riavvio di Songpress++* più sopra). |
+| **Mostra il percorso completo del file nella barra del titolo** | ☐ | Nella barra del titolo mostra il **percorso completo** del file aperto (es. `C:\Songs\ballad.crd`) invece del solo nome. Per un brano nuovo non ancora salvato mostra comunque *Untitled*. L'asterisco iniziale, che segnala modifiche non salvate, resta invariato. |
 | **Mostra messaggi di debug (percorso salvataggio temi)** | ☐ | Mostra popup diagnostici (es. il percorso in cui viene salvato un tema). Utile solo per diagnosi. |
 | **Salva dimensione e posizione della finestra all'uscita** | ✓ | Ripristina geometria della finestra al successivo avvio. |
 | **Sostituisci gli spazi con «_» nei nomi dei file salvati** | ☐ | Gli spazi nel nome del file (non nel percorso) diventano underscore in salvataggio ed esportazione. |
