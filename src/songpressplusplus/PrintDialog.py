@@ -1383,6 +1383,10 @@ class PrintOptionsDialog:
         )
         box_scale.Add(lbl_scale, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
         box_scale.Add(self.spin_font_scale, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
+        # Pulsante che riporta la scala a 100% (aggiorna anche la casella).
+        self.btn_scale_reset = wx.Button(dlg, wx.ID_ANY, _("100%"), style=wx.BU_EXACTFIT)
+        self.btn_scale_reset.SetToolTip(_("Reset scale to 100%"))
+        box_scale.Add(self.btn_scale_reset, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
         outer.Add(box_scale, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
 
         # ── Bottoni ────────────────────────────────────────────────────
@@ -1417,6 +1421,7 @@ class PrintOptionsDialog:
         self.cb_shrink.Bind(wx.EVT_CHECKBOX, self._on_shrink_changed)
         self.cb_remove_blank.Bind(wx.EVT_CHECKBOX, self._on_remove_blank_changed)
         self.btn_pin.Bind(wx.EVT_BUTTON, self._on_pin)
+        self.btn_scale_reset.Bind(wx.EVT_BUTTON, self._on_scale_reset)
         self.btn_ok.Bind(wx.EVT_BUTTON, self._on_ok)
 
     # ── Handler eventi ────────────────────────────────────────────────────────
@@ -1438,6 +1443,10 @@ class PrintOptionsDialog:
     def _on_col2(self, evt):
         self.rb_col2.SetValue(True)
         self.rb_col1.SetValue(False)
+
+    def _on_scale_reset(self, evt):
+        # Riporta la scala a 100% aggiornando anche la casella (SpinCtrl).
+        self.spin_font_scale.SetValue(100)
 
     def _on_shrink_changed(self, evt):
         enabled = self.cb_shrink.GetValue()

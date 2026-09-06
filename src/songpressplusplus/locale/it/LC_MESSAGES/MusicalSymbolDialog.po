@@ -55,6 +55,14 @@ msgstr ""
 "e appare come blocco strofa senza essere conteggiato nella numerazione.\n"
 "Esempio: {start_verse}{textsize:24}♩{textsize}{end_verse}"
 
+#. Tooltip on the selected-symbol description: explains which rendering path
+#. the symbol uses depending on its Unicode plane (SMP vs BMP).
+#: MusicalSymbolDialog.py
+msgid ""
+"SMP: rendered with FreeSerif (GDI+ path). BMP: rendered with the song font."
+msgstr ""
+"SMP: reso con FreeSerif (percorso GDI+). BMP: reso con il font del brano."
+
 # --- Tab names ---
 
 #: MusicalSymbolDialog.py

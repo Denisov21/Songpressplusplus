@@ -26,6 +26,29 @@ def _has_smp(s: str) -> bool:
     return any(ord(c) > 0xFFFF for c in s)
 
 
+def _smp_runs(s: str):
+    """Genera coppie (substring, is_smp) per run consecutivi di caratteri con
+    o senza codepoint SMP (> U+FFFF), così da poter disegnare/misurare ogni
+    tratto col font corretto: il font del brano per il testo normale, il font
+    con copertura SMP (FreeSerif) solo per il simbolo musicale.
+    Es.: "\U0001D13D  Per nutrirci di " ->
+         [("\U0001D13D", True), ("  Per nutrirci di ", False)]
+    """
+    if not s:
+        return
+    cur = [s[0]]
+    cur_smp = ord(s[0]) > 0xFFFF
+    for ch in s[1:]:
+        smp = ord(ch) > 0xFFFF
+        if smp == cur_smp:
+            cur.append(ch)
+        else:
+            yield ''.join(cur), cur_smp
+            cur = [ch]
+            cur_smp = smp
+    yield ''.join(cur), cur_smp
+
+
 class SongDecorator(object):
     def __init__(self):
         object.__init__(self)
@@ -232,10 +255,14 @@ class SongDecorator(object):
         for t in line.boxes:
             self.dc.SetFont(t.font)
             text = t.text
-            t.w, t.h = self.dc.GetTextExtent(text)
-            # GDI restituisce 0x0 per caratteri SMP: rimisura con GDI+ se necessario
-            if t.w == 0 and _has_smp(text):
-                t.w, t.h = self._GetTextExtentSMP(text)
+            # Box che contiene caratteri SMP: misura ogni run col suo font
+            # (testo normale col font del brano, simbolo con FreeSerif) e somma
+            # le larghezze. Così la larghezza riservata combacia con ciò che
+            # _DrawMixed disegnerà e il token successivo non si sovrappone.
+            if _has_smp(text):
+                t.w, t.h = self._MeasureMixed(text)
+            else:
+                t.w, t.h = self.dc.GetTextExtent(text)
             if getattr(t, 'is_time_sig', False):
                 # Per la frazione musicale: larghezza = max(num, den),
                 # altezza = cifra_sopra + gap + 1px linea + gap + cifra_sotto
@@ -778,9 +805,11 @@ class SongDecorator(object):
                                   f.GetWeight(), f.GetUnderlined(), f.GetFaceName())
             self.dc.SetFont(italic_font)
         # Caratteri SMP (U+10000+, es. blocco Musical Symbols U+1D100-U+1D1FF):
-        # GDI non fa font-fallback → switcha su GDI+ via GraphicsContext solo per loro.
+        # GDI/Cairo non fanno font-fallback → per i soli run SMP passiamo a GDI+
+        # via GraphicsContext con FreeSerif, mentre il testo normale resta col
+        # font del brano. Così cambia carattere solo il simbolo, non tutta la riga.
         if _has_smp(text.text):
-            self._DrawTextSMP(text.text, int(tx + text.marginLeft), int(ty + text.marginTop))
+            self._DrawMixed(text.text, int(tx + text.marginLeft), int(ty + text.marginTop))
         else:
             self.dc.DrawText(text.text, int(tx + text.marginLeft), int(ty + text.marginTop))
         
@@ -790,20 +819,12 @@ class SongDecorator(object):
     # un font che ha copertura SMP (FreeSerif > Segoe UI Symbol).        #
     # ------------------------------------------------------------------ #
 
-    def _smp_gc_font(self, gc, base_font, color):
-        """Crea un wx.GraphicsFont con copertura SMP a partire da base_font.
-        Itera su tutti i font caricati dalla cartella fonts/ (via get_smp_faces()),
-        più il font di sistema come ultimo fallback.
-        La dimensione viene scalata per pen_scale (zoom DC) perché GraphicsContext
-        non eredita SetUserScale del DC padre.
-        """
-        # pen_scale = fattore zoom del DC (es. 1.5 con zoom al 150%)
-        # Il GC ignora SetUserScale → moltiplichiamo la dimensione del font
-        scale = getattr(self, 'pen_scale', 1.0)
-        pt = max(1, round(base_font.GetPointSize() * scale))
-        # Lista dinamica: tutti i font caricati da fonts/ + font corrente come
-        # ultimo fallback (mostra rettangoli per glifi mancanti ma non crasha)
-        faces = list(_get_smp_faces()) + [base_font.GetFaceName()]
+    def _smp_gc_font_at(self, gc, pt: int, color):
+        """Crea un wx.GraphicsFont con copertura SMP alla dimensione *pt* (in
+        pixel device). Itera sui font caricati da fonts/ (get_smp_faces()) più il
+        face del brano come ultimo fallback. Usato sia dal DC su schermo sia dal
+        MemoryDC offscreen del percorso bitmap (stampa)."""
+        faces = list(_get_smp_faces()) + [self.dc.GetFont().GetFaceName()]
         for face in faces:
             if not face:
                 continue
@@ -814,47 +835,140 @@ class SongDecorator(object):
             )
             if candidate.IsOk():
                 return gc.CreateFont(candidate, color)
-        return gc.CreateFont(base_font, color)
+        return gc.CreateFont(self.dc.GetFont(), color)
+
+    def _smp_gc_font(self, gc, base_font, color):
+        """Compat: dimensione = pt del font base * pen_scale (zoom/stampa)."""
+        scale = getattr(self, 'pen_scale', 1.0)
+        pt = max(1, int(round(base_font.GetPointSize() * scale)))
+        return self._smp_gc_font_at(gc, pt, color)
+
+    def _smp_measure_device(self, s: str, pt: int, color):
+        """Misura *s* con un GraphicsContext su un MemoryDC (sempre disponibile,
+        anche quando GraphicsContext.Create(self.dc) fallisce su un DC di
+        stampa). Ritorna la misura in PIXEL DEVICE alla dimensione *pt*."""
+        bmp = wx.Bitmap(1, 1, 32)
+        mdc = wx.MemoryDC(bmp)
+        try:
+            gc = wx.GraphicsContext.Create(mdc)
+            if gc is None:
+                cw, ch = mdc.GetTextExtent('M')
+                return float(cw * max(1, len(s))), float(ch)
+            gc.SetFont(self._smp_gc_font_at(gc, pt, color))
+            return gc.GetTextExtent(s)
+        finally:
+            mdc.SelectObject(wx.NullBitmap)
+
+    def _MeasureMixed(self, s: str):
+        """Larghezza/altezza di *s* misurando ogni run col font giusto:
+        il font del brano per il testo normale, FreeSerif (via GDI+) per i run
+        SMP. La larghezza totale è la somma dei run, l'altezza è il massimo.
+        Deve restare coerente con _DrawMixed, altrimenti il token successivo
+        si sovrappone (era la causa dell'overlap, amplificata dallo zoom).
+        """
+        total_w = 0
+        max_h = 0
+        for run, is_smp in _smp_runs(s):
+            if is_smp:
+                w, h = self._GetTextExtentSMP(run)
+            else:
+                w, h = self.dc.GetTextExtent(run)
+            total_w += w
+            max_h = max(max_h, h)
+        if max_h == 0:
+            _w, max_h = self.dc.GetTextExtent('Mg')
+        return total_w, max_h
+
+    def _DrawMixed(self, s: str, x: int, y: int):
+        """Disegna *s* avanzando in orizzontale, un run alla volta: il testo
+        normale col font già impostato sul DC, i run SMP con FreeSerif via GDI+.
+        Le larghezze usate per avanzare sono le stesse di _MeasureMixed."""
+        cx = x
+        for run, is_smp in _smp_runs(s):
+            if is_smp:
+                self._DrawTextSMP(run, int(cx), y)
+                w, _h = self._GetTextExtentSMP(run)
+            else:
+                self.dc.DrawText(run, int(cx), y)
+                w, _h = self.dc.GetTextExtent(run)
+            cx += w
 
     def _GetTextExtentSMP(self, s: str):
-        """Misura *s* con GDI+ usando un font con copertura SMP.
-        GDI restituisce 0x0 per caratteri SMP → rimisura con GraphicsContext.
-        Il risultato viene diviso per pen_scale per tornare in coordinate DC logiche.
+        """Misura *s* (che contiene caratteri SMP) in coordinate logiche del DC.
+        Misuriamo con un MemoryDC offscreen (dove GraphicsContext è sempre
+        disponibile, a differenza dei DC di stampa) alla dimensione device
+        pt*scale, poi dividiamo per scale per tornare in coordinate logiche.
         """
         scale = getattr(self, 'pen_scale', 1.0)
-        try:
-            gc = wx.GraphicsContext.Create(self.dc)
-            if gc is None:
-                return self.dc.GetTextExtent(s)
-            gc.SetFont(self._smp_gc_font(gc, self.dc.GetFont(), self.dc.GetTextForeground()))
-            w, h = gc.GetTextExtent(s)
-            if w < 1:
-                cw, ch = self.dc.GetTextExtent('M')
-                # dc.GetTextExtent tiene già conto di pen_scale; niente divisione
-                return cw * max(1, len(s)), ch
-            # gc misura in pixel fisici (senza scala DC) → dividiamo per scale
-            return int(w / scale), int(h / scale)
-        except Exception:
+        base_font = self.dc.GetFont()
+        color = self.dc.GetTextForeground()
+        pt = max(1, int(round(base_font.GetPointSize() * scale)))
+        tw, th = self._smp_measure_device(s, pt, color)
+        if tw < 1:
             cw, ch = self.dc.GetTextExtent('M')
             return cw * max(1, len(s)), ch
+        return int(tw / scale), int(th / scale)
 
     def _DrawTextSMP(self, s: str, x: int, y: int):
-        """Disegna *s* con GDI+ usando un font con copertura SMP (FreeSerif).
-        Chiamato solo quando *s* contiene caratteri U+10000+.
-        Le coordinate x, y sono in spazio DC (con scala); il GC non eredita
-        SetUserScale, quindi le moltiplichiamo per pen_scale prima di passarle al GC.
+        """Disegna *s* con un font a copertura SMP (FreeSerif).
+        Chiamato solo per i run che contengono caratteri U+10000+.
+
+        Percorso veloce (schermo/anteprima live): GraphicsContext direttamente
+        sul DC. Azzeriamo UserScale prima di creare il GC così wxMSW (che non
+        eredita la scala) e wxGTK/Cairo (che la eredita) si comportano allo
+        stesso modo; poi applichiamo noi `scale` a coordinate e dimensione font.
+
+        Percorso robusto (stampa/anteprima di stampa): sui DC di stampa
+        GraphicsContext.Create(self.dc) può restituire None. Prima il glifo
+        cadeva sul disegno normale col font del brano, che senza copertura SMP
+        mostrava il quadratino .notdef (il «simbolo che non appare»). Ora, in
+        quel caso, selezioniamo un font con copertura SMP (FreeSerif) DIRETTAMENTE
+        sul DC e disegniamo con dc.DrawText: posizione, dimensione e DPI li
+        gestisce il DC come per ogni altra parola, quindi il glifo esce corretto.
         """
         scale = getattr(self, 'pen_scale', 1.0)
+        old_sx, old_sy = self.dc.GetUserScale()
         try:
+            self.dc.SetUserScale(1.0, 1.0)
             gc = wx.GraphicsContext.Create(self.dc)
             if gc is None:
-                self.dc.DrawText(s, x, y)
-                return
+                raise RuntimeError("GraphicsContext non disponibile sul DC")
             gc.SetFont(self._smp_gc_font(gc, self.dc.GetFont(), self.dc.GetTextForeground()))
-            # Converti coordinate da spazio DC logico a pixel fisici
             gc.DrawText(s, x * scale, y * scale)
+            return
         except Exception:
-            self.dc.DrawText(s, x, y)
+            pass
+        finally:
+            self.dc.SetUserScale(old_sx, old_sy)
+        # Fallback (DC di stampa: GraphicsContext.Create ha dato None): impostiamo
+        # un font con copertura SMP DIRETTAMENTE sul DC e disegniamo col percorso
+        # testo normale. Posizione (x, y logiche), dimensione (point size) e DPI
+        # sono gestiti dal DC come per tutto il resto del testo, quindi il glifo
+        # cade al posto giusto e della misura giusta — esattamente dove prima
+        # compariva il quadratino .notdef, ma stavolta con il glifo reale.
+        self._DrawTextSMP_dcfont(s, x, y)
+
+    def _DrawTextSMP_dcfont(self, s: str, x: int, y: int):
+        """Disegna *s* selezionando un face SMP sul DC e usando dc.DrawText.
+        Usato quando il DC non offre un GraphicsContext (stampa/anteprima di
+        stampa). Non tocca UserScale né origine: si comporta come il disegno di
+        una qualsiasi altra parola."""
+        base_font = self.dc.GetFont()
+        smp_face = next((f for f in _get_smp_faces() if f), None)
+        if smp_face:
+            smp_font = wx.Font(
+                base_font.GetPointSize(), wx.FONTFAMILY_DEFAULT,
+                base_font.GetStyle(), base_font.GetWeight(),
+                faceName=smp_face,
+            )
+            if smp_font.IsOk():
+                self.dc.SetFont(smp_font)
+                self.dc.DrawText(s, int(x), int(y))
+                self.dc.SetFont(base_font)
+                return
+        # Nessun face SMP trovato: disegno comunque (può dare .notdef, ma è
+        # meglio che non disegnare nulla e non lascia il DC incoerente).
+        self.dc.DrawText(s, int(x), int(y))
 
     def PostDrawText(self, text, tx, ty):
         # tx, ty: coordinates of top-left corner of drawable area

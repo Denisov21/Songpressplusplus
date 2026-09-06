@@ -77,6 +77,14 @@ msgstr "Soglia pagina vuota (%):"
 msgid "Scale (%):"
 msgstr "Scala (%):"
 
+#. Button next to the scale field: resets the scale back to 100%
+msgid "100%"
+msgstr "100%"
+
+#. Tooltip for the scale-reset button
+msgid "Reset scale to 100%"
+msgstr "Reimposta scala al 100%"
+
 # ── Buttons and tooltips ──────────────────────────────────────────────────────
 
 msgid "Keep this dialog open after applying"
