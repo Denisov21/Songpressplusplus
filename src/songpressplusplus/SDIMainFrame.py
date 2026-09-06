@@ -279,8 +279,14 @@ class SDIMainFrame(object):
         if self.document == '':
             doc = _('Untitled')
         else:
-            doc = os.path.basename(self.document)
-            (doc, ext) = os.path.splitext(doc)
+            pref = getattr(self, 'pref', None)
+            if pref is not None and getattr(pref, 'showFullPathInTitle', False):
+                # Percorso completo del file aperto (con estensione).
+                doc = self.document
+            else:
+                # Solo il nome del file, senza estensione (comportamento storico).
+                doc = os.path.basename(self.document)
+                (doc, ext) = os.path.splitext(doc)
         self.frame.SetTitle(u"%s%s - %s" % (mod, doc, self.appLongName))
 
     def AskSaveModified(self, canCancel = True):

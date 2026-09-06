@@ -199,6 +199,7 @@ class Preferences(object):
         self._LoadNoChordHide()
         self._LoadSingleInstance()
         self._LoadShowRestartMenuItem()
+        self._LoadShowFullPathInTitle()
         self._LoadSaveOnModified()
         self._LoadReplaceSpacesInFilenames()
         self._LoadSuggestTitleAsFilename()
@@ -434,6 +435,7 @@ class Preferences(object):
         self._SaveNoChordHide()
         self._SaveSingleInstance()
         self._SaveShowRestartMenuItem()
+        self._SaveShowFullPathInTitle()
         self._SaveSaveOnModified()
         self._SaveReplaceSpacesInFilenames()
         self._SaveSuggestTitleAsFilename()
@@ -971,4 +973,17 @@ class Preferences(object):
     def _SaveShowRestartMenuItem(self):
         self.config.SetPath('/App')
         self.config.Write('showRestartMenuItem', '1' if getattr(self, 'showRestartMenuItem', True) else '0')
+        self.config.SetPath('/')
+
+    def _LoadShowFullPathInTitle(self):
+        self.config.SetPath('/App')
+        v = self.config.Read('showFullPathInTitle')
+        # Default False: nella barra del titolo si mostra solo il nome del file,
+        # come prima. Se True viene mostrato il percorso completo.
+        self.showFullPathInTitle = bool(int(v)) if v != '' else False
+        self.config.SetPath('/')
+
+    def _SaveShowFullPathInTitle(self):
+        self.config.SetPath('/App')
+        self.config.Write('showFullPathInTitle', '1' if getattr(self, 'showFullPathInTitle', False) else '0')
         self.config.SetPath('/')

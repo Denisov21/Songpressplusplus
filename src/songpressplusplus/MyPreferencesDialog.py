@@ -233,6 +233,7 @@ class MyPreferencesDialog(PreferencesDialog):
         # Single instance
         self.singleInstanceCB.SetValue(getattr(self.pref, 'singleInstance', True))
         self.showRestartMenuItemCB.SetValue(getattr(self.pref, 'showRestartMenuItem', True))
+        self.showFullPathInTitleCB.SetValue(getattr(self.pref, 'showFullPathInTitle', False))
 
         # Opzioni anteprima (tab Songpress)
         self.showPageIndicatorCB.SetValue(getattr(self.pref, 'showPageIndicator', True))
@@ -1087,38 +1088,39 @@ class MyPreferencesDialog(PreferencesDialog):
         """Restituisce la cartella templates/ da aprire con "Apri cartella
         template", creando tutte le sottocartelle di _TEMPLATE_SUBDIRS.
 
-        Criterio: l'utente si aspetta di trovare *i template di esempio*
-        distribuiti con l'applicazione, che stanno in glb.path/templates
-        (dentro il pacchetto). La cartella dati utente viene invece creata
-        vuota da Globals.InitDataPath(): aprirla mostrerebbe solo cartelle
-        deserte. Quindi:
+        Criterio: deve essere la STESSA cartella che l'app rilegge, altrimenti
+        le modifiche fatte dall'utente restano "ombreggiate" e al riavvio si
+        rivede il template vecchio. La lettura (_theme_roots(),
+        SongpressFrame._BuildNewFromTemplateMenu(), Globals.ListLocalGlobalDir())
+        scandisce entrambe le radici ma fa **prevalere la copia utente**
+        (glb.data_path/templates). Quindi il pulsante apre proprio quella.
 
-          1. glb.path/templates  → radice del pacchetto. È la scelta giusta
-             ovunque l'installazione appartenga all'utente: Windows
-             (%LOCALAPPDATA%\\Songpress++\\tools\\...\\site-packages\\
-             songpressplusplus\\templates, anche su unità diverse da C:),
-             venv, modalità portable, albero sorgenti. Contiene gli esempi ed
-             è scrivibile, quindi l'utente può anche aggiungerne di propri.
-          2. glb.data_path/templates → usata quando la 1 non è scrivibile:
-             è il caso dell'installazione .deb di sistema, dove il pacchetto
-             sta in /usr/lib/python3/dist-packages ed è di root.
-          3. wx.StandardPaths → rete di sicurezza se glb.data_path manca.
+        Non è più vuota: al primo avvio (e di nuovo qui, in modo idempotente)
+        TemplateSeed.seed_user_templates() vi copia tutti i template distribuiti
+        con l'applicazione. Ordine dei candidati:
 
-        La lettura non cambia: _theme_roots() e
-        SongpressFrame._PopulateTemplateMenu() scandiscono comunque entrambe
-        le radici, con quella locale che sovrascrive quella globale.
+          1. glb.data_path/templates → cartella dati utente, scrivibile e
+             popolata dal seeding. È quella che l'app usa: modifiche e
+             salvataggi qui hanno effetto immediato e persistono al riavvio.
+          2. glb.path/templates → radice del pacchetto: solo ripiego quando la 1
+             non è disponibile/scrivibile (es. modalità portable, dove comunque
+             data_path == path e le due coincidono).
+          3. wx.StandardPaths → rete di sicurezza (dentro _get_user_data_dir).
         """
         import os as _os
 
         candidates = []
 
-        # 1. radice del pacchetto: contiene i template di esempio.
+        # 1. cartella dati utente: è quella che l'app RILEGGE (vince nella
+        #    de-duplicazione) ed è popolata dal seeding con i template
+        #    distribuiti. Aprire questa evita che le modifiche restino
+        #    "ombreggiate" dalla copia utente.
+        candidates.append(_os.path.join(self._get_user_data_dir(), 'templates'))
+
+        # 2. radice del pacchetto: solo se la 1 non è disponibile/scrivibile.
         pkg_path = getattr(glb, 'path', None) or \
             _os.path.dirname(_os.path.abspath(__file__))
         candidates.append(_os.path.join(pkg_path, 'templates'))
-
-        # 2./3. cartella dati utente: usata solo se il pacchetto è read-only.
-        candidates.append(_os.path.join(self._get_user_data_dir(), 'templates'))
 
         for path in candidates:
             if self._is_writable_templates_dir(path):
@@ -1815,6 +1817,7 @@ class MyPreferencesDialog(PreferencesDialog):
         # Single instance
         self.pref.singleInstance = self.singleInstanceCB.GetValue()
         self.pref.showRestartMenuItem = self.showRestartMenuItemCB.GetValue()
+        self.pref.showFullPathInTitle = self.showFullPathInTitleCB.GetValue()
         # Opzioni anteprima (tab Songpress)
         self.pref.showPageIndicator = self.showPageIndicatorCB.GetValue()
         self.pref.greyBackground    = self.greyBackgroundCB.GetValue()

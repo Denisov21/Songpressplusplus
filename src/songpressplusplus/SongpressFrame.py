@@ -4287,6 +4287,14 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
             ox = 14   # offset x
 
+            # Larghezza reale della tastiera disegnata da draw_keyboard: con
+            # partenza != DO/FA i tasti bianchi diventano 8 e la larghezza si
+            # arrotonda a un valore < _KBD_W. Le etichette vanno centrate su
+            # QUESTA larghezza, non su _KBD_W, altrimenti con 8 tasti risultano
+            # spostate rispetto alla tastiera.
+            _n_white = 8 if KlavierRenderer.keyboard_has_octave_key(start_semi) else 7
+            _kbd_w_real = (_KBD_W // _n_white) * _n_white
+
             # ── Etichetta mano (riga 1, in alto) ─────────────────────
             hand_font = wx.Font(
                 8, wx.FONTFAMILY_DEFAULT,
@@ -4295,7 +4303,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             dc.SetTextForeground(wx.Colour(80, 80, 80))
             hand_str = _(u"Right hand") if rb_right.GetValue() else _(u"Left hand")
             hw, hh = dc.GetTextExtent(hand_str)
-            dc.DrawText(hand_str, ox + (_KBD_W - hw) // 2, 2)
+            dc.DrawText(hand_str, ox + (_kbd_w_real - hw) // 2, 2)
 
             # ── Etichetta accordo in grassetto (riga 2) ───────────────
             label_font = wx.Font(
@@ -4304,15 +4312,20 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             dc.SetFont(label_font)
             cw, ch = dc.GetTextExtent(chord_name)
             dc.SetTextForeground(wx.BLACK)
-            dc.DrawText(chord_name, ox + (_KBD_W - cw) // 2, 2 + hh + 2)
+            dc.DrawText(chord_name, ox + (_kbd_w_real - cw) // 2, 2 + hh + 2)
 
             # ── Tastiera sotto le due etichette ───────────────────────
+            # Le etichette (mano + accordo) sono già disegnate qui sopra: si
+            # passa chord_name="" a draw_keyboard perché altrimenti ridisegna
+            # il nome dell'accordo per conto suo, centrato sulla larghezza
+            # interna della tastiera. Con start != DO le due larghezze non
+            # coincidono e le due scritte si sovrappongono sfalsate.
             oy = 2 + hh + 2 + ch + 4   # mano + accordo + gap
             highlight_color  = self._getKlavierHighlightColour()
             finger_num_color = self._getFingerNumColour()
             KlavierRenderer.draw_keyboard(
                 dc, ox, oy, _KBD_W, _KBD_H,
-                chord_name, keys, label_font,
+                u"", keys, label_font,
                 highlight_color, finger_map=finger_map,
                 finger_num_color=finger_num_color,
                 hand=None,
@@ -4365,7 +4378,15 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 sel = ch.GetSelection()
                 if sel > 0:
                     parts.append(u"%d=%s" % (sel, current_notes[i]))
-            return u"{fingering: %s}" % u" ".join(parts)
+            inner = u" ".join(parts)
+            # Se la casella "Ordina come sulla tastiera" è attiva, ordina i
+            # token dito=nota per posizione sulla tastiera (da sinistra a
+            # destra, partendo da start) anche nel testo della direttiva, non
+            # solo nella griglia. Con la casella disattivata resta l'ordine
+            # dell'accordo (fondamentale, terza, quinta...).
+            if cb_order.GetValue():
+                inner = KlavierRenderer.order_fingering_directive(inner)
+            return u"{fingering: %s}" % inner
 
         def _update_preview(e=None):
             txt_preview.SetValue(_build())
@@ -5419,6 +5440,44 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             return fallback
         return '%s.%s' % (name, self.docExt)
 
+    def _user_template_target(self, path, must_exist):
+        """Rimappa un percorso dall'albero template del PACCHETTO
+        (glb.path/templates) alla copia nella cartella template UTENTE
+        (glb.data_path/templates). Restituisce None se `path` non sta sotto la
+        cartella template del pacchetto (o in modalità portable).
+
+        Motivo: l'app rilegge i template dalla copia utente, che in
+        ListLocalGlobalDir e nel menu 'Nuovo da template' PREVALE sulla copia
+        globale. Modificare la copia del pacchetto è quindi inutile: la modifica
+        resta 'ombreggiata' da quella utente e al riavvio si rivede il template
+        vecchio. Rimappando apertura e salvataggio sulla copia utente, le
+        modifiche vanno dove l'app le usa davvero.
+
+        must_exist=True  -> rimappa solo se la copia utente esiste già (apertura).
+        must_exist=False -> rimappa comunque, creando le cartelle (salvataggio).
+        """
+        if not path or not getattr(glb, 'data_path', None):
+            return None
+        pkg_root  = os.path.normpath(os.path.join(glb.path, 'templates'))
+        user_root = os.path.normpath(os.path.join(glb.data_path, 'templates'))
+        if pkg_root == user_root:
+            return None  # modalità portable: un'unica cartella condivisa
+        doc = os.path.normpath(os.path.abspath(path))
+        try:
+            rel = os.path.relpath(doc, pkg_root)
+        except ValueError:
+            return None  # unità diverse (Windows): non confrontabili
+        if rel.startswith(os.pardir) or os.path.isabs(rel):
+            return None  # il file non è dentro la cartella template del pacchetto
+        target = os.path.join(user_root, rel)
+        if must_exist:
+            return target if os.path.isfile(target) else None
+        try:
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+        except OSError:
+            return None
+        return target
+
     def New(self):
         self.text.AutoChangeMode(True)
         self.text.New()
@@ -5428,6 +5487,13 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.UpdateEverything()
 
     def Open(self):
+        # Se stai aprendo un template dalla copia del PACCHETTO ma ne esiste già
+        # una copia nella cartella UTENTE, apri quella: è quella che l'app usa e
+        # su cui finiscono i salvataggi, così apertura e salvataggio restano
+        # coerenti (niente più "torna il vecchio" al riavvio).
+        user_doc = self._user_template_target(self.document, must_exist=True)
+        if user_doc:
+            self.document = user_doc
         self.text.AutoChangeMode(True)
         self.text.Open()
         self.text.AutoChangeMode(False)
@@ -5437,6 +5503,14 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.AutoAdjust(0, self.text.GetLength())
 
     def Save(self):
+        # Reindirizza il salvataggio dei template dalla copia del PACCHETTO
+        # (sempre ombreggiata da quella utente) alla copia UTENTE, dove l'app
+        # rilegge davvero i template. Così la modifica non va persa al riavvio.
+        # Vedi _user_template_target(). self.document viene aggiornato prima che
+        # SaveFile() ne registri il percorso nei file recenti.
+        user_doc = self._user_template_target(self.document, must_exist=False)
+        if user_doc:
+            self.document = user_doc
         self.text.Save()
         # UpdateEverything() viene chiamato da SDIMainFrame.SaveFile() tramite Save(),
         # ma a quel punto self.modified è ancora True (viene azzerato subito dopo da
@@ -8684,6 +8758,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             # multi-riga.  _FinalizeToolbarLayout() fa già DoUpdate()
             # sincrono, che applica anche i cambi preview/dockArt.
             self._ApplyRestartMenuVisibility()
+            # Riflette subito l'opzione "percorso completo nel titolo".
+            self.UpdateTitle()
             self._ApplyMainToolBarVisibility()
             self._ApplyFormatToolBarVisibility()
             self._ApplyInsertToolBarVisibility()

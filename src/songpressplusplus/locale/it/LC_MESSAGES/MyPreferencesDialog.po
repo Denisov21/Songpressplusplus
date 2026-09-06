@@ -180,6 +180,14 @@ msgstr "OK"
 msgid "Show 'Restart Songpress++' in the File menu"
 msgstr "Mostra 'Riavvia Songpress++' nel menu File"
 
+#: PreferencesDialog.py showFullPathInTitleCB
+msgid "Show the full file path in the title bar"
+msgstr "Mostra il percorso completo del file nella barra del titolo"
+
+#: PreferencesDialog.py showFullPathInTitleCB (tooltip)
+msgid "When enabled, the title bar shows the complete path of the open file (e.g. C:\\Songs\\ballad.crd) instead of just its name."
+msgstr "Se attivata, la barra del titolo mostra il percorso completo del file aperto (es. C:\\Songs\\ballad.crd) invece del solo nome."
+
 msgid "Show or hide icons in the Insert toolbar:"
 msgstr "Mostra o nascondi le icone nella toolbar Inserisci:"
 

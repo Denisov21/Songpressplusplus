@@ -275,6 +275,52 @@ def parse_fingering(fingering_str):
     return chord_name, finger_map, hand
 
 
+def order_fingering_directive(fingering_str, start_note=None):
+    """
+    Riordina i token 'dito=NOTA' di una direttiva {fingering: ...} secondo la
+    posizione delle note sulla tastiera, da sinistra a destra, partendo da
+    `start_note`.
+
+    start_note:
+        - None  -> usa l'eventuale token 'start=' presente nella direttiva
+                   stessa; se manca parte da DO;
+        - nome nota (DO..SI / C..B) o semitono intero (0-11) -> forza quel via.
+
+    Vengono spostati SOLO i token 'dito=NOTA'; nome accordo, 'hand=', 'start=',
+    'octave=' e ogni altro token restano dove sono, nell'ordine originale, e i
+    token diteggiatura riordinati vengono accodati in fondo. È la forma pensata
+    per l'opzione "Ordina le note come sulla tastiera" del dialogo: passa la
+    stringa attuale e riscrivi l'anteprima direttiva col risultato.
+
+    La chiave d'ordine è (semitono - start) % 12, cioè la distanza cromatica
+    verso destra dal primo tasto: es. con start=SI l'ordine è SI, MI, SOL, così
+    'MI- hand=R start=SI 5=SOL 1=SI 3=MI' -> 'MI- hand=R start=SI 1=SI 3=MI 5=SOL'.
+    """
+    parts = fingering_str.strip().split()
+    if not parts:
+        return fingering_str
+
+    if start_note is None:
+        s = parse_start_note(fingering_str)
+        start_semi = s if s is not None else 0
+    else:
+        start_semi = start_note_to_semitone(start_note)
+
+    finger_tokens = []   # (semitono, token)
+    other_tokens  = []   # token non-diteggiatura, ordine preservato
+    for tok in parts:
+        m = re.match(r'^(\d+)=(.+)$', tok)
+        if m:
+            semi = _note_name_to_semitone(m.group(2))
+            if semi is not None:
+                finger_tokens.append((semi, tok))
+                continue
+        other_tokens.append(tok)
+
+    finger_tokens.sort(key=lambda st: (st[0] - start_semi) % 12)
+    return ' '.join(other_tokens + [tok for _, tok in finger_tokens])
+
+
 def parse_start_note(fingering_str):
     """
     Estrae la nota di partenza da un eventuale token 'start=<nota>' presente

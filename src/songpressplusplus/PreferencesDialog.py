@@ -298,6 +298,10 @@ class PreferencesDialog(wx.Dialog):
         self.showRestartMenuItemCB.SetToolTip(_(u"When enabled, a 'Restart Songpress++' item appears in the File menu, allowing a quick restart without closing and reopening the application manually."))
         grpGeneral.Add(self.showRestartMenuItemCB, 0, wx.ALL, 5)
 
+        self.showFullPathInTitleCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Show the full file path in the title bar"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.showFullPathInTitleCB.SetToolTip(_(u"When enabled, the title bar shows the complete path of the open file (e.g. C:\\Songs\\ballad.crd) instead of just its name."))
+        grpGeneral.Add(self.showFullPathInTitleCB, 0, wx.ALL, 5)
+
         self.showDebugMsgCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Show debug messages (theme save path)"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.showDebugMsgCB.SetToolTip(_(u"When enabled, diagnostic messages such as the theme save path are shown in a popup during certain operations. Useful for troubleshooting."))
         grpGeneral.Add(self.showDebugMsgCB, 0, wx.ALL, 5)
