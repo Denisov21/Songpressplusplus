@@ -149,6 +149,26 @@ into `%APPDATA%\Songpress++\templates\` at install time.
 
 On uninstall the user is asked whether to delete the data folder (default: No).
 
+## Fonts in the `templates\fonts\` folder — mandatory and optional
+
+Songpress++ automatically loads every `.ttf` file in `templates\fonts\` as a
+private font (`wx.Font.AddPrivateFont`) and uses its Unicode Musical Symbols
+coverage (U+1D100–U+1D1FF) to draw and print musical symbols. It does not rely
+on system-installed fonts: only the files in this folder matter.
+
+| Font | Status | Notes |
+|------|--------|-------|
+| `FreeSerif.ttf` | **Mandatory** | The only indispensable font. It provides on-screen SMP coverage and is the file the print code rasterizes via FreeType (Pillow). Without it, musical symbols are not rendered. |
+| `FreeSerifBold.ttf` | Optional | Registered but not needed: the symbol is always drawn upright at normal weight, so the bold variant is never requested. |
+| `FreeSerifItalic.ttf` | Optional | Same as above — the italic variant is not used for symbols. |
+| `FreeSerifBoldItalic.ttf` | Optional | Same as above — the bold-italic variant is not used. |
+| Other `.ttf` (e.g. `Bravura.ttf`, `NotoMusic.ttf`, `NotoMusicRegular.ttf`) | Optional | Supported: if the user adds them they are loaded automatically to widen SMP coverage. Not shipped by default. |
+
+In short: **keep `FreeSerif.ttf`**; the three FreeSerif Bold/Italic/BoldItalic
+files can be removed with no effect on musical-symbol rendering (~1.8 MB saved).
+On Windows 10/11 `Segoe UI Symbol` remains available as a system fallback, which
+is not a file in this folder.
+
 ## Installer page options
 
 Songpress++ is always installed to `%LOCALAPPDATA%\Songpress++` and creates Start

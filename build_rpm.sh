@@ -266,6 +266,7 @@ if [ "$DISTRO" = suse ]; then
     #   markdown → python3-Markdown (openSUSE conserva la maiuscola PyPI)
     #   enchant  → python3-pyenchant
     #   wxPython → python3-wxPython
+    #   pillow   → python3-Pillow (Fedora: python3-pillow, minuscolo)
     #   dizionari hunspell forniti dai pacchetti myspell-<locale>
     REQUIRES=$(cat <<'REQ'
 Requires:       python3 >= 3.12
@@ -277,6 +278,7 @@ Requires:       python3-Markdown
 Requires:       python3-mistune
 Requires:       python3-pypdf
 Requires:       python3-pyenchant
+Requires:       python3-Pillow
 Requires:       xdg-utils
 Requires:       bash
 REQ
@@ -299,6 +301,7 @@ Requires:       python3-markdown
 Requires:       python3-mistune
 Requires:       python3-pypdf
 Requires:       python3-enchant
+Requires:       python3-pillow
 Requires:       xdg-utils
 Requires:       bash
 REQ

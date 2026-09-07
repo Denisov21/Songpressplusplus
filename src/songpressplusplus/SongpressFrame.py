@@ -7111,6 +7111,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             ("pypdf",           "pypdf",        ""),
             ("markdown",        "markdown",     ""),
             ("mistune",         "mistune",      ""),
+            ("Pillow",          "PIL",          _("Musical glyph rendering")),
             ("PyEnchant",       "enchant",      _("Spell checker")),
             ("pywin32",         "win32print",   _("Windows only")),
         ]
@@ -7174,6 +7175,18 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             grid.Add(wx.StaticText(dlg, label=ver_str),  0, wx.ALIGN_CENTER_VERTICAL)
             grid.Add(wx.StaticText(dlg, label=note),     0, wx.ALIGN_CENTER_VERTICAL)
 
+        # --- Autotest risorsa bundled: FreeSerif → glifo musicale SMP ---
+        # Stesso identico percorso della stampa: se questa riga è ✅, il simbolo
+        # musicale (es. U+1D13D) si rasterizza dal .ttf e quindi si stampa.
+        # NON dipende dai font installati nel sistema: verifica il file bundled.
+        f_status, f_ver, f_note = self._check_smp_font()
+        for _c in range(4):                       # riga vuota di separazione
+            grid.Add(wx.StaticText(dlg, label=u""), 0)
+        grid.Add(wx.StaticText(dlg, label=u"FreeSerif \u2192 SMP"), 0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(wx.StaticText(dlg, label=f_status), 0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(wx.StaticText(dlg, label=f_ver),    0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(wx.StaticText(dlg, label=f_note),   0, wx.ALIGN_CENTER_VERTICAL)
+
         outer.Add(grid, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
 
         # Python / wxPython info
@@ -7196,6 +7209,43 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         dlg.CentreOnParent()
         dlg.ShowModal()
         dlg.Destroy()
+
+    def _check_smp_font(self):
+        """Verifica end-to-end che la FreeSerif bundled sappia produrre un glifo
+        musicale SMP, esercitando lo stesso percorso della stampa
+        (SongDecorator._render_smp_bitmap): file bundled → FreeType → glifo
+        rasterizzato non vuoto. Indipendente dai font di sistema.
+
+        Ritorna (status, versione/percorso, nota) da mostrare nella griglia.
+        """
+        import os
+        OK, KO = u"\u2705", u"\u274c"          # ✅ / ❌
+        # 1) Pillow presente?
+        try:
+            from PIL import ImageFont, Image, ImageDraw
+        except Exception:
+            return (KO, _("not installed"), _("Pillow required"))
+        # 2) Il .ttf bundled si risolve? (stessi candidati di SongDecorator)
+        path = None
+        for rel in ("templates/fonts/FreeSerif.ttf", "template/fonts/FreeSerif.ttf", "fonts/FreeSerif.ttf"):
+            cand = glb.AddPath(rel)
+            if os.path.isfile(cand):
+                path = cand
+                break
+        if path is None:
+            return (KO, u"—", _("FreeSerif.ttf not found"))
+        # 3) FreeType lo apre e rasterizza U+1D13D producendo pixel?
+        try:
+            font = ImageFont.truetype(path, 48)
+            img = Image.new("RGBA", (72, 72), (0, 0, 0, 0))
+            ImageDraw.Draw(img).text((0, 0), u"\U0001D13D",
+                                     font=font, fill=(0, 0, 0, 255))
+            drawn = img.getbbox() is not None   # None ⇒ immagine tutta vuota
+        except Exception:
+            return (KO, os.path.basename(path), _("rasterization failed"))
+        if drawn:
+            return (OK, os.path.basename(path), _("prints correctly"))
+        return (KO, os.path.basename(path), _("glyph empty (.notdef)"))
 
     def OnGuide(self, evt):
         wx.LaunchDefaultBrowser(_("http://www.skeed.it/songpress-manual"))

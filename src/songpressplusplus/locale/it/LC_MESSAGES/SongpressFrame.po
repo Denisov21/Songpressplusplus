@@ -1356,6 +1356,25 @@ msgstr "Solo Windows"
 msgid "not installed"
 msgstr "non installato"
 
+# Verifica dipendenze — controllo font FreeSerif / glifi musicali SMP
+msgid "Musical glyph rendering"
+msgstr "Rendering glifi musicali"
+
+msgid "Pillow required"
+msgstr "Pillow richiesto"
+
+msgid "FreeSerif.ttf not found"
+msgstr "FreeSerif.ttf non trovato"
+
+msgid "rasterization failed"
+msgstr "rasterizzazione fallita"
+
+msgid "prints correctly"
+msgstr "si stampa correttamente"
+
+msgid "glyph empty (.notdef)"
+msgstr "glifo vuoto (.notdef)"
+
 msgid "Close"
 msgstr "Chiudi"
 

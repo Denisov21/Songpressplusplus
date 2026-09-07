@@ -150,6 +150,27 @@ in `%APPDATA%\Songpress++\templates\` durante l'installazione.
 
 In fase di disinstallazione viene chiesto se eliminare la cartella dati (default: No).
 
+## Font nella cartella `templates\fonts\` — obbligatori e facoltativi
+
+Songpress++ carica automaticamente ogni file `.ttf` presente in
+`templates\fonts\` come font privato (`wx.Font.AddPrivateFont`) e ne usa la
+copertura Unicode Musical Symbols (U+1D100–U+1D1FF) per disegnare e stampare i
+simboli musicali. Non dipende dai font installati nel sistema: contano solo i
+file di questa cartella.
+
+| Font | Stato | Note |
+|------|-------|------|
+| `FreeSerif.ttf` | **Obbligatorio** | Unico font indispensabile. Fornisce la copertura SMP a schermo ed è quello che il codice di stampa rasterizza via FreeType (Pillow). Senza questo file i simboli musicali non vengono resi. |
+| `FreeSerifBold.ttf` | Facoltativo | Registrato ma non necessario: il simbolo è sempre disegnato in tondo e peso normale, quindi la variante grassetto non viene mai richiesta. |
+| `FreeSerifItalic.ttf` | Facoltativo | Come sopra — la variante corsivo non è usata per i simboli. |
+| `FreeSerifBoldItalic.ttf` | Facoltativo | Come sopra — la variante grassetto-corsivo non è usata. |
+| Altri `.ttf` (es. `Bravura.ttf`, `NotoMusic.ttf`, `NotoMusicRegular.ttf`) | Facoltativi | Supportati: se aggiunti dall'utente vengono caricati automaticamente per ampliare la copertura SMP. Non inclusi di default. |
+
+In breve: **tieni `FreeSerif.ttf`**; i tre file FreeSerif Bold/Italic/BoldItalic
+si possono rimuovere senza alcun effetto sulla resa dei simboli musicali (~1,8 MB
+risparmiati). Su Windows 10/11 resta comunque disponibile `Segoe UI Symbol` come
+fallback di sistema, che non è un file di questa cartella.
+
 ## Opzioni della pagina di installazione
 
 Songpress++ viene installato sempre in `%LOCALAPPDATA%\Songpress++` e crea le

@@ -71,6 +71,10 @@ $Deps = @(
     'mistune>=3.0.0,<4.0.0'
     'pywin32>=308'
     'pyenchant>=3.2.0,<4.0.0'
+    # Pillow: rasterizzazione dei glifi musicali SMP in stampa (font FreeSerif
+    # via FreeType). Necessaria: pyproject congela il modulo PIL con cx_Freeze,
+    # quindi deve essere installata nel venv o la build fallisce.
+    'pillow>=10.0.0,<12.0.0'
 
 )
 

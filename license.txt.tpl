@@ -18,6 +18,8 @@ Modifications copyright Denisov21
     
      * Python and the Python Library
      * wxPython
+     * Spell-check dictionaries from the LibreOffice and titoBouzout
+       projects (downloaded on demand; see the notice below)
 
 
 		    GNU GENERAL PUBLIC LICENSE
@@ -303,6 +305,45 @@ POSSIBILITY OF SUCH DAMAGES.
 		     
 		     
 --------
+----
+ Spell-check dictionaries (LibreOffice and titoBouzout projects)
+----
+
+SongpressPlusPlus can install Hunspell spell-checking dictionaries (.aff / .dic)
+on demand. When the user chooses a language to install, the corresponding
+dictionary is downloaded and stored in the user's writable data directory; it
+is NOT part of the SongpressPlusPlus distribution.
+
+The dictionaries are retrieved from:
+
+  * The LibreOffice dictionaries project, maintained by The Document
+    Foundation, for most languages.
+    https://github.com/LibreOffice/dictionaries
+    https://extensions.libreoffice.org/
+
+  * The titoBouzout "Dictionaries" collection, for the Latin (la) dictionary.
+    The Latin dictionary is (c) 2008-2013 Karl Zeiler, based on mlatin
+    (c) 2006 Jean-Pierre Sutto, and is licensed under the GNU General Public
+    License version 2 or later.
+    https://github.com/titoBouzout/Dictionaries
+
+Each dictionary is the work of its respective authors and is provided under its
+own license, which varies by language (for example GPL, LGPL, MPL 2.0, BSD, or
+other open-source licenses). The license and copyright notice that apply to
+each dictionary are included inside the downloaded package (typically in files
+named LICENSE*, COPYING* or README_*).
+
+Because the dictionaries are obtained separately, at the user's request, and
+are not combined into the SongpressPlusPlus distribution, their licenses do not
+alter the licensing of SongpressPlusPlus itself.
+
+Note: if a particular build of SongpressPlusPlus ships pre-installed
+dictionaries (for example inside a bundled "dict/" folder), those specific
+dictionaries are then distributed as part of that package. They remain under
+their own licenses, and the corresponding license and copyright files must be
+distributed alongside them.
+
+
 ----
  uv
 ----

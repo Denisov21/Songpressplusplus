@@ -24,6 +24,10 @@ dependencies = [
     "pypdf>=6.0.0,<7.0.0",
     "markdown>=3.4,<4.0.0",
     "mistune>=3.0.0,<4.0.0",
+    # Pillow: rasterizzazione dei glifi musicali SMP in stampa (font FreeSerif
+    # via FreeType). reportlab la tira comunque, ma qui è esplicita perché è una
+    # dipendenza diretta del codice di stampa.
+    "pillow>=10.0.0,<12.0.0",
     "pyenchant>=3.2.0,<4.0.0",
     "pywin32>=308; sys_platform == 'win32'",
 ]
@@ -60,7 +64,7 @@ artifacts = [
 #
 #   python -m venv .venv
 #   .venv\Scripts\activate
-#   pip install cx_Freeze wxPython requests python-pptx pyshortcuts reportlab pypdf markdown mistune
+#   pip install cx_Freeze wxPython requests python-pptx pyshortcuts reportlab pypdf markdown mistune pillow
 #   python -m cx_Freeze build_exe
 
 [[tool.cxfreeze.executables]]
@@ -88,6 +92,9 @@ packages = [
     "markdown",
     "mistune",
     "pypdf",
+    # PIL (Pillow): rasterizzazione dei glifi musicali SMP in stampa. Il nome
+    # del modulo da congelare è PIL (il pacchetto PyPI è "pillow").
+    "PIL",
     # enchant (PyEnchant): motore del controllo ortografico. Su Windows il wheel
     # include la DLL enchant + il backend hunspell + i dizionari inglesi, tutto
     # sotto enchant/data/mingw64/ (bin/*.dll, lib/enchant-2/, share/enchant/).

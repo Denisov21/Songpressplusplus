@@ -1065,7 +1065,26 @@ class SongpressPrintout(wx.Printout):
         r.initialVerseCount  = vc
         r.initialLabelCount  = lc
         r.initialChorusCount = cc
-        r.Render(seg_text, dc)
+        # Su DC di stampa (carta/PDF) e in anteprima di stampa i glifi SMP vanno
+        # rasterizzati su bitmap: sul PrinterDC di Windows il GraphicsContext li
+        # rende come garbage. Il flag è confinato a questo render e ripristinato
+        # subito, così l'anteprima live (che condivide pref.decorator) resta sul
+        # percorso nitido a GraphicsContext.
+        _prev_smp_bmp = getattr(r.sd, 'smp_via_bitmap', False)
+        _prev_smp_res = getattr(r.sd, 'smp_device_res', True)
+        r.sd.smp_via_bitmap = True
+        # Su carta/PDF (IsPreview False) usa la bitmap a risoluzione device →
+        # nitida. In anteprima di stampa (IsPreview True) usa il blit a coordinate
+        # logiche, altrimenti la trasformazione di anteprima nasconde il glifo.
+        try:
+            r.sd.smp_device_res = not self.IsPreview()
+        except Exception:
+            r.sd.smp_device_res = True
+        try:
+            r.Render(seg_text, dc)
+        finally:
+            r.sd.smp_via_bitmap = _prev_smp_bmp
+            r.sd.smp_device_res = _prev_smp_res
 
         dc.DestroyClippingRegion()
         dc.SetUserScale(1.0, 1.0)
@@ -2164,15 +2183,16 @@ class PrintManager:
                 "unknown": (lambda: _("Color: unknown"),       wx.Colour(180,  80,   0)),
             }
 
-            def __init__(self, parent, print_data_ref, live_poll=True):
+            def __init__(self, parent, print_data_ref, live_poll=True,
+                         scope_text="", scope_colour=None):
                 super().__init__(parent, style=wx.STB_DEFAULT_STYLE)
                 # print_data_ref: callable → wx.PrintData corrente
                 self._get_pd   = print_data_ref
                 self._live     = live_poll
 
-                # Campo 3: larghezza fissa per l'icona (bitmap + padding)
-                self.SetFieldsCount(4)
-                self.SetStatusWidths([-1, -2, -2, 44])
+                # Campo 4: larghezza fissa per l'icona (bitmap + padding)
+                self.SetFieldsCount(5)
+                self.SetStatusWidths([-1, -2, -2, -2, 44])
 
                 # Campo 1: fronte/retro
                 self._lbl_duplex = wx.StaticText(self, wx.ID_ANY, "")
@@ -2186,7 +2206,16 @@ class PrintManager:
                 _f2.SetWeight(wx.FONTWEIGHT_BOLD)
                 self._lbl_color.SetFont(_f2)
 
-                # Campo 3: icona orientamento — placeholder, bitmap creata al primo reposition
+                # Campo 3: ambito di stampa (intero documento / solo selezione).
+                # È fisso per la sessione di anteprima, quindi impostato una volta.
+                self._lbl_scope = wx.StaticText(self, wx.ID_ANY, scope_text)
+                _f3 = self._lbl_scope.GetFont()
+                _f3.SetWeight(wx.FONTWEIGHT_BOLD)
+                self._lbl_scope.SetFont(_f3)
+                if scope_colour is not None:
+                    self._lbl_scope.SetForegroundColour(scope_colour)
+
+                # Campo 4: icona orientamento — placeholder, bitmap creata al primo reposition
                 self._bmp_orient = _make_orientation_bitmap(False, 20)
                 self._lbl_orient = wx.StaticBitmap(self, wx.ID_ANY, self._bmp_orient)
                 self._last_orient = None   # None → forza primo aggiornamento
@@ -2264,7 +2293,7 @@ class PrintManager:
                     self._last_orient = landscape
                     # Ricostruisce il bitmap con l'altezza attuale del campo
                     try:
-                        field_h = self.GetFieldRect(3).height
+                        field_h = self.GetFieldRect(4).height
                     except Exception:
                         field_h = 20
                     self._bmp_orient = _make_orientation_bitmap(landscape, field_h)
@@ -2284,16 +2313,19 @@ class PrintManager:
                     r1 = self.GetFieldRect(1)
                     r2 = self.GetFieldRect(2)
                     r3 = self.GetFieldRect(3)
+                    r4 = self.GetFieldRect(4)
                     pad = 4
-                    for lbl, r in ((self._lbl_duplex, r1), (self._lbl_color, r2)):
+                    for lbl, r in ((self._lbl_duplex, r1),
+                                   (self._lbl_color, r2),
+                                   (self._lbl_scope, r3)):
                         _, h = lbl.GetBestSize()
                         y = r.y + max(0, (r.height - h) // 2)
                         lbl.SetPosition(wx.Point(r.x + pad, y))
                         lbl.SetSize(wx.Size(r.width - pad * 2, h))
-                    # Campo 3: icona centrata nel campo
+                    # Campo 4: icona centrata nel campo
                     bw, bh = self._lbl_orient.GetBestSize()
-                    ix = r3.x + max(0, (r3.width  - bw) // 2)
-                    iy = r3.y + max(0, (r3.height - bh) // 2)
+                    ix = r4.x + max(0, (r4.width  - bw) // 2)
+                    iy = r4.y + max(0, (r4.height - bh) // 2)
                     self._lbl_orient.SetPosition(wx.Point(ix, iy))
                 except Exception:
                     pass
@@ -2312,7 +2344,14 @@ class PrintManager:
 
         _live_poll = getattr(self, 'pref', None)
         _live_poll = getattr(_live_poll, 'liveDriverPoll', True) if _live_poll else True
-        _sb = _ColoredStatusBar(pf, lambda: self._print_data, live_poll=_live_poll)
+        if has_sel:
+            _scope_text   = _("Printing selection only")
+            _scope_colour = wx.Colour(180, 80, 0)      # ambra: NON tutto il doc
+        else:
+            _scope_text   = _("Printing whole document")
+            _scope_colour = wx.Colour(20, 140, 60)     # verde: intero documento
+        _sb = _ColoredStatusBar(pf, lambda: self._print_data, live_poll=_live_poll,
+                                scope_text=_scope_text, scope_colour=_scope_colour)
         pf.SetStatusBar(_sb)
 
         # Al chiusura della preview: ferma il timer di polling e ripristina il canvas

@@ -5,7 +5,7 @@
 # Created:     2009-02-21
 # Modified by:  Denisov21
 # Copyright: Luca Allulli (https://www.skeed.it/songpress)
-#               Modifications copyright Denisov21
+#               Modifications copyright Denisov21, 2026
 # License:     GNU GPL v2
 ##############################################################
 
@@ -913,19 +913,25 @@ class SongDecorator(object):
         """Disegna *s* con un font a copertura SMP (FreeSerif).
         Chiamato solo per i run che contengono caratteri U+10000+.
 
-        Percorso veloce (schermo/anteprima live): GraphicsContext direttamente
-        sul DC. Azzeriamo UserScale prima di creare il GC così wxMSW (che non
-        eredita la scala) e wxGTK/Cairo (che la eredita) si comportano allo
-        stesso modo; poi applichiamo noi `scale` a coordinate e dimensione font.
+        Due percorsi, scelti dal flag `smp_via_bitmap`:
 
-        Percorso robusto (stampa/anteprima di stampa): sui DC di stampa
-        GraphicsContext.Create(self.dc) può restituire None. Prima il glifo
-        cadeva sul disegno normale col font del brano, che senza copertura SMP
-        mostrava il quadratino .notdef (il «simbolo che non appare»). Ora, in
-        quel caso, selezioniamo un font con copertura SMP (FreeSerif) DIRETTAMENTE
-        sul DC e disegniamo con dc.DrawText: posizione, dimensione e DPI li
-        gestisce il DC come per ogni altra parola, quindi il glifo esce corretto.
+        • Anteprima live a schermo (flag False): GraphicsContext direttamente sul
+          DC. Azzeriamo UserScale prima di creare il GC così wxMSW (che non
+          eredita la scala) e wxGTK/Cairo (che la eredita) si comportano allo
+          stesso modo; poi applichiamo noi `scale`. Resta nitido a ogni zoom.
+
+        • Stampa / esporta PDF (flag True, impostato dal printout): sul PrinterDC
+          di Windows il GraphicsContext rende i glifi SMP come garbage (giganti o
+          spezzati) e dc.DrawText mostra il .notdef. L'unico metodo affidabile su
+          quel DC è quello già usato per le icone di tempo: rasterizzare il glifo
+          su una bitmap (dove il GC funziona sempre) e blittarla con DrawBitmap,
+          supportato da qualunque DC. Lo stesso percorso vale per l'anteprima di
+          stampa, così anteprima e carta coincidono.
         """
+        if getattr(self, 'smp_via_bitmap', False):
+            self._DrawTextSMP_bitmap(s, x, y)
+            return
+
         scale = getattr(self, 'pen_scale', 1.0)
         old_sx, old_sy = self.dc.GetUserScale()
         try:
@@ -940,35 +946,186 @@ class SongDecorator(object):
             pass
         finally:
             self.dc.SetUserScale(old_sx, old_sy)
-        # Fallback (DC di stampa: GraphicsContext.Create ha dato None): impostiamo
-        # un font con copertura SMP DIRETTAMENTE sul DC e disegniamo col percorso
-        # testo normale. Posizione (x, y logiche), dimensione (point size) e DPI
-        # sono gestiti dal DC come per tutto il resto del testo, quindi il glifo
-        # cade al posto giusto e della misura giusta — esattamente dove prima
-        # compariva il quadratino .notdef, ma stavolta con il glifo reale.
-        self._DrawTextSMP_dcfont(s, x, y)
+        # Rete di sicurezza: se il GC diretto non è disponibile, usa la bitmap.
+        self._DrawTextSMP_bitmap(s, x, y)
 
-    def _DrawTextSMP_dcfont(self, s: str, x: int, y: int):
-        """Disegna *s* selezionando un face SMP sul DC e usando dc.DrawText.
-        Usato quando il DC non offre un GraphicsContext (stampa/anteprima di
-        stampa). Non tocca UserScale né origine: si comporta come il disegno di
-        una qualsiasi altra parola."""
+    # Cache condivise per la rasterizzazione FreeType/Pillow dei glifi SMP.
+    #   _smp_pil_font_cache: {px: ImageFont}          (font per dimensione)
+    #   _smp_pil_cache:      {(s, px, (r,g,b)): Image} (glifo RGBA renderizzato)
+    _smp_pil_font_cache = {}
+    _smp_pil_cache = {}
+
+    def _smp_pil_font(self, px: int):
+        """ImageFont FreeType per FreeSerif.ttf alla dimensione *px* (pixel).
+
+        FreeType legge il file font direttamente, senza passare dal font-matching
+        di GDI/GDI+ (che su Windows ignora i font privati). Ritorna None se Pillow
+        o il file font non sono disponibili → il chiamante ripiega su GDI+.
+        Il risultato è in cache per dimensione.
+        """
+        cache = SongDecorator._smp_pil_font_cache
+        if px in cache:
+            return cache[px]
+        font = None
+        try:
+            from PIL import ImageFont
+            # Path confermato: template/fonts/FreeSerif.ttf. Provo qualche
+            # candidato e uso il primo che carica, così un layout diverso nei
+            # pacchetti (AppImage/.deb) non rompe il caricamento.
+            for rel in ('templates/fonts/FreeSerif.ttf',
+                        'template/fonts/FreeSerif.ttf',
+                        'fonts/FreeSerif.ttf'):
+                try:
+                    font = ImageFont.truetype(_glb.AddPath(rel), px)
+                    break
+                except Exception:
+                    continue
+        except Exception:
+            font = None
+        cache[px] = font
+        return font
+
+    def _render_smp_bitmap(self, s: str, px: int, color, bg):
+        """Rasterizza *s* (glifo/i SMP) da FreeSerif.ttf con FreeType/Pillow e
+        ritorna (wx.Bitmap 24bit, w, h) già composto sullo sfondo *bg*.
+
+        Perché non lasciarlo a GDI+: la FreeSerif del progetto è un font privato
+        e su Windows GDI+ non lo risolve in fase di stampa → .notdef → glifo
+        assente sul foglio. Qui rasterizziamo noi dal .ttf: identico su Windows e
+        Linux, e la stampante riceve solo pixel (come le icone di tempo PNG).
+
+        Il glifo RGBA (colore + alpha) è in cache per (s, px, colore); la
+        composizione su *bg* — che varia poco ed è economica — è rifatta a ogni
+        chiamata così un cambio di colore pagina non invalida la cache del glifo.
+
+        Ritorna None se Pillow/il font non sono disponibili.
+        """
+        font = self._smp_pil_font(px)
+        if font is None:
+            return None
+        try:
+            from PIL import Image, ImageDraw
+            r, g, b = color.Red(), color.Green(), color.Blue()
+            key = (s, px, (r, g, b))
+            glyph = SongDecorator._smp_pil_cache.get(key)
+            if glyph is None:
+                ascent, descent = font.getmetrics()
+                try:
+                    adv = int(round(font.getlength(s)))
+                except Exception:
+                    adv = 0
+                bbox = font.getbbox(s)            # (l, t, r, b)
+                gw = max(1, adv, int(bbox[2]))
+                gh = max(1, ascent + descent)
+                glyph = Image.new('RGBA', (gw, gh), (r, g, b, 0))
+                draw = ImageDraw.Draw(glyph)
+                # Anchor top-left (default di Pillow): il top del glifo cade a
+                # y=0, coerente con DC.DrawText che posiziona dal suo angolo
+                # alto-sinistro → il glifo si allinea al resto del testo.
+                draw.text((0, 0), s, font=font, fill=(r, g, b, 255))
+                SongDecorator._smp_pil_cache[key] = glyph
+            w, h = glyph.size
+            # Composita su sfondo opaco: la stampa Windows non gestisce l'alpha,
+            # quindi consegniamo un bitmap 24 bit già appiattito su *bg*.
+            flat = Image.new('RGB', (w, h), (bg.Red(), bg.Green(), bg.Blue()))
+            flat.paste(glyph, (0, 0), glyph)      # usa l'alpha del glifo da maschera
+            wx_img = wx.Image(w, h)
+            wx_img.SetData(flat.tobytes())
+            return wx.Bitmap(wx_img), w, h
+        except Exception:
+            return None
+
+    def _DrawTextSMP_bitmap(self, s: str, x: int, y: int):
+        """Rasterizza il glifo SMP su una bitmap e la blitta sul DC corrente.
+        Usato per la stampa/anteprima di stampa (vedi _DrawTextSMP).
+
+        La bitmap è a 24 bit (niente alpha): un tentativo con bitmap a 32 bit
+        risultava trasparente sul PrinterDC di Windows (il glifo «non appariva»).
+        Lo sfondo è riempito col colore di pagina, come la pre-composizione delle
+        icone di tempo.
+
+        Due modalità di blit, scelte dal flag `smp_device_res`:
+
+        • Stampa reale / PDF (smp_device_res True): glifo renderizzato a
+          risoluzione DEVICE (pt*scale) e blittato 1:1 a coordinate device con
+          UserScale azzerato → massima nitidezza su carta.
+
+        • Anteprima di stampa (smp_device_res False): in anteprima wx lascia sul
+          DC una trasformazione (zoom preview → bitmap). Azzerare UserScale come
+          sopra combatte quella trasformazione e il glifo finisce fuori vista.
+          Quindi renderizziamo a dimensione LOGICA e blittiamo a coordinate
+          LOGICHE SENZA toccare UserScale: è il DC a scalare la bitmap, come fa
+          per le icone di tempo → visibile e alla misura giusta in anteprima.
+        """
+        scale = getattr(self, 'pen_scale', 1.0)
+        device_res = getattr(self, 'smp_device_res', True)
         base_font = self.dc.GetFont()
-        smp_face = next((f for f in _get_smp_faces() if f), None)
-        if smp_face:
-            smp_font = wx.Font(
-                base_font.GetPointSize(), wx.FONTFAMILY_DEFAULT,
-                base_font.GetStyle(), base_font.GetWeight(),
-                faceName=smp_face,
-            )
-            if smp_font.IsOk():
-                self.dc.SetFont(smp_font)
+        color = self.dc.GetTextForeground()
+
+        # In ENTRAMBI i casi la sorgente è renderizzata a risoluzione DEVICE
+        # (pt*scale): così resta nitida sia su carta sia in anteprima.
+        pt = max(1, int(round(base_font.GetPointSize() * scale)))
+
+        bg = getattr(self, 'bgColour', None) or wx.WHITE
+
+        # ── Sorgente PRIMARIA: rasterizzazione da FreeSerif.ttf con FreeType ──
+        # Il glifo SMP viene dalla FreeSerif bundled del progetto. Su Windows
+        # GDI+ NON vede i font privati (aggiunti a runtime con AddFontResourceEx):
+        # in stampa il match FreeSerif fallisce, disegna .notdef e sul foglio il
+        # glifo sparisce. FreeType (via Pillow) legge il .ttf direttamente dal
+        # file, in-process, indipendente da GDI/GDI+/driver — come le icone di
+        # tempo (PNG): la stampante riceve solo pixel controllati da noi.
+        _pil = self._render_smp_bitmap(s, pt, color, bg)
+        if _pil is not None:
+            bmp, w, h = _pil
+        else:
+            # ── Fallback: percorso storico GDI+ (se Pillow/il font mancano) ──
+            tw, th = self._smp_measure_device(s, pt, color)
+            w = max(1, int(tw + 0.999))
+            h = max(1, int(th + 0.999))
+            bmp = wx.Bitmap(w, h, 24)   # 24 bit: niente alpha → sempre visibile
+            mdc = wx.MemoryDC(bmp)
+            mdc.SetBackground(wx.Brush(bg))
+            mdc.Clear()
+            gc = wx.GraphicsContext.Create(mdc)
+            if gc is None:
+                mdc.SelectObject(wx.NullBitmap)
                 self.dc.DrawText(s, int(x), int(y))
-                self.dc.SetFont(base_font)
                 return
-        # Nessun face SMP trovato: disegno comunque (può dare .notdef, ma è
-        # meglio che non disegnare nulla e non lascia il DC incoerente).
-        self.dc.DrawText(s, int(x), int(y))
+            gc.SetFont(self._smp_gc_font_at(gc, pt, color))
+            gc.DrawText(s, 0, 0)
+            # GDI+ trasferisce sul DIB solo al flush/distruzione del GC: va
+            # eliminato PRIMA di deselezionare il bitmap e di blittarlo, altrimenti
+            # il glifo resta nel Graphics non-flushato e il bitmap è vuoto.
+            gc.Flush()
+            del gc
+            mdc.SelectObject(wx.NullBitmap)
+            del mdc
+
+        if device_res:
+            # Stampa reale / PDF: la sorgente è già a misura device → blit 1:1 a
+            # coordinate device con UserScale azzerato (origine e clip restano).
+            old_sx, old_sy = self.dc.GetUserScale()
+            try:
+                self.dc.SetUserScale(1.0, 1.0)
+                self.dc.DrawBitmap(bmp, int(round(x * scale)), int(round(y * scale)), False)
+            finally:
+                self.dc.SetUserScale(old_sx, old_sy)
+        else:
+            # Anteprima di stampa: NON tocchiamo UserScale (altrimenti la
+            # trasformazione di anteprima nasconde il glifo). Blittiamo la
+            # sorgente ad alta risoluzione in un rettangolo di destinazione in
+            # coordinate LOGICHE della dimensione del glifo: è il DC a scalare
+            # dest→device, quindi StretchBlit ricampiona la sorgente device-res
+            # e il glifo resta nitido come le altre parole.
+            lw, lh = self._GetTextExtentSMP(s)
+            lw = max(1, int(lw))
+            lh = max(1, int(lh))
+            src = wx.MemoryDC(bmp)
+            try:
+                self.dc.StretchBlit(int(x), int(y), lw, lh, src, 0, 0, w, h)
+            finally:
+                src.SelectObject(wx.NullBitmap)
 
     def PostDrawText(self, text, tx, ty):
         # tx, ty: coordinates of top-left corner of drawable area

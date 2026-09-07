@@ -172,9 +172,13 @@ HOMEPAGE="https://github.com/Denisov21/Songpressplusplus"
 # Nome del binario/entry-point come lo installa la wheel.
 APP_BIN="SongpressPlusPlus"
 
-# Dipendenze pure-Python da impacchettare nell'AppImage. wxPython NON è qui: lo
+# Dipendenze da impacchettare nell'AppImage. wxPython NON è qui: lo
 # copiamo dal sistema (vedi sotto). pywin32 è escluso (solo Windows).
 # Gli import corrispondenti sono già coperti dalle wheel manylinux di PyPI.
+# NB: pillow non è pure-Python (estensioni C _imaging), ma la sua wheel
+# manylinux include già le librerie native (libjpeg/zlib/... in PIL/.libs),
+# quindi pip la scarica pronta all'uso senza compilazione. Serve al rendering
+# dei glifi musicali SMP in stampa (rasterizzazione FreeType via Pillow).
 PIP_BUNDLE=(
     requests
     reportlab
@@ -184,6 +188,7 @@ PIP_BUNDLE=(
     python-pptx
     pyshortcuts
     pyenchant
+    pillow
 )
 
 # ── Cartelle di lavoro ────────────────────────────────────────

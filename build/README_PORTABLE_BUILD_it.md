@@ -32,7 +32,7 @@ Songpressplusplus/
 │       │   ├── songs/
 │       │   ├── slides/
 │       │   ├── themes/      ← temi colori sintassi (.ini)
-│       │   └── fonts/       ← font .ttf opzionali
+│       │   └── fonts/       ← font .ttf (FreeSerif.ttf richiesto per i simboli musicali)
 │       └── xrc/
 ├── pyproject.toml
 └── ...
@@ -98,7 +98,7 @@ Lo script esegue automaticamente questi passi:
 | 2 | Aggiorna pip e installa cx_Freeze + tutte le dipendenze pinnate (a ogni esecuzione) |
 | 3 | Aggiunge temporaneamente `src\` a `PYTHONPATH` (così il package `songpressPlusPlus` è importabile) ed esegue `cx_Freeze build_exe` usando la configurazione in `pyproject.toml` |
 | 4 | Individua la cartella build prodotta scegliendo la sottocartella di `build\` modificata più di recente (`build\exe.*` o `build\<nome>`). **Nota:** lo script *non* elimina la cartella `build\` prima della compilazione |
-| 5 | Copia `templates\fonts\` nella cartella build se non già inclusa |
+| 5 | Copia `templates\fonts\` nella cartella build se non già inclusa (contiene `FreeSerif.ttf`, richiesto per stampare i simboli musicali) |
 | 6 | Comprime la **cartella build** in `dist\Songpress++-<versione>-portable.zip` (la cartella viene inclusa come livello superiore dell'archivio) |
 
 > **Nota su pip:** l'aggiornamento di pip e l'installazione delle dipendenze
@@ -120,6 +120,8 @@ Lo script installa cx_Freeze più i seguenti pacchetti nel venv isolato:
 | markdown | `>=3.4,<4.0.0` |
 | mistune | `>=3.0.0,<4.0.0` |
 | pywin32 | `>=308` (solo Windows, `sys_platform == 'win32'`) |
+| pyenchant | `>=3.2.0,<4.0.0` |
+| Pillow | `>=10.0.0,<12.0.0` (rendering dei glifi musicali in stampa) |
 
 ---
 
@@ -164,6 +166,29 @@ Dopo l'estrazione i file si trovano nella sottocartella `exe.win-amd64-3.12\`
 
 Poiché `templates\` è accanto all'exe, Songpress++ lo rileva automaticamente
 come installazione portabile (logica in `MyPreferencesDialog.OnOpenTemplatesFolder`).
+
+---
+
+## Font in `templates\fonts\` — obbligatori e facoltativi
+
+Songpress++ carica automaticamente ogni file `.ttf` presente in
+`templates\fonts\` come font privato (`wx.Font.AddPrivateFont`) e ne usa la
+copertura Unicode Musical Symbols (U+1D100–U+1D1FF) per disegnare e stampare i
+simboli musicali. Non dipende dai font installati nel sistema: contano solo i
+file di questa cartella.
+
+| Font | Stato | Note |
+|------|-------|------|
+| `FreeSerif.ttf` | **Obbligatorio** | Unico font indispensabile. Fornisce la copertura SMP a schermo ed è quello che il codice di stampa rasterizza via FreeType (Pillow). Senza questo file i simboli musicali non vengono resi. |
+| `FreeSerifBold.ttf` | Facoltativo | Registrato ma non necessario: il simbolo è sempre disegnato in tondo e peso normale, quindi la variante grassetto non viene mai richiesta. |
+| `FreeSerifItalic.ttf` | Facoltativo | Come sopra — la variante corsivo non è usata per i simboli. |
+| `FreeSerifBoldItalic.ttf` | Facoltativo | Come sopra — la variante grassetto-corsivo non è usata. |
+| Altri `.ttf` (es. `Bravura.ttf`, `NotoMusic.ttf`, `NotoMusicRegular.ttf`) | Facoltativi | Supportati: se aggiunti dall'utente vengono caricati automaticamente per ampliare la copertura SMP. Non inclusi di default. |
+
+In breve: **tieni `FreeSerif.ttf`**; i tre file FreeSerif Bold/Italic/BoldItalic
+si possono rimuovere senza alcun effetto sulla resa dei simboli musicali (~1,8 MB
+risparmiati). Su Windows 10/11 resta comunque disponibile `Segoe UI Symbol` come
+fallback di sistema, che non è un file di questa cartella.
 
 ---
 

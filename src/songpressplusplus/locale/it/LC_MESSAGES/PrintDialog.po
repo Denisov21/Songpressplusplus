@@ -85,6 +85,14 @@ msgstr "100%"
 msgid "Reset scale to 100%"
 msgstr "Reimposta scala al 100%"
 
+#. Status bar (bottom of print preview): whole document will be printed
+msgid "Printing whole document"
+msgstr "Stampa intero documento"
+
+#. Status bar (bottom of print preview): only the editor selection will be printed
+msgid "Printing selection only"
+msgstr "Stampa solo selezione"
+
 # ── Buttons and tooltips ──────────────────────────────────────────────────────
 
 msgid "Keep this dialog open after applying"

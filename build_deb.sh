@@ -209,9 +209,12 @@ HOMEPAGE="https://github.com/Denisov21/Songpressplusplus"
 # python3-enchant è il binding PyEnchant nei repo Debian/Ubuntu (tira come
 # dipendenza libenchant-2-2 con il backend hunspell): è il motore del
 # controllo ortografico.
+# python3-pil è Pillow: serve al rendering dei glifi musicali SMP in stampa
+# (rasterizzazione del font FreeSerif via FreeType). È nei repo Debian/Ubuntu,
+# quindi va qui e NON tra le dipendenze solo-PyPI.
 DEPENDS="python3 (>= 3.12), python3-pip, python3-wxgtk4.0 | python3-wxpython4, \
 python3-requests, python3-reportlab, python3-markdown, python3-mistune, \
-python3-pypdf, python3-enchant, xdg-utils"
+python3-pypdf, python3-pil, python3-enchant, xdg-utils"
 
 # Dipendenze consigliate (installate da apt di default, ma non obbligatorie):
 #   - wl-clipboard  → fornisce wl-copy, usato per copiare l'immagine dello

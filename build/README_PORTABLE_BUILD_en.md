@@ -32,7 +32,7 @@ Songpressplusplus/
 │       │   ├── songs/
 │       │   ├── slides/
 │       │   ├── themes/      ← syntax colour themes (.ini)
-│       │   └── fonts/       ← optional .ttf fonts
+│       │   └── fonts/       ← .ttf fonts (FreeSerif.ttf required for musical symbols)
 │       └── xrc/
 ├── pyproject.toml
 └── ...
@@ -97,7 +97,7 @@ The script automatically performs these steps:
 | 2 | Upgrades pip and installs cx_Freeze + all pinned dependencies (every run) |
 | 3 | Temporarily prepends `src\` to `PYTHONPATH` (so the `songpressPlusPlus` package is importable) and runs `cx_Freeze build_exe` using the configuration in `pyproject.toml` |
 | 4 | Locates the produced build folder by picking the most recently modified subfolder of `build\` (`build\exe.*` or `build\<name>`). **Note:** the script does *not* delete the `build\` folder before compiling |
-| 5 | Copies `templates\fonts\` into the build folder if not already included |
+| 5 | Copies `templates\fonts\` into the build folder if not already included (contains `FreeSerif.ttf`, required for printing musical symbols) |
 | 6 | Compresses the **build folder** into `dist\Songpress++-<version>-portable.zip` (the folder is included as the archive's top level) |
 
 > **Note on pip:** the pip upgrade and the dependency install run on **every**
@@ -119,6 +119,8 @@ The script installs cx_Freeze plus the following packages into the isolated venv
 | markdown | `>=3.4,<4.0.0` |
 | mistune | `>=3.0.0,<4.0.0` |
 | pywin32 | `>=308` (Windows only, `sys_platform == 'win32'`) |
+| pyenchant | `>=3.2.0,<4.0.0` |
+| Pillow | `>=10.0.0,<12.0.0` (musical glyph rendering in print) |
 
 ---
 
@@ -163,6 +165,28 @@ After extraction the files live inside the `exe.win-amd64-3.12\` subfolder
 
 Since `templates\` is next to the exe, Songpress++ automatically detects it
 as a portable installation (logic in `MyPreferencesDialog.OnOpenTemplatesFolder`).
+
+---
+
+## Fonts in `templates\fonts\` — mandatory and optional
+
+Songpress++ automatically loads every `.ttf` file in `templates\fonts\` as a
+private font (`wx.Font.AddPrivateFont`) and uses its Unicode Musical Symbols
+coverage (U+1D100–U+1D1FF) to draw and print musical symbols. It does not rely
+on system-installed fonts: only the files in this folder matter.
+
+| Font | Status | Notes |
+|------|--------|-------|
+| `FreeSerif.ttf` | **Mandatory** | The only indispensable font. It provides on-screen SMP coverage and is the file the print code rasterizes via FreeType (Pillow). Without it, musical symbols are not rendered. |
+| `FreeSerifBold.ttf` | Optional | Registered but not needed: the symbol is always drawn upright at normal weight, so the bold variant is never requested. |
+| `FreeSerifItalic.ttf` | Optional | Same as above — the italic variant is not used for symbols. |
+| `FreeSerifBoldItalic.ttf` | Optional | Same as above — the bold-italic variant is not used. |
+| Other `.ttf` (e.g. `Bravura.ttf`, `NotoMusic.ttf`, `NotoMusicRegular.ttf`) | Optional | Supported: if the user adds them they are loaded automatically to widen SMP coverage. Not shipped by default. |
+
+In short: **keep `FreeSerif.ttf`**; the three FreeSerif Bold/Italic/BoldItalic
+files can be removed with no effect on musical-symbol rendering (~1.8 MB saved).
+On Windows 10/11 `Segoe UI Symbol` remains available as a system fallback, which
+is not a file in this folder.
 
 ---
 
