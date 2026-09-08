@@ -462,6 +462,37 @@ cat > "$APPDIR/usr/share/metainfo/${APP_ID}.metainfo.xml" <<METAINFO
 </component>
 METAINFO
 
+# ── 5b. xdg-open impacchettato (best-effort) ──────────────────
+# L'app usa xdg-open per aprire file/cartelle con l'applicazione predefinita
+# del desktop (es. "Apri cartella template", apertura del PDF esportato).
+# Sui desktop xdg-utils c'e' quasi sempre, ma su un host minimale potrebbe
+# mancare: copiamo qui xdg-open (e i due script che puo' richiamare) come
+# RIPIEGO. In AppRun li mettiamo in CODA al PATH, cosi' se l'host ha il suo
+# xdg-open vince quello, con i suoi helper (gio, kde-open, exo-open).
+bmsg "$OK Bundling xdg-open (best-effort)..." \
+     "$OK Impacchettamento xdg-open (best-effort)..."
+XDG_SHIM="$APPDIR/usr/xdg-shim"
+mkdir -p "$XDG_SHIM"
+XDG_ANY=0
+for _xdg in xdg-open xdg-mime xdg-settings; do
+    _src="$(command -v "$_xdg" 2>/dev/null || true)"
+    if [[ -n "$_src" && -f "$_src" ]]; then
+        cp "$_src" "$XDG_SHIM/$_xdg" 2>/dev/null || true
+        chmod 0755 "$XDG_SHIM/$_xdg" 2>/dev/null || true
+        [[ "$_xdg" == "xdg-open" ]] && XDG_ANY=1
+    fi
+done
+if [[ "$XDG_ANY" -eq 1 ]]; then
+    bmsg "    xdg-open bundled as a fallback." \
+         "    xdg-open incluso come ripiego."
+else
+    rmdir "$XDG_SHIM" 2>/dev/null || true
+    bmsg "$WARN xdg-open not found on the build host: not bundled." \
+         "$WARN xdg-open non trovato sull'host di build: non incluso."
+    bmsg "    The AppImage will rely on the host having xdg-utils." \
+         "    L'AppImage si affiderà a xdg-utils presente sull'host."
+fi
+
 # ── 6. AppRun personalizzato ──────────────────────────────────
 # Imposta l'ambiente Python impacchettato, sorgente gli hook dei plugin
 # linuxdeploy (il plugin GTK registra qui pixbuf loaders, moduli GIO, temi...),
@@ -484,6 +515,12 @@ export PYTHONHOME="\$APPDIR/usr"
 export PYTHONPATH="\$APPDIR/usr/lib/python$PYVER/site-packages\${PYTHONPATH:+:\$PYTHONPATH}"
 export PYTHONDONTWRITEBYTECODE=1
 export LD_LIBRARY_PATH="\$APPDIR/usr/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
+
+# xdg-open impacchettato come ripiego: in CODA al PATH, cosi' l'xdg-open
+# dell'host (se presente) ha la precedenza e usa i suoi helper (gio, kde-open).
+if [ -d "\$APPDIR/usr/xdg-shim" ]; then
+    export PATH="\$PATH:\$APPDIR/usr/xdg-shim"
+fi
 
 # wxPython/Wayland: forza il backend X11 (XWayland). Dopo gli hook, così vince.
 export GDK_BACKEND=x11

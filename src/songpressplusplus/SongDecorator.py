@@ -5,7 +5,7 @@
 # Created:     2009-02-21
 # Modified by:  Denisov21
 # Copyright: Luca Allulli (https://www.skeed.it/songpress)
-#               Modifications copyright Denisov21, 2026
+#               Modifications copyright Denisov21
 # License:     GNU GPL v2
 ##############################################################
 
