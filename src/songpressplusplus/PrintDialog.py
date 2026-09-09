@@ -1000,6 +1000,22 @@ class SongpressPrintout(wx.Printout):
 
         seg_text = self._segments[seg_idx]
 
+        # FIX Linux (wxGTK) — anteprima bianca con simboli SMP.
+        # ────────────────────────────────────────────────────────────────
+        # Su GTK, in anteprima di stampa, il DC della bitmap di preview può
+        # non essere ancora "caldo": la prima GetTextExtent() restituisce
+        # 0×0 e il layout del testo collassa (pagina bianca). Un'operazione
+        # dummy di misura forza GTK a inizializzare il contesto Pango/Cairo
+        # prima del render reale. No-op su Windows/macOS e in stampa reale.
+        try:
+            if wx.Platform == '__WXGTK__':
+                _wf = dc.GetFont()
+                if _wf and _wf.IsOk():
+                    dc.SetFont(_wf)
+                dc.GetTextExtent("A")  # warm-up del DC
+        except Exception:
+            pass
+
         col_w_du = self._col_w_du if self.two_pages_per_sheet else self._usable_w_du
 
         # FIX Linux (wxGTK) — «2 pagine per foglio» non divideva a metà
@@ -1072,16 +1088,40 @@ class SongpressPrintout(wx.Printout):
         # percorso nitido a GraphicsContext.
         _prev_smp_bmp = getattr(r.sd, 'smp_via_bitmap', False)
         _prev_smp_res = getattr(r.sd, 'smp_device_res', True)
+
+        _is_preview = self.IsPreview()
+        _is_gtk     = wx.Platform == '__WXGTK__'
+
         r.sd.smp_via_bitmap = True
         # Su carta/PDF (IsPreview False) usa la bitmap a risoluzione device →
         # nitida. In anteprima di stampa (IsPreview True) usa il blit a coordinate
         # logiche, altrimenti la trasformazione di anteprima nasconde il glifo.
         try:
-            r.sd.smp_device_res = not self.IsPreview()
+            r.sd.smp_device_res = not _is_preview
         except Exception:
             r.sd.smp_device_res = True
+
+        # FIX Linux (wxGTK) — anteprima bianca con simboli SMP.
+        # ────────────────────────────────────────────────────────────────
+        # In anteprima GTK il render dei glifi SMP via bitmap può fallire
+        # silenziosamente (o sollevare eccezione) e portarsi dietro l'intera
+        # pagina, che resta bianca. Se il render solleva un'eccezione in questo
+        # contesto, riproviamo una volta col percorso diretto (senza bitmap
+        # SMP): la resa dei soli glifi SMP è meno nitida, ma il resto del testo
+        # torna visibile — molto meglio di una pagina vuota. Su Windows/macOS e
+        # in stampa reale il comportamento non cambia (nessun fallback).
         try:
             r.Render(seg_text, dc)
+        except Exception:
+            if _is_preview and _is_gtk:
+                try:
+                    r.sd.smp_via_bitmap = False
+                    r.sd.smp_device_res = True
+                    r.Render(seg_text, dc)
+                except Exception:
+                    pass  # ultimo tentativo fallito: si prosegue comunque
+            else:
+                raise
         finally:
             r.sd.smp_via_bitmap = _prev_smp_bmp
             r.sd.smp_device_res = _prev_smp_res
@@ -1093,6 +1133,23 @@ class SongpressPrintout(wx.Printout):
     def OnPrintPage(self, page):
         dc = self.GetDC()
         self._ensure_layout(dc)
+
+        # FIX Linux (wxGTK) — anteprima bianca con simboli SMP.
+        # ────────────────────────────────────────────────────────────────
+        # Stabilizza il DC prima di disegnare qualsiasi cosa (filigrana,
+        # separatore, colonne). Se la prima misura del testo torna 0×0 il DC
+        # non è pronto: impostiamo una font valida per forzare GTK a
+        # inizializzare il contesto. No-op su Windows/macOS.
+        try:
+            if wx.Platform == '__WXGTK__':
+                dc.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT,
+                                   wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+                _w, _h = dc.GetTextExtent("Test")
+                if not _w or not _h:
+                    dc.SetFont(wx.Font(12, wx.FONTFAMILY_SWISS,
+                                       wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
+        except Exception:
+            pass
 
         ml, mt, mr, mb = self._margin_du
         pw, ph         = self._page_w_du, self._page_h_du

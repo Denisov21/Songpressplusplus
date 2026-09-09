@@ -277,7 +277,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.symbolSizeSpin.Enable(getattr(self.pref, 'symbolScaleEnabled', False))
         self.symbolInsertVerseCB.SetValue(getattr(self.pref, 'symbolInsertVerse', False))
         # Abbassamento verticale del simbolo: valore all'apertura + refresh live
-        self.symbolValignSpin.SetValue(getattr(self.pref, 'symbolValignPct', 22))
+        self.symbolValignSpin.SetValue(getattr(self.pref, 'symbolValignPct', 5))
         self.symbolValignSpin.Bind(wx.EVT_SPINCTRL, self.OnSymbolValignChanged)
         _sd = getattr(self.pref, 'gridSizeDir', 'both')
         self.gridSizeDirBoth.SetValue(_sd == 'both')
@@ -1765,9 +1765,9 @@ class MyPreferencesDialog(PreferencesDialog):
 
     def OnSymbolValignChanged(self, evt):
         """Aggiornamento in tempo reale dell'abbassamento simbolo.
-        Scrive subito il valore in wx.Config (stessa chiave /Rendering/smp_valign_pct
+        Scrive subito il valore in wx.Config (stessa chiave /Rendering/smp_valign_offset_pct
         letta da SongDecorator) e rinfresca l'anteprima, senza attendere l'OK."""
-        pct = max(0, min(int(self.symbolValignSpin.GetValue()), 100))
+        pct = max(0, min(int(self.symbolValignSpin.GetValue()), 25))
         self.pref.symbolValignPct = pct
         try:
             cfg = wx.Config.Get()
@@ -1898,7 +1898,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.symbolScaleEnabled = self.symbolScaleCB.GetValue()
         self.pref.symbolFontSize     = self.symbolSizeSpin.GetValue()
         self.pref.symbolInsertVerse  = self.symbolInsertVerseCB.GetValue()
-        self.pref.symbolValignPct    = max(0, min(int(self.symbolValignSpin.GetValue()), 100))
+        self.pref.symbolValignPct    = max(0, min(int(self.symbolValignSpin.GetValue()), 25))
         if self.gridSizeDirH.GetValue():
             self.pref.gridSizeDir = 'horizontal'
         elif self.gridSizeDirV.GetValue():

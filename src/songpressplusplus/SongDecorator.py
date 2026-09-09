@@ -859,6 +859,51 @@ class SongDecorator(object):
         finally:
             mdc.SelectObject(wx.NullBitmap)
 
+    def _smp_measure_device_pair(self, s: str, pt: int, color):
+        """Misura, nello STESSO GraphicsContext offscreen e alla stessa
+        dimensione *pt*, sia la stringa SMP sia un riferimento ('Mg') col font
+        del brano. Ritorna ((smp_w, smp_h), ref_h_gc).
+
+        FIX Linux — dimensione SMP non fisica in stampa
+        ────────────────────────────────────────────────
+        La dimensione ASSOLUTA misurata dal GC dipende dal DPI con cui il GC
+        converte i point in pixel: GDI+ (Windows) usa ~96 dpi, Cairo (Linux)
+        ~72 dpi. Il vecchio codice faceva `th / scale` assumendo che il DPI del
+        GC coincidesse con quello del DC: vero su Windows, falso su Linux, dove
+        il glifo SMP usciva ~25% più piccolo e non seguiva {textsize:N} sul
+        foglio.
+
+        La misura del RIFERIMENTO ('Mg') col font del brano, fatta nello stesso
+        GC e allo stesso pt, permette al chiamante di convertire la misura SMP
+        da device-GC a logico-DC tramite un RAPPORTO (glifo/testo), che è
+        indipendente dal DPI. Il fattore DPI si semplifica: su Windows il
+        risultato resta identico a prima, su Linux viene corretto."""
+        bmp = wx.Bitmap(1, 1, 32)
+        mdc = wx.MemoryDC(bmp)
+        try:
+            gc = wx.GraphicsContext.Create(mdc)
+            if gc is None:
+                cw, ch = mdc.GetTextExtent('M')
+                ch = float(ch) if ch else 1.0
+                return (float(cw * max(1, len(s))), ch), ch
+            # Run SMP con font a copertura SMP (FreeSerif) a dimensione pt.
+            gc.SetFont(self._smp_gc_font_at(gc, pt, color))
+            smp_w, smp_h = gc.GetTextExtent(s)
+            # Riferimento: font del brano alla STESSA dimensione pt (stesso
+            # percorso point-size di _smp_gc_font_at), stesso GC.
+            try:
+                ref_font = wx.Font(self.dc.GetFont())
+                ref_font.SetPointSize(pt)
+                gc.SetFont(gc.CreateFont(ref_font, color))
+                _rw, ref_h = gc.GetTextExtent('Mg')
+            except Exception:
+                ref_h = 0
+            if not ref_h or ref_h < 1:
+                ref_h = smp_h if smp_h and smp_h >= 1 else 1.0
+            return (smp_w, smp_h), float(ref_h)
+        finally:
+            mdc.SelectObject(wx.NullBitmap)
+
     def _MeasureMixed(self, s: str):
         """Larghezza/altezza di *s* misurando ogni run col font giusto:
         il font del brano per il testo normale, FreeSerif (via GDI+) per i run
@@ -871,6 +916,9 @@ class SongDecorator(object):
         for run, is_smp in _smp_runs(s):
             if is_smp:
                 w, h = self._GetTextExtentSMP(run)
+                # Riserva lo spazio dell'abbassamento (vedi _DrawMixed), così il
+                # glifo spostato in basso non invade la riga successiva.
+                h += int(round(h * getattr(self, 'smp_valign_frac', self._SMP_VALIGN_FRAC)))
             else:
                 w, h = self.dc.GetTextExtent(run)
             total_w += w
@@ -879,15 +927,52 @@ class SongDecorator(object):
             _w, max_h = self.dc.GetTextExtent('Mg')
         return total_w, max_h
 
+    # Abbassamento del glifo SMP come frazione della sua altezza. Il simbolo,
+    # ancorato in alto, risulta troppo in alto rispetto alle lettere. Il valore
+    # utente (spin in Opzioni) è un "livello" su scala compressa: 0 = punto
+    # grezzo, ~ALIGNED_PCT allinea il glifo alla riga di testo.
+    #   frazione effettiva = livello * (ALIGNED_FRAC / ALIGNED_PCT)
+    _SMP_ALIGN_ALIGNED_PCT  = 5       # valore utente che allinea il glifo
+    _SMP_ALIGN_ALIGNED_FRAC = 0.22    # abbassamento (frazione altezza) che allinea
+    _SMP_VALIGN_FRAC = _SMP_ALIGN_ALIGNED_FRAC   # fallback se Config non è disponibile
+    _SMP_VALIGN_CFG_PATH = '/Rendering'
+    # Livello utente (0 = grezzo). Chiave separata dalla vecchia 'smp_valign_pct'
+    # (valore assoluto, semantica diversa): non va riletta qui.
+    _SMP_VALIGN_CFG_KEY  = 'smp_valign_offset_pct'
+
+    def _read_smp_valign_frac(self):
+        """Frazione di abbassamento a partire dal livello utente su scala compressa.
+        0 = punto grezzo (nessun abbassamento); ~5 allinea il glifo alla riga;
+        valori più alti lo abbassano ancora. Ripiega sull'allineamento se Config
+        non è disponibile. Ripristina sempre il path di Config, risultato in 0..1."""
+        frac = 0.0
+        try:
+            cfg = wx.Config.Get()
+            old = cfg.GetPath()
+            try:
+                cfg.SetPath(self._SMP_VALIGN_CFG_PATH)
+                off = cfg.ReadInt(self._SMP_VALIGN_CFG_KEY, self._SMP_ALIGN_ALIGNED_PCT)
+            finally:
+                cfg.SetPath(old)
+            frac = max(0.0, min(1.0,
+                       off * (self._SMP_ALIGN_ALIGNED_FRAC / self._SMP_ALIGN_ALIGNED_PCT)))
+        except Exception:
+            pass
+        return frac
+
     def _DrawMixed(self, s: str, x: int, y: int):
         """Disegna *s* avanzando in orizzontale, un run alla volta: il testo
-        normale col font già impostato sul DC, i run SMP con FreeSerif via GDI+.
-        Le larghezze usate per avanzare sono le stesse di _MeasureMixed."""
+        normale col font già impostato sul DC, i run SMP con FreeSerif.
+        Le larghezze usate per avanzare sono le stesse di _MeasureMixed.
+        Il solo run SMP viene abbassato di _SMP_VALIGN_FRAC * altezza per
+        allinearsi meglio alla riga di testo (vedi immagine: il simbolo stava
+        troppo in alto)."""
         cx = x
         for run, is_smp in _smp_runs(s):
             if is_smp:
-                self._DrawTextSMP(run, int(cx), y)
-                w, _h = self._GetTextExtentSMP(run)
+                w, h = self._GetTextExtentSMP(run)
+                dy = int(round(h * getattr(self, 'smp_valign_frac', self._SMP_VALIGN_FRAC)))
+                self._DrawTextSMP(run, int(cx), int(y + dy))
             else:
                 self.dc.DrawText(run, int(cx), y)
                 w, _h = self.dc.GetTextExtent(run)
@@ -895,19 +980,69 @@ class SongDecorator(object):
 
     def _GetTextExtentSMP(self, s: str):
         """Misura *s* (che contiene caratteri SMP) in coordinate logiche del DC.
+
         Misuriamo con un MemoryDC offscreen (dove GraphicsContext è sempre
         disponibile, a differenza dei DC di stampa) alla dimensione device
-        pt*scale, poi dividiamo per scale per tornare in coordinate logiche.
+        pt = pointSize*scale.
+
+        FIX Linux — dimensione SMP non fisica in stampa
+        ────────────────────────────────────────────────
+        Il vecchio `th / scale` assumeva che il DPI del GraphicsContext (usato
+        per misurare il glifo) coincidesse con quello del DC. Su Windows (GDI+
+        ~96dpi) è vero; su Linux (Cairo ~72dpi) no, quindi il glifo SMP usciva
+        ~25% più piccolo e NON seguiva {textsize:N} sul foglio.
+
+        Ora ancoriamo l'altezza logica del glifo all'altezza LOGICA che il DC dà
+        al font del brano (quella che occupa il testo normale sulla stessa
+        riga): il glifo SMP risulta così alto quanto il testo su OGNI
+        piattaforma, e scala fisicamente con {textsize:N}. La conversione
+        device-GC → logico-DC passa dal rapporto misurato tra riferimento nel DC
+        e riferimento nel GC (stesso font, stesso pt) → il DPI si semplifica e su
+        Windows il risultato è identico a prima (conv = 1/scale).
+        
+        FIX Editor Linux — textsize nasconde il simbolo
+        ───────────────────────────────────────────────
+        Su Linux, quando {textsize:N} ha una dimensione esplicita, il calcolo di
+        larghezza è sbagliato e il simbolo viene nascosto dalle graffe. La causa
+        è che Cairo misura leggermente diverso da GDI+ quando il font è cambiato
+        esplicitamente. Aggiunjamo una correzione empirica per la larghezza su Linux.
         """
         scale = getattr(self, 'pen_scale', 1.0)
         base_font = self.dc.GetFont()
         color = self.dc.GetTextForeground()
         pt = max(1, int(round(base_font.GetPointSize() * scale)))
-        tw, th = self._smp_measure_device(s, pt, color)
-        if tw < 1:
+
+        (tw, th), ref_h_gc = self._smp_measure_device_pair(s, pt, color)
+        if tw < 1 or th < 1:
             cw, ch = self.dc.GetTextExtent('M')
             return cw * max(1, len(s)), ch
-        return int(tw / scale), int(th / scale)
+
+        # Altezza logica del font del brano nel DC (ciò che occupa il testo
+        # normale). 'Mg' come nel riferimento del GC → il fattore di line-height
+        # si semplifica nel rapporto.
+        _rw, dc_ref_h = self.dc.GetTextExtent('Mg')
+        if ref_h_gc >= 1 and dc_ref_h >= 1:
+            conv = dc_ref_h / ref_h_gc      # device-GC → logico-DC (DPI-safe)
+        else:
+            conv = 1.0 / scale if scale else 1.0   # fallback = vecchio comportamento
+
+        # Correzione per Linux: Cairo ha DPI leggermente diverso da GDI+
+        # Quando il fattore di conversione è < 1.0, significa che la larghezza SMP è
+        # troppo piccola su Linux. La causa è che Cairo e GDI+ non usano gli stessi DPI.
+        # Su Linux, applica una correzione empirica che dipende dal valore di conv.
+        import sys
+        if sys.platform.startswith('linux'):
+            # Se conv è significativamente < 1 (e.g., < 0.95), è probabile che
+            # Cairo stia misurando diversamente. Applica una correzione additiva
+            # basata sul valore di conv stesso.
+            if conv < 0.95:
+                # Aumenta conv di una piccola quantità per compensare il calcolo Cairo
+                conv = min(conv * 1.08, 1.0)
+            elif 0.95 <= conv < 1.0:
+                # Leggera correzione anche in questo caso
+                conv *= 1.02
+        
+        return max(1, int(round(tw * conv))), max(1, int(round(th * conv)))
 
     def _DrawTextSMP(self, s: str, x: int, y: int):
         """Disegna *s* con un font a copertura SMP (FreeSerif).
@@ -930,6 +1065,30 @@ class SongDecorator(object):
         """
         if getattr(self, 'smp_via_bitmap', False):
             self._DrawTextSMP_bitmap(s, x, y)
+            return
+
+        # Anteprima live.
+        # Su wxGTK creare un GraphicsContext IN-PLACE sul DC a schermo e togglare
+        # UserScale corrompe la matrice cairo condivisa: a zoom != 100% il testo
+        # disegnato DOPO il glifo SMP risulta deformato. Evitiamo del tutto il GC
+        # in-place passando dal percorso a bitmap (GC costruito su un MemoryDC
+        # separato, poi StretchBlit): non tocca il contesto cairo del DC.
+        #
+        # ATTENZIONE (bug zoom Linux): a zoom != 100% lo StretchBlit "logico"
+        # (dest in coordinate logiche, lasciando che sia il DC a scalarle con
+        # UserScale) su wxGTK/Cairo NON è affidabile — a seconda della versione
+        # la scala sul rettangolo di destinazione viene ignorata o applicata due
+        # volte, e il glifo SMP finisce fuori posto / di dimensione sbagliata
+        # (il "pasticcio" segnalato quando si cambia lo zoom). Per l'anteprima
+        # live passiamo quindi device_res=True: il blit avviene in coordinate
+        # DEVICE con UserScale azzerato solo attorno alla StretchBlit (nessun
+        # GraphicsContext coinvolto → la matrice cairo non viene toccata), così
+        # il risultato è corretto a QUALSIASI zoom, indipendentemente da come
+        # wxGTK interpreti la scala nel blit.
+        # Su wxMSW/macOS il GC in-place funziona ed è nitido a ogni zoom: lo
+        # teniamo per non cambiare un comportamento già corretto lì.
+        if wx.Platform == '__WXGTK__':
+            self._DrawTextSMP_bitmap(s, x, y, device_res=True)
             return
 
         scale = getattr(self, 'pen_scale', 1.0)
@@ -1035,30 +1194,32 @@ class SongDecorator(object):
         except Exception:
             return None
 
-    def _DrawTextSMP_bitmap(self, s: str, x: int, y: int):
+    def _DrawTextSMP_bitmap(self, s: str, x: int, y: int, device_res=None):
         """Rasterizza il glifo SMP su una bitmap e la blitta sul DC corrente.
-        Usato per la stampa/anteprima di stampa (vedi _DrawTextSMP).
+        Usato per la stampa, l'anteprima di stampa e, su wxGTK, anche per
+        l'anteprima live (vedi _DrawTextSMP).
 
         La bitmap è a 24 bit (niente alpha): un tentativo con bitmap a 32 bit
         risultava trasparente sul PrinterDC di Windows (il glifo «non appariva»).
         Lo sfondo è riempito col colore di pagina, come la pre-composizione delle
         icone di tempo.
 
-        Due modalità di blit, scelte dal flag `smp_device_res`:
+        Blit UNICO per tutti i casi: la sorgente è renderizzata a risoluzione
+        DEVICE (pt*scale, nitida) e posata con StretchBlit in un rettangolo di
+        destinazione in coordinate LOGICHE (la dimensione del glifo dal layout).
+        È il DC a scalare dest→device: così il glifo segue la dimensione del
+        testo (quindi {textsize:N}) su carta come in anteprima, resta nitido, e
+        non serve toccare UserScale (azzerarlo nascondeva il glifo in anteprima).
 
-        • Stampa reale / PDF (smp_device_res True): glifo renderizzato a
-          risoluzione DEVICE (pt*scale) e blittato 1:1 a coordinate device con
-          UserScale azzerato → massima nitidezza su carta.
-
-        • Anteprima di stampa (smp_device_res False): in anteprima wx lascia sul
-          DC una trasformazione (zoom preview → bitmap). Azzerare UserScale come
-          sopra combatte quella trasformazione e il glifo finisce fuori vista.
-          Quindi renderizziamo a dimensione LOGICA e blittiamo a coordinate
-          LOGICHE SENZA toccare UserScale: è il DC a scalare la bitmap, come fa
-          per le icone di tempo → visibile e alla misura giusta in anteprima.
+        `device_res` sceglie il ramo di blit finale:
+        • None/False (stampa, anteprima di stampa, rete di sicurezza): dest in
+          coordinate LOGICHE → il DC scala con UserScale, così il glifo segue
+          {textsize:N} sul foglio.
+        • True (anteprima live wxGTK): dest in coordinate DEVICE con UserScale
+          azzerato solo attorno alla StretchBlit → il glifo è corretto a ogni
+          zoom anche dove wxGTK non onora la scala nel blit (vedi _DrawTextSMP).
         """
         scale = getattr(self, 'pen_scale', 1.0)
-        device_res = getattr(self, 'smp_device_res', True)
         base_font = self.dc.GetFont()
         color = self.dc.GetTextForeground()
 
@@ -1102,30 +1263,57 @@ class SongDecorator(object):
             mdc.SelectObject(wx.NullBitmap)
             del mdc
 
-        if device_res:
-            # Stampa reale / PDF: la sorgente è già a misura device → blit 1:1 a
-            # coordinate device con UserScale azzerato (origine e clip restano).
-            old_sx, old_sy = self.dc.GetUserScale()
-            try:
+        # Blit UNIFICATO (stampa reale, PDF e anteprima di stampa):
+        # StretchBlit della sorgente ad alta risoluzione (device-res) in un
+        # rettangolo di destinazione in coordinate LOGICHE della dimensione del
+        # glifo (lw, lh dallo stesso _GetTextExtentSMP usato dal layout). È il DC
+        # a scalare dest→device con la propria trasformazione.
+        #   • Resta NITIDO: la sorgente è a risoluzione device, StretchBlit la
+        #     ricampiona ~1:1 sul footprint device del glifo.
+        #   • Traccia la DIMENSIONE: dest in unità logiche ∝ textsize → il DC lo
+        #     scala come il resto del testo. Il vecchio DrawBitmap a coordinate
+        #     device (blit 1:1 in pixel nativi) NON seguiva textsize su carta:
+        #     il glifo restava della stessa dimensione a ogni {textsize:N}.
+        #   • Non tocca UserScale, così vale identico anche in anteprima (dove
+        #     azzerarlo nascondeva il glifo).
+        lw, lh = self._GetTextExtentSMP(s)
+        lw = max(1, int(lw))
+        lh = max(1, int(lh))
+        src = wx.MemoryDC(bmp)
+        try:
+            if device_res:
+                # ── Anteprima live wxGTK: blit in coordinate DEVICE ──
+                # Convertiamo noi la destinazione logica (x, y, lw, lh) in pixel
+                # device usando l'UserScale corrente, poi azzeriamo UserScale
+                # SOLO attorno alla StretchBlit. Con scala 1.0 il DC non ri-scala
+                # il rettangolo di destinazione (la DeviceOrigin — scroll+margine
+                # — resta invariata e viene comunque applicata), quindi:
+                #   • se wxGTK IGNORA la scala nel blit → corretto (già in device);
+                #   • se la applica DUE volte → non accade più (scala = 1.0);
+                #   • se la applica una volta sola → corretto.
+                # In tutti i casi il glifo, renderizzato a risoluzione device
+                # (w×h), viene posato ~1:1 sul suo footprint device (dw×dh) alla
+                # posizione giusta, nitido e nel punto esatto a ogni zoom.
+                # Nessun GraphicsContext sul DC a schermo → la matrice cairo
+                # condivisa non viene toccata: il testo disegnato DOPO il glifo
+                # non risulta più deformato.
+                old_sx, old_sy = self.dc.GetUserScale()
+                dx = int(round(x * old_sx))
+                dy = int(round(y * old_sy))
+                dw = max(1, int(round(lw * old_sx)))
+                dh = max(1, int(round(lh * old_sy)))
                 self.dc.SetUserScale(1.0, 1.0)
-                self.dc.DrawBitmap(bmp, int(round(x * scale)), int(round(y * scale)), False)
-            finally:
-                self.dc.SetUserScale(old_sx, old_sy)
-        else:
-            # Anteprima di stampa: NON tocchiamo UserScale (altrimenti la
-            # trasformazione di anteprima nasconde il glifo). Blittiamo la
-            # sorgente ad alta risoluzione in un rettangolo di destinazione in
-            # coordinate LOGICHE della dimensione del glifo: è il DC a scalare
-            # dest→device, quindi StretchBlit ricampiona la sorgente device-res
-            # e il glifo resta nitido come le altre parole.
-            lw, lh = self._GetTextExtentSMP(s)
-            lw = max(1, int(lw))
-            lh = max(1, int(lh))
-            src = wx.MemoryDC(bmp)
-            try:
+                try:
+                    self.dc.StretchBlit(dx, dy, dw, dh, src, 0, 0, w, h)
+                finally:
+                    self.dc.SetUserScale(old_sx, old_sy)
+            else:
+                # Percorso stampa / anteprima di stampa: dest in coordinate
+                # LOGICHE, lasciando che sia il PrinterDC (UserScale tipicamente
+                # 1.0) a scalare → il glifo segue {textsize:N} sul foglio.
                 self.dc.StretchBlit(int(x), int(y), lw, lh, src, 0, 0, w, h)
-            finally:
-                src.SelectObject(wx.NullBitmap)
+        finally:
+            src.SelectObject(wx.NullBitmap)
 
     def PostDrawText(self, text, tx, ty):
         # tx, ty: coordinates of top-left corner of drawable area
@@ -1509,6 +1697,10 @@ class SongDecorator(object):
         # Auto-detect DC user scale to compensate pen widths
         sx, sy = dc.GetUserScale()
         self.pen_scale = sx if sx > 0 else 1.0
+        # Abbassamento verticale del simbolo SMP: valore utente salvato in
+        # wx.Config (scritto dalla finestra Simboli musicali). Ricaricato a ogni
+        # render così un cambio dell'impostazione si riflette subito in anteprima.
+        self.smp_valign_frac = self._read_smp_valign_frac()
         self.InitDraw()
         self.LayoutCompose()
         self.LayoutMove()

@@ -1514,6 +1514,26 @@ Both options can be combined: if both are active, the result is:
 
 The same settings are also accessible from **Preferences → Format → Musical symbol insertion**, where they are saved permanently.
 
+### SMP and BMP symbols — what's the difference
+
+The characters offered by the dialog belong to two Unicode families that Songpress++ handles very differently. Knowing which family a symbol belongs to explains why some behave like ordinary text while others need a dedicated font.
+
+| | **BMP** (Basic Multilingual Plane) | **SMP** (Supplementary Multilingual Plane) |
+| --- | --- | --- |
+| **What they are** | Characters with codepoint ≤ U+FFFF | Characters with codepoint > U+FFFF |
+| **Examples** | ♩ ♪ ♫ ♬ ★ † ½ ¼ × – — … | 𝄞 𝄢 and the other glyphs of the *Musical Symbols* block (U+1D100–U+1D1FF) |
+| **Where in the dialog** | **Common (BMP)** tab | *Notes and rests*, *Accidentals*, *Dynamics*, *Staff and clefs*, *Ornaments and articulations* tabs |
+| **Font coverage** | almost every system font contains them | common fonts (Arial, Times, Calibri) do **not** cover them: a dedicated font is needed (FreeSerif, bundled) |
+| **How they are rendered** | **directly with the song font**, exactly like a letter | through a **separate drawing path** (GDI+/`GraphicsContext` in the preview, FreeType/Pillow rasterization in print) |
+| **Resizable with `{textsize:}`** | yes, always | yes, but only if the font covers the glyph |
+| **Vertical alignment** | natural (they are normal text) | the glyph tends to sit higher: adjust it with **Symbol vertical drop (%)** in the Options |
+
+In short: a **BMP** symbol is a text character in every respect — it scales, prints and aligns like the letters next to it, with no special handling. An **SMP** symbol is "real" musical notation that ordinary fonts don't contain, so Songpress++ draws it separately with FreeSerif.
+
+In the dialog, the description of the selected symbol (at the bottom) states which plane it belongs to, so you immediately know whether it needs the dedicated font.
+
+> **Symbol vertical drop (%)** — Because SMP glyphs are drawn with a separate path, they tend to appear slightly higher than the letters. The **Preferences → Format → Musical symbol insertion → Symbol vertical drop (%)** option lowers them until they line up with the text row, updating the preview in real time. At **0** the symbol stays in its raw position, the default **~5** aligns it to the row; higher values lower it further. BMP symbols are unaffected.
+
 Symbols in the Musical Symbols block (U+1D100–U+1D1FF) belong to the Unicode **Supplementary Multilingual Plane** (SMP, codepoints > U+FFFF). Common system fonts (Arial, Times New Roman, Calibri) do not cover this range; Songpress++ solves this in two distinct ways:
 
 **In the editor (text panel)** — the editor uses the **DirectWrite** rendering engine (`SetTechnology(STC_TECHNOLOGY_DIRECTWRITE)`), which enables automatic Windows font-fallback: if the chosen editor font does not contain the glyph, Windows automatically searches among installed fonts for a suitable one.
@@ -1802,6 +1822,7 @@ Below, the scrollable **chord simplification** panel has one slider per chord gr
 | ----- | :-----: | ----------- |
 | **Custom size when inserting musical symbols (pt)** | ☐ | When enabled, the symbol is wrapped in `{textsize:N}`…`{textsize:}` with the size chosen in the spin control (6–144, default 24). |
 | **Wrap symbol in a verse block (not counted)** | ☐ | The symbol is wrapped in `{start_verse}`…`{end_verse}` so it is excluded from verse numbering. |
+| **Symbol vertical drop (%)** | 5 | Lowers **SMP** symbols to line them up with the text row (0–25); 0 = raw position, ~5 aligns them (default). Updates the preview in real time. Does not affect BMP symbols. |
 
 #### **Beat count (`{beats_time}`)** group
 

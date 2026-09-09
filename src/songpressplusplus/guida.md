@@ -1521,6 +1521,26 @@ Le due opzioni sono combinabili: se entrambe sono attive, il risultato è:
 
 Le stesse impostazioni sono accessibili anche da **Preferenze → Formattazione → Inserimento simbolo musicale**, dove vengono salvate in modo permanente.
 
+### Simboli SMP e BMP — che differenza c'è
+
+I caratteri offerti dalla finestra appartengono a due famiglie Unicode che Songpress++ tratta in modo molto diverso. Sapere a quale famiglia appartiene un simbolo spiega perché alcuni si comportano come normale testo e altri richiedono un font dedicato.
+
+| | **BMP** (Basic Multilingual Plane) | **SMP** (Supplementary Multilingual Plane) |
+| --- | --- | --- |
+| **Cosa sono** | Caratteri con codepoint ≤ U+FFFF | Caratteri con codepoint > U+FFFF |
+| **Esempi** | ♩ ♪ ♫ ♬ ★ † ½ ¼ × – — … | 𝄞 𝄢 e gli altri glifi del blocco *Musical Symbols* (U+1D100–U+1D1FF) |
+| **Dove nella finestra** | scheda **Comuni (BMP)** | schede *Note e pause*, *Alterazioni*, *Dinamiche*, *Pentagramma e chiavi*, *Ornamenti e articolazioni* |
+| **Copertura font** | quasi tutti i font di sistema li contengono | i font comuni (Arial, Times, Calibri) **non** li coprono: serve un font dedicato (FreeSerif, incluso) |
+| **Come vengono resi** | **direttamente col font della canzone**, esattamente come una lettera | tramite un **percorso di disegno separato** (GDI+/`GraphicsContext` in anteprima, rasterizzazione FreeType/Pillow in stampa) |
+| **Ridimensionabili con `{textsize:}`** | sì, sempre | sì, ma solo se il font copre il glifo |
+| **Allineamento verticale** | naturale (sono testo normale) | il glifo tende a stare più in alto: si regola con **Abbassamento simbolo (%)** nelle Opzioni |
+
+In pratica: un simbolo **BMP** è a tutti gli effetti un carattere di testo — scala, si stampa e si allinea come le lettere accanto, senza alcun trattamento speciale. Un simbolo **SMP** è notazione musicale "vera" che i font ordinari non contengono, perciò Songpress++ lo disegna a parte con FreeSerif.
+
+Nella finestra, la descrizione del simbolo selezionato (in basso) indica a quale piano appartiene, così sai subito se richiede il font dedicato oppure no.
+
+> **Abbassamento simbolo (%)** — Poiché i glifi SMP vengono disegnati con un percorso separato, tendono a comparire un po' più in alto rispetto alle lettere. L'opzione **Preferenze → Formato → Inserimento simbolo musicale → Abbassamento simbolo (%)** li abbassa fino ad allinearli alla riga di testo, con aggiornamento in tempo reale nell'anteprima. A **0** il simbolo resta nella posizione grezza, il valore predefinito **~5** lo allinea alla riga; valori più alti lo abbassano ancora. I simboli BMP non ne sono influenzati.
+
 I simboli del blocco Musical Symbols (U+1D100–U+1D1FF) appartengono al piano supplementare Unicode (**SMP**, codepoint > U+FFFF). I font di sistema comuni (Arial, Times New Roman, Calibri) non coprono questo range; Songpress++ risolve il problema in due modi distinti:
 
 **Nell'editor (pannello di testo)** — l'editor usa il motore di rendering **DirectWrite** (`SetTechnology(STC_TECHNOLOGY_DIRECTWRITE)`), che abilita il font-fallback automatico di Windows: se il font scelto per l'editor non contiene il glifo, Windows cerca automaticamente tra i font installati quello più adatto.
@@ -1809,6 +1829,7 @@ Sotto, il pannello scorrevole **semplificazione accordi** contiene un cursore pe
 | ----- | :---------: | ----------- |
 | **Dimensione personalizzata all'inserimento dei simboli (pt)** | ☐ | Se attivo, il simbolo viene racchiuso tra `{textsize:N}`…`{textsize:}` con il corpo scelto nello spin (6–144, predefinito 24). |
 | **Racchiudi il simbolo in un blocco strofa (non conteggiato)** | ☐ | Il simbolo viene avvolto in `{start_verse}`…`{end_verse}` così da non entrare nella numerazione delle strofe. |
+| **Abbassamento simbolo (%)** | 5 | Abbassa i simboli **SMP** per allinearli alla riga di testo (0–25); 0 = posizione grezza, ~5 li allinea (predefinito). Aggiornamento in tempo reale nell'anteprima. Non influisce sui simboli BMP. |
 
 #### Gruppo **Conteggio battute (`{beats_time}`)**
 

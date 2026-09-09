@@ -5789,7 +5789,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 if pref is not None and hasattr(pref, 'SanitizeFilename'):
                     fn = pref.SanitizeFilename(fn)
                 if os.path.isfile(fn):
-                    msg = "File \"%s\" already exists. Do you want to overwrite it?" % (fn,)
+                    msg = _("File \"%s\" already exists. Do you want to overwrite it?") % (fn,)
                     d = wx.MessageDialog(
                         self.frame,
                         msg,
@@ -7244,7 +7244,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         except Exception:
             return (KO, os.path.basename(path), _("rasterization failed"))
         if drawn:
-            return (OK, os.path.basename(path), _("prints correctly"))
+            return (OK, os.path.basename(path), _("print SMP symbols"))
         return (KO, os.path.basename(path), _("glyph empty (.notdef)"))
 
     def OnGuide(self, evt):

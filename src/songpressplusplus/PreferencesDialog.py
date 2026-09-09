@@ -631,12 +631,13 @@ class PreferencesDialog(wx.Dialog):
         )
         self.symbolValignSpin = wx.SpinCtrl(
             self.formatPanel, wx.ID_ANY,
-            min=0, max=100, initial=22,
+            min=0, max=25, initial=5,
             style=wx.SP_ARROW_KEYS,
         )
         self.symbolValignSpin.SetMinSize(wx.Size(60 + _SPIN_EXTRA_WIDTH, -1))
         self.symbolValignSpin.SetToolTip(
-            _(u"Lowers musical symbols so they line up with the text row.\n"
+            _(u"Lowers musical symbols to line them up with the text row.\n"
+              u"0 = raw position; about 5 aligns them (default); higher values lower them more.\n"
               u"Saved and applied to preview, print preview and printing.")
         )
         szValign.Add(self.symbolValignLbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)

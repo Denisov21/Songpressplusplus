@@ -673,11 +673,13 @@ class Preferences(object):
 
     # Abbassamento verticale del simbolo SMP, in percentuale (0-100).
     # Stessi percorso/chiave usati da SongDecorator (_SMP_VALIGN_CFG_*) e, in
-    # precedenza, da MusicalSymbolDialog: il renderer legge /Rendering/smp_valign_pct
+    # precedenza, da MusicalSymbolDialog: il renderer legge /Rendering/smp_valign_offset_pct
     # per far scendere i simboli SMP e allinearli alla riga di testo.
     _SMP_VALIGN_CFG_PATH = '/Rendering'
-    _SMP_VALIGN_CFG_KEY  = 'smp_valign_pct'
-    _SMP_VALIGN_DEFAULT  = 22
+    _SMP_VALIGN_CFG_KEY  = 'smp_valign_offset_pct'   # ritocco fine (anche negativo)
+    _SMP_VALIGN_DEFAULT  = 5
+    _SMP_VALIGN_MIN      = 0
+    _SMP_VALIGN_MAX      = 25
 
     def _LoadSmpValign(self):
         self.config.SetPath(self._SMP_VALIGN_CFG_PATH)
@@ -685,14 +687,14 @@ class Preferences(object):
             v = self.config.ReadInt(self._SMP_VALIGN_CFG_KEY, self._SMP_VALIGN_DEFAULT)
         except Exception:
             v = self._SMP_VALIGN_DEFAULT
-        self.symbolValignPct = max(0, min(int(v), 100))
+        self.symbolValignPct = max(self._SMP_VALIGN_MIN, min(int(v), self._SMP_VALIGN_MAX))
         self.config.SetPath('/')
 
     def _SaveSmpValign(self):
         self.config.SetPath(self._SMP_VALIGN_CFG_PATH)
         self.config.WriteInt(
             self._SMP_VALIGN_CFG_KEY,
-            max(0, min(int(getattr(self, 'symbolValignPct', self._SMP_VALIGN_DEFAULT)), 100)),
+            max(self._SMP_VALIGN_MIN, min(int(getattr(self, 'symbolValignPct', self._SMP_VALIGN_DEFAULT)), self._SMP_VALIGN_MAX)),
         )
         self.config.SetPath('/')
 

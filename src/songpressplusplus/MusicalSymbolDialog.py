@@ -477,12 +477,6 @@ def _make_symbol_font(point_size: int) -> wx.Font:
 class MusicalSymbolDialog(wx.Dialog):
     """Dialog modale per scegliere e inserire un simbolo musicale Unicode."""
 
-    # Abbassamento verticale del simbolo SMP, in percentuale dell'altezza del
-    # glifo. Salvato in wx.Config e letto da SongDecorator (stessi path/chiave).
-    _VALIGN_CFG_PATH = '/Rendering'
-    _VALIGN_CFG_KEY  = 'smp_valign_pct'
-    _VALIGN_DEFAULT  = 22
-
     def __init__(self, parent, scale_enabled: bool = False, font_size: int = 24,
                  insert_verse: bool = False, on_valign_change=None):
         super().__init__(
