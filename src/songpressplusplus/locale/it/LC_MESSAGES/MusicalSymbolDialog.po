@@ -34,6 +34,20 @@ msgstr "Chiudi"
 msgid "Custom size (pt):"
 msgstr "Dimensione personalizzata (pt):"
 
+#. Spin control label: how much to lower musical symbols to align them with text
+#: MusicalSymbolDialog.py
+msgid "Symbol vertical drop (%):"
+msgstr "Abbassamento simbolo (%):"
+
+#. Tooltip for the vertical-drop control
+#: MusicalSymbolDialog.py
+msgid ""
+"Lowers musical symbols so they line up with the text row.\n"
+"Saved and applied to preview, print preview and printing."
+msgstr ""
+"Abbassa i simboli musicali per allinearli alla riga di testo.\n"
+"Salvato e applicato ad anteprima, anteprima di stampa e stampa."
+
 #. Info note shown below the size controls
 #: MusicalSymbolDialog.py
 msgid "Note: not all symbols can be resized!"
@@ -49,11 +63,11 @@ msgstr "Incorpora il simbolo in una strofa (non conteggiata)"
 msgid ""
 "When enabled, the symbol is wrapped inside {start_verse}...{end_verse}\n"
 "so it appears as a verse block without being counted in the verse numbering.\n"
-"Example: {start_verse}{textsize:24}♩{textsize}{end_verse}"
+"Example: {start_verse}{textsize:24}♪{textsize}{end_verse}"
 msgstr ""
 "Se attiva, il simbolo viene incluso in {start_verse}...{end_verse}\n"
 "e appare come blocco strofa senza essere conteggiato nella numerazione.\n"
-"Esempio: {start_verse}{textsize:24}♩{textsize}{end_verse}"
+"Esempio: {start_verse}{textsize:24}♪{textsize}{end_verse}"
 
 #. Tooltip on the selected-symbol description: explains which rendering path
 #. the symbol uses depending on its Unicode plane (SMP vs BMP).
@@ -349,19 +363,19 @@ msgstr "Coda"
 
 #: MusicalSymbolDialog.py
 msgid "Begin slur"
-msgstr "Inizio legato"
+msgstr "Inizio legatura di portamento"
 
 #: MusicalSymbolDialog.py
 msgid "End slur"
-msgstr "Fine legato"
+msgstr "Fine legatura di portamento"
 
 #: MusicalSymbolDialog.py
 msgid "Begin tie"
-msgstr "Inizio ligatura"
+msgstr "Inizio legatura di valore"
 
 #: MusicalSymbolDialog.py
 msgid "End tie"
-msgstr "Fine ligatura"
+msgstr "Fine legatura di valore"
 
 #: MusicalSymbolDialog.py
 msgid "Begin phrase"

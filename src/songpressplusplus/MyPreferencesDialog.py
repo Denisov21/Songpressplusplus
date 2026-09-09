@@ -22,7 +22,7 @@ _ = wx.GetTranslation
 
 
 class MyPreferencesDialog(PreferencesDialog):
-    def __init__(self, parent, preferences, easyChords, on_apply=None, previewCanvas=None, on_theme_change=None):
+    def __init__(self, parent, preferences, easyChords, on_apply=None, previewCanvas=None, on_theme_change=None, on_valign_change=None):
         self.pref = preferences
         self.frame = self
         PreferencesDialog.__init__(self, parent)
@@ -32,6 +32,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self._restart_requested = False  # True se l'utente ha scelto «Riavvia ora»
         self._on_theme_change = on_theme_change  # callback chiamato quando la lista temi cambia (salva/elimina)
         self._previewCanvas = previewCanvas  # riferimento opzionale per applicare subito le opzioni anteprima
+        self._on_valign_change = on_valign_change  # callback opzionale: rinfresca l'anteprima durante il drag dell'abbassamento simbolo
         self.easyChords = easyChords
         self.clearRecentFiles = False
 
@@ -275,6 +276,9 @@ class MyPreferencesDialog(PreferencesDialog):
         self.symbolSizeSpin.SetValue(getattr(self.pref, 'symbolFontSize', 24))
         self.symbolSizeSpin.Enable(getattr(self.pref, 'symbolScaleEnabled', False))
         self.symbolInsertVerseCB.SetValue(getattr(self.pref, 'symbolInsertVerse', False))
+        # Abbassamento verticale del simbolo: valore all'apertura + refresh live
+        self.symbolValignSpin.SetValue(getattr(self.pref, 'symbolValignPct', 22))
+        self.symbolValignSpin.Bind(wx.EVT_SPINCTRL, self.OnSymbolValignChanged)
         _sd = getattr(self.pref, 'gridSizeDir', 'both')
         self.gridSizeDirBoth.SetValue(_sd == 'both')
         self.gridSizeDirH.SetValue(_sd == 'horizontal')
@@ -1759,6 +1763,33 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.cmShowIcons = self.cmShowIcons.GetValue()
         evt.Skip()
 
+    def OnSymbolValignChanged(self, evt):
+        """Aggiornamento in tempo reale dell'abbassamento simbolo.
+        Scrive subito il valore in wx.Config (stessa chiave /Rendering/smp_valign_pct
+        letta da SongDecorator) e rinfresca l'anteprima, senza attendere l'OK."""
+        pct = max(0, min(int(self.symbolValignSpin.GetValue()), 100))
+        self.pref.symbolValignPct = pct
+        try:
+            cfg = wx.Config.Get()
+            old = cfg.GetPath()
+            try:
+                cfg.SetPath(self.pref._SMP_VALIGN_CFG_PATH)
+                cfg.WriteInt(self.pref._SMP_VALIGN_CFG_KEY, pct)
+                cfg.Flush()
+            finally:
+                cfg.SetPath(old)
+        except Exception:
+            pass
+        # Rinfresca l'anteprima principale col canale disponibile (callback
+        # dedicata se fornita dal frame, altrimenti la callback di apply).
+        cb = self._on_valign_change or self._on_apply
+        if callable(cb):
+            try:
+                cb()
+            except Exception:
+                pass
+        evt.Skip()
+
     def OnOk(self, evt):
         # Assign ALL values to pref BEFORE Save() so everything is persisted
         self.pref.editorFace, self.pref.editorSize = self.GetFont()
@@ -1867,6 +1898,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.symbolScaleEnabled = self.symbolScaleCB.GetValue()
         self.pref.symbolFontSize     = self.symbolSizeSpin.GetValue()
         self.pref.symbolInsertVerse  = self.symbolInsertVerseCB.GetValue()
+        self.pref.symbolValignPct    = max(0, min(int(self.symbolValignSpin.GetValue()), 100))
         if self.gridSizeDirH.GetValue():
             self.pref.gridSizeDir = 'horizontal'
         elif self.gridSizeDirV.GetValue():

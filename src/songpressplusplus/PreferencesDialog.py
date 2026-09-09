@@ -622,6 +622,26 @@ class PreferencesDialog(wx.Dialog):
               u"in the verse numbering.")
         )
         grpSymbol.Add(self.symbolInsertVerseCB, 0, wx.ALL, 5)
+
+        # Riga: abbassamento verticale del simbolo (spostato qui dalla finestra
+        # "Simboli musicali"). Valore 0-100 %, aggiornato in tempo reale.
+        szValign = wx.BoxSizer(wx.HORIZONTAL)
+        self.symbolValignLbl = wx.StaticText(
+            self.formatPanel, wx.ID_ANY, _(u"Symbol vertical drop (%):")
+        )
+        self.symbolValignSpin = wx.SpinCtrl(
+            self.formatPanel, wx.ID_ANY,
+            min=0, max=100, initial=22,
+            style=wx.SP_ARROW_KEYS,
+        )
+        self.symbolValignSpin.SetMinSize(wx.Size(60 + _SPIN_EXTRA_WIDTH, -1))
+        self.symbolValignSpin.SetToolTip(
+            _(u"Lowers musical symbols so they line up with the text row.\n"
+              u"Saved and applied to preview, print preview and printing.")
+        )
+        szValign.Add(self.symbolValignLbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        szValign.Add(self.symbolValignSpin, 0, wx.ALIGN_CENTER_VERTICAL)
+        grpSymbol.Add(szValign, 0, wx.ALL, 5)
         bSizerFormat.Add(grpSymbol, 0, wx.EXPAND | wx.ALL, 8)
 
         # ── Gruppo: Beat count ({beats_time}) ───────────────────────

@@ -192,6 +192,7 @@ class Preferences(object):
         self._LoadGridDisplayMode()
         self._LoadDurationBeats()
         self._LoadMusicalSymbol()
+        self._LoadSmpValign()
         self._LoadSyntaxColours()
         self._LoadDebugOptions()
         self._LoadIntellisense()
@@ -428,6 +429,7 @@ class Preferences(object):
         self._SaveGridDisplayMode()
         self._SaveDurationBeats()
         self._SaveMusicalSymbol()
+        self._SaveSmpValign()
         self._SaveSyntaxColours()
         self._SaveDebugOptions()
         self._SaveIntellisense()
@@ -667,6 +669,31 @@ class Preferences(object):
         self.config.Write('scaleEnabled', '1' if getattr(self, 'symbolScaleEnabled', False) else '0')
         self.config.Write('fontSize', str(getattr(self, 'symbolFontSize', 24)))
         self.config.Write('insertVerse', '1' if getattr(self, 'symbolInsertVerse', False) else '0')
+        self.config.SetPath('/')
+
+    # Abbassamento verticale del simbolo SMP, in percentuale (0-100).
+    # Stessi percorso/chiave usati da SongDecorator (_SMP_VALIGN_CFG_*) e, in
+    # precedenza, da MusicalSymbolDialog: il renderer legge /Rendering/smp_valign_pct
+    # per far scendere i simboli SMP e allinearli alla riga di testo.
+    _SMP_VALIGN_CFG_PATH = '/Rendering'
+    _SMP_VALIGN_CFG_KEY  = 'smp_valign_pct'
+    _SMP_VALIGN_DEFAULT  = 22
+
+    def _LoadSmpValign(self):
+        self.config.SetPath(self._SMP_VALIGN_CFG_PATH)
+        try:
+            v = self.config.ReadInt(self._SMP_VALIGN_CFG_KEY, self._SMP_VALIGN_DEFAULT)
+        except Exception:
+            v = self._SMP_VALIGN_DEFAULT
+        self.symbolValignPct = max(0, min(int(v), 100))
+        self.config.SetPath('/')
+
+    def _SaveSmpValign(self):
+        self.config.SetPath(self._SMP_VALIGN_CFG_PATH)
+        self.config.WriteInt(
+            self._SMP_VALIGN_CFG_KEY,
+            max(0, min(int(getattr(self, 'symbolValignPct', self._SMP_VALIGN_DEFAULT)), 100)),
+        )
         self.config.SetPath('/')
 
     def _LoadDecoSliderColour(self):

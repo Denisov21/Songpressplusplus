@@ -430,6 +430,28 @@ class _SymbolGrid(wx.Panel):
 
 
 
+def _plane_tag(char: str) -> str:
+    """Ritorna 'SMP' se il simbolo contiene almeno un codepoint > U+FFFF
+    (Supplementary Multilingual Plane, dove cade il blocco Musical Symbols
+    U+1D100-1D1FF), altrimenti 'BMP' (Basic Multilingual Plane).
+
+    Serve a segnalare all'utente quali simboli richiedono il rendering
+    speciale via font a copertura SMP (FreeSerif) — gli stessi che
+    SongDecorator disegna con il percorso GDI+/bitmap.
+    """
+    if not char:
+        return "BMP"
+    return "SMP" if any(ord(c) > 0xFFFF for c in char) else "BMP"
+
+
+def _symbol_info(label: str, char: str) -> str:
+    """Descrizione uniforme di un simbolo: nome tradotto, codepoint e piano
+    Unicode (BMP/SMP). Usata sia per la riga di descrizione della selezione
+    sia per i tooltip, così l'informazione è identica ovunque."""
+    cp = ord(char[0]) if char else 0
+    return f"{_(label)}  (U+{cp:04X})  [{_plane_tag(char)}]"
+
+
 def _make_symbol_font(point_size: int) -> wx.Font:
     """Restituisce un wx.Font adatto a visualizzare simboli musicali SMP.
     Usa la lista dinamica _SMP_FACES (popolata da _load_fonts_dir);
@@ -455,8 +477,14 @@ def _make_symbol_font(point_size: int) -> wx.Font:
 class MusicalSymbolDialog(wx.Dialog):
     """Dialog modale per scegliere e inserire un simbolo musicale Unicode."""
 
+    # Abbassamento verticale del simbolo SMP, in percentuale dell'altezza del
+    # glifo. Salvato in wx.Config e letto da SongDecorator (stessi path/chiave).
+    _VALIGN_CFG_PATH = '/Rendering'
+    _VALIGN_CFG_KEY  = 'smp_valign_pct'
+    _VALIGN_DEFAULT  = 22
+
     def __init__(self, parent, scale_enabled: bool = False, font_size: int = 24,
-                 insert_verse: bool = False):
+                 insert_verse: bool = False, on_valign_change=None):
         super().__init__(
             parent,
             title=_("Musical Symbols"),
@@ -464,6 +492,7 @@ class MusicalSymbolDialog(wx.Dialog):
         )
 
         self._selected = None
+        self._on_valign_change = on_valign_change   # callback: rinfresca l'anteprima
         self._preview_font = _make_symbol_font(_FONT_SIZE)
         self._init_scale_enabled = scale_enabled
         self._init_font_size = max(6, min(font_size, 144))
@@ -622,8 +651,7 @@ class MusicalSymbolDialog(wx.Dialog):
             char, label = symbols[idx]
             self._selected = char
             self._preview.SetLabel(char)
-            cp = ord(char)
-            self._desc.SetLabel(f"{_(label)}  (U+{cp:04X})")
+            self._desc.SetLabel(_symbol_info(label, char))
             self._btn_insert.Enable()
         else:
             self._selected = None
@@ -639,10 +667,8 @@ class MusicalSymbolDialog(wx.Dialog):
         if row >= 0 and col >= 0:
             idx = row * _COLS + col
             if 0 <= idx < len(symbols):
-                _, label = symbols[idx]
-                cp = ord(symbols[idx][0])
-                tip = f"{_(label)}  (U+{cp:04X})"
-                grid.SetToolTip(tip)
+                char, label = symbols[idx]
+                grid.SetToolTip(_symbol_info(label, char))
                 evt.Skip()
                 return
         grid.SetToolTip("")
