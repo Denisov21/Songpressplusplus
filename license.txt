@@ -528,7 +528,7 @@ $Id: README,v 1.7 2009/01/13 08:43:23 Stevan_White Exp $
 
 
 ----
- NotoMusic.ttf
+ NotoMusic.ttf / NotoMusic-Regular.ttf
 ----
                           Noto Music
 
