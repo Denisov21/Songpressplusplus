@@ -1430,3 +1430,12 @@ msgstr "Accordo in maiuscolo"
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "File \"%s\" already exists. Do you want to overwrite it?"
 msgstr "Il file \"%s\" esiste già. Vuoi sovrascriverlo?"
+
+# Verifica dipendenze — controllo font NotoMusic per l'Editor (Linux)
+#: SongpressFrame.py — _check_editor_smp_font() note
+msgid "SMP symbols editor — Linux only"
+msgstr "Editor simboli SMP — solo Linux"
+
+#: SongpressFrame.py — _check_editor_smp_font() status when font not found
+msgid "not found"
+msgstr "non trovato"

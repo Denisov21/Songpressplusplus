@@ -207,6 +207,7 @@ class Preferences(object):
         self._LoadToolbarVis()
         self._LoadToolbarIconSize()
         self._LoadChordUppercase()
+        self._LoadDepIconMode()
 
     def _LoadKlavierColour(self):
         self.config.SetPath('/KlavierColour')
@@ -444,6 +445,7 @@ class Preferences(object):
         self._SaveToolbarVis()
         self._SaveToolbarIconSize()
         self._SaveChordUppercase()
+        self._SaveDepIconMode()
         self.config.Flush()
 
     def _SaveKlavierColour(self):
@@ -566,6 +568,20 @@ class Preferences(object):
     def _SaveChordUppercase(self):
         self.config.SetPath('/Editor')
         self.config.Write('chordUppercase', '1' if getattr(self, 'chordUppercase', False) else '0')
+        self.config.SetPath('/')
+
+    def _LoadDepIconMode(self):
+        """Icona della colonna Stato nella finestra 'Verifica dipendenze':
+        'native' = glifi di testo (✅/❌), 'image' = immagini da img/
+        (checked_box.png / not_checked_box.png)."""
+        self.config.SetPath('/App')
+        v = self.config.Read('depIconMode')
+        self.depIconMode = v if v in ('native', 'image') else 'native'
+        self.config.SetPath('/')
+
+    def _SaveDepIconMode(self):
+        self.config.SetPath('/App')
+        self.config.Write('depIconMode', getattr(self, 'depIconMode', 'native'))
         self.config.SetPath('/')
 
     def _SavePrintOptions(self):

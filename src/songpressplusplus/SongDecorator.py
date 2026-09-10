@@ -999,13 +999,6 @@ class SongDecorator(object):
         device-GC → logico-DC passa dal rapporto misurato tra riferimento nel DC
         e riferimento nel GC (stesso font, stesso pt) → il DPI si semplifica e su
         Windows il risultato è identico a prima (conv = 1/scale).
-        
-        FIX Editor Linux — textsize nasconde il simbolo
-        ───────────────────────────────────────────────
-        Su Linux, quando {textsize:N} ha una dimensione esplicita, il calcolo di
-        larghezza è sbagliato e il simbolo viene nascosto dalle graffe. La causa
-        è che Cairo misura leggermente diverso da GDI+ quando il font è cambiato
-        esplicitamente. Aggiunjamo una correzione empirica per la larghezza su Linux.
         """
         scale = getattr(self, 'pen_scale', 1.0)
         base_font = self.dc.GetFont()
@@ -1026,22 +1019,6 @@ class SongDecorator(object):
         else:
             conv = 1.0 / scale if scale else 1.0   # fallback = vecchio comportamento
 
-        # Correzione per Linux: Cairo ha DPI leggermente diverso da GDI+
-        # Quando il fattore di conversione è < 1.0, significa che la larghezza SMP è
-        # troppo piccola su Linux. La causa è che Cairo e GDI+ non usano gli stessi DPI.
-        # Su Linux, applica una correzione empirica che dipende dal valore di conv.
-        import sys
-        if sys.platform.startswith('linux'):
-            # Se conv è significativamente < 1 (e.g., < 0.95), è probabile che
-            # Cairo stia misurando diversamente. Applica una correzione additiva
-            # basata sul valore di conv stesso.
-            if conv < 0.95:
-                # Aumenta conv di una piccola quantità per compensare il calcolo Cairo
-                conv = min(conv * 1.08, 1.0)
-            elif 0.95 <= conv < 1.0:
-                # Leggera correzione anche in questo caso
-                conv *= 1.02
-        
         return max(1, int(round(tw * conv))), max(1, int(round(th * conv)))
 
     def _DrawTextSMP(self, s: str, x: int, y: int):

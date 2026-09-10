@@ -20,6 +20,7 @@
 
 import sys
 import os
+import subprocess
 import tempfile
 
 import wx
@@ -67,11 +68,83 @@ def _get_margins_pt(frame_obj):
 #  Punto di ingresso                                                   #
 # ------------------------------------------------------------------ #
 
-def export_as_pdf(frame_obj, filepath, title):
-    if sys.platform == 'win32':
-        _export_reportlab(frame_obj, filepath)
+def _has_reportlab():
+    """True se la libreria reportlab e' importabile."""
+    try:
+        import reportlab  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+def open_pdf(filepath):
+    """Apre il PDF con l'applicazione predefinita del sistema (Win/Linux/macOS)."""
+    try:
+        if sys.platform == 'win32':
+            os.startfile(filepath)  # type: ignore[attr-defined]
+        elif sys.platform == 'darwin':
+            subprocess.Popen(['open', filepath])
+        else:
+            subprocess.Popen(['xdg-open', filepath])
+    except Exception as e:
+        wx.MessageBox(
+            "Impossibile aprire il PDF automaticamente:\n%s\n\n"
+            "Il file e' comunque stato creato in:\n%s" % (e, filepath),
+            "Apertura PDF",
+            wx.OK | wx.ICON_WARNING,
+        )
+
+
+def _notify_success_and_maybe_open(frame_obj, filepath, offer_open):
+    """Mostra l'esito dell'esportazione e, se l'utente lascia spuntata la
+    casella "Apri il PDF ora", apre il file con l'applicazione predefinita.
+
+    Usa wx.RichMessageDialog, che espone nativamente una checkbox sul dialog
+    ed e' disponibile su tutte le piattaforme. Se per qualche motivo non fosse
+    disponibile, ripiega su un normale messaggio informativo (senza apertura).
+    """
+    parent = getattr(frame_obj, 'frame', None)
+    msg = "PDF esportato con successo:\n%s" % filepath
+    title = "Esportazione PDF"
+
+    if offer_open and hasattr(wx, 'RichMessageDialog'):
+        dlg = wx.RichMessageDialog(parent, msg, title,
+                                   wx.OK | wx.ICON_INFORMATION)
+        dlg.ShowCheckBox("Apri il PDF ora", checked=True)
+        dlg.ShowModal()
+        want_open = dlg.IsCheckBoxChecked()
+        dlg.Destroy()
+        if want_open:
+            open_pdf(filepath)
     else:
-        _export_cups(frame_obj, filepath, title)
+        wx.MessageBox(msg, title, wx.OK | wx.ICON_INFORMATION, parent)
+
+
+def export_as_pdf(frame_obj, filepath, title, offer_open=True):
+    """Esporta il brano in PDF.
+
+    reportlab e' il metodo primario su TUTTE le piattaforme: e' Python puro,
+    non dipende dal backend di stampa nativo e produce lo stesso output
+    ovunque. Su Linux/macOS il vecchio percorso CUPS (wx.PRINT_MODE_FILE) non
+    e' affidabile su wxGTK: segnala "successo" ma spesso NON crea il file.
+    Per questo lo usiamo solo come ripiego, e solo se reportlab non c'e'.
+
+    Se offer_open e' True e l'esportazione riesce, il messaggio di esito
+    mostra una casella "Apri il PDF ora" (spuntata di default): lasciandola
+    spuntata il PDF viene aperto con l'applicazione predefinita del sistema.
+    """
+    if _has_reportlab():
+        ok = _export_reportlab(frame_obj, filepath)
+    elif sys.platform == 'win32':
+        # Nessuna alternativa: _export_reportlab mostrera' il messaggio
+        # "installare reportlab".
+        ok = _export_reportlab(frame_obj, filepath)
+    else:
+        ok = _export_cups(frame_obj, filepath, title)
+
+    if ok:
+        _notify_success_and_maybe_open(frame_obj, filepath, offer_open)
+    return ok
 
 
 # ------------------------------------------------------------------ #
@@ -167,7 +240,7 @@ def _export_reportlab(frame_obj, filepath):
             wx.OK | wx.ICON_ERROR,
             frame_obj.frame,
         )
-        return
+        return False
 
     SCALE = 3  # ~216 dpi per una buona qualità
 
@@ -219,13 +292,7 @@ def _export_reportlab(frame_obj, filepath):
             c.drawImage(tmp.name, x, y, width=final_w, height=final_h)
 
         c.save()
-
-        wx.MessageBox(
-            "PDF esportato con successo:\n%s" % filepath,
-            "Esportazione PDF",
-            wx.OK | wx.ICON_INFORMATION,
-            frame_obj.frame,
-        )
+        return True
     finally:
         for f in tmp_files:
             try:
@@ -255,20 +322,22 @@ def _export_cups(frame_obj, filepath, title):
         two_pages_per_sheet=frame_obj._two_pages_per_sheet,
     )
 
-    if not printer.Print(frame_obj.frame, printout, False):
-        if printer.GetLastError() == wx.PRINTER_ERROR:
-            wx.MessageBox(
-                "Errore durante l'esportazione PDF.\n"
-                "Verifica che CUPS sia installato e configurato.",
-                "Errore esportazione PDF",
-                wx.OK | wx.ICON_ERROR,
-                frame_obj.frame,
-            )
+    ok = printer.Print(frame_obj.frame, printout, False)
+    printout.Destroy()
+
+    # Su wxGTK printer.Print() puo' restituire True senza aver scritto nulla:
+    # non fidarsi del solo valore di ritorno, controllare il file reale.
+    created = os.path.isfile(filepath) and os.path.getsize(filepath) > 0
+
+    if ok and created:
+        return True
     else:
         wx.MessageBox(
-            "PDF esportato con successo:\n%s" % filepath,
-            "Esportazione PDF",
-            wx.OK | wx.ICON_INFORMATION,
+            "Impossibile creare il PDF con il sistema di stampa nativo.\n\n"
+            "Su Linux/macOS l'esportazione PDF richiede la libreria "
+            "'reportlab':\n    pip install reportlab",
+            "Errore esportazione PDF",
+            wx.OK | wx.ICON_ERROR,
             frame_obj.frame,
         )
-    printout.Destroy()
+        return False

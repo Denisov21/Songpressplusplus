@@ -334,6 +334,19 @@ class PreferencesDialog(wx.Dialog):
         bSizerTbIconSize.Add(self.tbIconSizeLarge, 0, wx.ALIGN_CENTER_VERTICAL)
         grpGeneral.Add(bSizerTbIconSize, 0, wx.EXPAND | wx.ALL, 5)
 
+        # ── Icona finestra "Verifica dipendenze" ─────────────────────
+        bSizerDepIcon = wx.BoxSizer(wx.HORIZONTAL)
+        self.labelDepIcon = wx.StaticText(self.general2, wx.ID_ANY, _(u"Dependency check icon"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelDepIcon.Wrap(-1)
+        bSizerDepIcon.Add(self.labelDepIcon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        self.depIconNative = wx.RadioButton(self.general2, wx.ID_ANY, _(u"Native icon"), wx.DefaultPosition, wx.DefaultSize, wx.RB_GROUP)
+        self.depIconImage = wx.RadioButton(self.general2, wx.ID_ANY, _(u"Image icon"))
+        self.depIconNative.SetToolTip(_(u"Use text glyphs (✅ / ❌) rendered by the system font in the 'Check dependencies' window."))
+        self.depIconImage.SetToolTip(_(u"Use the image icons loaded from img/checked_box.png and img/not_checked_box.png in the 'Check dependencies' window."))
+        bSizerDepIcon.Add(self.depIconNative, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        bSizerDepIcon.Add(self.depIconImage, 0, wx.ALIGN_CENTER_VERTICAL)
+        grpGeneral.Add(bSizerDepIcon, 0, wx.EXPAND | wx.ALL, 5)
+
         bSizer11b.Add(grpGeneral, 0, wx.EXPAND | wx.ALL, 8)
 
         self.general2.SetSizer(bSizer11b)
@@ -638,7 +651,7 @@ class PreferencesDialog(wx.Dialog):
         self.symbolValignSpin.SetToolTip(
             _(u"Lowers musical symbols to line them up with the text row.\n"
               u"0 = raw position; about 5 aligns them (default); higher values lower them more.\n"
-              u"Saved and applied to preview, print preview and printing.")
+              u"Saved and applied to Songpress++ Preview, print preview and printing.")
         )
         szValign.Add(self.symbolValignLbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
         szValign.Add(self.symbolValignSpin, 0, wx.ALIGN_CENTER_VERTICAL)

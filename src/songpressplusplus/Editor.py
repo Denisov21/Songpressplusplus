@@ -70,6 +70,18 @@ class Editor(StyledTextCtrl):
         self.STC_STYLE_CHORUS = 15
         self.STC_STYLE_COMMENT = 16
         self.STC_STYLE_TAB_GRID = 17
+        # Stile dedicato ai glifi musicali SMP (U+1D100+). Su Linux i font
+        # monospazio (FreeMono, DejaVu Sans Mono, "Lucida Console") NON coprono
+        # questi glifi e — senza il font-fallback di DirectWrite, che esiste solo
+        # su Windows — Scintilla li rende a larghezza ~0, così restano nascosti
+        # dai caratteri adiacenti (es. le graffe). Diamo a questi singoli
+        # caratteri uno stile a parte con un font che li copre (FreeSerif),
+        # lasciando tutto il resto del testo col font monospazio. NB: {textsize:N}
+        # qui resta testo grezzo e NON ridimensiona nulla nell'editor.
+        self.STC_STYLE_SMP = 18
+        import sys
+        self._is_linux = sys.platform.startswith('linux')
+        self._smp_face = self._pick_smp_face() if self._is_linux else None
         # UTF-8: necessario per visualizzare correttamente i caratteri multibyte (simboli musicali SMP)
         self.SetCodePage(STC_CP_UTF8)
         # DirectWrite abilita il font-fallback automatico sui glifi SMP (U+1D100 ecc.) su Windows.
@@ -79,6 +91,11 @@ class Editor(StyledTextCtrl):
         except AttributeError:
             pass  # costante non disponibile in versioni vecchie di wxPython
         self.SetFont("Lucida Console", 12)
+        # Su Linux: padding orizzontale attorno ai glifi musicali SMP (vedi
+        # _setup_smp_representations). Va fatto dopo SetFont, quando lo stile SMP
+        # ha già il suo font.
+        if self._is_linux:
+            self._setup_smp_representations()
         self.SetLexer(STC_LEX_CONTAINER)
         self.StyleSetForeground(self.STC_STYLE_NORMAL, wx.Colour(0, 0, 0))
         self.StyleSetForeground(self.STC_STYLE_CHORUS, wx.Colour(0, 0, 0))
@@ -87,6 +104,9 @@ class Editor(StyledTextCtrl):
         self.StyleSetForeground(self.STC_STYLE_ATTR, wx.Colour(0, 128, 0))
         self.StyleSetForeground(self.STC_STYLE_COMMENT, wx.Colour(128, 128, 128))
         self.StyleSetForeground(self.STC_STYLE_TAB_GRID, wx.Colour(139, 90, 0))
+        # Il glifo SMP segue il colore del testo normale (mantenuto in sync da
+        # SetSyntaxColour quando cambia il tema).
+        self.StyleSetForeground(self.STC_STYLE_SMP, wx.Colour(0, 0, 0))
         self.StyleSetItalic(self.STC_STYLE_TAB_GRID, True)
         self.StyleSetBold(self.STC_STYLE_CHORUS, True)
         #Dummy "token": we artificially replace every normalToken into a chorusToken when we are
@@ -114,6 +134,63 @@ class Editor(StyledTextCtrl):
         # Colore evidenziazione trova — attributo di istanza (default giallo)
         self.find_highlight_colour = wx.Colour(255, 220, 0)
 
+    # Font che coprono il blocco Unicode "Musical Symbols" (U+1D100+), in
+    # ordine di preferenza per l'EDITOR. Sono proporzionali: vengono usati SOLO
+    # per lo stile STC_STYLE_SMP (i singoli glifi musicali), mai per il testo
+    # normale. Anteponiamo font con avanzamenti "larghi" (Noto Music ha ~25% di
+    # respiro incorporato, come il fallback di DirectWrite su Windows); FreeSerif
+    # copre gli stessi glifi ma li disegna molto stretti, quindi va in coda —
+    # in quel caso ci pensa il padding via representation (vedi
+    # _setup_smp_representations) a evitare che la graffa copra il simbolo.
+    _SMP_FACES = ('Noto Music', 'Bravura Text', 'FreeSerif', 'Symbola', 'Noto Sans Symbols2')
+
+    def _pick_smp_face(self):
+        """Ritorna il primo face installato che copre i glifi musicali SMP,
+        oppure None se nessuno è disponibile (in tal caso il glifo non sarà
+        renderizzabile, ma senza crash). Prima la lista curata per l'editor
+        (_SMP_FACES), poi gli eventuali face usati dall'app per la stampa."""
+        try:
+            from .MusicalSymbolDialog import get_smp_faces
+            candidates = list(self._SMP_FACES) + list(get_smp_faces())
+        except Exception:
+            candidates = list(self._SMP_FACES)
+        try:
+            available = set(wx.FontEnumerator.GetFacenames())
+        except Exception:
+            return candidates[0] if candidates else None
+        for face in candidates:
+            if face in available:
+                return face
+        return None
+
+    def _setup_smp_representations(self):
+        """Su Linux aggiunge un filo di spazio ai lati dei glifi musicali SMP.
+        I glifi di FreeSerif hanno un avanzamento strettissimo (315/1000 em per
+        la nota da 1/4, contro ~880 di una lettera): la graffa adiacente finirebbe
+        sopra il simbolo. Usiamo le 'representation' di Scintilla — che vengono
+        misurate e disegnate come testo normale nello stile del carattere (quindi
+        col font SMP) — inserendo uno spazio sottile prima e dopo il glifo, con
+        aspetto PLAIN (nessun riquadro).
+
+        Requisito: SCI_SETREPRESENTATIONAPPEARANCE (Scintilla 5.1+). Senza di esso
+        le representation custom verrebbero disegnate dentro un riquadro, peggio
+        del problema originale: in quel caso non tocchiamo nulla (il glifo resta
+        stretto ma pulito, e conviene comunque installare Noto Music)."""
+        plain = globals().get('STC_REPRESENTATION_PLAIN', None)
+        if plain is None:
+            return
+        if not (hasattr(self, 'SetRepresentation') and
+                hasattr(self, 'SetRepresentationAppearance')):
+            return
+        pad = '\u2009'  # THIN SPACE
+        for cp in range(0x1D100, 0x1D200):  # blocco Musical Symbols
+            ch = chr(cp)
+            try:
+                self.SetRepresentation(ch, pad + ch + pad)
+                self.SetRepresentationAppearance(ch, plain)
+            except Exception:
+                pass
+
     def SetFont(self, face, size):
         font = wx.Font(
             size,
@@ -127,6 +204,19 @@ class Editor(StyledTextCtrl):
         #the font bold
         self.StyleSetFont(self.STC_STYLE_CHORUS, font)
         self.StyleSetFont(self.STC_STYLE_TAB_GRID, font)
+        # Su Linux: font a copertura SMP (proporzionale) SOLO per lo stile dei
+        # glifi musicali, alla stessa dimensione del testo. Il resto dell'editor
+        # resta col font monospazio richiesto. Su Windows/macOS non serve
+        # (DirectWrite fa il fallback) e non tocchiamo nulla.
+        if self._is_linux and self._smp_face:
+            smp_font = wx.Font(
+                size,
+                wx.FONTFAMILY_DEFAULT,
+                wx.FONTSTYLE_NORMAL,
+                wx.FONTWEIGHT_NORMAL,
+                faceName = self._smp_face
+            )
+            self.StyleSetFont(self.STC_STYLE_SMP, smp_font)
         # Riapplica il colore di selezione dopo ogni cambio di stile
         sel_hex = getattr(getattr(self, 'spframe', None), 'pref', None)
         if sel_hex is not None:
@@ -152,6 +242,7 @@ class Editor(StyledTextCtrl):
         for style_id in (
             0,
             self.STC_STYLE_NORMAL,
+            self.STC_STYLE_SMP,
             self.STC_STYLE_CHORD,
             self.STC_STYLE_COMMAND,
             self.STC_STYLE_ATTR,
@@ -200,6 +291,9 @@ class Editor(StyledTextCtrl):
         except Exception:
             c = wx.Colour(0, 0, 0)
         self.StyleSetForeground(style_id, c)
+        # Il glifo SMP non ha un colore proprio nel tema: segue il testo normale.
+        if style_id == self.STC_STYLE_NORMAL:
+            self.StyleSetForeground(self.STC_STYLE_SMP, c)
         self.Colourise(0, -1)
         self.Refresh()
 
@@ -676,6 +770,28 @@ class Editor(StyledTextCtrl):
             self.PopupMenu(menu)
         menu.Destroy()
 
+    def _set_styling_smp(self, content, base_style):
+        """Colora *content* con *base_style*, ma assegna STC_STYLE_SMP ai
+        caratteri non-BMP (i glifi musicali SMP, codepoint >= 0x10000), così su
+        Linux vengono resi col font FreeSerif e non restano nascosti dai
+        caratteri adiacenti. Le lunghezze passate a SetStyling sono in BYTE
+        (l'editor è in codepage UTF-8): un carattere SMP occupa 4 byte."""
+        smp_style = self.STC_STYLE_SMP
+        run_len = 0
+        run_style = base_style
+        for ch in content:
+            b = len(ch.encode('utf-8'))
+            st = smp_style if ord(ch) >= 0x10000 else base_style
+            if st == run_style:
+                run_len += b
+            else:
+                if run_len:
+                    self.SetStyling(run_len, run_style)
+                run_style = st
+                run_len = b
+        if run_len:
+            self.SetStyling(run_len, run_style)
+
     def OnStyleNeeded(self, evt):
         end = evt.GetPosition()
         pos = self.GetEndStyled()
@@ -716,7 +832,11 @@ class Editor(StyledTextCtrl):
                     t = self.tabGridToken
                 elif bold and t == SongTokenizer.normalToken:
                     t = self.chorusToken
-                self.SetStyling(n, self.tokenStyle[t])
+                base_style = self.tokenStyle[t]
+                if self._is_linux:
+                    self._set_styling_smp(tok.content, base_style)
+                else:
+                    self.SetStyling(n, base_style)
                 if t == SongTokenizer.commandToken:
                     # Togli l'eventuale etichetta dopo ':' (es. {start_of_grid:CODA})
                     # cosi' il comando resta confrontabile con gli insiemi sotto.

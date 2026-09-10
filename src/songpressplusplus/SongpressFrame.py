@@ -7139,18 +7139,39 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         )
         outer = wx.BoxSizer(wx.VERTICAL)
 
+        # --- Modalità icona colonna Stato: 'native' (glifi ✅/❌) o 'image' ---
+        # (immagini caricate da img/). Scelta nelle Preferenze → General.
+        OK_CH, KO_CH = u"\u2705", u"\u274c"     # ✅ / ❌
+        use_images = getattr(self.pref, 'depIconMode', 'native') == 'image'
+        bmp_ok = bmp_ko = None
+        if use_images:
+            bmp_ok, bmp_ko = self._dep_icon_bitmaps()
+            # Se una delle immagini manca o non è valida, ripiega sui glifi.
+            if bmp_ok is None or bmp_ko is None:
+                use_images = False
+
+        def _status_widget(status):
+            """Ritorna il widget per la colonna Stato: StaticBitmap in modalità
+            immagine (solo per ✅/❌), altrimenti StaticText col glifo."""
+            if use_images and status in (OK_CH, KO_CH):
+                return wx.StaticBitmap(dlg, bitmap=(bmp_ok if status == OK_CH else bmp_ko))
+            return wx.StaticText(dlg, label=status)
+
         # Riepilogo in cima
         summary_text = (
             _("All required dependencies are installed correctly.")
             if all_ok
             else _("One or more required dependencies are missing.")
         )
-        summary_icon = u"\u2705 " if all_ok else u"\u274c "
-        summary_lbl = wx.StaticText(dlg, label=summary_icon + summary_text)
+        summary_row = wx.BoxSizer(wx.HORIZONTAL)
+        summary_row.Add(_status_widget(OK_CH if all_ok else KO_CH), 0,
+                        wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        summary_lbl = wx.StaticText(dlg, label=summary_text)
         font = summary_lbl.GetFont()
         font.SetWeight(wx.FONTWEIGHT_BOLD)
         summary_lbl.SetFont(font)
-        outer.Add(summary_lbl, 0, wx.ALL, 12)
+        summary_row.Add(summary_lbl, 0, wx.ALIGN_CENTER_VERTICAL)
+        outer.Add(summary_row, 0, wx.ALL, 12)
 
         # Griglia
         grid = wx.FlexGridSizer(cols=4, vgap=4, hgap=12)
@@ -7171,7 +7192,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         for display, status, ver_str, note in rows:
             grid.Add(wx.StaticText(dlg, label=display),  0, wx.ALIGN_CENTER_VERTICAL)
-            grid.Add(wx.StaticText(dlg, label=status),   0, wx.ALIGN_CENTER_VERTICAL)
+            grid.Add(_status_widget(status),             0, wx.ALIGN_CENTER_VERTICAL)
             grid.Add(wx.StaticText(dlg, label=ver_str),  0, wx.ALIGN_CENTER_VERTICAL)
             grid.Add(wx.StaticText(dlg, label=note),     0, wx.ALIGN_CENTER_VERTICAL)
 
@@ -7183,9 +7204,20 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         for _c in range(4):                       # riga vuota di separazione
             grid.Add(wx.StaticText(dlg, label=u""), 0)
         grid.Add(wx.StaticText(dlg, label=u"FreeSerif \u2192 SMP"), 0, wx.ALIGN_CENTER_VERTICAL)
-        grid.Add(wx.StaticText(dlg, label=f_status), 0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(_status_widget(f_status), 0, wx.ALIGN_CENTER_VERTICAL)
         grid.Add(wx.StaticText(dlg, label=f_ver),    0, wx.ALIGN_CENTER_VERTICAL)
         grid.Add(wx.StaticText(dlg, label=f_note),   0, wx.ALIGN_CENTER_VERTICAL)
+
+        # --- NotoMusic → simboli SMP nell'Editor (rilevante solo su Linux) ---
+        # Su Linux l'editor (GTK) mostra i simboli musicali SMP solo se è
+        # disponibile un font con copertura del blocco U+1D100-U+1D1FF: qui si
+        # usa NotoMusic. Su Windows il testo dell'editor rende già gli SMP con i
+        # font di sistema, perciò la riga è informativa e non richiesta.
+        n_status, n_ver, n_note = self._check_editor_smp_font()
+        grid.Add(wx.StaticText(dlg, label=u"NotoMusic \u2192 SMP"), 0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(_status_widget(n_status), 0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(wx.StaticText(dlg, label=n_ver),    0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(wx.StaticText(dlg, label=n_note),   0, wx.ALIGN_CENTER_VERTICAL)
 
         outer.Add(grid, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
 
@@ -7209,6 +7241,27 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         dlg.CentreOnParent()
         dlg.ShowModal()
         dlg.Destroy()
+
+    def _dep_icon_bitmaps(self):
+        """Carica le icone immagine per la colonna Stato della finestra
+        'Verifica dipendenze': (bmp_ok, bmp_ko) da img/checked_box.png e
+        img/not_checked_box.png. Ritorna None al posto del bitmap mancante o
+        non valido, così il chiamante può ripiegare sui glifi di testo.
+        """
+        import os
+        out = []
+        for fn in ("checked_box.png", "not_checked_box.png"):
+            bmp = None
+            try:
+                p = glb.AddPath("img/" + fn)
+                if os.path.isfile(p):
+                    img = wx.Image(p, wx.BITMAP_TYPE_PNG)
+                    if img.IsOk():
+                        bmp = wx.Bitmap(img)
+            except Exception:
+                bmp = None
+            out.append(bmp)
+        return out[0], out[1]
 
     def _check_smp_font(self):
         """Verifica end-to-end che la FreeSerif bundled sappia produrre un glifo
@@ -7244,8 +7297,85 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         except Exception:
             return (KO, os.path.basename(path), _("rasterization failed"))
         if drawn:
-            return (OK, os.path.basename(path), _("print SMP symbols"))
+            return (OK, os.path.basename(path), _("Print SMP symbols"))
         return (KO, os.path.basename(path), _("glyph empty (.notdef)"))
+
+    def _check_editor_smp_font(self):
+        """Verifica la disponibilità di NotoMusic per la resa dei simboli SMP
+        nell'editor. Rilevante solo su Linux: lì l'editor (GTK) mostra i glifi
+        musicali del blocco U+1D100-U+1D1FF solo se è disponibile un font che li
+        copre (NotoMusic). Su Windows i font di sistema coprono già gli SMP nel
+        controllo testo, quindi la riga è informativa e non richiesta.
+
+        Cerca prima una copia bundled (come FreeSerif), poi il font installato
+        nel sistema, ed esegue lo stesso autotest di rasterizzazione SMP.
+
+        Ritorna (status, versione/percorso, nota) da mostrare nella griglia.
+        Nota fissa: "Editor simboli SMP — solo Linux".
+        """
+        import os
+        import sys
+        OK, KO, NA = u"\u2705", u"\u274c", u"\u2013"   # ✅ / ❌ / –
+        note = _("SMP symbols editor — Linux only")
+        is_linux = sys.platform.startswith("linux")
+
+        # 1) Localizza NotoMusic.ttf: prima i candidati bundled (come FreeSerif),
+        #    poi le cartelle font di sistema (utile se installato dall'utente).
+        # Il file può chiamarsi NotoMusic.ttf oppure NotoMusic-Regular.ttf
+        # (stesso font): li accettiamo entrambi.
+        _noto_names = ("NotoMusic.ttf", "NotoMusic-Regular.ttf")
+        path = None
+        for base in ("templates/fonts", "template/fonts", "fonts"):
+            for name in _noto_names:
+                cand = glb.AddPath(base + "/" + name)
+                if os.path.isfile(cand):
+                    path = cand
+                    break
+            if path:
+                break
+        if path is None:
+            search_dirs = [
+                "/usr/share/fonts", "/usr/local/share/fonts",
+                os.path.expanduser("~/.fonts"),
+                os.path.expanduser("~/.local/share/fonts"),
+                os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts"),
+                os.path.expanduser(r"~\AppData\Local\Microsoft\Windows\Fonts"),
+            ]
+            for d in search_dirs:
+                if not d or not os.path.isdir(d):
+                    continue
+                _noto_lower = tuple(n.lower() for n in _noto_names)
+                try:
+                    for root, _dirs, files in os.walk(d):
+                        for fn in files:
+                            if fn.lower() in _noto_lower:
+                                path = os.path.join(root, fn)
+                                break
+                        if path:
+                            break
+                except Exception:
+                    pass
+                if path:
+                    break
+
+        # 2) Trovato? Prova a rasterizzare un glifo SMP (stesso test di FreeSerif).
+        if path is not None:
+            try:
+                from PIL import ImageFont, Image, ImageDraw
+                font = ImageFont.truetype(path, 48)
+                img = Image.new("RGBA", (72, 72), (0, 0, 0, 0))
+                ImageDraw.Draw(img).text((0, 0), u"\U0001D13D",
+                                         font=font, fill=(0, 0, 0, 255))
+                if img.getbbox() is not None:
+                    return (OK, os.path.basename(path), note)
+                return (KO, os.path.basename(path), note)
+            except Exception:
+                # Pillow assente o rasterizzazione fallita: il file c'è comunque.
+                return (OK if not is_linux else KO,
+                        os.path.basename(path), note)
+
+        # 3) Non trovato: obbligatorio solo su Linux; altrove semplicemente N/D.
+        return (KO if is_linux else NA, _("not found"), note)
 
     def OnGuide(self, evt):
         wx.LaunchDefaultBrowser(_("http://www.skeed.it/songpress-manual"))

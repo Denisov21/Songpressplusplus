@@ -337,3 +337,24 @@ msgstr ""
 "\n"
 "Su Debian/Ubuntu installa il pacchetto 'xdg-utils':\n"
 "    sudo apt install xdg-utils"
+
+#: PreferencesDialog.py (General group - Dependency check icon)
+msgid "Dependency check icon"
+msgstr "Icona verifica dipendenze"
+
+#: PreferencesDialog.py (Dependency check icon - native)
+msgid "Native icon"
+msgstr "Icona nativa"
+
+#: PreferencesDialog.py (Dependency check icon - native tooltip)
+msgid "Use text glyphs (✅ / ❌) rendered by the system font in the 'Check dependencies' window."
+msgstr "Usa glifi di testo (✅ / ❌) resi dal font di sistema nella finestra 'Verifica dipendenze'."
+
+#: PreferencesDialog.py (Dependency check icon - image)
+msgid "Image icon"
+msgstr "Icona da immagine"
+
+#: PreferencesDialog.py (Dependency check icon - image tooltip)
+msgid "Use the image icons loaded from img/checked_box.png and img/not_checked_box.png in the 'Check dependencies' window."
+msgstr "Usa le icone immagine caricate da img/checked_box.png e img/not_checked_box.png nella finestra 'Verifica dipendenze'."
+

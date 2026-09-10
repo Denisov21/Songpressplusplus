@@ -225,6 +225,12 @@ class MyPreferencesDialog(PreferencesDialog):
         else:
             self.tbIconSizeSmall.SetValue(True)
 
+        # Icona finestra "Verifica dipendenze"
+        if getattr(self.pref, 'depIconMode', 'native') == 'image':
+            self.depIconImage.SetValue(True)
+        else:
+            self.depIconNative.SetValue(True)
+
         # Debug messages
         self.showDebugMsgCB.SetValue(getattr(self.pref, 'showDebugMsg', False))
 
@@ -1842,6 +1848,11 @@ class MyPreferencesDialog(PreferencesDialog):
             self.pref.toolbarIconSize = 'medium'
         else:
             self.pref.toolbarIconSize = 'small'
+        # Icona finestra "Verifica dipendenze"
+        if self.depIconImage.GetValue():
+            self.pref.depIconMode = 'image'
+        else:
+            self.pref.depIconMode = 'native'
         self.pref.showDebugMsg = self.showDebugMsgCB.GetValue()
         # Intellisense direttive
         self.pref.intellisense = self.intellisenseCB.GetValue()
