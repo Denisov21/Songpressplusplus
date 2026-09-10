@@ -34,19 +34,21 @@ msgstr "Chiudi"
 msgid "Custom size (pt):"
 msgstr "Dimensione personalizzata (pt):"
 
-#. Spin control label: how much to lower musical symbols to align them with text
-#: MusicalSymbolDialog.py
+#. Spin control label (Options): how much to lower musical symbols; 0 = raw position
+#: PreferencesDialog.py
 msgid "Symbol vertical drop (%):"
 msgstr "Abbassamento simbolo (%):"
 
-#. Tooltip for the vertical-drop control
-#: MusicalSymbolDialog.py
+#. Tooltip for the vertical-drop control (Options)
+#: PreferencesDialog.py
 msgid ""
-"Lowers musical symbols so they line up with the text row.\n"
-"Saved and applied to preview, print preview and printing."
+"Lowers musical symbols to line them up with the text row.\n"
+"0 = raw position; about 5 aligns them (default); higher values lower them more.\n"
+"Saved and applied to Songpress++ Preview, print preview and printing."
 msgstr ""
 "Abbassa i simboli musicali per allinearli alla riga di testo.\n"
-"Salvato e applicato ad anteprima, anteprima di stampa e stampa."
+"0 = posizione grezza; circa 5 li allinea (predefinito); valori più alti li abbassano.\n"
+"Salvato e applicato ad Anteprima Songpress++, anteprima di stampa e stampa."
 
 #. Info note shown below the size controls
 #: MusicalSymbolDialog.py

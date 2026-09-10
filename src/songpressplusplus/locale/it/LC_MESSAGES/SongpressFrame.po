@@ -1369,8 +1369,8 @@ msgstr "FreeSerif.ttf non trovato"
 msgid "rasterization failed"
 msgstr "rasterizzazione fallita"
 
-msgid "print SMP symbols"
-msgstr "stampa simboli SMP"
+msgid "Print SMP symbols"
+msgstr "Stampa simboli SMP"
 
 msgid "glyph empty (.notdef)"
 msgstr "glifo vuoto (.notdef)"
