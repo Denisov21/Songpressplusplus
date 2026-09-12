@@ -193,6 +193,7 @@ class Preferences(object):
         self._LoadDurationBeats()
         self._LoadMusicalSymbol()
         self._LoadSmpValign()
+        self._LoadSmpOversample()
         self._LoadSyntaxColours()
         self._LoadDebugOptions()
         self._LoadIntellisense()
@@ -431,6 +432,7 @@ class Preferences(object):
         self._SaveDurationBeats()
         self._SaveMusicalSymbol()
         self._SaveSmpValign()
+        self._SaveSmpOversample()
         self._SaveSyntaxColours()
         self._SaveDebugOptions()
         self._SaveIntellisense()
@@ -711,6 +713,35 @@ class Preferences(object):
         self.config.WriteInt(
             self._SMP_VALIGN_CFG_KEY,
             max(self._SMP_VALIGN_MIN, min(int(getattr(self, 'symbolValignPct', self._SMP_VALIGN_DEFAULT)), self._SMP_VALIGN_MAX)),
+        )
+        self.config.SetPath('/')
+
+    # Sovracampionamento del glifo SMP in anteprima (SOLO Linux/wxGTK). Su Linux
+    # i simboli SMP a schermo passano da una bitmap e possono apparire sgranati;
+    # questo valore è il fattore MINIMO di sovracampionamento della sorgente
+    # (1 = nessuno, 3 = consigliato/default, 4 = massimo). Su Windows/macOS il
+    # glifo è vettoriale e l'impostazione non ha effetto. Stessi percorso/chiave
+    # letti da SongDecorator (_SMP_OVERSAMPLE_CFG_*).
+    _SMP_OVERSAMPLE_CFG_PATH = '/Rendering'
+    _SMP_OVERSAMPLE_CFG_KEY  = 'smp_oversample'
+    _SMP_OVERSAMPLE_DEFAULT  = 3
+    _SMP_OVERSAMPLE_MIN      = 1
+    _SMP_OVERSAMPLE_MAX      = 4
+
+    def _LoadSmpOversample(self):
+        self.config.SetPath(self._SMP_OVERSAMPLE_CFG_PATH)
+        try:
+            v = self.config.ReadInt(self._SMP_OVERSAMPLE_CFG_KEY, self._SMP_OVERSAMPLE_DEFAULT)
+        except Exception:
+            v = self._SMP_OVERSAMPLE_DEFAULT
+        self.symbolOversample = max(self._SMP_OVERSAMPLE_MIN, min(int(v), self._SMP_OVERSAMPLE_MAX))
+        self.config.SetPath('/')
+
+    def _SaveSmpOversample(self):
+        self.config.SetPath(self._SMP_OVERSAMPLE_CFG_PATH)
+        self.config.WriteInt(
+            self._SMP_OVERSAMPLE_CFG_KEY,
+            max(self._SMP_OVERSAMPLE_MIN, min(int(getattr(self, 'symbolOversample', self._SMP_OVERSAMPLE_DEFAULT)), self._SMP_OVERSAMPLE_MAX)),
         )
         self.config.SetPath('/')
 

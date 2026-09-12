@@ -491,6 +491,38 @@ msgstr ""
 "{start_verse}...{end_verse} in modo da non essere conteggiato\n"
 "nella numerazione delle strofe."
 
+#: PreferencesDialog.py format tab — musical symbol vertical drop label
+msgid "Symbol vertical drop (0-25%):"
+msgstr "Abbassamento simbolo (0–25%):"
+
+#: PreferencesDialog.py format tab — musical symbol vertical drop tooltip
+msgid ""
+"Lowers musical symbols to line them up with the text row.\n"
+"0 = raw position; about 5 aligns them (default); higher values lower them more.\n"
+"Saved and applied to Songpress++ Preview, print preview and printing."
+msgstr ""
+"Abbassa i simboli musicali per allinearli alla riga di testo.\n"
+"0 = posizione grezza; circa 5 li allinea (predefinito); valori più alti li abbassano di più.\n"
+"Salvato e applicato ad Anteprima Songpress++, anteprima di stampa e stampa."
+
+#: PreferencesDialog.py format tab — SMP symbol quality (Linux only) label
+msgid "SMP symbol quality — Linux only (1-4):"
+msgstr "Qualità simbolo SMP — solo Linux (1-4):"
+
+#: PreferencesDialog.py format tab — SMP symbol quality (Linux only) tooltip
+msgid ""
+"Linux only: sharpens SMP musical symbols in the 'Songpress++ Preview'.\n"
+"On Linux these symbols are drawn from a bitmap and can look\n"
+"low-resolution; higher values render them at higher resolution.\n"
+"1 = off, 3 = recommended (default), 4 = maximum (more memory).\n"
+"No effect on Windows/macOS, where the symbol is vector."
+msgstr ""
+"Solo Linux: rende più nitidi i simboli musicali SMP nell''Anteprima Songpress++'.\n"
+"Su Linux questi simboli sono disegnati da una bitmap e possono apparire\n"
+"a bassa risoluzione; valori più alti li rendono a risoluzione maggiore.\n"
+"1 = disattivato, 3 = consigliato (predefinito), 4 = massimo (più memoria).\n"
+"Nessun effetto su Windows/macOS, dove il simbolo è vettoriale."
+
 #: PreferencesDialog.py general tab — save window geometry checkbox
 msgid "Save window size and position on exit"
 msgstr "Salva dimensione e posizione della finestra all'uscita"
@@ -906,5 +938,23 @@ msgid "Standard toolbar icon size (16×16 pixels)."
 msgstr "Dimensione standard delle icone della barra degli strumenti (16×16 pixel)."
 
 
+#: PreferencesDialog.py (General group - Dependency check icon)
+msgid "'Dependency check...' icon"
+msgstr "Icona 'Verifica dipendenze...'"
 
+#: PreferencesDialog.py (Dependency check icon - native)
+msgid "Native icon"
+msgstr "Icona nativa"
+
+#: PreferencesDialog.py (Dependency check icon - native tooltip)
+msgid "Use text glyphs (✅ / ❌) rendered by the system font in the 'Check dependencies' window."
+msgstr "Usa glifi di testo (✅ / ❌) resi dal font di sistema nella finestra 'Verifica dipendenze'."
+
+#: PreferencesDialog.py (Dependency check icon - image)
+msgid "Image icon"
+msgstr "Icona da immagine"
+
+#: PreferencesDialog.py (Dependency check icon - image tooltip)
+msgid "Use the image icons loaded from img/checked_box.png and img/not_checked_box.png in the 'Check dependencies' window."
+msgstr "Usa le icone immagine caricate da img/checked_box.png e img/not_checked_box.png nella finestra 'Verifica dipendenze'."
 

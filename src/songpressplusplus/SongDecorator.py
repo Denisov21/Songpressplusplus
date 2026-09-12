@@ -1171,6 +1171,56 @@ class SongDecorator(object):
         except Exception:
             return None
 
+    def _screen_content_scale(self):
+        """Fattore di scala HiDPI del DC di destinazione (1.0 se non HiDPI o non
+        interrogabile). Su wxGTK/Wayland un monitor a 150/200% restituisce >1:
+        serve a rasterizzare la sorgente SMP abbastanza grande da non risultare
+        sgranata dopo l'upscale del backend. Interrogato in modo difensivo perché
+        GetContentScaleFactor non è esposto da tutte le versioni/tipi di DC; in
+        caso di dubbio torna 1.0 e il pavimento ss=2 dell'anteprima copre comunque
+        lo scarto di risoluzione."""
+        dc = getattr(self, 'dc', None)
+        if dc is None:
+            return 1.0
+        getf = getattr(dc, 'GetContentScaleFactor', None)
+        if callable(getf):
+            try:
+                v = float(getf())
+                if v and v > 0:
+                    return v
+            except Exception:
+                pass
+        return 1.0
+
+    # Sovracampionamento del glifo SMP in anteprima (SOLO wxGTK/Linux). Valore
+    # utente 1..4 salvato in wx.Config da MyPreferencesDialog; è il fattore
+    # MINIMO di sovracampionamento della sorgente (1 = nessuno → possibile
+    # sgranatura, 3 = consigliato/default, 4 = massimo). Stesso path/chiave usati
+    # da Preferences._Save/_LoadSmpOversample.
+    _SMP_OVERSAMPLE_CFG_PATH = '/Rendering'
+    _SMP_OVERSAMPLE_CFG_KEY  = 'smp_oversample'
+    _SMP_OVERSAMPLE_DEFAULT  = 3
+    _SMP_OVERSAMPLE_MIN      = 1
+    _SMP_OVERSAMPLE_MAX      = 4
+
+    def _read_smp_oversample(self):
+        """Pavimento di sovracampionamento SMP scelto dall'utente (1..4).
+        Riletto a ogni render (come l'abbassamento) così un cambio in Preferenze
+        si riflette subito in anteprima. Ripiega sul default se Config manca."""
+        val = self._SMP_OVERSAMPLE_DEFAULT
+        try:
+            cfg = wx.Config.Get()
+            old = cfg.GetPath()
+            try:
+                cfg.SetPath(self._SMP_OVERSAMPLE_CFG_PATH)
+                val = cfg.ReadInt(self._SMP_OVERSAMPLE_CFG_KEY,
+                                  self._SMP_OVERSAMPLE_DEFAULT)
+            finally:
+                cfg.SetPath(old)
+        except Exception:
+            pass
+        return max(self._SMP_OVERSAMPLE_MIN, min(int(val), self._SMP_OVERSAMPLE_MAX))
+
     def _DrawTextSMP_bitmap(self, s: str, x: int, y: int, device_res=None):
         """Rasterizza il glifo SMP su una bitmap e la blitta sul DC corrente.
         Usato per la stampa, l'anteprima di stampa e, su wxGTK, anche per
@@ -1202,7 +1252,34 @@ class SongDecorator(object):
 
         # In ENTRAMBI i casi la sorgente è renderizzata a risoluzione DEVICE
         # (pt*scale): così resta nitida sia su carta sia in anteprima.
-        pt = max(1, int(round(base_font.GetPointSize() * scale)))
+        #
+        # FIX Linux — glifo SMP sgranato in anteprima
+        # ───────────────────────────────────────────
+        # Su wxMSW/macOS l'anteprima disegna il glifo SMP come VETTORE
+        # (GraphicsContext in-place, vedi _DrawTextSMP): sempre nitido. Su wxGTK
+        # invece passiamo per questa bitmap (device_res=True) e la StretchBlit la
+        # deposita in un rettangolo di destinazione la cui impronta FISICA è più
+        # grande dei pixel della sorgente, per due motivi che si sommano:
+        #   1) Pillow/FreeType rasterizza a `pt` PIXEL (~72 dpi), mentre il DC
+        #      dimensiona il testo in unità logiche ~96 dpi → la destinazione è
+        #      ~1.3× la sorgente anche a zoom 100% su monitor normale;
+        #   2) su HiDPI (KDE/Wayland a 150/200%) il backing store ha
+        #      content-scale× pixel fisici in più, che il blit deve ancora
+        #      risalire.
+        # In entrambi i casi la sorgente viene INGRANDITA dal blit → sgranatura.
+        # Rimedio: sovracampioniamo SOLO la sorgente dell'anteprima (il rettangolo
+        # di destinazione — quindi dimensione e posizione — resta identico): la
+        # rasterizziamo a `pt*ss` e lasciamo che StretchBlit la RIDUCA sull'impronta
+        # fisica reale → nitida. `ss` è un PAVIMENTO scelto dall'utente in
+        # Preferenze (simbolo SMP, solo Linux; default 3): copre lo scarto 72/96
+        # dpi ed è alzato dall'HiDPI quando serve. Il cap evita bitmap enormi.
+        # Stampa e anteprima di stampa (device_res falso) NON sono toccate.
+        ss = 1.0
+        if device_res:
+            floor = float(getattr(self, 'smp_oversample', self._SMP_OVERSAMPLE_DEFAULT))
+            ss = max(floor, self._screen_content_scale())
+            ss = min(ss, float(self._SMP_OVERSAMPLE_MAX))
+        pt = max(1, int(round(base_font.GetPointSize() * scale * ss)))
 
         bg = getattr(self, 'bgColour', None) or wx.WHITE
 
@@ -1678,6 +1755,7 @@ class SongDecorator(object):
         # wx.Config (scritto dalla finestra Simboli musicali). Ricaricato a ogni
         # render così un cambio dell'impostazione si riflette subito in anteprima.
         self.smp_valign_frac = self._read_smp_valign_frac()
+        self.smp_oversample = self._read_smp_oversample()
         self.InitDraw()
         self.LayoutCompose()
         self.LayoutMove()

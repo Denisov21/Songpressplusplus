@@ -285,6 +285,18 @@ class MyPreferencesDialog(PreferencesDialog):
         # Abbassamento verticale del simbolo: valore all'apertura + refresh live
         self.symbolValignSpin.SetValue(getattr(self.pref, 'symbolValignPct', 5))
         self.symbolValignSpin.Bind(wx.EVT_SPINCTRL, self.OnSymbolValignChanged)
+        # Qualità (sovracampionamento) simbolo SMP — ha effetto SOLO su Linux
+        # (wxGTK), dove i simboli SMP in anteprima passano da una bitmap. Su
+        # Windows/macOS il glifo è vettoriale e il valore è inerte: mostriamo il
+        # controllo ma lo DISABILITIAMO (spin + etichetta in grigio), e non
+        # agganciamo nemmeno il refresh live.
+        self.symbolOversampleSpin.SetValue(getattr(self.pref, 'symbolOversample', 3))
+        if wx.Platform == '__WXGTK__':
+            self.symbolOversampleSpin.Bind(wx.EVT_SPINCTRL, self.OnSymbolOversampleChanged)
+        else:
+            self.symbolOversampleSpin.Enable(False)
+            if hasattr(self, 'symbolOversampleLbl'):
+                self.symbolOversampleLbl.Enable(False)
         _sd = getattr(self.pref, 'gridSizeDir', 'both')
         self.gridSizeDirBoth.SetValue(_sd == 'both')
         self.gridSizeDirH.SetValue(_sd == 'horizontal')
@@ -1796,6 +1808,32 @@ class MyPreferencesDialog(PreferencesDialog):
                 pass
         evt.Skip()
 
+    def OnSymbolOversampleChanged(self, evt):
+        """Aggiornamento in tempo reale della qualità del simbolo SMP (solo Linux).
+        Scrive subito il valore in wx.Config (stessa chiave /Rendering/smp_oversample
+        letta da SongDecorator) e rinfresca l'anteprima, senza attendere l'OK.
+        Su Windows/macOS il valore è innocuo: il glifo SMP lì è vettoriale."""
+        val = max(1, min(int(self.symbolOversampleSpin.GetValue()), 4))
+        self.pref.symbolOversample = val
+        try:
+            cfg = wx.Config.Get()
+            old = cfg.GetPath()
+            try:
+                cfg.SetPath(self.pref._SMP_OVERSAMPLE_CFG_PATH)
+                cfg.WriteInt(self.pref._SMP_OVERSAMPLE_CFG_KEY, val)
+                cfg.Flush()
+            finally:
+                cfg.SetPath(old)
+        except Exception:
+            pass
+        cb = self._on_valign_change or self._on_apply
+        if callable(cb):
+            try:
+                cb()
+            except Exception:
+                pass
+        evt.Skip()
+
     def OnOk(self, evt):
         # Assign ALL values to pref BEFORE Save() so everything is persisted
         self.pref.editorFace, self.pref.editorSize = self.GetFont()
@@ -1910,6 +1948,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.symbolFontSize     = self.symbolSizeSpin.GetValue()
         self.pref.symbolInsertVerse  = self.symbolInsertVerseCB.GetValue()
         self.pref.symbolValignPct    = max(0, min(int(self.symbolValignSpin.GetValue()), 25))
+        self.pref.symbolOversample   = max(1, min(int(self.symbolOversampleSpin.GetValue()), 4))
         if self.gridSizeDirH.GetValue():
             self.pref.gridSizeDir = 'horizontal'
         elif self.gridSizeDirV.GetValue():

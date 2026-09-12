@@ -260,12 +260,13 @@ class PreferencesDialog(wx.Dialog):
         bSizer11b.Add(grpSong, 0, wx.EXPAND | wx.ALL, 8)
 
         # ── Gruppo: Generale ─────────────────────────────────────────
-        grpGeneral = wx.StaticBoxSizer(wx.StaticBox(self.general2, wx.ID_ANY, _(u"General")), wx.VERTICAL)
+        _boxGeneral = wx.StaticBox(self.general2, wx.ID_ANY, _(u"General"))
+        grpGeneral = wx.StaticBoxSizer(_boxGeneral, wx.VERTICAL)
 
         bSizerClearRecent = wx.BoxSizer(wx.HORIZONTAL)
-        self.clearRecentFilesBtn = wx.Button(self.general2, wx.ID_ANY, _(u"Clear recent files"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.clearRecentFilesBtn = wx.Button(_boxGeneral, wx.ID_ANY, _(u"Clear recent files"), wx.DefaultPosition, wx.DefaultSize, 0)
         bSizerClearRecent.Add(self.clearRecentFilesBtn, 0)
-        self.openTemplatesFolderBtn = wx.Button(self.general2, wx.ID_ANY, _(u"Open templates folder"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.openTemplatesFolderBtn = wx.Button(_boxGeneral, wx.ID_ANY, _(u"Open templates folder"), wx.DefaultPosition, wx.DefaultSize, 0)
         bSizerClearRecent.Add(self.openTemplatesFolderBtn, 0, wx.LEFT, 8)
         grpGeneral.Add(bSizerClearRecent, 0, wx.ALL, 5)
 
@@ -278,54 +279,54 @@ class PreferencesDialog(wx.Dialog):
         # M - Mostra messaggi di debug…
         # S - Salva dimensione e posizione…
 
-        self.enableSaveOnModifiedCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Enable 'Save' button only when the song is modified"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.enableSaveOnModifiedCB = wx.CheckBox(_boxGeneral, wx.ID_ANY, _(u"Enable 'Save' button only when the song is modified"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.enableSaveOnModifiedCB.SetToolTip(_(u"When enabled, the 'Save' button and menu item are greyed out until the song has unsaved changes."))
         grpGeneral.Add(self.enableSaveOnModifiedCB, 0, wx.ALL, 5)
 
-        self.intellisenseCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Enable directive intellisense (Ctrl+Space)"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.intellisenseCB = wx.CheckBox(_boxGeneral, wx.ID_ANY, _(u"Enable directive intellisense (Ctrl+Space)"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.intellisenseCB.SetToolTip(_(u"When enabled, pressing Ctrl+Space inside the editor shows a list of available ChordPro directives for auto-completion."))
         grpGeneral.Add(self.intellisenseCB, 0, wx.ALL, 5)
 
-        self.multiCursorCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Enable multi-cursor (Alt+Click, Ctrl+D)"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.multiCursorCB = wx.CheckBox(_boxGeneral, wx.ID_ANY, _(u"Enable multi-cursor (Alt+Click, Ctrl+D)"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.multiCursorCB.SetToolTip(_(u"When enabled, Alt+Click adds a new cursor and Ctrl+D selects the next occurrence of the current word."))
         grpGeneral.Add(self.multiCursorCB, 0, wx.ALL, 5)
 
-        self.singleInstanceCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Single instance: open files in the existing window"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.singleInstanceCB = wx.CheckBox(_boxGeneral, wx.ID_ANY, _(u"Single instance: open files in the existing window"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.singleInstanceCB.SetToolTip(_(u"When enabled, opening a file from Explorer or the command line will reuse the existing Songpress++ window instead of launching a new instance."))
         grpGeneral.Add(self.singleInstanceCB, 0, wx.ALL, 5)
 
-        self.showRestartMenuItemCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Show 'Restart Songpress++' in the File menu"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.showRestartMenuItemCB = wx.CheckBox(_boxGeneral, wx.ID_ANY, _(u"Show 'Restart Songpress++' in the File menu"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.showRestartMenuItemCB.SetToolTip(_(u"When enabled, a 'Restart Songpress++' item appears in the File menu, allowing a quick restart without closing and reopening the application manually."))
         grpGeneral.Add(self.showRestartMenuItemCB, 0, wx.ALL, 5)
 
-        self.showFullPathInTitleCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Show the full file path in the title bar"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.showFullPathInTitleCB = wx.CheckBox(_boxGeneral, wx.ID_ANY, _(u"Show the full file path in the title bar"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.showFullPathInTitleCB.SetToolTip(_(u"When enabled, the title bar shows the complete path of the open file (e.g. C:\\Songs\\ballad.crd) instead of just its name."))
         grpGeneral.Add(self.showFullPathInTitleCB, 0, wx.ALL, 5)
 
-        self.showDebugMsgCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Show debug messages (theme save path)"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.showDebugMsgCB = wx.CheckBox(_boxGeneral, wx.ID_ANY, _(u"Show debug messages (theme save path)"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.showDebugMsgCB.SetToolTip(_(u"When enabled, diagnostic messages such as the theme save path are shown in a popup during certain operations. Useful for troubleshooting."))
         grpGeneral.Add(self.showDebugMsgCB, 0, wx.ALL, 5)
 
-        self.saveWindowGeometryCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Save window size and position on exit"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.saveWindowGeometryCB = wx.CheckBox(_boxGeneral, wx.ID_ANY, _(u"Save window size and position on exit"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.saveWindowGeometryCB.SetToolTip(_(u"When enabled, the window size and position are saved on exit and restored the next time Songpress++ is launched."))
         grpGeneral.Add(self.saveWindowGeometryCB, 0, wx.ALL, 5)
 
-        self.replaceSpacesInFilenamesCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Replace spaces with '_' in saved file names"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.replaceSpacesInFilenamesCB = wx.CheckBox(_boxGeneral, wx.ID_ANY, _(u"Replace spaces with '_' in saved file names"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.replaceSpacesInFilenamesCB.SetToolTip(_(u"When enabled, any whitespace in the file name (not the folder path) is replaced with an underscore '_' whenever a file is saved or exported. Works the same way on Windows and Linux."))
         grpGeneral.Add(self.replaceSpacesInFilenamesCB, 0, wx.ALL, 5)
 
-        self.suggestTitleAsFilenameCB = wx.CheckBox(self.general2, wx.ID_ANY, _(u"Suggest the song {title:} as file name in 'Save as'"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.suggestTitleAsFilenameCB = wx.CheckBox(_boxGeneral, wx.ID_ANY, _(u"Suggest the song {title:} as file name in 'Save as'"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.suggestTitleAsFilenameCB.SetToolTip(_(u"When enabled, the 'Save as' dialog proposes the value of the {title:} directive as the default file name. Invalid characters are removed. This option works together with 'Replace spaces with _': if both are enabled, the suggested name will use underscores instead of spaces."))
         grpGeneral.Add(self.suggestTitleAsFilenameCB, 0, wx.ALL, 5)
 
         # ── Dimensione icone toolbar ─────────────────────────────────
         bSizerTbIconSize = wx.BoxSizer(wx.HORIZONTAL)
-        self.labelTbIconSize = wx.StaticText(self.general2, wx.ID_ANY, _(u"Toolbar icon size"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelTbIconSize = wx.StaticText(_boxGeneral, wx.ID_ANY, _(u"Toolbar icon size"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.labelTbIconSize.Wrap(-1)
         bSizerTbIconSize.Add(self.labelTbIconSize, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
-        self.tbIconSizeSmall = wx.RadioButton(self.general2, wx.ID_ANY, _(u"Small (16×16)"), wx.DefaultPosition, wx.DefaultSize, wx.RB_GROUP)
-        self.tbIconSizeMedium = wx.RadioButton(self.general2, wx.ID_ANY, _(u"Medium (19×19)"))
-        self.tbIconSizeLarge = wx.RadioButton(self.general2, wx.ID_ANY, _(u"Large (21×21)"))
+        self.tbIconSizeSmall = wx.RadioButton(_boxGeneral, wx.ID_ANY, _(u"Small (16×16)"), wx.DefaultPosition, wx.DefaultSize, wx.RB_GROUP)
+        self.tbIconSizeMedium = wx.RadioButton(_boxGeneral, wx.ID_ANY, _(u"Medium (19×19)"))
+        self.tbIconSizeLarge = wx.RadioButton(_boxGeneral, wx.ID_ANY, _(u"Large (21×21)"))
         self.tbIconSizeSmall.SetToolTip(_(u"Standard toolbar icon size (16×16 pixels)."))
         self.tbIconSizeMedium.SetToolTip(_(u"Medium toolbar icon size (19×19 pixels, 1.2× larger)."))
         self.tbIconSizeLarge.SetToolTip(_(u"Large toolbar icon size (21×21 pixels, 1.3× larger)."))
@@ -336,11 +337,11 @@ class PreferencesDialog(wx.Dialog):
 
         # ── Icona finestra "Verifica dipendenze" ─────────────────────
         bSizerDepIcon = wx.BoxSizer(wx.HORIZONTAL)
-        self.labelDepIcon = wx.StaticText(self.general2, wx.ID_ANY, _(u"'Dependency check...' icon"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelDepIcon = wx.StaticText(_boxGeneral, wx.ID_ANY, _(u"'Dependency check...' icon"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.labelDepIcon.Wrap(-1)
         bSizerDepIcon.Add(self.labelDepIcon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
-        self.depIconNative = wx.RadioButton(self.general2, wx.ID_ANY, _(u"Native icon"), wx.DefaultPosition, wx.DefaultSize, wx.RB_GROUP)
-        self.depIconImage = wx.RadioButton(self.general2, wx.ID_ANY, _(u"Image icon"))
+        self.depIconNative = wx.RadioButton(_boxGeneral, wx.ID_ANY, _(u"Native icon"), wx.DefaultPosition, wx.DefaultSize, wx.RB_GROUP)
+        self.depIconImage = wx.RadioButton(_boxGeneral, wx.ID_ANY, _(u"Image icon"))
         self.depIconNative.SetToolTip(_(u"Use text glyphs (✅ / ❌) rendered by the system font in the 'Check dependencies' window."))
         self.depIconImage.SetToolTip(_(u"Use the image icons loaded from img/checked_box.png and img/not_checked_box.png in the 'Check dependencies' window."))
         bSizerDepIcon.Add(self.depIconNative, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
@@ -656,6 +657,32 @@ class PreferencesDialog(wx.Dialog):
         szValign.Add(self.symbolValignLbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
         szValign.Add(self.symbolValignSpin, 0, wx.ALIGN_CENTER_VERTICAL)
         grpSymbol.Add(szValign, 0, wx.ALL, 5)
+
+        # Riga: qualità (sovracampionamento) del simbolo SMP — SOLO Linux.
+        # Su Linux i simboli SMP in anteprima passano da una bitmap e possono
+        # apparire a bassa risoluzione; questo valore ne aumenta la nitidezza.
+        # Su Windows/macOS il glifo è vettoriale e l'impostazione non ha effetto.
+        szOversample = wx.BoxSizer(wx.HORIZONTAL)
+        self.symbolOversampleLbl = wx.StaticText(
+            self.formatPanel, wx.ID_ANY,
+            _(u"SMP symbol quality \u2014 Linux only (1-4):")
+        )
+        self.symbolOversampleSpin = wx.SpinCtrl(
+            self.formatPanel, wx.ID_ANY,
+            min=1, max=4, initial=3,
+            style=wx.SP_ARROW_KEYS,
+        )
+        self.symbolOversampleSpin.SetMinSize(wx.Size(60 + _SPIN_EXTRA_WIDTH, -1))
+        self.symbolOversampleSpin.SetToolTip(
+            _(u"Linux only: sharpens SMP musical symbols in the 'Songpress++ Preview'.\n"
+              u"On Linux these symbols are drawn from a bitmap and can look\n"
+              u"low-resolution; higher values render them at higher resolution.\n"
+              u"1 = off, 3 = recommended (default), 4 = maximum (more memory).\n"
+              u"No effect on Windows/macOS, where the symbol is vector.")
+        )
+        szOversample.Add(self.symbolOversampleLbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        szOversample.Add(self.symbolOversampleSpin, 0, wx.ALIGN_CENTER_VERTICAL)
+        grpSymbol.Add(szOversample, 0, wx.ALL, 5)
         bSizerFormat.Add(grpSymbol, 0, wx.EXPAND | wx.ALL, 8)
 
         # ── Gruppo: Beat count ({beats_time}) ───────────────────────
@@ -738,10 +765,8 @@ class PreferencesDialog(wx.Dialog):
         bSizerSongpress = wx.BoxSizer(wx.VERTICAL)
 
         # Gruppo: Anteprima
-        grpPreview = wx.StaticBoxSizer(
-            wx.StaticBox(self.songpressPanel, wx.ID_ANY, _(u"Songpress++ Preview")),
-            wx.VERTICAL
-        )
+        _boxPreview = wx.StaticBox(self.songpressPanel, wx.ID_ANY, _(u"Songpress++ Preview"))
+        grpPreview = wx.StaticBoxSizer(_boxPreview, wx.VERTICAL)
 
         # Ordine alfabetico italiano:
         # D - Doppio clic…
@@ -751,7 +776,7 @@ class PreferencesDialog(wx.Dialog):
         # S - Sfondo grigio…
 
         self.dblClickFocusCB = wx.CheckBox(
-            self.songpressPanel, wx.ID_ANY,
+            _boxPreview, wx.ID_ANY,
             _(u"Double-click on preview jumps to source line in editor")
         )
         self.dblClickFocusCB.SetToolTip(
@@ -761,7 +786,7 @@ class PreferencesDialog(wx.Dialog):
         grpPreview.Add(self.dblClickFocusCB, 0, wx.ALL, 5)
 
         self.previewMinSizeCB = wx.CheckBox(
-            self.songpressPanel, wx.ID_ANY,
+            _boxPreview, wx.ID_ANY,
             _(u"Set minimum size for the preview panel at startup (370×530)")
         )
         self.previewMinSizeCB.SetToolTip(
@@ -771,7 +796,7 @@ class PreferencesDialog(wx.Dialog):
         grpPreview.Add(self.previewMinSizeCB, 0, wx.ALL, 5)
 
         self.showPageIndicatorCB = wx.CheckBox(
-            self.songpressPanel, wx.ID_ANY,
+            _boxPreview, wx.ID_ANY,
             _(u"Show page indicator (e.g. 'Page 1 of 3')")
         )
         self.showPageIndicatorCB.SetToolTip(
@@ -780,7 +805,7 @@ class PreferencesDialog(wx.Dialog):
         grpPreview.Add(self.showPageIndicatorCB, 0, wx.ALL, 5)
 
         self.debounceRefreshCB = wx.CheckBox(
-            self.songpressPanel, wx.ID_ANY,
+            _boxPreview, wx.ID_ANY,
             _(u"Delay preview refresh while typing (debounce)")
         )
         self.debounceRefreshCB.SetToolTip(
@@ -791,7 +816,7 @@ class PreferencesDialog(wx.Dialog):
         grpPreview.Add(self.debounceRefreshCB, 0, wx.ALL, 5)
 
         self.greyBackgroundCB = wx.CheckBox(
-            self.songpressPanel, wx.ID_ANY,
+            _boxPreview, wx.ID_ANY,
             _(u"Grey background in preview (page style)")
         )
         self.greyBackgroundCB.SetToolTip(
@@ -803,10 +828,8 @@ class PreferencesDialog(wx.Dialog):
         bSizerSongpress.Add(grpPreview, 0, wx.EXPAND | wx.ALL, 8)
 
         # Gruppo: Stampa
-        grpPrint = wx.StaticBoxSizer(
-            wx.StaticBox(self.songpressPanel, wx.ID_ANY, _(u"Print")),
-            wx.VERTICAL
-        )
+        _boxPrint = wx.StaticBox(self.songpressPanel, wx.ID_ANY, _(u"Print"))
+        grpPrint = wx.StaticBoxSizer(_boxPrint, wx.VERTICAL)
 
         # Ordine alfabetico italiano:
         # A - Aggiornamento in tempo reale…
@@ -814,7 +837,7 @@ class PreferencesDialog(wx.Dialog):
         # M - Mostra anteprima di stampa…
 
         self.liveDriverPollCB = wx.CheckBox(
-            self.songpressPanel, wx.ID_ANY,
+            _boxPrint, wx.ID_ANY,
             _(u"Live update of duplex/color status in print preview (every 1.5 s)")
         )
         self.liveDriverPollCB.SetToolTip(
@@ -826,7 +849,7 @@ class PreferencesDialog(wx.Dialog):
         grpPrint.Add(self.liveDriverPollCB, 0, wx.ALL, 5)
 
         self.printPreviewAlwaysOnTopCB = wx.CheckBox(
-            self.songpressPanel, wx.ID_ANY,
+            _boxPrint, wx.ID_ANY,
             _(u"Keep print preview window always on top")
         )
         self.printPreviewAlwaysOnTopCB.SetToolTip(
@@ -837,7 +860,7 @@ class PreferencesDialog(wx.Dialog):
         grpPrint.Add(self.printPreviewAlwaysOnTopCB, 0, wx.ALL, 5)
 
         self.showPrintPreviewCB = wx.CheckBox(
-            self.songpressPanel, wx.ID_ANY,
+            _boxPrint, wx.ID_ANY,
             _(u"Show print preview before printing")
         )
         self.showPrintPreviewCB.SetToolTip(_(u"When enabled, a print preview window is shown before sending the document to the printer, allowing you to check the layout and page settings."))
@@ -846,17 +869,15 @@ class PreferencesDialog(wx.Dialog):
         bSizerSongpress.Add(grpPrint, 0, wx.EXPAND | wx.ALL, 8)
 
         # Gruppo: Nessun accordo — blocchi da nascondere
-        grpNoChords = wx.StaticBoxSizer(
-            wx.StaticBox(self.songpressPanel, wx.ID_ANY,
-                         _(u"No chords: blocks to hide")),
-            wx.VERTICAL
-        )
+        _boxNoChords = wx.StaticBox(self.songpressPanel, wx.ID_ANY,
+                         _(u"No chords: blocks to hide"))
+        grpNoChords = wx.StaticBoxSizer(_boxNoChords, wx.VERTICAL)
         _noChordsTip = _(
             u"Active only when 'Show chords' is set to 'No chords'.\n"
             u"Check each block type you want to hide from the preview and print."
         )
         _noChordHdr = wx.StaticText(
-            self.songpressPanel, wx.ID_ANY,
+            _boxNoChords, wx.ID_ANY,
             _(u"When 'No chords' is selected, also hide:")
         )
         _noChordHdr.SetToolTip(_noChordsTip)
@@ -870,7 +891,7 @@ class PreferencesDialog(wx.Dialog):
         # T - Tempo…
 
         self.hideIntroChordCB = wx.CheckBox(
-            self.songpressPanel, wx.ID_ANY,
+            _boxNoChords, wx.ID_ANY,
             _(u"Intro chords  {start_chord}\\{end_chord}")
         )
         self.hideIntroChordCB.SetToolTip(
@@ -879,7 +900,7 @@ class PreferencesDialog(wx.Dialog):
         grpNoChords.Add(self.hideIntroChordCB, 0, wx.ALL, 5)
 
         self.hideBridgeCB = wx.CheckBox(
-            self.songpressPanel, wx.ID_ANY,
+            _boxNoChords, wx.ID_ANY,
             _(u"Bridge  {start_bridge}\\{end_bridge}")
         )
         self.hideBridgeCB.SetToolTip(
@@ -888,7 +909,7 @@ class PreferencesDialog(wx.Dialog):
         grpNoChords.Add(self.hideBridgeCB, 0, wx.ALL, 5)
 
         self.hideGridCB = wx.CheckBox(
-            self.songpressPanel, wx.ID_ANY,
+            _boxNoChords, wx.ID_ANY,
             _(u"Grid  {start_of_grid}\\{end_of_grid}")
         )
         self.hideGridCB.SetToolTip(
@@ -897,7 +918,7 @@ class PreferencesDialog(wx.Dialog):
         grpNoChords.Add(self.hideGridCB, 0, wx.ALL, 5)
 
         self.hideTimeCB = wx.CheckBox(
-            self.songpressPanel, wx.ID_ANY,
+            _boxNoChords, wx.ID_ANY,
             _(u"Time signature  {time}")
         )
         self.hideTimeCB.SetToolTip(
@@ -906,7 +927,7 @@ class PreferencesDialog(wx.Dialog):
         grpNoChords.Add(self.hideTimeCB, 0, wx.ALL, 5)
 
         self.hideTempoCB = wx.CheckBox(
-            self.songpressPanel, wx.ID_ANY,
+            _boxNoChords, wx.ID_ANY,
             _(u"Tempo  {tempo_m}\\{tempo_s}\\{tempo_sp}\\{tempo_c}\\{tempo_cp}")
         )
         self.hideTempoCB.SetToolTip(
@@ -971,26 +992,28 @@ class PreferencesDialog(wx.Dialog):
         bSizerCM.Add(wx.StaticLine(self.contextMenuPanel), 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
 
         # --- Gruppo Undo/Redo ---
-        grpUndoRedo = wx.StaticBoxSizer(wx.StaticBox(self.contextMenuPanel, wx.ID_ANY, _(u"History")), wx.VERTICAL)
-        self.cmUndo  = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Undo"))
+        _boxUndoRedo = wx.StaticBox(self.contextMenuPanel, wx.ID_ANY, _(u"History"))
+        grpUndoRedo = wx.StaticBoxSizer(_boxUndoRedo, wx.VERTICAL)
+        self.cmUndo  = wx.CheckBox(_boxUndoRedo, wx.ID_ANY, _(u"Undo"))
         self.cmUndo.SetToolTip(_(u"Show the 'Undo' command in the right-click context menu."))
-        self.cmRedo  = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Redo"))
+        self.cmRedo  = wx.CheckBox(_boxUndoRedo, wx.ID_ANY, _(u"Redo"))
         self.cmRedo.SetToolTip(_(u"Show the 'Redo' command in the right-click context menu."))
         grpUndoRedo.Add(self.cmUndo,  0, wx.ALL, 4)
         grpUndoRedo.Add(self.cmRedo,  0, wx.ALL, 4)
         bSizerCM.Add(grpUndoRedo, 0, wx.EXPAND | wx.ALL, 5)
 
         # --- Gruppo Modifica ---
-        grpEdit = wx.StaticBoxSizer(wx.StaticBox(self.contextMenuPanel, wx.ID_ANY, _(u"Edit")), wx.VERTICAL)
-        self.cmCut    = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Cut"))
+        _boxEdit = wx.StaticBox(self.contextMenuPanel, wx.ID_ANY, _(u"Edit"))
+        grpEdit = wx.StaticBoxSizer(_boxEdit, wx.VERTICAL)
+        self.cmCut    = wx.CheckBox(_boxEdit, wx.ID_ANY, _(u"Cut"))
         self.cmCut.SetToolTip(_(u"Show the 'Cut' command in the right-click context menu."))
-        self.cmCopy   = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Copy"))
+        self.cmCopy   = wx.CheckBox(_boxEdit, wx.ID_ANY, _(u"Copy"))
         self.cmCopy.SetToolTip(_(u"Show the 'Copy' command in the right-click context menu."))
-        self.cmPaste  = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Paste"))
+        self.cmPaste  = wx.CheckBox(_boxEdit, wx.ID_ANY, _(u"Paste"))
         self.cmPaste.SetToolTip(_(u"Show the 'Paste' command in the right-click context menu."))
-        self.cmDelete = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Delete"))
+        self.cmDelete = wx.CheckBox(_boxEdit, wx.ID_ANY, _(u"Delete"))
         self.cmDelete.SetToolTip(_(u"Show the 'Delete' command in the right-click context menu."))
-        self.cmConfirmDelete = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Ask confirmation before deleting"))
+        self.cmConfirmDelete = wx.CheckBox(_boxEdit, wx.ID_ANY, _(u"Ask confirmation before deleting"))
         self.cmConfirmDelete.SetToolTip(_(u"When enabled, a confirmation dialog is shown before any delete operation performed via the context menu."))
         grpEdit.Add(self.cmCut,    0, wx.ALL, 4)
         grpEdit.Add(self.cmCopy,   0, wx.ALL, 4)
@@ -1000,14 +1023,15 @@ class PreferencesDialog(wx.Dialog):
         bSizerCM.Add(grpEdit, 0, wx.EXPAND | wx.ALL, 5)
 
         # --- Gruppo Azioni speciali ---
-        grpSpecial = wx.StaticBoxSizer(wx.StaticBox(self.contextMenuPanel, wx.ID_ANY, _(u"Special actions")), wx.VERTICAL)
-        self.cmPasteChords           = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Paste chords"))
+        _boxSpecial = wx.StaticBox(self.contextMenuPanel, wx.ID_ANY, _(u"Special actions"))
+        grpSpecial = wx.StaticBoxSizer(_boxSpecial, wx.VERTICAL)
+        self.cmPasteChords           = wx.CheckBox(_boxSpecial, wx.ID_ANY, _(u"Paste chords"))
         self.cmPasteChords.SetToolTip(_(u"Show the 'Paste chords' command in the right-click context menu."))
-        self.cmPropagateVerseChords  = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Propagate verse chords"))
+        self.cmPropagateVerseChords  = wx.CheckBox(_boxSpecial, wx.ID_ANY, _(u"Propagate verse chords"))
         self.cmPropagateVerseChords.SetToolTip(_(u"Show the 'Propagate verse chords' command in the right-click context menu."))
-        self.cmPropagateChorusChords = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Propagate chorus chords"))
+        self.cmPropagateChorusChords = wx.CheckBox(_boxSpecial, wx.ID_ANY, _(u"Propagate chorus chords"))
         self.cmPropagateChorusChords.SetToolTip(_(u"Show the 'Propagate chorus chords' command in the right-click context menu."))
-        self.cmCopyTextOnly          = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Copy text only"))
+        self.cmCopyTextOnly          = wx.CheckBox(_boxSpecial, wx.ID_ANY, _(u"Copy text only"))
         self.cmCopyTextOnly.SetToolTip(_(u"Show the 'Copy text only' command in the right-click context menu (copies lyrics without chords)."))
         grpSpecial.Add(self.cmPasteChords,           0, wx.ALL, 4)
         grpSpecial.Add(self.cmPropagateVerseChords,  0, wx.ALL, 4)
@@ -1016,15 +1040,17 @@ class PreferencesDialog(wx.Dialog):
         bSizerCM.Add(grpSpecial, 0, wx.EXPAND | wx.ALL, 5)
 
         # --- Gruppo Selezione ---
-        grpSel = wx.StaticBoxSizer(wx.StaticBox(self.contextMenuPanel, wx.ID_ANY, _(u"Selection")), wx.VERTICAL)
-        self.cmSelectAll = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Select all"))
+        _boxSel = wx.StaticBox(self.contextMenuPanel, wx.ID_ANY, _(u"Selection"))
+        grpSel = wx.StaticBoxSizer(_boxSel, wx.VERTICAL)
+        self.cmSelectAll = wx.CheckBox(_boxSel, wx.ID_ANY, _(u"Select all"))
         self.cmSelectAll.SetToolTip(_(u"Show the 'Select all' command in the right-click context menu."))
         grpSel.Add(self.cmSelectAll, 0, wx.ALL, 4)
         bSizerCM.Add(grpSel, 0, wx.EXPAND | wx.ALL, 5)
 
         # --- Gruppo Aspetto ---
-        grpAppearance = wx.StaticBoxSizer(wx.StaticBox(self.contextMenuPanel, wx.ID_ANY, _(u"Appearance")), wx.VERTICAL)
-        self.cmShowIcons = wx.CheckBox(self.contextMenuPanel, wx.ID_ANY, _(u"Show icons in context menu"))
+        _boxAppearance = wx.StaticBox(self.contextMenuPanel, wx.ID_ANY, _(u"Appearance"))
+        grpAppearance = wx.StaticBoxSizer(_boxAppearance, wx.VERTICAL)
+        self.cmShowIcons = wx.CheckBox(_boxAppearance, wx.ID_ANY, _(u"Show icons in context menu"))
         self.cmShowIcons.SetToolTip(_(u"When enabled, small icons are displayed next to each command in the right-click context menu."))
         grpAppearance.Add(self.cmShowIcons, 0, wx.ALL, 4)
         bSizerCM.Add(grpAppearance, 0, wx.EXPAND | wx.ALL, 5)

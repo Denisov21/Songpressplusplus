@@ -25,6 +25,7 @@ _BAR_COLOUR_EMPTY_RGB = (200, 220, 240)   # azzurro chiaro (valore basso / sfond
 _BAR_COLOUR_BG_RGB    = (230, 235, 240)   # sfondo pannello
 _TICK_COLOUR_RGB      = (150, 170, 190)   # colore dei segni di graduazione
 _LABEL_COLOUR_RGB     = (120, 140, 160)   # colore etichette Facile/Difficile
+_THUMB_BORDER_RGB     = (255, 255, 255)   # bordo del cursore disegnato
 
 def _c(rgb):
     """Restituisce un wx.Colour dalla tripla RGB. Chiamato solo a runtime."""
@@ -53,23 +54,106 @@ BAR_HEIGHT       = 8    # px – altezza della barra
 BAR_RADIUS       = 4    # px – arrotondamento angoli
 LABEL_FONT_SIZE  = 8    # pt
 TICK_HEIGHT      = 4    # px – altezza dei tick
+THUMB_RADIUS     = 7    # px – raggio del cursore disegnato
+H_MARGIN         = 10   # px – margine orizzontale (spazio per il cursore ai bordi)
 
 
 class MyDecoSlider(DecoSlider):
+    """
+    Slider decorato con snap esatto ai valori interi.
+
+    Il wx.Slider nativo (self.slider, dalla classe base DecoSlider) su GTK
+    lascia scorrere il cursore in modo continuo e NON rispetta lo snap ai
+    valori interi imposto dall'esterno: su Linux "faceva troppi scatti".
+    Per avere lo stesso comportamento su Windows e Linux, qui il cursore
+    nativo viene NASCOSTO e usato solo come contenitore del valore (0..max);
+    il pannello sottostante disegna barra + cursore + tacche e gestisce
+    click/trascinamento con snap esatto a (max-min+1) posizioni.
+
+    Il codice esterno continua a usare self.slider.GetValue()/SetValue()
+    senza alcuna modifica.
+    """
     def __init__(self, parent):
         DecoSlider.__init__(self, parent)
         _ensure_colours()
-        # Altezza minima aumentata per ospitare le etichette Easy/Difficult
-        self.panel.SetMinSize(wx.Size(-1, 36))
-        # Adattiamo il colore di sfondo del panel al nuovo stile
+
+        # Nascondi il cursore nativo di wx.Slider e toglilo dal layout:
+        # resta vivo (contiene il valore) ma non e' piu' visibile ne'
+        # interattivo. Tutta l'interazione avviene nel pannello.
+        self.slider.Hide()
+        _sizer = self.GetSizer()
+        if _sizer is not None:
+            _sizer.Detach(self.slider)
+
+        # Il pannello diventa lo slider completo (cursore + barra + etichette)
+        self.panel.SetMinSize(wx.Size(-1, 44))
         self.panel.SetBackgroundColour(BAR_COLOUR_BG)
-        # Aggiorna il pannello ad ogni movimento del cursore
+        try:
+            self.panel.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        except Exception:
+            pass
+
+        # Eventi del mouse per l'interazione (click + trascinamento)
+        self.panel.Bind(wx.EVT_LEFT_DOWN, self.OnPanelMouse)
+        self.panel.Bind(wx.EVT_LEFT_UP, self.OnPanelMouse)
+        self.panel.Bind(wx.EVT_MOTION, self.OnPanelMouse)
+        # Obbligatorio con CaptureMouse: gestire la perdita della cattura
+        self.panel.Bind(wx.EVT_MOUSE_CAPTURE_LOST, self.OnCaptureLost)
+
+        # Se il valore del cursore nascosto cambia (via codice esterno),
+        # ridisegna il pannello.
         self.slider.Bind(wx.EVT_SLIDER, self.OnSliderChanged)
 
+        self.Layout()
+
+    # ------------------------------------------------------------------ #
+    #  Interazione                                                        #
+    # ------------------------------------------------------------------ #
     def OnSliderChanged(self, event):
         self.panel.Refresh()
         event.Skip()
 
+    def OnCaptureLost(self, event):
+        # Non serve fare nulla: la cattura e' gia' stata rilasciata.
+        pass
+
+    def OnPanelMouse(self, event):
+        if event.LeftDown():
+            if not self.panel.HasCapture():
+                self.panel.CaptureMouse()
+            self._SetValueFromX(event.GetX())
+        elif event.LeftUp():
+            if self.panel.HasCapture():
+                self.panel.ReleaseMouse()
+            self._SetValueFromX(event.GetX())
+        elif event.Dragging() and event.LeftIsDown():
+            self._SetValueFromX(event.GetX())
+        event.Skip()
+
+    def _SetValueFromX(self, x):
+        """Converte la posizione X del mouse nel valore intero piu' vicino
+        e lo applica al cursore nascosto (snap esatto)."""
+        w = self.panel.GetClientSize().width
+        bar_w = max(w - 2 * H_MARGIN, 1)
+        mn = self.slider.GetMin()
+        mx = self.slider.GetMax()
+        ratio = (x - H_MARGIN) / bar_w
+        ratio = min(max(ratio, 0.0), 1.0)
+        val = int(mn + round(ratio * (mx - mn)))
+        val = min(max(val, mn), mx)
+        if val != self.slider.GetValue():
+            self.slider.SetValue(val)
+            # Propaga l'evento come farebbe un wx.Slider nativo, cosi' eventuali
+            # handler EVT_SLIDER esterni continuano a funzionare.
+            ev = wx.CommandEvent(wx.EVT_SLIDER.typeId, self.slider.GetId())
+            ev.SetInt(val)
+            ev.SetEventObject(self.slider)
+            wx.PostEvent(self.slider, ev)
+        self.panel.Refresh()
+
+    # ------------------------------------------------------------------ #
+    #  Disegno                                                            #
+    # ------------------------------------------------------------------ #
     def OnPaint(self, event):
         _ensure_colours()
         dc = wx.PaintDC(self.panel)
@@ -89,11 +173,11 @@ class MyDecoSlider(DecoSlider):
         easy_w, lbl_h = dc.GetTextExtent(lbl_easy)
         hard_w, _lh   = dc.GetTextExtent(lbl_hard)
 
-        # --- geometria: barra sopra, etichette sotto ---
-        margin     = 8
+        # --- geometria: cursore+barra sopra, etichette sotto ---
+        margin     = H_MARGIN
         bar_w      = max(w - 2 * margin, 1)
         bar_area_h = h - lbl_h - 2
-        bar_y      = max((bar_area_h - BAR_HEIGHT) // 2, 0)
+        bar_y      = max((bar_area_h - BAR_HEIGHT) // 2, THUMB_RADIUS)
         lbl_y      = bar_area_h + 2
 
         # --- parametri slider ---
@@ -102,10 +186,12 @@ class MyDecoSlider(DecoSlider):
         mx    = self.slider.GetMax()
         ratio = (val - mn) / max(mx - mn, 1)
 
-        # Usiamo GraphicsContext per avere angoli arrotondati nativi
+        thumb_x  = margin + bar_w * ratio
+        thumb_cy = bar_y + BAR_HEIGHT / 2.0
+
         gc = wx.GraphicsContext.Create(dc)
         if gc is None:
-            self._paint_fallback(dc, ratio, margin, bar_w, bar_y)
+            self._paint_fallback(dc, ratio, margin, bar_w, bar_y, thumb_x, thumb_cy)
             dc.DrawText(lbl_easy, margin, lbl_y)
             dc.DrawText(lbl_hard, w - margin - hard_w, lbl_y)
             return
@@ -132,11 +218,17 @@ class MyDecoSlider(DecoSlider):
                 tx = margin + int(bar_w * i / steps)
                 gc.StrokeLine(tx, tick_y_top, tx, tick_y_bot)
 
+        # --- cursore (thumb) alla posizione corrente ---
+        gc.SetBrush(gc.CreateBrush(wx.Brush(BAR_COLOUR_FULL, wx.SOLID)))
+        gc.SetPen(wx.Pen(_c(_THUMB_BORDER_RGB), 2))
+        gc.DrawEllipse(thumb_x - THUMB_RADIUS, thumb_cy - THUMB_RADIUS,
+                       2 * THUMB_RADIUS, 2 * THUMB_RADIUS)
+
         # --- etichette (disegnate con dc, non gc) ---
         dc.DrawText(lbl_easy, margin, lbl_y)
         dc.DrawText(lbl_hard, w - margin - hard_w, lbl_y)
 
-    def _paint_fallback(self, dc, ratio, margin, bar_w, bar_y):
+    def _paint_fallback(self, dc, ratio, margin, bar_w, bar_y, thumb_x, thumb_cy):
         """Disegno semplificato senza GraphicsContext (sistemi molto datati)."""
         dc.SetPen(wx.NullPen)
         dc.SetBrush(wx.Brush(BAR_COLOUR_EMPTY, wx.SOLID))
@@ -145,6 +237,10 @@ class MyDecoSlider(DecoSlider):
         if filled_w > 0:
             dc.SetBrush(wx.Brush(BAR_COLOUR_FULL, wx.SOLID))
             dc.DrawRectangle(margin, bar_y, filled_w, BAR_HEIGHT)
+        # cursore
+        dc.SetBrush(wx.Brush(BAR_COLOUR_FULL, wx.SOLID))
+        dc.SetPen(wx.Pen(_c(_THUMB_BORDER_RGB), 2))
+        dc.DrawCircle(int(thumb_x), int(thumb_cy), THUMB_RADIUS)
 
     def OnSize(self, event):
         self.panel.Refresh()
