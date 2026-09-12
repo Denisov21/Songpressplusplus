@@ -336,7 +336,7 @@ class PreferencesDialog(wx.Dialog):
 
         # ── Icona finestra "Verifica dipendenze" ─────────────────────
         bSizerDepIcon = wx.BoxSizer(wx.HORIZONTAL)
-        self.labelDepIcon = wx.StaticText(self.general2, wx.ID_ANY, _(u"Dependency check icon"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelDepIcon = wx.StaticText(self.general2, wx.ID_ANY, _(u"'Dependency check...' icon"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.labelDepIcon.Wrap(-1)
         bSizerDepIcon.Add(self.labelDepIcon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
         self.depIconNative = wx.RadioButton(self.general2, wx.ID_ANY, _(u"Native icon"), wx.DefaultPosition, wx.DefaultSize, wx.RB_GROUP)
@@ -637,10 +637,10 @@ class PreferencesDialog(wx.Dialog):
         grpSymbol.Add(self.symbolInsertVerseCB, 0, wx.ALL, 5)
 
         # Riga: abbassamento verticale del simbolo (spostato qui dalla finestra
-        # "Simboli musicali"). Valore 0-100 %, aggiornato in tempo reale.
+        # "Simboli musicali"). Valore 0-25 %, aggiornato in tempo reale.
         szValign = wx.BoxSizer(wx.HORIZONTAL)
         self.symbolValignLbl = wx.StaticText(
-            self.formatPanel, wx.ID_ANY, _(u"Symbol vertical drop (%):")
+            self.formatPanel, wx.ID_ANY, _(u"Symbol vertical drop (0-25%):")
         )
         self.symbolValignSpin = wx.SpinCtrl(
             self.formatPanel, wx.ID_ANY,
