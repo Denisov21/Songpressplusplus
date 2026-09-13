@@ -275,6 +275,66 @@ Dopodiché, in Dolphin: tasto destro sul `.deb` → _Apri con…_ → scegli "Pr
 
 ---
 
+## FAQ / Risoluzione problemi
+
+### Errore: `dpkg frontend lock was locked by ... packagekitd`
+
+Durante l'installazione con `dpkg` o `apt` puoi imbatterti in un errore come:
+
+```
+dpkg: errore: dpkg frontend lock was locked by /usr/libexec/packagekitd process with pid 2755
+E: Impossibile impostare il blocco /var/lib/dpkg/lock-frontend. È bloccato dal processo 2755 (packagekitd)
+```
+
+Significa che **un altro processo sta già usando il sistema di gestione
+pacchetti** e tiene occupato il *lock* di `dpkg`. Il colpevole più comune è
+**`packagekitd`**, il servizio in background che gestisce aggiornamenti e
+installazioni grafiche (Discover, GNOME Software…): spesso parte da solo
+all'avvio o quando apri un gestore pacchetti.
+
+> **⚠️ Non rimuovere mai il file di blocco a mano** (`/var/lib/dpkg/lock-frontend`
+> o simili), come avverte lo stesso messaggio: puoi corrompere il database dei
+> pacchetti e danneggiare il sistema. Il lock va **rilasciato**, non cancellato.
+
+**Soluzione 1 — aspetta qualche minuto.** Spesso `packagekitd` sta solo
+aggiornando la cache e rilascia il lock da solo. Riprova dopo un paio di minuti.
+
+**Soluzione 2 — ferma il servizio e reinstalla:**
+
+```bash
+sudo systemctl stop packagekit
+sudo dpkg -i "build_deb/songpressplusplus_8.0.4_all.deb" && sudo apt-get install -f
+```
+
+Se il servizio riparte subito e rioccupa il lock, **mascheralo
+temporaneamente**, installa, poi riabilitalo:
+
+```bash
+sudo systemctl mask packagekit
+sudo systemctl stop packagekit
+# … installa il pacchetto …
+sudo systemctl unmask packagekit
+```
+
+> **🔎 Chi tiene occupato il lock?** Non è detto che sia `packagekitd`. Per
+> scoprire quale processo lo occupa:
+>
+> ```bash
+> ps aux | grep -E 'apt|dpkg|packagekit' | grep -v grep
+> ```
+>
+> Se è un `apt`/`dpkg` che hai avviato tu in un altro terminale, **attendine la
+> fine** invece di terminarlo a forza: interromperlo a metà può lasciare i
+> pacchetti in stato incoerente.
+
+> **💡 `dpkg -i` e `apt-get install -f` in un colpo solo.** Nell'esempio sopra i
+> due comandi sono uniti con `&&`: così il secondo (che risolve le dipendenze)
+> parte solo se il primo va a buon fine, e non devi ricordarti di lanciarlo a
+> mano. Attenzione a non incollarli come se fossero un unico comando su righe
+> separate: vanno separati (`&&` o due invii distinti).
+
+---
+
 ## Aggiornamento a una nuova versione
 
 ### 1. Aggiorna la versione in `pyproject.toml`

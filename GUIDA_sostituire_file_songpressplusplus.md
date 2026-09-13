@@ -140,3 +140,219 @@ find / -name "NOMEFILE" -path "*ongpress*" 2>/dev/null
   fc-list | grep -i "noto music"        # verifica se è presente
   sudo apt install fonts-noto-extra     # installalo se manca (Debian/Ubuntu)
   ```
+
+---
+
+## Esempio pratico
+
+Supponiamo di dover sostituire **`Editor.py`**, appena scaricato in
+**`~/Scaricati/Editor.py`**. I comandi diventano:
+
+```bash
+# 0. (Consigliato) verifica che il file scaricato ci sia
+ls -l ~/Scaricati/Editor.py
+
+# 1. Backup dell'originale (una sola volta)
+sudo cp /usr/lib/python3/dist-packages/songpressplusplus/Editor.py \
+        /usr/lib/python3/dist-packages/songpressplusplus/Editor.py.backup
+
+# 2. Copia la versione corretta al posto di quella vecchia
+sudo cp ~/Scaricati/Editor.py \
+        /usr/lib/python3/dist-packages/songpressplusplus/Editor.py
+
+# 3. Pulisci la cache compilata
+sudo rm -f /usr/lib/python3/dist-packages/songpressplusplus/__pycache__/*.pyc
+```
+
+Poi chiudi e riapri Songpress++ e prova a scrivere una riga con il simbolo ♪.
+
+Se qualcosa non va, ripristina il backup:
+
+```bash
+sudo cp /usr/lib/python3/dist-packages/songpressplusplus/Editor.py.backup \
+        /usr/lib/python3/dist-packages/songpressplusplus/Editor.py
+sudo rm -f /usr/lib/python3/dist-packages/songpressplusplus/__pycache__/*.pyc
+```
+
+<br>
+
+---
+---
+
+<br>
+
+# Replacing a Songpress++ file (Linux)
+
+Generic guide to replace **a single file** of the already-installed app
+(e.g. `Editor.py`, `SongDecorator.py`, …) with a fixed version downloaded to
+**`~/Downloads`**. No reinstall needed.
+
+> These commands use `FILENAME` as a placeholder: **replace it** with the real
+> file name (e.g. `Editor.py`). The typical install folder is
+> `/usr/lib/python3/dist-packages/songpressplusplus/` — if it's different on
+> your system, see **"Finding the right folder"** at the bottom.
+
+---
+
+## Quick version (copy-paste)
+
+Replace `FILENAME` with the real file name, then run in sequence:
+
+```bash
+# App install folder
+DEST=/usr/lib/python3/dist-packages/songpressplusplus
+
+# 1. Back up the original (only once)
+sudo cp "$DEST/FILENAME" "$DEST/FILENAME.backup"
+
+# 2. Copy the fixed version from ~/Downloads over the old one
+sudo cp ~/Downloads/FILENAME "$DEST/FILENAME"
+
+# 3. Clear the compiled cache (otherwise Python may use the old version)
+sudo rm -f "$DEST/__pycache__/"*.pyc
+```
+
+Then **close and reopen Songpress++**.
+
+---
+
+## Step by step
+
+### 1. Check the downloaded file is there
+
+```bash
+ls -l ~/Downloads/FILENAME
+```
+
+If it doesn't show up, the file is elsewhere: fix the path (e.g.
+`~/Scaricati/FILENAME`) in the following commands.
+
+### 2. Back up the original
+
+Do this **the first time**, so you can always roll back:
+
+```bash
+sudo cp /usr/lib/python3/dist-packages/songpressplusplus/FILENAME \
+        /usr/lib/python3/dist-packages/songpressplusplus/FILENAME.backup
+```
+
+### 3. Copy the fixed version
+
+```bash
+sudo cp ~/Downloads/FILENAME \
+        /usr/lib/python3/dist-packages/songpressplusplus/FILENAME
+```
+
+> `sudo` is needed because `/usr/lib/...` is a system location.
+
+### 4. Clear the `.pyc` cache (important)
+
+Python keeps a compiled copy: if you don't remove it, it may keep using the old
+version even after copying.
+
+```bash
+sudo rm -f /usr/lib/python3/dist-packages/songpressplusplus/__pycache__/*.pyc
+```
+
+### 5. Restart the app
+
+Fully close Songpress++ and reopen it. The change is now active.
+
+---
+
+## Rolling back to the original
+
+If something goes wrong, restore the backup made in step 2:
+
+```bash
+sudo cp /usr/lib/python3/dist-packages/songpressplusplus/FILENAME.backup \
+        /usr/lib/python3/dist-packages/songpressplusplus/FILENAME
+sudo rm -f /usr/lib/python3/dist-packages/songpressplusplus/__pycache__/*.pyc
+```
+
+Then restart the app.
+
+---
+
+## Finding the right folder
+
+If the install folder isn't the one shown above, locate it like this:
+
+```bash
+find / -name "SongTokenizer.py" 2>/dev/null
+```
+
+The folder containing `SongTokenizer.py` (and `SDIMainFrame.py`) is the right
+one: use it instead of `/usr/lib/python3/dist-packages/songpressplusplus` in all
+commands.
+
+Alternative search, directly by the name of the file to replace:
+
+```bash
+find / -name "FILENAME" -path "*ongpress*" 2>/dev/null
+```
+
+---
+
+## Useful notes
+
+- **App updates**: if you later reinstall or update Songpress++ from the package
+  (`apt`, `.deb`, `.rpm`…), the file in `/usr/lib/...` may be **overwritten** and
+  your manual change lost. If so, just copy the fixed version again with the same
+  commands.
+
+- **Syntax check (optional)**: before restarting you can verify the file has no
+  Python syntax errors:
+
+  ```bash
+  python3 -m py_compile /usr/lib/python3/dist-packages/songpressplusplus/FILENAME \
+    && echo "OK" || echo "SYNTAX ERROR"
+  ```
+
+- **"Frozen" app (AppImage / PyInstaller)**: if you installed Songpress++ as an
+  **AppImage** or single executable, the individual file **cannot** be edited by
+  hand this way (the sources are packed inside the image). In that case you need
+  to rebuild the package with the fixed file.
+
+- **Fonts for musical symbols**: if you're replacing `Editor.py` for the SMP
+  musical-glyph fix, make sure a font that covers them is present. FreeSerif is
+  already bundled with the app; for the best rendering (like on Windows) you can
+  install Noto Music:
+
+  ```bash
+  fc-list | grep -i "noto music"        # check if present
+  sudo apt install fonts-noto-extra     # install if missing (Debian/Ubuntu)
+  ```
+
+---
+
+## Practical example
+
+Say you need to replace **`Editor.py`**, just downloaded to
+**`~/Downloads/Editor.py`**. The commands become:
+
+```bash
+# 0. (Recommended) check the downloaded file is there
+ls -l ~/Downloads/Editor.py
+
+# 1. Back up the original (only once)
+sudo cp /usr/lib/python3/dist-packages/songpressplusplus/Editor.py \
+        /usr/lib/python3/dist-packages/songpressplusplus/Editor.py.backup
+
+# 2. Copy the fixed version over the old one
+sudo cp ~/Downloads/Editor.py \
+        /usr/lib/python3/dist-packages/songpressplusplus/Editor.py
+
+# 3. Clear the compiled cache
+sudo rm -f /usr/lib/python3/dist-packages/songpressplusplus/__pycache__/*.pyc
+```
+
+Then close and reopen Songpress++ and try typing a line with the ♪ symbol.
+
+If something goes wrong, restore the backup:
+
+```bash
+sudo cp /usr/lib/python3/dist-packages/songpressplusplus/Editor.py.backup \
+        /usr/lib/python3/dist-packages/songpressplusplus/Editor.py
+sudo rm -f /usr/lib/python3/dist-packages/songpressplusplus/__pycache__/*.pyc
+```

@@ -271,6 +271,67 @@ Then, in Dolphin: right-click the `.deb` → _Open With…_ → choose "GDebi Pa
 
 ---
 
+## FAQ / Troubleshooting
+
+### Error: `dpkg frontend lock was locked by ... packagekitd`
+
+While installing with `dpkg` or `apt` you may hit an error like:
+
+```
+dpkg: error: dpkg frontend lock was locked by /usr/libexec/packagekitd process with pid 2755
+E: Could not get lock /var/lib/dpkg/lock-frontend. It is held by process 2755 (packagekitd)
+```
+
+It means that **another process is already using the package management system**
+and holds the `dpkg` *lock*. The most common culprit is **`packagekitd`**, the
+background service that handles updates and graphical installs (Discover, GNOME
+Software…): it often starts on its own at boot or when you open a package
+manager.
+
+> **⚠️ Never remove the lock file by hand** (`/var/lib/dpkg/lock-frontend` or
+> similar), as the message itself warns: you can corrupt the package database and
+> damage the system. The lock must be **released**, not deleted.
+
+**Solution 1 — wait a few minutes.** Often `packagekitd` is just refreshing its
+cache and releases the lock on its own. Try again after a couple of minutes.
+
+**Solution 2 — stop the service and reinstall:**
+
+```bash
+sudo systemctl stop packagekit
+sudo dpkg -i "build_deb/songpressplusplus_8.0.4_all.deb" && sudo apt-get install -f
+```
+
+If the service restarts immediately and grabs the lock again, **mask it
+temporarily**, install, then re-enable it:
+
+```bash
+sudo systemctl mask packagekit
+sudo systemctl stop packagekit
+# … install the package …
+sudo systemctl unmask packagekit
+```
+
+> **🔎 Who is holding the lock?** It is not necessarily `packagekitd`. To find
+> out which process holds it:
+>
+> ```bash
+> ps aux | grep -E 'apt|dpkg|packagekit' | grep -v grep
+> ```
+>
+> If it is an `apt`/`dpkg` you started yourself in another terminal, **wait for
+> it to finish** rather than killing it: interrupting it midway can leave
+> packages in an inconsistent state.
+
+> **💡 `dpkg -i` and `apt-get install -f` in one go.** In the example above the
+> two commands are joined with `&&`: this way the second one (which resolves the
+> dependencies) only runs if the first succeeds, and you don't have to remember
+> to run it by hand. Be careful not to paste them as if they were a single
+> command on separate lines: they must be separated (`&&` or two distinct
+> Enter presses).
+
+---
+
 ## Upgrading to a new version
 
 ### 1. Update the version in `pyproject.toml`

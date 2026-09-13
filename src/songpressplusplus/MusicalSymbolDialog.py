@@ -477,8 +477,41 @@ def _make_symbol_font(point_size: int) -> wx.Font:
 class MusicalSymbolDialog(wx.Dialog):
     """Dialog modale per scegliere e inserire un simbolo musicale Unicode."""
 
+    # ── Persistenza del colore del simbolo ──────────────────────────────────
+    # Lo storage vive QUI (non più in Preferences): il dialog legge/scrive il
+    # colore direttamente nella config globale (wx.Config.Get()), sotto la
+    # stessa sezione usata per le altre impostazioni del simbolo musicale.
+    _COLOUR_CFG_PATH = '/MusicalSymbol'
+    _COLOUR_CFG_KEY  = 'colourHex'
+    _COLOUR_DEFAULT  = '#000000'
+
+    @classmethod
+    def _read_stored_colour(cls) -> str:
+        try:
+            cfg = wx.Config.Get()
+            old = cfg.GetPath()
+            cfg.SetPath(cls._COLOUR_CFG_PATH)
+            h = cfg.Read(cls._COLOUR_CFG_KEY)
+            cfg.SetPath(old if old else '/')
+            return h if h else cls._COLOUR_DEFAULT
+        except Exception:
+            return cls._COLOUR_DEFAULT
+
+    @classmethod
+    def _write_stored_colour(cls, hex_str: str) -> None:
+        try:
+            cfg = wx.Config.Get()
+            old = cfg.GetPath()
+            cfg.SetPath(cls._COLOUR_CFG_PATH)
+            cfg.Write(cls._COLOUR_CFG_KEY, hex_str or cls._COLOUR_DEFAULT)
+            cfg.SetPath(old if old else '/')
+            cfg.Flush()
+        except Exception:
+            pass
+
     def __init__(self, parent, scale_enabled: bool = False, font_size: int = 24,
-                 insert_verse: bool = False, on_valign_change=None):
+                 insert_verse: bool = False, on_valign_change=None,
+                 symbol_colour: str = None):
         super().__init__(
             parent,
             title=_("Musical Symbols"),
@@ -491,6 +524,11 @@ class MusicalSymbolDialog(wx.Dialog):
         self._init_scale_enabled = scale_enabled
         self._init_font_size = max(6, min(font_size, 144))
         self._init_insert_verse = insert_verse
+        # Colore iniziale: se non passato esplicitamente, lo legge dallo storage
+        # interno del dialog (config globale).
+        if symbol_colour is None:
+            symbol_colour = self._read_stored_colour()
+        self._init_symbol_colour = symbol_colour or self._COLOUR_DEFAULT
 
         self._build_ui()
         self.SetMinSize(wx.Size(620, 400))
@@ -523,6 +561,15 @@ class MusicalSymbolDialog(wx.Dialog):
         )
         self._preview.SetFont(_make_symbol_font(36))
         self._preview.SetMinSize(wx.Size(56, 56))
+        # Anteprima nel colore configurato per il simbolo.
+        try:
+            _ph = (self._init_symbol_colour or '').strip().lstrip('#')
+            if len(_ph) == 6:
+                self._preview.SetForegroundColour(
+                    wx.Colour(int(_ph[0:2], 16), int(_ph[2:4], 16), int(_ph[4:6], 16))
+                )
+        except Exception:
+            pass
         info_row.Add(self._preview, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 12)
 
         self._desc = wx.StaticText(self, label="")
@@ -533,6 +580,10 @@ class MusicalSymbolDialog(wx.Dialog):
         # ── Riga dimensione ────────────────────────────────────────────────
         size_row = wx.BoxSizer(wx.HORIZONTAL)
         self._chk_scale = wx.CheckBox(self, label=_("Custom size (pt):"))
+        self._chk_scale.SetToolTip(
+            _("When enabled, inserted musical symbols are wrapped with\n"
+              "{textsize:N}...{textsize:} to apply the chosen point size.")
+        )
         self._chk_scale.SetValue(self._init_scale_enabled)
         self._spin_size = wx.SpinCtrl(
             self, value=str(self._init_font_size),
@@ -558,6 +609,35 @@ class MusicalSymbolDialog(wx.Dialog):
         )
         self._chk_verse.SetValue(self._init_insert_verse)
         outer.Add(self._chk_verse, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
+        # ── Riga colore del simbolo ────────────────────────────────────────
+        # Spostata qui dalla finestra Opzioni: il colore si sceglie al momento
+        # dell'inserimento. Vale sia su Windows sia su Linux, a schermo e in
+        # stampa, ed è applicato via {textcolour:...} (indipendente da {textsize}).
+        colour_row = wx.BoxSizer(wx.HORIZONTAL)
+        self._lbl_colour = wx.StaticText(self, label=_("Symbol colour:"))
+        self._txt_colour = wx.TextCtrl(
+            self, value=self._init_symbol_colour, size=wx.Size(80, -1)
+        )
+        self._btn_colour = wx.Button(self, label=_("Pick…"), size=wx.Size(60, -1))
+        self._swatch_colour = wx.Panel(
+            self, size=wx.Size(24, 24), style=wx.BORDER_SIMPLE
+        )
+        self._swatch_colour.SetBackgroundColour(
+            self._hex_to_colour(self._init_symbol_colour)
+        )
+        self._txt_colour.SetToolTip(
+            _("Colour applied to the inserted symbol.\n"
+              "Works on both Windows and Linux, on screen and in print.")
+        )
+        colour_row.Add(self._lbl_colour,    0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        colour_row.Add(self._txt_colour,    0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        colour_row.Add(self._btn_colour,    0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        colour_row.Add(self._swatch_colour, 0, wx.ALIGN_CENTER_VERTICAL)
+        outer.Add(colour_row, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
+        self._btn_colour.Bind(wx.EVT_BUTTON, self._on_pick_colour)
+        self._txt_colour.Bind(wx.EVT_TEXT, self._on_colour_text)
 
         # ── Nota informativa dimensione ────────────────────────────────────
         note_row = wx.BoxSizer(wx.HORIZONTAL)
@@ -598,6 +678,59 @@ class MusicalSymbolDialog(wx.Dialog):
 
     def _on_chk_scale(self, evt):
         self._spin_size.Enable(self._chk_scale.GetValue())
+
+    # ── Colore del simbolo ─────────────────────────────────────────────────
+    @staticmethod
+    def _hex_to_colour(hex_str):
+        try:
+            h = (hex_str or "").strip().lstrip('#')
+            if len(h) == 6:
+                return wx.Colour(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+        except Exception:
+            pass
+        return wx.Colour(0, 0, 0)
+
+    @staticmethod
+    def _colour_to_hex(colour):
+        if not colour.IsOk():
+            return '#000000'
+        return '#{:02X}{:02X}{:02X}'.format(colour.Red(), colour.Green(), colour.Blue())
+
+    def _apply_colour_to_widgets(self, hex_str):
+        """Aggiorna quadratino di anteprima e colore dell'anteprima del glifo."""
+        c = self._hex_to_colour(hex_str)
+        self._swatch_colour.SetBackgroundColour(c)
+        self._swatch_colour.Refresh()
+        self._preview.SetForegroundColour(c)
+        self._preview.Refresh()
+
+    def _on_colour_text(self, evt):
+        self._apply_colour_to_widgets(self._txt_colour.GetValue())
+        evt.Skip()
+
+    def _on_pick_colour(self, evt):
+        data = wx.ColourData()
+        data.SetColour(self._hex_to_colour(self._txt_colour.GetValue()))
+        data.SetChooseFull(True)
+        dlg = wx.ColourDialog(self, data)
+        if dlg.ShowModal() == wx.ID_OK:
+            chosen = dlg.GetColourData().GetColour()
+            self._txt_colour.SetValue(self._colour_to_hex(chosen))
+            self._apply_colour_to_widgets(self._colour_to_hex(chosen))
+        dlg.Destroy()
+
+    def GetSymbolColour(self) -> str:
+        """Restituisce il colore corrente (hex sanificato, es. '#RRGGBB')."""
+        c = self._hex_to_colour(self._txt_colour.GetValue())
+        return self._colour_to_hex(c)
+
+    def EndModal(self, retCode):
+        # Alla conferma (pulsante Inserisci o doppio clic → ID_OK) il dialog
+        # salva da sé il colore scelto nel proprio storage, così la scelta
+        # persiste tra sessioni senza passare da Preferences.
+        if retCode == wx.ID_OK:
+            self._write_stored_colour(self.GetSymbolColour())
+        return super().EndModal(retCode)
 
     def _make_grid(self, parent, symbols):
         rows = max(1, (len(symbols) + _COLS - 1) // _COLS)
@@ -688,11 +821,21 @@ class MusicalSymbolDialog(wx.Dialog):
             solo simbolo          → ♩
             con dimensione        → {textsize:24}♩{textsize}
             con strofa            → {start_verse}♩{end_verse}
+            con colore            → {textcolour:#FF0000}♩{textcolour}
             con entrambe          → {start_verse}{textsize:24}♩{textsize}{end_verse}
         """
         sym = self._selected or ""
         if not sym:
             return ""
+        # Applica colore del simbolo: direttiva a sé, indipendente da {textsize}.
+        # Riusa la direttiva {textcolour:...}...{textcolour} già gestita dal
+        # parser (SongFormat/SongBoxes) e onorata dal renderer su tutti i
+        # percorsi (GraphicsContext su Windows/macOS, bitmap su Linux e stampa).
+        # Si emette solo se è stato scelto un colore diverso dal nero di default,
+        # così l'inserimento resta pulito quando il colore non serve.
+        col = self.GetSymbolColour().strip()
+        if col and col.upper() != "#000000":
+            sym = f"{{textcolour:{col}}}{sym}{{textcolour}}"
         # Applica dimensione
         if self._chk_scale.GetValue():
             pt = self._spin_size.GetValue()
