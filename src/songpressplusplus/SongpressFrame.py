@@ -737,6 +737,19 @@ else:
 
 class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, SongpressToolbarsMixin):
     def __init__(self, res):
+        # --- Istanza singola (SOLO Linux): elezione atomica del primario il
+        #     PRIMA POSSIBILE, prima di costruire la finestra. Su Linux un
+        #     doppio/triplo click su un file lancia più processi quasi
+        #     simultanei: acquisendo subito la porta come arbitro, i processi
+        #     "perdenti" inoltrano il file all'istanza esistente ed escono
+        #     senza aprire una seconda finestra. Vedi _AcquireSingleInstanceEarly
+        #     in SDIMainFrame. Su altre piattaforme la chiamata è un no-op e il
+        #     comportamento resta identico a prima.
+        try:
+            _singleInstancePref = getattr(Preferences(), 'singleInstance', True)
+        except Exception:
+            _singleInstancePref = True
+        self._AcquireSingleInstanceEarly(_singleInstancePref)
         PrintManager.__init__(self)
         SDIMainFrame.__init__(
             self,

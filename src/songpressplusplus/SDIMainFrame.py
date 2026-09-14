@@ -26,6 +26,7 @@ import sys
 import platform
 import socket
 import threading
+import time
 
 import wx
 import wx.adv
@@ -553,7 +554,12 @@ class SDIMainFrame(object):
         # così il socket è in ascolto il prima possibile ed evita la race
         # condition in cui una seconda istanza trova la porta libera perché
         # il server non era ancora partito.
-        self._singleInstanceServer = None
+        # NB: su Linux il socket può essere già stato acquisito in anticipo
+        # da _AcquireSingleInstanceEarly (in cima a __init__): NON azzerarlo,
+        # altrimenti perderemmo la porta già vinta. Lo inizializziamo a None
+        # solo se non è ancora stato valorizzato.
+        if getattr(self, '_singleInstanceServer', None) is None:
+            self._singleInstanceServer = None
         self._StartSingleInstanceServer()
         if len(sys.argv) > 1:
             fn = sys.argv[1]
@@ -565,6 +571,10 @@ class SDIMainFrame(object):
     # ------------------------------------------------------------------ #
 
     _SINGLE_INSTANCE_PORT = 47833  # arbitrary local port
+    # Socket del server single-instance. Definito a livello di classe così
+    # esiste sempre come attributo (default None) anche prima che venga
+    # eventualmente valorizzato dall'acquisizione anticipata su Linux.
+    _singleInstanceServer = None
 
     @classmethod
     def _TrySendToExistingInstance(cls, filepath):
@@ -583,6 +593,69 @@ class SDIMainFrame(object):
         except (ConnectionRefusedError, OSError):
             return False
 
+    def _AcquireSingleInstanceEarly(self, single_instance):
+        """Elezione del primario ANTICIPATA e atomica — SOLO su Linux.
+
+        Perché serve (e perché solo su Linux):
+        Su Linux, cliccando due o più volte in rapida successione su un file
+        nel file manager, vengono lanciati due o più processi quasi nello
+        stesso istante. Con il vecchio codice il server single-instance
+        veniva messo in ascolto molto tardi (dopo aver costruito e mostrato
+        l'intera finestra, in FinalizePaneInitialization). In quella finestra
+        temporale ogni processo, controllando se esiste già un'istanza, la
+        trovava assente e apriva la propria copia: risultato, più finestre.
+
+        La soluzione è usare il bind della porta come arbitro: il kernel
+        garantisce che un solo processo alla volta possa fare bind su
+        127.0.0.1:<porta>. Chi vince il bind è il primario e tiene il socket
+        per tutta la sessione; ogni altro processo fallisce il bind, inoltra
+        il proprio file al primario ed esce PRIMA di costruire una seconda
+        finestra. Poiché il bind è atomico a livello di kernel, la corsa è
+        chiusa anche per avvii perfettamente simultanei.
+
+        Non fa nulla se non siamo su Linux o se la modalità istanza singola è
+        disattivata. In caso di errore imprevisto non impedisce mai l'avvio:
+        si prosegue con un avvio normale.
+
+        Va chiamata il prima possibile (in cima a __init__ della sottoclasse),
+        prima di costruire la finestra.
+        """
+        if platform.system() != 'Linux' or not single_instance:
+            return
+        port = self._SINGLE_INSTANCE_PORT
+        # Messaggio da inoltrare: il file passato da riga di comando, oppure
+        # una semplice richiesta di portare in primo piano la finestra
+        # esistente quando siamo stati avviati senza file.
+        if len(sys.argv) > 1:
+            payload = sys.argv[1]
+        else:
+            payload = '__RAISE__'
+        for _attempt in range(2):
+            try:
+                srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                srv.bind(('127.0.0.1', port))
+                srv.listen(5)
+            except OSError:
+                # Porta già occupata: un primario è (probabilmente) in
+                # esecuzione. Gli inoltriamo il nostro file e ci ritiriamo
+                # senza aprire una seconda finestra.
+                if self._TrySendToExistingInstance(payload):
+                    raise SystemExit(0)
+                # Il detentore è sparito tra il nostro bind e la connessione:
+                # riproviamo una volta a prenderci noi la porta.
+                time.sleep(0.15)
+                continue
+            else:
+                # Abbiamo vinto la corsa: teniamo il socket già in bind+listen.
+                # Il thread di ascolto verrà avviato più tardi da
+                # _StartSingleInstanceServer (che riutilizzerà questo socket).
+                self._singleInstanceServer = srv
+                return
+        # Non siamo riusciti né a fare bind né a inoltrare: avvio normale
+        # (meglio una finestra in più che un click che non fa nulla).
+        return
+
     def _StartSingleInstanceServer(self):
         """Bind to the local port and listen for file-open requests.
 
@@ -595,15 +668,23 @@ class SDIMainFrame(object):
         pref = getattr(self, 'pref', None)
         if pref is not None and not getattr(pref, 'singleInstance', True):
             return
-        try:
-            srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            srv.bind(('127.0.0.1', self._SINGLE_INSTANCE_PORT))
-            srv.listen(5)
-            self._singleInstanceServer = srv
-        except OSError:
-            # Port already in use — another instance is running; nothing to do.
-            return
+        srv = getattr(self, '_singleInstanceServer', None)
+        if srv is None:
+            # Il socket non è stato acquisito in anticipo (piattaforme diverse
+            # da Linux, oppure acquisizione anticipata saltata): facciamo ora
+            # il bind, come in origine.
+            try:
+                srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                srv.bind(('127.0.0.1', self._SINGLE_INSTANCE_PORT))
+                srv.listen(5)
+                self._singleInstanceServer = srv
+            except OSError:
+                # Port already in use — another instance is running; nothing to do.
+                return
+        # else: su Linux il socket è già in bind+listen dall'acquisizione
+        # anticipata (_AcquireSingleInstanceEarly): riusiamolo così com'è e
+        # avviamo semplicemente il thread di ascolto.
 
         def _listen():
             while True:
@@ -620,6 +701,11 @@ class SDIMainFrame(object):
                         data += chunk
                     conn.close()
                     filepath = data.decode('utf-8').strip()
+                    # La finestra potrebbe non esistere ancora se una richiesta
+                    # arriva prestissimo (backlog del listen creato in anticipo):
+                    # in tal caso ignoriamo in sicurezza.
+                    if not hasattr(self, 'frame') or self.frame is None:
+                        continue
                     if filepath == '__RAISE__':
                         wx.CallAfter(self.frame.Raise)
                         wx.CallAfter(self.frame.RequestUserAttention)

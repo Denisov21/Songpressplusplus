@@ -49,6 +49,7 @@ class Preferences(object):
         * Set/GetEasyChordsGroup
         * GetEasyChords
         * showRecentFiles (bool)
+        * colourPreview (bool)
     """
     def __init__(self):
         object.__init__(self)
@@ -195,6 +196,7 @@ class Preferences(object):
         self._LoadSmpValign()
         self._LoadSmpOversample()
         self._LoadSyntaxColours()
+        self._LoadColourPreview()
         self._LoadDebugOptions()
         self._LoadIntellisense()
         self._LoadDecoSliderColour()
@@ -291,6 +293,14 @@ class Preferences(object):
         self.config.SetPath('/Editor')
         v = self.config.Read('multiCursor')
         self.multiCursor = bool(int(v)) if v != '' else False
+        self.config.SetPath('/')
+
+    def _LoadColourPreview(self):
+        # Anteprima del colore al passaggio del mouse su una sigla colore
+        # (es. {textcolor:#A52A2A}). Default True = mostra l'anteprima.
+        self.config.SetPath('/Editor')
+        v = self.config.Read('colourPreview')
+        self.colourPreview = bool(int(v)) if v != '' else True
         self.config.SetPath('/')
 
     def _LoadTempoIconSize(self):
@@ -434,6 +444,7 @@ class Preferences(object):
         self._SaveSmpValign()
         self._SaveSmpOversample()
         self._SaveSyntaxColours()
+        self._SaveColourPreview()
         self._SaveDebugOptions()
         self._SaveIntellisense()
         self._SaveDecoSliderColour()
@@ -595,6 +606,11 @@ class Preferences(object):
     def _SaveMultiCursor(self):
         self.config.SetPath('/Editor')
         self.config.Write('multiCursor', '1' if getattr(self, 'multiCursor', False) else '0')
+        self.config.SetPath('/')
+
+    def _SaveColourPreview(self):
+        self.config.SetPath('/Editor')
+        self.config.Write('colourPreview', '1' if getattr(self, 'colourPreview', True) else '0')
         self.config.SetPath('/')
 
     def _SaveTempoIconSize(self):

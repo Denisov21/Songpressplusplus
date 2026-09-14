@@ -958,3 +958,11 @@ msgstr "Icona da immagine"
 msgid "Use the image icons loaded from img/checked_box.png and img/not_checked_box.png in the 'Check dependencies' window."
 msgstr "Usa le icone immagine caricate da img/checked_box.png e img/not_checked_box.png nella finestra 'Verifica dipendenze'."
 
+
+#: PreferencesDialog.py — Editor tab, Syntax colours, colour preview checkbox
+msgid "Show a colour preview when hovering over a colour code"
+msgstr "Mostra un'anteprima del colore al passaggio del mouse su una sigla colore"
+
+#: PreferencesDialog.py — Editor tab, Syntax colours, colour preview checkbox tooltip
+msgid "When enabled, resting the mouse over a colour code (e.g. {textcolor:#A52A2A} or {textcolor:red}) shows a small rectangle previewing that colour, attached just below the text. Works on Windows and Linux."
+msgstr "Se attivo, fermando il mouse su una sigla colore (es. {textcolor:#A52A2A} o {textcolor:red}) appare un piccolo rettangolo con l'anteprima di quel colore, agganciato appena sotto il testo. Funziona su Windows e Linux."

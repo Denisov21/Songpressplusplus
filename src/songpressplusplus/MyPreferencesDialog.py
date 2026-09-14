@@ -204,6 +204,9 @@ class MyPreferencesDialog(PreferencesDialog):
         # Multi-cursor
         self.multiCursorCB.SetValue(getattr(self.pref, 'multiCursor', False))
 
+        # Anteprima colore al passaggio del mouse
+        self.colourPreviewCB.SetValue(getattr(self.pref, 'colourPreview', True))
+
         # Enable Save only when modified
         self.enableSaveOnModifiedCB.SetValue(getattr(self.pref, 'enableSaveOnModified', True))
 
@@ -1872,6 +1875,8 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.showPrintPreview = self.showPrintPreviewCB.GetValue()
         # Multi-cursor
         self.pref.multiCursor = self.multiCursorCB.GetValue()
+        # Anteprima colore al passaggio del mouse
+        self.pref.colourPreview = self.colourPreviewCB.GetValue()
         self.pref.enableSaveOnModified = self.enableSaveOnModifiedCB.GetValue()
         # Salvataggio geometria finestra
         self.pref.saveWindowGeometry = self.saveWindowGeometryCB.GetValue()

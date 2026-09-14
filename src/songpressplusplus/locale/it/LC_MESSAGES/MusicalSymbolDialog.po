@@ -34,6 +34,15 @@ msgstr "Chiudi"
 msgid "Custom size (pt):"
 msgstr "Dimensione personalizzata (pt):"
 
+#. Tooltip for the custom-size checkbox (same text as in Options)
+#: MusicalSymbolDialog.py
+msgid ""
+"When enabled, inserted musical symbols are wrapped with\n"
+"{textsize:N}...{textsize:} to apply the chosen point size."
+msgstr ""
+"Se attiva, i simboli musicali inseriti vengono racchiusi tra\n"
+"{textsize:N}...{textsize:} per applicare la dimensione in punti scelta."
+
 #. Spin control label (Options): how much to lower musical symbols; 0 = raw position
 #: PreferencesDialog.py
 msgid "Symbol vertical drop (%):"
@@ -52,8 +61,8 @@ msgstr ""
 
 #. Info note shown below the size controls
 #: MusicalSymbolDialog.py
-msgid "Note: not all symbols can be resized!"
-msgstr "Nota: non tutti i simboli si possono dimensionare!"
+msgid "Rendering may vary depending on the available font"
+msgstr "La resa può variare in base al font disponibile"
 
 #. Checkbox label: wrap the symbol in a non-counted verse block
 #: MusicalSymbolDialog.py
@@ -78,6 +87,27 @@ msgid ""
 "SMP: rendered with FreeSerif (GDI+ path). BMP: rendered with the song font."
 msgstr ""
 "SMP: reso con FreeSerif (percorso GDI+). BMP: reso con il font del brano."
+
+# --- Symbol colour ---
+
+#. Label for the symbol colour picker in the Musical Symbols dialog
+#: MusicalSymbolDialog.py
+msgid "Symbol colour:"
+msgstr "Colore simbolo:"
+
+#. Button that opens the colour chooser
+#: MusicalSymbolDialog.py
+msgid "Pick…"
+msgstr "Scegli…"
+
+#. Tooltip for the symbol colour field (multiline)
+#: MusicalSymbolDialog.py
+msgid ""
+"Colour applied to the inserted symbol.\n"
+"Works on both Windows and Linux, on screen and in print."
+msgstr ""
+"Colore applicato al simbolo inserito.\n"
+"Funziona sia su Windows sia su Linux, a schermo e in stampa."
 
 # --- Tab names ---
 

@@ -14,6 +14,7 @@
 
 
 import codecs
+import re
 
 from wx.stc import *
 import wx.lib, wx.lib.newevent
@@ -41,6 +42,59 @@ def get_text_from_clipboard():
         return None
     wx.TheClipboard.Close()
     return do.GetText()
+
+
+class _ColourPreviewPopup(wx.PopupWindow):
+    """Piccola finestra senza bordi che mostra un campione di colore e la sua
+    sigla. Usata per l'anteprima al passaggio del mouse nell'editor.
+    wx.PopupWindow e' disponibile sia su Windows sia su GTK (Linux)."""
+
+    _SWATCH_W = 44
+    _SWATCH_H = 24
+    _PAD = 6
+    _GAP = 8
+
+    def __init__(self, parent):
+        wx.PopupWindow.__init__(self, parent)
+        self._colour = wx.Colour(0, 0, 0)
+        self._label = ''
+        self.Bind(wx.EVT_PAINT, self._on_paint)
+
+    def ShowColour(self, colour, label, anchor_screen):
+        self._colour = colour
+        self._label = label or ''
+        dc = wx.ClientDC(self)
+        dc.SetFont(wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT))
+        tw, th = dc.GetTextExtent(self._label) if self._label else (0, 0)
+        w = self._PAD + self._SWATCH_W + (self._GAP + tw if self._label else 0) + self._PAD
+        h = self._PAD + max(self._SWATCH_H, th) + self._PAD
+        self.SetSize((w, h))
+        # Position() posiziona la finestra vicino al punto tenendo conto dei
+        # bordi dello schermo (anchor_screen e' in coordinate schermo).
+        self.Position(anchor_screen, (w, h))
+        self.Refresh()
+        self.Show()
+
+    def _on_paint(self, evt):
+        dc = wx.PaintDC(self)
+        w, h = self.GetClientSize()
+        # Sfondo chiaro + bordo esterno
+        dc.SetBrush(wx.Brush(wx.Colour(250, 250, 250)))
+        dc.SetPen(wx.Pen(wx.Colour(110, 110, 110)))
+        dc.DrawRectangle(0, 0, w, h)
+        # Campione del colore
+        sy = (h - self._SWATCH_H) // 2
+        dc.SetBrush(wx.Brush(self._colour))
+        dc.SetPen(wx.Pen(wx.Colour(60, 60, 60)))
+        dc.DrawRectangle(self._PAD, sy, self._SWATCH_W, self._SWATCH_H)
+        # Etichetta con la sigla (es. #A52A2A)
+        if self._label:
+            dc.SetFont(wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT))
+            dc.SetTextForeground(wx.Colour(20, 20, 20))
+            tw, th = dc.GetTextExtent(self._label)
+            dc.DrawText(self._label,
+                        self._PAD + self._SWATCH_W + self._GAP,
+                        (h - th) // 2)
 
 
 class Editor(StyledTextCtrl):
@@ -133,6 +187,10 @@ class Editor(StyledTextCtrl):
         self.in_tab_grid = []
         # Colore evidenziazione trova — attributo di istanza (default giallo)
         self.find_highlight_colour = wx.Colour(255, 220, 0)
+        # Anteprima colore al passaggio del mouse sopra una sigla colore
+        # (es. {textcolor:#A52A2A}). Funziona su Windows e Linux.
+        self._colour_popup = None
+        self._setup_colour_preview()
 
     # Font che coprono il blocco Unicode "Musical Symbols" (U+1D100+), in
     # ordine di preferenza per l'EDITOR. Sono proporzionali: vengono usati SOLO
@@ -418,6 +476,138 @@ class Editor(StyledTextCtrl):
         """Rimuove i puntini di durata dall'editor."""
         self.SetIndicatorCurrent(self.DOTS_INDICATOR)
         self.IndicatorClearRange(0, self.GetLength())
+
+    # -----------------------------------------------------------------------
+
+    # --- Anteprima colore al passaggio del mouse ---------------------------
+    # Mostra un riquadro con l'anteprima del colore quando il mouse si ferma
+    # sopra una sigla colore: esadecimale ({textcolor:#A52A2A}) o per nome
+    # ({textcolor:red}). Cross-platform: usa gli eventi "dwell" di Scintilla
+    # e una wx.PopupWindow (supportata su Windows e su GTK/Linux).
+
+    # #RGB, #RRGGBB o #RRGGBBAA (la forma piu' lunga ha priorita').
+    _HEX_COLOUR_RE = re.compile(
+        r'#(?:[0-9A-Fa-f]{8}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})\b')
+    # Nome colore dentro una direttiva che contiene "color"/"colour"
+    # (es. {textcolor:red}, {text_colour: dark green}); il gruppo 1 e' il nome.
+    _NAMED_COLOUR_RE = re.compile(
+        r'\{[^{}]*colou?r[^:{}]*:\s*([A-Za-z][A-Za-z ]*?)\s*\}', re.IGNORECASE)
+
+    def _setup_colour_preview(self):
+        """Abilita gli eventi dwell e collega gli handler dell'anteprima."""
+        if not hasattr(wx, 'PopupWindow'):
+            return  # piattaforma senza PopupWindow: niente anteprima, nessun crash
+        try:
+            self.SetMouseDwellTime(400)  # ms di sosta prima di mostrare l'anteprima
+        except Exception:
+            return
+        self.Bind(EVT_STC_DWELLSTART, self.OnColourDwellStart)
+        self.Bind(EVT_STC_DWELLEND, self.OnColourDwellEnd)
+        self.Bind(wx.EVT_LEAVE_WINDOW, self._on_leave_hide_colour)
+        self.Bind(wx.EVT_MOUSEWHEEL, self._on_wheel_hide_colour)
+
+    def _parse_colour(self, s):
+        """Converte una sigla colore (esadecimale o nome) in wx.Colour, o None."""
+        s = s.strip()
+        if s.startswith('#'):
+            h = s[1:]
+            try:
+                if len(h) == 3:
+                    return wx.Colour(int(h[0] * 2, 16), int(h[1] * 2, 16), int(h[2] * 2, 16))
+                if len(h) == 6:
+                    return wx.Colour(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+                if len(h) == 8:
+                    return wx.Colour(int(h[0:2], 16), int(h[2:4], 16),
+                                     int(h[4:6], 16), int(h[6:8], 16))
+            except ValueError:
+                return None
+            return None
+        try:
+            c = wx.TheColourDatabase.Find(s.upper())
+        except Exception:
+            return None
+        return c if (c is not None and c.IsOk()) else None
+
+    def _colour_at_position(self, pos):
+        """Se in *pos* (posizione byte STC) c'e' una sigla colore valida,
+        ritorna (wx.Colour, etichetta); altrimenti None."""
+        if pos is None or pos < 0:
+            return None
+        line = self.LineFromPosition(pos)
+        line_start = self.PositionFromLine(line)
+        text = self.GetLine(line)
+        rel_byte = pos - line_start
+
+        # Le posizioni STC sono in byte (UTF-8): converto gli indici carattere
+        # dei match regex in indici byte per confrontarli con rel_byte.
+        def byte_idx(char_idx):
+            return len(text[:char_idx].encode('utf-8'))
+
+        for m in self._HEX_COLOUR_RE.finditer(text):
+            if byte_idx(m.start()) <= rel_byte < byte_idx(m.end()):
+                col = self._parse_colour(m.group(0))
+                if col is not None:
+                    return (col, m.group(0))
+        for m in self._NAMED_COLOUR_RE.finditer(text):
+            if byte_idx(m.start(1)) <= rel_byte < byte_idx(m.end(1)):
+                col = self._parse_colour(m.group(1))
+                if col is not None:
+                    return (col, m.group(1).strip())
+        return None
+
+    def _colour_preview_enabled(self):
+        """True se l'anteprima colore e' attiva nelle preferenze.
+        Lettura dal vivo: il cambio nelle preferenze ha effetto subito, senza
+        riavvio. Se non c'e' un oggetto pref (es. editor di anteprima interno
+        al dialogo) il default e' True."""
+        pref = getattr(getattr(self, 'spframe', None), 'pref', None)
+        return bool(getattr(pref, 'colourPreview', True))
+
+    def OnColourDwellStart(self, evt):
+        if not self._colour_preview_enabled():
+            self._hide_colour_popup()
+            evt.Skip()
+            return
+        pos = evt.GetPosition()
+        info = self._colour_at_position(pos)
+        if info is None:
+            self._hide_colour_popup()
+            evt.Skip()
+            return
+        colour, label = info
+        # Ancora il popup appena SOTTO il testo della sigla colore (non al
+        # puntatore), cosi' appare "attaccato" alla riga. PointFromPosition da'
+        # il pixel in alto a sinistra del carattere; TextHeight l'altezza riga.
+        pt = self.PointFromPosition(pos)
+        lh = self.TextHeight(self.LineFromPosition(pos))
+        anchor = self.ClientToScreen(wx.Point(pt.x, pt.y + lh + 1))
+        self._show_colour_popup(colour, label, anchor)
+        evt.Skip()
+
+    def OnColourDwellEnd(self, evt):
+        self._hide_colour_popup()
+        evt.Skip()
+
+    def _on_leave_hide_colour(self, evt):
+        self._hide_colour_popup()
+        evt.Skip()
+
+    def _on_wheel_hide_colour(self, evt):
+        self._hide_colour_popup()
+        evt.Skip()
+
+    def _show_colour_popup(self, colour, label, anchor_screen):
+        if self._colour_popup is None:
+            try:
+                self._colour_popup = _ColourPreviewPopup(self)
+            except Exception:
+                self._colour_popup = None
+                return
+        self._colour_popup.ShowColour(colour, label, anchor_screen)
+
+    def _hide_colour_popup(self):
+        if self._colour_popup is not None:
+            self._colour_popup.Hide()
 
     # -----------------------------------------------------------------------
 

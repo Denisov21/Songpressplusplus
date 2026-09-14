@@ -650,7 +650,7 @@ class MusicalSymbolDialog(wx.Dialog):
         note_row.Add(_info_icon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         _note_lbl = wx.StaticText(
             self,
-            label=_("Note: not all symbols can be resized!")
+            label=_("Rendering may vary depending on the available font")
         )
         _note_font = _note_lbl.GetFont()
         _note_font.SetPointSize(max(_note_font.GetPointSize() - 1, 7))
