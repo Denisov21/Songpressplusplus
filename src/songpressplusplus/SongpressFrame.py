@@ -37,6 +37,7 @@ from .HTML import HtmlExporter, TabExporter
 from . import PdfExporter
 from . import SongbookExporter
 from . import CanzonatorDialog
+from . import CreaIndice
 from .MyTransposeDialog import *
 from .MyNotationDialog import *
 from .MyNormalizeDialog import *
@@ -1568,6 +1569,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         Bind(self.OnExportAsPptx, 'exportAsPptx')
         Bind(self.OnExportAsPdf, 'exportAsPdf')
         Bind(self.OnSongbook, 'songbook')
+        Bind(self.OnCreateIndex, 'createIndex')
         Bind(self.OnCanzonatore, 'canzonatore')
         Bind(self.OnPrint, 'print')
         Bind(self.OnPrintPreview, 'printPreview')
@@ -5953,6 +5955,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
     def OnCanzonatore(self, evt):
         """Unisce più file ChordPro in un unico file (Canzonatore)."""
         CanzonatorDialog.open_canzonatore(self, self.frame)
+
+    def OnCreateIndex(self, evt):
+        """Crea un indice PDF (sommario) da una cartella di brani, ordinato per numero del canto."""
+        CreaIndice.showCreateIndexDialog(self.frame)
 
     def OnExportAsPptx(self, evt):
         try:

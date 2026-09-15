@@ -94,6 +94,12 @@
           <help>Crea un songbook PDF da una cartella di brani</help>
           <bitmap>../img/songbook.png</bitmap>
         </object>
+        <object class="wxMenuItem" name="createIndex">
+          <label>Crea _indice PDF...</label>
+          <accel></accel>
+          <help>Crea un indice PDF (sommario) da una cartella di brani, ordinato per numero del canto</help>
+          <bitmap>../img/CreateIndex.png</bitmap>
+        </object>
         <object class="wxMenuItem" name="canzonatore">
           <label>_Canzonatore (unisci brani)...</label>
           <accel></accel>

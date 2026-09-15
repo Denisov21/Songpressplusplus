@@ -94,6 +94,12 @@
           <help>Create a PDF songbook from a folder of songs</help>
           <bitmap>../img/songbook.png</bitmap>
         </object>
+        <object class="wxMenuItem" name="createIndex">
+          <label>Create _Index PDF...</label>
+          <accel></accel>
+          <help>Create a PDF index (table of contents) from a folder of songs, sorted by song number</help>
+          <bitmap>../img/createIndex.png</bitmap>
+        </object>
         <object class="wxMenuItem" name="canzonatore">
           <label>_Mocker (combine songs)...</label>
           <accel></accel>

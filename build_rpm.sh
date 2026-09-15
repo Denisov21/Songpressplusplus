@@ -279,6 +279,7 @@ Requires:       python3-mistune
 Requires:       python3-pypdf
 Requires:       python3-pyenchant
 Requires:       python3-Pillow
+Requires:       python3-docx
 Requires:       xdg-utils
 Requires:       bash
 REQ
@@ -302,6 +303,7 @@ Requires:       python3-mistune
 Requires:       python3-pypdf
 Requires:       python3-enchant
 Requires:       python3-pillow
+Requires:       python3-docx
 Requires:       xdg-utils
 Requires:       bash
 REQ

@@ -24,6 +24,9 @@ dependencies = [
     "pypdf>=6.0.0,<7.0.0",
     "markdown>=3.4,<4.0.0",
     "mistune>=3.0.0,<4.0.0",
+    # python-docx: lettura/scrittura di documenti Word (.docx). Il pacchetto
+    # PyPI è "python-docx", ma il modulo da importare è "docx".
+    "python-docx>=1.1.0,<2.0.0",
     # Pillow: rasterizzazione dei glifi musicali SMP in stampa (font FreeSerif
     # via FreeType). reportlab la tira comunque, ma qui è esplicita perché è una
     # dipendenza diretta del codice di stampa.
@@ -92,6 +95,9 @@ packages = [
     "markdown",
     "mistune",
     "pypdf",
+    # python-docx: lettura/scrittura .docx. Nome del modulo da congelare è
+    # "docx" (il pacchetto PyPI è "python-docx").
+    "docx",
     # PIL (Pillow): rasterizzazione dei glifi musicali SMP in stampa. Il nome
     # del modulo da congelare è PIL (il pacchetto PyPI è "pillow").
     "PIL",

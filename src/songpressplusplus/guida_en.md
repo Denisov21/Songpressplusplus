@@ -1261,7 +1261,12 @@ Accidentals (`#`, `b`, `♯`, `♭`), qualities (`-`, `m`, `M`, `min`, `maj`, `d
 
 ### Musical Symbols Unicode ⌨️
 
-- **Musical symbol (Unicode)…** (`Insert › Musical symbol (Unicode)…`, shortcut `Ctrl+Shift+M`) — opens the **Musical Symbols dialog**, from which you can choose a Unicode character and insert it at the cursor position.
+- **Musical symbol (Unicode)…** (`Insert › Musical symbol (Unicode)…`, shortcut `Ctrl+Shift+M`) — opens the **Musical Symbols dialog**, from which you can choose a Unicode character and insert it at the cursor position. The symbols are organized into six tabs — *Notes and rests*, *Accidentals*, *Dynamics*, *Staff and clefs*, *Ornaments and articulations* and *Common (BMP)* — and the dialog offers a few insertion options:
+  - **Custom size (pt)** — wraps the symbol in `{textsize:N}…{textsize}` to insert it at a specific point size (6–144 pt);
+  - **Symbol colour** — applies a colour via `{textcolour:#RRGGBB}…{textcolour}`, with a *Pick…* picker; the choice is remembered across sessions;
+  - **Wrap in a verse block (not counted)** — wraps the symbol in `{start_verse}…{end_verse}` without affecting the verse numbering.
+
+  The option states are saved automatically. The two character families (BMP and SMP) and full details are covered in the *Musical Symbols Unicode — dialog* section.
 
 ### Syntax Check
 
@@ -1465,12 +1470,12 @@ The dialog is organized into **six tabs** by category:
 
 | Tab | Contents |
 | ---------------------------- | ------------------------------------------------------------------ |
-| **Note e pause** | Whole note, half note, eighth note, rests of every value (U+1D13B–U+1D164) |
-| **Alterazioni** | Sharp, flat, natural, double accidentals, quarter-tone accidentals |
-| **Dinamiche** | *p*, *f*, *mp*, *mf*, *sf*, crescendo, decrescendo, etc. |
-| **Pentagramma e chiavi** | Clefs (treble, bass, C clef), barlines, segno, coda |
-| **Ornamenti e articolazioni** | Slurs, fermata, caesura, breath mark, etc. |
-| **Comuni (BMP)** | ♩ ♪ ♫ ♬ ★ † ½ ¼ × – — … and other common characters |
+| **Notes and rests** | Notes from breve to 128th, noteheads, rests of every value and multi-measure rest (U+1D13A–U+1D164) |
+| **Accidentals** | Sharp, flat, natural, double accidentals, quarter-tone and microtonal (raised/lowered) accidentals |
+| **Dynamics** | *p*, *m*, *f* and compounds (*pp*, *mp*, *mf*, *ff*, *sf*, *sfz*, *fp*…), rinforzando, crescendo/decrescendo |
+| **Staff and clefs** | Clefs (treble, bass, C clef, with octave variants), barlines, repeats, *segno*, *coda*, *dal segno*, *da capo* |
+| **Ornaments and articulations** | Fermata, breath mark, caesura, trills, turns, grace notes, slurs and phrases |
+| **Common (BMP)** | ♩ ♪ ♫ ♬ ★ † ½ ¼ × – — … and other common characters |
 
 ### How to Insert a Symbol
 
@@ -2165,6 +2170,7 @@ On Windows, color detection uses three sources in cascade, each activated only i
 | PDF                 | PDF document (page setup dialog shown first, then file name) |
 | PowerPoint (.pptx)  | Presentation                                  |
 | Create Songbook PDF | PDF song collection with clickable index      |
+| Create Index        | Two-column PDF/DOCX index (number and title)  |
 | Canzonatore         | Merges multiple ChordPro files into one       |
 | Copy as image       | Copies to clipboard as vector image           |
 | Copy text only      | Copies text without chords                    |
@@ -2254,6 +2260,51 @@ The **Create Songbook PDF** function (*File → Create Songbook PDF…*) generat
 - Images inserted with `{image: filename.png}` are looked up **in the same folder as the source file** and included in the PDF automatically.
 - Songs are always sorted alphabetically, regardless of the file order in the folder.
 - To include `.txt` files (which usually contain no ChordPro directives), tick the corresponding extension in the list.
+
+---
+
+## Create Index
+
+The **Create Index** function (*File → Create Index PDF…*, or by launching `CreaIndice.py` as a stand-alone program) generates a **two-column index — song number and title — sorted by song number**, from all the ChordPro files in a folder. The index can be produced as a **PDF** or a **DOCX**.
+
+Unlike the internal index of the *Songbook PDF* (sorted by title and tied to a single collection document), *Create Index* produces a self-contained list, meant as a numeric table of contents for the songbook.
+
+### How to use
+
+1. Choose the **Main folder** with the songs; the **Include subfolders** option extends the scan to nested folders
+2. Select the file **extension** to include via the radio buttons: `.cho`, `.chopro`, `.pro`, `.crd`, `.txt`, **All files** or **Other…** (free-text field). Each entry shows the **number of files** found with that extension
+3. Optional: set a **background watermark** (image) with opacity, angle and size
+4. Optional: customize the **Index title** (default "Index")
+5. Leave the **Open the PDF now** checkbox on, or turn it off
+6. Click **Generate PDF** or **Generate DOCX** and choose where to save the file
+
+### How number and title are extracted
+
+| Field | Source | If missing |
+| ----- | ------ | ---------- |
+| **Song number** | First `{subtitle:}` / `{st:}` containing `numero: N` (e.g. `{subtitle: Canto numero: 22}`); otherwise, the first integer found in a subtitle | The song is placed **at the end** of the list |
+| **Title** | First `{title:}` / `{t:}` directive | The file name (without extension) |
+
+Sorting is by **ascending number**; songs without a number are listed **after** the numbered ones, alphabetically by title.
+
+### Options
+
+| Option | Default | Description |
+| ------ | ------- | ----------- |
+| Main folder | last used | Folder of songs to scan. **The last path used is remembered** and restored at the next launch |
+| Include subfolders | ✅ on | Also scans nested folders |
+| Exclude files with “watermark” | ☐ off | When enabled, files containing a `{watermark: …}` directive (draft / stamped copies) are left out of the index and the counts. The file count updates as soon as the box is ticked |
+| File extension | `.cho` | File type to include; **All files** automatically skips binaries (`.pdf`, `.png`, `.jpg`, `.jpeg`, `.svg`, `.emf`); **Other…** enables a field for a custom extension |
+| Background watermark | none | Image (PNG/JPG) drawn behind the text on every page, with **Opacity (%)**, **Angle (°)** and **Size (%)** |
+| Index title | `Index` | Heading printed at the top of the index |
+| Open the PDF now | ✅ on | When enabled, the generated file (PDF or DOCX) is opened with the system's default application once created. The choice is remembered across launches |
+
+### Notes
+
+- The last **Main folder** used is saved and restored automatically at restart; if the folder no longer exists, it falls back to the home folder.
+- The song number is searched in **all** the file's subtitles: it is enough for one of them to contain `numero: N`.
+- **PDF** generation requires the `reportlab` library, **DOCX** requires `python-docx`; the **watermark** requires `Pillow`. If a library is missing, the program shows a notice with the `pip` command to install it.
+- *Create Index* can also be used as a stand-alone program (`python3 CreaIndice.py [folder]`), handy for quickly producing a table of contents without opening Songpress++.
 
 ---
 

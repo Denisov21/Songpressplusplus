@@ -69,9 +69,15 @@ class _ColourPreviewPopup(wx.PopupWindow):
         w = self._PAD + self._SWATCH_W + (self._GAP + tw if self._label else 0) + self._PAD
         h = self._PAD + max(self._SWATCH_H, th) + self._PAD
         self.SetSize((w, h))
-        # Position() posiziona la finestra vicino al punto tenendo conto dei
+        # Position(ptOrigin, size): 'size' e' la dimensione dell'OGGETTO di
+        # ancoraggio (la riga sotto cui appoggiare il popup), non del popup
+        # stesso — Position mette la finestra a ptOrigin.y + size.y. anchor_screen
+        # e' gia' il punto esatto dove vogliamo l'angolo in alto a sinistra
+        # (calcolato in OnColourDwellStart), quindi passiamo (0, 0): nessun
+        # offset aggiuntivo, cosi' l'anteprima resta attaccata alla riga.
+        # Position gestisce comunque il ribaltamento sopra/sinistra vicino ai
         # bordi dello schermo (anchor_screen e' in coordinate schermo).
-        self.Position(anchor_screen, (w, h))
+        self.Position(anchor_screen, (0, 0))
         self.Refresh()
         self.Show()
 

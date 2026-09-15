@@ -189,6 +189,10 @@ PIP_BUNDLE=(
     pyshortcuts
     pyenchant
     pillow
+    # python-docx: lettura/scrittura .docx. È pure-Python; le sue dipendenze
+    # (lxml, typing-extensions) arrivano dalle wheel manylinux di PyPI, quindi
+    # vengono tirate automaticamente da pip (qui NON usiamo --no-deps).
+    python-docx
 )
 
 # ── Cartelle di lavoro ────────────────────────────────────────

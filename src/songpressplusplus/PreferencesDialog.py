@@ -126,17 +126,25 @@ class PreferencesDialog(wx.Dialog):
         grpEditor.Add(bSizerCapPreview, 0, wx.EXPAND | wx.ALL, 5)
 
         # ── Colori sintassi editor ──────────────────────────────────
-        grpSyntax = wx.StaticBoxSizer(wx.StaticBox(self.general, wx.ID_ANY, _(u"Syntax colours")), wx.VERTICAL)
+        _boxSyntax = wx.StaticBox(self.general, wx.ID_ANY, _(u"Syntax colours"))
+        grpSyntax = wx.StaticBoxSizer(_boxSyntax, wx.VERTICAL)
 
         # Barra temi
+        # NB: tutti i controlli del gruppo "Colori sintassi" devono avere come
+        # genitore la StaticBox _boxSyntax (non il pannello self.general). Se si
+        # mescolano genitori diversi all'interno dello stesso StaticBoxSizer, su
+        # Windows e Linux gli elementi figli del pannello vengono posizionati in
+        # un sistema di coordinate diverso da quelli figli della StaticBox e i
+        # controlli finiscono sovrapposti. Stesso schema usato nella scheda
+        # "Generale".
         bSizerTheme = wx.BoxSizer(wx.HORIZONTAL)
-        self.labelTheme = wx.StaticText(self.general, wx.ID_ANY, _(u"Theme:"))
+        self.labelTheme = wx.StaticText(_boxSyntax, wx.ID_ANY, _(u"Theme:"))
         bSizerTheme.Add(self.labelTheme, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.themeCh = wx.Choice(self.general, wx.ID_ANY, wx.DefaultPosition, wx.Size(150, -1), [])
+        self.themeCh = wx.Choice(_boxSyntax, wx.ID_ANY, wx.DefaultPosition, wx.Size(150, -1), [])
         bSizerTheme.Add(self.themeCh, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.themeLoadBtn  = wx.Button(self.general, wx.ID_ANY, _(u"Load"),   wx.DefaultPosition, wx.Size(75, -1))
-        self.themeSaveBtn  = wx.Button(self.general, wx.ID_ANY, _(u"Save"),   wx.DefaultPosition, wx.Size(75, -1))
-        self.themeDeleteBtn = wx.Button(self.general, wx.ID_ANY, _(u"Delete"), wx.DefaultPosition, wx.Size(75, -1))
+        self.themeLoadBtn  = wx.Button(_boxSyntax, wx.ID_ANY, _(u"Load"),   wx.DefaultPosition, wx.Size(75, -1))
+        self.themeSaveBtn  = wx.Button(_boxSyntax, wx.ID_ANY, _(u"Save"),   wx.DefaultPosition, wx.Size(75, -1))
+        self.themeDeleteBtn = wx.Button(_boxSyntax, wx.ID_ANY, _(u"Delete"), wx.DefaultPosition, wx.Size(75, -1))
         # Icone pulsanti tema
         import os as _os
         from .Globals import glb
@@ -180,13 +188,13 @@ class PreferencesDialog(wx.Dialog):
         self.syntaxSwatches   = {}
         self.syntaxPickBtns   = {}
         for key, label, default in _syntax_rows:
-            lbl = wx.StaticText(self.general, wx.ID_ANY, label)
+            lbl = wx.StaticText(_boxSyntax, wx.ID_ANY, label)
             _syntaxGrid.Add(lbl, 0, wx.ALIGN_CENTER_VERTICAL)
-            hx = wx.TextCtrl(self.general, wx.ID_ANY, default, wx.DefaultPosition, wx.Size(80, -1))
+            hx = wx.TextCtrl(_boxSyntax, wx.ID_ANY, default, wx.DefaultPosition, wx.Size(80, -1))
             _syntaxGrid.Add(hx, 0, wx.ALIGN_CENTER_VERTICAL)
-            btn = wx.Button(self.general, wx.ID_ANY, _(u"Pick…"), wx.DefaultPosition, wx.Size(60, -1))
+            btn = wx.Button(_boxSyntax, wx.ID_ANY, _(u"Pick…"), wx.DefaultPosition, wx.Size(60, -1))
             _syntaxGrid.Add(btn, 0, wx.ALIGN_CENTER_VERTICAL)
-            sw = wx.Panel(self.general, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
+            sw = wx.Panel(_boxSyntax, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
             _syntaxGrid.Add(sw, 0, wx.ALIGN_CENTER_VERTICAL)
             self.syntaxHexCtrls[key] = hx
             self.syntaxSwatches[key] = sw
@@ -198,6 +206,18 @@ class PreferencesDialog(wx.Dialog):
         for key in self.syntaxHexCtrls:
             self.syntaxHexCtrls[key].Bind(wx.EVT_TEXT, self.OnSyntaxHexChanged)
             self.syntaxPickBtns[key].Bind(wx.EVT_BUTTON, self.OnSyntaxPickColour)
+
+        # Anteprima colore al passaggio del mouse sulle sigle colore.
+        # NB: la checkbox deve essere figlia della StaticBox (_boxSyntax) e non
+        # del pannello self.general: su wxGTK (Linux) la StaticBox è una finestra
+        # nativa che copre l'area del riquadro e, se il controllo è un semplice
+        # "fratello" sovrapposto, intercetta gli eventi di hover e il tooltip non
+        # compare (il click invece passa lo stesso). Con la StaticBox come
+        # genitore il tooltip funziona su Windows e su Linux, come per le altre
+        # checkbox dei gruppi che usano già questo schema.
+        self.colourPreviewCB = wx.CheckBox(_boxSyntax, wx.ID_ANY, _(u"Show a colour preview when hovering over a colour code"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.colourPreviewCB.SetToolTip(_(u"When enabled, resting the mouse over a colour code (e.g. {textcolor:#A52A2A} or {textcolor:red}) shows a small rectangle previewing that colour, attached just below the text. Works on Windows and Linux."))
+        grpSyntax.Add(self.colourPreviewCB, 0, wx.ALL, 5)
 
         # Preview
         bSizer13 = wx.BoxSizer(wx.HORIZONTAL)

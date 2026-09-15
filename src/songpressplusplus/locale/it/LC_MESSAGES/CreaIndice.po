@@ -1,0 +1,217 @@
+# Italian translation for the "Create Index PDF" tool (CreaIndice.py).
+# Songpress++ — song index / table of contents generator.
+# Copyright (C) 2026 Denis.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Songpress++ CreaIndice\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-14 00:00+0000\n"
+"PO-Revision-Date: 2026-09-14 00:00+0000\n"
+"Last-Translator: Denis\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: CreaIndice.py
+msgid "Index"
+msgstr "Indice"
+
+#: CreaIndice.py
+msgid ""
+"The 'reportlab' module is not installed.\n"
+"\n"
+"Install it with:\n"
+"    pip install reportlab"
+msgstr ""
+"Il modulo 'reportlab' non è installato.\n"
+"\n"
+"Installalo con:\n"
+"    pip install reportlab"
+
+#: CreaIndice.py
+msgid "No."
+msgstr "N."
+
+#: CreaIndice.py
+msgid "Title"
+msgstr "Titolo"
+
+#: CreaIndice.py
+msgid "Main folder"
+msgstr "Cartella principale"
+
+#: CreaIndice.py
+msgid "Choose the folder with the songs"
+msgstr "Scegli la cartella con i brani"
+
+#: CreaIndice.py
+msgid "Include subfolders"
+msgstr "Includi anche le sottocartelle"
+
+#: CreaIndice.py
+msgid "File extension"
+msgstr "Estensione dei file"
+
+#: CreaIndice.py
+msgid "All files"
+msgstr "Tutti i file"
+
+#: CreaIndice.py
+msgid "Other…"
+msgstr "Altro…"
+
+#: CreaIndice.py
+msgid "Other:"
+msgstr "Altro:"
+
+#: CreaIndice.py
+msgid "Index title:"
+msgstr "Titolo dell'indice:"
+
+#: CreaIndice.py
+msgid "Generate PDF"
+msgstr "Genera PDF"
+
+#: CreaIndice.py
+msgid "Please select a valid folder."
+msgstr "Seleziona una cartella valida."
+
+#: CreaIndice.py
+msgid "Warning"
+msgstr "Attenzione"
+
+#: CreaIndice.py
+msgid "Scanning files…"
+msgstr "Scansione dei file in corso…"
+
+#: CreaIndice.py
+msgid "No files found with the selected extension."
+msgstr "Nessun file trovato con l'estensione selezionata."
+
+#: CreaIndice.py
+msgid "No results"
+msgstr "Nessun risultato"
+
+#: CreaIndice.py
+msgid "Save the index as…"
+msgstr "Salva l'indice come…"
+
+#: CreaIndice.py
+msgid "PDF files (*.pdf)|*.pdf"
+msgstr "File PDF (*.pdf)|*.pdf"
+
+#: CreaIndice.py
+msgid "Error"
+msgstr "Errore"
+
+#: CreaIndice.py
+msgid ""
+"Could not create the file:\n"
+"%s"
+msgstr ""
+"Impossibile creare il file:\n"
+"%s"
+
+#: CreaIndice.py
+msgid "Created the index with %d songs"
+msgstr "Creato l'indice con %d brani"
+
+#: CreaIndice.py
+msgid " (%d without a number, placed at the end)"
+msgstr " (%d senza numero, messi in fondo)"
+
+#: CreaIndice.py
+msgid "Done: %s"
+msgstr "Fatto: %s"
+
+#: CreaIndice.py
+msgid "Index created"
+msgstr "Indice creato"
+
+#: CreaIndice.py
+msgid "Create Index PDF"
+msgstr "Crea indice PDF"
+
+#: CreaIndice.py
+msgid "Close"
+msgstr "Chiudi"
+
+#: CreaIndice.py
+msgid "Generate DOCX"
+msgstr "Genera DOCX"
+
+#: CreaIndice.py
+msgid "Word files (*.docx)|*.docx"
+msgstr "File Word (*.docx)|*.docx"
+
+#: CreaIndice.py
+msgid ""
+"The 'python-docx' module is not installed.\n"
+"\n"
+"Install it with:\n"
+"    pip install python-docx"
+msgstr ""
+"Il modulo 'python-docx' non è installato.\n"
+"\n"
+"Installalo con:\n"
+"    pip install python-docx"
+
+#: CreaIndice.py
+msgid "Background watermark (optional)"
+msgstr "Immagine di sfondo (facoltativa)"
+
+#: CreaIndice.py
+msgid "Image:"
+msgstr "Immagine:"
+
+#: CreaIndice.py
+msgid "Choose the watermark image"
+msgstr "Scegli l'immagine di sfondo"
+
+#: CreaIndice.py
+msgid "Images (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg"
+msgstr "Immagini (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg"
+
+#: CreaIndice.py
+msgid "Opacity (%):"
+msgstr "Opacità (%):"
+
+#: CreaIndice.py
+msgid "Angle (°):"
+msgstr "Angolo (°):"
+
+#: CreaIndice.py
+msgid "Size (%):"
+msgstr "Dimensione (%):"
+
+#: CreaIndice.py
+msgid ""
+"The 'Pillow' module is not installed.\n"
+"\n"
+"Install it with:\n"
+"    pip install Pillow"
+msgstr ""
+"Il modulo 'Pillow' non è installato.\n"
+"\n"
+"Installalo con:\n"
+"    pip install Pillow"
+
+#: CreaIndice.py
+msgid "Open the PDF now"
+msgstr "Apri il PDF ora"
+
+#: CreaIndice.py
+msgid "Exclude files with a “watermark” directive"
+msgstr "Escludi i file con la direttiva «watermark»"
+
+#: CreaIndice.py
+msgid ""
+"Could not open the file automatically:\n"
+"%s"
+msgstr ""
+"Impossibile aprire il file automaticamente:\n"
+"%s"

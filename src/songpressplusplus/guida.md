@@ -1268,7 +1268,12 @@ Vengono riconosciute anche alterazioni (`#`, `b`, `♯`, `♭`), qualità (`-`, 
 
 ### Simboli musicali Unicode ⌨️
 
-- **Simbolo musicale (Unicode)…** (`Inserisci › Simbolo musicale (Unicode)…`, scorciatoia `Ctrl+Shift+M`) — apre la **finestra Simboli musicali**, da cui è possibile scegliere un carattere Unicode e inserirlo nel punto del cursore.
+- **Simbolo musicale (Unicode)…** (`Inserisci › Simbolo musicale (Unicode)…`, scorciatoia `Ctrl+Shift+M`) — apre la **finestra Simboli musicali**, da cui è possibile scegliere un carattere Unicode e inserirlo nel punto del cursore. I simboli sono organizzati in sei schede — *Note e pause*, *Alterazioni*, *Dinamiche*, *Pentagramma e chiavi*, *Ornamenti e articolazioni* e *Comuni (BMP)* — e la finestra offre alcune opzioni di inserimento:
+  - **Dimensione personalizzata (pt)** — racchiude il simbolo tra `{textsize:N}…{textsize}` per inserirlo a una dimensione specifica (6–144 pt);
+  - **Colore del simbolo** — applica un colore tramite `{textcolour:#RRGGBB}…{textcolour}`, con selettore *Pick…*; la scelta viene ricordata tra le sessioni;
+  - **Incorpora in una strofa (non conteggiata)** — racchiude il simbolo in `{start_verse}…{end_verse}` senza alterare la numerazione progressiva delle strofe.
+
+  Lo stato delle opzioni viene salvato automaticamente. Le due famiglie di caratteri (BMP e SMP) e i dettagli completi sono descritti nella sezione *Simboli musicali Unicode — finestra di dialogo*.
 
 ### Controllo sintassi
 
@@ -1472,11 +1477,11 @@ La finestra è organizzata in **sei schede** per categoria:
 
 | Scheda | Contenuto |
 | ---------------------- | ---------------------------------------------------------------- |
-| **Note e pause** | Semibreve, minima, croma, pause di ogni valore (U+1D13B–U+1D164) |
-| **Alterazioni** | Diesis, bemolle, bequadro, doppi e quarti di tono |
-| **Dinamiche** | *p*, *f*, *mp*, *mf*, *sf*, crescendo, decrescendo, ecc. |
-| **Pentagramma e chiavi** | Chiavi (violino, basso, Do), stanghette, segno, coda |
-| **Ornamenti e articolazioni** | Legature, fermata, cesura, respiro, ecc. |
+| **Note e pause** | Note dalla breve alla 128ª, teste di nota, pause di ogni valore e pausa multi-misura (U+1D13A–U+1D164) |
+| **Alterazioni** | Diesis, bemolle, bequadro, doppi, quarti di tono e microtonali (alzati/abbassati) |
+| **Dinamiche** | *p*, *m*, *f* e composte (*pp*, *mp*, *mf*, *ff*, *sf*, *sfz*, *fp*…), rinforzando, crescendo/decrescendo |
+| **Pentagramma e chiavi** | Chiavi (violino, basso, Do, con ottave), stanghette, ritornelli, *segno*, *coda*, *dal segno*, *da capo* |
+| **Ornamenti e articolazioni** | Fermata, respiro, cesura, trilli, gruppetti, abbellimenti, legature e frasi |
 | **Comuni (BMP)** | ♩ ♪ ♫ ♬ ★ † ½ ¼ × – — … e altri caratteri d'uso comune |
 
 ### Come inserire un simbolo
@@ -2172,6 +2177,7 @@ Su Windows il rilevamento del colore usa tre fonti in cascata, ognuna attivata s
 | PDF                  | Documento PDF (chiede prima l'impostazione pagina, poi il nome file) |
 | PowerPoint (.pptx)   | Presentazione                                |
 | Crea Songbook PDF    | Raccolta PDF di canzoni con indice cliccabile |
+| Crea Indice          | Indice PDF/DOCX a due colonne (numero e titolo) |
 | Canzonatore          | Unisce più file ChordPro in un unico file    |
 | Copia come immagine  | Copia negli appunti come immagine vettoriale |
 | Copia solo testo     | Copia il testo senza accordi                 |
@@ -2261,6 +2267,51 @@ La funzione **Crea Songbook PDF** (menu *File → Crea Songbook PDF…*) genera 
 - Le immagini `{image: nomefile.png}` inserite nei brani vengono cercate **nella stessa cartella del file sorgente** e incluse automaticamente nel PDF.
 - I brani sono sempre ordinati alfabeticamente, indipendentemente dall'ordine dei file nella cartella.
 - Per includere file `.txt` (che di norma non contengono direttive ChordPro), spuntare l'apposita estensione nell'elenco.
+
+---
+
+## Crea Indice
+
+La funzione **Crea Indice** (menu *File → Crea Indice PDF…*, oppure avviando `CreaIndice.py` come programma indipendente) genera un **indice a due colonne — numero del canto e titolo — ordinato per numero di canto**, a partire da tutti i file ChordPro presenti in una cartella. L'indice può essere prodotto in formato **PDF** o **DOCX**.
+
+A differenza dell'indice interno del *Songbook PDF* (ordinato per titolo e legato a un singolo documento raccolta), *Crea Indice* produce un elenco autonomo, pensato come sommario numerico del canzoniere.
+
+### Come si usa
+
+1. Scegliere la **Cartella principale** con i brani; l'opzione **Includi sottocartelle** estende la scansione alle cartelle annidate
+2. Selezionare l'**estensione** dei file da includere tramite i pulsanti di scelta: `.cho`, `.chopro`, `.pro`, `.crd`, `.txt`, **Tutti i file** o **Altro…** (campo libero). Accanto a ogni voce compare il **numero di file** trovati con quell'estensione
+3. Facoltativo: impostare una **filigrana di sfondo** (immagine) con opacità, angolo e dimensione
+4. Facoltativo: personalizzare il **Titolo indice** (predefinito «Indice»)
+5. Lasciare attiva o disattivare la casella **Apri il PDF ora**
+6. Premere **Genera PDF** o **Genera DOCX** e scegliere dove salvare il file
+
+### Come vengono estratti numero e titolo
+
+| Dato | Origine | In mancanza |
+| ---- | ------- | ----------- |
+| **Numero del canto** | Primo `{subtitle:}` / `{st:}` contenente `numero: N` (es. `{subtitle: Canto numero: 22}`); in alternativa, il primo numero intero presente in un sottotitolo | Il brano viene collocato **in fondo** all'elenco |
+| **Titolo** | Prima direttiva `{title:}` / `{t:}` | Nome del file (senza estensione) |
+
+L'ordinamento è per **numero crescente**; i brani senza numero sono elencati **dopo** quelli numerati, in ordine alfabetico di titolo.
+
+### Opzioni
+
+| Opzione | Predefinito | Descrizione |
+| ------- | ----------- | ----------- |
+| Cartella principale | ultima usata | Cartella dei brani da scansionare. **L'ultimo percorso usato viene ricordato** e riproposto al successivo avvio |
+| Includi sottocartelle | ✅ attivo | Scansiona anche le cartelle annidate |
+| Escludi file con «watermark» | ☐ disattivo | Se attivo, i file che contengono la direttiva `{watermark: …}` (copie bozza/timbrate) vengono esclusi dall'indice e dai conteggi. Il conteggio dei file si aggiorna appena la casella viene spuntata |
+| Estensione file | `.cho` | Tipo di file da includere; **Tutti i file** salta automaticamente i binari (`.pdf`, `.png`, `.jpg`, `.jpeg`, `.svg`, `.emf`); **Altro…** abilita un campo per un'estensione personalizzata |
+| Filigrana di sfondo | nessuna | Immagine (PNG/JPG) disegnata dietro al testo su ogni pagina, con **Opacità (%)**, **Angolo (°)** e **Dimensione (%)** |
+| Titolo indice | `Indice` | Intestazione stampata in cima all'indice |
+| Apri il PDF ora | ✅ attivo | Se attivo, al termine il file generato (PDF o DOCX) viene aperto con l'applicazione predefinita del sistema. La scelta viene ricordata tra un avvio e l'altro |
+
+### Note
+
+- L'ultima **Cartella principale** usata viene salvata e riproposta automaticamente al riavvio; se la cartella non esiste più, si riparte dalla cartella home.
+- Il numero del canto viene cercato in **tutti** i sottotitoli del file: è sufficiente che uno di essi contenga `numero: N`.
+- La generazione **PDF** richiede la libreria `reportlab`, quella **DOCX** richiede `python-docx`; la **filigrana** richiede `Pillow`. Se una libreria manca, il programma mostra un avviso con il comando `pip` per installarla.
+- *Crea Indice* può essere usato anche come programma autonomo (`python3 CreaIndice.py [cartella]`), utile per generare rapidamente un sommario senza aprire Songpress++.
 
 ---
 
