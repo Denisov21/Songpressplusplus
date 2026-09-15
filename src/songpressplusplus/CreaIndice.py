@@ -8,7 +8,7 @@ Scans a folder (and its subfolders) of ChordPro files and, for each file,
 reads:
 
     {subtitle: Canto numero:  22}   -> song number (22)
-    {title:    Ave Maria splendore del mattino}   -> title
+    {title:    Nome Titolo}   -> title
 
 then produces a PDF with two columns — song number and title —
 SORTED by song number.
