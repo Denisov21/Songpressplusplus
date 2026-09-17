@@ -189,6 +189,18 @@ msgid "Size (%):"
 msgstr "Dimensione (%):"
 
 #: CreaIndice.py
+msgid "Rendering:"
+msgstr "Rendering:"
+
+#: CreaIndice.py
+msgid "Colour"
+msgstr "Colori"
+
+#: CreaIndice.py
+msgid "Black and white"
+msgstr "Bianco e nero"
+
+#: CreaIndice.py
 msgid ""
 "The 'Pillow' module is not installed.\n"
 "\n"

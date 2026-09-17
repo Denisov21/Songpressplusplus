@@ -40,10 +40,6 @@ Descrizione di ogni file e cartella presente nel progetto.
 | `README_italian.md` | Documentazione principale del progetto in italiano. |
 | `struttura_progetto_it.md` | Questo file. Descrizione di ogni file e cartella del progetto. |
 | `Elenco programmi, pacchetti Python e versioni.md` | Elenco dei programmi, pacchetti Python e versioni utilizzate. |
-| `guida.md` | Guida utente completa di Songpress++ in italiano. Documenta comandi ChordPro supportati, sintassi delle direttive, funzionalità dell'editor e dell'anteprima. |
-| `guida_en.md` | Versione inglese della guida utente completa (`guida.md`). |
-| `guida_comandi_songpress.md` | Riferimento rapido ai comandi e alle scorciatoie di Songpress++ in italiano. |
-| `guida_comandi_songpress_en.md` | Versione inglese del riferimento rapido ai comandi (`guida_comandi_songpress.md`). |
 
 ### Licenza
 
@@ -223,11 +219,21 @@ Strumenti di utilità e script di supporto standalone, **non** parte del codice 
 | `Enumerate.py` | Fornisce una classe o funzione di enumerazione (compatibilità con versioni Python precedenti). |
 | `songimpress.py` | Importazione o integrazione con il formato SongImpress (LibreOffice Impress). |
 
+### Documentazione utente e indice
+
+| File | Descrizione |
+| ---- | ----------- |
+| `guida.md` | Guida utente completa di Songpress++ in italiano. Documenta comandi ChordPro supportati, sintassi delle direttive, funzionalità dell'editor e dell'anteprima. |
+| `guida_en.md` | Versione inglese della guida utente completa (`guida.md`). |
+| `guida_comandi_songpress.md` | Riferimento rapido ai comandi e alle scorciatoie di Songpress++ in italiano. |
+| `guida_comandi_songpress_en.md` | Versione inglese del riferimento rapido ai comandi (`guida_comandi_songpress.md`). |
+| `CreaIndice.py` | Script standalone che genera automaticamente l'**indice** (sommario / table of contents con ancore e link interni) delle guide utente in markdown `guida.md` e `guida_en.md`, collocate nella stessa cartella. Da eseguire dopo ogni modifica alle guide per rigenerarne il sommario: `python CreaIndice.py`. |
+
 ### Sottocartelle di `src/`
 
 | Cartella | Descrizione |
 | -------- | ----------- |
-| `songpress/` | Package principale dell'applicazione. |
+| `songpressplusplus/` | Package principale dell'applicazione. |
 | `xrc/` | File di risorse wxPython in formato XRC (XML Resource). Definiscono il layout delle finestre in modo dichiarativo. |
 | `templates/` | Template di canzone predefiniti, usati per la creazione di nuovi file. |
 | `img/` | Immagini e icone dell'interfaccia grafica. |

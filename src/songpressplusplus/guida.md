@@ -2279,8 +2279,8 @@ A differenza dell'indice interno del *Songbook PDF* (ordinato per titolo e legat
 ### Come si usa
 
 1. Scegliere la **Cartella principale** con i brani; l'opzione **Includi sottocartelle** estende la scansione alle cartelle annidate
-2. Selezionare l'**estensione** dei file da includere tramite i pulsanti di scelta: `.cho`, `.chopro`, `.pro`, `.crd`, `.txt`, **Tutti i file** o **Altro…** (campo libero). Accanto a ogni voce compare il **numero di file** trovati con quell'estensione
-3. Facoltativo: impostare una **filigrana di sfondo** (immagine) con opacità, angolo e dimensione
+2. Selezionare l'**estensione** dei file da includere tramite i pulsanti di scelta: `.cho`, `.chopro`, `.pro`, `.crd`, `.txt`, **Tutti i file** o **Altro…** (campo libero). Accanto a ogni voce compare il **numero di file** trovati con quell'estensione. All'apertura è già selezionato il pulsante corrispondente all'**Estensione dei file predefinita** impostata in *Opzioni → Generale*
+3. Facoltativo: impostare una **filigrana di sfondo** (immagine) con opacità, angolo e dimensione, e scegliere se renderla **a colori** o in **bianco e nero**
 4. Facoltativo: personalizzare il **Titolo indice** (predefinito «Indice»)
 5. Lasciare attiva o disattivare la casella **Apri il PDF ora**
 6. Premere **Genera PDF** o **Genera DOCX** e scegliere dove salvare il file
@@ -2301,14 +2301,17 @@ L'ordinamento è per **numero crescente**; i brani senza numero sono elencati **
 | Cartella principale | ultima usata | Cartella dei brani da scansionare. **L'ultimo percorso usato viene ricordato** e riproposto al successivo avvio |
 | Includi sottocartelle | ✅ attivo | Scansiona anche le cartelle annidate |
 | Escludi file con «watermark» | ☐ disattivo | Se attivo, i file che contengono la direttiva `{watermark: …}` (copie bozza/timbrate) vengono esclusi dall'indice e dai conteggi. Il conteggio dei file si aggiorna appena la casella viene spuntata |
-| Estensione file | `.cho` | Tipo di file da includere; **Tutti i file** salta automaticamente i binari (`.pdf`, `.png`, `.jpg`, `.jpeg`, `.svg`, `.emf`); **Altro…** abilita un campo per un'estensione personalizzata |
-| Filigrana di sfondo | nessuna | Immagine (PNG/JPG) disegnata dietro al testo su ogni pagina, con **Opacità (%)**, **Angolo (°)** e **Dimensione (%)** |
+| Estensione file | da *Opzioni* | Tipo di file da includere. All'avvio è preselezionato il pulsante corrispondente all'**Estensione dei file predefinita** di *Opzioni → Generale* (se tale estensione non è tra quelle fisse, viene selezionato **Altro…** e il campo compilato automaticamente); **Tutti i file** salta automaticamente i binari (`.pdf`, `.png`, `.jpg`, `.jpeg`, `.svg`, `.emf`); **Altro…** abilita un campo per un'estensione personalizzata |
+| Filigrana di sfondo | nessuna | Immagine (PNG/JPG) disegnata dietro al testo su ogni pagina, con **Opacità (%)**, **Angolo (°)** e **Dimensione (%)**. L'opzione **Rendering** permette di sceglierla **a colori** (predefinito) o in **bianco e nero** (l'immagine viene desaturata mantenendo la trasparenza). Questi controlli sono attivi **solo quando è selezionata un'immagine** (altrimenti restano disabilitati). Tutti questi valori vengono **ricordati tra un avvio e l'altro** |
 | Titolo indice | `Indice` | Intestazione stampata in cima all'indice |
 | Apri il PDF ora | ✅ attivo | Se attivo, al termine il file generato (PDF o DOCX) viene aperto con l'applicazione predefinita del sistema. La scelta viene ricordata tra un avvio e l'altro |
 
 ### Note
 
 - L'ultima **Cartella principale** usata viene salvata e riproposta automaticamente al riavvio; se la cartella non esiste più, si riparte dalla cartella home.
+- All'apertura, il pulsante dell'**estensione** riflette l'**Estensione dei file predefinita** impostata in *Opzioni → Generale* (letta dalle impostazioni di Songpress++); quando la finestra è avviata come programma autonomo si usa `crd` come ripiego.
+- I valori della **filigrana** (Opacità, Angolo, Dimensione e la scelta Colori/Bianco e nero) vengono ricordati a ogni modifica e ripristinati alla riapertura della finestra.
+- I controlli della **filigrana** (Opacità, Angolo, Dimensione e Rendering) sono disabilitati finché non si seleziona un'immagine, e si attivano automaticamente appena il campo **Immagine** contiene un percorso.
 - Il numero del canto viene cercato in **tutti** i sottotitoli del file: è sufficiente che uno di essi contenga `numero: N`.
 - La generazione **PDF** richiede la libreria `reportlab`, quella **DOCX** richiede `python-docx`; la **filigrana** richiede `Pillow`. Se una libreria manca, il programma mostra un avviso con il comando `pip` per installarla.
 - *Crea Indice* può essere usato anche come programma autonomo (`python3 CreaIndice.py [cartella]`), utile per generare rapidamente un sommario senza aprire Songpress++.

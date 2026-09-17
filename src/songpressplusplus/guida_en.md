@@ -2272,8 +2272,8 @@ Unlike the internal index of the *Songbook PDF* (sorted by title and tied to a s
 ### How to use
 
 1. Choose the **Main folder** with the songs; the **Include subfolders** option extends the scan to nested folders
-2. Select the file **extension** to include via the radio buttons: `.cho`, `.chopro`, `.pro`, `.crd`, `.txt`, **All files** or **Other…** (free-text field). Each entry shows the **number of files** found with that extension
-3. Optional: set a **background watermark** (image) with opacity, angle and size
+2. Select the file **extension** to include via the radio buttons: `.cho`, `.chopro`, `.pro`, `.crd`, `.txt`, **All files** or **Other…** (free-text field). Each entry shows the **number of files** found with that extension. On opening, the radio matching the **Default file extension** set in *Options → General* is already selected
+3. Optional: set a **background watermark** (image) with opacity, angle and size, and choose whether to render it in **colour** or in **black and white**
 4. Optional: customize the **Index title** (default "Index")
 5. Leave the **Open the PDF now** checkbox on, or turn it off
 6. Click **Generate PDF** or **Generate DOCX** and choose where to save the file
@@ -2294,14 +2294,17 @@ Sorting is by **ascending number**; songs without a number are listed **after** 
 | Main folder | last used | Folder of songs to scan. **The last path used is remembered** and restored at the next launch |
 | Include subfolders | ✅ on | Also scans nested folders |
 | Exclude files with “watermark” | ☐ off | When enabled, files containing a `{watermark: …}` directive (draft / stamped copies) are left out of the index and the counts. The file count updates as soon as the box is ticked |
-| File extension | `.cho` | File type to include; **All files** automatically skips binaries (`.pdf`, `.png`, `.jpg`, `.jpeg`, `.svg`, `.emf`); **Other…** enables a field for a custom extension |
-| Background watermark | none | Image (PNG/JPG) drawn behind the text on every page, with **Opacity (%)**, **Angle (°)** and **Size (%)** |
+| File extension | from *Options* | File type to include. At startup the radio matching the **Default file extension** from *Options → General* is preselected (if that extension is not among the fixed ones, **Other…** is selected and the field filled in automatically); **All files** automatically skips binaries (`.pdf`, `.png`, `.jpg`, `.jpeg`, `.svg`, `.emf`); **Other…** enables a field for a custom extension |
+| Background watermark | none | Image (PNG/JPG) drawn behind the text on every page, with **Opacity (%)**, **Angle (°)** and **Size (%)**. The **Rendering** option lets you choose **colour** (default) or **black and white** (the image is desaturated while keeping its transparency). These controls are enabled **only when an image is selected** (otherwise they stay disabled). All these values are **remembered across launches** |
 | Index title | `Index` | Heading printed at the top of the index |
 | Open the PDF now | ✅ on | When enabled, the generated file (PDF or DOCX) is opened with the system's default application once created. The choice is remembered across launches |
 
 ### Notes
 
 - The last **Main folder** used is saved and restored automatically at restart; if the folder no longer exists, it falls back to the home folder.
+- On opening, the **extension** radio reflects the **Default file extension** set in *Options → General* (read from Songpress++'s settings); when the window is launched as a stand-alone program it falls back to `crd`.
+- The **watermark** values (Opacity, Angle, Size and the Colour/Black-and-white choice) are remembered on every change and restored when the window is reopened.
+- The **watermark** controls (Opacity, Angle, Size and Rendering) are disabled until an image is selected, and turn on automatically as soon as the **Image** field contains a path.
 - The song number is searched in **all** the file's subtitles: it is enough for one of them to contain `numero: N`.
 - **PDF** generation requires the `reportlab` library, **DOCX** requires `python-docx`; the **watermark** requires `Pillow`. If a library is missing, the program shows a notice with the `pip` command to install it.
 - *Create Index* can also be used as a stand-alone program (`python3 CreaIndice.py [folder]`), handy for quickly producing a table of contents without opening Songpress++.
