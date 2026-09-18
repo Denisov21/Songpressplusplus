@@ -7115,12 +7115,33 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.SetFont(True)
         evt.Skip()
 
-    def OnCheckDependencies(self, evt):
-        """Mostra una finestra con le dipendenze richieste e il loro stato."""
-        import importlib
-        import sys
+    def _probe_dependencies(self):
+        """Rileva presenza e versione dei pacchetti richiesti SENZA importarli
+        (importlib.util.find_spec + importlib.metadata), così la finestra
+        'Verifica dipendenze' si apre subito invece di forzare l'import di
+        pptx/reportlab/… sul thread della UI.
 
-        # (nome_visualizzato, nome_modulo, note)
+        Eccezione: PyEnchant richiede una probe funzionale reale, perché
+        find_spec vede il wrapper Python anche quando manca la libreria nativa
+        libenchant (darebbe un ✅ bugiardo).
+
+        Il risultato è memoizzato per sessione: i pacchetti installati non
+        cambiano a runtime, quindi le riaperture sono immediate.
+
+        Ritorna (rows, all_ok) con rows = [(display, status, ver_str, note), …].
+        """
+        cached = getattr(self, '_deps_probe_cache', None)
+        if cached is not None:
+            return cached
+
+        import sys
+        import importlib.util
+        import importlib.metadata as _md
+
+        OK, KO, NA = u"\u2705", u"\u274c", u"\u2013"   # ✅ / ❌ / –
+        is_windows = sys.platform.startswith("win")
+
+        # (nome_visualizzato = nome distribuzione PyPI, nome_modulo, note)
         DEPS = [
             ("wxPython",        "wx",           ""),
             ("requests",        "requests",     ""),
@@ -7135,20 +7156,71 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             ("pywin32",         "win32print",   _("Windows only")),
         ]
 
+        def _installed(module):
+            """True se il modulo è importabile, senza eseguirne l'import."""
+            try:
+                return importlib.util.find_spec(module) is not None
+            except (ImportError, ValueError):
+                # find_spec può sollevare su installazioni parziali/namespace rotti
+                return False
+
+        def _version(dist):
+            try:
+                return str(_md.version(dist))
+            except _md.PackageNotFoundError:
+                return "?"
+            except Exception:
+                return "?"
+
         rows = []
         all_ok = True
         for display, module, note in DEPS:
-            try:
-                mod = importlib.import_module(module)
-                ver = getattr(mod, '__version__', None) or getattr(mod, 'VERSION', None) or "?"
-                status = u"\u2705"   # ✅
-                ver_str = str(ver)
-            except ImportError:
-                status = u"\u274c"   # ❌
+            # Dipendenze specifiche di una piattaforma: altrove NON sono
+            # "mancanti" ma non applicabili — mostrale come "–" (N/D) invece
+            # di un ❌ rosso fuorviante, senza intaccare il riepilogo.
+            if module == "win32print" and not is_windows:
+                rows.append((display, NA, NA, note))
+                continue
+            if module == "enchant":
+                present, ver_str = self._probe_enchant()
+            elif _installed(module):
+                present, ver_str = True, _version(display)
+            else:
+                present, ver_str = False, _("not installed")
+
+            if present:
+                status = OK
+            else:
+                status = KO
                 ver_str = _("not installed")
-                if not note:          # obbligatoria
+                if not note:          # dipendenza obbligatoria mancante
                     all_ok = False
             rows.append((display, status, ver_str, note))
+
+        self._deps_probe_cache = (rows, all_ok)
+        return self._deps_probe_cache
+
+    @staticmethod
+    def _probe_enchant():
+        """Probe funzionale di PyEnchant: verifica che il wrapper Python E la
+        libreria nativa libenchant siano davvero utilizzabili (find_spec da
+        solo non basta). Ritorna (present, version_str).
+        """
+        try:
+            import enchant
+            # Costruire un Broker forza il collegamento alla libreria nativa:
+            # se libenchant manca, solleva qui invece di dare un falso ✅.
+            enchant.Broker()
+            ver = getattr(enchant, '__version__', None) or "?"
+            return True, str(ver)
+        except Exception:
+            return False, _("not installed")
+
+    def OnCheckDependencies(self, evt):
+        """Mostra una finestra con le dipendenze richieste e il loro stato."""
+        import sys
+
+        rows, all_ok = self._probe_dependencies()
 
         # --- dialog ---
         dlg = wx.Dialog(
@@ -7190,10 +7262,22 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         font.SetWeight(wx.FONTWEIGHT_BOLD)
         summary_lbl.SetFont(font)
         summary_row.Add(summary_lbl, 0, wx.ALIGN_CENTER_VERTICAL)
-        outer.Add(summary_row, 0, wx.ALL, 12)
+        outer.Add(summary_row, 0, wx.LEFT | wx.RIGHT | wx.TOP, 12)
+        outer.Add(wx.StaticLine(dlg), 0, wx.EXPAND | wx.ALL, 12)
+
+        # Testo secondario (versioni, note, riga Python) nel grigio di sistema:
+        # così l'unico colore "forte" resta il ✅/❌ dello Stato — meno rumore.
+        # SYS_COLOUR_GRAYTEXT segue anche i temi scuri.
+        _muted = wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT)
+
+        def _cell(text, secondary=False):
+            w = wx.StaticText(dlg, label=text)
+            if secondary:
+                w.SetForegroundColour(_muted)
+            return w
 
         # Griglia
-        grid = wx.FlexGridSizer(cols=4, vgap=4, hgap=12)
+        grid = wx.FlexGridSizer(cols=4, vgap=6, hgap=16)
         grid.AddGrowableCol(0)
         grid.AddGrowableCol(2)
 
@@ -7210,22 +7294,28 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         grid.Add(_hdr(_("Notes")),    0, wx.ALIGN_CENTER_VERTICAL)
 
         for display, status, ver_str, note in rows:
-            grid.Add(wx.StaticText(dlg, label=display),  0, wx.ALIGN_CENTER_VERTICAL)
-            grid.Add(_status_widget(status),             0, wx.ALIGN_CENTER_VERTICAL)
-            grid.Add(wx.StaticText(dlg, label=ver_str),  0, wx.ALIGN_CENTER_VERTICAL)
-            grid.Add(wx.StaticText(dlg, label=note),     0, wx.ALIGN_CENTER_VERTICAL)
+            grid.Add(_cell(display),                 0, wx.ALIGN_CENTER_VERTICAL)
+            grid.Add(_status_widget(status),         0, wx.ALIGN_CENTER_VERTICAL)
+            grid.Add(_cell(ver_str, secondary=True), 0, wx.ALIGN_CENTER_VERTICAL)
+            grid.Add(_cell(note, secondary=True),    0, wx.ALIGN_CENTER_VERTICAL)
 
         # --- Autotest risorsa bundled: FreeSerif → glifo musicale SMP ---
         # Stesso identico percorso della stampa: se questa riga è ✅, il simbolo
         # musicale (es. U+1D13D) si rasterizza dal .ttf e quindi si stampa.
         # NON dipende dai font installati nel sistema: verifica il file bundled.
         f_status, f_ver, f_note = self._check_smp_font()
-        for _c in range(4):                       # riga vuota di separazione
-            grid.Add(wx.StaticText(dlg, label=u""), 0)
-        grid.Add(wx.StaticText(dlg, label=u"FreeSerif \u2192 SMP"), 0, wx.ALIGN_CENTER_VERTICAL)
-        grid.Add(_status_widget(f_status), 0, wx.ALIGN_CENTER_VERTICAL)
-        grid.Add(wx.StaticText(dlg, label=f_ver),    0, wx.ALIGN_CENTER_VERTICAL)
-        grid.Add(wx.StaticText(dlg, label=f_note),   0, wx.ALIGN_CENTER_VERTICAL)
+        # Spazio + intestazione di sezione: separa nettamente le librerie Python
+        # dalle verifiche sui font musicali (prima c'era solo una riga vuota).
+        for _c in range(4):
+            grid.Add((0, 10))
+        grid.Add(_hdr(_("Musical font checks")), 0,
+                 wx.ALIGN_CENTER_VERTICAL | wx.BOTTOM, 2)
+        for _c in range(3):
+            grid.Add((0, 0))
+        grid.Add(_cell(u"FreeSerif \u2192 SMP"),  0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(_status_widget(f_status),        0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(_cell(f_ver, secondary=True),    0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(_cell(f_note, secondary=True),   0, wx.ALIGN_CENTER_VERTICAL)
 
         # --- NotoMusic → simboli SMP nell'Editor (rilevante solo su Linux) ---
         # Su Linux l'editor (GTK) mostra i simboli musicali SMP solo se è
@@ -7233,10 +7323,16 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         # usa NotoMusic. Su Windows il testo dell'editor rende già gli SMP con i
         # font di sistema, perciò la riga è informativa e non richiesta.
         n_status, n_ver, n_note = self._check_editor_smp_font()
-        grid.Add(wx.StaticText(dlg, label=u"NotoMusic \u2192 SMP"), 0, wx.ALIGN_CENTER_VERTICAL)
-        grid.Add(_status_widget(n_status), 0, wx.ALIGN_CENTER_VERTICAL)
-        grid.Add(wx.StaticText(dlg, label=n_ver),    0, wx.ALIGN_CENTER_VERTICAL)
-        grid.Add(wx.StaticText(dlg, label=n_note),   0, wx.ALIGN_CENTER_VERTICAL)
+        if not sys.platform.startswith("linux"):
+            # Fuori da Linux l'editor rende gli SMP con i font di sistema:
+            # questo controllo è informativo, non un requisito → "–" (N/D).
+            n_status = u"\u2013"
+            n_ver = u"\u2013"
+            n_note = _("Not required on this system")
+        grid.Add(_cell(u"NotoMusic \u2192 SMP"),  0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(_status_widget(n_status),        0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(_cell(n_ver, secondary=True),    0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(_cell(n_note, secondary=True),   0, wx.ALIGN_CENTER_VERTICAL)
 
         outer.Add(grid, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 12)
 
@@ -7249,6 +7345,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 wx.__version__,
             ),
         )
+        py_info.SetForegroundColour(_muted)
         outer.Add(py_info, 0, wx.ALL, 10)
 
         # Bottone OK
@@ -7353,29 +7450,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             if path:
                 break
         if path is None:
-            search_dirs = [
-                "/usr/share/fonts", "/usr/local/share/fonts",
-                os.path.expanduser("~/.fonts"),
-                os.path.expanduser("~/.local/share/fonts"),
-                os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts"),
-                os.path.expanduser(r"~\AppData\Local\Microsoft\Windows\Fonts"),
-            ]
-            for d in search_dirs:
-                if not d or not os.path.isdir(d):
-                    continue
-                _noto_lower = tuple(n.lower() for n in _noto_names)
-                try:
-                    for root, _dirs, files in os.walk(d):
-                        for fn in files:
-                            if fn.lower() in _noto_lower:
-                                path = os.path.join(root, fn)
-                                break
-                        if path:
-                            break
-                except Exception:
-                    pass
-                if path:
-                    break
+            path = self._find_system_noto(_noto_names)
 
         # 2) Trovato? Prova a rasterizzare un glifo SMP (stesso test di FreeSerif).
         if path is not None:
@@ -7395,6 +7470,105 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         # 3) Non trovato: obbligatorio solo su Linux; altrove semplicemente N/D.
         return (KO if is_linux else NA, _("not found"), note)
+
+    def _find_system_noto(self, noto_names):
+        """Localizza un file NotoMusic installato nel sistema, evitando la
+        scansione ricorsiva delle cartelle font.
+
+        - Linux: interroga fontconfig (fc-list, poi fc-match), che usa una
+          cache ed è pressoché istantaneo. Ricade sullo scan ricorsivo solo
+          se fontconfig non è disponibile.
+        - Altri sistemi (Windows/macOS): scandisce in modo NON ricorsivo le
+          cartelle font note, che su queste piattaforme sono piatte.
+
+        Ritorna il percorso del file trovato, oppure None.
+        """
+        import os
+        import sys
+        import shutil
+        import subprocess
+
+        noto_lower = tuple(n.lower() for n in noto_names)
+
+        def _run(cmd):
+            """Esegue *cmd* con timeout breve; ritorna stdout o '' su errore."""
+            try:
+                res = subprocess.run(
+                    cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                    timeout=3, text=True,
+                )
+                return res.stdout or ""
+            except Exception:
+                return ""
+
+        # --- Linux: fontconfig ------------------------------------------------
+        if sys.platform.startswith("linux"):
+            fc_list = shutil.which("fc-list")
+            fc_match = shutil.which("fc-match")
+            if fc_list or fc_match:
+                if fc_list:
+                    # fc-list stampa una riga "PERCORSO: " per ogni file della
+                    # famiglia richiesta; output vuoto ⇒ font non installato.
+                    for line in _run([fc_list, ":family=Noto Music", "file"]).splitlines():
+                        cand = line.split(":", 1)[0].strip()   # i path Linux iniziano con '/'
+                        if cand and os.path.isfile(cand):
+                            return cand
+                if fc_match:
+                    # fc-match restituisce SEMPRE un font (sostituzione): verifichiamo
+                    # che la famiglia sia davvero Noto Music prima di fidarci.
+                    out = _run([fc_match, "-f", "%{family}\t%{file}", "Noto Music"]).strip()
+                    if "\t" in out:
+                        fam, _sep, fpath = out.partition("\t")
+                        if "noto music" in fam.lower() and os.path.isfile(fpath):
+                            return fpath
+                # fontconfig ha risposto ma NotoMusic non risulta: è la fonte
+                # autorevole sui font installati ⇒ niente scan ricorsivo, None.
+                return None
+            # fontconfig del tutto assente: ultima risorsa, lo scan ricorsivo storico.
+            return self._walk_for_noto(
+                ("/usr/share/fonts", "/usr/local/share/fonts",
+                 os.path.expanduser("~/.fonts"),
+                 os.path.expanduser("~/.local/share/fonts")),
+                noto_lower,
+            )
+
+        # --- Windows / macOS: scan NON ricorsivo delle cartelle note ----------
+        flat_dirs = [
+            os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts"),
+            os.path.expanduser(r"~\AppData\Local\Microsoft\Windows\Fonts"),
+            "/Library/Fonts",
+            os.path.expanduser("~/Library/Fonts"),
+            "/System/Library/Fonts",
+        ]
+        for d in flat_dirs:
+            if not d or not os.path.isdir(d):
+                continue
+            try:
+                with os.scandir(d) as it:
+                    for entry in it:
+                        if entry.is_file() and entry.name.lower() in noto_lower:
+                            return entry.path
+            except Exception:
+                pass
+        return None
+
+    @staticmethod
+    def _walk_for_noto(dirs, noto_lower):
+        """Scan ricorsivo storico delle cartelle font: usato solo come fallback
+        su Linux quando fontconfig (fc-list/fc-match) non è disponibile.
+        """
+        import os
+        for d in dirs:
+            if not d or not os.path.isdir(d):
+                continue
+            try:
+                for root, _dirs, files in os.walk(d):
+                    for fn in files:
+                        if fn.lower() in noto_lower:
+                            return os.path.join(root, fn)
+            except Exception:
+                pass
+        return None
 
     def OnGuide(self, evt):
         wx.LaunchDefaultBrowser(_("http://www.skeed.it/songpress-manual"))

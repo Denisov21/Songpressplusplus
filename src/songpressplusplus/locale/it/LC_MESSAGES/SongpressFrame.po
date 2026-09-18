@@ -1439,3 +1439,11 @@ msgstr "Editor simboli SMP — solo Linux"
 #: SongpressFrame.py — _check_editor_smp_font() status when font not found
 msgid "not found"
 msgstr "non trovato"
+
+#: src/songpress/SongpressFrame.py
+msgid "Not required on this system"
+msgstr "Non richiesto su questo sistema"
+
+#: src/songpress/SongpressFrame.py
+msgid "Musical font checks"
+msgstr "Verifiche font musicali"

@@ -2856,6 +2856,43 @@ Il comportamento dei tre badge **non è identico sulle due piattaforme**, perch�
 
 ---
 
+## Verifica dipendenze
+
+**Aiuto › Verifica dipendenze…** apre una finestra diagnostica che elenca i pacchetti Python richiesti da Songpress++, il loro stato di installazione e la versione rilevata. In cima compare un riepilogo complessivo: **✅ Tutte le dipendenze richieste sono installate correttamente** oppure **❌ Una o più dipendenze richieste risultano mancanti**. Il riepilogo tiene conto delle sole dipendenze *obbligatorie*: se manca esclusivamente una dipendenza *opzionale*, il riepilogo resta verde.
+
+### Pacchetti controllati
+
+| Pacchetto       | Ruolo                                   | Tipo                       |
+| --------------- | --------------------------------------- | -------------------------- |
+| **wxPython**    | Interfaccia grafica                     | Obbligatoria               |
+| **requests**    | Richieste di rete                       | Obbligatoria               |
+| **python-pptx** | Esportazione PowerPoint                 | Obbligatoria               |
+| **pyshortcuts** | Creazione dei collegamenti sul desktop  | Obbligatoria               |
+| **reportlab**   | Generazione dei PDF                     | Obbligatoria               |
+| **pypdf**       | Manipolazione dei PDF                    | Obbligatoria               |
+| **markdown**    | Rendering del Markdown                  | Obbligatoria               |
+| **mistune**     | Rendering del Markdown                  | Obbligatoria               |
+| **Pillow**      | Rendering dei glifi musicali            | Opzionale                  |
+| **PyEnchant**   | Correttore ortografico                  | Opzionale                  |
+| **pywin32**     | Funzioni specifiche di Windows          | Opzionale (solo Windows)   |
+
+### Autotest dei font musicali
+
+Sotto l'elenco dei pacchetti, la finestra esegue due verifiche sui font necessari alla resa dei simboli musicali:
+
+- **FreeSerif → SMP** — verifica end-to-end che il file **FreeSerif.ttf** incluso nel programma sappia rasterizzare un glifo musicale del piano SMP (ad es. U+1D13D), percorrendo esattamente lo stesso percorso usato in stampa. Se questa riga è ✅, i simboli musicali verranno stampati correttamente. Il test riguarda il file *incluso* in Songpress++ e non dipende dai font installati nel sistema; richiede però **Pillow**.
+- **NotoMusic → SMP** — verifica la disponibilità del font **NotoMusic** per mostrare i simboli SMP *nell'editor*. È rilevante solo su **Linux**: lì l'editor (GTK) visualizza i glifi del blocco U+1D100–U+1D1FF soltanto se è presente un font che li copre. Fuori da Linux i font di sistema coprono già questi simboli nel controllo di testo, quindi la riga non è un requisito: viene mostrata come **–** (N/D) con la nota *«Non richiesto su questo sistema»*. Il font viene cercato prima tra quelli inclusi nel programma, poi tra i font di sistema; su **Linux** i font installati vengono individuati tramite **fontconfig** (`fc-list`/`fc-match`), che usa una cache ed evita la scansione ricorsiva delle cartelle font.
+
+In fondo alla finestra sono indicate le versioni di **Python** e **wxPython** attualmente in uso.
+
+> **Voci specifiche del sistema** — Le dipendenze che non si applicano al sistema in uso non compaiono come mancanti (❌) ma come **–** (non applicabile): ad esempio **pywin32** è **–** su Linux e macOS (serve solo su Windows) e la riga **NotoMusic → SMP** è **–** fuori da Linux.
+
+> **Icone di stato** — Lo stile delle icone ✅/❌ della colonna *Stato* può essere scelto nella scheda *Generale* della finestra **Opzioni** (glifi nativi oppure immagini). Se le immagini non sono disponibili, la finestra ripiega automaticamente sui glifi.
+
+> **Aggiornamento del controllo** — Per aprirsi rapidamente, la finestra rileva i pacchetti senza caricarli e memorizza l'esito per la sessione corrente. Di conseguenza, se installi una dipendenza mancante mentre Songpress++ è in esecuzione, per vederne aggiornato lo stato riapri la finestra dopo aver **riavviato** il programma.
+
+---
+
 ## Licenza e crediti
 
 **Songpress++** è un'opera derivata di **Songpress**, originariamente sviluppato da Luca Allulli / [Skeed](https://www.skeed.it/songpress) — copyright © 2009–2026 Luca Allulli (Skeed).

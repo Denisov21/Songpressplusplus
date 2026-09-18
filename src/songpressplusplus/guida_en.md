@@ -2849,6 +2849,43 @@ The three badges **do not behave identically on both platforms**, because their 
 
 ---
 
+## Check Dependencies
+
+**Help › Check dependencies…** opens a diagnostic window that lists the Python packages required by Songpress++, their installation status and the detected version. A summary line appears at the top: **✅ All required dependencies are installed correctly** or **❌ One or more required dependencies are missing**. The summary considers *required* dependencies only: if only an *optional* dependency is missing, the summary stays green.
+
+### Checked packages
+
+| Package         | Role                                    | Type                       |
+| --------------- | --------------------------------------- | -------------------------- |
+| **wxPython**    | Graphical user interface                | Required                   |
+| **requests**    | Network requests                        | Required                   |
+| **python-pptx** | PowerPoint export                       | Required                   |
+| **pyshortcuts** | Desktop shortcut creation               | Required                   |
+| **reportlab**   | PDF generation                          | Required                   |
+| **pypdf**       | PDF manipulation                        | Required                   |
+| **markdown**    | Markdown rendering                      | Required                   |
+| **mistune**     | Markdown rendering                      | Required                   |
+| **Pillow**      | Musical glyph rendering                 | Optional                   |
+| **PyEnchant**   | Spell checker                           | Optional                   |
+| **pywin32**     | Windows-specific features               | Optional (Windows only)    |
+
+### Musical font self-tests
+
+Below the package list, the window runs two checks on the fonts needed to render musical symbols:
+
+- **FreeSerif → SMP** — an end-to-end check that the bundled **FreeSerif.ttf** file can rasterize a musical glyph from the SMP plane (e.g. U+1D13D), following exactly the same path used when printing. If this row is ✅, musical symbols will print correctly. The test targets the file *bundled* with Songpress++ and does not depend on system fonts; it does require **Pillow**.
+- **NotoMusic → SMP** — checks the availability of the **NotoMusic** font for displaying SMP symbols *in the editor*. It is relevant only on **Linux**: there the editor (GTK) shows glyphs from the U+1D100–U+1D1FF block only if a font covering them is available. Outside Linux the system fonts already cover these symbols in the text control, so the row is not a requirement: it is shown as **–** (N/A) with the note *“Not required on this system”*. The font is looked up first among those bundled with the program, then among the system fonts; on **Linux** the installed fonts are located via **fontconfig** (`fc-list`/`fc-match`), which uses a cache and avoids a recursive scan of the font directories.
+
+The **Python** and **wxPython** versions currently in use are shown at the bottom of the window.
+
+> **System-specific rows** — Dependencies that do not apply to the current system are not flagged as missing (❌) but as **–** (not applicable): for example **pywin32** shows as **–** on Linux and macOS (it is only useful on Windows), and the **NotoMusic → SMP** row shows as **–** outside Linux.
+
+> **Status icons** — The style of the ✅/❌ icons in the *Status* column can be chosen in the *General* tab of the **Options** window (native glyphs or images). If the images are unavailable, the window automatically falls back to the glyphs.
+
+> **Refreshing the check** — To open quickly, the window detects the packages without loading them and caches the result for the current session. As a result, if you install a missing dependency while Songpress++ is running, reopen the window after **restarting** the program to see its status updated.
+
+---
+
 ## License and Credits
 
 **Songpress++** is a derivative work of **Songpress**, originally developed by Luca Allulli / [Skeed](https://www.skeed.it/songpress) — copyright © 2009–2026 Luca Allulli (Skeed).
