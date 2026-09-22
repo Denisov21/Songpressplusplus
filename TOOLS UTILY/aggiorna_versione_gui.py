@@ -345,7 +345,7 @@ def send_to_trash(path: Path) -> None:
 # Modifica liberamente autore, anno e URL secondo le tue esigenze.
 APP_AUTHOR = "Denisov21"
 APP_URL = "https://github.com/Denisov21/Songpressplusplus"
-APP_COPYRIGHT = "Copyright (C) 2024-2026  Denisov21"
+APP_COPYRIGHT = "Copyright (C) 2026  Denisov21"
 
 # Lingue disponibili nell'interfaccia (codice -> nome mostrato nel selettore).
 LANGUAGES = {"it": "Italiano", "en": "English"}

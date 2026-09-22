@@ -5,7 +5,7 @@
 #              Python. Interfaccia grafica (tkinter) + modalità
 #              da riga di comando.
 # Author:      Denisov21
-# License:     GNU GPL v2 (GPL-2.0-only)
+# License:     GNU GPL v2
 ###############################################################
 """
 find_unused.py — Trova i file .py non referenziati in un progetto Python.
