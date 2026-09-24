@@ -1,0 +1,110 @@
+# Traduzioni italiane del righello a schermo (ScreenRuler.py) - Songpress++
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: it\n"
+
+#: ScreenRuler.py
+msgid "Screen ruler..."
+msgstr "Righello a schermo..."
+
+#: ScreenRuler.py
+msgid "Screen ruler"
+msgstr "Righello a schermo"
+
+#: ScreenRuler.py
+msgid "Measure width and height of text and objects on screen"
+msgstr "Misura larghezza e altezza di testo e oggetti sullo schermo"
+
+#: ScreenRuler.py
+msgid "&Tools"
+msgstr "&Strumenti"
+
+#: ScreenRuler.py
+msgid "Bounds"
+msgstr "Riquadro"
+
+#: ScreenRuler.py
+msgid "Drag a rectangle to measure width and height (1)"
+msgstr "Trascina un rettangolo per misurare larghezza e altezza (1)"
+
+#: ScreenRuler.py
+msgid "Spacing"
+msgstr "Spaziatura"
+
+#: ScreenRuler.py
+msgid "Measure horizontal and vertical spacing around the cursor (2)"
+msgstr "Misura la spaziatura orizzontale e verticale attorno al cursore (2)"
+
+#: ScreenRuler.py
+msgid "Horizontal"
+msgstr "Orizzontale"
+
+#: ScreenRuler.py
+msgid "Measure horizontal spacing (3)"
+msgstr "Misura la spaziatura orizzontale (3)"
+
+#: ScreenRuler.py
+msgid "Vertical"
+msgstr "Verticale"
+
+#: ScreenRuler.py
+msgid "Measure vertical spacing (4)"
+msgstr "Misura la spaziatura verticale (4)"
+
+#: ScreenRuler.py
+msgid "Fit to content"
+msgstr "Adatta al contenuto"
+
+#: ScreenRuler.py
+msgid "Shrink the rectangle around its content, e.g. to measure the real height of a text (F)"
+msgstr "Restringe il rettangolo attorno al contenuto, ad es. per misurare l'altezza reale di un testo (F)"
+
+#: ScreenRuler.py
+msgid "Tolerance:"
+msgstr "Tolleranza:"
+
+#: ScreenRuler.py
+msgid "Maximum colour difference considered as the same area"
+msgstr "Differenza di colore massima considerata come la stessa area"
+
+#: ScreenRuler.py
+msgid "Unit:"
+msgstr "Unità:"
+
+#: ScreenRuler.py
+msgid "Measurement unit (U). Physical units depend on the screen DPI."
+msgstr "Unità di misura (U). Le unità fisiche dipendono dai DPI dello schermo."
+
+#: ScreenRuler.py
+msgid "Close (Esc)"
+msgstr "Chiudi (Esc)"
+
+#: ScreenRuler.py
+msgid "Unable to capture the screen.\n\nOn Wayland the screenshot permission may have been denied, or xdg-desktop-portal is not available. Alternatively install one of: grim, gnome-screenshot, spectacle."
+msgstr "Impossibile catturare lo schermo.\n\nSu Wayland il permesso di cattura potrebbe essere stato negato, oppure xdg-desktop-portal non è disponibile. In alternativa installa uno tra: grim, gnome-screenshot, spectacle."
+
+#: ScreenRuler.py
+msgid "Show cross"
+msgstr "Mostra croce"
+
+#: ScreenRuler.py
+msgid "Show or hide the measuring cross and lines; the measurement label is always shown (C)"
+msgstr "Mostra o nasconde la croce e le linee di misura; l'etichetta con la misura resta sempre visibile (C)"
+
+#: ScreenRuler.py
+msgid "Zoom:"
+msgstr "Zoom:"
+
+#: ScreenRuler.py
+msgid "Zoom out (-)"
+msgstr "Riduci (-)"
+
+#: ScreenRuler.py
+msgid "Zoom in (+, Ctrl+mouse wheel)"
+msgstr "Ingrandisci (+, Ctrl+rotellina)"
+
+#: ScreenRuler.py
+msgid "Zoom only enlarges the view: measurements are always in real screen pixels (0 = 1:1)"
+msgstr "Lo zoom ingrandisce solo la vista: le misure sono sempre in pixel reali dello schermo (0 = 1:1)"

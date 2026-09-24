@@ -54,7 +54,7 @@ removed by simply deleting the file. That's why some steps in this guide
   downloading/building the new file and replacing the old one (§3);
   third-party tools like AppImageUpdate exist for incremental updates, but
   aren't covered by this guide.
-- **Requires FUSE** for automatic mounting (workaround available, see §8).
+- **Requires FUSE** for automatic mounting (workaround available, see §9).
 - **Tied to the build machine's ABI**: since it's built against the native
   system libraries (glibc, GTK) of the machine that created it, it may fail
   to start on distributions much older than the build one. The `.deb`,
@@ -81,7 +81,7 @@ The AppImage is meant to run as-is, with nothing to install. You only need:
   - Fedora: `sudo dnf install fuse-libs`.
   - openSUSE: `sudo zypper install libfuse2`.
   - If you can't install FUSE, see [8. Running without
-    FUSE](#8-running-without-fuse).
+    FUSE](#9-running-without-fuse).
 
 No Python, no wxPython, no application libraries needed: they're all inside
 the image.
@@ -284,7 +284,53 @@ Alternatively, Songpress++ lets you download dictionaries from its own menu:
 
 ---
 
-## 8. Running without FUSE
+## 8. Screen ruler on Wayland
+
+The **Tools › Screen ruler** command (<kbd>F9</kbd>) needs to capture an
+image of the screen. On **X11** it works with nothing extra. On **Wayland**
+applications cannot read the screen directly, and the AppImage also runs
+through XWayland (`AppRun` sets `GDK_BACKEND=x11`): Songpress++ therefore
+uses **system** components, not those bundled in the AppImage, in this
+order:
+
+1. **grim** (Sway/wlroots) or **spectacle** (KDE), if installed;
+2. the **xdg-desktop-portal**, available out of the box on GNOME and KDE:
+   the request goes through the system's PyGObject (`python3-gi`) or, if
+   missing, through the `gdbus` command;
+3. **gnome-screenshot**.
+
+With the portal nothing needs to be installed: on first use the desktop may
+ask for permission to capture the screen. If you deny or cancel it, the
+ruler does not open.
+
+If on a Wayland desktop the ruler shows "Unable to capture the screen",
+install one of these packages:
+
+```bash
+# Debian/Ubuntu
+sudo apt install python3-gi          # for the portal (GNOME/KDE)
+sudo apt install kde-spectacle       # KDE, as an alternative
+sudo apt install grim                # Sway/wlroots
+
+# Fedora
+sudo dnf install python3-gobject     # for the portal (GNOME/KDE)
+sudo dnf install spectacle           # KDE, as an alternative
+sudo dnf install grim                # Sway/wlroots
+
+# openSUSE
+sudo zypper install python3-gobject  # for the portal (GNOME/KDE)
+sudo zypper install spectacle        # KDE, as an alternative
+sudo zypper install grim             # Sway/wlroots
+```
+
+> ℹ️ External programs are started with an environment "cleaned" of the
+> AppImage variables (`PYTHONHOME`, `LD_LIBRARY_PATH`, `GDK_BACKEND`,
+> internal GTK paths), so they use the system libraries rather than the
+> bundled ones.
+
+---
+
+## 9. Running without FUSE
 
 If the system has no FUSE (e.g. some containers or sandboxes), the AppImage
 can still run by extracting itself:
@@ -299,7 +345,7 @@ require FUSE.
 
 ---
 
-## 9. FAQ
+## 10. FAQ
 
 **Can the AppImage and the `.deb` package be installed together?**
 Yes. They don't share system files; they only share the user data folder
@@ -312,5 +358,10 @@ No, never. All installation/uninstallation happens entirely in user space.
 Because you haven't done the integration described in §2a yet. It's an
 optional step — the app still works via double-click or the command line.
 
+**The screen ruler (F9) says "Unable to capture the screen".**
+This only happens on Wayland: see §8. Usually it's enough to accept the
+desktop's permission request, or to install `python3-gi` / `spectacle` /
+`grim`.
+
 **"FUSE error" on startup.**
-Install FUSE (§1) or use the no-FUSE mode (§8).
+Install FUSE (§1) or use the no-FUSE mode (§9).

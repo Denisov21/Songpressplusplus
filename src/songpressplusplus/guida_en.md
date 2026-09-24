@@ -1452,6 +1452,74 @@ The dialog shows the song duration in the **Metadata** section with two distinct
 
 > **Note** — The automatic estimate is indicative: it does not account for repeats, multiple choruses or pauses. Adding `{duration:MM:SS}` with the actual playing time of the song displays a precise value in the statistics.
 
+### Screen Ruler (<kbd>F9</kbd>)
+
+**Tools › Screen ruler…** measures, in pixels (or other units), the width and height of anything visible on screen: the real height of a text in the preview, the distance between two lines, the space above chords, a page margin.
+
+When started, Songpress++ captures an image of the screen and shows it full screen; a small toolbar with the measuring modes and options appears at the top. Measurements are taken on that image, so what you see does not change while the ruler is open.
+
+#### Measuring modes
+
+| Mode | Key | How to use it |
+|---|---|---|
+| **Bounds** | <kbd>1</kbd> | Drag a rectangle with the mouse: its *width × height* is shown. |
+| **Spacing** | <kbd>2</kbd> | No dragging: a cross starts from the cursor and stops at the first edges to the left, right, top and bottom. Measures the uniform space around the cursor. |
+| **Horizontal** | <kbd>3</kbd> | Like *Spacing*, horizontal only. |
+| **Vertical** | <kbd>4</kbd> | Like *Spacing*, vertical only. |
+
+In **Horizontal** and **Vertical** modes the cross-shaped mouse pointer is hidden so it does not cover the measured spot: the position is shown by the measuring line itself. The pointer reappears over the toolbar.
+
+#### Toolbar options
+
+| Option | Function |
+|---|---|
+| **Fit to content** | *Bounds* mode only. The dragged rectangle automatically shrinks around the content that differs from the background. The original rectangle stays visible as a grey dashed outline. On by default (key <kbd>F</kbd>). |
+| **Show cross** | Shows or hides the measuring cross: the dashed lines following the cursor in *Bounds* mode and the orange lines with end ticks in *Spacing*, *Horizontal* and *Vertical* modes. When hidden, only the measurement label remains visible, which avoids covering the text being measured. The setting is remembered until Songpress++ is closed (key <kbd>C</kbd>). |
+| **Tolerance** | Maximum colour difference (0–255) beyond which a pixel is treated as an edge. Low values make the measurement sensitive to shading (antialiasing); high values ignore small variations. Default: 30. |
+| **Unit** | `px`, `pt`, `mm`, `cm`, `in` (key <kbd>U</kbd> cycles to the next one). |
+| **Zoom − / +** | Magnifies the view (1×, 2×, 3×, 4×, 6×, 8×, 12×, 16×) around the cursor. See *Magnification* below. |
+| **✕** | Closes the ruler (same as <kbd>Esc</kbd>). |
+
+#### Magnification
+
+To measure small elements precisely (a chord, the thickness of a line, the gap between two letters) you can magnify the view with <kbd>+</kbd>, <kbd>Ctrl</kbd>+mouse wheel or the **− / +** toolbar buttons. Zooming happens around the cursor and every screen pixel becomes a clearly visible square, with no smoothing.
+
+Zoom **changes only the view, not the measurement**: a text 12 pixels high is always reported as `12 px`, at 1× as well as at 16×. The arrow keys also always move the cursor by 1 real pixel.
+
+| Action | Effect |
+|---|---|
+| <kbd>+</kbd> / <kbd>-</kbd> or <kbd>Ctrl</kbd>+mouse wheel | Zooms in / out around the cursor |
+| <kbd>0</kbd> | Back to the 1:1 view |
+| Mouse wheel (while zoomed) | Scrolls the view vertically; with <kbd>Shift</kbd> horizontally |
+| Middle-button drag | Moves the magnified view |
+| Arrow keys past the edge | The view scrolls automatically |
+
+#### Measuring the height or width of a text
+
+1. Open the ruler with <kbd>F9</kbd>.
+2. Keep **Bounds** mode with **Fit to content** enabled.
+3. Drag a generous rectangle around the word or line, including some background on every side.
+4. The rectangle shrinks around the letters by itself and shows, for example, `212 × 17 px`: 212 is the text width, 17 the height from the highest ascender to the lowest descender actually present.
+
+To measure the **space between two lines**, use **Vertical** mode instead and place the cursor in the empty space between the lines.
+
+#### Controls
+
+| Action | Effect |
+|---|---|
+| Left click | Pins the current measurement (it stays drawn in blue) and copies it to the clipboard, e.g. `212 × 17 px` |
+| Right click | Clears pinned measurements; if there are none, closes the ruler |
+| <kbd>Ctrl</kbd>+<kbd>C</kbd> | Copies the current (or last pinned) measurement to the clipboard |
+| <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> | Moves the cursor by 1 pixel (10 pixels with <kbd>Shift</kbd>) |
+| <kbd>C</kbd> | Shows / hides the measuring cross |
+| <kbd>+</kbd> / <kbd>-</kbd> / <kbd>0</kbd> | Zoom in / out / back to 1:1 |
+| <kbd>Del</kbd> / <kbd>Backspace</kbd> | Clears pinned measurements |
+| <kbd>Esc</kbd> | Cancels the drag in progress or closes the ruler |
+
+> **Note — physical units** — Values in `mm`, `cm`, `pt` and `in` are computed from the DPI reported by the operating system (often 96 on Linux) and are exact only if that value matches the monitor's real resolution. Pixel measurements are always precise. To measure the printed size of an element, use the preview at 100% zoom.
+
+> **Note — Linux / Wayland** — On Wayland applications cannot read the screen directly. Songpress++ tries, in order: **grim** (Sway/wlroots) or **spectacle** (KDE) if installed, then the **xdg-desktop-portal**, available out of the box on GNOME and KDE, and finally **gnome-screenshot**. With the portal nothing needs to be installed: on first use the desktop may ask for permission to capture the screen; if you deny or cancel it, the ruler does not open. On X11 and Windows nothing extra is needed. With HiDPI scaling enabled, measurements are expressed in logical pixels.
+
 ### Directive Intellisense (`Ctrl+Space`)
 
 Pressing `Ctrl+Space` while the cursor is inside a pair of curly braces `{…}` opens a pop-up list of all ChordPro directives supported by Songpress++. Selecting an entry from the list (with `Enter` or double-click) inserts the directive at the correct position.

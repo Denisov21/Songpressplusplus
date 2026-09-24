@@ -122,6 +122,10 @@ sudo rpm -i ./build_rpm/songpressplusplus-*.noarch.rpm
 > sudo pip3 install --break-system-packages python-pptx pyshortcuts
 > ```
 
+> **Pacchetti suggeriti.** L'`.rpm` indica `gnome-screenshot`, `spectacle` e
+> `grim` come `Suggests`: `dnf` e `zypper` **non** li installano di default.
+> Servono solo al **Righello a schermo** su Wayland come riserva (vedi §4).
+
 ---
 
 ## 4. Avvio
@@ -137,6 +141,26 @@ Per vedere tutti i messaggi di log (disattiva il filtro del wrapper):
 ```bash
 SONGPRESS_VERBOSE=1 SongpressPlusPlus
 ```
+
+### Righello a schermo (F9) su Wayland
+
+Su **Wayland** le applicazioni non possono leggere lo schermo direttamente.
+Il comando **Strumenti › Righello a schermo** usa, in ordine: `grim`
+(Sway/wlroots) o `spectacle` (KDE) se installati, poi il portale
+**xdg-desktop-portal** (di serie su GNOME e KDE, tramite PyGObject oppure
+`gdbus`), infine `gnome-screenshot`. Di norma non serve installare nulla: al
+primo utilizzo il desktop può chiedere il permesso di catturare lo schermo.
+
+Se il righello dice "Impossibile catturare lo schermo", accetta la richiesta di
+permesso (se l'hai negata o annullata il righello non si apre), oppure installa:
+
+| | Fedora / RHEL | openSUSE / SLE |
+|---|---|---|
+| PyGObject (portale) | `sudo dnf install python3-gobject` | `sudo zypper install python3-gobject` |
+| KDE | `sudo dnf install spectacle` | `sudo zypper install spectacle` |
+| Sway / wlroots | `sudo dnf install grim` | `sudo zypper install grim` |
+
+Su X11 non serve nulla.
 
 ---
 

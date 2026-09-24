@@ -194,6 +194,13 @@ python3-pypdf, python3-enchant, xdg-utils
 wl-clipboard, hunspell-it, hunspell-en-us
 ```
 
+**Suggested** (not installed by `install.sh`; only needed by the **Screen
+ruler** on Wayland if the xdg-desktop-portal cannot be used, see §8):
+
+```
+python3-gi, kde-spectacle | gnome-screenshot | grim
+```
+
 **PyPI-only** (not in the Debian repositories, installed with `pip`):
 
 ```bash
@@ -220,6 +227,20 @@ Launching already forces `GDK_BACKEND=x11`. To see the full messages:
 ```bash
 SONGPRESS_VERBOSE=1 SongpressPlusPlus
 ```
+
+**"The screen ruler (F9) says 'Unable to capture the screen'"**
+This only happens on **Wayland**, where applications cannot read the screen
+directly. Songpress++ uses, in order: `grim` (Sway/wlroots) or `spectacle` (KDE)
+if installed, then the **xdg-desktop-portal** (available out of the box on GNOME
+and KDE, via `python3-gi` or `gdbus`), and finally `gnome-screenshot`. Check:
+
+1. if the desktop asked for permission to capture the screen, accept it (if you
+   denied or cancelled it, the ruler does not open);
+2. that PyGObject is installed: `sudo apt install python3-gi`;
+3. alternatively, your desktop's tool:
+   `sudo apt install kde-spectacle` (KDE) or `sudo apt install grim` (Sway).
+
+On X11 nothing is needed.
 
 **"I installed with a prefix but the app can't find the Python modules"**
 Make sure you used `install.sh --prefix ...` (which sets `PYTHONPATH` in the

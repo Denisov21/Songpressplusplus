@@ -227,6 +227,16 @@ python3-pypdf, python3-pil, python3-enchant, python3-docx, xdg-utils"
 #     subito italiano e inglese senza download.
 RECOMMENDS="wl-clipboard, hunspell-it, hunspell-en-us"
 
+# Dipendenze suggerite (NON installate automaticamente da apt):
+#   - gnome-screenshot | kde-spectacle | grim → usati dal Righello a schermo
+#     (Strumenti › Righello a schermo, F9) per catturare lo schermo su
+#     sessioni Wayland, dove wx.ScreenDC restituisce un'immagine nera.
+#     Su X11 non servono. Su GNOME e KDE il righello usa prima di tutto
+#     xdg-desktop-portal (gia' presente di serie), quindi questi pacchetti
+#     sono solo una riserva; grim serve per Sway/wlroots. Sono "Suggests"
+#     per non installare lo strumento di un desktop diverso da quello in uso.
+SUGGESTS="gnome-screenshot | kde-spectacle | grim"
+
 # Dipendenze che NON esistono nei repo Debian: si installano via pip nel postinst.
 # Formato: "nome_pip:nome_modulo_import" (uno per riga).
 #   - python-pptx  → modulo "pptx"       (necessario su Linux)
@@ -1055,6 +1065,7 @@ Maintainer: ${MAINTAINER}
 Installed-Size: ${INSTALLED_SIZE}
 Depends: ${DEPENDS}
 Recommends: ${RECOMMENDS}
+Suggests: ${SUGGESTS}
 Section: utils
 Priority: optional
 Homepage: ${HOMEPAGE}

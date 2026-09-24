@@ -55,6 +55,7 @@ from . import KlavierRenderer
 from .PrintDialog import SongpressPrintout, PrintManager
 from .CopyAIBeatsPrompt import CopyAIBeatsPromptMixin
 from .SongpressToolbars import SongpressToolbarsMixin
+from .ScreenRuler import ScreenRulerMixin
 from . import ChordProDirectives
 from .SpellChecker import SpellManager
 
@@ -736,7 +737,8 @@ else:
     ]
 
 
-class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, SongpressToolbarsMixin):
+class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, SongpressToolbarsMixin,
+                     ScreenRulerMixin):
     def __init__(self, res):
         # --- Istanza singola (SOLO Linux): elezione atomica del primario il
         #     PRIMA POSSIBILE, prima di costruire la finestra. Su Linux un
@@ -973,6 +975,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         self.BindMyMenu()
         self._BuildNewFromTemplateMenu()
+        # Righello a schermo (Strumenti -> Righello a schermo)
+        self._InstallScreenRuler()
         # Rigenera il sottomenu "Nuovo da template" a ogni apertura del menu
         # File, così template aggiunti/rinominati/eliminati compaiono subito,
         # senza dover riavviare l'applicazione.

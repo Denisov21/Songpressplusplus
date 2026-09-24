@@ -28,6 +28,17 @@ sudo apt install python3 python3-pip python3-venv fakeroot dpkg imagemagick
 > loginctl show-session "$(loginctl --no-legend list-sessions | awk -v u="$USER" '$3==u {print $1; exit}')" -p Type --value
 > ```
 
+> **Utenti Wayland — Righello a schermo (F9):** il comando
+> **Strumenti › Righello a schermo** deve catturare lo schermo, cosa che su
+> Wayland le applicazioni non possono fare direttamente. Songpress++ usa, in
+> ordine: `grim` (Sway/wlroots) o `spectacle` (KDE) se installati, poi il
+> portale **xdg-desktop-portal** (presente di serie su GNOME e KDE, tramite
+> `python3-gi` oppure il comando `gdbus`), infine `gnome-screenshot`. Di norma
+> non serve installare nulla: al primo utilizzo il desktop può chiedere il
+> permesso di catturare lo schermo. Il `.deb` indica `gnome-screenshot`,
+> `kde-spectacle` e `grim` tra i `Suggests` (non installati automaticamente).
+> Su sessioni X11 non serve nulla.
+
 ---
 
 ## Creazione del pacchetto `.deb`
@@ -332,6 +343,23 @@ sudo systemctl unmask packagekit
 > parte solo se il primo va a buon fine, e non devi ricordarti di lanciarlo a
 > mano. Attenzione a non incollarli come se fossero un unico comando su righe
 > separate: vanno separati (`&&` o due invii distinti).
+
+### Il righello a schermo (F9) dice "Impossibile catturare lo schermo"
+
+Succede solo su **Wayland**. Controlla, in quest'ordine:
+
+1. se il desktop ha mostrato una richiesta di permesso, accettala (se l'hai
+   negata o annullata il righello non si apre);
+2. che sia installato PyGObject per il portale:
+   ```bash
+   sudo apt install python3-gi
+   ```
+3. in alternativa installa lo strumento di cattura del tuo desktop:
+   ```bash
+   sudo apt install kde-spectacle     # KDE
+   sudo apt install grim              # Sway / wlroots
+   sudo apt install gnome-screenshot  # GNOME (ultima risorsa)
+   ```
 
 ---
 

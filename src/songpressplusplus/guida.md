@@ -1459,6 +1459,74 @@ Il dialogo mostra la durata del brano nella sezione **Metadati** con due modalit
 
 > **Nota** — La stima automatica è orientativa: non tiene conto di ripetizioni, ritornelli multipli o pause. Inserire `{duration:MM:SS}` con la durata reale del brano permette di visualizzare un valore preciso nelle statistiche.
 
+### Righello a schermo (<kbd>F9</kbd>)
+
+**Strumenti › Righello a schermo…** misura in pixel (o in altre unità) la larghezza e l'altezza di qualsiasi cosa visibile sullo schermo: l'altezza reale di un testo nell'anteprima, la distanza tra due righe, lo spazio sopra gli accordi, un margine della pagina.
+
+All'avvio Songpress++ cattura un'immagine dello schermo e la mostra a tutto schermo; in alto compare una piccola barra con le modalità di misura e le opzioni. Le misure vengono eseguite su quell'immagine, quindi ciò che si vede non cambia finché il righello resta aperto.
+
+#### Modalità di misura
+
+| Modalità | Tasto | Come si usa |
+|---|---|---|
+| **Riquadro** | <kbd>1</kbd> | Trascina un rettangolo con il mouse: viene mostrata la dimensione *larghezza × altezza*. |
+| **Spaziatura** | <kbd>2</kbd> | Nessun trascinamento: una croce parte dal cursore e si ferma ai primi bordi a sinistra, destra, sopra e sotto. Misura lo spazio uniforme attorno al cursore. |
+| **Orizzontale** | <kbd>3</kbd> | Come *Spaziatura*, ma solo in orizzontale. |
+| **Verticale** | <kbd>4</kbd> | Come *Spaziatura*, ma solo in verticale. |
+
+Nelle modalità **Orizzontale** e **Verticale** il puntatore del mouse a croce viene nascosto, per non coprire il punto misurato: la posizione è indicata dalla linea di misura stessa. Il puntatore riappare passando sulla barra degli strumenti.
+
+#### Opzioni della barra
+
+| Opzione | Funzione |
+|---|---|
+| **Adatta al contenuto** | Solo in modalità *Riquadro*. Il rettangolo trascinato si restringe automaticamente attorno al contenuto diverso dallo sfondo. Il rettangolo originale resta visibile tratteggiato in grigio. Attiva per impostazione predefinita (tasto <kbd>F</kbd>). |
+| **Mostra croce** | Mostra o nasconde la croce di misura: le linee tratteggiate che seguono il cursore in modalità *Riquadro* e le linee arancioni con i trattini di estremità nelle modalità *Spaziatura*, *Orizzontale* e *Verticale*. Quando è nascosta resta visibile solo l'etichetta con la misura, utile per non coprire il testo che si sta misurando. L'impostazione viene ricordata fino alla chiusura di Songpress++ (tasto <kbd>C</kbd>). |
+| **Tolleranza** | Differenza di colore massima (0–255) oltre la quale un pixel è considerato un bordo. Valori bassi rendono la misura sensibile anche alle sfumature (antialiasing); valori alti ignorano le piccole variazioni. Predefinito: 30. |
+| **Unità** | `px`, `pt`, `mm`, `cm`, `in` (tasto <kbd>U</kbd> per passare alla successiva). |
+| **Zoom − / +** | Ingrandisce la vista (1×, 2×, 3×, 4×, 6×, 8×, 12×, 16×) attorno al cursore. Vedi *Ingrandimento* qui sotto. |
+| **✕** | Chiude il righello (come <kbd>Esc</kbd>). |
+
+#### Ingrandimento
+
+Per misurare con precisione elementi piccoli (un accordo, lo spessore di una linea, la distanza tra due lettere) si può ingrandire la vista con <kbd>+</kbd>, <kbd>Ctrl</kbd>+rotellina o i pulsanti **− / +** della barra. L'ingrandimento avviene attorno al cursore e ogni pixel dello schermo diventa un quadratino ben visibile, senza sfumature.
+
+Lo zoom **cambia solo la visualizzazione, non la misura**: un testo alto 12 pixel viene sempre indicato come `12 px`, sia a 1× sia a 16×. Anche i tasti freccia spostano il cursore sempre di 1 pixel reale.
+
+| Azione | Effetto |
+|---|---|
+| <kbd>+</kbd> / <kbd>-</kbd> oppure <kbd>Ctrl</kbd>+rotellina | Ingrandisce / riduce attorno al cursore |
+| <kbd>0</kbd> | Torna alla vista 1:1 |
+| Rotellina (con zoom attivo) | Scorre la vista in verticale; con <kbd>Shift</kbd> in orizzontale |
+| Trascinamento con il tasto centrale | Sposta la vista ingrandita |
+| Frecce oltre il bordo | La vista scorre automaticamente |
+
+#### Misurare l'altezza o la larghezza di un testo
+
+1. Apri il righello con <kbd>F9</kbd>.
+2. Lascia la modalità **Riquadro** con **Adatta al contenuto** attivo.
+3. Trascina un rettangolo abbondante attorno alla parola o alla riga, includendo un po' di sfondo su tutti i lati.
+4. Il rettangolo si stringe da solo attorno alle lettere e mostra, per esempio, `212 × 17 px`: 212 è la larghezza del testo, 17 l'altezza dall'ascendente più alto al discendente più basso effettivamente presenti.
+
+Per misurare lo **spazio tra due righe** usa invece la modalità **Verticale** e posiziona il cursore nello spazio vuoto tra le righe.
+
+#### Comandi
+
+| Azione | Effetto |
+|---|---|
+| Clic sinistro | Fissa la misura corrente (resta disegnata in azzurro) e la copia negli appunti, es. `212 × 17 px` |
+| Clic destro | Cancella le misure fissate; se non ce ne sono, chiude il righello |
+| <kbd>Ctrl</kbd>+<kbd>C</kbd> | Copia negli appunti la misura attuale (o l'ultima fissata) |
+| <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> | Sposta il cursore di 1 pixel (con <kbd>Shift</kbd> di 10 pixel) |
+| <kbd>C</kbd> | Mostra / nasconde la croce di misura |
+| <kbd>+</kbd> / <kbd>-</kbd> / <kbd>0</kbd> | Ingrandisce / riduce / torna a 1:1 |
+| <kbd>Canc</kbd> / <kbd>Backspace</kbd> | Cancella le misure fissate |
+| <kbd>Esc</kbd> | Annulla il trascinamento in corso oppure chiude il righello |
+
+> **Nota — unità fisiche** — I valori in `mm`, `cm`, `pt` e `in` sono calcolati dai DPI dichiarati dal sistema operativo (spesso 96 su Linux) e sono esatti solo se questo valore corrisponde alla risoluzione reale del monitor. La misura in pixel è sempre precisa. Per misurare la dimensione di stampa di un elemento conviene usare l'anteprima allo zoom 100%.
+
+> **Nota — Linux / Wayland** — Su Wayland le applicazioni non possono leggere direttamente lo schermo. Songpress++ prova in ordine: **grim** (Sway/wlroots) o **spectacle** (KDE) se installati, poi il **portale xdg-desktop-portal**, presente di serie su GNOME e KDE, e infine **gnome-screenshot**. Con il portale non serve installare nulla: al primo utilizzo il desktop può chiedere il permesso di catturare lo schermo; se lo neghi o annulli, il righello non si apre. Su X11 e Windows non serve nulla di aggiuntivo. Con lo scaling HiDPI attivo le misure sono espresse in pixel logici.
+
 ### Intellisense direttive (`Ctrl+Spazio`)
 
 Premendo `Ctrl+Spazio` con il cursore posizionato all'interno di una coppia di parentesi graffe `{…}`, l'editor mostra un elenco a comparsa con tutte le direttive ChordPro supportate da Songpress++. Selezionando una voce dall'elenco (con `Enter` o doppio clic), la direttiva viene inserita nella posizione corretta.

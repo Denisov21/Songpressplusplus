@@ -28,6 +28,16 @@ sudo apt install python3 python3-pip python3-venv fakeroot dpkg imagemagick
 > loginctl show-session "$(loginctl --no-legend list-sessions | awk -v u="$USER" '$3==u {print $1; exit}')" -p Type --value
 > ```
 
+> **Wayland users — Screen ruler (F9):** the **Tools › Screen ruler**
+> command needs to capture the screen, which applications cannot do directly
+> on Wayland. Songpress++ uses, in order: `grim` (Sway/wlroots) or
+> `spectacle` (KDE) if installed, then the **xdg-desktop-portal** (available
+> out of the box on GNOME and KDE, via `python3-gi` or the `gdbus` command),
+> and finally `gnome-screenshot`. Normally nothing needs to be installed: on
+> first use the desktop may ask for permission to capture the screen. The
+> `.deb` lists `gnome-screenshot`, `kde-spectacle` and `grim` under
+> `Suggests` (not installed automatically). On X11 sessions nothing is needed.
+
 ---
 
 ## Building the `.deb` package
@@ -329,6 +339,23 @@ sudo systemctl unmask packagekit
 > to run it by hand. Be careful not to paste them as if they were a single
 > command on separate lines: they must be separated (`&&` or two distinct
 > Enter presses).
+
+### The screen ruler (F9) says "Unable to capture the screen"
+
+This only happens on **Wayland**. Check, in this order:
+
+1. if the desktop showed a permission request, accept it (if you denied or
+   cancelled it, the ruler does not open);
+2. that PyGObject is installed for the portal:
+   ```bash
+   sudo apt install python3-gi
+   ```
+3. alternatively, install your desktop's capture tool:
+   ```bash
+   sudo apt install kde-spectacle     # KDE
+   sudo apt install grim              # Sway / wlroots
+   sudo apt install gnome-screenshot  # GNOME (last resort)
+   ```
 
 ---
 

@@ -647,6 +647,12 @@
           <help>Show song statistics and difficulty rating (chords, structure, words)</help>
           <bitmap>../img/statistics.png</bitmap>
         </object>
+        <object class="wxMenuItem" name="screenRuler">
+          <label>Screen _ruler...</label>
+          <accel>F9</accel>
+          <help>Measure width and height of text and objects on screen</help>
+          <bitmap>../img/screenRuler.png</bitmap>
+        </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="copyAIBeatsPrompt">
           <label>Copy IA {beats__time} prompt</label>

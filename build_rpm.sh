@@ -290,6 +290,12 @@ Recommends:     myspell-it_IT
 Recommends:     myspell-en_US
 REC
 )
+    SUGGESTS=$(cat <<'SUG'
+Suggests:       gnome-screenshot
+Suggests:       spectacle
+Suggests:       grim
+SUG
+)
 else
     # ── Fedora / RHEL / Rocky / Alma ──────────────────────────────────────────
     REQUIRES=$(cat <<'REQ'
@@ -314,6 +320,15 @@ Recommends:     hunspell-it
 Recommends:     hunspell-en
 REC
 )
+    # Righello a schermo (F9): cattura dello schermo su Wayland. Su GNOME e
+    # KDE si usa prima xdg-desktop-portal (gia' presente), questi sono solo
+    # una riserva; grim serve per Sway/wlroots. Su X11 non servono.
+    SUGGESTS=$(cat <<'SUG'
+Suggests:       gnome-screenshot
+Suggests:       spectacle
+Suggests:       grim
+SUG
+)
 fi
 
 # ── (Opzionale) verifica dei nomi contro il gestore pacchetti locale ──────────
@@ -330,8 +345,8 @@ if [ "$CHECK_DEPS" = 1 ]; then
     # Estrae il nome nudo del pacchetto da una riga Requires/Recommends,
     # scartando il vincolo di versione e le rich-deps fra parentesi.
     _dep_names() {
-        printf '%s\n%s\n' "$REQUIRES" "$RECOMMENDS" \
-        | sed -E 's/^(Requires|Recommends):[[:space:]]*//' \
+        printf '%s\n%s\n%s\n' "$REQUIRES" "$RECOMMENDS" "$SUGGESTS" \
+        | sed -E 's/^(Requires|Recommends|Suggests):[[:space:]]*//' \
         | tr '()' '  ' | sed -E 's/[[:space:]]+or[[:space:]]+/\n/g' \
         | awk '{print $1}' | sort -u | grep -v '^$'
     }
@@ -1230,6 +1245,7 @@ BuildArch:      ${RPM_ARCH}
 AutoReqProv:    no
 ${REQUIRES}
 ${RECOMMENDS}
+${SUGGESTS}
 
 %description
 Songpress++ is a free, easy-to-use song typesetting program

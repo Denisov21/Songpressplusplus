@@ -54,7 +54,7 @@ passi di questa guida (icona nel menu, associazione file) sono **opzionali
   significa scaricare/costruire il nuovo file e sostituire il vecchio (§3);
   esistono strumenti di terze parti come AppImageUpdate per gli
   aggiornamenti incrementali, ma non sono coperti da questa guida.
-- **Richiede FUSE** per il montaggio automatico (aggirabile, vedi §8).
+- **Richiede FUSE** per il montaggio automatico (aggirabile, vedi §9).
 - **Legato alla ABI della macchina di build**: essendo compilato contro le
   librerie native di sistema (glibc, GTK) della macchina che lo ha creato,
   potrebbe non partire su distribuzioni molto più vecchie di quella di
@@ -82,7 +82,7 @@ Servono solo:
   - Fedora: `sudo dnf install fuse-libs`.
   - openSUSE: `sudo zypper install libfuse2`.
   - Se non puoi installare FUSE, vedi la sezione [8. Eseguire senza
-    FUSE](#8-eseguire-senza-fuse).
+    FUSE](#9-eseguire-senza-fuse).
 
 Non serve Python, non serve wxPython, non serve alcuna libreria applicativa:
 sono tutte dentro l'immagine.
@@ -286,7 +286,53 @@ menu **Opzioni ortografia → Installa dizionari...**.
 
 ---
 
-## 8. Eseguire senza FUSE
+## 8. Righello a schermo su Wayland
+
+Il comando **Strumenti › Righello a schermo** (<kbd>F9</kbd>) deve catturare
+un'immagine dello schermo. Su **X11** funziona senza nulla di aggiuntivo. Su
+**Wayland** le applicazioni non possono leggere lo schermo direttamente, e
+l'AppImage gira inoltre tramite XWayland (l'`AppRun` imposta
+`GDK_BACKEND=x11`): Songpress++ usa quindi i componenti del **sistema**, non
+quelli contenuti nell'AppImage, in quest'ordine:
+
+1. **grim** (Sway/wlroots) o **spectacle** (KDE), se installati;
+2. il **portale xdg-desktop-portal**, presente di serie su GNOME e KDE: la
+   richiesta passa per PyGObject del sistema (`python3-gi`) oppure, se manca,
+   per il comando `gdbus`;
+3. **gnome-screenshot**.
+
+Con il portale non serve installare nulla: al primo utilizzo il desktop può
+chiedere il permesso di catturare lo schermo. Se lo neghi o annulli, il
+righello non si apre.
+
+Se su un desktop Wayland il righello mostra "Impossibile catturare lo
+schermo", installa uno di questi pacchetti:
+
+```bash
+# Debian/Ubuntu
+sudo apt install python3-gi          # per il portale (GNOME/KDE)
+sudo apt install kde-spectacle       # KDE, in alternativa
+sudo apt install grim                # Sway/wlroots
+
+# Fedora
+sudo dnf install python3-gobject     # per il portale (GNOME/KDE)
+sudo dnf install spectacle           # KDE, in alternativa
+sudo dnf install grim                # Sway/wlroots
+
+# openSUSE
+sudo zypper install python3-gobject  # per il portale (GNOME/KDE)
+sudo zypper install spectacle        # KDE, in alternativa
+sudo zypper install grim             # Sway/wlroots
+```
+
+> ℹ️ I programmi esterni vengono avviati con un ambiente "ripulito" dalle
+> variabili dell'AppImage (`PYTHONHOME`, `LD_LIBRARY_PATH`, `GDK_BACKEND`,
+> percorsi GTK interni), così usano le librerie del sistema e non quelle
+> impacchettate.
+
+---
+
+## 9. Eseguire senza FUSE
 
 Se il sistema non ha FUSE (es. alcuni container o sandbox), l'AppImage può
 comunque girare estraendosi da sé:
@@ -301,7 +347,7 @@ FUSE.
 
 ---
 
-## 9. Domande frequenti
+## 10. Domande frequenti
 
 **L'AppImage e il pacchetto `.deb` possono stare installati insieme?**
 Sì. Non condividono file di sistema; condividono solo la cartella dati
@@ -314,5 +360,9 @@ No, mai. Tutta l'installazione/disinstallazione avviene nello spazio utente.
 Perché non hai ancora fatto l'integrazione descritta al §2a. È un passo
 facoltativo: l'app funziona comunque via doppio clic o da riga di comando.
 
+**Il righello a schermo (F9) dice "Impossibile catturare lo schermo".**
+Succede solo su Wayland: vedi §8. Di solito basta accettare la richiesta di
+permesso del desktop, oppure installare `python3-gi` / `spectacle` / `grim`.
+
 **"Errore: FUSE non disponibile" all'avvio.**
-Installa FUSE (§1) oppure usa la modalità senza FUSE (§8).
+Installa FUSE (§1) oppure usa la modalità senza FUSE (§9).

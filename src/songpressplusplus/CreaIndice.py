@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+###############################################################
+# Name:        CreaIndice.py
+# Author:      Denisov21
+# Created:     2026
+# Copyright:   © 2026 Denisov21
+# License:     GNU GPL v2
+###############################################################
+
 """
 CreaIndice.py — Create an index (table of contents) PDF for Songpress++
 =======================================================================

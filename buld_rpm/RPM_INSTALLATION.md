@@ -121,6 +121,10 @@ sudo rpm -i ./build_rpm/songpressplusplus-*.noarch.rpm
 > sudo pip3 install --break-system-packages python-pptx pyshortcuts
 > ```
 
+> **Suggested packages.** The `.rpm` lists `gnome-screenshot`, `spectacle` and
+> `grim` as `Suggests`: `dnf` and `zypper` do **not** install them by default.
+> They are only a fallback for the **Screen ruler** on Wayland (see §4).
+
 ---
 
 ## 4. Running
@@ -136,6 +140,26 @@ To see all log messages (disables the wrapper filter):
 ```bash
 SONGPRESS_VERBOSE=1 SongpressPlusPlus
 ```
+
+### Screen ruler (F9) on Wayland
+
+On **Wayland** applications cannot read the screen directly. The
+**Tools › Screen ruler** command uses, in order: `grim` (Sway/wlroots) or
+`spectacle` (KDE) if installed, then the **xdg-desktop-portal** (available out
+of the box on GNOME and KDE, via PyGObject or `gdbus`), and finally
+`gnome-screenshot`. Normally nothing needs to be installed: on first use the
+desktop may ask for permission to capture the screen.
+
+If the ruler says "Unable to capture the screen", accept the permission request
+(if you denied or cancelled it, the ruler does not open), or install:
+
+| | Fedora / RHEL | openSUSE / SLE |
+|---|---|---|
+| PyGObject (portal) | `sudo dnf install python3-gobject` | `sudo zypper install python3-gobject` |
+| KDE | `sudo dnf install spectacle` | `sudo zypper install spectacle` |
+| Sway / wlroots | `sudo dnf install grim` | `sudo zypper install grim` |
+
+On X11 nothing is needed.
 
 ---
 

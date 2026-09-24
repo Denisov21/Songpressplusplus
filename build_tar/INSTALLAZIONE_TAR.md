@@ -194,6 +194,14 @@ python3-pypdf, python3-enchant, xdg-utils
 wl-clipboard, hunspell-it, hunspell-en-us
 ```
 
+**Suggerite** (non installate da `install.sh`; servono solo al **Righello a
+schermo** su Wayland se il portale xdg-desktop-portal non è utilizzabile,
+vedi §8):
+
+```
+python3-gi, kde-spectacle | gnome-screenshot | grim
+```
+
 **Solo-PyPI** (non presenti nei repository Debian, si installano con `pip`):
 
 ```bash
@@ -220,6 +228,20 @@ L'avvio forza già `GDK_BACKEND=x11`. Per vedere i messaggi completi:
 ```bash
 SONGPRESS_VERBOSE=1 SongpressPlusPlus
 ```
+
+**«Il righello a schermo (F9) dice "Impossibile catturare lo schermo"»**
+Succede solo su **Wayland**, dove le applicazioni non possono leggere lo schermo
+direttamente. Songpress++ usa, in ordine: `grim` (Sway/wlroots) o `spectacle`
+(KDE) se installati, poi il portale **xdg-desktop-portal** (di serie su GNOME e
+KDE, tramite `python3-gi` oppure `gdbus`), infine `gnome-screenshot`. Controlla:
+
+1. se il desktop ha chiesto il permesso di catturare lo schermo, accettalo
+   (se l'hai negato o annullato il righello non si apre);
+2. che sia installato PyGObject: `sudo apt install python3-gi`;
+3. in alternativa lo strumento del tuo desktop:
+   `sudo apt install kde-spectacle` (KDE) oppure `sudo apt install grim` (Sway).
+
+Su X11 non serve nulla.
 
 **«Ho installato con un prefisso ma l'app non trova i moduli Python»**
 Assicurati di aver usato `install.sh --prefix ...` (che imposta `PYTHONPATH` nel
