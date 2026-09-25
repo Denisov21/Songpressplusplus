@@ -1988,7 +1988,7 @@ Associa le estensioni a Songpress++ **solo per l'utente corrente**.
 
 ### Scheda *Toolbar*
 
-Contiene quattro sotto-schede — **Standard**, **Formato**, **Inserisci**, **Visualizza** — con una checkbox per ogni icona della relativa barra e i pulsanti **Seleziona tutto** / **Deseleziona tutto** (agiscono solo sulla sotto-scheda attiva). Dettagli e comportamento dei separatori nel capitolo *Personalizzazione delle toolbar*.
+Contiene quattro sotto-schede — **Standard**, **Formato**, **Inserisci**, **Visualizza** — con una checkbox per ogni icona della relativa barra e, in alto sopra le sotto-schede, i pulsanti **Seleziona tutto** / **Deseleziona tutto** (agiscono solo sulla sotto-scheda aperta). Dettagli e comportamento dei separatori nel capitolo *Personalizzazione delle toolbar*.
 
 ---
 
@@ -2010,7 +2010,7 @@ Aprire **Strumenti → Opzioni…** e selezionare la scheda **Toolbar**. La sche
 ### Come mostrare o nascondere un'icona
 
 1. Nella sotto-scheda corrispondente, **spuntare** la casella per mostrare l'icona, **deselezionarla** per nasconderla.
-2. I pulsanti **Seleziona tutto** e **Deseleziona tutto** agiscono solo sulla sotto-scheda corrente.
+2. I pulsanti **Seleziona tutto** e **Deseleziona tutto**, in alto sopra le sotto-schede, agiscono solo sulla sotto-scheda aperta.
 3. Fare clic su **OK**: la toolbar viene aggiornata immediatamente.
 
 Le impostazioni vengono salvate nel file di configurazione dell'applicazione e ripristinate ad ogni avvio.

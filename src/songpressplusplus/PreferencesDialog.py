@@ -242,7 +242,12 @@ class PreferencesDialog(wx.Dialog):
         bSizer11.FitInside(self.general)
 
         # ── Tab "Generale" ─────────────────────────────────────────
-        self.general2 = wx.Panel(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL)
+        # Pagina scorrevole: se il contenuto non entra nella finestra (es. su
+        # Linux con font e temi piu' grandi) compare da sola la barra di
+        # scorrimento verticale (e orizzontale se serve).
+        self.general2 = wx.ScrolledWindow(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize,
+                                    wx.TAB_TRAVERSAL | wx.VSCROLL | wx.HSCROLL)
+        self.general2.SetScrollRate(10, 10)
         bSizer11b = wx.BoxSizer(wx.VERTICAL)
 
         # ── Gruppo: Canzone ──────────────────────────────────────────
@@ -828,7 +833,12 @@ class PreferencesDialog(wx.Dialog):
         # --- Fine Tab "Format" ---
 
         # --- Tab "Songpress" ---
-        self.songpressPanel = wx.Panel(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL)
+        # Pagina scorrevole: se il contenuto non entra nella finestra (es. su
+        # Linux con font e temi piu' grandi) compare da sola la barra di
+        # scorrimento verticale (e orizzontale se serve).
+        self.songpressPanel = wx.ScrolledWindow(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize,
+                                    wx.TAB_TRAVERSAL | wx.VSCROLL | wx.HSCROLL)
+        self.songpressPanel.SetScrollRate(10, 10)
         bSizerSongpress = wx.BoxSizer(wx.VERTICAL)
 
         # Gruppo: Anteprima
@@ -1011,7 +1021,12 @@ class PreferencesDialog(wx.Dialog):
         # --- Fine Tab "Songpress" ---
 
         # --- Tab "Guida rapida" ---
-        self.guidePanel = wx.Panel(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL)
+        # Pagina scorrevole: se il contenuto non entra nella finestra (es. su
+        # Linux con font e temi piu' grandi) compare da sola la barra di
+        # scorrimento verticale (e orizzontale se serve).
+        self.guidePanel = wx.ScrolledWindow(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize,
+                                    wx.TAB_TRAVERSAL | wx.VSCROLL | wx.HSCROLL)
+        self.guidePanel.SetScrollRate(10, 10)
         bSizerGuide = wx.BoxSizer(wx.VERTICAL)
 
         # Gruppo: Visualizzatore Markdown
@@ -1047,7 +1062,12 @@ class PreferencesDialog(wx.Dialog):
         # --- Fine Tab "Guida rapida" ---
 
         # --- Tab "Context menu" ---
-        self.contextMenuPanel = wx.Panel(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL)
+        # Pagina scorrevole: se il contenuto non entra nella finestra (es. su
+        # Linux con font e temi piu' grandi) compare da sola la barra di
+        # scorrimento verticale (e orizzontale se serve).
+        self.contextMenuPanel = wx.ScrolledWindow(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize,
+                                    wx.TAB_TRAVERSAL | wx.VSCROLL | wx.HSCROLL)
+        self.contextMenuPanel.SetScrollRate(10, 10)
         bSizerCM = wx.BoxSizer(wx.VERTICAL)
 
         headerCM = wx.StaticText(self.contextMenuPanel, wx.ID_ANY,
@@ -1131,7 +1151,12 @@ class PreferencesDialog(wx.Dialog):
         # --- Tab "File associations" (Windows e Linux) ---
         import platform as _platform
         self._fileAssocAvailable = (_platform.system() in ('Windows', 'Linux'))
-        self.fileAssocPanel = wx.Panel(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL)
+        # Pagina scorrevole: se il contenuto non entra nella finestra (es. su
+        # Linux con font e temi piu' grandi) compare da sola la barra di
+        # scorrimento verticale (e orizzontale se serve).
+        self.fileAssocPanel = wx.ScrolledWindow(self.notebook, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize,
+                                    wx.TAB_TRAVERSAL | wx.VSCROLL | wx.HSCROLL)
+        self.fileAssocPanel.SetScrollRate(10, 10)
         bSizerFA = wx.BoxSizer(wx.VERTICAL)
 
         if self._fileAssocAvailable:
@@ -1515,6 +1540,11 @@ class PreferencesDialog(wx.Dialog):
         self.Layout()
         self.Centre(wx.BOTH)
 
+        # Pagine scorrevoli: ricalcolo dell'area da scorrere a finestra visibile
+        self._InitScrollPages([self.general2, self.general, self.formatPanel,
+                               self.songpressPanel, self.guidePanel,
+                               self.contextMenuPanel, self.fileAssocPanel])
+
         # Connect Events
         self.fontCB.Bind(wx.EVT_KILL_FOCUS, self.OnFontSelected)
         self.sizeCB.Bind(wx.EVT_COMBOBOX, self.OnFontSelected)
@@ -1527,6 +1557,176 @@ class PreferencesDialog(wx.Dialog):
         self.showDebugMsgCB.Bind(wx.EVT_CHECKBOX, self.OnShowDebugMsgChanged)
         self.cmConfirmDelete.Bind(wx.EVT_CHECKBOX, self.OnCmConfirmDeleteChanged)
         self.cmShowIcons.Bind(wx.EVT_CHECKBOX, self.OnCmShowIconsChanged)
+
+    # ── Pagine scorrevoli ────────────────────────────────────────────
+    # Su Linux/GTK le dimensioni reali di molti controlli (caselle numeriche,
+    # riquadri con titolo, testi con font di sistema piu' grandi) si conoscono
+    # solo dopo che la finestra e' stata mostrata. L'area da scorrere,
+    # calcolata prima, risultava piu' corta del contenuto e le ultime righe
+    # restavano invisibili anche in fondo alla barra di scorrimento.
+    # Qui l'area viene ricalcolata a finestra visibile, al cambio di scheda e
+    # al ridimensionamento, con un piccolo margine in fondo.
+
+    _SCROLL_BOTTOM_MARGIN = 100
+
+    def _InitScrollPages(self, pages):
+        self._scrollPages = [pg for pg in pages if isinstance(pg, wx.ScrolledWindow)]
+        for pg in self._scrollPages:
+            # La pagina non deve imporre al notebook (e quindi alla finestra)
+            # l'altezza di tutto il contenuto: altrimenti su GTK la pagina
+            # risulta piu' alta della parte visibile e il fondo resta tagliato.
+            pg.SetMinSize(wx.Size(-1, 120))
+        self._LimitNotebookHeight()
+        self.Bind(wx.EVT_SHOW, self._OnShowScrollPages)
+        self.notebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self._OnPageChangedScroll)
+        self.Bind(wx.EVT_SIZE, self._OnSizeScrollPages)
+
+    def _LimitNotebookHeight(self):
+        """Il notebook calcola la sua altezza minima dalla pagina piu' alta
+        (comprese quelle aggiunte dopo, es. la scheda Toolbar). Se supera lo
+        spazio della finestra, su GTK il notebook sconfina sotto i pulsanti
+        OK/Annulla: la pagina e' piu' alta della parte visibile e la barra di
+        scorrimento non compare nemmeno. Con un'altezza minima piccola il
+        notebook occupa esattamente lo spazio disponibile e le pagine
+        scorrono."""
+        best = self.notebook.GetBestSize()
+        self.notebook.SetMinSize(wx.Size(best.width, 200))
+
+    def _RefitScrollPages(self):
+        """Area da scorrere = fin dove arrivano DAVVERO i controlli.
+
+        Non ci si fida solo della dimensione minima calcolata dal sizer (su GTK
+        puo' essere piu' bassa del reale): dopo il layout si misura il fondo
+        effettivo dei controlli e lo si impone come altezza minima del sizer,
+        cosi' anche i ricalcoli automatici di wx (FitInside) lo rispettano."""
+        if getattr(self, '_refitting', False):
+            return
+        # Mai durante un clic in corso (es. sulle frecce < > delle linguette):
+        # su GTK rifare il layout mentre il pulsante del mouse e' premuto puo'
+        # lasciare il puntatore "agganciato" al notebook, e i clic successivi
+        # (anche su OK / Annulla) andrebbero persi. Si riprova poco dopo.
+        ms = wx.GetMouseState()
+        if ms.LeftIsDown() or ms.RightIsDown() or ms.MiddleIsDown():
+            self._ScheduleRefit(150)
+            return
+        self._refitting = True
+        try:
+            def invalidate(win):
+                win.InvalidateBestSize()
+                for child in win.GetChildren():
+                    invalidate(child)
+            for pg in getattr(self, '_scrollPages', []):
+                if not pg:
+                    continue
+                sz = pg.GetSizer()
+                if sz is None:
+                    continue
+                invalidate(pg)
+                sz.SetMinSize(wx.Size(0, 0))
+                pg.Layout()
+                # Fondo reale di TUTTI i controlli, anche quelli dentro i
+                # riquadri con titolo (figli dello StaticBox, non della
+                # pagina): posizioni sullo schermo riportate alla pagina.
+                right = bottom = 0
+                origin = pg.GetScreenPosition()
+                vx, vy = pg.GetViewStart()
+                ux, uy = pg.GetScrollPixelsPerUnit()
+                offX, offY = vx * ux, vy * uy
+                stack = list(pg.GetChildren())
+                while stack:
+                    child = stack.pop()
+                    if not child.IsShown():
+                        continue
+                    r = child.GetScreenRect()
+                    right = max(right, r.x - origin.x + offX + r.width)
+                    bottom = max(bottom, r.y - origin.y + offY + r.height)
+                    stack.extend(child.GetChildren())
+                calc = sz.CalcMin()
+                need = wx.Size(max(calc.width, right),
+                               max(calc.height, bottom) + self._SCROLL_BOTTOM_MARGIN)
+                sz.SetMinSize(need)
+                pg._scrollNeed = need
+                # FitInside() su GTK non allarga l'area oltre la parte visibile:
+                # la si imposta esplicitamente.
+                pg.SetVirtualSize(need)
+                pg.FitInside()
+                if pg.GetVirtualSize().height < need.height:
+                    pg.SetVirtualSize(need)
+            # Layout della finestra solo se l'altezza minima del notebook e'
+            # davvero cambiata (evita impaginazioni inutili a ogni evento).
+            before = self.notebook.GetMinSize()
+            self._LimitNotebookHeight()
+            if self.notebook.GetMinSize() != before:
+                self.Layout()
+            # la pagina non deve coprire i pulsanti OK / Annulla
+            self._FitPageInNotebook()
+        finally:
+            self._refitting = False
+
+    def _FitPageInNotebook(self):
+        """Su GTK (soprattutto con temi come Breeze) wx calcola l'altezza
+        della pagina come se le linguette fossero piu' basse di quanto GTK le
+        disegna: la pagina viene spostata in basso da GTK ma resta alta come
+        calcolato da wx, e sporge sotto il notebook, sopra OK / Annulla. I
+        pulsanti restano visibili ma i clic vanno alla pagina che li copre:
+        e' il blocco che si vede dopo aver cambiato scheda.
+        Qui la pagina aperta viene accorciata fino al bordo reale del
+        notebook."""
+        idx = self.notebook.GetSelection()
+        if idx < 0:
+            return
+        page = self.notebook.GetPage(idx)
+        if not page or not page.IsShown():
+            return
+        nb = self.notebook.GetScreenRect()
+        r = page.GetScreenRect()
+        allowed = nb.GetBottom() - r.GetTop() - 2      # 2 px per il bordo
+        if allowed > 50 and r.height > allowed:
+            page.SetSize(r.width, allowed)
+            if isinstance(page, wx.ScrolledWindow):
+                page.FitInside()
+
+    def _ScheduleRefit(self, delay=200):
+        """Un solo ricalcolo, a eventi finiti: cambi di scheda e
+        ridimensionamenti ravvicinati ne fanno partire uno soltanto."""
+        timer = getattr(self, '_refitTimer', None)
+        try:
+            if timer is not None and timer.IsRunning():
+                timer.Stop()
+        except Exception:
+            pass
+        self._refitTimer = wx.CallLater(delay, self._SafeRefit)
+
+    def _SafeRefit(self):
+        # la finestra puo' essere gia' stata chiusa quando scatta il timer
+        try:
+            if not self or not self.IsShown():
+                return
+        except RuntimeError:
+            return
+        self._RefitScrollPages()
+
+    def _OnShowScrollPages(self, event):
+        event.Skip()
+        if event.IsShown():
+            # due passaggi: GTK completa le misure dopo il primo ridisegno
+            wx.CallAfter(self._SafeRefit)
+            self._ScheduleRefit(250)
+        else:
+            timer = getattr(self, '_refitTimer', None)
+            if timer is not None:
+                try:
+                    timer.Stop()
+                except Exception:
+                    pass
+
+    def _OnPageChangedScroll(self, event):
+        event.Skip()
+        self._ScheduleRefit(200)
+
+    def _OnSizeScrollPages(self, event):
+        event.Skip()
+        self._ScheduleRefit(200)
 
     def __del__(self):
         pass

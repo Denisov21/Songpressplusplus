@@ -355,8 +355,28 @@ class MyPreferencesDialog(PreferencesDialog):
         outer = wx.Panel(self.notebook)
         outer_vbox = wx.BoxSizer(wx.VERTICAL)
 
+        # Seleziona / Deseleziona tutto: IN ALTO, sopra le sotto-schede, e
+        # agiscono sulla sotto-scheda aperta. In fondo, su Linux/GTK, finivano
+        # tagliati: con due notebook annidati (Toolbar › Inserisci) GTK mostra
+        # meno spazio di quello che wx assegna e l'ultima riga spariva.
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        btn_all  = wx.Button(outer, -1, _("Select all"))
+        btn_none = wx.Button(outer, -1, _("Deselect all"))
+        btn_sizer.Add(btn_all,  0, wx.RIGHT, 6)
+        btn_sizer.Add(btn_none, 0)
+        outer_vbox.Add(btn_sizer, 0, wx.LEFT | wx.RIGHT | wx.TOP, 6)
+
         inner_nb = wx.Notebook(outer)
         self._tb_checkboxes = {}   # pref_key → wx.CheckBox (tutte le barre)
+        _page_keys = []            # per ogni sotto-scheda: le sue pref_key
+
+        def _set_current(value):
+            idx = inner_nb.GetSelection()
+            if 0 <= idx < len(_page_keys):
+                for k in _page_keys[idx]:
+                    self._tb_checkboxes[k].SetValue(value)
+        btn_all.Bind(wx.EVT_BUTTON, lambda e: _set_current(True))
+        btn_none.Bind(wx.EVT_BUTTON, lambda e: _set_current(False))
 
         # Helper: costruisce una sotto-scheda con checkbox + Seleziona/Deseleziona
         def _make_sub_tab(items, sep_after_set, title):
@@ -365,6 +385,12 @@ class MyPreferencesDialog(PreferencesDialog):
 
             scroll = wx.ScrolledWindow(panel, style=wx.VSCROLL)
             scroll.SetScrollRate(0, 12)
+            # L'elenco non deve imporre la propria altezza alla scheda:
+            # altrimenti, se la finestra e' bassa, l'elenco sconfina e i
+            # pulsanti Seleziona/Deseleziona tutto spariscono sotto OK/Annulla.
+            # Con un'altezza minima piccola l'elenco scorre e i pulsanti
+            # restano sempre visibili.
+            scroll.SetMinSize(wx.Size(-1, 80))
             grid = wx.BoxSizer(wx.VERTICAL)
 
             prev = None
@@ -378,30 +404,16 @@ class MyPreferencesDialog(PreferencesDialog):
                 grid.Add(cb, 0, wx.LEFT | wx.TOP, 6)
                 prev = xrc_name
 
+            # margine in fondo: l'ultima voce non resta attaccata al bordo
+            grid.AddSpacer(62)
             scroll.SetSizer(grid)
             grid.FitInside(scroll)
             scroll.SetVirtualSize(grid.GetMinSize())
 
-            btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            btn_all  = wx.Button(panel, -1, _("Select all"))
-            btn_none = wx.Button(panel, -1, _("Deselect all"))
-            btn_sizer.Add(btn_all,  0, wx.RIGHT, 6)
-            btn_sizer.Add(btn_none, 0)
+            # voci di questa sotto-scheda, per Seleziona/Deseleziona tutto
+            _page_keys.append([pk for _, _, pk in items])
 
-            # Closures sui checkbox della singola scheda (snapshot della lista)
-            _keys = [pk for _, _, pk in items]
-            def on_all(e, keys=_keys):
-                for k in keys:
-                    self._tb_checkboxes[k].SetValue(True)
-            def on_none(e, keys=_keys):
-                for k in keys:
-                    self._tb_checkboxes[k].SetValue(False)
-
-            btn_all.Bind(wx.EVT_BUTTON, on_all)
-            btn_none.Bind(wx.EVT_BUTTON, on_none)
-
-            vbox.Add(scroll,    1, wx.EXPAND | wx.ALL, 6)
-            vbox.Add(btn_sizer, 0, wx.ALL, 6)
+            vbox.Add(scroll, 1, wx.EXPAND | wx.ALL, 6)
             panel.SetSizer(vbox)
             inner_nb.AddPage(panel, title)
 
@@ -433,7 +445,13 @@ class MyPreferencesDialog(PreferencesDialog):
             _("View"),
         )
 
-        outer_vbox.Add(inner_nb, 1, wx.EXPAND | wx.ALL, 4)
+        inner_nb.SetMinSize(wx.Size(-1, 150))
+        # In basso margine piu' ampio: su GTK la scheda risulta qualche pixel
+        # piu' alta della parte visibile e il fondo (pulsanti Seleziona /
+        # Deseleziona tutto) finirebbe sotto i pulsanti OK/Annulla.
+        outer_vbox.Add(inner_nb, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 4)
+        outer_vbox.AddSpacer(16)
+        outer.SetMinSize(wx.Size(-1, 150))
         outer.SetSizer(outer_vbox)
         self.notebook.AddPage(outer, _("Toolbars"))
 

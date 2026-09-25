@@ -1981,7 +1981,7 @@ Associates extensions with Songpress++ **for the current user only**.
 
 ### *Toolbars* tab
 
-Contains four sub-tabs — **Standard**, **Format**, **Insert**, **View** — with one checkbox per icon of the corresponding bar, plus **Select all** / **Deselect all** buttons (acting only on the active sub-tab). Details and separator behaviour in the *Toolbar Customisation* chapter.
+Contains four sub-tabs — **Standard**, **Format**, **Insert**, **View** — with one checkbox per icon of the corresponding bar, plus **Select all** / **Deselect all** buttons at the top, above the sub-tabs (acting only on the open sub-tab). Details and separator behaviour in the *Toolbar Customisation* chapter.
 
 ---
 
@@ -2003,7 +2003,7 @@ Open **Tools → Options…** and select the **Toolbars** tab. The tab contains 
 ### How to show or hide an icon
 
 1. In the corresponding sub-tab, **check** the box to show the icon, **uncheck** it to hide it.
-2. The **Select all** and **Deselect all** buttons act only on the current sub-tab.
+2. The **Select all** and **Deselect all** buttons, at the top above the sub-tabs, act only on the open sub-tab.
 3. Click **OK**: the toolbar updates immediately.
 
 Settings are saved to the application configuration file and restored at every startup.
