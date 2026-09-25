@@ -1,9 +1,9 @@
 # Traduzioni italiane del righello a schermo (ScreenRuler.py) - Songpress++
 msgid ""
 msgstr ""
+"Language: it\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: it\n"
 
 #: ScreenRuler.py
 msgid "Screen ruler..."
@@ -58,8 +58,12 @@ msgid "Fit to content"
 msgstr "Adatta al contenuto"
 
 #: ScreenRuler.py
-msgid "Shrink the rectangle around its content, e.g. to measure the real height of a text (F)"
-msgstr "Restringe il rettangolo attorno al contenuto, ad es. per misurare l'altezza reale di un testo (F)"
+msgid ""
+"Shrink the rectangle around its content, e.g. to measure the real height of "
+"a text (F)"
+msgstr ""
+"Restringe il rettangolo attorno al contenuto, ad es. per misurare l'altezza "
+"reale di un testo (F)"
 
 #: ScreenRuler.py
 msgid "Tolerance:"
@@ -75,23 +79,34 @@ msgstr "Unità:"
 
 #: ScreenRuler.py
 msgid "Measurement unit (U). Physical units depend on the screen DPI."
-msgstr "Unità di misura (U). Le unità fisiche dipendono dai DPI dello schermo."
+msgstr ""
+"Unità di misura (U). Le unità fisiche dipendono dai DPI dello schermo."
 
 #: ScreenRuler.py
 msgid "Close (Esc)"
 msgstr "Chiudi (Esc)"
 
 #: ScreenRuler.py
-msgid "Unable to capture the screen.\n\nOn Wayland the screenshot permission may have been denied, or xdg-desktop-portal is not available. Alternatively install one of: grim, gnome-screenshot, spectacle."
-msgstr "Impossibile catturare lo schermo.\n\nSu Wayland il permesso di cattura potrebbe essere stato negato, oppure xdg-desktop-portal non è disponibile. In alternativa installa uno tra: grim, gnome-screenshot, spectacle."
+msgid ""
+"Unable to capture the screen.\n"
+"\n"
+"On Wayland the screenshot permission may have been denied, or xdg-desktop-portal is not available. Alternatively install one of: grim, gnome-screenshot, spectacle."
+msgstr ""
+"Impossibile catturare lo schermo.\n"
+"\n"
+"Su Wayland il permesso di cattura potrebbe essere stato negato, oppure xdg-desktop-portal non è disponibile. In alternativa installa uno tra: grim, gnome-screenshot, spectacle."
 
 #: ScreenRuler.py
 msgid "Show cross"
 msgstr "Mostra croce"
 
 #: ScreenRuler.py
-msgid "Show or hide the measuring cross and lines; the measurement label is always shown (C)"
-msgstr "Mostra o nasconde la croce e le linee di misura; l'etichetta con la misura resta sempre visibile (C)"
+msgid ""
+"Show or hide the measuring cross and lines; the measurement label is always "
+"shown (C)"
+msgstr ""
+"Mostra o nasconde la croce e le linee di misura; l'etichetta con la misura "
+"resta sempre visibile (C)"
 
 #: ScreenRuler.py
 msgid "Zoom:"
@@ -106,5 +121,41 @@ msgid "Zoom in (+, Ctrl+mouse wheel)"
 msgstr "Ingrandisci (+, Ctrl+rotellina)"
 
 #: ScreenRuler.py
-msgid "Zoom only enlarges the view: measurements are always in real screen pixels (0 = 1:1)"
-msgstr "Lo zoom ingrandisce solo la vista: le misure sono sempre in pixel reali dello schermo (0 = 1:1)"
+msgid ""
+"Zoom only enlarges the view: measurements are always in real screen pixels "
+"(0 = 1:1)"
+msgstr ""
+"Lo zoom ingrandisce solo la vista: le misure sono sempre in pixel reali "
+"dello schermo (0 = 1:1)"
+
+#: ScreenRuler.py
+msgid "Smooth zoom"
+msgstr "Ingrandimento morbido"
+
+#: ScreenRuler.py
+msgid ""
+"Enlarge the view with interpolation: no visible squares, but edges become "
+"blurred. Measurements are always in real screen pixels (S)"
+msgstr ""
+"Ingrandisce la vista con interpolazione: niente quadratini visibili, ma i "
+"bordi diventano sfumati. Le misure sono sempre in pixel reali dello schermo "
+"(S)"
+
+#: ScreenRuler.py
+msgid "High resolution"
+msgstr "Alta risoluzione"
+
+#: ScreenRuler.py
+msgid ""
+"On HiDPI screens (scaling above 100%) use all the physical pixels of the "
+"screen for the enlarged view, for sharper details. Measurements stay in "
+"logical pixels. Not available at 100% scaling (H)"
+msgstr ""
+"Sugli schermi HiDPI (ridimensionamento oltre il 100%) usa tutti i pixel "
+"fisici dello schermo per la vista ingrandita, per dettagli più nitidi. Le "
+"misure restano in pixel logici. Non disponibile con ridimensionamento al "
+"100% (H)"
+
+#: ScreenRuler.py
+msgid "Options: fit to content (F), show cross (C), smooth zoom (S), high resolution (H)"
+msgstr "Opzioni: adatta al contenuto (F), mostra croce (C), ingrandimento morbido (S), alta risoluzione (H)"

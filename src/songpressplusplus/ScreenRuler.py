@@ -30,6 +30,8 @@ Tasti:
   1..4             cambia modalita'
   F                attiva/disattiva "Adatta al contenuto"
   C                mostra/nasconde la croce di misura
+  S                attiva/disattiva "Ingrandimento morbido"
+  H                attiva/disattiva "Alta risoluzione" (solo schermi HiDPI)
   U                cambia unita' (px, pt, mm, cm, in)
   Frecce           sposta il cursore di 1 px (Maiusc = 10 px)
   + / -            ingrandisce / riduce la vista attorno al cursore
@@ -65,6 +67,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from operator import itemgetter
 from urllib.parse import unquote, urlparse
 
 import wx
@@ -87,11 +90,16 @@ _DEFAULT_TOLERANCE = 30
 
 # Livelli di ingrandimento. Lo zoom cambia solo la VISUALIZZAZIONE: le misure
 # restano sempre calcolate sui pixel reali dello schermo.
-_ZOOM_LEVELS = [1, 2, 3, 4, 6, 8, 12, 16]
+# Passo 1 da 1x (1:1) fino a 8x.
+_ZOOM_LEVELS = [1, 2, 3, 4, 5, 6, 7, 8]
+
+
+def _zoom_text(z):
+    return "%g\u00d7" % z
 
 # Impostazioni ricordate tra un'apertura e l'altra del righello
 # (per tutta la sessione di Songpress++).
-_session = {'showCross': True}
+_session = {'showCross': True, 'smooth': False, 'hires': True}
 
 # (chiave, fattore da pollici)
 _UNITS = [
@@ -130,13 +138,115 @@ def _load_image_bitmap(relpath, size=None):
 _ICON_SIZE = (16, 16)     # icone dei pulsanti della barra (minus, plus, close)
 
 
-def _icon_button(parent, relpath, fallbackText):
+def _no_dpi_scaling(window, bmp):
+    """Mantiene l'icona a 16x16 pixel REALI anche con ridimensionamento dello
+    schermo oltre il 100% (es. Windows al 150%).
+
+    Da wxPython 4.2 una bitmap senza fattore di scala viene considerata
+    "a 100%" e ingrandita (e sfocata) secondo i DPI dello schermo. Dichiarando
+    che la bitmap e' gia' alla scala dello schermo, wx la disegna cosi' com'e',
+    pixel per pixel. Con le versioni precedenti, o a 100%, non cambia nulla."""
+    try:
+        scale = window.GetDPIScaleFactor()          # wx >= 4.1 (Windows e GTK)
+    except AttributeError:
+        try:
+            scale = window.GetContentScaleFactor()
+        except Exception:
+            scale = 1.0
+    if scale and scale > 1.0:
+        try:
+            bmp.SetScaleFactor(scale)
+        except Exception:
+            pass
+    return bmp
+
+
+def _icon_button(parent, relpath, fallbackText, noDpiScale=True):
     """Pulsante con l'icona delle risorse di Songpress++; se l'immagine
     manca, pulsante di testo con fallbackText."""
     bmp = _load_image_bitmap(relpath, _ICON_SIZE)
     if bmp is not None:
+        if noDpiScale:
+            bmp = _no_dpi_scaling(parent, bmp)
         return wx.BitmapButton(parent, -1, bmp)
     return wx.Button(parent, -1, fallbackText, size=(28, -1), style=wx.BU_EXACTFIT)
+
+
+# Icone dei pulsanti delle modalita' (cartella img/ di Songpress++, 16x16).
+# Se un file manca, l'icona viene disegnata da _make_mode_bitmap().
+_MODE_ICONS = {
+    'bounds': 'img/ruler_bounds.png',
+    'spacing': 'img/ruler_spacing.png',
+    'horizontal': 'img/ruler_horizontal.png',
+    'vertical': 'img/ruler_vertical.png',
+}
+
+
+def _mode_bitmap(mode, size=16):
+    """Icona della modalita': prima il file in img/, poi quella disegnata."""
+    bmp = _load_image_bitmap(_MODE_ICONS.get(mode, ''), (size, size))
+    if bmp is not None:
+        return bmp
+    return _make_mode_bitmap(mode, size)
+
+
+def _make_mode_bitmap(mode, size=16):
+    """Icona di una modalita' di misura, disegnata al volo (nessun file).
+    Le coordinate sono pensate su una griglia 16x16 e scalate su 'size'."""
+    bmp = wx.Bitmap.FromRGBA(size, size, 0, 0, 0, 0)
+    dc = wx.MemoryDC(bmp)
+    gc = wx.GraphicsContext.Create(dc)
+    if gc is not None:
+        k = size / 16.0
+
+        def mkpen(colour, width):
+            # wx.Pen accetta solo spessori INTERI (con 1.5 solleva TypeError):
+            # per gli spessori decimali si usa una penna del GraphicsContext.
+            try:
+                return gc.CreatePen(wx.GraphicsPenInfo(colour).Width(width).Cap(wx.CAP_BUTT))
+            except Exception:
+                pen = wx.Pen(colour, max(1, int(round(width))))
+                pen.SetCap(wx.CAP_BUTT)
+                return pen
+
+        orange = mkpen(_LINE_COLOUR, max(1.0, 1.5 * k))
+        tick = mkpen(_LINE_COLOUR, max(1.0, 1.0 * k))
+        grey = wx.Colour(90, 90, 90)
+
+        def line(pen, x0, y0, x1, y1):
+            gc.SetPen(pen)
+            gc.StrokeLine(x0 * k, y0 * k, x1 * k, y1 * k)
+
+        if mode == 'bounds':
+            # rettangolo di misura attorno a due "righe di testo"
+            gc.SetPen(orange)
+            gc.SetBrush(wx.TRANSPARENT_BRUSH)
+            gc.DrawRectangle(2 * k, 3 * k, 12 * k, 10 * k)
+            gc.SetPen(wx.TRANSPARENT_PEN)
+            gc.SetBrush(wx.Brush(grey))
+            gc.DrawRectangle(4.5 * k, 5.5 * k, 7 * k, 1.5 * k)
+            gc.DrawRectangle(4.5 * k, 9 * k, 5 * k, 1.5 * k)
+        elif mode == 'spacing':
+            # croce con i trattini di estremita' sui quattro lati
+            line(orange, 1.5, 8, 14.5, 8)
+            line(orange, 8, 1.5, 8, 14.5)
+            line(tick, 1.5, 5.5, 1.5, 10.5)
+            line(tick, 14.5, 5.5, 14.5, 10.5)
+            line(tick, 5.5, 1.5, 10.5, 1.5)
+            line(tick, 5.5, 14.5, 10.5, 14.5)
+        elif mode == 'horizontal':
+            # |------|  (linea con trattini di estremita', senza punte)
+            line(orange, 2, 8, 14, 8)
+            line(tick, 1.5, 3.5, 1.5, 12.5)
+            line(tick, 14.5, 3.5, 14.5, 12.5)
+        elif mode == 'vertical':
+            # stessa icona ruotata di 90 gradi
+            line(orange, 8, 2, 8, 14)
+            line(tick, 3.5, 1.5, 12.5, 1.5)
+            line(tick, 3.5, 14.5, 12.5, 14.5)
+        del gc
+    dc.SelectObject(wx.NullBitmap)
+    return bmp
 
 
 def _modes():
@@ -445,6 +555,13 @@ def _capture_with_portal():
 def capture_screen(rect):
     """Restituisce un wx.Image dello schermo grande esattamente rect.size,
     oppure None se la cattura non e' possibile."""
+    return capture_screen_ex(rect)[0]
+
+
+def capture_screen_ex(rect):
+    """Come capture_screen, ma ritorna (immagine, immagine_piena):
+    immagine_piena e' la cattura originale in pixel fisici quando lo
+    schermo e' HiDPI (piu' grande di rect), altrimenti None."""
     wayland = os.environ.get('XDG_SESSION_TYPE', '').lower() == 'wayland' \
         or bool(os.environ.get('WAYLAND_DISPLAY'))
     if wayland:
@@ -454,7 +571,7 @@ def capture_screen(rect):
         if img is None:
             img, status = _capture_with_portal()
             if status == 'denied':
-                return None     # l'utente ha rifiutato/annullato: non insistere
+                return None, None   # l'utente ha rifiutato/annullato: non insistere
         # 3) ultime risorse
         if img is None:
             img = _capture_with_tools(['gnome-screenshot']) or _capture_with_wx(rect)
@@ -463,12 +580,16 @@ def capture_screen(rect):
         # tutto nero e' comunque un'immagine valida.
         img = _capture_with_wx(rect, allowBlank=True) or _capture_with_tools()
     if img is None:
-        return None
+        return None, None
     # Con scaling HiDPI la cattura esterna e' in pixel fisici: la riportiamo
-    # in pixel logici (NEAREST mantiene i bordi netti).
+    # in pixel logici (NEAREST mantiene i bordi netti) per le misure, ma
+    # conserviamo l'originale per la vista ingrandita ad alta risoluzione.
+    full = None
     if img.GetWidth() != rect.width or img.GetHeight() != rect.height:
+        if img.GetWidth() > rect.width and img.GetHeight() > rect.height:
+            full = img
         img = img.Scale(rect.width, rect.height, wx.IMAGE_QUALITY_NEAREST)
-    return img
+    return img, full
 
 
 # ---------------------------------------------------------------------------
@@ -487,9 +608,31 @@ class _RulerToolbar(wx.Panel):
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.modeButtons = {}
+        # Icone 16x16 al posto delle scritte (stessa dimensione di
+        # _ICON_SIZE, usata per meno/piu'/chiudi): il nome della modalita'
+        # resta nel suggerimento.
+        # Icone o scritte secondo Opzioni › Generale › "Pulsanti modalita'
+        # del Righello a schermo" (pref.rulerModeButtons).
+        iconPx = _ICON_SIZE[0]
         for key, label, tip in _modes():
-            b = wx.ToggleButton(self, -1, label, style=wx.BU_EXACTFIT)
-            b.SetToolTip(tip)
+            if not overlay.modeIcons:
+                b = wx.ToggleButton(self, -1, label, style=wx.BU_EXACTFIT)
+                b.SetToolTip(tip)
+                b.Bind(wx.EVT_TOGGLEBUTTON, lambda e, k=key: overlay.SetMode(k))
+                sizer.Add(b, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
+                self.modeButtons[key] = b
+                continue
+            b = wx.ToggleButton(self, -1, "", style=wx.BU_EXACTFIT)
+            try:
+                bmp = _mode_bitmap(key, iconPx)
+                if overlay.iconsNoDpiScale:
+                    bmp = _no_dpi_scaling(self, bmp)
+                b.SetBitmap(bmp)
+            except Exception as exc:
+                # ripiego: pulsante di testo (l'errore resta visibile in console)
+                sys.stderr.write("ScreenRuler: icona '%s' non disponibile: %r\n" % (key, exc))
+                b.SetLabel(label)
+            b.SetToolTip("%s \u2014 %s" % (label, tip))
             b.Bind(wx.EVT_TOGGLEBUTTON, lambda e, k=key: overlay.SetMode(k))
             sizer.Add(b, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
             self.modeButtons[key] = b
@@ -497,29 +640,37 @@ class _RulerToolbar(wx.Panel):
         sizer.Add(wx.StaticLine(self, size=(1, 20), style=wx.LI_VERTICAL), 0,
                   wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4)
 
-        self.fit = wx.CheckBox(self, -1, _("Fit to content"))
-        self.fit.SetToolTip(_("Shrink the rectangle around its content, "
-                              "e.g. to measure the real height of a text (F)"))
-        self.fit.SetValue(True)
-        self.fit.Bind(wx.EVT_CHECKBOX, lambda e: overlay.SetFit(self.fit.GetValue()))
-        sizer.Add(self.fit, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
+        # Caselle delle opzioni: affiancate nella barra oppure raggruppate in
+        # una lista verticale aperta dal pulsante img/ruler_list.png
+        # (Opzioni › Generale › "Opzioni 'Righello a schermo...'").
+        self.fit = self.cross = self.smooth = self.hires = None
+        self.optionsPopup = None
+        self.listBtn = None
+        if overlay.optionsList:
+            self.listBtn = _icon_button(self, 'img/ruler_list.png', "\u2630",
+                                        overlay.iconsNoDpiScale)
+            self.listBtn.SetToolTip(_("Options: fit to content (F), show cross (C), "
+                                      "smooth zoom (S), high resolution (H)"))
+            self.listBtn.Bind(wx.EVT_BUTTON, self.OnOptionsList)
+            sizer.Add(self.listBtn, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
+        else:
+            for cb in self._MakeOptionChecks(self):
+                sizer.Add(cb, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
 
-        self.cross = wx.CheckBox(self, -1, _("Show cross"))
-        self.cross.SetToolTip(_("Show or hide the measuring cross and lines; "
-                                "the measurement label is always shown (C)"))
-        self.cross.Bind(wx.EVT_CHECKBOX, lambda e: overlay.SetShowCross(self.cross.GetValue()))
-        sizer.Add(self.cross, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
-
-        sizer.Add(wx.StaticText(self, -1, _("Tolerance:")), 0,
-                  wx.LEFT | wx.ALIGN_CENTER_VERTICAL, 8)
-        # Su GTK la larghezza naturale evita pulsanti +/- tagliati.
-        spinSize = (60, -1) if wx.Platform == '__WXMSW__' else wx.DefaultSize
-        self.tol = wx.SpinCtrl(self, -1, size=spinSize,
-                               min=0, max=255, initial=_DEFAULT_TOLERANCE)
-        self.tol.SetToolTip(_("Maximum colour difference considered as the same area"))
-        self.tol.Bind(wx.EVT_SPINCTRL, lambda e: overlay.SetTolerance(self.tol.GetValue()))
-        self.tol.Bind(wx.EVT_TEXT, lambda e: overlay.SetTolerance(self.tol.GetValue()))
-        sizer.Add(self.tol, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
+        # Tolleranza: nella barra solo se richiesto in Opzioni › Generale ›
+        # Righello a schermo; il valore e' comunque quello delle Opzioni.
+        self.tol = None
+        if overlay.showTolerance:
+            sizer.Add(wx.StaticText(self, -1, _("Tolerance:")), 0,
+                      wx.LEFT | wx.ALIGN_CENTER_VERTICAL, 8)
+            # Su GTK la larghezza naturale evita pulsanti +/- tagliati.
+            spinSize = (60, -1) if wx.Platform == '__WXMSW__' else wx.DefaultSize
+            self.tol = wx.SpinCtrl(self, -1, size=spinSize,
+                                   min=0, max=255, initial=overlay.tolerance)
+            self.tol.SetToolTip(_("Maximum colour difference considered as the same area"))
+            self.tol.Bind(wx.EVT_SPINCTRL, lambda e: overlay.SetTolerance(self.tol.GetValue()))
+            self.tol.Bind(wx.EVT_TEXT, lambda e: overlay.SetTolerance(self.tol.GetValue()))
+            sizer.Add(self.tol, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
 
         sizer.Add(wx.StaticText(self, -1, _("Unit:")), 0,
                   wx.LEFT | wx.ALIGN_CENTER_VERTICAL, 8)
@@ -531,34 +682,157 @@ class _RulerToolbar(wx.Panel):
 
         sizer.Add(wx.StaticText(self, -1, _("Zoom:")), 0,
                   wx.LEFT | wx.ALIGN_CENTER_VERTICAL, 8)
-        zout = _icon_button(self, 'img/minus.png', "\u2212")
+        zout = _icon_button(self, 'img/minus.png', "\u2212", overlay.iconsNoDpiScale)
         zout.SetToolTip(_("Zoom out (-)"))
         zout.Bind(wx.EVT_BUTTON, lambda e: overlay.ZoomStep(-1))
         sizer.Add(zout, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 1)
-        self.zoomLabel = wx.StaticText(self, -1, "16\u00d7", style=wx.ALIGN_CENTRE_HORIZONTAL | wx.ST_NO_AUTORESIZE)
-        self.zoomLabel.SetMinSize(self.zoomLabel.GetBestSize())
+        self.zoomLabel = wx.StaticText(self, -1, _zoom_text(_ZOOM_LEVELS[-1]),
+                                       style=wx.ALIGN_CENTRE_HORIZONTAL | wx.ST_NO_AUTORESIZE)
+        # Larghezza FISSA pari all'etichetta piu' larga fra tutti i livelli:
+        # cambiando zoom ("1x" -> "8x") l'etichetta non deve ridimensionarsi,
+        # altrimenti la barra si allarga/restringe.
+        lw = max(self.zoomLabel.GetTextExtent(_zoom_text(z))[0] for z in _ZOOM_LEVELS) + 6
+        lh = self.zoomLabel.GetBestSize().height
+        self.zoomLabel.SetMinSize((lw, lh))
+        self.zoomLabel.SetMaxSize((lw, lh))
         self.zoomLabel.SetToolTip(_("Zoom only enlarges the view: measurements are always in real screen pixels (0 = 1:1)"))
         sizer.Add(self.zoomLabel, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
-        zin = _icon_button(self, 'img/plus.png', "+")
+        zin = _icon_button(self, 'img/plus.png', "+", overlay.iconsNoDpiScale)
         zin.SetToolTip(_("Zoom in (+, Ctrl+mouse wheel)"))
         zin.Bind(wx.EVT_BUTTON, lambda e: overlay.ZoomStep(+1))
         sizer.Add(zin, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 1)
 
-        close = _icon_button(self, 'img/close.png', "\u2715")
+        close = _icon_button(self, 'img/close.png', "\u2715", overlay.iconsNoDpiScale)
         close.SetToolTip(_("Close (Esc)"))
         close.Bind(wx.EVT_BUTTON, lambda e: overlay.Close())
         sizer.Add(close, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
 
+        # Tutti i pulsanti a icona (modalita', meno, piu', chiudi) diventano
+        # quadrati identici: lato = dimensione piu' grande richiesta da uno
+        # qualsiasi di essi. I pulsanti di testo di ripiego restano liberi.
+        square = [b for b in self.modeButtons.values() if b.GetBitmap().IsOk()]
+        square += [b for b in (zout, zin, close, self.listBtn) if isinstance(b, wx.BitmapButton)]
+        if square:
+            side = max(max(b.GetBestSize()) for b in square)
+            for b in square:
+                b.SetMinSize((side, side))
+                b.SetMaxSize((side, side))
+
         self.SetSizerAndFit(sizer)
+        # Dimensione della barra calcolata UNA volta e bloccata: lo zoom del
+        # righello ingrandisce solo la vista dello schermo, mai la barra.
+        self.fixedSize = wx.Size(self.GetSize())
+        self.SetMinSize(self.fixedSize)
+        self.SetMaxSize(self.fixedSize)
+
+    def _MakeOptionChecks(self, parent):
+        """Crea le quattro caselle delle opzioni su 'parent' (la barra oppure
+        la lista a comparsa) e le ritorna nell'ordine di visualizzazione."""
+        o = self.overlay
+        self.fit = wx.CheckBox(parent, -1, _("Fit to content"))
+        self.fit.SetToolTip(_("Shrink the rectangle around its content, "
+                              "e.g. to measure the real height of a text (F)"))
+        self.fit.Bind(wx.EVT_CHECKBOX, lambda e: o.SetFit(e.IsChecked()))
+
+        self.cross = wx.CheckBox(parent, -1, _("Show cross"))
+        self.cross.SetToolTip(_("Show or hide the measuring cross and lines; "
+                                "the measurement label is always shown (C)"))
+        self.cross.Bind(wx.EVT_CHECKBOX, lambda e: o.SetShowCross(e.IsChecked()))
+
+        self.smooth = wx.CheckBox(parent, -1, _("Smooth zoom"))
+        self.smooth.SetToolTip(_("Enlarge the view with interpolation: no visible "
+                                 "squares, but edges become blurred. Measurements "
+                                 "are always in real screen pixels (S)"))
+        self.smooth.Bind(wx.EVT_CHECKBOX, lambda e: o.SetSmooth(e.IsChecked()))
+
+        self.hires = wx.CheckBox(parent, -1, _("High resolution"))
+        self.hires.SetToolTip(_("On HiDPI screens (scaling above 100%) use all the "
+                                "physical pixels of the screen for the enlarged view, "
+                                "for sharper details. Measurements stay in logical "
+                                "pixels. Not available at 100% scaling (H)"))
+        self.hires.Bind(wx.EVT_CHECKBOX, lambda e: o.SetHires(e.IsChecked()))
+        return [self.fit, self.cross, self.smooth, self.hires]
+
+    def OnOptionsList(self, evt):
+        if self.optionsPopup:
+            self.optionsPopup.Close()
+            return
+        # Il clic sul pulsante chiude prima la lista (clic "fuori" dalla
+        # lista): senza questo controllo la riaprirebbe subito.
+        if time.time() - getattr(self, '_popupClosedAt', 0) < 0.3:
+            return
+        popup = _OptionsPopup(self)
+        self.optionsPopup = popup
+        self.Sync()
+        btn = self.listBtn
+        # sotto il pulsante (wx lo sposta sopra se in basso non c'e' spazio)
+        popup.Position(btn.ClientToScreen(wx.Point(0, 0)), wx.Size(0, btn.GetSize().height))
+        popup.Popup()
+
+    def _OptionsPopupClosed(self):
+        self.optionsPopup = None
+        self.fit = self.cross = self.smooth = self.hires = None
+        self.overlay._FocusCanvas()
 
     def Sync(self):
         o = self.overlay
         for key, b in self.modeButtons.items():
             b.SetValue(key == o.mode)
-        self.fit.SetValue(o.fit)
-        self.cross.SetValue(o.showCross)
+        # Le caselle esistono solo se sono nella barra o se la lista e' aperta
+        if self.fit:
+            self.fit.SetValue(o.fit)
+            self.cross.SetValue(o.showCross)
+            self.smooth.SetValue(o.smooth)
+            self.hires.Enable(o.HasHires())
+            self.hires.SetValue(o.hires and o.HasHires())
         self.unit.SetSelection(o.unitIdx)
-        self.zoomLabel.SetLabel("%d\u00d7" % o.zoom)
+        label = _zoom_text(o.zoom)
+        if self.zoomLabel.GetLabel() != label:
+            # Solo il testo cambia: niente Layout/Fit, la barra resta ferma.
+            self.zoomLabel.SetLabel(label)
+            self.zoomLabel.Refresh()
+
+
+class _OptionsPopup(wx.PopupTransientWindow):
+    """Lista a comparsa con le caselle delle opzioni, una sotto l'altra.
+    Resta aperta mentre si cliccano le caselle; si chiude cliccando altrove,
+    con Esc o premendo di nuovo il pulsante."""
+
+    def __init__(self, toolbar):
+        wx.PopupTransientWindow.__init__(self, toolbar, wx.BORDER_SIMPLE)
+        self.toolbar = toolbar
+        panel = wx.Panel(self)
+        panel.SetBackgroundColour(toolbar.GetBackgroundColour())
+        panel.SetForegroundColour(toolbar.GetForegroundColour())
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        for cb in toolbar._MakeOptionChecks(panel):
+            sizer.Add(cb, 0, wx.ALL, 5)
+        panel.SetSizer(sizer)
+        sizer.Fit(panel)
+        self.SetClientSize(panel.GetSize())
+        self.Bind(wx.EVT_CHAR_HOOK, self._OnKey)
+
+    def _OnKey(self, evt):
+        if evt.GetKeyCode() == wx.WXK_ESCAPE:
+            self.Close()
+        else:
+            evt.Skip()
+
+    def Close(self):
+        """Chiude la lista da codice (Esc, pulsante): Dismiss() non chiama
+        OnDismiss(), che quindi viene chiamato qui."""
+        self.Dismiss()
+        self.OnDismiss()
+
+    def OnDismiss(self):
+        if getattr(self, '_closed', False):     # gia' chiusa
+            return
+        self._closed = True
+        tb = self.toolbar
+        tb._popupClosedAt = time.time()
+        # chiusura differita: OnDismiss arriva mentre la finestra e' ancora attiva
+        wx.CallAfter(tb._OptionsPopupClosed)
+        wx.CallAfter(self.Destroy)
 
 
 # ---------------------------------------------------------------------------
@@ -567,7 +841,10 @@ class _RulerToolbar(wx.Panel):
 
 class ScreenRulerOverlay(wx.Frame):
 
-    def __init__(self, parent, image, screenRect, onClose=None):
+    def __init__(self, parent, image, screenRect, onClose=None, fullImage=None,
+                 modeIcons=True, iconsNoDpiScale=True, optionsList=False,
+                 tolerance=_DEFAULT_TOLERANCE, showTolerance=True,
+                 onToleranceChanged=None):
         style = wx.FRAME_NO_TASKBAR | wx.STAY_ON_TOP | wx.BORDER_NONE
         if parent is not None:
             style |= wx.FRAME_FLOAT_ON_PARENT
@@ -583,6 +860,8 @@ class ScreenRulerOverlay(wx.Frame):
         self.data = bytes(image.GetData())
         self.bitmap = wx.Bitmap(image)
         self._image = image.Copy()      # sorgente per la vista ingrandita
+        # Cattura originale in pixel fisici (solo schermi HiDPI)
+        self._full = fullImage.Copy() if fullImage is not None and fullImage.IsOk() else None
 
         # offset client -> immagine (se il WM sposta la finestra)
         self.offX = 0
@@ -591,14 +870,29 @@ class ScreenRulerOverlay(wx.Frame):
         self.mode = 'bounds'
         self.fit = True
         self.showCross = _session['showCross']
-        self.tolerance = _DEFAULT_TOLERANCE
+        self.modeIcons = bool(modeIcons)   # pulsanti modalita': icone o scritte
+        # icone a 16x16 pixel reali anche con ridimensionamento > 100%
+        self.iconsNoDpiScale = bool(iconsNoDpiScale)
+        # opzioni: caselle affiancate nella barra oppure lista a comparsa
+        self.optionsList = bool(optionsList)
+        # Tolleranza: valore iniziale dalle Opzioni; ogni modifica fatta nella
+        # barra viene riportata alle Opzioni tramite onToleranceChanged.
+        self.showTolerance = bool(showTolerance)
+        self._onToleranceChanged = onToleranceChanged
+        self.smooth = _session['smooth']
+        self.hires = _session['hires']
+        try:
+            self.tolerance = max(0, min(255, int(tolerance)))
+        except (TypeError, ValueError):
+            self.tolerance = _DEFAULT_TOLERANCE
         self.unitIdx = 0
         ppi = wx.ScreenDC().GetPPI()
         self.ppiX = float(ppi.x or 96)
         self.ppiY = float(ppi.y or 96)
 
-        # Vista: zoom intero e pixel dell'immagine nell'angolo in alto a sinistra
-        self.zoom = 1
+        # Vista: zoom (multiplo di 0.5) e pixel dell'immagine nell'angolo
+        # in alto a sinistra
+        self.zoom = 1.0
         self.viewX = 0
         self.viewY = 0
         self._viewBmp = None       # cache dell'immagine ingrandita
@@ -663,8 +957,10 @@ class ScreenRulerOverlay(wx.Frame):
 
     def _PlaceToolbar(self):
         cw, ch = self.GetClientSize()
-        tw, th = self.toolbar.GetBestSize()
-        self.toolbar.SetSize(tw, th)
+        # Dimensione fissa (non GetBestSize, che varia con lo zoom/etichette)
+        tw, th = self.toolbar.fixedSize
+        if self.toolbar.GetSize() != self.toolbar.fixedSize:
+            self.toolbar.SetSize(tw, th)
         y = 10 if self.toolbarAtTop else ch - th - 10
         self.toolbar.SetPosition(wx.Point(max(0, (cw - tw) // 2), max(0, y)))
 
@@ -692,6 +988,8 @@ class ScreenRulerOverlay(wx.Frame):
         figli cede il focus al primo controllo (spesso il campo Tolleranza),
         che consumerebbe i tasti 1-4, F, U, C: in quel caso il focus va al
         pulsante della modalita' corrente, che non li consuma."""
+        if self.toolbar.optionsPopup:
+            return      # la lista delle opzioni e' aperta: il focus resta li'
         self.SetFocus()
         if wx.Window.FindFocus() is not self:
             btn = self.toolbar.modeButtons.get(self.mode)
@@ -713,6 +1011,27 @@ class ScreenRulerOverlay(wx.Frame):
         self._FocusCanvas()
         self.Refresh()
 
+    def HasHires(self):
+        return self._full is not None
+
+    def SetSmooth(self, smooth):
+        self.smooth = bool(smooth)
+        _session['smooth'] = self.smooth
+        self._viewBmp = None
+        self.toolbar.Sync()
+        self._FocusCanvas()
+        self.Refresh(False)
+
+    def SetHires(self, hires):
+        if not self.HasHires():
+            return
+        self.hires = bool(hires)
+        _session['hires'] = self.hires
+        self._viewBmp = None
+        self.toolbar.Sync()
+        self._FocusCanvas()
+        self.Refresh(False)
+
     def SetFit(self, fit):
         self.fit = fit
         self.toolbar.Sync()
@@ -724,6 +1043,11 @@ class ScreenRulerOverlay(wx.Frame):
             self.tolerance = max(0, min(255, int(tol)))
         except (TypeError, ValueError):
             return
+        if self._onToleranceChanged is not None:
+            try:
+                self._onToleranceChanged(self.tolerance)
+            except Exception:
+                pass
         self.Refresh()
 
     def SetUnit(self, idx):
@@ -854,19 +1178,33 @@ class ScreenRulerOverlay(wx.Frame):
 
     # ---- zoom / vista ---------------------------------------------------
 
+    # Lo zoom e' un multiplo di 0.5: tutti i calcoli usano z2 = 2*zoom
+    # (intero) per restare esatti.  Convenzione unica per disegno e misura:
+    #   pixel client d  ->  pixel immagine floor(d / zoom)
+    #   pixel immagine x ->  primo pixel client ceil(x * zoom)
+    # Con zoom 1.5 i pixel reali diventano quindi quadrati alternati di
+    # 1 e 2 pixel, ma il riquadro disegnato coincide sempre con la misura.
+
+    def _z2(self):
+        return int(round(self.zoom * 2))
+
     def _X(self, x):
         """Coordinata immagine -> client (bordo sinistro del pixel)."""
-        return self.offX + (x - self.viewX) * self.zoom
+        return self.offX - ((-(x - self.viewX) * self._z2()) // 2)
 
     def _Y(self, y):
-        return self.offY + (y - self.viewY) * self.zoom
+        return self.offY - ((-(y - self.viewY) * self._z2()) // 2)
+
+    def _half(self):
+        """Meta' della dimensione a schermo di un pixel reale."""
+        return int(self.zoom) // 2
 
     def _viewSize(self):
         """Quanti pixel dell'immagine sono visibili con lo zoom corrente."""
         cw, ch = self.GetClientSize()
-        z = self.zoom
-        return (min(self.W, (cw - self.offX + z - 1) // z),
-                min(self.H, (ch - self.offY + z - 1) // z))
+        z2 = self._z2()
+        return (min(self.W, ((cw - self.offX) * 2 + z2 - 1) // z2),
+                min(self.H, ((ch - self.offY) * 2 + z2 - 1) // z2))
 
     def _ClampView(self):
         vw, vh = self._viewSize()
@@ -876,24 +1214,24 @@ class ScreenRulerOverlay(wx.Frame):
     def SetZoom(self, zoom, anchor=None):
         """Cambia lo zoom mantenendo fermo il pixel sotto 'anchor'
         (coordinate client; default: posizione del mouse o centro)."""
-        zoom = max(_ZOOM_LEVELS[0], min(_ZOOM_LEVELS[-1], int(zoom)))
+        zoom = max(_ZOOM_LEVELS[0], min(_ZOOM_LEVELS[-1], float(zoom)))
+        zoom = int(round(zoom))                 # solo livelli interi
         if anchor is None:
             anchor = self.ScreenToClient(wx.GetMousePosition())
             cw, ch = self.GetClientSize()
             if not (0 <= anchor.x < cw and 0 <= anchor.y < ch):
                 anchor = wx.Point(cw // 2, ch // 2)
-        ix = self.viewX + (anchor.x - self.offX) // self.zoom
-        iy = self.viewY + (anchor.y - self.offY) // self.zoom
+        ix, iy = self._to_image(anchor, clamp=False)
         self.zoom = zoom
-        self.viewX = ix - (anchor.x - self.offX) // zoom
-        self.viewY = iy - (anchor.y - self.offY) // zoom
+        z2 = self._z2()
+        self.viewX = ix - ((anchor.x - self.offX) * 2) // z2
+        self.viewY = iy - ((anchor.y - self.offY) * 2) // z2
         self._ClampView()
         self._viewBmp = None
         self.mouse = self._to_image(anchor)
         if self.dragStart is not None:
             self.dragEnd = self.mouse
         self.toolbar.Sync()
-        self._PlaceToolbar()
         self.Refresh(False)
 
     def ZoomStep(self, direction, anchor=None):
@@ -920,22 +1258,64 @@ class ScreenRulerOverlay(wx.Frame):
         self.Refresh(False)
 
     def _view_bitmap(self):
-        """Porzione visibile dell'immagine, ingrandita senza interpolazione
-        (ogni pixel reale diventa un quadrato zoom x zoom)."""
+        """Porzione visibile dell'immagine, ingrandita senza interpolazione.
+        Il ridimensionamento e' fatto qui (e non con wx.Image.Scale) perche'
+        usi ESATTAMENTE la stessa corrispondenza pixel di _X/_to_image:
+        con zoom non interi wx arrotonda diversamente e il riquadro di misura
+        risulterebbe sfasato di un pixel rispetto all'immagine."""
         if self.zoom == 1:
             return self.bitmap
         if self._viewBmp is None:
             vw, vh = self._viewSize()
             vw = min(vw, self.W - self.viewX)
             vh = min(vh, self.H - self.viewY)
-            sub = self._image.GetSubImage(wx.Rect(self.viewX, self.viewY, vw, vh))
-            sub = sub.Scale(vw * self.zoom, vh * self.zoom, wx.IMAGE_QUALITY_NEAREST)
-            self._viewBmp = wx.Bitmap(sub)
+            z2 = self._z2()
+            dw = (vw * z2 + 1) // 2
+            dh = (vh * z2 + 1) // 2
+            quality = wx.IMAGE_QUALITY_BICUBIC if self.smooth else wx.IMAGE_QUALITY_NEAREST
+            if self.hires and self._full is not None:
+                # Stessa porzione, presa dalla cattura in pixel fisici
+                fW, fH = self._full.GetWidth(), self._full.GetHeight()
+                sx, sy = fW / float(self.W), fH / float(self.H)
+                fx = min(fW - 1, int(round(self.viewX * sx)))
+                fy = min(fH - 1, int(round(self.viewY * sy)))
+                fw = max(1, min(fW - fx, int(round(vw * sx))))
+                fh = max(1, min(fH - fy, int(round(vh * sy))))
+                sub = self._full.GetSubImage(wx.Rect(fx, fy, fw, fh))
+                if (fw, fh) != (dw, dh):
+                    sub = sub.Scale(dw, dh, quality)
+                self._viewBmp = wx.Bitmap(sub)
+                return self._viewBmp
+            if self.smooth:
+                sub = self._image.GetSubImage(wx.Rect(self.viewX, self.viewY, vw, vh))
+                self._viewBmp = wx.Bitmap(sub.Scale(dw, dh, quality))
+                return self._viewBmp
+            x0, y0 = self.viewX, self.viewY
+            idx = []
+            for d in range(dw):
+                o = (x0 + (2 * d) // z2) * 3
+                idx.extend((o, o + 1, o + 2))
+            pick = itemgetter(*idx)
+            rowLen = self.W * 3
+            data = self.data
+            rows = {}
+            out = []
+            for d in range(dh):
+                sy = y0 + (2 * d) // z2
+                r = rows.get(sy)
+                if r is None:
+                    base = sy * rowLen
+                    r = rows[sy] = bytes(pick(data[base:base + rowLen]))
+                out.append(r)
+            self._viewBmp = wx.Bitmap(wx.Image(dw, dh, b''.join(out)))
         return self._viewBmp
 
-    def _to_image(self, pos):
-        x = self.viewX + (pos.x - self.offX) // self.zoom
-        y = self.viewY + (pos.y - self.offY) // self.zoom
+    def _to_image(self, pos, clamp=True):
+        z2 = self._z2()
+        x = self.viewX + ((pos.x - self.offX) * 2) // z2
+        y = self.viewY + ((pos.y - self.offY) * 2) // z2
+        if not clamp:
+            return x, y
         return min(max(x, 0), self.W - 1), min(max(y, 0), self.H - 1)
 
     def OnWheel(self, evt):
@@ -945,7 +1325,7 @@ class ScreenRulerOverlay(wx.Frame):
         if evt.ControlDown():
             self.ZoomStep(1 if rot > 0 else -1, evt.GetPosition())
             return
-        step = max(1, 60 // self.zoom) * (-1 if rot > 0 else 1)
+        step = max(1, int(60 // self.zoom)) * (-1 if rot > 0 else 1)
         horizontal = evt.ShiftDown() or evt.GetWheelAxis() == wx.MOUSE_WHEEL_HORIZONTAL
         if horizontal:
             self.Pan(step, 0)
@@ -970,8 +1350,9 @@ class ScreenRulerOverlay(wx.Frame):
         pos = evt.GetPosition()
         if self._panStart is not None and evt.MiddleIsDown():
             p0, vx, vy = self._panStart
-            self.viewX = vx - (pos.x - p0.x) // self.zoom
-            self.viewY = vy - (pos.y - p0.y) // self.zoom
+            z2 = self._z2()
+            self.viewX = vx - ((pos.x - p0.x) * 2) // z2
+            self.viewY = vy - ((pos.y - p0.y) * 2) // z2
             self._ClampView()
             self._viewBmp = None
             self.mouse = self._to_image(pos)
@@ -1075,6 +1456,12 @@ class ScreenRulerOverlay(wx.Frame):
         if code in (ord('1'), ord('2'), ord('3'), ord('4')):
             self.SetMode(_modes()[code - ord('1')][0])
             return
+        if code in (ord('S'), ord('s')):
+            self.SetSmooth(not self.smooth)
+            return
+        if code in (ord('H'), ord('h')):
+            self.SetHires(not self.hires)
+            return
         if code in (ord('C'), ord('c')):
             self.SetShowCross(not self.showCross)
             return
@@ -1092,10 +1479,13 @@ class ScreenRulerOverlay(wx.Frame):
                   wx.WXK_UP: (0, -1), wx.WXK_DOWN: (0, 1)}
         if code in arrows:
             dx, dy = arrows[code]
-            # 1 pixel REALE per pressione, qualunque sia lo zoom
-            step = (10 if evt.ShiftDown() else 1) * self.zoom
+            # 1 pixel REALE per pressione, qualunque sia lo zoom:
+            # il puntatore va al centro del pixel reale successivo.
+            n = 10 if evt.ShiftDown() else 1
             pos = self.ScreenToClient(wx.GetMousePosition())
-            nx, ny = pos.x + dx * step, pos.y + dy * step
+            ix, iy = self._to_image(pos, clamp=False)
+            nx = self._X(ix + dx * n) + self._half()
+            ny = self._Y(iy + dy * n) + self._half()
             cw, ch = self.GetClientSize()
             # se si esce dalla vista ingrandita, la vista scorre
             if self.zoom > 1 and not (0 <= nx < cw and 0 <= ny < ch):
@@ -1151,7 +1541,7 @@ class ScreenRulerOverlay(wx.Frame):
 
     def _draw_crosshair(self, dc):
         x, y = self.mouse
-        h = self.zoom // 2
+        h = self._half()
         cw, ch = self.GetClientSize()
         dc.SetPen(self._pen(_CROSS_COLOUR, True))
         dc.DrawLine(0, self._Y(y) + h, cw, self._Y(y) + h)
@@ -1169,7 +1559,7 @@ class ScreenRulerOverlay(wx.Frame):
             self._draw_label(dc, text, (X0 + X1) // 2, Y1 + 8, below=True)
 
     def _draw_spacing(self, dc, m, colour, lines=True):
-        h = self.zoom // 2
+        h = self._half()
         x, y = self._X(m['x']) + h, self._Y(m['y']) + h
         t = 5 + h
         dc.SetPen(self._pen(colour))
@@ -1334,7 +1724,7 @@ class ScreenRulerMixin(object):
         rect = _virtual_screen_rect()
         wx.BeginBusyCursor()
         try:
-            img = capture_screen(rect)
+            img, full = capture_screen_ex(rect)
         finally:
             wx.EndBusyCursor()
         if img is None:
@@ -1348,8 +1738,28 @@ class ScreenRulerMixin(object):
 
         def _closed():
             self._screenRuler = None
+            # Salva la tolleranza eventualmente cambiata nella barra
+            if pref is not None and hasattr(pref, 'SaveRulerTolerance'):
+                try:
+                    pref.SaveRulerTolerance()
+                except Exception:
+                    pass
 
-        self._screenRuler = ScreenRulerOverlay(self.frame, img, rect, onClose=_closed)
+        def _toleranceChanged(value):
+            if pref is not None:
+                pref.rulerTolerance = value
+
+        pref = getattr(self, 'pref', None)
+        modeIcons = getattr(pref, 'rulerModeButtons', 'icons') != 'text'
+        noDpi = getattr(pref, 'rulerIconsNoDpiScale', True)
+        optList = getattr(pref, 'rulerOptionsLayout', 'inline') == 'list'
+        self._screenRuler = ScreenRulerOverlay(self.frame, img, rect, onClose=_closed,
+                                               fullImage=full, modeIcons=modeIcons,
+                                               iconsNoDpiScale=noDpi,
+                                               optionsList=optList,
+                                               tolerance=getattr(pref, 'rulerTolerance', _DEFAULT_TOLERANCE),
+                                               showTolerance=getattr(pref, 'rulerShowTolerance', True),
+                                               onToleranceChanged=_toleranceChanged)
         self._screenRuler.Start()
 
 
@@ -1360,10 +1770,11 @@ class ScreenRulerMixin(object):
 if __name__ == '__main__':
     app = wx.App(False)
     r = _virtual_screen_rect()
-    im = capture_screen(r)
+    im, full = capture_screen_ex(r)
     if im is None:
         print("Cattura dello schermo non riuscita")
     else:
-        ov = ScreenRulerOverlay(None, im, r, onClose=app.ExitMainLoop)
+        ov = ScreenRulerOverlay(None, im, r, onClose=app.ExitMainLoop,
+                                fullImage=full)
         ov.Start()
         app.MainLoop()

@@ -234,6 +234,20 @@ class MyPreferencesDialog(PreferencesDialog):
         else:
             self.depIconNative.SetValue(True)
 
+        # Pulsanti modalita' del Righello a schermo: icone o scritte
+        if getattr(self.pref, 'rulerModeButtons', 'icons') == 'text':
+            self.rulerBtnText.SetValue(True)
+        else:
+            self.rulerBtnIcons.SetValue(True)
+        self.rulerIconsNoDpiScaleCB.SetValue(getattr(self.pref, 'rulerIconsNoDpiScale', True))
+        if getattr(self.pref, 'rulerOptionsLayout', 'inline') == 'list':
+            self.rulerOptList.SetValue(True)
+        else:
+            self.rulerOptInline.SetValue(True)
+        # Tolleranza del righello (condivisa con la barra del righello)
+        self.rulerToleranceSpin.SetValue(getattr(self.pref, 'rulerTolerance', 30))
+        self.rulerShowToleranceCB.SetValue(getattr(self.pref, 'rulerShowTolerance', True))
+
         # Debug messages
         self.showDebugMsgCB.SetValue(getattr(self.pref, 'showDebugMsg', False))
 
@@ -1896,6 +1910,12 @@ class MyPreferencesDialog(PreferencesDialog):
             self.pref.depIconMode = 'image'
         else:
             self.pref.depIconMode = 'native'
+        # Pulsanti modalita' del Righello a schermo (vale dalla prossima apertura)
+        self.pref.rulerModeButtons = 'text' if self.rulerBtnText.GetValue() else 'icons'
+        self.pref.rulerIconsNoDpiScale = self.rulerIconsNoDpiScaleCB.GetValue()
+        self.pref.rulerOptionsLayout = 'list' if self.rulerOptList.GetValue() else 'inline'
+        self.pref.rulerTolerance = max(0, min(255, self.rulerToleranceSpin.GetValue()))
+        self.pref.rulerShowTolerance = self.rulerShowToleranceCB.GetValue()
         self.pref.showDebugMsg = self.showDebugMsgCB.GetValue()
         # Intellisense direttive
         self.pref.intellisense = self.intellisenseCB.GetValue()

@@ -368,7 +368,54 @@ class PreferencesDialog(wx.Dialog):
         bSizerDepIcon.Add(self.depIconImage, 0, wx.ALIGN_CENTER_VERTICAL)
         grpGeneral.Add(bSizerDepIcon, 0, wx.EXPAND | wx.ALL, 5)
 
+
         bSizer11b.Add(grpGeneral, 0, wx.EXPAND | wx.ALL, 8)
+
+        # ── Gruppo "Righello a schermo" ───────────────────────────────
+        _boxRuler = wx.StaticBox(self.general2, wx.ID_ANY, _(u"Screen ruler"))
+        grpRuler = wx.StaticBoxSizer(_boxRuler, wx.VERTICAL)
+        # Due righe di scelta con le etichette allineate in colonna
+        gRuler = wx.FlexGridSizer(0, 3, 6, 8)
+
+        # Pulsanti delle modalita': icone o scritte
+        self.labelRulerBtn = wx.StaticText(_boxRuler, wx.ID_ANY, _(u"Mode buttons"))
+        self.rulerBtnIcons = wx.RadioButton(_boxRuler, wx.ID_ANY, _(u"Icons"), wx.DefaultPosition, wx.DefaultSize, wx.RB_GROUP)
+        self.rulerBtnText = wx.RadioButton(_boxRuler, wx.ID_ANY, _(u"Text labels"))
+        self.rulerBtnIcons.SetToolTip(_(u"Show the Bounds, Spacing, Horizontal and Vertical buttons of the screen ruler as 16×16 icons; the name appears in the tooltip."))
+        self.rulerBtnText.SetToolTip(_(u"Show the Bounds, Spacing, Horizontal and Vertical buttons of the screen ruler with their names."))
+        gRuler.Add(self.labelRulerBtn, 0, wx.ALIGN_CENTER_VERTICAL)
+        gRuler.Add(self.rulerBtnIcons, 0, wx.ALIGN_CENTER_VERTICAL)
+        gRuler.Add(self.rulerBtnText, 0, wx.ALIGN_CENTER_VERTICAL)
+
+        # Caselle delle opzioni: affiancate nella barra o in una lista
+        self.labelRulerOpt = wx.StaticText(_boxRuler, wx.ID_ANY, _(u"Options"))
+        self.rulerOptInline = wx.RadioButton(_boxRuler, wx.ID_ANY, _(u"Side by side"), wx.DefaultPosition, wx.DefaultSize, wx.RB_GROUP)
+        self.rulerOptList = wx.RadioButton(_boxRuler, wx.ID_ANY, _(u"In a list"))
+        self.rulerOptInline.SetToolTip(_(u"Show the Fit to content, Show cross, Smooth zoom and High resolution checkboxes side by side in the screen ruler toolbar."))
+        self.rulerOptList.SetToolTip(_(u"Group the Fit to content, Show cross, Smooth zoom and High resolution checkboxes in a vertical list, opened by a button in the screen ruler toolbar. The toolbar becomes shorter."))
+        gRuler.Add(self.labelRulerOpt, 0, wx.ALIGN_CENTER_VERTICAL)
+        gRuler.Add(self.rulerOptInline, 0, wx.ALIGN_CENTER_VERTICAL)
+        gRuler.Add(self.rulerOptList, 0, wx.ALIGN_CENTER_VERTICAL)
+        grpRuler.Add(gRuler, 0, wx.ALL, 5)
+
+        # Icone a 16x16 pixel reali anche con ridimensionamento > 100%
+        self.rulerIconsNoDpiScaleCB = wx.CheckBox(_boxRuler, wx.ID_ANY, _(u"Keep icons at 16×16 real pixels"))
+        self.rulerIconsNoDpiScaleCB.SetToolTip(_(u"With display scaling above 100% (e.g. 150%), the icons of the screen ruler toolbar are not enlarged: they stay sharp at 16×16 real pixels but look smaller than the text. When disabled, they are enlarged like the other icons and may look slightly blurred. No effect at 100% scaling."))
+        grpRuler.Add(self.rulerIconsNoDpiScaleCB, 0, wx.ALL, 5)
+
+        # Tolleranza (stesso valore della barra del righello)
+        bSizerRulerTol = wx.BoxSizer(wx.HORIZONTAL)
+        self.labelRulerTol = wx.StaticText(_boxRuler, wx.ID_ANY, _(u"Tolerance"))
+        bSizerRulerTol.Add(self.labelRulerTol, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        self.rulerToleranceSpin = wx.SpinCtrl(_boxRuler, wx.ID_ANY, "", wx.DefaultPosition, wx.DefaultSize, wx.SP_ARROW_KEYS, 0, 255, 30)
+        self.rulerToleranceSpin.SetToolTip(_(u"Maximum colour difference (0-255) beyond which a pixel is treated as an edge. Low values detect even shading (antialiasing); high values ignore small variations. Default: 30. It is the same value as the Tolerance field of the screen ruler toolbar: a change made in one place also appears in the other."))
+        bSizerRulerTol.Add(self.rulerToleranceSpin, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 12)
+        self.rulerShowToleranceCB = wx.CheckBox(_boxRuler, wx.ID_ANY, _(u'Show also in the "Screen ruler..." toolbar'))
+        self.rulerShowToleranceCB.SetToolTip(_(u"When enabled, the Tolerance field is also shown in the screen ruler toolbar. When disabled, the tolerance can be changed only here and the toolbar becomes shorter."))
+        bSizerRulerTol.Add(self.rulerShowToleranceCB, 0, wx.ALIGN_CENTER_VERTICAL)
+        grpRuler.Add(bSizerRulerTol, 0, wx.ALL, 5)
+
+        bSizer11b.Add(grpRuler, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
         self.general2.SetSizer(bSizer11b)
         self.general2.Layout()

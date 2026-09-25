@@ -1460,6 +1460,8 @@ When started, Songpress++ captures an image of the screen and shows it full scre
 
 #### Measuring modes
 
+On the toolbar each mode is an icon button: square with corner dots (*Bounds*), cross (*Spacing*), horizontal double arrow (*Horizontal*) and vertical double arrow (*Vertical*). Hovering over a button shows its name and description. If you prefer written names, choose **Options › General › Screen ruler › Mode buttons › Text labels**; the choice is saved and takes effect the next time the ruler is opened.
+
 | Mode | Key | How to use it |
 |---|---|---|
 | **Bounds** | <kbd>1</kbd> | Drag a rectangle with the mouse: its *width × height* is shown. |
@@ -1471,20 +1473,31 @@ In **Horizontal** and **Vertical** modes the cross-shaped mouse pointer is hidde
 
 #### Toolbar options
 
+The *Fit to content*, *Show cross*, *Smooth zoom* and *High resolution* checkboxes appear side by side on the toolbar or, if **In a list** is chosen in **Options › General › Screen ruler › Options**, in a vertical list opened by the list button on the toolbar. The list stays open while you toggle the checkboxes and closes when you click elsewhere, press <kbd>Esc</kbd> or press the button again. The <kbd>F</kbd>, <kbd>C</kbd>, <kbd>S</kbd> and <kbd>H</kbd> keys work in both cases.
+
 | Option | Function |
 |---|---|
 | **Fit to content** | *Bounds* mode only. The dragged rectangle automatically shrinks around the content that differs from the background. The original rectangle stays visible as a grey dashed outline. On by default (key <kbd>F</kbd>). |
 | **Show cross** | Shows or hides the measuring cross: the dashed lines following the cursor in *Bounds* mode and the orange lines with end ticks in *Spacing*, *Horizontal* and *Vertical* modes. When hidden, only the measurement label remains visible, which avoids covering the text being measured. The setting is remembered until Songpress++ is closed (key <kbd>C</kbd>). |
-| **Tolerance** | Maximum colour difference (0–255) beyond which a pixel is treated as an edge. Low values make the measurement sensitive to shading (antialiasing); high values ignore small variations. Default: 30. |
+| **Tolerance** | Maximum colour difference (0–255) beyond which a pixel is treated as an edge. Low values make the measurement sensitive to shading (antialiasing); high values ignore small variations. Default: 30. The value is remembered and is the same as **Options › General › Screen ruler › Tolerance**, where you can also choose not to show the field on the toolbar. |
 | **Unit** | `px`, `pt`, `mm`, `cm`, `in` (key <kbd>U</kbd> cycles to the next one). |
-| **Zoom − / +** | Magnifies the view (1×, 2×, 3×, 4×, 6×, 8×, 12×, 16×) around the cursor. See *Magnification* below. |
+| **Smooth zoom** | While zoomed, enlarges the view with bicubic interpolation: pixels no longer appear as squares, but edges become blurred. Off by default, because sharp pixels are clearer for measuring. The setting is remembered until Songpress++ is closed (key <kbd>S</kbd>). |
+| **High resolution** | HiDPI screens only (scaling above 100%). The magnified view uses all the physical pixels of the screen instead of the logical pixels, so icons and text show more detail. On by default; at 100% the checkbox is disabled (greyed out) because there are no extra pixels. The setting is remembered until Songpress++ is closed (key <kbd>H</kbd>). |
+| **Zoom − / +** | Magnifies the view around the cursor, from 1× to 8× in steps of 1. See *Magnification* below. |
 | **✕** | Closes the ruler (same as <kbd>Esc</kbd>). |
 
 #### Magnification
 
-To measure small elements precisely (a chord, the thickness of a line, the gap between two letters) you can magnify the view with <kbd>+</kbd>, <kbd>Ctrl</kbd>+mouse wheel or the **− / +** toolbar buttons. Zooming happens around the cursor and every screen pixel becomes a clearly visible square, with no smoothing.
+To measure small elements precisely (a chord, the thickness of a line, the gap between two letters) you can magnify the view with <kbd>+</kbd>, <kbd>Ctrl</kbd>+mouse wheel or the **− / +** toolbar buttons. Zooming happens around the cursor, from 1× to 8× in steps of 1, and every screen pixel becomes a clearly visible square, with no smoothing. The ruler toolbar does not change size: only the captured image is magnified.
 
-Zoom **changes only the view, not the measurement**: a text 12 pixels high is always reported as `12 px`, at 1× as well as at 16×. The arrow keys also always move the cursor by 1 real pixel.
+The magnified image cannot contain more detail than the screen itself: a 16×16 pixel icon, magnified, shows its 256 squares. The toolbar offers two **view-only** checkboxes for a different look, also toggled with the <kbd>S</kbd> and <kbd>H</kbd> keys:
+
+- **Smooth zoom** — removes the blocky look by smoothing colour transitions; the image looks smoother but less sharp.
+- **High resolution** — on HiDPI screens (for example at 150% or 200% scaling) the screen has more physical pixels than the logical pixels used for measuring: with this option the magnified view uses them all and shows finer real detail.
+
+The two options can be combined.
+
+Zoom **changes only the view, not the measurement**: a text 12 pixels high is always reported as `12 px`, at 1× as well as at 8×, with or without *Smooth zoom* and *High resolution*. The arrow keys also always move the cursor by 1 real pixel.
 
 | Action | Effect |
 |---|---|
@@ -1512,13 +1525,15 @@ To measure the **space between two lines**, use **Vertical** mode instead and pl
 | <kbd>Ctrl</kbd>+<kbd>C</kbd> | Copies the current (or last pinned) measurement to the clipboard |
 | <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> | Moves the cursor by 1 pixel (10 pixels with <kbd>Shift</kbd>) |
 | <kbd>C</kbd> | Shows / hides the measuring cross |
+| <kbd>S</kbd> | Toggles *Smooth zoom* |
+| <kbd>H</kbd> | Toggles *High resolution* (HiDPI screens only) |
 | <kbd>+</kbd> / <kbd>-</kbd> / <kbd>0</kbd> | Zoom in / out / back to 1:1 |
 | <kbd>Del</kbd> / <kbd>Backspace</kbd> | Clears pinned measurements |
 | <kbd>Esc</kbd> | Cancels the drag in progress or closes the ruler |
 
 > **Note — physical units** — Values in `mm`, `cm`, `pt` and `in` are computed from the DPI reported by the operating system (often 96 on Linux) and are exact only if that value matches the monitor's real resolution. Pixel measurements are always precise. To measure the printed size of an element, use the preview at 100% zoom.
 
-> **Note — Linux / Wayland** — On Wayland applications cannot read the screen directly. Songpress++ tries, in order: **grim** (Sway/wlroots) or **spectacle** (KDE) if installed, then the **xdg-desktop-portal**, available out of the box on GNOME and KDE, and finally **gnome-screenshot**. With the portal nothing needs to be installed: on first use the desktop may ask for permission to capture the screen; if you deny or cancel it, the ruler does not open. On X11 and Windows nothing extra is needed. With HiDPI scaling enabled, measurements are expressed in logical pixels.
+> **Note — Linux / Wayland** — On Wayland applications cannot read the screen directly. Songpress++ tries, in order: **grim** (Sway/wlroots) or **spectacle** (KDE) if installed, then the **xdg-desktop-portal**, available out of the box on GNOME and KDE, and finally **gnome-screenshot**. With the portal nothing needs to be installed: on first use the desktop may ask for permission to capture the screen; if you deny or cancel it, the ruler does not open. On X11 and Windows nothing extra is needed. With HiDPI scaling enabled, measurements are expressed in logical pixels; the **High resolution** option uses physical pixels only for the magnified view.
 
 ### Directive Intellisense (`Ctrl+Space`)
 
@@ -1799,6 +1814,18 @@ Opened from **Tools → Options…** (window title: *Songpress++ options*). It i
 | **Toolbar icon size** | Small | Radio: **Small (16×16)**, **Medium (19×19)**, **Large (21×21)**. |
 
 > Checkboxes in this group are sorted alphabetically according to the interface language, so the on-screen order may differ from the table.
+
+#### **Screen ruler** group
+
+Options for the *Screen ruler* (<kbd>F9</kbd>) toolbar. They take effect the next time the ruler is opened.
+
+| Command / option | Default | Description |
+| ---------------- | :-----: | ----------- |
+| **Mode buttons** | Icons | Radio: **Icons** (16×16 icons, the name appears in the tooltip) or **Text labels** (the mode name on the button). |
+| **Options** | Side by side | Radio: **Side by side** (the *Fit to content*, *Show cross*, *Smooth zoom* and *High resolution* checkboxes next to each other on the toolbar) or **In a list** (a button opens a vertical list with the same checkboxes instead; the toolbar becomes shorter). |
+| **Keep icons at 16×16 real pixels** | ✓ | With display scaling above 100% (e.g. 150%) the toolbar icons are not enlarged: they stay sharp at 16×16 pixels but look smaller than the text. When disabled, they are enlarged like the other icons and may look slightly blurred. No effect at 100%. |
+| **Tolerance** | 30 | Maximum colour difference (0–255) beyond which a pixel is treated as an edge. It is **the same value** as the *Tolerance* field of the ruler toolbar: if you change it on the toolbar, it is saved when the ruler closes and shows up here; if you change it here, the ruler opens with the new value. |
+| **Show also in the "Screen ruler..." toolbar** | ✓ | When enabled, the *Tolerance* field is also shown on the ruler toolbar. When disabled, the tolerance can be changed only here and the toolbar becomes shorter. |
 
 ---
 

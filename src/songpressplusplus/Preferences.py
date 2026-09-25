@@ -211,6 +211,7 @@ class Preferences(object):
         self._LoadToolbarIconSize()
         self._LoadChordUppercase()
         self._LoadDepIconMode()
+        self._LoadRulerModeButtons()
 
     def _LoadKlavierColour(self):
         self.config.SetPath('/KlavierColour')
@@ -459,6 +460,7 @@ class Preferences(object):
         self._SaveToolbarIconSize()
         self._SaveChordUppercase()
         self._SaveDepIconMode()
+        self._SaveRulerModeButtons()
         self.config.Flush()
 
     def _SaveKlavierColour(self):
@@ -596,6 +598,51 @@ class Preferences(object):
         self.config.SetPath('/App')
         self.config.Write('depIconMode', getattr(self, 'depIconMode', 'native'))
         self.config.SetPath('/')
+
+    def _LoadRulerModeButtons(self):
+        """Pulsanti delle modalita' del Righello a schermo (Riquadro,
+        Spaziatura, Orizzontale, Verticale): 'icons' = icone 16x16,
+        'text' = scritte."""
+        self.config.SetPath('/App')
+        v = self.config.Read('rulerModeButtons')
+        self.rulerModeButtons = v if v in ('icons', 'text') else 'icons'
+        # Icone del righello a 16x16 pixel reali anche con ridimensionamento
+        # dello schermo oltre il 100% (nessun ingrandimento HiDPI).
+        v = self.config.Read('rulerIconsNoDpiScale')
+        self.rulerIconsNoDpiScale = bool(int(v)) if v != '' else True
+        # Caselle delle opzioni del righello: 'inline' = affiancate nella
+        # barra, 'list' = in una lista aperta dal pulsante ruler_list.png
+        v = self.config.Read('rulerOptionsLayout')
+        self.rulerOptionsLayout = v if v in ('inline', 'list') else 'inline'
+        # Tolleranza del righello (0-255), condivisa con la barra del righello,
+        # e se mostrarla anche nella barra oppure solo qui nelle Opzioni.
+        v = self.config.Read('rulerTolerance')
+        try:
+            self.rulerTolerance = max(0, min(255, int(v))) if v != '' else 30
+        except ValueError:
+            self.rulerTolerance = 30
+        v = self.config.Read('rulerShowTolerance')
+        self.rulerShowTolerance = bool(int(v)) if v != '' else True
+        self.config.SetPath('/')
+
+    def _SaveRulerModeButtons(self):
+        self.config.SetPath('/App')
+        self.config.Write('rulerModeButtons', getattr(self, 'rulerModeButtons', 'icons'))
+        self.config.Write('rulerIconsNoDpiScale',
+                          '1' if getattr(self, 'rulerIconsNoDpiScale', True) else '0')
+        self.config.Write('rulerOptionsLayout', getattr(self, 'rulerOptionsLayout', 'inline'))
+        self.config.Write('rulerTolerance', str(getattr(self, 'rulerTolerance', 30)))
+        self.config.Write('rulerShowTolerance',
+                          '1' if getattr(self, 'rulerShowTolerance', True) else '0')
+        self.config.SetPath('/')
+
+    def SaveRulerTolerance(self):
+        """Salva subito la sola tolleranza del righello (chiamato alla
+        chiusura del righello, se il valore e' stato cambiato nella barra)."""
+        self.config.SetPath('/App')
+        self.config.Write('rulerTolerance', str(getattr(self, 'rulerTolerance', 30)))
+        self.config.SetPath('/')
+        self.config.Flush()
 
     def _SavePrintOptions(self):
         self.config.SetPath('/Print')

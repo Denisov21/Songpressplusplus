@@ -273,16 +273,23 @@ msgid "Show page indicator (e.g. 'Page 1 of 3')"
 msgstr "Mostra indicatore di pagina (es. 'Pagina 1 di 3')"
 
 #: PreferencesDialog.py
-msgid "Show or hide the page counter label at the top right of the preview panel"
-msgstr "Mostra o nasconde il contatore di pagine in alto a destra del pannello anteprima"
+msgid ""
+"Show or hide the page counter label at the top right of the preview panel"
+msgstr ""
+"Mostra o nasconde il contatore di pagine in alto a destra del pannello "
+"anteprima"
 
 #: PreferencesDialog.py
 msgid "Grey background in preview (page style)"
 msgstr "Sfondo grigio nell'anteprima (stile pagina)"
 
 #: PreferencesDialog.py
-msgid "Show the preview on a grey background to simulate a printed page. When disabled, the background is white."
-msgstr "Mostra l'anteprima su sfondo grigio per simulare una pagina stampata. Se disabilitato, lo sfondo è bianco."
+msgid ""
+"Show the preview on a grey background to simulate a printed page. When "
+"disabled, the background is white."
+msgstr ""
+"Mostra l'anteprima su sfondo grigio per simulare una pagina stampata. Se "
+"disabilitato, lo sfondo è bianco."
 
 #: PreviewCanvas.py
 msgid "Page %d of %d"
@@ -293,24 +300,40 @@ msgid "Delay preview refresh while typing (debounce)"
 msgstr "Ritarda aggiornamento anteprima durante la digitazione (debounce)"
 
 #: PreferencesDialog.py
-msgid "When enabled, the preview redraws only after a short pause in typing (300 ms), reducing CPU usage. When disabled, every keystroke immediately updates the preview."
-msgstr "Se abilitato, l'anteprima viene ridisegnata solo dopo una breve pausa nella digitazione (300 ms), riducendo l'uso della CPU. Se disabilitato, ogni tasto aggiorna immediatamente l'anteprima."
+msgid ""
+"When enabled, the preview redraws only after a short pause in typing (300 "
+"ms), reducing CPU usage. When disabled, every keystroke immediately updates "
+"the preview."
+msgstr ""
+"Se abilitato, l'anteprima viene ridisegnata solo dopo una breve pausa nella "
+"digitazione (300 ms), riducendo l'uso della CPU. Se disabilitato, ogni tasto"
+" aggiorna immediatamente l'anteprima."
 
 #: PreferencesDialog.py
 msgid "Double-click on preview jumps to source line in editor"
 msgstr "Doppio clic sull'anteprima porta alla riga sorgente nell'editor"
 
 #: PreferencesDialog.py
-msgid "When enabled, double-clicking on any word or chord in the preview moves the cursor to the corresponding line in the editor."
-msgstr "Se abilitato, il doppio clic su una parola o un accordo nell'anteprima sposta il cursore alla riga corrispondente nell'editor."
+msgid ""
+"When enabled, double-clicking on any word or chord in the preview moves the "
+"cursor to the corresponding line in the editor."
+msgstr ""
+"Se abilitato, il doppio clic su una parola o un accordo nell'anteprima "
+"sposta il cursore alla riga corrispondente nell'editor."
 
 #: PreferencesDialog.py
 msgid "Set minimum size for the preview panel at startup (370×530)"
-msgstr "Imposta la dimensione minima del pannello anteprima all'avvio (370×530)"
+msgstr ""
+"Imposta la dimensione minima del pannello anteprima all'avvio (370×530)"
 
 #: PreferencesDialog.py
-msgid "When enabled, the preview panel cannot be resized below 370×530 pixels. This prevents the panel from appearing too small when the application starts."
-msgstr "Se abilitato, il pannello anteprima non può essere ridimensionato al di sotto di 370×530 pixel. In questo modo il pannello non appare troppo piccolo all'avvio."
+msgid ""
+"When enabled, the preview panel cannot be resized below 370×530 pixels. This"
+" prevents the panel from appearing too small when the application starts."
+msgstr ""
+"Se abilitato, il pannello anteprima non può essere ridimensionato al di "
+"sotto di 370×530 pixel. In questo modo il pannello non appare troppo piccolo"
+" all'avvio."
 
 #: PreferencesDialog.py guide viewer group title
 msgid "Quick guide"
@@ -383,8 +406,12 @@ msgid "Pipe table  —  | C   | G   | Am  | F   |"
 msgstr "Tabella pipe  —  | C   | G   | Am  | F   |"
 
 #: PreferencesDialog.py format tab — chord grid pipe tooltip
-msgid "Each bar is separated by | characters. The raw text in the source must already contain | delimiters."
-msgstr "Ogni battuta è separata dal carattere |. Il testo sorgente deve già contenere i delimitatori |."
+msgid ""
+"Each bar is separated by | characters. The raw text in the source must "
+"already contain | delimiters."
+msgstr ""
+"Ogni battuta è separata dal carattere |. Il testo sorgente deve già "
+"contenere i delimitatori |."
 
 #: PreferencesDialog.py format tab — chord grid plain radio
 msgid "Plain spacing  —  C   G   Am  F"
@@ -399,12 +426,16 @@ msgid "Table  —  cells with borders"
 msgstr "Tabella  —  celle con bordi"
 
 #: PreferencesDialog.py format tab — chord grid table tooltip
-msgid "Each bar is rendered as a cell with a visible border, like a grid table."
-msgstr "Ogni battuta viene disegnata come una cella con bordo visibile, come una tabella a griglia."
+msgid ""
+"Each bar is rendered as a cell with a visible border, like a grid table."
+msgstr ""
+"Ogni battuta viene disegnata come una cella con bordo visibile, come una "
+"tabella a griglia."
 
 #: PreferencesDialog.py format tab — chord grid default label
 msgid "Default label (used when {start_of_grid} has no label):"
-msgstr "Etichetta predefinita (usata quando {start_of_grid} non ha etichetta):"
+msgstr ""
+"Etichetta predefinita (usata quando {start_of_grid} non ha etichetta):"
 
 #: PreferencesDialog.py format tab — chord grid default label value
 msgid "Grid"
@@ -535,13 +566,12 @@ msgstr "Sostituisci gli spazi con '_' nei nomi dei file salvati"
 #: tooltip
 msgid ""
 "When enabled, any whitespace in the file name (not the folder path) is "
-"replaced with an underscore '_' whenever a file is saved or exported. "
-"Works the same way on Windows and Linux."
+"replaced with an underscore '_' whenever a file is saved or exported. Works "
+"the same way on Windows and Linux."
 msgstr ""
 "Se attivo, ogni spazio presente nel nome del file (non nel percorso della "
-"cartella) viene sostituito con un trattino basso '_' ogni volta che un "
-"file viene salvato o esportato. Funziona allo stesso modo su Windows e "
-"Linux."
+"cartella) viene sostituito con un trattino basso '_' ogni volta che un file "
+"viene salvato o esportato. Funziona allo stesso modo su Windows e Linux."
 
 #: PreferencesDialog.py format tab — tempo icon size label
 msgid "Tempo icon size"
@@ -608,8 +638,12 @@ msgid "Font size (% of chord font)"
 msgstr "Dimensione carattere (% del carattere accordo)"
 
 #: PreferencesDialog.py format tab — beat count font size tooltip
-msgid "Size of the beat-count number as a percentage of the chord font size (default: 60%)"
-msgstr "Dimensione del numero di battiti come percentuale del carattere accordo (predefinito: 60%)"
+msgid ""
+"Size of the beat-count number as a percentage of the chord font size "
+"(default: 60%)"
+msgstr ""
+"Dimensione del numero di battiti come percentuale del carattere accordo "
+"(predefinito: 60%)"
 
 #: PreferencesDialog.py format tab — beat count bold checkbox
 msgid "Bold"
@@ -709,7 +743,9 @@ msgstr "Accordi di intro  {start_chord}\\{end_chord}"
 
 #: PreferencesDialog.py songpress tab — hide intro chord tooltip
 msgid "Hide {start_chord}…{end_chord} blocks when no chords are shown."
-msgstr "Nasconde i blocchi {start_chord}…{end_chord} quando gli accordi sono disabilitati."
+msgstr ""
+"Nasconde i blocchi {start_chord}…{end_chord} quando gli accordi sono "
+"disabilitati."
 
 #: PreferencesDialog.py songpress tab — hide bridge checkbox
 msgid "Bridge  {start_bridge}\\{end_bridge}"
@@ -717,7 +753,9 @@ msgstr "Bridge  {start_bridge}\\{end_bridge}"
 
 #: PreferencesDialog.py songpress tab — hide bridge tooltip
 msgid "Hide {start_bridge}…{end_bridge} blocks when no chords are shown."
-msgstr "Nasconde i blocchi {start_bridge}…{end_bridge} quando gli accordi sono disabilitati."
+msgstr ""
+"Nasconde i blocchi {start_bridge}…{end_bridge} quando gli accordi sono "
+"disabilitati."
 
 #: PreferencesDialog.py songpress tab — hide grid checkbox
 msgid "Grid  {start_of_grid}\\{end_of_grid}"
@@ -725,15 +763,21 @@ msgstr "Griglia  {start_of_grid}\\{end_of_grid}"
 
 #: PreferencesDialog.py songpress tab — hide grid tooltip
 msgid "Hide {start_of_grid}…{end_of_grid} blocks when no chords are shown."
-msgstr "Nasconde i blocchi {start_of_grid}…{end_of_grid} quando gli accordi sono disabilitati."
+msgstr ""
+"Nasconde i blocchi {start_of_grid}…{end_of_grid} quando gli accordi sono "
+"disabilitati."
 
 #: PreferencesDialog.py songpress tab — hide tempo checkbox
 msgid "Tempo  {tempo_m}\\{tempo_s}\\{tempo_sp}\\{tempo_c}\\{tempo_cp}"
 msgstr "Tempo  {tempo_m}\\{tempo_s}\\{tempo_sp}\\{tempo_c}\\{tempo_cp}"
 
 #: PreferencesDialog.py songpress tab — hide tempo tooltip
-msgid "Hide {tempo_m}, {tempo_s}, {tempo_sp}, {tempo_c}, {tempo_cp} directives when no chords are shown."
-msgstr "Nasconde le direttive {tempo_m}, {tempo_s}, {tempo_sp}, {tempo_c}, {tempo_cp} quando gli accordi sono disabilitati."
+msgid ""
+"Hide {tempo_m}, {tempo_s}, {tempo_sp}, {tempo_c}, {tempo_cp} directives when"
+" no chords are shown."
+msgstr ""
+"Nasconde le direttive {tempo_m}, {tempo_s}, {tempo_sp}, {tempo_c}, "
+"{tempo_cp} quando gli accordi sono disabilitati."
 
 #: PreferencesDialog.py songpress tab — hide time checkbox
 msgid "Time signature  {time}"
@@ -741,7 +785,8 @@ msgstr "Indicazione di tempo  {time}"
 
 #: PreferencesDialog.py songpress tab — hide time tooltip
 msgid "Hide {time:...} directives when no chords are shown."
-msgstr "Nasconde le direttive {time:...} quando gli accordi sono disabilitati."
+msgstr ""
+"Nasconde le direttive {time:...} quando gli accordi sono disabilitati."
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/Preferences.py:33
 msgid "Above text"
@@ -756,8 +801,12 @@ msgid "Single instance: open files in the existing window"
 msgstr "Istanza singola: apri i file nella finestra esistente"
 
 #: PreferencesDialog.py — General tab, single instance checkbox tooltip
-msgid "When enabled, opening a file from Explorer or the command line will reuse the existing Songpress++ window instead of launching a new instance."
-msgstr "Se attivo, aprire un file da Explorer o dalla riga di comando riutilizza la finestra di Songpress++ già aperta, invece di avviarne una nuova."
+msgid ""
+"When enabled, opening a file from Explorer or the command line will reuse "
+"the existing Songpress++ window instead of launching a new instance."
+msgstr ""
+"Se attivo, aprire un file da Explorer o dalla riga di comando riutilizza la "
+"finestra di Songpress++ già aperta, invece di avviarne una nuova."
 
 # — Preferenze — gruppo Stampa (tab Songpress++ Preview)
 msgid "Print"
@@ -765,10 +814,16 @@ msgstr "Stampa"
 
 #: PreferencesDialog.py — Print group, live update checkbox
 msgid "Live update of duplex/color status in print preview (every 1.5 s)"
-msgstr "Aggiornamento in tempo reale dello stato fronte/retro e colore nell'anteprima (ogni 1,5 s)"
+msgstr ""
+"Aggiornamento in tempo reale dello stato fronte/retro e colore "
+"nell'anteprima (ogni 1,5 s)"
 
 #: PreferencesDialog.py — Print group, live update checkbox tooltip
-msgid "When enabled, the duplex and color status shown in the print preview status bar is refreshed every 1.5 seconds by querying the printer driver. This lets you see changes made in the driver panel without closing the preview. When disabled, the status is read once when the preview opens and stays fixed."
+msgid ""
+"When enabled, the duplex and color status shown in the print preview status "
+"bar is refreshed every 1.5 seconds by querying the printer driver. This lets"
+" you see changes made in the driver panel without closing the preview. When "
+"disabled, the status is read once when the preview opens and stays fixed."
 msgstr ""
 "Se attivo, lo stato fronte/retro e colore mostrato nella barra di stato\n"
 "dell'anteprima di stampa viene aggiornato ogni 1,5 secondi interrogando\n"
@@ -781,7 +836,10 @@ msgid "Keep print preview window always on top"
 msgstr "Mantieni sempre in primo piano la finestra di anteprima di stampa"
 
 #: PreferencesDialog.py — Print group, always on top checkbox tooltip
-msgid "When enabled, the print preview window stays on top of all other windows, including the main Songpress++ window. When disabled, the preview window behaves as a normal window."
+msgid ""
+"When enabled, the print preview window stays on top of all other windows, "
+"including the main Songpress++ window. When disabled, the preview window "
+"behaves as a normal window."
 msgstr ""
 "Se attivo, la finestra di anteprima di stampa rimane sempre in primo piano\n"
 "rispetto a tutte le altre finestre, inclusa la finestra principale di Songpress++.\n"
@@ -802,56 +860,111 @@ msgstr "Abilita il pulsante 'Salva' solo quando il brano è modificato"
 
 #: PreferencesDialog.py — General group, enable save on modified checkbox
 #: tooltip
-msgid "When enabled, the 'Save' button and menu item are greyed out until the song has unsaved changes."
-msgstr "Se attivo, il pulsante 'Salva' e la voce di menu corrispondente sono disabilitati finché il brano non presenta modifiche non salvate."
+msgid ""
+"When enabled, the 'Save' button and menu item are greyed out until the song "
+"has unsaved changes."
+msgstr ""
+"Se attivo, il pulsante 'Salva' e la voce di menu corrispondente sono "
+"disabilitati finché il brano non presenta modifiche non salvate."
 
 #: PreferencesDialog.py — General tab, multi-cursor checkbox tooltip
-msgid "When enabled, Alt+Click adds a new cursor and Ctrl+D selects the next occurrence of the current word."
-msgstr "Se attivo, Alt+Clic aggiunge un nuovo cursore e Ctrl+D seleziona l'occorrenza successiva della parola corrente."
+msgid ""
+"When enabled, Alt+Click adds a new cursor and Ctrl+D selects the next "
+"occurrence of the current word."
+msgstr ""
+"Se attivo, Alt+Clic aggiunge un nuovo cursore e Ctrl+D seleziona "
+"l'occorrenza successiva della parola corrente."
 
 #: PreferencesDialog.py — General tab, save window geometry checkbox tooltip
-msgid "When enabled, the window size and position are saved on exit and restored the next time Songpress++ is launched."
-msgstr "Se attivo, le dimensioni e la posizione della finestra vengono salvate all'uscita e ripristinate al prossimo avvio di Songpress++."
+msgid ""
+"When enabled, the window size and position are saved on exit and restored "
+"the next time Songpress++ is launched."
+msgstr ""
+"Se attivo, le dimensioni e la posizione della finestra vengono salvate "
+"all'uscita e ripristinate al prossimo avvio di Songpress++."
 
 #: PreferencesDialog.py — General tab, show debug messages checkbox tooltip
-msgid "When enabled, diagnostic messages such as the theme save path are shown in a popup during certain operations. Useful for troubleshooting."
-msgstr "Se attivo, messaggi diagnostici come il percorso di salvataggio del tema vengono mostrati in un popup durante alcune operazioni. Utile per la risoluzione dei problemi."
+msgid ""
+"When enabled, diagnostic messages such as the theme save path are shown in a"
+" popup during certain operations. Useful for troubleshooting."
+msgstr ""
+"Se attivo, messaggi diagnostici come il percorso di salvataggio del tema "
+"vengono mostrati in un popup durante alcune operazioni. Utile per la "
+"risoluzione dei problemi."
 
 #: PreferencesDialog.py — General tab, intellisense checkbox tooltip
-msgid "When enabled, pressing Ctrl+Space inside the editor shows a list of available ChordPro directives for auto-completion."
-msgstr "Se attivo, premendo Ctrl+Spazio nell'editor viene mostrato un elenco delle direttive ChordPro disponibili per il completamento automatico."
+msgid ""
+"When enabled, pressing Ctrl+Space inside the editor shows a list of "
+"available ChordPro directives for auto-completion."
+msgstr ""
+"Se attivo, premendo Ctrl+Spazio nell'editor viene mostrato un elenco delle "
+"direttive ChordPro disponibili per il completamento automatico."
 
 #: PreferencesDialog.py — General tab, show restart menu item checkbox tooltip
-msgid "When enabled, a 'Restart Songpress++' item appears in the File menu, allowing a quick restart without closing and reopening the application manually."
-msgstr "Se attivo, nel menu File compare la voce 'Riavvia Songpress++', che consente un riavvio rapido senza dover chiudere e riaprire manualmente l'applicazione."
+msgid ""
+"When enabled, a 'Restart Songpress++' item appears in the File menu, "
+"allowing a quick restart without closing and reopening the application "
+"manually."
+msgstr ""
+"Se attivo, nel menu File compare la voce 'Riavvia Songpress++', che consente"
+" un riavvio rapido senza dover chiudere e riaprire manualmente "
+"l'applicazione."
 
 #: PreferencesDialog.py — AutoAdjust tab, remove blank lines checkbox tooltip
-msgid "When enabled, Songpress++ will offer to automatically remove unnecessary blank lines when opening or saving a song."
-msgstr "Se attivo, Songpress++ proporrà di rimuovere automaticamente le righe vuote superflue all'apertura o al salvataggio di un brano."
+msgid ""
+"When enabled, Songpress++ will offer to automatically remove unnecessary "
+"blank lines when opening or saving a song."
+msgstr ""
+"Se attivo, Songpress++ proporrà di rimuovere automaticamente le righe vuote "
+"superflue all'apertura o al salvataggio di un brano."
 
-#: PreferencesDialog.py — AutoAdjust tab, convert tab to chordpro checkbox tooltip
-msgid "When enabled, Songpress++ will offer to convert songs written in tab (chord-over-lyrics) format to ChordPro format automatically."
-msgstr "Se attivo, Songpress++ proporrà di convertire automaticamente i brani scritti in formato tab (accordi sopra il testo) nel formato ChordPro."
+#: PreferencesDialog.py — AutoAdjust tab, convert tab to chordpro checkbox
+#: tooltip
+msgid ""
+"When enabled, Songpress++ will offer to convert songs written in tab (chord-"
+"over-lyrics) format to ChordPro format automatically."
+msgstr ""
+"Se attivo, Songpress++ proporrà di convertire automaticamente i brani "
+"scritti in formato tab (accordi sopra il testo) nel formato ChordPro."
 
 #: PreferencesDialog.py — AutoAdjust tab, easy key checkbox tooltip
-msgid "When enabled, Songpress++ will offer to transpose the song to the key that produces the simplest chord shapes (fewest sharps/flats)."
-msgstr "Se attivo, Songpress++ proporrà di trasporre il brano nella tonalità che produce le forme di accordo più semplici (con meno diesis o bemolle)."
+msgid ""
+"When enabled, Songpress++ will offer to transpose the song to the key that "
+"produces the simplest chord shapes (fewest sharps/flats)."
+msgstr ""
+"Se attivo, Songpress++ proporrà di trasporre il brano nella tonalità che "
+"produce le forme di accordo più semplici (con meno diesis o bemolle)."
 
 #: PreferencesDialog.py format tab — chord grid size=N both tooltip
 msgid "size=N multiplies both horizontal and vertical cell padding."
-msgstr "size=N moltiplica sia il margine orizzontale che quello verticale delle celle."
+msgstr ""
+"size=N moltiplica sia il margine orizzontale che quello verticale delle "
+"celle."
 
 #: PreferencesDialog.py format tab — chord grid size=N width only tooltip
-msgid "size=N multiplies only horizontal cell padding; vertical padding stays at its base value."
-msgstr "size=N moltiplica solo il margine orizzontale delle celle; il margine verticale rimane al suo valore base."
+msgid ""
+"size=N multiplies only horizontal cell padding; vertical padding stays at "
+"its base value."
+msgstr ""
+"size=N moltiplica solo il margine orizzontale delle celle; il margine "
+"verticale rimane al suo valore base."
 
 #: PreferencesDialog.py format tab — chord grid size=N height only tooltip
-msgid "size=N multiplies only vertical cell padding; horizontal padding stays at its base value."
-msgstr "size=N moltiplica solo il margine verticale delle celle; il margine orizzontale rimane al suo valore base."
+msgid ""
+"size=N multiplies only vertical cell padding; horizontal padding stays at "
+"its base value."
+msgstr ""
+"size=N moltiplica solo il margine verticale delle celle; il margine "
+"orizzontale rimane al suo valore base."
 
 #: PreferencesDialog.py — Print group, show print preview checkbox tooltip
-msgid "When enabled, a print preview window is shown before sending the document to the printer, allowing you to check the layout and page settings."
-msgstr "Se attivo, viene mostrata una finestra di anteprima prima di inviare il documento alla stampante, permettendo di verificare il layout e le impostazioni di pagina."
+msgid ""
+"When enabled, a print preview window is shown before sending the document to"
+" the printer, allowing you to check the layout and page settings."
+msgstr ""
+"Se attivo, viene mostrata una finestra di anteprima prima di inviare il "
+"documento alla stampante, permettendo di verificare il layout e le "
+"impostazioni di pagina."
 
 #: PreferencesDialog.py — Context menu tab, Undo checkbox tooltip
 msgid "Show the 'Undo' command in the right-click context menu."
@@ -878,32 +991,54 @@ msgid "Show the 'Delete' command in the right-click context menu."
 msgstr "Mostra il comando 'Elimina' nel menu contestuale (tasto destro)."
 
 #: PreferencesDialog.py — Context menu tab, confirm delete checkbox tooltip
-msgid "When enabled, a confirmation dialog is shown before any delete operation performed via the context menu."
-msgstr "Se attivo, viene mostrata una finestra di conferma prima di qualsiasi operazione di eliminazione eseguita tramite il menu contestuale."
+msgid ""
+"When enabled, a confirmation dialog is shown before any delete operation "
+"performed via the context menu."
+msgstr ""
+"Se attivo, viene mostrata una finestra di conferma prima di qualsiasi "
+"operazione di eliminazione eseguita tramite il menu contestuale."
 
 #: PreferencesDialog.py — Context menu tab, Paste chords checkbox tooltip
 msgid "Show the 'Paste chords' command in the right-click context menu."
-msgstr "Mostra il comando 'Incolla accordi' nel menu contestuale (tasto destro)."
+msgstr ""
+"Mostra il comando 'Incolla accordi' nel menu contestuale (tasto destro)."
 
-#: PreferencesDialog.py — Context menu tab, Propagate verse chords checkbox tooltip
-msgid "Show the 'Propagate verse chords' command in the right-click context menu."
-msgstr "Mostra il comando 'Propaga accordi strofa' nel menu contestuale (tasto destro)."
+#: PreferencesDialog.py — Context menu tab, Propagate verse chords checkbox
+#: tooltip
+msgid ""
+"Show the 'Propagate verse chords' command in the right-click context menu."
+msgstr ""
+"Mostra il comando 'Propaga accordi strofa' nel menu contestuale (tasto "
+"destro)."
 
-#: PreferencesDialog.py — Context menu tab, Propagate chorus chords checkbox tooltip
-msgid "Show the 'Propagate chorus chords' command in the right-click context menu."
-msgstr "Mostra il comando 'Propaga accordi ritornello' nel menu contestuale (tasto destro)."
+#: PreferencesDialog.py — Context menu tab, Propagate chorus chords checkbox
+#: tooltip
+msgid ""
+"Show the 'Propagate chorus chords' command in the right-click context menu."
+msgstr ""
+"Mostra il comando 'Propaga accordi ritornello' nel menu contestuale (tasto "
+"destro)."
 
 #: PreferencesDialog.py — Context menu tab, Copy text only checkbox tooltip
-msgid "Show the 'Copy text only' command in the right-click context menu (copies lyrics without chords)."
-msgstr "Mostra il comando 'Copia solo testo' nel menu contestuale (tasto destro) — copia il testo senza gli accordi."
+msgid ""
+"Show the 'Copy text only' command in the right-click context menu (copies "
+"lyrics without chords)."
+msgstr ""
+"Mostra il comando 'Copia solo testo' nel menu contestuale (tasto destro) — "
+"copia il testo senza gli accordi."
 
 #: PreferencesDialog.py — Context menu tab, Select all checkbox tooltip
 msgid "Show the 'Select all' command in the right-click context menu."
-msgstr "Mostra il comando 'Seleziona tutto' nel menu contestuale (tasto destro)."
+msgstr ""
+"Mostra il comando 'Seleziona tutto' nel menu contestuale (tasto destro)."
 
 #: PreferencesDialog.py — Context menu tab, Show icons checkbox tooltip
-msgid "When enabled, small icons are displayed next to each command in the right-click context menu."
-msgstr "Se attivo, vengono visualizzate piccole icone accanto a ciascun comando nel menu contestuale (tasto destro)."
+msgid ""
+"When enabled, small icons are displayed next to each command in the right-"
+"click context menu."
+msgstr ""
+"Se attivo, vengono visualizzate piccole icone accanto a ciascun comando nel "
+"menu contestuale (tasto destro)."
 
 #: PreferencesDialog.py — General tab, toolbar icon size label
 msgid "Toolbar icon size"
@@ -927,16 +1062,18 @@ msgstr "Icone piccole nella barra degli strumenti (16×16 pixel, predefinito)."
 
 #: PreferencesDialog.py — General tab, toolbar icon size: medium tooltip
 msgid "Medium toolbar icon size (19×19 pixels, 1.2× larger)."
-msgstr "Icone medie nella barra degli strumenti (19×19 pixel, 1,2× più grandi)."
+msgstr ""
+"Icone medie nella barra degli strumenti (19×19 pixel, 1,2× più grandi)."
 
 #: PreferencesDialog.py — General tab, toolbar icon size: large tooltip
 msgid "Large toolbar icon size (21×21 pixels, 1.3× larger)."
-msgstr "Icone grandi nella barra degli strumenti (21×21 pixel, 1,3× più grandi)."
+msgstr ""
+"Icone grandi nella barra degli strumenti (21×21 pixel, 1,3× più grandi)."
 
 #: PreferencesDialog.py — General tab, toolbar icon size: standard tooltip
 msgid "Standard toolbar icon size (16×16 pixels)."
-msgstr "Dimensione standard delle icone della barra degli strumenti (16×16 pixel)."
-
+msgstr ""
+"Dimensione standard delle icone della barra degli strumenti (16×16 pixel)."
 
 #: PreferencesDialog.py (General group - Dependency check icon)
 msgid "'Dependency check...' icon"
@@ -947,22 +1084,150 @@ msgid "Native icon"
 msgstr "Icona nativa"
 
 #: PreferencesDialog.py (Dependency check icon - native tooltip)
-msgid "Use text glyphs (✅ / ❌) rendered by the system font in the 'Check dependencies' window."
-msgstr "Usa glifi di testo (✅ / ❌) resi dal font di sistema nella finestra 'Verifica dipendenze'."
+msgid ""
+"Use text glyphs (✅ / ❌) rendered by the system font in the 'Check "
+"dependencies' window."
+msgstr ""
+"Usa glifi di testo (✅ / ❌) resi dal font di sistema nella finestra 'Verifica"
+" dipendenze'."
 
 #: PreferencesDialog.py (Dependency check icon - image)
 msgid "Image icon"
 msgstr "Icona da immagine"
 
 #: PreferencesDialog.py (Dependency check icon - image tooltip)
-msgid "Use the image icons loaded from img/checked_box.png and img/not_checked_box.png in the 'Check dependencies' window."
-msgstr "Usa le icone immagine caricate da img/checked_box.png e img/not_checked_box.png nella finestra 'Verifica dipendenze'."
-
+msgid ""
+"Use the image icons loaded from img/checked_box.png and "
+"img/not_checked_box.png in the 'Check dependencies' window."
+msgstr ""
+"Usa le icone immagine caricate da img/checked_box.png e "
+"img/not_checked_box.png nella finestra 'Verifica dipendenze'."
 
 #: PreferencesDialog.py — Editor tab, Syntax colours, colour preview checkbox
 msgid "Show a colour preview when hovering over a colour code"
-msgstr "Mostra un'anteprima del colore al passaggio del mouse su una sigla colore"
+msgstr ""
+"Mostra un'anteprima del colore al passaggio del mouse su una sigla colore"
 
-#: PreferencesDialog.py — Editor tab, Syntax colours, colour preview checkbox tooltip
-msgid "When enabled, resting the mouse over a colour code (e.g. {textcolor:#A52A2A} or {textcolor:red}) shows a small rectangle previewing that colour, attached just below the text. Works on Windows and Linux."
-msgstr "Se attivo, fermando il mouse su una sigla colore (es. {textcolor:#A52A2A} o {textcolor:red}) appare un piccolo rettangolo con l'anteprima di quel colore, agganciato appena sotto il testo. Funziona su Windows e Linux."
+#: PreferencesDialog.py — Editor tab, Syntax colours, colour preview checkbox
+#: tooltip
+msgid ""
+"When enabled, resting the mouse over a colour code (e.g. {textcolor:#A52A2A}"
+" or {textcolor:red}) shows a small rectangle previewing that colour, "
+"attached just below the text. Works on Windows and Linux."
+msgstr ""
+"Se attivo, fermando il mouse su una sigla colore (es. {textcolor:#A52A2A} o "
+"{textcolor:red}) appare un piccolo rettangolo con l'anteprima di quel "
+"colore, agganciato appena sotto il testo. Funziona su Windows e Linux."
+
+#: PreferencesDialog.py (General group - Screen ruler mode buttons label)
+msgid "Mode buttons"
+msgstr "Pulsanti modalità"
+
+#: PreferencesDialog.py (Screen ruler mode buttons - icons)
+msgid "Icons"
+msgstr "Icone"
+
+#: PreferencesDialog.py (Screen ruler mode buttons - text)
+msgid "Text labels"
+msgstr "Scritte"
+
+#: PreferencesDialog.py (Screen ruler mode buttons - icons tooltip)
+msgid ""
+"Show the Bounds, Spacing, Horizontal and Vertical buttons of the screen "
+"ruler as 16×16 icons; the name appears in the tooltip."
+msgstr ""
+"Mostra i pulsanti Riquadro, Spaziatura, Orizzontale e Verticale del righello"
+" a schermo come icone 16×16; il nome compare nel suggerimento."
+
+#: PreferencesDialog.py (Screen ruler mode buttons - text tooltip)
+msgid ""
+"Show the Bounds, Spacing, Horizontal and Vertical buttons of the screen "
+"ruler with their names."
+msgstr ""
+"Mostra i pulsanti Riquadro, Spaziatura, Orizzontale e Verticale del righello"
+" a schermo con il loro nome."
+
+#: PreferencesDialog.py (General group - Screen ruler icons without HiDPI
+#: scaling)
+msgid "Keep icons at 16×16 real pixels"
+msgstr "Mantieni le icone a 16×16 pixel reali"
+
+#: PreferencesDialog.py (General group - Screen ruler icons without HiDPI
+#: scaling tooltip)
+msgid ""
+"With display scaling above 100% (e.g. 150%), the icons of the screen ruler "
+"toolbar are not enlarged: they stay sharp at 16×16 real pixels but look "
+"smaller than the text. When disabled, they are enlarged like the other icons"
+" and may look slightly blurred. No effect at 100% scaling."
+msgstr ""
+"Con il ridimensionamento dello schermo oltre il 100% (es. 150%), le icone "
+"della barra del righello a schermo non vengono ingrandite: restano nitide a "
+"16×16 pixel reali ma appaiono più piccole del testo. Se disattivata, vengono"
+" ingrandite come le altre icone e possono apparire leggermente sfocate. "
+"Nessun effetto con ridimensionamento al 100%."
+
+#: PreferencesDialog.py (General group - Screen ruler options layout)
+msgid "Options"
+msgstr "Opzioni"
+
+#: PreferencesDialog.py (Screen ruler options layout - inline)
+msgid "Side by side"
+msgstr "Affiancate"
+
+#: PreferencesDialog.py (Screen ruler options layout - list)
+msgid "In a list"
+msgstr "In una lista"
+
+#: PreferencesDialog.py (Screen ruler options layout - inline tooltip)
+msgid ""
+"Show the Fit to content, Show cross, Smooth zoom and High resolution "
+"checkboxes side by side in the screen ruler toolbar."
+msgstr ""
+"Mostra le caselle Adatta al contenuto, Mostra croce, Ingrandimento morbido e"
+" Alta risoluzione affiancate nella barra del righello a schermo."
+
+#: PreferencesDialog.py (Screen ruler options layout - list tooltip)
+msgid ""
+"Group the Fit to content, Show cross, Smooth zoom and High resolution "
+"checkboxes in a vertical list, opened by a button in the screen ruler "
+"toolbar. The toolbar becomes shorter."
+msgstr ""
+"Raggruppa le caselle Adatta al contenuto, Mostra croce, Ingrandimento "
+"morbido e Alta risoluzione in una lista verticale, aperta da un pulsante "
+"nella barra del righello a schermo. La barra diventa più corta."
+
+#: PreferencesDialog.py (Screen ruler group title)
+msgid "Screen ruler"
+msgstr "Righello a schermo"
+
+#: PreferencesDialog.py (Screen ruler group)
+msgid "Tolerance"
+msgstr "Tolleranza"
+
+#: PreferencesDialog.py (Screen ruler group)
+msgid ""
+"Maximum colour difference (0-255) beyond which a pixel is treated as an "
+"edge. Low values detect even shading (antialiasing); high values ignore "
+"small variations. Default: 30. It is the same value as the Tolerance field "
+"of the screen ruler toolbar: a change made in one place also appears in the "
+"other."
+msgstr ""
+"Differenza di colore massima (0-255) oltre la quale un pixel è considerato "
+"un bordo. Valori bassi rilevano anche le sfumature (antialiasing); valori "
+"alti ignorano le piccole variazioni. Predefinito: 30. È lo stesso valore del"
+" campo Tolleranza della barra del righello a schermo: una modifica fatta in "
+"un punto compare anche nell'altro."
+
+#: PreferencesDialog.py (Screen ruler group)
+msgid "Show also in the \"Screen ruler...\" toolbar"
+msgstr "Mostra anche nella \"Barra Righello dello schermo...\""
+
+#: PreferencesDialog.py (Screen ruler group)
+msgid ""
+"When enabled, the Tolerance field is also shown in the screen ruler toolbar."
+" When disabled, the tolerance can be changed only here and the toolbar "
+"becomes shorter."
+msgstr ""
+"Se attivo, il campo Tolleranza compare anche nella barra del righello a "
+"schermo. Se disattivo, la tolleranza si può cambiare solo qui e la barra "
+"diventa più corta."

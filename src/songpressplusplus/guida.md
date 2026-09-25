@@ -1467,6 +1467,8 @@ All'avvio Songpress++ cattura un'immagine dello schermo e la mostra a tutto sche
 
 #### Modalità di misura
 
+Nella barra ogni modalità è un pulsante con un'icona: quadrato con i punti agli angoli (*Riquadro*), croce (*Spaziatura*), doppia freccia orizzontale (*Orizzontale*) e doppia freccia verticale (*Verticale*). Passando il mouse sul pulsante compaiono il nome e la descrizione. Chi preferisce i nomi scritti può sceglierli in **Opzioni › Generale › Righello a schermo › Pulsanti modalità › Scritte**; la scelta viene salvata e vale dalla successiva apertura del righello.
+
 | Modalità | Tasto | Come si usa |
 |---|---|---|
 | **Riquadro** | <kbd>1</kbd> | Trascina un rettangolo con il mouse: viene mostrata la dimensione *larghezza × altezza*. |
@@ -1478,20 +1480,31 @@ Nelle modalità **Orizzontale** e **Verticale** il puntatore del mouse a croce v
 
 #### Opzioni della barra
 
+Le caselle *Adatta al contenuto*, *Mostra croce*, *Ingrandimento morbido* e *Alta risoluzione* compaiono affiancate nella barra oppure, se in **Opzioni › Generale › Righello a schermo › Opzioni** è scelto **In una lista**, in una lista verticale che si apre con il pulsante a lista della barra. La lista resta aperta mentre si attivano le caselle e si chiude cliccando altrove, con <kbd>Esc</kbd> o premendo di nuovo il pulsante. I tasti <kbd>F</kbd>, <kbd>C</kbd>, <kbd>S</kbd> e <kbd>H</kbd> funzionano in entrambi i casi.
+
 | Opzione | Funzione |
 |---|---|
 | **Adatta al contenuto** | Solo in modalità *Riquadro*. Il rettangolo trascinato si restringe automaticamente attorno al contenuto diverso dallo sfondo. Il rettangolo originale resta visibile tratteggiato in grigio. Attiva per impostazione predefinita (tasto <kbd>F</kbd>). |
 | **Mostra croce** | Mostra o nasconde la croce di misura: le linee tratteggiate che seguono il cursore in modalità *Riquadro* e le linee arancioni con i trattini di estremità nelle modalità *Spaziatura*, *Orizzontale* e *Verticale*. Quando è nascosta resta visibile solo l'etichetta con la misura, utile per non coprire il testo che si sta misurando. L'impostazione viene ricordata fino alla chiusura di Songpress++ (tasto <kbd>C</kbd>). |
-| **Tolleranza** | Differenza di colore massima (0–255) oltre la quale un pixel è considerato un bordo. Valori bassi rendono la misura sensibile anche alle sfumature (antialiasing); valori alti ignorano le piccole variazioni. Predefinito: 30. |
+| **Tolleranza** | Differenza di colore massima (0–255) oltre la quale un pixel è considerato un bordo. Valori bassi rendono la misura sensibile anche alle sfumature (antialiasing); valori alti ignorano le piccole variazioni. Predefinito: 30. Il valore viene ricordato ed è lo stesso di **Opzioni › Generale › Righello a schermo › Tolleranza**, dove si può anche scegliere di non mostrare il campo nella barra. |
 | **Unità** | `px`, `pt`, `mm`, `cm`, `in` (tasto <kbd>U</kbd> per passare alla successiva). |
-| **Zoom − / +** | Ingrandisce la vista (1×, 2×, 3×, 4×, 6×, 8×, 12×, 16×) attorno al cursore. Vedi *Ingrandimento* qui sotto. |
+| **Ingrandimento morbido** | Con lo zoom attivo ingrandisce la vista con interpolazione bicubica: i pixel non appaiono più come quadratini, ma i bordi diventano sfumati. Spenta per impostazione predefinita, perché per misurare sono più chiari i pixel netti. L'impostazione viene ricordata fino alla chiusura di Songpress++ (tasto <kbd>S</kbd>). |
+| **Alta risoluzione** | Solo su schermi HiDPI (ridimensionamento oltre il 100%). Per la vista ingrandita usa tutti i pixel fisici dello schermo invece dei pixel logici, così icone e testi mostrano più dettagli. Accesa per impostazione predefinita; al 100% la casella è disattivata (grigia) perché non ci sono pixel in più. L'impostazione viene ricordata fino alla chiusura di Songpress++ (tasto <kbd>H</kbd>). |
+| **Zoom − / +** | Ingrandisce la vista attorno al cursore, da 1× a 8× a passi di 1. Vedi *Ingrandimento* qui sotto. |
 | **✕** | Chiude il righello (come <kbd>Esc</kbd>). |
 
 #### Ingrandimento
 
-Per misurare con precisione elementi piccoli (un accordo, lo spessore di una linea, la distanza tra due lettere) si può ingrandire la vista con <kbd>+</kbd>, <kbd>Ctrl</kbd>+rotellina o i pulsanti **− / +** della barra. L'ingrandimento avviene attorno al cursore e ogni pixel dello schermo diventa un quadratino ben visibile, senza sfumature.
+Per misurare con precisione elementi piccoli (un accordo, lo spessore di una linea, la distanza tra due lettere) si può ingrandire la vista con <kbd>+</kbd>, <kbd>Ctrl</kbd>+rotellina o i pulsanti **− / +** della barra. L'ingrandimento avviene attorno al cursore, da 1× a 8× a passi di 1, e ogni pixel dello schermo diventa un quadratino ben visibile, senza sfumature. La barra del righello non cambia dimensione: si ingrandisce solo l'immagine catturata.
 
-Lo zoom **cambia solo la visualizzazione, non la misura**: un testo alto 12 pixel viene sempre indicato come `12 px`, sia a 1× sia a 16×. Anche i tasti freccia spostano il cursore sempre di 1 pixel reale.
+L'immagine ingrandita non può contenere più dettagli di quelli presenti sullo schermo: un'icona di 16×16 pixel, ingrandita, mostra i suoi 256 quadratini. Per un aspetto diverso la barra offre due caselle, entrambe **solo visive**, attivabili anche con i tasti <kbd>S</kbd> e <kbd>H</kbd>:
+
+- **Ingrandimento morbido** — elimina l'effetto a quadratini ammorbidendo i passaggi di colore; l'immagine appare più liscia ma meno nitida.
+- **Alta risoluzione** — sugli schermi HiDPI (per esempio con ridimensionamento al 150% o 200%) lo schermo ha più pixel fisici di quelli logici usati per le misure: con questa opzione la vista ingrandita li usa tutti e mostra dettagli reali più fini.
+
+Le due opzioni si possono combinare.
+
+Lo zoom **cambia solo la visualizzazione, non la misura**: un testo alto 12 pixel viene sempre indicato come `12 px`, sia a 1× sia a 8×, con o senza *Ingrandimento morbido* e *Alta risoluzione*. Anche i tasti freccia spostano il cursore sempre di 1 pixel reale.
 
 | Azione | Effetto |
 |---|---|
@@ -1519,13 +1532,15 @@ Per misurare lo **spazio tra due righe** usa invece la modalità **Verticale** e
 | <kbd>Ctrl</kbd>+<kbd>C</kbd> | Copia negli appunti la misura attuale (o l'ultima fissata) |
 | <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> | Sposta il cursore di 1 pixel (con <kbd>Shift</kbd> di 10 pixel) |
 | <kbd>C</kbd> | Mostra / nasconde la croce di misura |
+| <kbd>S</kbd> | Attiva / disattiva *Ingrandimento morbido* |
+| <kbd>H</kbd> | Attiva / disattiva *Alta risoluzione* (solo schermi HiDPI) |
 | <kbd>+</kbd> / <kbd>-</kbd> / <kbd>0</kbd> | Ingrandisce / riduce / torna a 1:1 |
 | <kbd>Canc</kbd> / <kbd>Backspace</kbd> | Cancella le misure fissate |
 | <kbd>Esc</kbd> | Annulla il trascinamento in corso oppure chiude il righello |
 
 > **Nota — unità fisiche** — I valori in `mm`, `cm`, `pt` e `in` sono calcolati dai DPI dichiarati dal sistema operativo (spesso 96 su Linux) e sono esatti solo se questo valore corrisponde alla risoluzione reale del monitor. La misura in pixel è sempre precisa. Per misurare la dimensione di stampa di un elemento conviene usare l'anteprima allo zoom 100%.
 
-> **Nota — Linux / Wayland** — Su Wayland le applicazioni non possono leggere direttamente lo schermo. Songpress++ prova in ordine: **grim** (Sway/wlroots) o **spectacle** (KDE) se installati, poi il **portale xdg-desktop-portal**, presente di serie su GNOME e KDE, e infine **gnome-screenshot**. Con il portale non serve installare nulla: al primo utilizzo il desktop può chiedere il permesso di catturare lo schermo; se lo neghi o annulli, il righello non si apre. Su X11 e Windows non serve nulla di aggiuntivo. Con lo scaling HiDPI attivo le misure sono espresse in pixel logici.
+> **Nota — Linux / Wayland** — Su Wayland le applicazioni non possono leggere direttamente lo schermo. Songpress++ prova in ordine: **grim** (Sway/wlroots) o **spectacle** (KDE) se installati, poi il **portale xdg-desktop-portal**, presente di serie su GNOME e KDE, e infine **gnome-screenshot**. Con il portale non serve installare nulla: al primo utilizzo il desktop può chiedere il permesso di catturare lo schermo; se lo neghi o annulli, il righello non si apre. Su X11 e Windows non serve nulla di aggiuntivo. Con lo scaling HiDPI attivo le misure sono espresse in pixel logici; l'opzione **Alta risoluzione** usa i pixel fisici solo per la vista ingrandita.
 
 ### Intellisense direttive (`Ctrl+Spazio`)
 
@@ -1806,6 +1821,18 @@ Si apre da **Strumenti → Opzioni…** (titolo della finestra: *Opzioni Songpre
 | **Dimensione icone toolbar** | Piccole | Radio: **Piccole (16×16)**, **Medie (19×19)**, **Grandi (21×21)**. |
 
 > Le checkbox del gruppo sono ordinate alfabeticamente secondo la lingua dell'interfaccia: l'ordine a schermo può differire da quello della tabella.
+
+#### Gruppo **Righello a schermo**
+
+Opzioni della barra del *Righello a schermo* (<kbd>F9</kbd>). Valgono dalla successiva apertura del righello.
+
+| Comando / opzione | Predefinito | Descrizione |
+| ----------------- | :---------: | ----------- |
+| **Pulsanti modalità** | Icone | Radio: **Icone** (icone 16×16, il nome compare nel suggerimento) oppure **Scritte** (nome della modalità sul pulsante). |
+| **Opzioni** | Affiancate | Radio: **Affiancate** (le caselle *Adatta al contenuto*, *Mostra croce*, *Ingrandimento morbido* e *Alta risoluzione* una accanto all'altra nella barra) oppure **In una lista** (al loro posto un pulsante apre una lista verticale con le stesse caselle; la barra diventa più corta). |
+| **Mantieni le icone a 16×16 pixel reali** | ✓ | Con ridimensionamento dello schermo oltre il 100% (es. 150%) le icone della barra non vengono ingrandite: restano nitide a 16×16 pixel ma appaiono più piccole del testo. Se disattivata, vengono ingrandite come le altre icone e possono apparire leggermente sfocate. Al 100% non ha effetto. |
+| **Tolleranza** | 30 | Differenza di colore massima (0–255) oltre la quale un pixel è considerato un bordo. È **lo stesso valore** del campo *Tolleranza* della barra del righello: se lo cambi nella barra, alla chiusura del righello viene salvato e lo ritrovi qui; se lo cambi qui, il righello si apre con il nuovo valore. |
+| **Mostra anche nella "Barra Righello dello schermo..."** | ✓ | Se attiva, il campo *Tolleranza* compare anche nella barra del righello. Se disattivata, la tolleranza si cambia solo qui e la barra diventa più corta. |
 
 ---
 
