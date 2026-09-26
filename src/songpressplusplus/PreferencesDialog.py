@@ -1570,6 +1570,10 @@ class PreferencesDialog(wx.Dialog):
     _SCROLL_BOTTOM_MARGIN = 100
 
     def _InitScrollPages(self, pages):
+        # Dimensione di avvio, letta ORA: quando arriva EVT_SHOW, con un
+        # window manager vero GTK non ha ancora dimensionato la finestra e
+        # GetSize() restituisce valori minuscoli (es. 4x28).
+        self._startSize = wx.Size(self.GetSize())
         self._scrollPages = [pg for pg in pages if isinstance(pg, wx.ScrolledWindow)]
         for pg in self._scrollPages:
             # La pagina non deve imporre al notebook (e quindi alla finestra)
@@ -1663,6 +1667,34 @@ class PreferencesDialog(wx.Dialog):
         finally:
             self._refitting = False
 
+    def _WatchPageSizes(self):
+        """Ogni pagina del notebook (anche quelle aggiunte dopo, es. Toolbar)
+        viene sorvegliata: se GTK le ridà la misura sbagliata dopo un
+        ridimensionamento, _FitPageInNotebook la riaccorcia subito."""
+        watched = getattr(self, '_watchedPages', None)
+        if watched is None:
+            watched = self._watchedPages = set()
+        for i in range(self.notebook.GetPageCount()):
+            page = self.notebook.GetPage(i)
+            if id(page) not in watched:
+                watched.add(id(page))
+                page.Bind(wx.EVT_SIZE, self._OnPageSize)
+
+    def _OnPageSize(self, event):
+        event.Skip()
+        if not getattr(self, '_fitPending', False):
+            self._fitPending = True
+            wx.CallAfter(self._FitPageLater)
+
+    def _FitPageLater(self):
+        self._fitPending = False
+        try:
+            if not self or not self.IsShown():
+                return
+        except RuntimeError:
+            return
+        self._FitPageInNotebook()
+
     def _FitPageInNotebook(self):
         """Su GTK (soprattutto con temi come Breeze) wx calcola l'altezza
         della pagina come se le linguette fossero piu' basse di quanto GTK le
@@ -1706,9 +1738,36 @@ class PreferencesDialog(wx.Dialog):
             return
         self._RefitScrollPages()
 
+    def _LockMinHeight(self):
+        """Solo Linux/GTK: la finestra non puo' diventare piu' piccola della
+        dimensione con cui si apre, ne' in altezza ne' in larghezza.
+        Riducendola, GTK ridisegna le schede con misure sbagliate e la pagina
+        finisce sopra OK / Annulla, che non ricevono piu' i clic. Ingrandirla
+        resta possibile. La misura bloccata non supera mai lo schermo
+        disponibile (su schermi piccoli la finestra resta utilizzabile)."""
+        if wx.Platform == '__WXMSW__' or getattr(self, '_heightLocked', False):
+            return
+        self._heightLocked = True
+        size = getattr(self, '_startSize', None) or self.GetSize()
+        w, h = size.width, size.height
+        if w < 100 or h < 100:      # misura non ancora valida: niente blocco
+            self._heightLocked = False
+            return
+        try:
+            idx = wx.Display.GetFromWindow(self)
+            area = wx.Display(idx if idx != wx.NOT_FOUND else 0).GetClientArea()
+            w = min(w, area.width)
+            h = min(h, area.height)
+        except Exception:
+            pass
+        self.SetMinSize(wx.Size(w, h))
+        self.SetSizeHints(wx.Size(w, h), wx.DefaultSize)
+
     def _OnShowScrollPages(self, event):
         event.Skip()
         if event.IsShown():
+            self._LockMinHeight()
+            self._WatchPageSizes()
             # due passaggi: GTK completa le misure dopo il primo ridisegno
             wx.CallAfter(self._SafeRefit)
             self._ScheduleRefit(250)
