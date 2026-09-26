@@ -159,8 +159,24 @@ _ANY_INT_RE = re.compile(r'(\d+)')
 # the {watermark ...} directive (draft / stamped copies)
 _WATERMARK_RE = re.compile(r'\{\s*watermark', re.IGNORECASE)
 
+# raster image formats accepted for the background watermark. Every one of
+# them is opened through Pillow (see _make_watermark), which the PDF and DOCX
+# builders then consume, so adding a format here is all it takes — as long as
+# the installed Pillow can decode it (the official wheels handle all of these).
+# Vector formats (SVG/EMF) are NOT listed: Pillow cannot rasterise them.
+_WM_IMAGE_EXTS = ('.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp',
+                  '.tif', '.tiff')
+
 # extensions treated as binaries and skipped by the "All files" choice
-_BINARY_EXTS = ('.pdf', '.png', '.jpg', '.jpeg', '.svg', '.emf')
+_BINARY_EXTS = ('.pdf', '.svg', '.emf', '.docx') + _WM_IMAGE_EXTS
+
+
+def _wm_wildcard():
+    """File-dialog filter for the watermark picker: every supported image
+    format in one entry (the default), then "All files" as an escape hatch."""
+    pats = u";".join(u"*" + e for e in _WM_IMAGE_EXTS)
+    return u"%s (%s)|%s|%s (*.*)|*.*" % (
+        _(u"Images"), pats, pats, _(u"All files"))
 
 
 def _walk_files(folder, recursive):
@@ -319,13 +335,24 @@ def _make_watermark(path, opacity, angle, grayscale=False):
     RuntimeError if Pillow is missing.
     """
     try:
-        from PIL import Image
+        from PIL import Image, ImageOps
     except ImportError as e:
         raise RuntimeError(_(
             u"The 'Pillow' module is not installed.\n\n"
             u"Install it with:\n    pip install Pillow")) from e
 
-    img = Image.open(path).convert('RGBA')
+    try:
+        with Image.open(path) as src:
+            # animated GIF/WebP: Image.open is already on the first frame.
+            # Honour the EXIF orientation (phone photos), then normalise any
+            # mode (palette, CMYK, 16-bit TIFF, …) to RGBA.
+            img = ImageOps.exif_transpose(src).convert('RGBA')
+    except (OSError, ValueError) as e:  # incl. PIL.UnidentifiedImageError
+        raise RuntimeError(_(
+            u"Could not read the watermark image:\n%s\n\n"
+            u"Supported formats: %s") % (
+                path, u", ".join(x.lstrip('.').upper()
+                                 for x in _WM_IMAGE_EXTS))) from e
     orig_w, orig_h = img.size
     if grayscale:
         # desaturate the RGB channels but keep the original alpha channel
@@ -714,7 +741,7 @@ class IndexPanel(wx.Panel):
                  0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, 6)
         self.wmPicker = wx.FilePickerCtrl(
             sb, message=_(u"Choose the watermark image"),
-            wildcard=_(u"Images (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg"),
+            wildcard=_wm_wildcard(),
             style=wx.FLP_USE_TEXTCTRL | wx.FLP_OPEN | wx.FLP_FILE_MUST_EXIST)
         wrow.Add(self.wmPicker, 1, wx.EXPAND | wx.RIGHT, 6)
         box_wm.Add(wrow, 0, wx.EXPAND | wx.ALL, 4)
