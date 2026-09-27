@@ -471,15 +471,12 @@ class PreferencesDialog(wx.Dialog):
             wx.StaticBox(self.formatPanel, wx.ID_ANY, _(u"Title and structure")),
             wx.VERTICAL
         )
-        # Controlli figli dello StaticBox (non del pannello): su wxGTK
-        # lo StaticBox fratello copre i controlli e ne blocca i tooltip.
-        _boxTitleStruct = grpTitleStruct.GetStaticBox()
 
         bSizerTitleLine = wx.BoxSizer(wx.HORIZONTAL)
-        self.labelTitleLine = wx.StaticText(_boxTitleStruct, wx.ID_ANY, _(u"Title underline thickness"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelTitleLine = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Title underline thickness"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.labelTitleLine.Wrap(-1)
         bSizerTitleLine.Add(self.labelTitleLine, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self._titleSpinPanel = wx.Panel(_boxTitleStruct, wx.ID_ANY)
+        self._titleSpinPanel = wx.Panel(self.formatPanel, wx.ID_ANY)
         self.titleLineWidthSpin = wx.SpinCtrl(self._titleSpinPanel, wx.ID_ANY, "4", wx.DefaultPosition, wx.Size(60 + _SPIN_EXTRA_WIDTH, -1), wx.SP_ARROW_KEYS, 1, 5, 4)
         titleSpinSizer = wx.BoxSizer(wx.HORIZONTAL)
         titleSpinSizer.Add(self.titleLineWidthSpin, 0, 0, 0)
@@ -488,10 +485,10 @@ class PreferencesDialog(wx.Dialog):
         grpTitleStruct.Add(bSizerTitleLine, 0, wx.EXPAND | wx.ALL, 5)
 
         bSizerVerseBox = wx.BoxSizer(wx.HORIZONTAL)
-        self.labelVerseBox = wx.StaticText(_boxTitleStruct, wx.ID_ANY, _(u"Verse number box thickness"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelVerseBox = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Verse number box thickness"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.labelVerseBox.Wrap(-1)
         bSizerVerseBox.Add(self.labelVerseBox, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self._verseSpinPanel = wx.Panel(_boxTitleStruct, wx.ID_ANY)
+        self._verseSpinPanel = wx.Panel(self.formatPanel, wx.ID_ANY)
         self.verseBoxWidthSpin = wx.SpinCtrl(self._verseSpinPanel, wx.ID_ANY, "1", wx.DefaultPosition, wx.Size(60 + _SPIN_EXTRA_WIDTH, -1), wx.SP_ARROW_KEYS, 1, 5, 1)
         verseSpinSizer = wx.BoxSizer(wx.HORIZONTAL)
         verseSpinSizer.Add(self.verseBoxWidthSpin, 0, 0, 0)
@@ -499,6 +496,11 @@ class PreferencesDialog(wx.Dialog):
         bSizerVerseBox.Add(self._verseSpinPanel, 0, wx.ALIGN_CENTER_VERTICAL)
         grpTitleStruct.Add(bSizerVerseBox, 0, wx.EXPAND | wx.ALL, 5)
 
+        # Nota: a differenza degli altri gruppi, qui i controlli restano figli
+        # di formatPanel. Spostati nello StaticBox, su wxGTK provocano il
+        # messaggio "gtk_widget_size_allocate(): attempt to allocate widget
+        # with width 2 and height -1"; il gruppo non ha tooltip, quindi non
+        # serve spostarli.
         bSizerFormat.Add(grpTitleStruct, 0, wx.EXPAND | wx.ALL, 8)
 
         # ── Gruppo: Accordi e tastiera ───────────────────────────────
@@ -1588,13 +1590,10 @@ class PreferencesDialog(wx.Dialog):
         self.sizeCB.Bind(wx.EVT_KILL_FOCUS, self.OnFontSelected)
         self.sizeCB.Bind(wx.EVT_TEXT_ENTER, self.OnFontSelected)
         self.m_sdbSizer3OK.Bind(wx.EVT_BUTTON, self.OnOk)
-        # Registrato DOPO OnOk: wx chiama per primo l'ultimo handler collegato,
-        # quindi il valore viene copiato in pref prima che OnOk salvi le preferenze.
-        self.m_sdbSizer3OK.Bind(wx.EVT_BUTTON, self._OnOkKlavierOctave)
-        # MyPreferencesDialog chiama questo costruttore senza 'pref' e imposta
-        # self.pref solo dopo: i valori si caricano quindi con CallAfter.
+        # Colore tasto d'ottava: valori iniziali da self.pref (MyPreferencesDialog
+        # imposta self.pref prima di chiamare questo costruttore); il salvataggio
+        # avviene in MyPreferencesDialog.OnOk.
         self._InitKlavierOctaveColour()
-        wx.CallAfter(self._InitKlavierOctaveColour)
         self.btnPin.Bind(wx.EVT_BUTTON, self.OnPin)
         self.clearRecentFilesBtn.Bind(wx.EVT_BUTTON, self.OnClearRecentFiles)
         self.openTemplatesFolderBtn.Bind(wx.EVT_BUTTON, self.OnOpenTemplatesFolder)
@@ -1865,11 +1864,6 @@ class PreferencesDialog(wx.Dialog):
             return None
 
     def _InitKlavierOctaveColour(self):
-        try:
-            if not self.klavierOctaveCB:      # finestra già distrutta
-                return
-        except RuntimeError:
-            return
         pref = getattr(self, 'pref', None)
         enabled = bool(getattr(pref, 'klavierOctaveColourEnabled', False))
         hex_str = getattr(pref, 'klavierOctaveHex', '#3C78D2') or '#3C78D2'
@@ -1913,14 +1907,11 @@ class PreferencesDialog(wx.Dialog):
         finally:
             dlg.Destroy()
 
-    def _OnOkKlavierOctave(self, event):
-        pref = getattr(self, 'pref', None)
-        if pref is not None:
-            pref.klavierOctaveColourEnabled = self.klavierOctaveCB.GetValue()
-            c = self._KlavierOctaveParseHex(self.klavierOctaveHexCtrl.GetValue())
-            if c is not None:
-                pref.klavierOctaveHex = u'#%02X%02X%02X' % (c.Red(), c.Green(), c.Blue())
-        event.Skip()   # prosegue verso OnOk (salvataggio e chiusura)
+    def GetKlavierOctaveColourValues(self):
+        """(abilitato, '#RRGGBB' o None se il testo non e' un colore valido)."""
+        c = self._KlavierOctaveParseHex(self.klavierOctaveHexCtrl.GetValue())
+        hex_str = (u'#%02X%02X%02X' % (c.Red(), c.Green(), c.Blue())) if c is not None else None
+        return self.klavierOctaveCB.GetValue(), hex_str
 
     def OnFingerNumHexChanged(self, event):
         event.Skip()

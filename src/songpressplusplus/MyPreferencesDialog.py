@@ -524,6 +524,24 @@ class MyPreferencesDialog(PreferencesDialog):
             self.klavierColourSwatch.Refresh()
         dlg.Destroy()
 
+    def _OnKlavierOctavePickColour(self, evt):
+        """Come OnKlavierPickColour, con la stessa tavolozza di colori
+        personalizzati dei tasti klavier."""
+        current = self._hex_to_colour(self.klavierOctaveHexCtrl.GetValue())
+        data = wx.ColourData()
+        data.SetColour(current)
+        data.SetChooseFull(True)
+        self._apply_custom_colours(data, 'customColoursKlavier')
+        dlg = wx.ColourDialog(self, data)
+        if dlg.ShowModal() == wx.ID_OK:
+            result_data = dlg.GetColourData()
+            chosen = result_data.GetColour()
+            self._read_custom_colours(result_data, 'customColoursKlavier')
+            self.klavierOctaveHexCtrl.SetValue(self._colour_to_hex(chosen))
+            self.klavierOctaveColourSwatch.SetBackgroundColour(chosen)
+            self.klavierOctaveColourSwatch.Refresh()
+        dlg.Destroy()
+
     def OnFingerNumHexChanged(self, evt):
         c = self._hex_to_colour(self.fingerNumHexCtrl.GetValue())
         self.fingerNumColourSwatch.SetBackgroundColour(c)
@@ -1884,6 +1902,12 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.titleLineWidth = self.titleLineWidthSpin.GetValue()
         self.pref.verseBoxWidth = self.verseBoxWidthSpin.GetValue()
         self.pref.klavierHighlightHex = self.klavierHexCtrl.GetValue().strip()
+        # Secondo colore per il tasto d'ottava (tastiere a 8 tasti)
+        if hasattr(self, 'klavierOctaveCB'):
+            _oct_on, _oct_hex = self.GetKlavierOctaveColourValues()
+            self.pref.klavierOctaveColourEnabled = _oct_on
+            if _oct_hex:
+                self.pref.klavierOctaveHex = _oct_hex
         self.pref.decoSliderBarColourHex = self.decoBarHexCtrl.GetValue().strip()
         if hasattr(self, 'fingerNumHexCtrl'):
             self.pref.fingerNumColourHex = self.fingerNumHexCtrl.GetValue().strip()
