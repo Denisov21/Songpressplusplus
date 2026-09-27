@@ -707,6 +707,8 @@ Il token ha effetto solo nei layout a 8 tasti (partenza diversa da DO/FA); negli
 {fingering: Si hand=R start=Si octave=one 1=Si 2=Re# 3=Fa#}
 ```
 
+**Colore del tasto d'ottava:** con `octave=both` le due note uguali hanno per impostazione predefinita lo stesso colore. Per distinguere quella più a destra (es. il **Si alto** in una tastiera Si…Si) attiva *Opzioni → Formattazione → Accordi e tastiera → Colore diverso per il tasto dell'ottava superiore* e scegli il colore (predefinito `#3C78D2`, blu). L'impostazione vale per anteprima, stampa, esportazione e anteprima del dialogo.
+
 Le note si scrivono in notazione italiana (`Do`, `Re`, `Mi`, `Fa`, `Sol`, `La`, `Si`, con `#` per i diesis) o inglese (`C`, `D`, `E`, `F`, `G`, `A`, `B`).
 
 > **Nota sulla notazione** — Il dialogo di inserimento e la griglia delle dita rispettano la **notazione predefinita** impostata nelle preferenze di Songpress++ (*Opzioni → Notazione predefinita*). I nomi delle note mostrati nella griglia e scritti nella direttiva generata cambiano automaticamente in base alla notazione scelta: con notazione Americana si vedrà `A, C#, E`; con Italiana `La, Do#, Mi`; con Tedesca `A, Cis, E`, e così via. Anche il riconoscimento degli accordi digitati nel campo *Accordo* segue la notazione corrente. Le notazioni Nashville e Romana non sono supportate per la diteggiatura.
@@ -1906,6 +1908,7 @@ Sotto, il pannello scorrevole **semplificazione accordi** contiene un cursore pe
 | Campo | Predefinito | Descrizione |
 | ----- | ----------- | ----------- |
 | **Colore tasti Klavier** | `#D23C3C` | Evidenziazione dei tasti nel diagramma di tastiera. |
+| **Colore diverso per il tasto dell'ottava superiore** | disattivato, `#3C78D2` | Nelle tastiere a 8 tasti colora con un secondo colore il tasto più a destra uguale al primo (es. Si alto in Si…Si). |
 | **Colore numeri diteggiatura** | `#1A1A1A` | Colore dei numeri di `{fingering:}`. |
 
 #### Gruppo **Tempo**

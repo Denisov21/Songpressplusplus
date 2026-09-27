@@ -140,6 +140,20 @@ msgstr "Scegli…"
 msgid "Finger number colour"
 msgstr "Colore numeri diteggiatura"
 
+#: PreferencesDialog.py format tab — upper octave key colour checkbox
+msgid "Different colour for the upper octave key"
+msgstr "Colore diverso per il tasto dell'ottava superiore"
+
+#: PreferencesDialog.py format tab — upper octave key colour tooltip
+msgid ""
+"On 8-key keyboards (start note other than C or F) the start note appears "
+"twice: use this colour for the rightmost one (e.g. the high B on a B...B "
+"keyboard)."
+msgstr ""
+"Nelle tastiere a 8 tasti (nota di partenza diversa da DO o FA) la nota "
+"iniziale compare due volte: usa questo colore per quella più a destra (es. "
+"il SI alto in una tastiera SI...SI)."
+
 #: PreferencesDialog.py
 msgid "Clear recent files"
 msgstr "Cancella file recenti"

@@ -63,6 +63,32 @@ _WHITE_KEYS = [0, 2, 4, 5, 7, 9, 11]
 # Tasti neri: semitono -> indice spazio tra i bianchi (layout di default da DO)
 _BLACK_KEYS = {1: 0, 3: 1, 6: 3, 8: 4, 10: 5}
 
+# Colore globale del tasto "ottava" (il duplicato più a destra nelle tastiere a
+# 8 tasti, es. il SI alto in una tastiera SI...SI). None = stesso colore degli
+# altri tasti evidenziati. Viene impostato dall'applicazione in base alle
+# preferenze (vedi set_octave_highlight_color), così tutti i punti che
+# disegnano tastiere — anteprima, stampa, esportazione, anteprima del dialogo —
+# lo usano senza dover passare un parametro in più.
+_octave_highlight_color = None
+
+# Sentinella: "parametro non passato, usa il default globale"
+_USE_GLOBAL = object()
+
+
+def set_octave_highlight_color(colour):
+    """
+    Imposta il colore di default del tasto d'ottava (il duplicato a destra
+    nelle tastiere a 8 tasti). Passare None per usare lo stesso colore di
+    evidenziazione degli altri tasti.
+    """
+    global _octave_highlight_color
+    _octave_highlight_color = colour
+
+
+def get_octave_highlight_color():
+    """Restituisce il colore di default del tasto d'ottava (o None)."""
+    return _octave_highlight_color
+
 
 def _keyboard_layout(start_semi):
     """
@@ -409,7 +435,7 @@ def keyboard_header_height(dc, label_font, chord_name, hand=None):
 def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
                   label_font=None, highlight_color=None, finger_map=None,
                   finger_num_color=None, hand=None, start_note=0,
-                  highlight_octave_both=True):
+                  highlight_octave_both=True, octave_color=_USE_GLOBAL):
     """
     Disegna una tastiera di un'ottava su dc.
 
@@ -424,9 +450,15 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
                        nota iniziale compare a entrambe le estremità. Se True
                        (default) viene evidenziata su entrambe; se False solo
                        su quella di sinistra. Ininfluente nei layout a 7 tasti.
+    octave_color     : colore del tasto d'ottava evidenziato (il duplicato più
+                       a destra nei layout a 8 tasti). Se omesso usa il default
+                       globale impostato con set_octave_highlight_color(); se
+                       None (o default globale None) usa highlight_color.
     """
     if highlight_color is None:
         highlight_color = wx.Colour(210, 60, 60)
+    if octave_color is _USE_GLOBAL:
+        octave_color = _octave_highlight_color
     if finger_map is None:
         finger_map = {}
 
@@ -454,9 +486,13 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
         hl = semi in highlighted_keys
         # In layout a 8 tasti l'ultimo tasto è l'ottava del primo: se non si
         # vuole l'evidenziazione doppia, non evidenziare il duplicato in fondo.
-        if hl and not highlight_octave_both and n_white == 8 and i == n_white - 1:
+        is_octave_key = (n_white == 8 and i == n_white - 1)
+        if hl and not highlight_octave_both and is_octave_key:
             hl = False
-        if hl:
+        if hl and is_octave_key and octave_color is not None:
+            # Tasto d'ottava (es. SI alto): secondo colore, se impostato
+            dc.SetBrush(wx.Brush(octave_color))
+        elif hl:
             dc.SetBrush(wx.Brush(highlight_color))
         else:
             dc.SetBrush(wx.WHITE_BRUSH)

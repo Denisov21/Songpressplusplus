@@ -789,6 +789,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self.pref.tempoIconColourHex = '#000000'
         if not hasattr(self.pref, 'klavierHighlightHex'):
             self.pref.klavierHighlightHex = '#D23C3C'
+        if not hasattr(self.pref, 'klavierOctaveColourEnabled'):
+            self.pref.klavierOctaveColourEnabled = False
+        if not hasattr(self.pref, 'klavierOctaveHex'):
+            self.pref.klavierOctaveHex = '#3C78D2'
         # Filigrana (watermark): stampata ed esportata (vedi Watermark.py).
         # I campi di STILE (opacita', angolo, dimensione, colore, mosaico) sono
         # preferenze globali persistite in Preferences.py come pref.watermarkStyle;
@@ -9182,8 +9186,27 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.ClearRecentFiles()
 
     def _applyKlavierHighlightColor(self):
-        """Converte klavierHighlightHex in wx.Colour e lo applica al decorator."""
+        """Converte klavierHighlightHex in wx.Colour e lo applica al decorator.
+        Imposta anche il colore globale del tasto d'ottava in KlavierRenderer."""
         self.pref.decorator.klavierHighlightColor = self._getKlavierHighlightColour()
+        try:
+            KlavierRenderer.set_octave_highlight_color(self._getKlavierOctaveColour())
+        except Exception:
+            pass
+
+    def _getKlavierOctaveColour(self):
+        """Colore del tasto d'ottava (duplicato a destra nelle tastiere a 8
+        tasti, es. SI alto in SI...SI) oppure None se l'opzione è disattivata
+        (in quel caso si usa lo stesso colore degli altri tasti)."""
+        if not getattr(self.pref, 'klavierOctaveColourEnabled', False):
+            return None
+        hex_str = getattr(self.pref, 'klavierOctaveHex', '#3C78D2')
+        try:
+            h = hex_str.strip().lstrip('#')
+            r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+            return wx.Colour(r, g, b)
+        except Exception:
+            return None
 
     def _getKlavierHighlightColour(self):
         """Restituisce wx.Colour dal valore hex salvato nelle preferenze."""

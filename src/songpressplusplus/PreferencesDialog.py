@@ -516,6 +516,22 @@ class PreferencesDialog(wx.Dialog):
         bSizerKlavier.Add(self.klavierColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
         grpChords.Add(bSizerKlavier, 0, wx.EXPAND | wx.ALL, 5)
 
+        # Secondo colore per il tasto d'ottava: nelle tastiere a 8 tasti (nota
+        # di partenza diversa da DO/FA) la nota iniziale compare due volte; il
+        # duplicato più a destra (es. SI alto in SI...SI) può avere un colore
+        # proprio per distinguerlo dal primo.
+        bSizerKlavierOct = wx.BoxSizer(wx.HORIZONTAL)
+        self.klavierOctaveCB = wx.CheckBox(self.formatPanel, wx.ID_ANY, _(u"Different colour for the upper octave key"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.klavierOctaveCB.SetToolTip(_(u"On 8-key keyboards (start note other than C or F) the start note appears twice: use this colour for the rightmost one (e.g. the high B on a B...B keyboard)."))
+        bSizerKlavierOct.Add(self.klavierOctaveCB, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.klavierOctaveHexCtrl = wx.TextCtrl(self.formatPanel, wx.ID_ANY, u"#3C78D2", wx.DefaultPosition, wx.Size(80, -1), 0)
+        bSizerKlavierOct.Add(self.klavierOctaveHexCtrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.klavierOctaveColourBtn = wx.Button(self.formatPanel, wx.ID_ANY, _(u"Pick\u2026"), wx.DefaultPosition, wx.Size(60, -1), 0)
+        bSizerKlavierOct.Add(self.klavierOctaveColourBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.klavierOctaveColourSwatch = wx.Panel(self.formatPanel, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
+        bSizerKlavierOct.Add(self.klavierOctaveColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
+        grpChords.Add(bSizerKlavierOct, 0, wx.EXPAND | wx.ALL, 5)
+
         bSizerFingerNum = wx.BoxSizer(wx.HORIZONTAL)
         self.labelFingerNumColour = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Finger number colour"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.labelFingerNumColour.Wrap(-1)
@@ -1502,6 +1518,9 @@ class PreferencesDialog(wx.Dialog):
         self.klavierHexCtrl.Bind(wx.EVT_TEXT, self.OnKlavierHexChanged)
         self.fingerNumColourBtn.Bind(wx.EVT_BUTTON, self.OnFingerNumPickColour)
         self.fingerNumHexCtrl.Bind(wx.EVT_TEXT, self.OnFingerNumHexChanged)
+        self.klavierOctaveCB.Bind(wx.EVT_CHECKBOX, self._OnKlavierOctaveToggled)
+        self.klavierOctaveColourBtn.Bind(wx.EVT_BUTTON, self._OnKlavierOctavePickColour)
+        self.klavierOctaveHexCtrl.Bind(wx.EVT_TEXT, self._OnKlavierOctaveHexChanged)
         self.tempoIconColourBtn.Bind(wx.EVT_BUTTON, self.OnTempoIconColourPickColour)
         self.tempoIconColourHexCtrl.Bind(wx.EVT_TEXT, self.OnTempoIconColourHexChanged)
         self.durationBeatsColourBtn.Bind(wx.EVT_BUTTON, self.OnDurationBeatsPickColour)
@@ -1551,6 +1570,13 @@ class PreferencesDialog(wx.Dialog):
         self.sizeCB.Bind(wx.EVT_KILL_FOCUS, self.OnFontSelected)
         self.sizeCB.Bind(wx.EVT_TEXT_ENTER, self.OnFontSelected)
         self.m_sdbSizer3OK.Bind(wx.EVT_BUTTON, self.OnOk)
+        # Registrato DOPO OnOk: wx chiama per primo l'ultimo handler collegato,
+        # quindi il valore viene copiato in pref prima che OnOk salvi le preferenze.
+        self.m_sdbSizer3OK.Bind(wx.EVT_BUTTON, self._OnOkKlavierOctave)
+        # MyPreferencesDialog chiama questo costruttore senza 'pref' e imposta
+        # self.pref solo dopo: i valori si caricano quindi con CallAfter.
+        self._InitKlavierOctaveColour()
+        wx.CallAfter(self._InitKlavierOctaveColour)
         self.btnPin.Bind(wx.EVT_BUTTON, self.OnPin)
         self.clearRecentFilesBtn.Bind(wx.EVT_BUTTON, self.OnClearRecentFiles)
         self.openTemplatesFolderBtn.Bind(wx.EVT_BUTTON, self.OnOpenTemplatesFolder)
@@ -1804,6 +1830,79 @@ class PreferencesDialog(wx.Dialog):
 
     def OnKlavierPickColour(self, event):
         event.Skip()
+
+    # ── Colore del tasto d'ottava (duplicato a destra, tastiere a 8 tasti) ──
+    # Logica autonoma nella classe base: non richiede modifiche alla
+    # sottoclasse MyPreferencesDialog.
+
+    @staticmethod
+    def _KlavierOctaveParseHex(text):
+        """'#RRGGBB' (o 'RRGGBB') -> wx.Colour, None se non valido."""
+        h = (text or u'').strip().lstrip('#')
+        if len(h) != 6:
+            return None
+        try:
+            return wx.Colour(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+        except ValueError:
+            return None
+
+    def _InitKlavierOctaveColour(self):
+        try:
+            if not self.klavierOctaveCB:      # finestra già distrutta
+                return
+        except RuntimeError:
+            return
+        pref = getattr(self, 'pref', None)
+        enabled = bool(getattr(pref, 'klavierOctaveColourEnabled', False))
+        hex_str = getattr(pref, 'klavierOctaveHex', '#3C78D2') or '#3C78D2'
+        self.klavierOctaveCB.SetValue(enabled)
+        self.klavierOctaveHexCtrl.ChangeValue(hex_str)
+        self._UpdateKlavierOctaveSwatch()
+        self._UpdateKlavierOctaveEnable()
+
+    def _UpdateKlavierOctaveSwatch(self):
+        c = self._KlavierOctaveParseHex(self.klavierOctaveHexCtrl.GetValue())
+        if c is not None:
+            self.klavierOctaveColourSwatch.SetBackgroundColour(c)
+            self.klavierOctaveColourSwatch.Refresh()
+
+    def _UpdateKlavierOctaveEnable(self):
+        on = self.klavierOctaveCB.GetValue()
+        self.klavierOctaveHexCtrl.Enable(on)
+        self.klavierOctaveColourBtn.Enable(on)
+        self.klavierOctaveColourSwatch.Enable(on)
+
+    def _OnKlavierOctaveToggled(self, event):
+        self._UpdateKlavierOctaveEnable()
+        event.Skip()
+
+    def _OnKlavierOctaveHexChanged(self, event):
+        self._UpdateKlavierOctaveSwatch()
+        event.Skip()
+
+    def _OnKlavierOctavePickColour(self, event):
+        data = wx.ColourData()
+        data.SetChooseFull(True)
+        c = self._KlavierOctaveParseHex(self.klavierOctaveHexCtrl.GetValue())
+        if c is not None:
+            data.SetColour(c)
+        dlg = wx.ColourDialog(self, data)
+        try:
+            if dlg.ShowModal() == wx.ID_OK:
+                col = dlg.GetColourData().GetColour()
+                self.klavierOctaveHexCtrl.SetValue(
+                    u'#%02X%02X%02X' % (col.Red(), col.Green(), col.Blue()))
+        finally:
+            dlg.Destroy()
+
+    def _OnOkKlavierOctave(self, event):
+        pref = getattr(self, 'pref', None)
+        if pref is not None:
+            pref.klavierOctaveColourEnabled = self.klavierOctaveCB.GetValue()
+            c = self._KlavierOctaveParseHex(self.klavierOctaveHexCtrl.GetValue())
+            if c is not None:
+                pref.klavierOctaveHex = u'#%02X%02X%02X' % (c.Red(), c.Green(), c.Blue())
+        event.Skip()   # prosegue verso OnOk (salvataggio e chiusura)
 
     def OnFingerNumHexChanged(self, event):
         event.Skip()

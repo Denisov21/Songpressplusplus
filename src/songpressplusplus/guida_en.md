@@ -700,6 +700,8 @@ The token only has an effect on 8-key layouts (start other than C/F); otherwise 
 {fingering: B hand=R start=B octave=one 1=B 2=D# 3=F#}
 ```
 
+**Upper octave key colour:** with `octave=both` the two identical notes share the same colour by default. To tell the rightmost one apart (e.g. the **high B** on a B…B keyboard) enable *Options → Format → Chords and keyboard → Different colour for the upper octave key* and pick the colour (default `#3C78D2`, blue). The setting applies to preview, print, export and the dialog preview.
+
 Notes can be written in Italian notation (`Do`, `Re`, `Mi`, `Fa`, `Sol`, `La`, `Si`, with `#` for sharps) or English notation (`C`, `D`, `E`, `F`, `G`, `A`, `B`).
 
 > **Note on notation** — The insertion dialog and the finger grid follow the **default notation** set in Songpress++ preferences (*Options → Default notation*). Note names shown in the grid and written into the generated directive change automatically according to the selected notation: with American notation you will see `A, C#, E`; with Italian `La, Do#, Mi`; with German `A, Cis, E`, and so on. Chord recognition in the *Chord* field also respects the current notation. Nashville and Roman notations are not supported for fingering.
@@ -1899,6 +1901,7 @@ Below, the scrollable **chord simplification** panel has one slider per chord gr
 | Field | Default | Description |
 | ----- | ------- | ----------- |
 | **Klavier key colour** | `#D23C3C` | Key highlight in the keyboard diagram. |
+| **Different colour for the upper octave key** | off, `#3C78D2` | On 8-key keyboards, draws the rightmost key matching the first one in a second colour (e.g. high B on B…B). |
 | **Finger number colour** | `#1A1A1A` | Colour of `{fingering:}` numbers. |
 
 #### **Tempo** group

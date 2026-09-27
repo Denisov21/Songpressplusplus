@@ -217,6 +217,12 @@ class Preferences(object):
         self.config.SetPath('/KlavierColour')
         h = self.config.Read('highlightHex')
         self.klavierHighlightHex = h if h else '#D23C3C'
+        # Secondo colore per il tasto d'ottava (duplicato a destra nelle
+        # tastiere a 8 tasti, es. SI alto in SI...SI). Disattivato di default.
+        v = self.config.Read('octaveColourEnabled')
+        self.klavierOctaveColourEnabled = bool(int(v)) if v != '' else False
+        h = self.config.Read('octaveHex')
+        self.klavierOctaveHex = h if h else '#3C78D2'
         v = self.config.Read('scalePct')
         try:
             self.klavierScalePct = max(50, min(int(v), 200)) if v != '' else 100
@@ -466,6 +472,9 @@ class Preferences(object):
     def _SaveKlavierColour(self):
         self.config.SetPath('/KlavierColour')
         self.config.Write('highlightHex', getattr(self, 'klavierHighlightHex', '#D23C3C'))
+        self.config.Write('octaveColourEnabled',
+                          '1' if getattr(self, 'klavierOctaveColourEnabled', False) else '0')
+        self.config.Write('octaveHex', getattr(self, 'klavierOctaveHex', '#3C78D2'))
         self.config.Write('scalePct', str(getattr(self, 'klavierScalePct', 100)))
         self.config.SetPath('/')
 
