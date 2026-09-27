@@ -471,12 +471,15 @@ class PreferencesDialog(wx.Dialog):
             wx.StaticBox(self.formatPanel, wx.ID_ANY, _(u"Title and structure")),
             wx.VERTICAL
         )
+        # Controlli figli dello StaticBox (non del pannello): su wxGTK
+        # lo StaticBox fratello copre i controlli e ne blocca i tooltip.
+        _boxTitleStruct = grpTitleStruct.GetStaticBox()
 
         bSizerTitleLine = wx.BoxSizer(wx.HORIZONTAL)
-        self.labelTitleLine = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Title underline thickness"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelTitleLine = wx.StaticText(_boxTitleStruct, wx.ID_ANY, _(u"Title underline thickness"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.labelTitleLine.Wrap(-1)
         bSizerTitleLine.Add(self.labelTitleLine, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self._titleSpinPanel = wx.Panel(self.formatPanel, wx.ID_ANY)
+        self._titleSpinPanel = wx.Panel(_boxTitleStruct, wx.ID_ANY)
         self.titleLineWidthSpin = wx.SpinCtrl(self._titleSpinPanel, wx.ID_ANY, "4", wx.DefaultPosition, wx.Size(60 + _SPIN_EXTRA_WIDTH, -1), wx.SP_ARROW_KEYS, 1, 5, 4)
         titleSpinSizer = wx.BoxSizer(wx.HORIZONTAL)
         titleSpinSizer.Add(self.titleLineWidthSpin, 0, 0, 0)
@@ -485,10 +488,10 @@ class PreferencesDialog(wx.Dialog):
         grpTitleStruct.Add(bSizerTitleLine, 0, wx.EXPAND | wx.ALL, 5)
 
         bSizerVerseBox = wx.BoxSizer(wx.HORIZONTAL)
-        self.labelVerseBox = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Verse number box thickness"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelVerseBox = wx.StaticText(_boxTitleStruct, wx.ID_ANY, _(u"Verse number box thickness"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.labelVerseBox.Wrap(-1)
         bSizerVerseBox.Add(self.labelVerseBox, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self._verseSpinPanel = wx.Panel(self.formatPanel, wx.ID_ANY)
+        self._verseSpinPanel = wx.Panel(_boxTitleStruct, wx.ID_ANY)
         self.verseBoxWidthSpin = wx.SpinCtrl(self._verseSpinPanel, wx.ID_ANY, "1", wx.DefaultPosition, wx.Size(60 + _SPIN_EXTRA_WIDTH, -1), wx.SP_ARROW_KEYS, 1, 5, 1)
         verseSpinSizer = wx.BoxSizer(wx.HORIZONTAL)
         verseSpinSizer.Add(self.verseBoxWidthSpin, 0, 0, 0)
@@ -503,16 +506,19 @@ class PreferencesDialog(wx.Dialog):
             wx.StaticBox(self.formatPanel, wx.ID_ANY, _(u"Chords and keyboard")),
             wx.VERTICAL
         )
+        # Controlli figli dello StaticBox (non del pannello): su wxGTK
+        # lo StaticBox fratello copre i controlli e ne blocca i tooltip.
+        _boxChords = grpChords.GetStaticBox()
 
         bSizerKlavier = wx.BoxSizer(wx.HORIZONTAL)
-        self.labelKlavierColour = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Klavier key colour"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelKlavierColour = wx.StaticText(_boxChords, wx.ID_ANY, _(u"Klavier key colour"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.labelKlavierColour.Wrap(-1)
         bSizerKlavier.Add(self.labelKlavierColour, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.klavierHexCtrl = wx.TextCtrl(self.formatPanel, wx.ID_ANY, u"#D23C3C", wx.DefaultPosition, wx.Size(80, -1), 0)
+        self.klavierHexCtrl = wx.TextCtrl(_boxChords, wx.ID_ANY, u"#D23C3C", wx.DefaultPosition, wx.Size(80, -1), 0)
         bSizerKlavier.Add(self.klavierHexCtrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.klavierColourBtn = wx.Button(self.formatPanel, wx.ID_ANY, _(u"Pick…"), wx.DefaultPosition, wx.Size(60, -1), 0)
+        self.klavierColourBtn = wx.Button(_boxChords, wx.ID_ANY, _(u"Pick…"), wx.DefaultPosition, wx.Size(60, -1), 0)
         bSizerKlavier.Add(self.klavierColourBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.klavierColourSwatch = wx.Panel(self.formatPanel, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
+        self.klavierColourSwatch = wx.Panel(_boxChords, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
         bSizerKlavier.Add(self.klavierColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
         grpChords.Add(bSizerKlavier, 0, wx.EXPAND | wx.ALL, 5)
 
@@ -521,26 +527,26 @@ class PreferencesDialog(wx.Dialog):
         # duplicato più a destra (es. SI alto in SI...SI) può avere un colore
         # proprio per distinguerlo dal primo.
         bSizerKlavierOct = wx.BoxSizer(wx.HORIZONTAL)
-        self.klavierOctaveCB = wx.CheckBox(self.formatPanel, wx.ID_ANY, _(u"Different colour for the upper octave key"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.klavierOctaveCB = wx.CheckBox(_boxChords, wx.ID_ANY, _(u"Different colour for the upper octave key"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.klavierOctaveCB.SetToolTip(_(u"On 8-key keyboards (start note other than C or F) the start note appears twice: use this colour for the rightmost one (e.g. the high B on a B...B keyboard)."))
         bSizerKlavierOct.Add(self.klavierOctaveCB, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.klavierOctaveHexCtrl = wx.TextCtrl(self.formatPanel, wx.ID_ANY, u"#3C78D2", wx.DefaultPosition, wx.Size(80, -1), 0)
+        self.klavierOctaveHexCtrl = wx.TextCtrl(_boxChords, wx.ID_ANY, u"#3C78D2", wx.DefaultPosition, wx.Size(80, -1), 0)
         bSizerKlavierOct.Add(self.klavierOctaveHexCtrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.klavierOctaveColourBtn = wx.Button(self.formatPanel, wx.ID_ANY, _(u"Pick\u2026"), wx.DefaultPosition, wx.Size(60, -1), 0)
+        self.klavierOctaveColourBtn = wx.Button(_boxChords, wx.ID_ANY, _(u"Pick\u2026"), wx.DefaultPosition, wx.Size(60, -1), 0)
         bSizerKlavierOct.Add(self.klavierOctaveColourBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.klavierOctaveColourSwatch = wx.Panel(self.formatPanel, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
+        self.klavierOctaveColourSwatch = wx.Panel(_boxChords, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
         bSizerKlavierOct.Add(self.klavierOctaveColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
         grpChords.Add(bSizerKlavierOct, 0, wx.EXPAND | wx.ALL, 5)
 
         bSizerFingerNum = wx.BoxSizer(wx.HORIZONTAL)
-        self.labelFingerNumColour = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Finger number colour"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelFingerNumColour = wx.StaticText(_boxChords, wx.ID_ANY, _(u"Finger number colour"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.labelFingerNumColour.Wrap(-1)
         bSizerFingerNum.Add(self.labelFingerNumColour, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.fingerNumHexCtrl = wx.TextCtrl(self.formatPanel, wx.ID_ANY, u"#1A1A1A", wx.DefaultPosition, wx.Size(80, -1), 0)
+        self.fingerNumHexCtrl = wx.TextCtrl(_boxChords, wx.ID_ANY, u"#1A1A1A", wx.DefaultPosition, wx.Size(80, -1), 0)
         bSizerFingerNum.Add(self.fingerNumHexCtrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.fingerNumColourBtn = wx.Button(self.formatPanel, wx.ID_ANY, _(u"Pick\u2026"), wx.DefaultPosition, wx.Size(60, -1), 0)
+        self.fingerNumColourBtn = wx.Button(_boxChords, wx.ID_ANY, _(u"Pick\u2026"), wx.DefaultPosition, wx.Size(60, -1), 0)
         bSizerFingerNum.Add(self.fingerNumColourBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.fingerNumColourSwatch = wx.Panel(self.formatPanel, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
+        self.fingerNumColourSwatch = wx.Panel(_boxChords, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
         bSizerFingerNum.Add(self.fingerNumColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
         grpChords.Add(bSizerFingerNum, 0, wx.EXPAND | wx.ALL, 5)
 
@@ -551,15 +557,18 @@ class PreferencesDialog(wx.Dialog):
             wx.StaticBox(self.formatPanel, wx.ID_ANY, _(u"Tempo")),
             wx.VERTICAL
         )
+        # Controlli figli dello StaticBox (non del pannello): su wxGTK
+        # lo StaticBox fratello copre i controlli e ne blocca i tooltip.
+        _boxTempo = grpTempo.GetStaticBox()
 
         # Dimensione icone tempo ({tempo_*})
         bSizerTempoIcon = wx.BoxSizer(wx.HORIZONTAL)
-        self.labelTempoIconSize = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Tempo icon size"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelTempoIconSize = wx.StaticText(_boxTempo, wx.ID_ANY, _(u"Tempo icon size"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.labelTempoIconSize.Wrap(-1)
         bSizerTempoIcon.Add(self.labelTempoIconSize, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.tempoIconSize16 = wx.RadioButton(self.formatPanel, wx.ID_ANY, u"16×16", wx.DefaultPosition, wx.DefaultSize, wx.RB_GROUP)
-        self.tempoIconSize24 = wx.RadioButton(self.formatPanel, wx.ID_ANY, u"24×24")
-        self.tempoIconSize32 = wx.RadioButton(self.formatPanel, wx.ID_ANY, u"32×32")
+        self.tempoIconSize16 = wx.RadioButton(_boxTempo, wx.ID_ANY, u"16×16", wx.DefaultPosition, wx.DefaultSize, wx.RB_GROUP)
+        self.tempoIconSize24 = wx.RadioButton(_boxTempo, wx.ID_ANY, u"24×24")
+        self.tempoIconSize32 = wx.RadioButton(_boxTempo, wx.ID_ANY, u"32×32")
         bSizerTempoIcon.Add(self.tempoIconSize16, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         bSizerTempoIcon.Add(self.tempoIconSize24, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         bSizerTempoIcon.Add(self.tempoIconSize32, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -567,14 +576,14 @@ class PreferencesDialog(wx.Dialog):
 
         # Colore icone tempo ({tempo_*}) — tinta applicata ai PNG nota/metronomo
         bSizerTempoColour = wx.BoxSizer(wx.HORIZONTAL)
-        self.labelTempoIconColour = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Tempo icon colour"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelTempoIconColour = wx.StaticText(_boxTempo, wx.ID_ANY, _(u"Tempo icon colour"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.labelTempoIconColour.Wrap(-1)
         bSizerTempoColour.Add(self.labelTempoIconColour, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.tempoIconColourHexCtrl = wx.TextCtrl(self.formatPanel, wx.ID_ANY, u"#000000", wx.DefaultPosition, wx.Size(80, -1), 0)
+        self.tempoIconColourHexCtrl = wx.TextCtrl(_boxTempo, wx.ID_ANY, u"#000000", wx.DefaultPosition, wx.Size(80, -1), 0)
         bSizerTempoColour.Add(self.tempoIconColourHexCtrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.tempoIconColourBtn = wx.Button(self.formatPanel, wx.ID_ANY, _(u"Pick\u2026"), wx.DefaultPosition, wx.Size(60, -1), 0)
+        self.tempoIconColourBtn = wx.Button(_boxTempo, wx.ID_ANY, _(u"Pick\u2026"), wx.DefaultPosition, wx.Size(60, -1), 0)
         bSizerTempoColour.Add(self.tempoIconColourBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.tempoIconColourSwatch = wx.Panel(self.formatPanel, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
+        self.tempoIconColourSwatch = wx.Panel(_boxTempo, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
         bSizerTempoColour.Add(self.tempoIconColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
         grpTempo.Add(bSizerTempoColour, 0, wx.EXPAND | wx.ALL, 5)
 
@@ -585,13 +594,16 @@ class PreferencesDialog(wx.Dialog):
             wx.StaticBox(self.formatPanel, wx.ID_ANY, _(u"Chord grid ({start_of_grid}.{end_of_grid})")),
             wx.VERTICAL
         )
+        # Controlli figli dello StaticBox (non del pannello): su wxGTK
+        # lo StaticBox fratello copre i controlli e ne blocca i tooltip.
+        _boxGrid = grpGrid.GetStaticBox()
 
-        lbl = wx.StaticText(self.formatPanel, wx.ID_ANY,
+        lbl = wx.StaticText(_boxGrid, wx.ID_ANY,
             _(u"Display mode for {start_of_grid} blocks:"))
         grpGrid.Add(lbl, 0, wx.LEFT | wx.TOP | wx.RIGHT, 5)
 
         self.gridModePipe = wx.RadioButton(
-            self.formatPanel, wx.ID_ANY,
+            _boxGrid, wx.ID_ANY,
             _(u"Pipe table  —  | C   | G   | Am  | F   |"),
             style=wx.RB_GROUP
         )
@@ -602,7 +614,7 @@ class PreferencesDialog(wx.Dialog):
         grpGrid.Add(self.gridModePipe, 0, wx.ALL, 4)
 
         self.gridModePlain = wx.RadioButton(
-            self.formatPanel, wx.ID_ANY,
+            _boxGrid, wx.ID_ANY,
             _(u"Plain spacing  —  C   G   Am  F")
         )
         self.gridModePlain.SetToolTip(
@@ -611,7 +623,7 @@ class PreferencesDialog(wx.Dialog):
         grpGrid.Add(self.gridModePlain, 0, wx.ALL, 4)
 
         self.gridModeTable = wx.RadioButton(
-            self.formatPanel, wx.ID_ANY,
+            _boxGrid, wx.ID_ANY,
             _(u"Table  —  cells with borders")
         )
         self.gridModeTable.SetToolTip(
@@ -623,12 +635,12 @@ class PreferencesDialog(wx.Dialog):
         # ── Etichetta predefinita ────────────────────────────────────
         szLbl = wx.BoxSizer(wx.HORIZONTAL)
         lblDefault = wx.StaticText(
-            self.formatPanel, wx.ID_ANY,
+            _boxGrid, wx.ID_ANY,
             _(u"Default label (used when {start_of_grid} has no label):")
         )
         szLbl.Add(lblDefault, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
         self.gridDefaultLabelCtrl = wx.TextCtrl(
-            self.formatPanel, wx.ID_ANY,
+            _boxGrid, wx.ID_ANY,
             value=_(u"Grid"),
             size=(160, -1)
         )
@@ -641,7 +653,7 @@ class PreferencesDialog(wx.Dialog):
         grpGrid.Add(szLbl, 0, wx.ALL, 5)
 
         self.gridSpaceAsPipeCB = wx.CheckBox(
-            self.formatPanel, wx.ID_ANY,
+            _boxGrid, wx.ID_ANY,
             _(u"Space bar inserts | separator (pipe mode)")
         )
         self.gridSpaceAsPipeCB.SetToolTip(
@@ -653,11 +665,11 @@ class PreferencesDialog(wx.Dialog):
 
         # ── Direzione di size=N ──────────────────────────────────────
         szSizeDir = wx.BoxSizer(wx.HORIZONTAL)
-        lblSizeDir = wx.StaticText(self.formatPanel, wx.ID_ANY,
+        lblSizeDir = wx.StaticText(_boxGrid, wx.ID_ANY,
             _(u"size=N affects:"))
         szSizeDir.Add(lblSizeDir, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
         self.gridSizeDirBoth = wx.RadioButton(
-            self.formatPanel, wx.ID_ANY,
+            _boxGrid, wx.ID_ANY,
             _(u"Width and height"),
             style=wx.RB_GROUP
         )
@@ -665,7 +677,7 @@ class PreferencesDialog(wx.Dialog):
             _(u"size=N multiplies both horizontal and vertical cell padding.")
         )
         self.gridSizeDirH = wx.RadioButton(
-            self.formatPanel, wx.ID_ANY,
+            _boxGrid, wx.ID_ANY,
             _(u"Width only")
         )
         self.gridSizeDirH.SetToolTip(
@@ -673,7 +685,7 @@ class PreferencesDialog(wx.Dialog):
               u"vertical padding stays at its base value.")
         )
         self.gridSizeDirV = wx.RadioButton(
-            self.formatPanel, wx.ID_ANY,
+            _boxGrid, wx.ID_ANY,
             _(u"Height only")
         )
         self.gridSizeDirV.SetToolTip(
@@ -692,9 +704,12 @@ class PreferencesDialog(wx.Dialog):
             wx.StaticBox(self.formatPanel, wx.ID_ANY, _(u"Musical symbol insertion")),
             wx.VERTICAL,
         )
+        # Controlli figli dello StaticBox (non del pannello): su wxGTK
+        # lo StaticBox fratello copre i controlli e ne blocca i tooltip.
+        _boxSymbol = grpSymbol.GetStaticBox()
         szSymbol = wx.BoxSizer(wx.HORIZONTAL)
         self.symbolScaleCB = wx.CheckBox(
-            self.formatPanel, wx.ID_ANY,
+            _boxSymbol, wx.ID_ANY,
             _(u"Custom size when inserting musical symbols (pt):"),
         )
         self.symbolScaleCB.SetToolTip(
@@ -702,7 +717,7 @@ class PreferencesDialog(wx.Dialog):
               u"{textsize:N}...{textsize:} to apply the chosen point size.")
         )
         self.symbolSizeSpin = wx.SpinCtrl(
-            self.formatPanel, wx.ID_ANY,
+            _boxSymbol, wx.ID_ANY,
             min=6, max=144, initial=24,
             style=wx.SP_ARROW_KEYS,
         )
@@ -715,7 +730,7 @@ class PreferencesDialog(wx.Dialog):
             lambda e: self.symbolSizeSpin.Enable(self.symbolScaleCB.GetValue()),
         )
         self.symbolInsertVerseCB = wx.CheckBox(
-            self.formatPanel, wx.ID_ANY,
+            _boxSymbol, wx.ID_ANY,
             _(u"Wrap symbol in a verse block (not counted)"),
         )
         self.symbolInsertVerseCB.SetToolTip(
@@ -729,10 +744,10 @@ class PreferencesDialog(wx.Dialog):
         # "Simboli musicali"). Valore 0-25 %, aggiornato in tempo reale.
         szValign = wx.BoxSizer(wx.HORIZONTAL)
         self.symbolValignLbl = wx.StaticText(
-            self.formatPanel, wx.ID_ANY, _(u"Symbol vertical drop (0-25%):")
+            _boxSymbol, wx.ID_ANY, _(u"Symbol vertical drop (0-25%):")
         )
         self.symbolValignSpin = wx.SpinCtrl(
-            self.formatPanel, wx.ID_ANY,
+            _boxSymbol, wx.ID_ANY,
             min=0, max=25, initial=5,
             style=wx.SP_ARROW_KEYS,
         )
@@ -752,11 +767,11 @@ class PreferencesDialog(wx.Dialog):
         # Su Windows/macOS il glifo è vettoriale e l'impostazione non ha effetto.
         szOversample = wx.BoxSizer(wx.HORIZONTAL)
         self.symbolOversampleLbl = wx.StaticText(
-            self.formatPanel, wx.ID_ANY,
+            _boxSymbol, wx.ID_ANY,
             _(u"SMP symbol quality \u2014 Linux only (1-4):")
         )
         self.symbolOversampleSpin = wx.SpinCtrl(
-            self.formatPanel, wx.ID_ANY,
+            _boxSymbol, wx.ID_ANY,
             min=1, max=4, initial=3,
             style=wx.SP_ARROW_KEYS,
         )
@@ -778,45 +793,48 @@ class PreferencesDialog(wx.Dialog):
             wx.StaticBox(self.formatPanel, wx.ID_ANY, _(u"Beat count ({beats_time})")),
             wx.VERTICAL
         )
+        # Controlli figli dello StaticBox (non del pannello): su wxGTK
+        # lo StaticBox fratello copre i controlli e ne blocca i tooltip.
+        _boxDuration = grpDuration.GetStaticBox()
 
         # Riga 1: colore
         bSizerDurColour = wx.BoxSizer(wx.HORIZONTAL)
-        lblDurColour = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Colour"), wx.DefaultPosition, wx.DefaultSize, 0)
+        lblDurColour = wx.StaticText(_boxDuration, wx.ID_ANY, _(u"Colour"), wx.DefaultPosition, wx.DefaultSize, 0)
         bSizerDurColour.Add(lblDurColour, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.durationBeatsHexCtrl = wx.TextCtrl(self.formatPanel, wx.ID_ANY, u"#6464C8", wx.DefaultPosition, wx.Size(80, -1), 0)
+        self.durationBeatsHexCtrl = wx.TextCtrl(_boxDuration, wx.ID_ANY, u"#6464C8", wx.DefaultPosition, wx.Size(80, -1), 0)
         bSizerDurColour.Add(self.durationBeatsHexCtrl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.durationBeatsColourBtn = wx.Button(self.formatPanel, wx.ID_ANY, _(u"Pick…"), wx.DefaultPosition, wx.Size(60, -1), 0)
+        self.durationBeatsColourBtn = wx.Button(_boxDuration, wx.ID_ANY, _(u"Pick…"), wx.DefaultPosition, wx.Size(60, -1), 0)
         bSizerDurColour.Add(self.durationBeatsColourBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.durationBeatsColourSwatch = wx.Panel(self.formatPanel, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
+        self.durationBeatsColourSwatch = wx.Panel(_boxDuration, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
         bSizerDurColour.Add(self.durationBeatsColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
         grpDuration.Add(bSizerDurColour, 0, wx.EXPAND | wx.ALL, 5)
 
         # Riga 2: dimensione font (% del font accordo)
         bSizerDurSize = wx.BoxSizer(wx.HORIZONTAL)
-        lblDurSize = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Font size (% of chord font)"), wx.DefaultPosition, wx.DefaultSize, 0)
+        lblDurSize = wx.StaticText(_boxDuration, wx.ID_ANY, _(u"Font size (% of chord font)"), wx.DefaultPosition, wx.DefaultSize, 0)
         bSizerDurSize.Add(lblDurSize, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        self.durationBeatsSizeSpin = wx.SpinCtrl(self.formatPanel, wx.ID_ANY, "60", wx.DefaultPosition, wx.Size(70 + _SPIN_EXTRA_WIDTH, -1), wx.SP_ARROW_KEYS, 30, 150, 60)
+        self.durationBeatsSizeSpin = wx.SpinCtrl(_boxDuration, wx.ID_ANY, "60", wx.DefaultPosition, wx.Size(70 + _SPIN_EXTRA_WIDTH, -1), wx.SP_ARROW_KEYS, 30, 150, 60)
         self.durationBeatsSizeSpin.SetToolTip(_(u"Size of the beat-count number as a percentage of the chord font size (default: 60%)"))
         bSizerDurSize.Add(self.durationBeatsSizeSpin, 0, wx.ALIGN_CENTER_VERTICAL)
         grpDuration.Add(bSizerDurSize, 0, wx.EXPAND | wx.ALL, 5)
 
         # Riga 3: grassetto
-        self.durationBeatsBoldCB = wx.CheckBox(self.formatPanel, wx.ID_ANY, _(u"Bold"))
+        self.durationBeatsBoldCB = wx.CheckBox(_boxDuration, wx.ID_ANY, _(u"Bold"))
         self.durationBeatsBoldCB.SetToolTip(_(u"Draw the beat-count number in bold"))
         grpDuration.Add(self.durationBeatsBoldCB, 0, wx.ALL, 5)
 
         # Riga 4: allineamento (sinistra / centro / destra)
         bSizerDurAlign = wx.BoxSizer(wx.HORIZONTAL)
-        lblDurAlign = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Position"), wx.DefaultPosition, wx.DefaultSize, 0)
+        lblDurAlign = wx.StaticText(_boxDuration, wx.ID_ANY, _(u"Position"), wx.DefaultPosition, wx.DefaultSize, 0)
         bSizerDurAlign.Add(lblDurAlign, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         self.durationBeatsAlignLeft = wx.RadioButton(
-            self.formatPanel, wx.ID_ANY, _(u"Left"), style=wx.RB_GROUP)
+            _boxDuration, wx.ID_ANY, _(u"Left"), style=wx.RB_GROUP)
         self.durationBeatsAlignLeft.SetToolTip(_(u"Show beat count to the left of the chord name"))
         self.durationBeatsAlignCenter = wx.RadioButton(
-            self.formatPanel, wx.ID_ANY, _(u"Center"))
+            _boxDuration, wx.ID_ANY, _(u"Center"))
         self.durationBeatsAlignCenter.SetToolTip(_(u"Show beat count centered above the chord name"))
         self.durationBeatsAlignRight = wx.RadioButton(
-            self.formatPanel, wx.ID_ANY, _(u"Right"))
+            _boxDuration, wx.ID_ANY, _(u"Right"))
         self.durationBeatsAlignRight.SetToolTip(_(u"Show beat count to the right of the chord name"))
         bSizerDurAlign.Add(self.durationBeatsAlignLeft,   0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
         bSizerDurAlign.Add(self.durationBeatsAlignCenter, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
@@ -825,16 +843,16 @@ class PreferencesDialog(wx.Dialog):
 
         # Riga 5: modalità visualizzazione (numero / puntini / entrambi)
         bSizerDurMode = wx.BoxSizer(wx.HORIZONTAL)
-        lblDurMode = wx.StaticText(self.formatPanel, wx.ID_ANY, _(u"Display mode"), wx.DefaultPosition, wx.DefaultSize, 0)
+        lblDurMode = wx.StaticText(_boxDuration, wx.ID_ANY, _(u"Display mode"), wx.DefaultPosition, wx.DefaultSize, 0)
         bSizerDurMode.Add(lblDurMode, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         self.durationModeNumber = wx.RadioButton(
-            self.formatPanel, wx.ID_ANY, _(u"Number"), style=wx.RB_GROUP)
+            _boxDuration, wx.ID_ANY, _(u"Number"), style=wx.RB_GROUP)
         self.durationModeNumber.SetToolTip(_(u"Show beat count as a number above the chord"))
         self.durationModeDots   = wx.RadioButton(
-            self.formatPanel, wx.ID_ANY, _(u"Dots"))
+            _boxDuration, wx.ID_ANY, _(u"Dots"))
         self.durationModeDots.SetToolTip(_(u"Show beat count as dots between chords"))
         self.durationModeBoth   = wx.RadioButton(
-            self.formatPanel, wx.ID_ANY, _(u"Both"))
+            _boxDuration, wx.ID_ANY, _(u"Both"))
         self.durationModeBoth.SetToolTip(_(u"Show both number and dots"))
         bSizerDurMode.Add(self.durationModeNumber, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
         bSizerDurMode.Add(self.durationModeDots,   0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
