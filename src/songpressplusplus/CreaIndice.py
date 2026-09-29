@@ -89,6 +89,32 @@ def _save_open_after(value):
 # last-used watermark settings are restored on the next launch.
 _WM_DEFAULTS = {u"wm_opacity": 15, u"wm_angle": 45, u"wm_size": 60}
 
+# Above this opacity (%) the watermark can make the index text hard to read,
+# so the dialog shows a warning next to the opacity field. The value is NOT
+# clamped: the user may still choose a higher one.
+_WM_OPACITY_WARN = 50
+
+
+def _set_tip(win, text):
+    """Set a tooltip that also works on wxGTK (Linux).
+
+    Composite controls (file picker, spin control) are made of a native
+    child widget that receives the mouse hover on GTK, so the tip is set on
+    the control and on its inner parts. Controls must also be children of
+    their wx.StaticBox (as done in PreferencesDialog), otherwise the box
+    covers them and swallows the hover events."""
+    win.SetToolTip(text)
+    for getter in (u"GetTextCtrl", u"GetPickerCtrl"):
+        fn = getattr(win, getter, None)
+        if fn is None:
+            continue
+        try:
+            child = fn()
+        except Exception:  # noqa: BLE001
+            child = None
+        if child:
+            child.SetToolTip(text)
+
 
 def _load_wm_value(key):
     """Return the stored watermark spin value for `key`, or its default."""
@@ -681,6 +707,12 @@ class IndexPanel(wx.Panel):
             label=_(u"Exclude files with a \u201cwatermark\u201d directive"))
         self.excludeWmCb.SetValue(False)
         box_dir.Add(self.excludeWmCb, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 4)
+        _set_tip(self.dirPicker, _(u"Folder that contains the song files."))
+        _set_tip(self.recursiveCb,
+                 _(u"Also scan the subfolders of the main folder."))
+        _set_tip(self.excludeWmCb,
+                 _(u"Leave out the songs that contain a {watermark} directive "
+                   u"(draft or stamped copies)."))
         outer.Add(box_dir, 0, wx.EXPAND | wx.ALL, 8)
 
         # --- extension (radio buttons, with per-extension file counts) ---
@@ -719,6 +751,15 @@ class IndexPanel(wx.Panel):
 
         for rb, _kind, _val, _base in self.extButtons:
             rb.Bind(wx.EVT_RADIOBUTTON, self._on_ext_changed)
+            if _kind == 'ext':
+                _set_tip(rb, _(u"Use the files with this extension. "
+                               u"The number in brackets is how many were found."))
+            elif _kind == 'all':
+                _set_tip(rb, _(u"Use every text file in the folder "
+                               u"(images, PDF and Word files are skipped)."))
+            else:
+                _set_tip(rb, _(u"Type a different extension in the field on the right."))
+        _set_tip(self.customExt, _(u"Custom extension, e.g. .txt or txt."))
         # preselect the radio matching the app-wide default extension
         # (Options -> "Default file extension"); '.cho' if nothing matches
         self._preselect_extension(self._default_ext)
@@ -744,6 +785,9 @@ class IndexPanel(wx.Panel):
             wildcard=_wm_wildcard(),
             style=wx.FLP_USE_TEXTCTRL | wx.FLP_OPEN | wx.FLP_FILE_MUST_EXIST)
         wrow.Add(self.wmPicker, 1, wx.EXPAND | wx.RIGHT, 6)
+        _set_tip(self.wmPicker,
+                 _(u"Image drawn behind the text on every page. Leave empty "
+                   u"for no watermark."))
         box_wm.Add(wrow, 0, wx.EXPAND | wx.ALL, 4)
 
         orow = wx.BoxSizer(wx.HORIZONTAL)
@@ -768,6 +812,19 @@ class IndexPanel(wx.Panel):
         orow.Add(self.sizeSpin, 0, wx.RIGHT, 6)
         box_wm.Add(orow, 0, wx.ALL, 4)
 
+        # tooltips on labels and fields (labels too: on GTK the hover is
+        # received by whichever widget is under the mouse)
+        tip_opacity = _(u"How opaque the image is (0-100). Above %d%% the text "
+                        u"may become hard to read.") % _WM_OPACITY_WARN
+        tip_angle = _(u"Rotation of the image in degrees (-180 to 180).")
+        tip_size = _(u"Width of the image as a percentage of the page width.")
+        for _w in (self.opacityLabel, self.opacitySpin):
+            _set_tip(_w, tip_opacity)
+        for _w in (self.angleLabel, self.angleSpin):
+            _set_tip(_w, tip_angle)
+        for _w in (self.sizeLabel, self.sizeSpin):
+            _set_tip(_w, tip_size)
+
         # colour vs black-and-white rendering of the watermark image
         crow = wx.BoxSizer(wx.HORIZONTAL)
         self.wmRenderLabel = wx.StaticText(sb, label=_(u"Rendering:"))
@@ -779,6 +836,21 @@ class IndexPanel(wx.Panel):
         crow.Add(self.wmColorRb, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 12)
         crow.Add(self.wmGrayRb, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
         box_wm.Add(crow, 0, wx.ALL, 4)
+        _set_tip(self.wmColorRb, _(u"Keep the original colours of the image."))
+        _set_tip(self.wmGrayRb,
+                 _(u"Convert the image to grey tones: less distracting behind "
+                   u"the text."))
+
+        # inline warning shown when the opacity is above _WM_OPACITY_WARN.
+        # The label always keeps its height (text is just cleared) so the
+        # dialog does not jump or clip when the warning appears.
+        # Starts empty (zero width, so it never widens the dialog) with room
+        # for 2 lines: the text wraps instead of being clipped.
+        self.opacityWarn = wx.StaticText(sb, label=u"")
+        self.opacityWarn.SetForegroundColour(wx.Colour(192, 57, 43))
+        self.opacityWarn.SetMinSize((-1, self.opacityWarn.GetCharHeight() * 2))
+        box_wm.Add(self.opacityWarn, 0,
+                   wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
         # restore the last-used choice
         if _config().ReadBool(u"wm_grayscale", False):
             self.wmGrayRb.SetValue(True)
@@ -828,6 +900,11 @@ class IndexPanel(wx.Panel):
         self.pdfBtn = wx.Button(self, label=_(u"Generate PDF"))
         self.pdfBtn.Bind(wx.EVT_BUTTON, self.on_generate_pdf)
         btnRow.Add(self.pdfBtn, 0)
+        _set_tip(self.headingCtrl, _(u"Heading printed at the top of the index."))
+        _set_tip(self.openAfterCb,
+                 _(u"Open the generated file with the default application."))
+        _set_tip(self.docxBtn, _(u"Create the index as a Word document."))
+        _set_tip(self.pdfBtn, _(u"Create the index as a PDF file."))
         outer.Add(btnRow, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
         self.status = wx.StaticText(self, label="")
@@ -861,6 +938,21 @@ class IndexPanel(wx.Panel):
                    self.sizeLabel, self.sizeSpin,
                    self.wmRenderLabel, self.wmColorRb, self.wmGrayRb):
             _w.Enable(has_path)
+        self._update_opacity_warning()
+
+    def _update_opacity_warning(self):
+        """Show a warning when a watermark is selected and its opacity is
+        above _WM_OPACITY_WARN (the text could become hard to read)."""
+        has_path = bool(self.wmPicker.GetPath().strip())
+        if has_path and self.opacitySpin.GetValue() > _WM_OPACITY_WARN:
+            self.opacityWarn.SetLabel(
+                _(u"Warning: with opacity above %d%% the text may be hard "
+                  u"to read.") % _WM_OPACITY_WARN)
+            # SetLabel resets wrapping: wrap to the box width every time
+            w = self.opacityWarn.GetParent().GetClientSize().width - 30
+            self.opacityWarn.Wrap(max(120, w))
+        else:
+            self.opacityWarn.SetLabel(u"")
 
     def _save_wm_values(self, _evt=None):
         """Persist the three watermark spin values (opacity/angle/size) so they
@@ -872,6 +964,9 @@ class IndexPanel(wx.Panel):
         cfg.WriteInt(u"wm_size", self.sizeSpin.GetValue())
         cfg.WriteBool(u"wm_grayscale", self.wmGrayRb.GetValue())
         cfg.Flush()
+        self._update_opacity_warning()
+        if _evt is not None:
+            _evt.Skip()
 
     def _preselect_extension(self, ext):
         """Select the radio button matching `ext` (the app-wide default from

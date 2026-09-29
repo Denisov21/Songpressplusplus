@@ -26,6 +26,29 @@ import wx
 _ = wx.GetTranslation
 
 
+# Sopra questa opacita' (%) la filigrana puo' rendere il testo difficile da
+# leggere: il dialogo mostra un avviso. Il valore NON viene limitato.
+OPACITY_WARN = 50
+
+
+def _set_tip(win, text):
+    """Tooltip compatibile anche con wxGTK (Linux).
+
+    Sui controlli compositi (selettore colore, spin) il mouse e' ricevuto dal
+    widget nativo interno, quindi il tip va impostato anche sulle parti."""
+    win.SetToolTip(text)
+    for getter in ("GetTextCtrl", "GetPickerCtrl"):
+        fn = getattr(win, getter, None)
+        if fn is None:
+            continue
+        try:
+            child = fn()
+        except Exception:
+            child = None
+        if child:
+            child.SetToolTip(text)
+
+
 # Valori di default (usati anche da SongpressFrame per inizializzare le pref)
 DEFAULTS = {
     'enabled':    False,
@@ -179,46 +202,85 @@ class WatermarkDialog(wx.Dialog):
         grid.AddGrowableCol(1, 1)
 
         # Testo
-        grid.Add(wx.StaticText(self, label=_("Text:")),
-                 0, wx.ALIGN_CENTER_VERTICAL)
+        self.lblText = wx.StaticText(self, label=_("Text:"))
+        grid.Add(self.lblText, 0, wx.ALIGN_CENTER_VERTICAL)
         self.txtText = wx.TextCtrl(self, value=str(self._cfg['text']),
                                    size=(220, -1))
         grid.Add(self.txtText, 1, wx.EXPAND)
 
         # Opacita'
-        grid.Add(wx.StaticText(self, label=_("Opacity (%):")),
-                 0, wx.ALIGN_CENTER_VERTICAL)
+        self.lblOpacity = wx.StaticText(self, label=_("Opacity (%):"))
+        grid.Add(self.lblOpacity, 0, wx.ALIGN_CENTER_VERTICAL)
         self.spinOpacity = wx.SpinCtrl(self, min=2, max=100,
                                        initial=int(self._cfg['opacity']))
         grid.Add(self.spinOpacity, 0)
 
         # Angolo
-        grid.Add(wx.StaticText(self, label=_("Angle (\u00b0):")),
-                 0, wx.ALIGN_CENTER_VERTICAL)
+        self.lblAngle = wx.StaticText(self, label=_("Angle (\u00b0):"))
+        grid.Add(self.lblAngle, 0, wx.ALIGN_CENTER_VERTICAL)
         self.spinAngle = wx.SpinCtrl(self, min=-90, max=90,
                                      initial=int(self._cfg['angle']))
         grid.Add(self.spinAngle, 0)
 
         # Dimensione
-        grid.Add(wx.StaticText(self, label=_("Size (%):")),
-                 0, wx.ALIGN_CENTER_VERTICAL)
+        self.lblSize = wx.StaticText(self, label=_("Size (%):"))
+        grid.Add(self.lblSize, 0, wx.ALIGN_CENTER_VERTICAL)
         self.spinSize = wx.SpinCtrl(self, min=20, max=300,
                                     initial=int(self._cfg['sizePct']))
         grid.Add(self.spinSize, 0)
 
         # Colore
-        grid.Add(wx.StaticText(self, label=_("Colour:")),
-                 0, wx.ALIGN_CENTER_VERTICAL)
+        self.lblColour = wx.StaticText(self, label=_("Colour:"))
+        grid.Add(self.lblColour, 0, wx.ALIGN_CENTER_VERTICAL)
         self.colourPicker = wx.ColourPickerCtrl(
             self, colour=wx.Colour(self._cfg['colourHex']))
         grid.Add(self.colourPicker, 0)
 
         main.Add(grid, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, pad)
 
+        # Avviso: opacita' alta = testo del brano difficile da leggere.
+        # L'altezza viene riservata (la label e' solo svuotata), cosi' il
+        # dialogo non cambia dimensione quando l'avviso compare.
+        self._warnText = _("Warning: with opacity above %d%% the song text "
+                           "may be hard to read.") % OPACITY_WARN
+        # Parte vuota (larghezza 0, cosi' non allarga il dialogo) con altezza
+        # minima di 3 righe: il testo va a capo e non viene mai tagliato.
+        self.lblWarn = wx.StaticText(self, label="")
+        self.lblWarn.SetForegroundColour(wx.Colour(192, 57, 43))
+        self.lblWarn.SetMinSize((-1, self.lblWarn.GetCharHeight() * 3))
+        main.Add(self.lblWarn, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, pad)
+        self._wrapW = 300     # rifinito dopo SetSizerAndFit
+
         # Mosaico
         self.chkTile = wx.CheckBox(self, label=_("Tile (repeat over the page)"))
         self.chkTile.SetValue(bool(self._cfg['tile']))
         main.Add(self.chkTile, 0, wx.ALL, pad)
+
+        # Tooltip (anche sulle etichette: su GTK il mouse e' ricevuto dal
+        # widget sotto il cursore)
+        _set_tip(self.chkEnabled, _("Turn the watermark on or off for this song."))
+        _set_tip(self.chkPreview,
+                 _("Also show the watermark in the Songpress++ preview. "
+                   "Print and export always include it."))
+        tip_text = _("Text of the watermark, e.g. DRAFT.")
+        tip_opacity = _("Intensity of the watermark (2-100). Above %d%% "
+                        "the song text may be hard to read.") % OPACITY_WARN
+        tip_angle = _("Rotation of the text in degrees (-90 to 90).")
+        tip_size = _("Size of the text, as a percentage (20-300).")
+        tip_colour = _("Colour of the watermark text.")
+        for w in (self.lblText, self.txtText):
+            _set_tip(w, tip_text)
+        for w in (self.lblOpacity, self.spinOpacity):
+            _set_tip(w, tip_opacity)
+        for w in (self.lblAngle, self.spinAngle):
+            _set_tip(w, tip_angle)
+        for w in (self.lblSize, self.spinSize):
+            _set_tip(w, tip_size)
+        for w in (self.lblColour, self.colourPicker):
+            _set_tip(w, tip_colour)
+        _set_tip(self.chkTile,
+                 _("Repeat the watermark over the whole page instead of "
+                   "a single centred one."))
 
         # Nota
         note = wx.StaticText(
@@ -235,15 +297,36 @@ class WatermarkDialog(wx.Dialog):
         main.Add(btns, 0, wx.EXPAND | wx.ALL, pad)
 
         self.SetSizerAndFit(main)
+        # larghezza utile per andare a capo, ricavata dal dialogo gia' dimensionato
+        self._wrapW = max(120, self.GetClientSize().width - 2 * pad)
 
         self.chkEnabled.Bind(wx.EVT_CHECKBOX, self._on_toggle)
+        self.spinOpacity.Bind(wx.EVT_SPINCTRL, self._on_opacity)
+        self.spinOpacity.Bind(wx.EVT_TEXT, self._on_opacity)
         self._on_toggle(None)
+
+    def _on_opacity(self, evt):
+        self._update_warning()
+        if evt is not None:
+            evt.Skip()
+
+    def _update_warning(self):
+        """Mostra l'avviso se la filigrana e' abilitata e l'opacita' supera
+        OPACITY_WARN; altrimenti svuota la label (l'altezza resta riservata)."""
+        if (self.chkEnabled.GetValue()
+                and self.spinOpacity.GetValue() > OPACITY_WARN):
+            # SetLabel azzera il wrap: va richiamato Wrap() dopo ogni cambio
+            self.lblWarn.SetLabel(self._warnText)
+            self.lblWarn.Wrap(self._wrapW)
+        else:
+            self.lblWarn.SetLabel("")
 
     def _on_toggle(self, evt):
         on = self.chkEnabled.GetValue()
         for w in (self.chkPreview, self.txtText, self.spinOpacity, self.spinAngle,
                   self.spinSize, self.colourPicker, self.chkTile):
             w.Enable(on)
+        self._update_warning()
 
     def GetConfig(self):
         col = self.colourPicker.GetColour()

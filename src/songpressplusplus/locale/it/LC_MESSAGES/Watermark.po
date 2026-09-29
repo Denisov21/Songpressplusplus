@@ -64,3 +64,41 @@ msgstr ""
 "esportati (PNG, SVG, EMF, EPS, PDF). Attiva «Mostra\n"
 "nell'Anteprima Songpress++» per vederla anche nell'editor.\n"
 "È disegnata dietro al brano, quindi non copre mai il testo."
+
+#: src/songpress/Watermark.py
+#, python-format
+msgid "Warning: with opacity above %d%% the song text may be hard to read."
+msgstr "Attenzione: con un'opacità superiore al %d%% il testo del brano potrebbe essere difficile da leggere."
+
+#: src/songpress/Watermark.py
+msgid "Turn the watermark on or off for this song."
+msgstr "Attiva o disattiva la filigrana per questo brano."
+
+#: src/songpress/Watermark.py
+msgid "Also show the watermark in the Songpress++ preview. Print and export always include it."
+msgstr "Mostra la filigrana anche nell'anteprima di Songpress++. Stampa ed esportazione la includono sempre."
+
+#: src/songpress/Watermark.py
+msgid "Text of the watermark, e.g. DRAFT."
+msgstr "Testo della filigrana, ad es. DRAFT."
+
+#: src/songpress/Watermark.py
+#, python-format
+msgid "Intensity of the watermark (2-100). Above %d%% the song text may be hard to read."
+msgstr "Intensità della filigrana (2-100). Oltre il %d%% il testo del brano potrebbe essere difficile da leggere."
+
+#: src/songpress/Watermark.py
+msgid "Rotation of the text in degrees (-90 to 90)."
+msgstr "Rotazione del testo in gradi (da -90 a 90)."
+
+#: src/songpress/Watermark.py
+msgid "Size of the text, as a percentage (20-300)."
+msgstr "Dimensione del testo, in percentuale (20-300)."
+
+#: src/songpress/Watermark.py
+msgid "Colour of the watermark text."
+msgstr "Colore del testo della filigrana."
+
+#: src/songpress/Watermark.py
+msgid "Repeat the watermark over the whole page instead of a single centred one."
+msgstr "Ripete la filigrana su tutta la pagina invece di una sola al centro."

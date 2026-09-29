@@ -239,3 +239,95 @@ msgstr ""
 "%s\n"
 "\n"
 "Formati supportati: %s"
+
+#: CreaIndice.py
+#, python-format
+msgid "Warning: with opacity above %d%% the text may be hard to read."
+msgstr "Attenzione: con un'opacità superiore al %d%% il testo potrebbe essere difficile da leggere."
+
+#: CreaIndice.py
+msgid "Folder that contains the song files."
+msgstr "Cartella che contiene i file dei brani."
+
+#: CreaIndice.py
+msgid "Also scan the subfolders of the main folder."
+msgstr "Cerca anche nelle sottocartelle della cartella principale."
+
+#: CreaIndice.py
+msgid ""
+"Leave out the songs that contain a {watermark} directive (draft or stamped "
+"copies)."
+msgstr ""
+"Escludi i brani che contengono una direttiva {watermark} (copie di bozza o "
+"timbrate)."
+
+#: CreaIndice.py
+msgid ""
+"Use the files with this extension. The number in brackets is how many were "
+"found."
+msgstr ""
+"Usa i file con questa estensione. Il numero tra parentesi indica quanti ne "
+"sono stati trovati."
+
+#: CreaIndice.py
+msgid ""
+"Use every text file in the folder (images, PDF and Word files are skipped)."
+msgstr ""
+"Usa tutti i file di testo nella cartella (immagini, PDF e file Word vengono "
+"ignorati)."
+
+#: CreaIndice.py
+msgid "Type a different extension in the field on the right."
+msgstr "Scrivi un'estensione diversa nel campo a destra."
+
+#: CreaIndice.py
+msgid "Custom extension, e.g. .txt or txt."
+msgstr "Estensione personalizzata, ad es. .txt oppure txt."
+
+#: CreaIndice.py
+msgid ""
+"Image drawn behind the text on every page. Leave empty for no watermark."
+msgstr ""
+"Immagine disegnata dietro al testo in ogni pagina. Lascia vuoto per non "
+"usare nessuna immagine."
+
+#: CreaIndice.py
+#, python-format
+msgid ""
+"How opaque the image is (0-100). Above %d%% the text may become hard to read."
+msgstr ""
+"Quanto è opaca l'immagine (0-100). Oltre il %d%% il testo potrebbe diventare "
+"difficile da leggere."
+
+#: CreaIndice.py
+msgid "Rotation of the image in degrees (-180 to 180)."
+msgstr "Rotazione dell'immagine in gradi (da -180 a 180)."
+
+#: CreaIndice.py
+msgid "Width of the image as a percentage of the page width."
+msgstr "Larghezza dell'immagine in percentuale della larghezza della pagina."
+
+#: CreaIndice.py
+msgid "Keep the original colours of the image."
+msgstr "Mantieni i colori originali dell'immagine."
+
+#: CreaIndice.py
+msgid "Convert the image to grey tones: less distracting behind the text."
+msgstr ""
+"Converti l'immagine in toni di grigio: distrae meno dietro al testo."
+
+#: CreaIndice.py
+msgid "Heading printed at the top of the index."
+msgstr "Titolo stampato in cima all'indice."
+
+#: CreaIndice.py
+msgid "Open the generated file with the default application."
+msgstr "Apri il file generato con l'applicazione predefinita."
+
+#: CreaIndice.py
+msgid "Create the index as a Word document."
+msgstr "Crea l'indice come documento Word."
+
+#: CreaIndice.py
+msgid "Create the index as a PDF file."
+msgstr "Crea l'indice come file PDF."
