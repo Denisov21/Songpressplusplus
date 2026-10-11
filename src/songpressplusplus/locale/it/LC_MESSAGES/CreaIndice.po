@@ -331,3 +331,26 @@ msgstr "Crea l'indice come documento Word."
 #: CreaIndice.py
 msgid "Create the index as a PDF file."
 msgstr "Crea l'indice come file PDF."
+
+#: CreaIndice.py
+msgid "Add a note at the end of the index about excluded songs"
+msgstr "Aggiungi in fondo all'indice una nota sui brani esclusi"
+
+#: CreaIndice.py
+msgid "Songs with a watermark have been excluded from this index."
+msgstr "I brani con filigrana sono stati esclusi da questo indice."
+
+#: CreaIndice.py
+#, python-format
+msgid "Prints “%s” at the end of the index."
+msgstr "Stampa «%s» in fondo all'indice."
+
+#: CreaIndice.py
+msgid ""
+"Print a note with an info icon at the end of the index, saying that songs "
+"with a watermark were excluded. Available only when the exclusion option is "
+"on."
+msgstr ""
+"Stampa in fondo all'indice una nota con l'icona info, che indica che i brani "
+"con filigrana sono stati esclusi. Disponibile solo quando l'opzione di "
+"esclusione è attiva."

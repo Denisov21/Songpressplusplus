@@ -146,6 +146,21 @@ def _load_default_extension():
     return ext or u"crd"
 
 
+def _info_icon_path():
+    """Return the path of img/info.png (next to this module), or None if it
+    is missing. Used for the note printed at the end of the index and for the
+    small icon beside its checkbox; callers degrade gracefully without it."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        u"img", u"info.png")
+    return path if os.path.isfile(path) else None
+
+
+def _exclusion_note():
+    """Text of the note added at the end of the index when watermarked songs
+    were excluded."""
+    return _(u"Songs with a watermark have been excluded from this index.")
+
+
 def _open_file(path):
     """Open `path` with the operating system's default application.
 
@@ -243,9 +258,27 @@ def file_contains_watermark(path):
     files are treated as *not* containing it, so they are kept.
     """
     try:
-        return bool(_WATERMARK_RE.search(_read_text(path)))
+        st = os.stat(path)
+        sig = (st.st_mtime_ns, st.st_size)
+        hit = _WM_CACHE.get(path)
+        if hit is not None and hit[0] == sig:
+            return hit[1]  # unchanged since the last scan: no need to reread
+        # Raw bytes + a bytes regex: the directive is plain ASCII, so there is
+        # no need to try several text decodings just to look for it.
+        with open(path, 'rb') as f:
+            found = bool(_WATERMARK_BYTES_RE.search(f.read()))
+        _WM_CACHE[path] = (sig, found)
+        return found
     except OSError:
         return False
+
+
+# path -> ((mtime_ns, size), has_watermark). Toggling the "exclude watermark"
+# option, changing extension or generating the index reuse the result of the
+# first scan instead of reading every file again; a file that is modified on
+# disk is detected through its mtime/size and rechecked.
+_WM_CACHE = {}
+_WATERMARK_BYTES_RE = re.compile(rb'\{\s*watermark', re.IGNORECASE)
 
 
 def extract_song_info(path):
@@ -333,12 +366,26 @@ def count_by_extension(folder, recursive=True, exclude_watermark=False):
     """
     counts = {}
     total = 0
-    for root, name in _walk_files(folder, recursive):
+    entries = list(_walk_files(folder, recursive))
+
+    # the watermark keyword only makes sense in text files, so binaries are
+    # never read (and are excluded from `total` anyway). The files are checked
+    # in parallel: the work is disk I/O, so several threads overlap the waits.
+    has_wm = {}
+    if exclude_watermark:
+        todo = [os.path.join(r, n) for r, n in entries
+                if not n.lower().endswith(_BINARY_EXTS)]
+        if len(todo) > 16:
+            from concurrent.futures import ThreadPoolExecutor
+            with ThreadPoolExecutor(max_workers=8) as pool:
+                has_wm = dict(zip(todo, pool.map(file_contains_watermark, todo)))
+        else:
+            has_wm = {p: file_contains_watermark(p) for p in todo}
+
+    for root, name in entries:
         is_binary = name.lower().endswith(_BINARY_EXTS)
-        # the watermark keyword only makes sense in text files, so binaries
-        # are never read (and are excluded from `total` anyway)
         if exclude_watermark and not is_binary \
-                and file_contains_watermark(os.path.join(root, name)):
+                and has_wm.get(os.path.join(root, name)):
             continue
         ext = os.path.splitext(name)[1].lower()
         counts[ext] = counts.get(ext, 0) + 1
@@ -398,11 +445,13 @@ def _make_watermark(path, opacity, angle, grayscale=False):
 #  PDF GENERATION
 # ---------------------------------------------------------------------------
 
-def build_index_pdf(songs, out_path, heading=None, watermark=None):
+def build_index_pdf(songs, out_path, heading=None, watermark=None, note=None):
     """Create the two-column (number | title) PDF at `out_path`.
 
     `watermark`, if given, is a dict {'path', 'opacity', 'angle', 'size'}; the
-    image is drawn behind the text on every page. Returns (total, with_number).
+    image is drawn behind the text on every page. `note`, if given, is a text
+    added at the end of the index, preceded by the img/info.png icon.
+    Returns (total, with_number).
     Raises RuntimeError if reportlab is not installed.
     """
     if heading is None:
@@ -490,6 +539,29 @@ def build_index_pdf(songs, out_path, heading=None, watermark=None):
 
     story = [Paragraph(_escape(heading), title_style), table,
              Spacer(1, 6 * mm)]
+
+    if note:
+        # icon + text on one row, kept together so it never splits
+        note_style = ParagraphStyle('IdxNote', parent=styles['Normal'],
+                                    fontName='Helvetica-Oblique', fontSize=9,
+                                    leading=12, textColor=colors.HexColor('#404040'))
+        icon = _info_icon_path()
+        cells = []
+        widths = []
+        if icon:
+            from reportlab.platypus import Image as RLImage
+            cells.append(RLImage(icon, width=5 * mm, height=5 * mm))
+            widths.append(8 * mm)
+        cells.append(Paragraph(_escape(note), note_style))
+        widths.append((170 - sum(w / mm for w in widths)) * mm)
+        note_tbl = Table([cells], colWidths=widths, hAlign='LEFT')
+        note_tbl.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 2),
+        ]))
+        story.append(note_tbl)
+
     doc.build(story, onFirstPage=_draw_watermark, onLaterPages=_draw_watermark)
     return len(songs), n_with_number
 
@@ -587,11 +659,13 @@ def _docx_add_bg_watermark(doc, pil_img, orig_w, size_pct):
     (effect if effect is not None else extent).addnext(wrap)
 
 
-def build_index_docx(songs, out_path, heading=None, watermark=None):
+def build_index_docx(songs, out_path, heading=None, watermark=None, note=None):
     """Create the two-column (number | title) Word document at `out_path`.
 
     `watermark`, if given, is a dict {'path', 'opacity', 'angle', 'size'}; the
-    image is placed behind the text on every page. Returns (total, with_number).
+    image is placed behind the text on every page. `note`, if given, is a text
+    added at the end of the document, preceded by the img/info.png icon.
+    Returns (total, with_number).
     Raises RuntimeError if python-docx is not installed.
     """
     if heading is None:
@@ -645,6 +719,18 @@ def build_index_docx(songs, out_path, heading=None, watermark=None):
         _docx_cell(row[0], num, width_mm=col_num_mm, bold=True, fill=fill,
                    align=WD_ALIGN_PARAGRAPH.CENTER)
         _docx_cell(row[1], s['title'], width_mm=col_title_mm, fill=fill)
+
+    if note:
+        np_ = doc.add_paragraph()
+        np_.paragraph_format.space_before = Pt(10)
+        icon = _info_icon_path()
+        if icon:
+            np_.add_run().add_picture(icon, width=Mm(5), height=Mm(5))
+            np_.add_run(u"  ")
+        nr = np_.add_run(note)
+        nr.italic = True
+        nr.font.size = Pt(9)
+        nr.font.color.rgb = RGBColor(0x40, 0x40, 0x40)
 
     if watermark and watermark.get('path'):
         wm_img, wm_ow, _oh = _make_watermark(
@@ -707,6 +793,36 @@ class IndexPanel(wx.Panel):
             label=_(u"Exclude files with a \u201cwatermark\u201d directive"))
         self.excludeWmCb.SetValue(False)
         box_dir.Add(self.excludeWmCb, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 4)
+
+        # optional note at the end of the index (info icon + checkbox). It is
+        # only meaningful, and so only enabled, while the filter above is on.
+        noteRow = wx.BoxSizer(wx.HORIZONTAL)
+        self.noteWmCb = wx.CheckBox(
+            box_dir.GetStaticBox(),
+            label=_(u"Add a note at the end of the index about excluded songs"))
+        self.noteWmCb.SetValue(_config().ReadBool(u"wm_note", False))
+        noteRow.Add(self.noteWmCb, 0, wx.ALIGN_CENTER_VERTICAL)
+        icon_path = _info_icon_path()
+        if icon_path:
+            bmp = wx.Bitmap(icon_path, wx.BITMAP_TYPE_PNG)
+            if bmp.IsOk():
+                # scale to a small, consistent size next to the checkbox
+                img = bmp.ConvertToImage().Scale(16, 16, wx.IMAGE_QUALITY_HIGH)
+                self.noteIcon = wx.StaticBitmap(box_dir.GetStaticBox(),
+                                                bitmap=wx.Bitmap(img))
+                noteRow.Add(self.noteIcon, 0,
+                            wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
+                _set_tip(self.noteIcon, _(u"Prints \u201c%s\u201d at the end of "
+                                          u"the index.") % _exclusion_note())
+        box_dir.Add(noteRow, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 4)
+        _set_tip(self.noteWmCb,
+                 _(u"Print a note with an info icon at the end of the index, "
+                   u"saying that songs with a watermark were excluded. "
+                   u"Available only when the exclusion option is on."))
+        self.noteWmCb.Bind(wx.EVT_CHECKBOX, self._on_note_changed)
+        # (excludeWmCb's own handler is bound further down, together with the
+        # file-count refresh, so the two do not replace each other)
+        self._update_note_enabled()
         _set_tip(self.dirPicker, _(u"Folder that contains the song files."))
         _set_tip(self.recursiveCb,
                  _(u"Also scan the subfolders of the main folder."))
@@ -769,7 +885,7 @@ class IndexPanel(wx.Panel):
         self.dirPicker.Bind(wx.EVT_DIRPICKER_CHANGED, self._update_counts)
         self.recursiveCb.Bind(wx.EVT_CHECKBOX, self._update_counts)
         # the watermark filter changes which files are counted, too
-        self.excludeWmCb.Bind(wx.EVT_CHECKBOX, self._update_counts)
+        self.excludeWmCb.Bind(wx.EVT_CHECKBOX, self._on_exclude_changed)
 
         outer.Add(box_ext, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
@@ -924,6 +1040,27 @@ class IndexPanel(wx.Panel):
     def _on_ext_changed(self, _evt):
         self.customExt.Enable(self.extButtons[-1][0].GetValue())  # "Other…"
         self._update_other_count()
+
+    def _on_exclude_changed(self, _evt):
+        """The exclusion filter changed: refresh the counts and the state of
+        the dependent 'add a note' option."""
+        self._update_note_enabled()
+        self._update_counts()
+
+    def _update_note_enabled(self):
+        """The note only makes sense while watermarked songs are excluded, so
+        its checkbox (and icon) are enabled only when that filter is on. The
+        user's choice is kept while disabled and just not applied."""
+        on = self.excludeWmCb.GetValue()
+        self.noteWmCb.Enable(on)
+        icon = getattr(self, 'noteIcon', None)
+        if icon is not None:
+            icon.Enable(on)
+
+    def _on_note_changed(self, _evt):
+        cfg = _config()
+        cfg.WriteBool(u"wm_note", self.noteWmCb.GetValue())
+        cfg.Flush()
 
     def _on_wm_path_changed(self, _evt):
         self._update_wm_controls_enabled()
@@ -1095,6 +1232,11 @@ class IndexPanel(wx.Panel):
                          'size': self.sizeSpin.GetValue(),
                          'grayscale': self.wmGrayRb.GetValue()}
 
+        # the exclusion note is printed only if the filter is on AND the
+        # note option is ticked (it is disabled otherwise)
+        note = _exclusion_note() if (self.excludeWmCb.GetValue()
+                                     and self.noteWmCb.GetValue()) else None
+
         self.status.SetLabel(_(u"Scanning files\u2026"))
         wx.BeginBusyCursor()
         try:
@@ -1128,7 +1270,7 @@ class IndexPanel(wx.Panel):
         wx.BeginBusyCursor()
         try:
             total, with_num = builder(songs, out_path, heading=heading,
-                                      watermark=watermark)
+                                      watermark=watermark, note=note)
         except RuntimeError as e:
             wx.EndBusyCursor()
             self.status.SetLabel("")

@@ -2377,11 +2377,12 @@ A differenza dell'indice interno del *Songbook PDF* (ordinato per titolo e legat
 ### Come si usa
 
 1. Scegliere la **Cartella principale** con i brani; l'opzione **Includi sottocartelle** estende la scansione alle cartelle annidate
-2. Selezionare l'**estensione** dei file da includere tramite i pulsanti di scelta: `.cho`, `.chopro`, `.pro`, `.crd`, `.txt`, **Tutti i file** o **Altro…** (campo libero). Accanto a ogni voce compare il **numero di file** trovati con quell'estensione. All'apertura è già selezionato il pulsante corrispondente all'**Estensione dei file predefinita** impostata in *Opzioni → Generale*
-3. Facoltativo: impostare una **filigrana di sfondo** (immagine) con opacità, angolo e dimensione, e scegliere se renderla **a colori** o in **bianco e nero**
-4. Facoltativo: personalizzare il **Titolo indice** (predefinito «Indice»)
-5. Lasciare attiva o disattivare la casella **Apri il PDF ora**
-6. Premere **Genera PDF** o **Genera DOCX** e scegliere dove salvare il file
+2. Facoltativo: spuntare **Escludi file con «watermark»** per lasciare fuori i brani che contengono la direttiva `{watermark: …}` (copie bozza/timbrate). Una volta attiva, si può spuntare anche **Aggiungi in fondo all'indice una nota sui brani esclusi** (con l'icona info), che stampa in fondo all'indice un avviso sull'esclusione
+3. Selezionare l'**estensione** dei file da includere tramite i pulsanti di scelta: `.cho`, `.chopro`, `.pro`, `.crd`, `.txt`, **Tutti i file** o **Altro…** (campo libero). Accanto a ogni voce compare il **numero di file** trovati con quell'estensione. All'apertura è già selezionato il pulsante corrispondente all'**Estensione dei file predefinita** impostata in *Opzioni → Generale*
+4. Facoltativo: impostare una **filigrana di sfondo** (immagine) con opacità, angolo e dimensione, e scegliere se renderla **a colori** o in **bianco e nero**
+5. Facoltativo: personalizzare il **Titolo indice** (predefinito «Indice»)
+6. Lasciare attiva o disattivare la casella **Apri il PDF ora**
+7. Premere **Genera PDF** o **Genera DOCX** e scegliere dove salvare il file
 
 ### Come vengono estratti numero e titolo
 
@@ -2398,7 +2399,8 @@ L'ordinamento è per **numero crescente**; i brani senza numero sono elencati **
 | ------- | ----------- | ----------- |
 | Cartella principale | ultima usata | Cartella dei brani da scansionare. **L'ultimo percorso usato viene ricordato** e riproposto al successivo avvio |
 | Includi sottocartelle | ✅ attivo | Scansiona anche le cartelle annidate |
-| Escludi file con «watermark» | ☐ disattivo | Se attivo, i file che contengono la direttiva `{watermark: …}` (copie bozza/timbrate) vengono esclusi dall'indice e dai conteggi. Il conteggio dei file si aggiorna appena la casella viene spuntata |
+| Escludi file con «watermark» | ☐ disattivo | Se attivo, i file che contengono la direttiva `{watermark: …}` (copie bozza/timbrate) vengono esclusi dall'indice e dai conteggi. Il conteggio dei file si aggiorna appena la casella viene spuntata. La scansione è veloce e i risultati vengono ricordati (vedi *Note*) |
+| Aggiungi in fondo all'indice una nota sui brani esclusi | ☐ disattivo | Disponibile **solo quando «Escludi file con «watermark»» è attivo**: altrimenti la casella e la relativa icona info restano disabilitate. Se attiva, in fondo all'indice (sia PDF sia DOCX) viene aggiunta una riga con l'icona info e il testo «I brani con filigrana sono stati esclusi da questo indice.». La scelta viene **ricordata tra un avvio e l'altro** |
 | Estensione file | da *Opzioni* | Tipo di file da includere. All'avvio è preselezionato il pulsante corrispondente all'**Estensione dei file predefinita** di *Opzioni → Generale* (se tale estensione non è tra quelle fisse, viene selezionato **Altro…** e il campo compilato automaticamente); **Tutti i file** salta automaticamente i binari (`.pdf`, `.docx`, `.svg`, `.emf` e le immagini `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`, `.tif`, `.tiff`); **Altro…** abilita un campo per un'estensione personalizzata |
 | Filigrana di sfondo | nessuna | Immagine (PNG, JPG/JPEG, WebP, GIF, BMP, TIFF) disegnata dietro al testo su ogni pagina, con **Opacità (%)**, **Angolo (°)** e **Dimensione (%)**. L'opzione **Rendering** permette di sceglierla **a colori** (predefinito) o in **bianco e nero** (l'immagine viene desaturata mantenendo la trasparenza). Questi controlli sono attivi **solo quando è selezionata un'immagine** (altrimenti restano disabilitati). Tutti questi valori vengono **ricordati tra un avvio e l'altro** |
 | Titolo indice | `Indice` | Intestazione stampata in cima all'indice |
@@ -2410,6 +2412,9 @@ L'ordinamento è per **numero crescente**; i brani senza numero sono elencati **
 - All'apertura, il pulsante dell'**estensione** riflette l'**Estensione dei file predefinita** impostata in *Opzioni → Generale* (letta dalle impostazioni di Songpress++); quando la finestra è avviata come programma autonomo si usa `crd` come ripiego.
 - I valori della **filigrana** (Opacità, Angolo, Dimensione e la scelta Colori/Bianco e nero) vengono ricordati a ogni modifica e ripristinati alla riapertura della finestra.
 - I controlli della **filigrana** (Opacità, Angolo, Dimensione e Rendering) sono disabilitati finché non si seleziona un'immagine, e si attivano automaticamente appena il campo **Immagine** contiene un percorso.
+- La **nota sui brani esclusi** viene stampata solo se **entrambe** le caselle sono attive («Escludi file con «watermark»» e «Aggiungi in fondo all'indice una nota…»). Se si disattiva l'esclusione, la casella della nota si disabilita e la nota non viene stampata, ma la scelta fatta resta memorizzata e si riattiva insieme all'esclusione.
+- L'icona della nota viene letta da `img/info.png`, nella cartella che contiene `CreaIndice.py`; se il file manca, la nota viene stampata ugualmente, senza icona. Il testo della nota segue la lingua dell'interfaccia di Songpress++.
+- **Velocità della scansione «watermark».** La ricerca della direttiva `{watermark}` è stata resa molto più rapida: i file vengono letti direttamente come byte (senza provare più codifiche di testo), controllati **in parallelo** quando sono più di 16 e l'esito di ciascun file viene **ricordato** finché il file non cambia (data o dimensione). Per questo riattivare la casella, cambiare estensione o generare l'indice non rileggono i file: solo la **prima** scansione di una cartella richiede più tempo, le successive sono quasi immediate.
 - Il numero del canto viene cercato in **tutti** i sottotitoli del file: è sufficiente che uno di essi contenga `numero: N`.
 - La generazione **PDF** richiede la libreria `reportlab`, quella **DOCX** richiede `python-docx`; la **filigrana** richiede `Pillow`. Se una libreria manca, il programma mostra un avviso con il comando `pip` per installarla.
 - *Crea Indice* può essere usato anche come programma autonomo (`python3 CreaIndice.py [cartella]`), utile per generare rapidamente un sommario senza aprire Songpress++.
