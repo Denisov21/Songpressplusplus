@@ -6723,35 +6723,63 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         text = self.text.GetText()
         blocks, all_lines = self._parse_chordpro_blocks(text)
 
-        typed = [b for b in blocks if b['type'] == block_type]
+        self._propagate_hint = ''
+
+        def _content(b):
+            """(righe di contenuto, offset nel file) escludendo i delimitatori."""
+            if b.get('tagged', False):
+                return b['lines'][1:-1], b['start'] + 1
+            return b['lines'], b['start']
+
+        def _has_lyrics(lines):
+            """True se almeno una riga ha testo cantato oltre agli accordi."""
+            return any(self._strip_chords_from_line(l).strip() for l in lines)
+
+        def _has_chords(lines):
+            return any(pos for pos in self._extract_chord_map(lines))
+
+        # Blocchi con testo cantato. Le righe composte SOLO da accordi
+        # (es. "[La-] [Mi-] [Re]" dopo {comment: Intro}) vengono dal parser
+        # come "strofe": vanno ignorate, altrimenti diventano la sorgente
+        # (1 riga) e non viene propagato nulla alle vere strofe.
+        typed = []
+        for b in blocks:
+            if b['type'] != block_type:
+                continue
+            content, _off = _content(b)
+            if content and _has_lyrics(content):
+                typed.append(b)
+
         if len(typed) < 2:
             return None
 
-        source = typed[0]
-        tagged = source.get('tagged', False)
+        # Sorgente: il primo blocco che contiene accordi e ha almeno un
+        # blocco successivo con lo stesso numero di righe.
+        source = None
+        for i, cand in enumerate(typed[:-1]):
+            c_content, _off = _content(cand)
+            if not _has_chords(c_content):
+                continue
+            if any(len(_content(t)[0]) == len(c_content) for t in typed[i + 1:]):
+                source = cand
+                source_idx = i
+                break
 
-        if tagged:
-            # delimiter lines are first and last; content is in between
-            src_content = source['lines'][1:-1]
-            src_offset  = source['start'] + 1
-        else:
-            src_content = source['lines']
-            src_offset  = source['start']
+        if source is None:
+            # Aiuta a capire perché: elenca il numero di righe di ogni blocco.
+            counts = ', '.join(str(len(_content(t)[0])) for t in typed)
+            self._propagate_hint = counts
+            return None
 
+        src_content, src_offset = _content(source)
         chord_map      = self._extract_chord_map(src_content)
         src_line_count = len(src_content)
 
         result_lines = list(all_lines)
         modified     = False
 
-        for target in typed[1:]:
-            t_tagged = target.get('tagged', False)
-            if t_tagged:
-                tgt_content = target['lines'][1:-1]
-                tgt_offset  = target['start'] + 1
-            else:
-                tgt_content = target['lines']
-                tgt_offset  = target['start']
+        for target in typed[source_idx + 1:]:
+            tgt_content, tgt_offset = _content(target)
 
             if len(tgt_content) != src_line_count:
                 continue   # metrica diversa, salta
@@ -6759,10 +6787,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             stripped    = [self._strip_chords_from_line(l) for l in tgt_content]
             new_content = self._apply_chord_map(stripped, chord_map)
 
+            if new_content != tgt_content:
+                modified = True
             for j, new_line in enumerate(new_content):
                 result_lines[tgt_offset + j] = new_line
-
-            modified = True
 
         return '\n'.join(result_lines) if modified else None
 
@@ -6772,7 +6800,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         if result is None:
             wx.MessageBox(
                 _("No compatible verse found.\n"
-                  "Make sure the song has at least two verses with the same number of lines."),
+                  "Make sure the song has at least two verses with the same number of lines.")
+                + ((_("\n\nLines per verse found: %s") % self._propagate_hint)
+                   if getattr(self, '_propagate_hint', '') else ''),
                 _("Propagate verse chords"),
                 wx.OK | wx.ICON_INFORMATION,
                 self.frame,
@@ -6788,7 +6818,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         if result is None:
             wx.MessageBox(
                 _("No compatible chorus found.\n"
-                  "Make sure the song has at least two choruses with the same number of lines."),
+                  "Make sure the song has at least two choruses with the same number of lines.")
+                + ((_("\n\nLines per chorus found: %s") % self._propagate_hint)
+                   if getattr(self, '_propagate_hint', '') else ''),
                 _("Propagate chorus chords"),
                 wx.OK | wx.ICON_INFORMATION,
                 self.frame,

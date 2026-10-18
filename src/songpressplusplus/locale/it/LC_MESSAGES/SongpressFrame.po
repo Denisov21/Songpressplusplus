@@ -501,6 +501,17 @@ msgstr ""
 msgid "Propagate verse chords"
 msgstr "Propaga accordi strofa"
 
+#: SongpressFrame.py propagate verse chords — diagnostic hint (lines per verse)
+#, python-format
+msgid ""
+"\n"
+"\n"
+"Lines per verse found: %s"
+msgstr ""
+"\n"
+"\n"
+"Righe per strofa trovate: %s"
+
 #: SongpressFrame.py propagate chorus chords
 msgid ""
 "No compatible chorus found.\n"
@@ -511,6 +522,17 @@ msgstr ""
 
 msgid "Propagate chorus chords"
 msgstr "Propaga accordi ritornello"
+
+#: SongpressFrame.py propagate chorus chords — diagnostic hint (lines per chorus)
+#, python-format
+msgid ""
+"\n"
+"\n"
+"Lines per chorus found: %s"
+msgstr ""
+"\n"
+"\n"
+"Righe per ritornello trovate: %s"
 
 #: SongpressFrame.py insert image dialog title
 msgid "Insert image"
