@@ -354,3 +354,20 @@ msgstr ""
 "Stampa in fondo all'indice una nota con l'icona info, che indica che i brani "
 "con filigrana sono stati esclusi. Disponibile solo quando l'opzione di "
 "esclusione è attiva."
+
+#: CreaIndice.py
+#, python-format
+msgid "Total songs in the index: %d"
+msgstr "Totale brani nell'indice: %d"
+
+#: CreaIndice.py
+msgid "Write the number of songs in the index"
+msgstr "Scrivi nell'indice il numero dei brani"
+
+#: CreaIndice.py
+msgid ""
+"Add a line at the end of the index with the total number of songs it "
+"contains."
+msgstr ""
+"Aggiungi in fondo all'indice una riga con il numero totale di brani che "
+"contiene."

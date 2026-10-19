@@ -2121,7 +2121,19 @@ I seguenti controlli si trovano nella scheda **Formattazione** delle preferenze 
 | Rimuovi pagine vuote                                 | Rimuove le pagine logiche quasi vuote dall'output di stampa              |
 | Soglia pagina vuota (%)                              | Percentuale massima di pagina occupata sotto cui la pagina viene rimossa |
 | Scala (%)                                            | Ingrandisce o riduce l'intero contenuto stampato (50–200%, predefinito 100%) |
+| Scrivi log del layout di pagina (Diagnostica)        | Scrive un file di log con i parametri di impaginazione (vedi *Diagnostica di stampa*); predefinito disattivo |
+| Apri cartella (Diagnostica)                          | Apre la cartella che contiene il file di log; accanto è mostrato il percorso completo |
 | 📌 Pin                                                | Mantiene aperto il dialogo dopo OK, applicando subito le modifiche all'anteprima |
+
+#### Diagnostica di stampa
+
+In fondo al dialogo **Opzioni di stampa** c'è la sezione **Diagnostica**, utile per capire perché un brano viene impaginato in un certo modo (o per segnalare un problema):
+
+- **Scrivi log del layout di pagina** — se attiva, a ogni anteprima/stampa viene scritto il file `songpress_print_debug.log`. Registra i parametri di impaginazione (riduzione attiva, impaginazione per blocchi, colonne, due pagine per foglio, pagine per foglio, scala verticale, offset, area di ritaglio), i **salti di blocco** e le **regioni di ritaglio** di ogni pagina. Predefinito: disattivo.
+- **Apri cartella** — apre la cartella del log. Il percorso completo del file è mostrato in grigio accanto al pulsante.
+- Il file si trova nella cartella temporanea del sistema: `%TEMP%` su Windows, `/tmp` (o `$TMPDIR`) su Linux e macOS.
+
+Il log serve solo per la diagnostica: lasciarlo disattivato non influisce sulla stampa.
 
 La direttiva `{new_page}` nel testo forza una nuova pagina logica durante la stampa. Con il layout a 2 colonne, `{column_break}` forza il salto alla colonna successiva.
 
@@ -2153,6 +2165,7 @@ I valori sono memorizzati nella sezione `/PageSetup` della configurazione utente
 | Rimuovi pagine vuote     | `remove_blank_pages`     | disattivo          |
 | Soglia pagina vuota (%)  | `blank_page_threshold`   | 5                  |
 | Stato del pulsante 📌 Pin | `print_options_pinned`   | disattivo          |
+| Scrivi log del layout    | `print_debug`            | disattivo          |
 
 > **Eccezione — Scala (%)** — Il valore del campo **Scala** non viene **mai** salvato. Resta attivo per tutta la sessione di lavoro (utile per regolarlo con il dialogo «pinnato» osservando l'anteprima in tempo reale), ma a ogni riavvio di Songpress++ torna sempre a **100%**. Questo evita di ritrovarsi con stampe ingrandite o ridotte senza accorgersene, dopo aver usato la scala per un singolo brano. Anche eventuali valori residui salvati da versioni precedenti vengono rimossi dalla configurazione.
 
@@ -2212,9 +2225,9 @@ Usa i binding `win32print` e `pywintypes` inclusi nella dipendenza `pywin32`:
 
 Se `pywin32` non è disponibile o genera un errore, viene usata la stessa logica tramite `ctypes.WinDLL('winspool.drv')`, chiamando `DocumentPropertiesW` direttamente con buffer `ctypes.create_string_buffer`. I campi del DEVMODE risultante (orientamento, formato carta, copie, colore, duplex) vengono letti tramite offset fissi nella struttura `DEVMODEW`.
 
-**Tentativo 3 — Finestra informativa (non-Windows o entrambi i tentativi falliti)**
+**Tentativo 3 — Finestra Imposta pagina (non-Windows o entrambi i tentativi falliti)**
 
-Su piattaforme diverse da Windows, o se entrambi i tentativi precedenti falliscono, viene mostrata una finestra informativa che avvisa che il pannello del driver non è disponibile su questa piattaforma, suggerendo di usare la toolbar dell'anteprima per modificare orientamento, formato carta e margini. Non viene aperta nessuna finestra di dialogo aggiuntiva per evitare la comparsa di due finestre con funzioni simili.
+Su piattaforme diverse da Windows, o se entrambi i tentativi precedenti falliscono, viene aperta la finestra standard **Imposta pagina** (`wx.PageSetupDialog`), dove si possono modificare orientamento, formato carta e margini. Le modifiche confermate con OK vengono applicate all'anteprima.
 
 #### Propagazione delle modifiche
 
@@ -2224,12 +2237,13 @@ Quando l'utente conferma con OK, Songpress++ propaga automaticamente in `wx.Prin
 
 ### Rilevamento automatico della stampante nell'anteprima
 
-La barra di stato dell'anteprima di stampa mostra tre indicatori che leggono le impostazioni **reali** della stampante selezionata, non solo quelle impostate da wx:
+La barra di stato dell'anteprima di stampa mostra quattro indicatori che leggono le impostazioni **reali** della stampante selezionata, non solo quelle impostate da wx:
 
 | Indicatore | Valori possibili |
 | ---------- | ---------------- |
 | **Fronte/retro** | `Fronte/retro: disattivato (solo fronte)` · `ATTIVO — rilegatura lato lungo` · `ATTIVO — rilegatura lato corto` |
 | **Colore** | `Colore: stampa a colori` · `Colore: bianco e nero` |
+| **Ambito di stampa** | `Stampa tutto il documento` (verde) · `Stampa solo la selezione` (ambra) |
 | **Orientamento** | Icona foglio verticale (ritratto) o orizzontale (landscape) |
 
 **Come funziona il rilevamento (Windows)**
@@ -2376,13 +2390,14 @@ A differenza dell'indice interno del *Songbook PDF* (ordinato per titolo e legat
 
 ### Come si usa
 
-1. Scegliere la **Cartella principale** con i brani; l'opzione **Includi sottocartelle** estende la scansione alle cartelle annidate
-2. Facoltativo: spuntare **Escludi file con «watermark»** per lasciare fuori i brani che contengono la direttiva `{watermark: …}` (copie bozza/timbrate). Una volta attiva, si può spuntare anche **Aggiungi in fondo all'indice una nota sui brani esclusi** (con l'icona info), che stampa in fondo all'indice un avviso sull'esclusione
+1. Scegliere la **Cartella principale** con i brani; l'opzione **Includi anche le sottocartelle** estende la scansione alle cartelle annidate
+2. Facoltativo: spuntare **Escludi i file con la direttiva «watermark»** per lasciare fuori i brani che contengono la direttiva `{watermark: …}` (copie bozza/timbrate). Una volta attiva, si può spuntare anche **Aggiungi in fondo all'indice una nota sui brani esclusi** (con l'icona info), che stampa in fondo all'indice un avviso sull'esclusione
 3. Selezionare l'**estensione** dei file da includere tramite i pulsanti di scelta: `.cho`, `.chopro`, `.pro`, `.crd`, `.txt`, **Tutti i file** o **Altro…** (campo libero). Accanto a ogni voce compare il **numero di file** trovati con quell'estensione. All'apertura è già selezionato il pulsante corrispondente all'**Estensione dei file predefinita** impostata in *Opzioni → Generale*
 4. Facoltativo: impostare una **filigrana di sfondo** (immagine) con opacità, angolo e dimensione, e scegliere se renderla **a colori** o in **bianco e nero**
 5. Facoltativo: personalizzare il **Titolo indice** (predefinito «Indice»)
-6. Lasciare attiva o disattivare la casella **Apri il PDF ora**
-7. Premere **Genera PDF** o **Genera DOCX** e scegliere dove salvare il file
+6. Facoltativo: spuntare **Scrivi nell'indice il numero dei brani** per aggiungere in fondo all'indice una riga con il totale dei brani
+7. Lasciare attiva o disattivare la casella **Apri il PDF ora**
+8. Premere **Genera PDF** o **Genera DOCX** e scegliere dove salvare il file
 
 ### Come vengono estratti numero e titolo
 
@@ -2398,12 +2413,13 @@ L'ordinamento è per **numero crescente**; i brani senza numero sono elencati **
 | Opzione | Predefinito | Descrizione |
 | ------- | ----------- | ----------- |
 | Cartella principale | ultima usata | Cartella dei brani da scansionare. **L'ultimo percorso usato viene ricordato** e riproposto al successivo avvio |
-| Includi sottocartelle | ✅ attivo | Scansiona anche le cartelle annidate |
-| Escludi file con «watermark» | ☐ disattivo | Se attivo, i file che contengono la direttiva `{watermark: …}` (copie bozza/timbrate) vengono esclusi dall'indice e dai conteggi. Il conteggio dei file si aggiorna appena la casella viene spuntata. La scansione è veloce e i risultati vengono ricordati (vedi *Note*) |
-| Aggiungi in fondo all'indice una nota sui brani esclusi | ☐ disattivo | Disponibile **solo quando «Escludi file con «watermark»» è attivo**: altrimenti la casella e la relativa icona info restano disabilitate. Se attiva, in fondo all'indice (sia PDF sia DOCX) viene aggiunta una riga con l'icona info e il testo «I brani con filigrana sono stati esclusi da questo indice.». La scelta viene **ricordata tra un avvio e l'altro** |
+| Includi anche le sottocartelle | ✅ attivo | Scansiona anche le cartelle annidate |
+| Escludi i file con la direttiva «watermark» | ☐ disattivo | Se attivo, i file che contengono la direttiva `{watermark: …}` (copie bozza/timbrate) vengono esclusi dall'indice e dai conteggi. Il conteggio dei file si aggiorna appena la casella viene spuntata. La scansione è veloce e i risultati vengono ricordati (vedi *Note*) |
+| Aggiungi in fondo all'indice una nota sui brani esclusi | ☐ disattivo | Disponibile **solo quando «Escludi i file con la direttiva «watermark»» è attivo**: altrimenti la casella e la relativa icona info restano disabilitate. Se attiva, in fondo all'indice (sia PDF sia DOCX) viene aggiunta una riga con l'icona info e il testo «I brani con filigrana sono stati esclusi da questo indice.». La scelta viene **ricordata tra un avvio e l'altro** |
 | Estensione file | da *Opzioni* | Tipo di file da includere. All'avvio è preselezionato il pulsante corrispondente all'**Estensione dei file predefinita** di *Opzioni → Generale* (se tale estensione non è tra quelle fisse, viene selezionato **Altro…** e il campo compilato automaticamente); **Tutti i file** salta automaticamente i binari (`.pdf`, `.docx`, `.svg`, `.emf` e le immagini `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`, `.tif`, `.tiff`); **Altro…** abilita un campo per un'estensione personalizzata |
 | Filigrana di sfondo | nessuna | Immagine (PNG, JPG/JPEG, WebP, GIF, BMP, TIFF) disegnata dietro al testo su ogni pagina, con **Opacità (%)**, **Angolo (°)** e **Dimensione (%)**. L'opzione **Rendering** permette di sceglierla **a colori** (predefinito) o in **bianco e nero** (l'immagine viene desaturata mantenendo la trasparenza). Questi controlli sono attivi **solo quando è selezionata un'immagine** (altrimenti restano disabilitati). Tutti questi valori vengono **ricordati tra un avvio e l'altro** |
 | Titolo indice | `Indice` | Intestazione stampata in cima all'indice |
+| Scrivi nell'indice il numero dei brani | ☐ disattivo | Se attivo, subito dopo la tabella (PDF e DOCX) viene aggiunta una riga in grassetto con il totale dei brani, es. «Totale brani nell'indice: 120». Compare prima dell'eventuale nota sui brani esclusi. La scelta viene **ricordata tra un avvio e l'altro** |
 | Apri il PDF ora | ✅ attivo | Se attivo, al termine il file generato (PDF o DOCX) viene aperto con l'applicazione predefinita del sistema. La scelta viene ricordata tra un avvio e l'altro |
 
 ### Note
@@ -2412,7 +2428,9 @@ L'ordinamento è per **numero crescente**; i brani senza numero sono elencati **
 - All'apertura, il pulsante dell'**estensione** riflette l'**Estensione dei file predefinita** impostata in *Opzioni → Generale* (letta dalle impostazioni di Songpress++); quando la finestra è avviata come programma autonomo si usa `crd` come ripiego.
 - I valori della **filigrana** (Opacità, Angolo, Dimensione e la scelta Colori/Bianco e nero) vengono ricordati a ogni modifica e ripristinati alla riapertura della finestra.
 - I controlli della **filigrana** (Opacità, Angolo, Dimensione e Rendering) sono disabilitati finché non si seleziona un'immagine, e si attivano automaticamente appena il campo **Immagine** contiene un percorso.
-- La **nota sui brani esclusi** viene stampata solo se **entrambe** le caselle sono attive («Escludi file con «watermark»» e «Aggiungi in fondo all'indice una nota…»). Se si disattiva l'esclusione, la casella della nota si disabilita e la nota non viene stampata, ma la scelta fatta resta memorizzata e si riattiva insieme all'esclusione.
+- La **nota sui brani esclusi** viene stampata solo se **entrambe** le caselle sono attive («Escludi i file con la direttiva «watermark»» e «Aggiungi in fondo all'indice una nota…»). Se si disattiva l'esclusione, la casella della nota si disabilita e la nota non viene stampata, ma la scelta fatta resta memorizzata e si riattiva insieme all'esclusione.
+- **Avviso opacità filigrana.** Quando è selezionata un'immagine e l'**Opacità** supera il **50%**, sotto il controllo compare un avviso in rosso («Attenzione: con un'opacità superiore al 50% il testo potrebbe essere difficile da leggere.»). È solo un avviso: il valore non viene limitato.
+- Tutti i controlli della finestra hanno un **tooltip** esplicativo.
 - L'icona della nota viene letta da `img/info.png`, nella cartella che contiene `CreaIndice.py`; se il file manca, la nota viene stampata ugualmente, senza icona. Il testo della nota segue la lingua dell'interfaccia di Songpress++.
 - **Velocità della scansione «watermark».** La ricerca della direttiva `{watermark}` è stata resa molto più rapida: i file vengono letti direttamente come byte (senza provare più codifiche di testo), controllati **in parallelo** quando sono più di 16 e l'esito di ciascun file viene **ricordato** finché il file non cambia (data o dimensione). Per questo riattivare la casella, cambiare estensione o generare l'indice non rileggono i file: solo la **prima** scansione di una cartella richiede più tempo, le successive sono quasi immediate.
 - Il numero del canto viene cercato in **tutti** i sottotitoli del file: è sufficiente che uno di essi contenga `numero: N`.

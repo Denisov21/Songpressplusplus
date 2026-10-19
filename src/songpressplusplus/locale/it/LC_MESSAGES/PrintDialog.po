@@ -201,3 +201,41 @@ msgstr "Il pannello delle impostazioni del driver di stampa non è disponibile s
 
 msgid "Driver settings unavailable"
 msgstr "Impostazioni driver non disponibili"
+
+# ── Etichette dinamiche con «2 pagine» per foglio (riduzione per colonna) ─────
+
+#. Con 2 pagine per foglio ogni pagina logica è una metà (colonna) del foglio
+msgid "Shrink if exceeds column"
+msgstr "Riduci se eccede la colonna"
+
+msgid "Shrink to fit current column"
+msgstr "Riduci per adattare alla colonna corrente"
+
+msgid "Reduce the content only if it exceeds the size of its column (each half of the sheet), no upscaling"
+msgstr "Riduce il contenuto solo se eccede le dimensioni della sua colonna (ciascuna metà del foglio), senza ingrandimento"
+
+msgid "Reduce the content only if it exceeds the size of its column (each half of the sheet), to avoid bottom clipping"
+msgstr "Riduce il contenuto solo se supera le dimensioni della sua colonna (ciascuna metà del foglio), per evitare il taglio in fondo"
+
+# ── Sezione Diagnostica ───────────────────────────────────────────────────────
+
+msgid "Diagnostics"
+msgstr "Diagnostica"
+
+msgid "Write page layout log"
+msgstr "Scrivi log impaginazione"
+
+msgid "Save how the song is split into pages to this file:"
+msgstr "Salva in questo file come il brano viene suddiviso in pagine:"
+
+msgid "Open folder"
+msgstr "Apri cartella"
+
+msgid "Open the folder that contains the log file"
+msgstr "Apre la cartella che contiene il file di log"
+
+msgid "Unable to open the folder:"
+msgstr "Impossibile aprire la cartella:"
+
+msgid "Error"
+msgstr "Errore"

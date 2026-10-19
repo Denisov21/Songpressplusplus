@@ -161,6 +161,12 @@ def _exclusion_note():
     return _(u"Songs with a watermark have been excluded from this index.")
 
 
+def _count_note(n):
+    """Line added at the end of the index when the "write the number of
+    songs" option is on."""
+    return _(u"Total songs in the index: %d") % n
+
+
 def _open_file(path):
     """Open `path` with the operating system's default application.
 
@@ -445,12 +451,15 @@ def _make_watermark(path, opacity, angle, grayscale=False):
 #  PDF GENERATION
 # ---------------------------------------------------------------------------
 
-def build_index_pdf(songs, out_path, heading=None, watermark=None, note=None):
+def build_index_pdf(songs, out_path, heading=None, watermark=None, note=None,
+                    show_count=False):
     """Create the two-column (number | title) PDF at `out_path`.
 
     `watermark`, if given, is a dict {'path', 'opacity', 'angle', 'size'}; the
     image is drawn behind the text on every page. `note`, if given, is a text
     added at the end of the index, preceded by the img/info.png icon.
+    If `show_count` is True, a line with the number of songs in the index is
+    written right after the table.
     Returns (total, with_number).
     Raises RuntimeError if reportlab is not installed.
     """
@@ -539,6 +548,13 @@ def build_index_pdf(songs, out_path, heading=None, watermark=None, note=None):
 
     story = [Paragraph(_escape(heading), title_style), table,
              Spacer(1, 6 * mm)]
+
+    if show_count:
+        count_style = ParagraphStyle('IdxCount', parent=styles['Normal'],
+                                     fontName='Helvetica-Bold', fontSize=10,
+                                     leading=13, alignment=TA_LEFT)
+        story.append(Paragraph(_escape(_count_note(len(songs))), count_style))
+        story.append(Spacer(1, 4 * mm))
 
     if note:
         # icon + text on one row, kept together so it never splits
@@ -659,12 +675,15 @@ def _docx_add_bg_watermark(doc, pil_img, orig_w, size_pct):
     (effect if effect is not None else extent).addnext(wrap)
 
 
-def build_index_docx(songs, out_path, heading=None, watermark=None, note=None):
+def build_index_docx(songs, out_path, heading=None, watermark=None, note=None,
+                     show_count=False):
     """Create the two-column (number | title) Word document at `out_path`.
 
     `watermark`, if given, is a dict {'path', 'opacity', 'angle', 'size'}; the
     image is placed behind the text on every page. `note`, if given, is a text
     added at the end of the document, preceded by the img/info.png icon.
+    If `show_count` is True, a line with the number of songs in the index is
+    written right after the table.
     Returns (total, with_number).
     Raises RuntimeError if python-docx is not installed.
     """
@@ -719,6 +738,13 @@ def build_index_docx(songs, out_path, heading=None, watermark=None, note=None):
         _docx_cell(row[0], num, width_mm=col_num_mm, bold=True, fill=fill,
                    align=WD_ALIGN_PARAGRAPH.CENTER)
         _docx_cell(row[1], s['title'], width_mm=col_title_mm, fill=fill)
+
+    if show_count:
+        cp = doc.add_paragraph()
+        cp.paragraph_format.space_before = Pt(10)
+        cr = cp.add_run(_count_note(len(songs)))
+        cr.bold = True
+        cr.font.size = Pt(10)
 
     if note:
         np_ = doc.add_paragraph()
@@ -807,7 +833,7 @@ class IndexPanel(wx.Panel):
             bmp = wx.Bitmap(icon_path, wx.BITMAP_TYPE_PNG)
             if bmp.IsOk():
                 # scale to a small, consistent size next to the checkbox
-                img = bmp.ConvertToImage().Scale(16, 16, wx.IMAGE_QUALITY_HIGH)
+                img = bmp.ConvertToImage().Scale(12, 12, wx.IMAGE_QUALITY_HIGH)
                 self.noteIcon = wx.StaticBitmap(box_dir.GetStaticBox(),
                                                 bitmap=wx.Bitmap(img))
                 noteRow.Add(self.noteIcon, 0,
@@ -823,6 +849,16 @@ class IndexPanel(wx.Panel):
         # (excludeWmCb's own handler is bound further down, together with the
         # file-count refresh, so the two do not replace each other)
         self._update_note_enabled()
+        # optional line with the number of songs listed in the index
+        self.showCountCb = wx.CheckBox(
+            box_dir.GetStaticBox(),
+            label=_(u"Write the number of songs in the index"))
+        self.showCountCb.SetValue(_config().ReadBool(u"show_count", False))
+        self.showCountCb.Bind(wx.EVT_CHECKBOX, self._on_show_count_changed)
+        box_dir.Add(self.showCountCb, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 4)
+        _set_tip(self.showCountCb,
+                 _(u"Add a line at the end of the index with the total "
+                   u"number of songs it contains."))
         _set_tip(self.dirPicker, _(u"Folder that contains the song files."))
         _set_tip(self.recursiveCb,
                  _(u"Also scan the subfolders of the main folder."))
@@ -1062,6 +1098,11 @@ class IndexPanel(wx.Panel):
         cfg.WriteBool(u"wm_note", self.noteWmCb.GetValue())
         cfg.Flush()
 
+    def _on_show_count_changed(self, _evt):
+        cfg = _config()
+        cfg.WriteBool(u"show_count", self.showCountCb.GetValue())
+        cfg.Flush()
+
     def _on_wm_path_changed(self, _evt):
         self._update_wm_controls_enabled()
 
@@ -1270,7 +1311,8 @@ class IndexPanel(wx.Panel):
         wx.BeginBusyCursor()
         try:
             total, with_num = builder(songs, out_path, heading=heading,
-                                      watermark=watermark, note=note)
+                                      watermark=watermark, note=note,
+                                      show_count=self.showCountCb.GetValue())
         except RuntimeError as e:
             wx.EndBusyCursor()
             self.status.SetLabel("")

@@ -46,6 +46,60 @@ from .Renderer import Renderer, SongDecorator
 
 _ = wx.GetTranslation
 
+# ── Diagnostica layout di stampa ──────────────────────────────────────────────
+# Attivabile dalla casella «Scrivi log impaginazione» in «Opzioni di stampa»
+# (salvata in configurazione). Scrive come viene impaginato il brano in
+# <cartella temporanea>/songpress_print_debug.log: %TEMP% su Windows, /tmp
+# (o $TMPDIR) su Linux e macOS. Utile se un'interruzione di pagina non cade
+# dove ci si aspetta.
+PRINT_DEBUG = False
+
+
+def _debug_log_path():
+    """Percorso del log di impaginazione (cartella temporanea del sistema)."""
+    import tempfile
+    return os.path.join(tempfile.gettempdir(), 'songpress_print_debug.log')
+
+
+def _dbg(msg):
+    if not PRINT_DEBUG:
+        return
+    try:
+        with open(_debug_log_path(), 'a', encoding='utf-8') as f:
+            f.write(msg + '\n')
+    except Exception:
+        pass
+
+
+def _open_debug_log_folder():
+    """Apre nel file manager la cartella del log (Windows, Linux, macOS).
+
+    Se il file esiste su Windows/macOS viene anche evidenziato; altrimenti si
+    apre solo la cartella. Restituisce True se l'apertura è stata avviata."""
+    import subprocess
+    path   = _debug_log_path()
+    folder = os.path.dirname(path)
+    try:
+        if wx.Platform == '__WXMSW__':
+            if os.path.isfile(path):
+                subprocess.Popen(['explorer', '/select,', os.path.normpath(path)])
+            else:
+                os.startfile(folder)
+            return True
+        if wx.Platform == '__WXMAC__':
+            subprocess.Popen(['open', '-R', path] if os.path.isfile(path)
+                             else ['open', folder])
+            return True
+        subprocess.Popen(['xdg-open', folder])
+        return True
+    except Exception:
+        pass
+    try:
+        return bool(wx.LaunchDefaultApplication(folder))
+    except Exception:
+        return False
+
+
 # ── Rilevamento duplex dal driver di sistema ───────────────────────────────────
 
 def _get_duplex_mode(print_data):
@@ -531,6 +585,7 @@ class SongpressPrintout(wx.Printout):
         # force_full=True → ignora la selezione e stampa sempre l'intero documento
         self._force_full        = force_full
         self._page_offsets      = None   # list of (segment_idx, y_offset_px)
+        self._page_clip_px      = None   # per pagina: altezza max (px schermo) o None
         self._segments          = None   # list of text strings (split on {new_page})
         self._scale_x           = None
         self._scale_y           = None
@@ -635,6 +690,74 @@ class SongpressPrintout(wx.Printout):
         r._document_dir = _os.path.dirname(doc_path) if doc_path else ''
         return r
 
+    def _block_breaks(self, seg_idx, seg_text, seg_h, mdc):
+        """Altezze (px schermo) dove si può interrompere la pagina.
+
+        Dopo Renderer.Render() ogni blocco del brano (titolo, strofa,
+        ritornello, griglia, immagine…) conosce la propria posizione verticale
+        `y`: l'inizio di ciascun blocco (tranne il primo) è un punto valido
+        dove andare a capo di pagina. Si usa la stessa formula
+        `song.marginTop + block.y` di Renderer.page_break_ys, quindi coincide
+        con il layout realmente disegnato. Il punto è alzato di qualche pixel (PAD)
+        per non tagliare la cornice/etichetta che il decorator disegna appena
+        sopra il blocco.
+        Restituisce una lista ordinata (eventualmente vuota)."""
+        # La riga dei battiti ({beats_time}, i numeri sopra gli accordi) viene
+        # disegnata SOPRA l'inizio del blocco (circa 12 px logici): il punto
+        # di interruzione va quindi messo piu' in alto di block.y, ma mai sopra
+        # il fondo del blocco precedente.
+        PROTRUDE = 24
+        try:
+            r = self._make_renderer()
+            vc, lc, cc = self._seg_verse_start.get(seg_idx, (0, 0, 0))
+            r.initialVerseCount  = vc
+            r.initialLabelCount  = lc
+            r.initialChorusCount = cc
+            r.Render(seg_text, mdc)
+            margin_top = getattr(r.song, 'marginTop', 0) or 0
+            ys = []
+            prev = None
+            for box in r.song.boxes:
+                by = getattr(box, 'y', None)
+                if by is None:
+                    continue
+                top = float(margin_top + by)
+                y = top - PROTRUDE
+                if prev is not None:
+                    try:
+                        prev_bottom = (float(margin_top + prev.y)
+                                       + float(prev.GetTotalHeight()) + 2.0)
+                        y = max(y, prev_bottom)
+                    except Exception:
+                        pass
+                prev = box
+                if 0 < y < seg_h - 0.5 and (not ys or y > ys[-1] + 0.5):
+                    ys.append(y)
+            _dbg('block_breaks seg=%d h=%s marginTop=%s ys=%s'
+                 % (seg_idx, seg_h, margin_top, sorted(ys)))
+            return sorted(ys)
+        except Exception:
+            import traceback
+            _dbg('block_breaks seg=%d ERRORE:\n%s' % (seg_idx, traceback.format_exc()))
+            return []
+
+    @staticmethod
+    def _paginate_blocks(h, ppp, ys):
+        """Divide un segmento alto `h` in pagine alte al massimo `ppp`,
+        interrompendo solo ai punti `ys` (fine blocco). Se fra due pagine non
+        c'è alcun punto valido (blocco più alto di una pagina) taglia a `ppp`.
+        Restituisce [(offset_y, altezza_pagina | None)]; None = ultima pagina."""
+        ppp = max(1.0, float(ppp))
+        pages, start = [], 0.0
+        while h - start > ppp + 0.5:
+            limit = start + ppp
+            cand  = [y for y in ys if start + 1.0 < y <= limit + 0.5]
+            end   = max(cand) if cand else limit
+            pages.append((start, end - start))
+            start = end
+        pages.append((start, None))
+        return pages
+
     def _ensure_layout(self, dc):
         if self._page_offsets is not None:
             return
@@ -705,6 +828,7 @@ class SongpressPrintout(wx.Printout):
 
         mdc = wx.MemoryDC(wx.Bitmap(1, 1))
         self._page_offsets = []
+        self._page_clip_px = []
 
         verse_count = label_count = chorus_count = 0
         for seg_idx, seg_text in enumerate(self._segments):
@@ -765,52 +889,47 @@ class SongpressPrintout(wx.Printout):
                 # rispetto al renderer, ma serviranno corretti sotto).
                 # Non serve: seg_h_px rimane in px-schermo; scale è cambiata.
 
-        if getattr(self.frame_obj, '_shrink_to_fit', False):
+        # ── Interruzioni di pagina per BLOCCHI (opzione «adatta alla pagina») ──
+        #
+        # Con «Riduci per adattare alla pagina/colonna corrente» una pagina
+        # non viene più tagliata a un'altezza fissa: se un blocco (strofa,
+        # ritornello…) non entra per intero, passa per intero alla pagina
+        # successiva. Il font NON viene rimpicciolito per forzare tutto in una
+        # sola pagina. Disponibile con 1 colonna di testo per pagina (con 2
+        # colonne la spezzatura è gestita dal Renderer).
+        shrink_on   = bool(getattr(self.frame_obj, '_shrink_to_fit', False))
+        block_aware = shrink_on and columns_per_page < 2
+        seg_breaks  = [[] for _ in self._segments]
+        if block_aware:
+            for seg_idx, seg_text in enumerate(self._segments):
+                seg_breaks[seg_idx] = self._block_breaks(
+                    seg_idx, seg_text, seg_h_px[seg_idx], mdc2)
+
+        if shrink_on:
             # ── Parametri di margine riducibile ───────────────────────────
             min_margin_mm = float(getattr(self.frame_obj, '_min_margin_shrink', 5))
             min_margin_du = self._mm_to_du(min_margin_mm, ppi_y)
 
-            # Quanto possiamo togliere da top e bottom rispettando il minimo.
-            # Calcolato separatamente per i due margini per distribuire
-            # correttamente anche quando mt ≠ mb.
             red_top_max = max(0, mt - min_margin_du)
             red_bot_max = max(0, mb - min_margin_du)
             reducible_du = red_top_max + red_bot_max   # totale disponibile
 
-            # ── Calcolo overflow per ogni segmento ────────────────────────
-            # Per ciascun segmento, l'overflow è la parte che sporge
-            # nell'ultima pagina oltre un multiplo intero di px_per_page.
-            # Se overflow == 0 il segmento chiude esatto: non serve shrink.
-            # Prendiamo il worst-case su tutti i segmenti.
-
             px_per_page = usable_h / self._scale_y   # in px-schermo
 
             def _overflow_px(h_px, ppp):
-                """Pixel che debordano nell'ultima pagina di un segmento."""
-                if ppp <= 0:
+                """Pixel che sporgono oltre l'ultima pagina piena di un segmento.
+                Se il segmento sta già in una pagina non c'è nulla da recuperare."""
+                if ppp <= 0 or h_px <= ppp:
                     return 0.0
-                remainder = math.fmod(h_px, ppp)
-                # fmod restituisce 0.0 se h_px è multiplo esatto di ppp
-                return remainder
+                return math.fmod(h_px, ppp)
 
-            # Overflow massimo tra tutti i segmenti (in px-schermo).
-            max_overflow_px = max(
-                _overflow_px(h, px_per_page) for h in seg_h_px
-            )
+            max_overflow_px = max(_overflow_px(h, px_per_page) for h in seg_h_px)
 
             if max_overflow_px > 0:
-                # ── Fase 1: proviamo a recuperare l'overflow riducendo i margini ──
-                #
-                # Quanti device-units aggiuntivi ci servono in altezza utile
-                # per far rientrare max_overflow_px nella pagina?
-                # Convertiamo l'overflow da px-schermo a device-units:
-                #   needed_du = max_overflow_px * self._scale_y
                 needed_du = max_overflow_px * self._scale_y
 
                 if needed_du <= reducible_du:
-                    # I margini bastano: li riduciamo proporzionalmente.
-                    # Distribuiamo needed_du tra top e bottom in proporzione
-                    # alla loro riducibilità, così rispettiamo entrambi i minimi.
+                    # Fase 1: i margini bastano a recuperare lo sbordo.
                     if reducible_du > 0:
                         ratio       = needed_du / reducible_du
                         red_top_du  = int(math.ceil(red_top_max * ratio))
@@ -823,38 +942,32 @@ class SongpressPrintout(wx.Printout):
                     usable_h += red_top_du + red_bot_du
                     self._margin_du = (ml, mt, mr, mb)
 
+                elif block_aware:
+                    # Fase 2 (a blocchi): i margini non bastano → il blocco che
+                    # non entra va alla pagina dopo. Si interviene su margini e
+                    # font SOLO se un singolo blocco è più alto di una pagina.
+                    tallest_px = 0.0
+                    for seg_idx, h in enumerate(seg_h_px):
+                        edges = [0.0] + list(seg_breaks[seg_idx]) + [float(h)]
+                        for e0, e1 in zip(edges, edges[1:]):
+                            tallest_px = max(tallest_px, e1 - e0)
+                    if tallest_px * self._scale_y > usable_h:
+                        mt       -= red_top_max
+                        mb       -= red_bot_max
+                        usable_h += reducible_du
+                        self._margin_du = (ml, mt, mr, mb)
+                        if tallest_px * self._scale_y > usable_h:
+                            f = max(0.5, usable_h / (tallest_px * self._scale_y))
+                            self._scale_x *= f
+                            self._scale_y *= f
+
                 else:
-                    # ── Fase 2: margini non bastano → riduciamo anche il font ──
-                    #
-                    # Prima sfruttiamo tutto il margine disponibile…
+                    # Fase 2 (comportamento originale, modalità 2 colonne):
+                    # sfrutta tutto il margine, poi riduce anche il font.
                     mt       -= red_top_max
                     mb       -= red_bot_max
                     usable_h += reducible_du
                     self._margin_du = (ml, mt, mr, mb)
-
-                    # …poi calcoliamo il fattore di scala per far rientrare
-                    # l'overflow residuo nella pagina aggiornata.
-                    #
-                    # Per ogni segmento vogliamo:
-                    #   h_px * scale_y_new  ≡   0  (mod usable_h_new)
-                    # ovvero che h_px * scale_y_new sia un multiplo di usable_h_new.
-                    # La condizione necessaria e sufficiente è che per il segmento
-                    # più "scomodo" il numero di pagine che occupa con la nuova
-                    # scala sia un intero.
-                    #
-                    # Approccio: cerchiamo il fattore f < 1 tale che, per ogni
-                    # segmento, ceil(h_px * f * scale_y / usable_h) * usable_h
-                    # sia >= h_px * f * scale_y  (ovvero nessun overflow).
-                    # La soluzione conservativa più semplice e stabile:
-                    # scaliamo in modo che l'overflow peggiore diventi 0,
-                    # ovvero che ogni segmento occupi un numero intero di pagine.
-                    #
-                    # Per il segmento con overflow residuo:
-                    #   n_pages = ceil(h_px * scale_y / usable_h)
-                    #   target  = n_pages * usable_h          [in du]
-                    #   f       = target / (h_px * scale_y)   [≥ 1 se già ok, ≤ 1 se va ridotto]
-                    # Prendiamo il minimo f tra tutti i segmenti (quello che
-                    # richiede la riduzione maggiore).
 
                     f_min = 1.0
                     for h_px in seg_h_px:
@@ -862,27 +975,16 @@ class SongpressPrintout(wx.Printout):
                         n_pages = max(1, math.ceil(h_du / usable_h))
                         target_du = n_pages * usable_h
                         if h_du > target_du:
-                            # non dovrebbe mai accadere per costruzione di ceil,
-                            # ma per robustezza:
                             f_candidate = target_du / h_du
                         elif h_du > 0:
-                            # Vogliamo f tale che h_px * scale_y * f <= target_du
-                            # con n_pages invariato (non vogliamo aggiungere pagine).
-                            # f_candidate = target_du / h_du  ← sarebbe ≥ 1, non utile.
-                            # Invece cerchiamo n_pages - 1 pagine se l'overflow
-                            # è ciò che causa il problema:
                             overflow_du = math.fmod(h_du, usable_h)
                             if overflow_du > 0:
-                                # Riduciamo fino a far sparire l'overflow:
-                                # (h_du - overflow_du) = (n_pages-1)*usable_h
-                                # f = (n_pages-1)*usable_h / h_du
                                 f_candidate = ((n_pages - 1) * usable_h) / h_du
-                                f_candidate = max(0.5, f_candidate)  # floor di sicurezza
+                                f_candidate = max(0.5, f_candidate)
                             else:
                                 f_candidate = 1.0
                         else:
                             f_candidate = 1.0
-
                         f_min = min(f_min, f_candidate)
 
                     if f_min < 1.0:
@@ -905,13 +1007,26 @@ class SongpressPrintout(wx.Printout):
             if getattr(self.frame_obj, '_remove_blank_pages', False) and sh <= 2:
                 continue
 
-            y = 0.0
-            while y < sh:
-                self._page_offsets.append((seg_idx, y))
-                y += px_per_page
+            if block_aware:
+                for start_y, page_h in self._paginate_blocks(
+                        sh, px_per_page, seg_breaks[seg_idx]):
+                    self._page_offsets.append((seg_idx, start_y))
+                    self._page_clip_px.append(page_h)
+            else:
+                y = 0.0
+                while y < sh:
+                    self._page_offsets.append((seg_idx, y))
+                    self._page_clip_px.append(None)
+                    y += px_per_page
 
         if not self._page_offsets:
             self._page_offsets = [(0, 0.0)]
+            self._page_clip_px = [None]
+
+        _dbg('layout shrink_on=%s block_aware=%s cols=%s two_pages=%s ppp=%.1f '
+             'scale_y=%.3f offsets=%s clip=%s'
+             % (shrink_on, block_aware, columns_per_page, self.two_pages_per_sheet,
+                px_per_page, self._scale_y, self._page_offsets, self._page_clip_px))
 
         # Rimuovi ultima pagina quasi vuota
         if getattr(self.frame_obj, '_remove_blank_pages', False) and len(self._page_offsets) > 1:
@@ -926,6 +1041,7 @@ class SongpressPrintout(wx.Printout):
             threshold  = getattr(self.frame_obj, '_blank_page_threshold', 5) / 100.0
             if remaining < px_per_page * threshold:
                 self._page_offsets.pop()
+                self._page_clip_px.pop()
 
     # ── wx.Printout interface ─────────────────────────────────────────────────
 
@@ -1074,6 +1190,17 @@ class SongpressPrintout(wx.Printout):
         clip_y = int(y_offset_px)
         clip_w = int(math.ceil(col_w_du / sx)) + BOX_LEFT_PAD
         clip_h = int(math.ceil(usable_h_du / sy))
+        # Pagine a blocchi: non disegnare oltre il punto di interruzione, così
+        # la prima riga del blocco successivo non resta tagliata in fondo.
+        try:
+            _ph = self._page_clip_px[logical_page_idx]
+        except Exception:
+            _ph = None
+        if _ph:
+            clip_h = min(clip_h, int(math.ceil(_ph)) + 1)
+        _dbg('render page=%d seg=%d y_off=%.1f clip=(%s,%s,%s,%s) page_h=%s preview=%s'
+             % (logical_page_idx, seg_idx, y_offset_px, clip_x, clip_y, clip_w,
+                clip_h, _ph, self.IsPreview()))
         dc.SetClippingRegion(clip_x, clip_y, clip_w, clip_h)
 
         r = self._make_renderer()
@@ -1397,6 +1524,7 @@ class PrintOptionsDialog:
         note.SetFont(nf)
         shrink_vsz.Add(self.cb_shrink, 0)
         shrink_vsz.Add(note, 0, wx.LEFT, 20)
+        self._shrink_panel = shrink_panel
         shrink_panel.SetSizer(shrink_vsz)
         box_resize.Add(shrink_panel, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
 
@@ -1414,6 +1542,9 @@ class PrintOptionsDialog:
 
         self.lbl_min_margin.Enable(owner._shrink_to_fit)
         self.spin_min_margin.Enable(owner._shrink_to_fit)
+
+        # Etichette coerenti con la modalità «pagine per foglio» corrente
+        self._update_scope_labels(owner._two_pages_per_sheet)
 
         outer.Add(box_resize, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
 
@@ -1465,6 +1596,28 @@ class PrintOptionsDialog:
         box_scale.Add(self.btn_scale_reset, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
         outer.Add(box_scale, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
 
+        # ── Sezione Diagnostica ────────────────────────────────────────
+        box_diag = wx.StaticBoxSizer(
+            wx.StaticBox(dlg, label=_("Diagnostics")), wx.VERTICAL
+        )
+        self.cb_debug = wx.CheckBox(dlg, label=_("Write page layout log"))
+        self.cb_debug.SetValue(getattr(owner, '_print_debug', False))
+        self.cb_debug.SetToolTip(
+            _("Save how the song is split into pages to this file:") + "\n" + _debug_log_path())
+        row_dbg = wx.BoxSizer(wx.HORIZONTAL)
+        row_dbg.Add(self.cb_debug, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        self.btn_open_log = wx.Button(dlg, wx.ID_ANY, _("Open folder"), style=wx.BU_EXACTFIT)
+        self.btn_open_log.SetToolTip(_("Open the folder that contains the log file"))
+        row_dbg.Add(self.btn_open_log, 0, wx.ALIGN_CENTER_VERTICAL)
+        box_diag.Add(row_dbg, 0, wx.EXPAND | wx.ALL, _GAP)
+        lbl_path = wx.StaticText(dlg, label=_debug_log_path())
+        lbl_path.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT))
+        pf_ = lbl_path.GetFont()
+        pf_.SetPointSize(max(7, pf_.GetPointSize() - 1))
+        lbl_path.SetFont(pf_)
+        box_diag.Add(lbl_path, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
+        outer.Add(box_diag, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
+
         # ── Bottoni ────────────────────────────────────────────────────
         PIN_OFF = u"📌"
         PIN_ON  = u"📍"
@@ -1498,19 +1651,52 @@ class PrintOptionsDialog:
         self.cb_remove_blank.Bind(wx.EVT_CHECKBOX, self._on_remove_blank_changed)
         self.btn_pin.Bind(wx.EVT_BUTTON, self._on_pin)
         self.btn_scale_reset.Bind(wx.EVT_BUTTON, self._on_scale_reset)
+        self.btn_open_log.Bind(wx.EVT_BUTTON, self._on_open_log_folder)
         self.btn_ok.Bind(wx.EVT_BUTTON, self._on_ok)
 
     # ── Handler eventi ────────────────────────────────────────────────────────
+
+    def _update_scope_labels(self, two_pages):
+        """Adegua testi e tooltip delle due opzioni di riduzione.
+
+        Con «2 pagine per foglio» le due pagine logiche sono affiancate sullo
+        stesso foglio: la riduzione si applica a ciascuna metà (colonna) e non
+        al foglio intero, quindi le etichette parlano di «colonna».
+        """
+        if two_pages:
+            self.cb_fit.SetLabel(_("Shrink if exceeds column"))
+            self.cb_fit.SetToolTip(_(
+                "Reduce the content only if it exceeds the size of its column "
+                "(each half of the sheet), no upscaling"))
+            self.cb_shrink.SetLabel(_("Shrink to fit current column"))
+            self.cb_shrink.SetToolTip(_(
+                "Reduce the content only if it exceeds the size of its column "
+                "(each half of the sheet), to avoid bottom clipping"))
+        else:
+            self.cb_fit.SetLabel(_("Shrink if exceeds page"))
+            self.cb_fit.SetToolTip(_(
+                "Reduce the content only if it exceeds the page size (no upscaling)"))
+            self.cb_shrink.SetLabel(_("Shrink to fit current page"))
+            self.cb_shrink.SetToolTip(_(
+                "Reduce the content only if it exceeds the page size, to avoid bottom clipping"))
+        try:
+            self._shrink_panel.Layout()
+            self.dlg.Layout()
+            self.dlg.Fit()
+        except Exception:
+            pass
 
     def _on_page1(self, evt):
         self.rb_page1.SetValue(True)
         self.rb_page2.SetValue(False)
         self.cb_no_mirror.Enable(False)
+        self._update_scope_labels(False)
 
     def _on_page2(self, evt):
         self.rb_page2.SetValue(True)
         self.rb_page1.SetValue(False)
         self.cb_no_mirror.Enable(True)
+        self._update_scope_labels(True)
 
     def _on_col1(self, evt):
         self.rb_col1.SetValue(True)
@@ -1519,6 +1705,12 @@ class PrintOptionsDialog:
     def _on_col2(self, evt):
         self.rb_col2.SetValue(True)
         self.rb_col1.SetValue(False)
+
+    def _on_open_log_folder(self, evt):
+        if not _open_debug_log_folder():
+            wx.MessageBox(
+                _("Unable to open the folder:") + "\n" + os.path.dirname(_debug_log_path()),
+                _("Error"), wx.OK | wx.ICON_ERROR, self.dlg)
 
     def _on_scale_reset(self, evt):
         # Riporta la scala a 100% aggiornando anche la casella (SpinCtrl).
@@ -1561,6 +1753,9 @@ class PrintOptionsDialog:
         o._remove_blank_pages   = self.cb_remove_blank.GetValue()
         o._blank_page_threshold = self.spin_blank_threshold.GetValue()
         o._print_font_scale     = self.spin_font_scale.GetValue()
+        global PRINT_DEBUG
+        o._print_debug          = self.cb_debug.GetValue()
+        PRINT_DEBUG             = o._print_debug
         # Persistenza immediata (la scala non viene salvata)
         try:
             o._SavePageMargins()
@@ -1616,6 +1811,7 @@ class PrintManager:
         self._min_margin_shrink    = 5
         self._print_font_scale     = 100
         self._print_options_pinned = False
+        self._print_debug          = False
 
         self._preview_frame = None
 
@@ -1645,6 +1841,7 @@ class PrintManager:
             self.config.Write('remove_blank_pages',   '1' if self._remove_blank_pages else '0')
             self.config.Write('blank_page_threshold', str(self._blank_page_threshold))
             self.config.Write('print_options_pinned', '1' if self._print_options_pinned else '0')
+            self.config.Write('print_debug',          '1' if self._print_debug else '0')
             # Scala volutamente NON salvata (reset a 100 ad ogni riapertura).
             self.config.DeleteEntry('print_font_scale', False)
             self.config.Flush()
@@ -1702,6 +1899,9 @@ class PrintManager:
             self._remove_blank_pages   = _rb('remove_blank_pages',   self._remove_blank_pages)
             self._blank_page_threshold = _ri('blank_page_threshold', self._blank_page_threshold, 1, 95)
             self._print_options_pinned = _rb('print_options_pinned', self._print_options_pinned)
+            global PRINT_DEBUG
+            self._print_debug = _rb('print_debug', self._print_debug)
+            PRINT_DEBUG = self._print_debug
 
             # La scala non è persistente: sempre 100% all'avvio.
             self._print_font_scale = 100

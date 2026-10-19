@@ -2114,7 +2114,19 @@ The following controls are found in the **Formatting** tab of preferences and af
 | Remove blank pages                             | Removes nearly-empty logical pages from the print output            |
 | Blank page threshold (%)                       | Maximum page fill percentage below which a page is considered blank |
 | Scale (%)                                      | Enlarges or reduces the whole printed content (50–200%, default 100%) |
+| Write page layout log (Diagnostics)            | Writes a log file with the layout parameters (see *Print diagnostics*); default off |
+| Open folder (Diagnostics)                      | Opens the folder containing the log file; the full path is shown next to it |
 | 📌 Pin                                          | Keeps the dialog open after OK, applying changes to the preview immediately |
+
+#### Print diagnostics
+
+At the bottom of the **Print Options** dialog is the **Diagnostics** section, useful for understanding why a song is laid out in a certain way (or for reporting a problem):
+
+- **Write page layout log** — when on, the file `songpress_print_debug.log` is written on every preview/print. It records the layout parameters (shrink on, block-aware layout, columns, two pages per sheet, pages per sheet, vertical scale, offsets, clip area), the **block breaks** and the **clip regions** of each page. Default: off.
+- **Open folder** — opens the log folder. The full path of the file is shown in grey next to the button.
+- The file is in the system temporary folder: `%TEMP%` on Windows, `/tmp` (or `$TMPDIR`) on Linux and macOS.
+
+The log is for diagnostics only: leaving it off does not affect printing.
 
 The `{new_page}` directive in the text forces a new logical page during printing. With the 2-column layout, `{column_break}` forces a jump to the next column.
 
@@ -2146,6 +2158,7 @@ Values are stored in the `/PageSetup` section of the user configuration (`~/.Son
 | Remove blank pages         | `remove_blank_pages`   | off        |
 | Blank page threshold (%)   | `blank_page_threshold` | 5          |
 | 📌 Pin button state         | `print_options_pinned` | off        |
+| Write page layout log      | `print_debug`          | off        |
 
 > **Exception — Scale (%)** — The **Scale** value is **never** saved. It stays active for the whole working session (handy when adjusting it with the dialog pinned while watching the preview), but it always returns to **100%** each time Songpress++ restarts. This prevents unnoticed enlarged or reduced printouts after the scale was used for a single song. Any leftover value stored by earlier versions is removed from the configuration as well.
 
@@ -2205,9 +2218,9 @@ Uses the `win32print` and `pywintypes` bindings included with the `pywin32` depe
 
 If `pywin32` is unavailable or raises an error, the same logic is applied via `ctypes.WinDLL('winspool.drv')`, calling `DocumentPropertiesW` directly with `ctypes.create_string_buffer` buffers. The relevant DEVMODE fields (orientation, paper size, copies, color, duplex) are read using fixed offsets in the `DEVMODEW` structure.
 
-**Attempt 3 — Informational dialog (non-Windows or both attempts failed)**
+**Attempt 3 — Page Setup dialog (non-Windows or both attempts failed)**
 
-On platforms other than Windows, or if both previous attempts fail, an informational message box is shown explaining that the driver settings panel is not available on this platform, and suggesting the use of the preview toolbar to change orientation, paper size and margins. No additional dialog window is opened, to avoid showing two windows with overlapping functions.
+On platforms other than Windows, or if both previous attempts fail, the standard **Page Setup** dialog (`wx.PageSetupDialog`) is opened, where orientation, paper size and margins can be changed. Changes confirmed with OK are applied to the preview.
 
 #### Propagation of changes
 
@@ -2217,12 +2230,13 @@ When the user confirms with OK, Songpress++ automatically propagates the readabl
 
 ### Automatic printer detection in the preview
 
-The print preview status bar displays three indicators that read the **actual** settings of the selected printer, not just the values set by wx:
+The print preview status bar displays four indicators that read the **actual** settings of the selected printer, not just the values set by wx:
 
 | Indicator | Possible values |
 | --------- | --------------- |
 | **Duplex** | `Duplex: off (simplex)` · `Duplex: ON — long-edge binding` · `Duplex: ON — short-edge binding` |
 | **Color** | `Color: color print` · `Color: black & white` |
+| **Print scope** | `Printing whole document` (green) · `Printing selection only` (amber) |
 | **Orientation** | Portrait sheet icon or landscape sheet icon |
 
 **How detection works (Windows)**
@@ -2374,8 +2388,9 @@ Unlike the internal index of the *Songbook PDF* (sorted by title and tied to a s
 3. Select the file **extension** to include via the radio buttons: `.cho`, `.chopro`, `.pro`, `.crd`, `.txt`, **All files** or **Other…** (free-text field). Each entry shows the **number of files** found with that extension. On opening, the radio matching the **Default file extension** set in *Options → General* is already selected
 4. Optional: set a **background watermark** (image) with opacity, angle and size, and choose whether to render it in **colour** or in **black and white**
 5. Optional: customize the **Index title** (default "Index")
-6. Leave the **Open the PDF now** checkbox on, or turn it off
-7. Click **Generate PDF** or **Generate DOCX** and choose where to save the file
+6. Optional: tick **Write the number of songs in the index** to add a line with the total number of songs at the end of the index
+7. Leave the **Open the PDF now** checkbox on, or turn it off
+8. Click **Generate PDF** or **Generate DOCX** and choose where to save the file
 
 ### How number and title are extracted
 
@@ -2397,6 +2412,7 @@ Sorting is by **ascending number**; songs without a number are listed **after** 
 | File extension | from *Options* | File type to include. At startup the radio matching the **Default file extension** from *Options → General* is preselected (if that extension is not among the fixed ones, **Other…** is selected and the field filled in automatically); **All files** automatically skips binaries (`.pdf`, `.docx`, `.svg`, `.emf` and the images `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`, `.tif`, `.tiff`); **Other…** enables a field for a custom extension |
 | Background watermark | none | Image (PNG, JPG/JPEG, WebP, GIF, BMP, TIFF) drawn behind the text on every page, with **Opacity (%)**, **Angle (°)** and **Size (%)**. The **Rendering** option lets you choose **colour** (default) or **black and white** (the image is desaturated while keeping its transparency). These controls are enabled **only when an image is selected** (otherwise they stay disabled). All these values are **remembered across launches** |
 | Index title | `Index` | Heading printed at the top of the index |
+| Write the number of songs in the index | ☐ off | When enabled, a bold line with the total number of songs (e.g. “Total songs in the index: 120”) is added right after the table (PDF and DOCX), before the excluded-songs note if any. The choice is **remembered across launches** |
 | Open the PDF now | ✅ on | When enabled, the generated file (PDF or DOCX) is opened with the system's default application once created. The choice is remembered across launches |
 
 ### Notes
@@ -2405,6 +2421,8 @@ Sorting is by **ascending number**; songs without a number are listed **after** 
 - On opening, the **extension** radio reflects the **Default file extension** set in *Options → General* (read from Songpress++'s settings); when the window is launched as a stand-alone program it falls back to `crd`.
 - The **watermark** values (Opacity, Angle, Size and the Colour/Black-and-white choice) are remembered on every change and restored when the window is reopened.
 - The **watermark** controls (Opacity, Angle, Size and Rendering) are disabled until an image is selected, and turn on automatically as soon as the **Image** field contains a path.
+- **Watermark opacity warning.** When an image is selected and **Opacity** is above **50%**, a red warning appears under the control (“with opacity above 50% the text may be hard to read”). It is only a warning: the value is not clamped.
+- Every control in the window has an explanatory **tooltip**.
 - The **note about excluded songs** is printed only if **both** checkboxes are on (“Exclude files with “watermark”” and “Add a note at the end of the index…”). If you turn the exclusion off, the note checkbox is disabled and the note is not printed, but your choice stays stored and comes back together with the exclusion.
 - The note's icon is read from `img/info.png`, in the folder that contains `CreaIndice.py`; if the file is missing, the note is still printed, without the icon. The note text follows Songpress++'s interface language.
 - **“watermark” scan speed.** The search for the `{watermark}` directive is now much faster: files are read directly as bytes (without trying several text encodings), checked **in parallel** when there are more than 16, and each file's result is **remembered** until the file changes (date or size). So turning the checkbox back on, changing the extension or generating the index does not reread the files: only the **first** scan of a folder takes longer, later ones are almost instant.
