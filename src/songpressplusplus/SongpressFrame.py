@@ -1839,20 +1839,49 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         )
         cb_spaces = wx.CheckBox(dlg, label=_(u"Normalize multiple spaces (replace 2+ spaces with one)"))
         cb_spaces.SetValue(True)
+        cb_spaces.SetToolTip(_(u"Replaces every run of two or more consecutive spaces with a single space."))
 
         cb_underscore = wx.CheckBox(dlg, label=_(u"Remove '_' characters from text"))
         cb_underscore.SetValue(False)
+        cb_underscore.SetToolTip(_(u"Deletes every '_' character from the text (the underscore used to join the parts of a word)."))
 
         cb_dash = wx.CheckBox(dlg, label=_(u"Remove '-' characters from text"))
         cb_dash.SetValue(False)
+        cb_dash.SetToolTip(_(u"Deletes every '-' character from the text, such as syllable hyphens. Warning: it also removes the '-' in minor chords (e.g. MI-)."))
 
         cb_leading = wx.CheckBox(dlg, label=_(u"Remove leading whitespace from each line"))
         cb_leading.SetValue(False)
+        cb_leading.SetToolTip(_(u"Removes the spaces and tabs at the beginning of every line."))
+
+        cb_join = wx.CheckBox(
+            dlg, label=_(u"Join split words with '_' (only where needed)"))
+        cb_join.SetValue(False)
+        cb_join.SetToolTip(_(
+            u"Where a wide chord pushes apart the syllables of a word "
+            u"(e.g. d[LA-]i), insert '_' before the next chord so the "
+            u"parts stay visually joined."))
+
+        # "Remove '_'" and "Join with '_'" are mutually exclusive:
+        # checking one unchecks and disables the other.
+        def _sync_exclusive(evt=None):
+            if cb_underscore.GetValue():
+                cb_join.SetValue(False)
+                cb_join.Enable(False)
+            else:
+                cb_join.Enable(True)
+            if cb_join.GetValue():
+                cb_underscore.SetValue(False)
+                cb_underscore.Enable(False)
+            else:
+                cb_underscore.Enable(True)
+        cb_underscore.Bind(wx.EVT_CHECKBOX, _sync_exclusive)
+        cb_join.Bind(wx.EVT_CHECKBOX, _sync_exclusive)
 
         opts_box.Add(cb_spaces,     0, wx.ALL, 6)
         opts_box.Add(cb_underscore, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
         opts_box.Add(cb_dash,       0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
         opts_box.Add(cb_leading,    0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
+        opts_box.Add(cb_join,       0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
 
         outer.Add(opts_box, 0, wx.EXPAND | wx.ALL, 10)
 
@@ -1871,9 +1900,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         do_underscore = cb_underscore.GetValue()
         do_dash       = cb_dash.GetValue()
         do_leading    = cb_leading.GetValue()
+        do_join       = cb_join.GetValue()
         dlg.Destroy()
 
-        if not do_spaces and not do_underscore and not do_dash and not do_leading:
+        if not (do_spaces or do_underscore or do_dash or do_leading or do_join):
             return  # nulla da fare
 
         # ── Applica le operazioni ────────────────────────────────────────
@@ -1890,6 +1920,37 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             new_text = new_text.replace('-', '')
         if do_leading:
             new_text = '\n'.join(line.lstrip() for line in new_text.split('\n'))
+        if do_join:
+            # Inserisce '_' SOLO dove serve: quando l'accordo e' piu' largo della
+            # sillaba che lo segue, il prossimo accordo spinge via il testo e la
+            # parola appare spezzata ("d i"). Se la spaziatura cade in mezzo a
+            # una parola (lettera prima e dopo il confine), si mette '_' davanti
+            # al prossimo accordo. Larghezza accordo ~ 1.3 volte quella del testo
+            # (maiuscole/grassetto). Idempotente: dopo l'inserimento il segmento
+            # termina con '_' e non viene piu' toccato.
+            _CHORD_W = 1.3
+            _letter = re.compile(r'[^\W\d_]')
+            _split = re.compile(r'(\[[^\]]*\])')
+
+            def _join_line(line):
+                if line.lstrip().startswith(('{', '#')):
+                    return line
+                parts = _split.split(line)   # [txt0, chord1, txt1, chord2, txt2, ...]
+                if len(parts) < 5:           # servono almeno due accordi
+                    return line
+                for k in range(1, len(parts) - 2, 2):
+                    chord = parts[k][1:-1].strip()
+                    seg = parts[k + 1]
+                    nxt = parts[k + 3] if k + 3 < len(parts) else ''
+                    if not seg or not nxt:
+                        continue
+                    if not (_letter.match(seg[-1]) and _letter.match(nxt[0])):
+                        continue             # confine non in mezzo a una parola
+                    if len(chord) * _CHORD_W > len(seg.replace('_', '')):
+                        parts[k + 1] = seg + '_'
+                return ''.join(parts)
+
+            new_text = '\n'.join(_join_line(l) for l in new_text.split('\n'))
 
         if new_text == text:
             return  # nessuna modifica, evita undo inutile
@@ -6491,6 +6552,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         # {chorus} single-tag (without soc/eoc)
         CHORUS_TAG = re.compile(r'^\s*\{chorus(?:[:\s][^}]*)?\}',  re.IGNORECASE)
         DIRECTIVE  = re.compile(r'^\s*\{[^}]+\}',                  re.IGNORECASE)
+        # {beats_time: ...} e' una direttiva "trasparente": sta fra una riga di
+        # accordi e l'altra ma non deve spezzare la strofa in blocchi da 1 riga.
+        BEATS      = re.compile(r'^\s*\{\s*beats_time\b[^}]*\}\s*$', re.IGNORECASE)
         COMMENT    = re.compile(r'^\s*#')
         # paired block delimiters whose content must NOT be treated as verse
         # (start_chord/end_chord, grid/end_grid, tab/end_tab, bridge, etc.)
@@ -6606,7 +6670,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 continue
 
             # --- generic directive / comment → header ---
-            if DIRECTIVE.match(line) or COMMENT.match(line):
+            if (DIRECTIVE.match(line) and not BEATS.match(line)) or COMMENT.match(line):
                 blocks.append({'type': 'header', 'lines': [line], 'start': i, 'tagged': False})
                 i += 1
                 continue
@@ -6618,7 +6682,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 l = lines[i]
                 if (l.strip() == '' or SOV.match(l) or SOC.match(l)
                         or VERSE_TAG.match(l) or CHORUS_TAG.match(l)
-                        or DIRECTIVE.match(l) or COMMENT.match(l)):
+                        or (DIRECTIVE.match(l) and not BEATS.match(l))
+                        or COMMENT.match(l)):
                     break
                 block_lines.append(l)
                 i += 1
@@ -6725,11 +6790,18 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         self._propagate_hint = ''
 
+        import re
+        _BEATS = re.compile(r'^\s*\{\s*beats_time\b[^}]*\}\s*$', re.IGNORECASE)
+
         def _content(b):
-            """(righe di contenuto, offset nel file) escludendo i delimitatori."""
+            """(righe di contenuto senza {beats_time}, indici reali nel file).
+            I delimitatori ({sov}/{eov}...) sono esclusi."""
             if b.get('tagged', False):
-                return b['lines'][1:-1], b['start'] + 1
-            return b['lines'], b['start']
+                lines, off = b['lines'][1:-1], b['start'] + 1
+            else:
+                lines, off = b['lines'], b['start']
+            idx = [off + k for k, l in enumerate(lines) if not _BEATS.match(l)]
+            return [all_lines[i] for i in idx], idx
 
         def _has_lyrics(lines):
             """True se almeno una riga ha testo cantato oltre agli accordi."""
@@ -6771,7 +6843,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self._propagate_hint = counts
             return None
 
-        src_content, src_offset = _content(source)
+        src_content, _src_idx = _content(source)
         chord_map      = self._extract_chord_map(src_content)
         src_line_count = len(src_content)
 
@@ -6779,7 +6851,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         modified     = False
 
         for target in typed[source_idx + 1:]:
-            tgt_content, tgt_offset = _content(target)
+            tgt_content, tgt_idx = _content(target)
 
             if len(tgt_content) != src_line_count:
                 continue   # metrica diversa, salta
@@ -6790,7 +6862,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             if new_content != tgt_content:
                 modified = True
             for j, new_line in enumerate(new_content):
-                result_lines[tgt_offset + j] = new_line
+                result_lines[tgt_idx[j]] = new_line
 
         return '\n'.join(result_lines) if modified else None
 

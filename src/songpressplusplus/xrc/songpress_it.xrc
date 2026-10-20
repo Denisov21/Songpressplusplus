@@ -616,6 +616,7 @@
         <object class="wxMenuItem" name="normalizeSpaces">
           <label>_Normalizza spazi multipli...</label>
           <accel></accel>
+          <bitmap>../img/text_spacing.png</bitmap>
           <help>Sostituisci sequenze di spazi multipli con un singolo spazio</help>
         </object>
         <object class="separator"/>

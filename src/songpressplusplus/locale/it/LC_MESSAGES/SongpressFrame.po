@@ -967,6 +967,30 @@ msgstr "Elimina i caratteri '-' dal testo"
 msgid "Remove leading whitespace from each line"
 msgstr "Elimina gli spazi iniziali da ogni riga"
 
+#: SongpressFrame.py OnNormalizeSpaces checkbox spaces tooltip
+msgid "Replaces every run of two or more consecutive spaces with a single space."
+msgstr "Sostituisce ogni sequenza di due o più spazi consecutivi con uno spazio solo."
+
+#: SongpressFrame.py OnNormalizeSpaces checkbox underscore tooltip
+msgid "Deletes every '_' character from the text (the underscore used to join the parts of a word)."
+msgstr "Elimina tutti i caratteri '_' dal testo (il trattino basso usato per unire le parti di una parola)."
+
+#: SongpressFrame.py OnNormalizeSpaces checkbox dash tooltip
+msgid "Deletes every '-' character from the text, such as syllable hyphens. Warning: it also removes the '-' in minor chords (e.g. MI-)."
+msgstr "Elimina tutti i caratteri '-' dal testo, ad esempio i trattini di sillabazione. Attenzione: rimuove anche il '-' degli accordi minori (es. MI-)."
+
+#: SongpressFrame.py OnNormalizeSpaces checkbox leading tooltip
+msgid "Removes the spaces and tabs at the beginning of every line."
+msgstr "Elimina gli spazi e le tabulazioni all'inizio di ogni riga."
+
+#: SongpressFrame.py OnNormalizeSpaces checkbox join split words
+msgid "Join split words with '_' (only where needed)"
+msgstr "Unisci le parole spezzate con '_' (solo se necessario)"
+
+#: SongpressFrame.py OnNormalizeSpaces checkbox join split words tooltip
+msgid "Where a wide chord pushes apart the syllables of a word (e.g. d[LA-]i), insert '_' before the next chord so the parts stay visually joined."
+msgstr "Dove un accordo largo allontana le sillabe di una parola (es. d[LA-]i), inserisce '_' davanti all'accordo successivo così le parti restano unite."
+
 #: SongpressFrame.py OnInsertBeatsTime multicursor notice
 msgid "Multi-cursor active: %d positions."
 msgstr "Multicursore attivo: %d posizioni."

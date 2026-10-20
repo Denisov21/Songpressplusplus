@@ -593,6 +593,7 @@
         <object class="wxMenuItem" name="cleanupChords">
           <label>_Cleanup chords...</label>
           <accel></accel>
+          <bitmap>../img/text_spacing.png</bitmap>
           <help>Normalize chords according to current notation</help>
         </object>
         <object class="separator"/>

@@ -1429,7 +1429,7 @@
             <property name="permission">none</property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap"></property>
+            <property name="bitmap">Load From File; ../img/text_spacing.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
             <property name="help">Replace sequences of multiple spaces with a single space</property>
