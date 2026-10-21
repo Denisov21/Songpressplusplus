@@ -6543,10 +6543,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         blocks = []
         i = 0
 
-        SOV = re.compile(r'^\s*\{s(?:ov|tart_of_verse)[^}]*\}',   re.IGNORECASE)
-        EOV = re.compile(r'^\s*\{e(?:ov|nd_of_verse)[^}]*\}',     re.IGNORECASE)
-        SOC = re.compile(r'^\s*\{s(?:oc|tart_of_chorus)[^}]*\}',  re.IGNORECASE)
-        EOC = re.compile(r'^\s*\{e(?:oc|nd_of_chorus)[^}]*\}',    re.IGNORECASE)
+        SOV = re.compile(r'^\s*\{(?:sov|start_of_verse|start_verse(?:_num)?)\b[^}]*\}', re.IGNORECASE)
+        EOV = re.compile(r'^\s*\{(?:eov|end_of_verse|end_verse(?:_num)?)\b[^}]*\}',     re.IGNORECASE)
+        SOC = re.compile(r'^\s*\{(?:soc|start_of_chorus|start_chorus)\b[^}]*\}',        re.IGNORECASE)
+        EOC = re.compile(r'^\s*\{(?:eoc|end_of_chorus|end_chorus)\b[^}]*\}',            re.IGNORECASE)
         # {verse} or {verse:label}
         VERSE_TAG  = re.compile(r'^\s*\{verse(?:[:\s][^}]*)?\}',   re.IGNORECASE)
         # {chorus} single-tag (without soc/eoc)
