@@ -30,6 +30,11 @@ msgstr "Controllo sintassi"
 msgid "No syntax errors found."
 msgstr "Nessun errore sintattico trovato."
 
+#. Subtitle of the success message
+#: SyntaxCheckerDialog.py
+msgid "The song is syntactically correct."
+msgstr "Il brano è sintatticamente corretto."
+
 #. Button: adapt dialog width to fit the longest description text
 #: SyntaxCheckerDialog.py:56
 msgid "Fit width"
@@ -44,6 +49,21 @@ msgstr "Ridimensiona il dialog in modo che la colonna Descrizione contenga il te
 #: SyntaxCheckerDialog.py
 msgid "Go to line"
 msgstr "Vai alla riga"
+
+#. Hint shown under the header of the error list
+#: SyntaxCheckerDialog.py
+msgid "Click an error to highlight its line in the editor."
+msgstr "Fai clic su un errore per evidenziarne la riga nell'editor."
+
+#. Label of the colour picker used to highlight the error line in the editor
+#: SyntaxCheckerDialog.py
+msgid "Highlight colour:"
+msgstr "Colore evidenziazione:"
+
+#. Tooltip for the highlight colour picker
+#: SyntaxCheckerDialog.py
+msgid "Colour used to highlight the selected error line in the editor"
+msgstr "Colore usato per evidenziare nell'editor la riga dell'errore selezionato"
 
 #. Button: close the dialog
 #: SyntaxCheckerDialog.py:68

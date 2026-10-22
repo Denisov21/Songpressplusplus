@@ -19,15 +19,16 @@ class SyntaxCheckerDialog(wx.Dialog):
 
     If there are no errors, a success message is displayed.
     If there are errors, they are listed with line, column and description.
-    Double-clicking an error (or pressing Go to line) moves the editor
+    Double-clicking an error moves the editor
     to the corresponding line (requires the caller to bind OnGoToError).
     """
 
-    def __init__(self, parent, result: SyntaxCheckResult):
+    def __init__(self, parent, result: SyntaxCheckResult, config=None):
         title = _("Syntax check")
         super().__init__(parent, title=title,
                          style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
         self._result = result
+        self._config = config
         self._build_ui()
         # Resize grip in the bottom-right corner
         self._status_bar = wx.StatusBar(self, style=wx.STB_SIZEGRIP)
@@ -48,35 +49,24 @@ class SyntaxCheckerDialog(wx.Dialog):
         title bar, status bar) and clamps the result between a minimum and a
         maximum so the dialog never looks awkward on either extreme.
         """
-        _MIN_H = 220   # px — floor (success panel or single-error)
-        _MAX_H = 600   # px — cap so the dialog never exceeds the screen
+        _MIN_W = 550
+        _MIN_ROWS, _MAX_ROWS = 2, 12   # visible rows of the error list
 
-        if self._result.is_valid or not hasattr(self, "_list"):
-            # Success panel: just fit naturally
-            self.Fit()
-            w, h = self.GetSize()
-            self.SetMinSize((550, max(h, _MIN_H)))
-            self.SetSize(550, max(h, _MIN_H))
-            return
+        if not self._result.is_valid and hasattr(self, "_list"):
+            row_count = self._list.GetItemCount()
+            row_h = self._list.GetItemRect(0).height if row_count > 0 else 20
+            header_row_h = 24            # column header (not exposed by wx)
+            rows = max(_MIN_ROWS, min(row_count, _MAX_ROWS))
+            # The list gets exactly the height its rows need; the sizer then
+            # computes the real minimum for the rest (band, buttons, status bar).
+            self._list.SetMinSize((-1, header_row_h + row_h * rows + 6))
 
-        row_count = self._list.GetItemCount()
-
-        # Measure the real row height (wx renders a hidden item if needed)
-        row_h = self._list.GetItemRect(0).height if row_count > 0 else 20
-        # ListCtrl column header height is not directly exposed; 24 px is the
-        # typical value on all platforms when using the default font.
-        header_row_h = 24
-
-        list_h = header_row_h + row_h * row_count + 4   # +4 for border
-
-        # Extra chrome: bold header label (~22), margins (10*4=40 top/bottom),
-        # button row (~30), status bar (~22), dialog title bar (~30)
-        chrome_h = 22 + 40 + 30 + 22 + 30
-
-        target_h = max(min(list_h + chrome_h, _MAX_H), _MIN_H)
-
-        self.SetMinSize((550, _MIN_H))
-        self.SetSize(550, target_h)
+        self.Layout()
+        self.Fit()                       # smallest size that shows everything
+        w, h = self.GetSize()
+        w = max(w, _MIN_W)
+        self.SetMinSize((_MIN_W, h))     # never smaller than the content
+        self.SetSize(w, h)
 
     # ------------------------------------------------------------------
     # UI construction
@@ -92,6 +82,7 @@ class SyntaxCheckerDialog(wx.Dialog):
             self._build_error_list(panel, vbox)
 
         # Buttons
+        vbox.Add(wx.StaticLine(panel), 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 14)
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
         if not self._result.is_valid:
             self._fit_btn = wx.Button(panel, label=_("Fit width"))
@@ -100,10 +91,16 @@ class SyntaxCheckerDialog(wx.Dialog):
             self._fit_btn.Bind(wx.EVT_BUTTON, self._on_fit_width)
             btn_sizer.Add(self._fit_btn, 0, wx.RIGHT, 8)
 
-            self._goto_btn = wx.Button(panel, label=_("Go to line"))
-            self._goto_btn.Bind(wx.EVT_BUTTON, self._on_goto)
-            btn_sizer.Add(self._goto_btn, 0, wx.RIGHT, 8)
-            self._goto_btn.Enable(False)
+
+        if not self._result.is_valid:
+            # Colour used to highlight the error line in the editor
+            btn_sizer.Add(wx.StaticText(panel, label=_("Highlight colour:")),
+                          0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, 6)
+            self._colour_picker = wx.ColourPickerCtrl(panel, colour=self._load_colour())
+            self._colour_picker.SetToolTip(
+                _("Colour used to highlight the selected error line in the editor"))
+            self._colour_picker.Bind(wx.EVT_COLOURPICKER_CHANGED, self._on_colour_changed)
+            btn_sizer.Add(self._colour_picker, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
 
         btn_sizer.AddStretchSpacer()
         close_btn = wx.Button(panel, wx.ID_CLOSE, _("Close"))
@@ -111,7 +108,7 @@ class SyntaxCheckerDialog(wx.Dialog):
         close_btn.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_CLOSE))
         btn_sizer.Add(close_btn, 0)
 
-        vbox.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 10)
+        vbox.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, 14)
         panel.SetSizer(vbox)
 
         # Dialog sizer: panel + status bar
@@ -119,34 +116,68 @@ class SyntaxCheckerDialog(wx.Dialog):
         dlg_sizer.Add(panel, 1, wx.EXPAND)
         self.SetSizer(dlg_sizer)
 
-    def _build_success(self, panel, sizer):
-        panel.SetBackgroundColour(wx.Colour(180, 230, 140))  # verde chiaro tenue
-        icon = wx.StaticBitmap(
-            panel,
-            bitmap=wx.ArtProvider.GetBitmap(wx.ART_TICK_MARK, wx.ART_MESSAGE_BOX, (32, 32))
-        )
-        label = wx.StaticText(panel, label=_("No syntax errors found."))
-        label.SetForegroundColour(wx.Colour(0, 0, 0))
-        font = label.GetFont()
-        font.SetPointSize(font.GetPointSize() + 1)
-        font.SetWeight(wx.FONTWEIGHT_BOLD)
-        label.SetFont(font)
+    @staticmethod
+    def _make_check_bitmap(size=32, colour=wx.Colour(46, 160, 67),
+                           bg=wx.Colour(229, 245, 232)):
+        """Draws a round green badge with a white check mark."""
+        bmp = wx.Bitmap(size, size, 32)
+        try:
+            dc = wx.MemoryDC(bmp)
+            dc.SetBackground(wx.Brush(bg))  # same colour as the band: no black corners
+            dc.Clear()
+            gc = wx.GraphicsContext.Create(dc)
+            gc.SetBrush(wx.Brush(colour))
+            gc.SetPen(wx.TRANSPARENT_PEN)
+            gc.DrawEllipse(0, 0, size, size)
+            gc.SetPen(wx.Pen(wx.WHITE, max(2, size // 11), wx.PENSTYLE_SOLID))
+            path = gc.CreatePath()
+            path.MoveToPoint(size * 0.27, size * 0.53)
+            path.AddLineToPoint(size * 0.44, size * 0.69)
+            path.AddLineToPoint(size * 0.74, size * 0.34)
+            gc.StrokePath(path)
+            del gc
+            dc.SelectObject(wx.NullBitmap)
+            return bmp
+        except Exception:
+            return wx.ArtProvider.GetBitmap(wx.ART_TICK_MARK, wx.ART_MESSAGE_BOX, (size, size))
 
+    def _build_success(self, panel, sizer):
+        # Same look as the error list: tinted band on top, neutral body.
+        band = wx.Panel(panel)
+        band.SetBackgroundColour(wx.Colour(229, 245, 232))
+        icon = wx.StaticBitmap(band, bitmap=self._make_check_bitmap(40))
+        title = wx.StaticText(band, label=_("No syntax errors found."))
+        title.SetForegroundColour(wx.Colour(30, 110, 50))
+        font = title.GetFont()
+        font.SetWeight(wx.FONTWEIGHT_BOLD)
+        font.SetPointSize(font.GetPointSize() + 2)
+        title.SetFont(font)
+        hint = wx.StaticText(band, label=_("The song is syntactically correct."))
+        hint.SetForegroundColour(wx.Colour(90, 90, 90))
+
+        texts = wx.BoxSizer(wx.VERTICAL)
+        texts.Add(title, 0)
+        texts.Add(hint, 0, wx.TOP, 2)
         hbox = wx.BoxSizer(wx.HORIZONTAL)
-        hbox.Add(icon, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 10)
-        hbox.Add(label, 1, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 10)
-        sizer.Add(hbox, 1, wx.EXPAND | wx.ALL, 6)
+        hbox.Add(icon, 0, wx.LEFT | wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL, 18)
+        hbox.Add(texts, 1, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 16)
+        band.SetSizer(hbox)
+        sizer.Add(band, 1, wx.EXPAND | wx.BOTTOM, 12)
 
     def _build_error_list(self, panel, sizer):
         n_err = self._result.error_count
         n_warn = self._result.warning_count
 
-        # Colore di sfondo: arancione se ci sono errori veri,
-        # giallo se ci sono solo avvertimenti.
+        # Fascia d'intestazione tenue: rosata se ci sono errori veri,
+        # ambra se ci sono solo avvertimenti. Il resto del dialogo resta neutro.
         if n_err > 0:
-            panel.SetBackgroundColour(wx.Colour(255, 180, 140))  # arancione-rosso chiaro
+            band_bg = wx.Colour(253, 232, 229)
+            accent  = wx.Colour(198, 40, 40)
+            art_id  = wx.ART_ERROR
         else:
-            panel.SetBackgroundColour(wx.Colour(255, 224, 130))  # giallo (solo avvertimenti)
+            band_bg = wx.Colour(255, 244, 214)
+            accent  = wx.Colour(176, 112, 0)
+            art_id  = wx.ART_WARNING
 
         # Intestazione: forme dedicate singolare/plurale così l'accordo
         # participio/numero resta corretto anche in italiano. Nel caso misto
@@ -163,12 +194,27 @@ class SyntaxCheckerDialog(wx.Dialog):
             header_text = (_("Found 1 warning:") if n_warn == 1
                            else _("Found {n} warnings:").format(n=n_warn))
 
-        header = wx.StaticText(panel, label=header_text)
-        header.SetForegroundColour(wx.Colour(0, 0, 0))
+        band = wx.Panel(panel)
+        band.SetBackgroundColour(band_bg)
+        icon = wx.StaticBitmap(
+            band, bitmap=wx.ArtProvider.GetBitmap(art_id, wx.ART_MESSAGE_BOX, (32, 32)))
+        header = wx.StaticText(band, label=header_text)
+        header.SetForegroundColour(accent)
         font = header.GetFont()
         font.SetWeight(wx.FONTWEIGHT_BOLD)
+        font.SetPointSize(font.GetPointSize() + 2)
         header.SetFont(font)
-        sizer.Add(header, 0, wx.ALL, 10)
+        hint = wx.StaticText(band, label=_("Click an error to highlight its line in the editor."))
+        hint.SetForegroundColour(wx.Colour(90, 90, 90))
+
+        texts = wx.BoxSizer(wx.VERTICAL)
+        texts.Add(header, 0)
+        texts.Add(hint, 0, wx.TOP, 2)
+        band_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        band_sizer.Add(icon, 0, wx.LEFT | wx.TOP | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL, 14)
+        band_sizer.Add(texts, 1, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 12)
+        band.SetSizer(band_sizer)
+        sizer.Add(band, 0, wx.EXPAND | wx.BOTTOM, 12)
 
         # Error list
         self._list = wx.ListCtrl(
@@ -198,12 +244,15 @@ class SyntaxCheckerDialog(wx.Dialog):
             self._list.SetItem(idx, 1, str(err.line))
             self._list.SetItem(idx, 2, str(err.column))
             self._list.SetItem(idx, 3, err.message)
+            self._list.SetItemBackgroundColour(
+                idx, wx.Colour(255, 246, 220) if err.severity == SEVERITY_WARNING
+                else wx.Colour(255, 240, 238))
 
         self._list.Bind(wx.EVT_LIST_ITEM_SELECTED,  self._on_item_selected)
         self._list.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self._on_goto)
         self._list.Bind(wx.EVT_SIZE, self._on_list_resize)
 
-        sizer.Add(self._list, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        sizer.Add(self._list, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 14)
 
     # ------------------------------------------------------------------
     # Event handling
@@ -259,9 +308,39 @@ class SyntaxCheckerDialog(wx.Dialog):
         self.Layout()
 
     def _on_item_selected(self, event):
-        if hasattr(self, "_goto_btn"):
-            self._goto_btn.Enable(True)
+        # Evidenzia subito la riga dell'errore nell'editor
+        self._on_goto(None)
         event.Skip()
+
+    _COLOUR_KEY = 'syntaxErrorHighlightColour'
+    _COLOUR_DEFAULT = '#FF7878'
+
+    def _load_colour(self):
+        """Reads the saved highlight colour (on open)."""
+        col = wx.Colour(self._COLOUR_DEFAULT)
+        if self._config is not None:
+            c = wx.Colour(self._config.Read(self._COLOUR_KEY, self._COLOUR_DEFAULT))
+            if c.IsOk():
+                col = c
+        return col
+
+    def _save_colour(self):
+        """Writes the highlight colour to disk (on close)."""
+        if self._config is not None and hasattr(self, "_colour_picker"):
+            self._config.Write(self._COLOUR_KEY,
+                               self._colour_picker.GetColour().GetAsString(wx.C2S_HTML_SYNTAX))
+            self._config.Flush()
+
+    def EndModal(self, retCode):
+        self._save_colour()
+        super().EndModal(retCode)
+
+    def _on_colour_changed(self, event):
+        if self._config is not None:
+            # apply immediately: the frame reads the colour from the config
+            self._config.Write(self._COLOUR_KEY,
+                               self._colour_picker.GetColour().GetAsString(wx.C2S_HTML_SYNTAX))
+        self._on_goto(None)
 
     def _on_goto(self, event):
         """Posts a custom event to move the cursor to the error line."""

@@ -1964,9 +1964,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         """Esegue la verifica sintattica ChordPro e mostra il dialogo con i risultati."""
         text = self.text.GetText()
         result = syntax_check(text)
-        dlg = SyntaxCheckerDialog(self.frame, result)
+        self._ClearSyntaxHighlight()
+        dlg = SyntaxCheckerDialog(self.frame, result, self.config)
         dlg.ShowModal()
         dlg.Destroy()
+        self.text.SetFocus()
 
     # ------------------------------------------------------------------
     # Controllo ortografico
@@ -2530,16 +2532,44 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         dlg.ShowModal()
         dlg.Destroy()
 
+    _SYNTAX_MARKER = 10
+
+    def _ClearSyntaxHighlight(self):
+        try:
+            self.text.MarkerDeleteAll(self._SYNTAX_MARKER)
+        except Exception:
+            pass
+
     def OnSyntaxGoto(self, evt):
-        """Sposta il cursore alla riga/colonna dell'errore selezionato nel dialogo."""
-        text = self.text.GetText()
-        lines = text.splitlines(keepends=True)
-        target_line = evt.line - 1    # 0-based
-        target_col  = evt.column - 1  # 0-based
-        pos = sum(len(l) for l in lines[:target_line]) + target_col
-        pos = max(0, min(pos, len(text)))
-        self.text.SetInsertionPoint(pos)
-        self.text.SetFocus()
+        """Evidenzia (solo marker di sfondo) la riga dell'errore selezionato."""
+        stc = self.text
+        line = max(0, min(evt.line - 1, stc.GetLineCount() - 1))
+        # Le posizioni di Scintilla sono in byte: si usano le API per riga
+        start = stc.PositionFromLine(line)
+        end = stc.GetLineEndPosition(line)
+
+        # Marker di sfondo dedicato (indipendente dalla selezione e dai marker 8/9)
+        col = wx.Colour(self.config.Read('syntaxErrorHighlightColour', '#FF7878'))
+        if not col.IsOk():
+            col = wx.Colour(255, 120, 120)
+        stc.MarkerDefine(self._SYNTAX_MARKER, wx.stc.STC_MARK_BACKGROUND,
+                         background=col)
+        stc.MarkerDeleteAll(self._SYNTAX_MARKER)
+        stc.MarkerDeleteAll(8)
+        stc.MarkerDeleteAll(9)
+        stc.MarkerAdd(line, self._SYNTAX_MARKER)
+
+        stc.EnsureVisible(line)
+        # Solo il marker colora la riga: nessuna selezione, così il colore
+        # dell'editor (selezione) non si mescola con quello scelto dall'utente
+        stc.GotoLine(line)
+        stc.SetSelection(start, start)
+        # Porta la riga al centro della vista
+        first = stc.GetFirstVisibleLine()
+        visible = stc.LinesOnScreen()
+        if line < first or line >= first + visible:
+            stc.ScrollToLine(max(0, line - visible // 2))
+        stc.Refresh()
 
     def OnInsertLinespacing(self, evt):
         """Inserisce la direttiva {linespacing: <valore>}."""
