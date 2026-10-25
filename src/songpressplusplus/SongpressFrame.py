@@ -996,6 +996,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.copyAsImageMenuId = xrc.XRCID('copyAsImage')
         self.pasteMenuId = xrc.XRCID('paste')
         self.pasteChordsMenuId = xrc.XRCID('pasteChords')
+        self.integrateChordsMenuId = xrc.XRCID('integrateChords')
+        self.convertTabMenuId = xrc.XRCID('convertTabToChordpro')
+        self.chordProImportMenuId = xrc.XRCID('chordProImport')
         self.undoMenuId = xrc.XRCID('undo')
         self.redoMenuId = xrc.XRCID('redo')
         self.propagateVerseChordsMenuId = xrc.XRCID('propagateVerseChords')
@@ -1274,28 +1277,31 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 argv[0] = os.path.abspath(argv[0])
             cmd = [sys.executable] + argv
 
+        # --- Prima chiude QUESTA finestra, poi avvia la nuova istanza ----------
+        # Se il documento ha modifiche non salvate, la chiusura mostra la
+        # richiesta "Salvare?". In passato la nuova istanza veniva avviata
+        # PRIMA della chiusura: mentre la richiesta era aperta (o se l'utente
+        # annullava) la nuova istanza apriva il file dal disco e le finestre
+        # restavano due, con la vecchia ancora in attesa. Ora il riavvio
+        # procede solo se la chiusura va a buon fine; se l'utente annulla,
+        # non parte nessuna seconda finestra. Il comportamento e' identico su
+        # Windows e Linux (il ramo specifico per piattaforma e' solo
+        # _SpawnDetached).
+        try:
+            closed = self.frame.Close()
+        except Exception:
+            closed = False
+        if not closed:
+            self._closing = False
+            return
+
         # --- Rilascia il server single-instance PRIMA di avviare la nuova
-        #     istanza -------------------------------------------------------
-        # Il controllo di istanza singola e' un server socket in ascolto su
-        # 127.0.0.1:47833 (vedi SDIMainFrame). Al riavvio la nuova istanza fa
-        # _TrySendToExistingInstance('__RAISE__'): se il vecchio server e'
-        # ancora in ascolto quando la nuova istanza controlla, la trova
-        # occupata, considera Songpress++ gia' in esecuzione, inoltra
-        # '__RAISE__' ed esce subito (sys.exit(0)) senza aprire nulla. Poi la
-        # vecchia si chiude -> nessuna finestra riaperta.
-        #
-        # Chiudiamo quindi il server QUI, in modo sincrono nel processo
-        # corrente, cosi' la porta 47833 e' gia' libera quando la nuova istanza
-        # esegue il proprio controllo. Elimina la race condition su tutte le
-        # piattaforme senza dipendere dai tempi. SO_REUSEADDR sul bind della
-        # nuova istanza gestisce l'eventuale stato TIME_WAIT della porta.
-        # La chiamata e' idempotente: OnClose la richiamera' come no-op.
+        #     istanza (porta 127.0.0.1:47833, vedi SDIMainFrame). La chiamata
+        #     e' idempotente: OnClose l'ha gia' richiamata come no-op.
         self._StopSingleInstanceServer()
 
         # --- Avvia la nuova istanza (detachata dallo scope corrente) ---
         self._SpawnDetached(cmd)
-
-        wx.CallAfter(self.frame.Close)
 
     def _SpawnDetached(self, cmd):
         """Avvia *cmd* come processo indipendente che sopravvive alla chiusura
@@ -2596,18 +2602,53 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.InsertWithCaret("{start_verse_num}\n|\n{end_verse_num}\n")
 
     def OnInsertChorusBlock(self, evt):
-        """Insert a chorus block: {start_chorus} ... {end_chorus}"""
+        """Insert a chorus block, choosing the form with a radio button:
+        {start_chorus} ... {end_chorus}  or  {soc} ... {eoc}"""
         default = self.pref.decoratorFormat.GetChorusLabel()
-        label = wx.GetTextFromUser(
-            _("Enter a label for the chorus, or press Cancel to omit the label."),
-            _("Chorus label"),
-            default,
-            self.frame,
-        )
-        if label == default or not label.strip():
-            self.InsertWithCaret("{start_chorus}\n|\n{end_chorus}\n")
+        dlg = wx.Dialog(self.frame, title=_("Chorus"))
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        lbl = wx.StaticText(dlg, label=_("Label (leave empty for the default label):"))
+        sizer.Add(lbl, 0, wx.LEFT | wx.RIGHT | wx.TOP, 10)
+        txt = wx.TextCtrl(dlg, value=default, size=(300, -1))
+        _tt_label = _("Text shown as the chorus label. If left empty or unchanged, the default label is used.")
+        lbl.SetToolTip(_tt_label)
+        txt.SetToolTip(_tt_label)
+        sizer.Add(txt, 0, wx.EXPAND | wx.ALL, 10)
+        # I radio button sono figli dello StaticBox (non del dialogo): su
+        # Linux/GTK e' necessario perche' ricevano correttamente click e
+        # tooltip; su Windows il comportamento e' identico.
+        sbox = wx.StaticBox(dlg, label=_("Form"))
+        box = wx.StaticBoxSizer(sbox, wx.VERTICAL)
+        rb_long = wx.RadioButton(sbox, label="{start_chorus} ... {end_chorus}", style=wx.RB_GROUP)
+        rb_short = wx.RadioButton(sbox, label="{soc} ... {eoc}")
+        rb_long.SetToolTip(_("Long form: {start_chorus} ... {end_chorus}"))
+        rb_short.SetToolTip(_("Short form: {soc} ... {eoc} (start_of_chorus / end_of_chorus)"))
+        if getattr(self, '_lastChorusShort', False):
+            rb_short.SetValue(True)
         else:
-            self.InsertWithCaret("{start_chorus:%s}\n|\n{end_chorus}\n" % label)
+            rb_long.SetValue(True)
+        box.Add(rb_long, 0, wx.ALL, 5)
+        box.Add(rb_short, 0, wx.ALL, 5)
+        sizer.Add(box, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        btns = dlg.CreateButtonSizer(wx.OK | wx.CANCEL)
+        if btns:
+            sizer.Add(btns, 0, wx.EXPAND | wx.ALL, 10)
+        dlg.SetSizerAndFit(sizer)
+        dlg.CentreOnParent()
+        txt.SetFocus()
+        txt.SelectAll()
+        if dlg.ShowModal() != wx.ID_OK:
+            dlg.Destroy()
+            return
+        label = txt.GetValue()
+        short = rb_short.GetValue()
+        dlg.Destroy()
+        self._lastChorusShort = short
+        start, end = ("soc", "eoc") if short else ("start_chorus", "end_chorus")
+        if label == default or not label.strip():
+            self.InsertWithCaret("{%s}\n|\n{%s}\n" % (start, end))
+        else:
+            self.InsertWithCaret("{%s:%s}\n|\n{%s}\n" % (start, label, end))
 
     def OnInsertChordBlock(self, evt):
         """Insert an intro chord block: {start_chord} ... {end_chord}
@@ -4165,6 +4206,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         cb_upper.SetValue(True)
         vbox.Add(cb_upper, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
+        # Nota informativa: dove viene disegnata la tastiera.
+        vbox.Add(self._MakeInfoNote(
+            dlg, _(u"Note: the chord keyboard is always drawn at the bottom of the page, even if you can insert the command anywhere in the editor.")),
+            0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 10)
+
         btn_sizer = dlg.CreateButtonSizer(wx.OK | wx.CANCEL)
         vbox.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 8)
         dlg.SetSizer(vbox)
@@ -4188,6 +4234,33 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             else:
                 self.InsertWithCaret(u"{taste:|}")
         dlg.Destroy()
+
+    def _MakeInfoNote(self, parent, text, wrap=260):
+        """Riga informativa: icona 'i' (img/info.png) + testo a capo.
+
+        Restituisce un wx.BoxSizer da aggiungere al dialogo. Se l'icona non
+        esiste usa quella di sistema, cosi' funziona uguale su Windows e Linux.
+        """
+        row = wx.BoxSizer(wx.HORIZONTAL)
+        bmp = wx.NullBitmap
+        try:
+            img = wx.Image(glb.AddPath('img/info.png'))
+            if img.IsOk():
+                # Icona sempre a 16x16 pixel, qualunque sia la dimensione del file.
+                if img.GetWidth() != 16 or img.GetHeight() != 16:
+                    img = img.Scale(16, 16, wx.IMAGE_QUALITY_HIGH)
+                bmp = wx.Bitmap(img)
+        except Exception:
+            pass
+        if not bmp.IsOk():
+            bmp = wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_MESSAGE_BOX, (16, 16))
+        if bmp.IsOk():
+            row.Add(wx.StaticBitmap(parent, -1, bmp), 0,
+                    wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        lbl = wx.StaticText(parent, -1, text)
+        lbl.Wrap(wrap)
+        row.Add(lbl, 1, wx.ALIGN_CENTER_VERTICAL)
+        return row
 
     def OnInsertDefine(self, evt):
         """Inserts the {define:} directive for a guitar chord diagram."""
@@ -4486,6 +4559,12 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 kbd_panel.Refresh()
 
         cb_kbd.Bind(wx.EVT_CHECKBOX, _on_cb_kbd)
+
+        # Nota informativa: dove viene disegnata la tastiera.
+        vbox.Add(self._MakeInfoNote(
+            dlg, _(u"Note: the chord keyboard is always drawn at the bottom of the page, even if you can insert the command anywhere in the editor."),
+            wrap=300),
+            0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 10)
 
         btn_sizer = dlg.CreateButtonSizer(wx.OK | wx.CANCEL)
         vbox.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 8)
@@ -5685,7 +5764,113 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.menuBar.Enable(self.pasteMenuId, cp)
         self.mainToolBar.EnableTool(self.pasteChordsTool, cp)
         self.menuBar.Enable(self.pasteChordsMenuId, cp)
-        self.menuBar.Enable(self.removeChordsMenuId, s != e)
+        # "Rimuovi accordi": attivo solo se la selezione contiene almeno un accordo [..]
+        import re
+        has_chords = False
+        if s != e:
+            try:
+                has_chords = re.search(r'\[[^\]\r\n]+\]', self.text.GetSelectedText()) is not None
+            except Exception:
+                has_chords = True
+        self.menuBar.Enable(self.removeChordsMenuId, has_chords)
+        self._UpdateIntegrateChords()
+        self._UpdateConvertTab()
+        self._UpdateChordProImport()
+
+    # Una "riga di accordi" in formato tab: solo accordi separati da spazi,
+    # senza parentesi quadre ne' graffe (es. "Do   Sol7  La-  Fa/La").
+    _CHORD_TOKEN_RE = None
+
+    @classmethod
+    def _IsTabChordLine(cls, line):
+        import re
+        if cls._CHORD_TOKEN_RE is None:
+            cls._CHORD_TOKEN_RE = re.compile(
+                r'^\(?(?:DO|RE|MI|FA|SOL|LA|SI|[A-H])(?:#|b|\u266f|\u266d)?'
+                r'(?:maj|min|dim|aug|sus|add|alt|m|M|[-+\u00b0\u00f8]|[0-9()#b+,])*'
+                r'(?:/(?:DO|RE|MI|FA|SOL|LA|SI|[A-H])(?:#|b|\u266f|\u266d)?)?\)?$',
+                re.IGNORECASE)
+        line = line.strip()
+        if not line or '[' in line or '{' in line:
+            return False
+        tokens = line.split()
+        return all(cls._CHORD_TOKEN_RE.match(t) for t in tokens)
+
+    def _UpdateIntegrateChords(self):
+        """"Integra accordi" ha senso solo se la riga corrente e' una riga di
+        accordi in formato tab e la riga successiva contiene il testo."""
+        enable = False
+        try:
+            # Opzione disattivata: la voce resta sempre attiva (come in origine).
+            if not getattr(self.pref, 'integrateChordsOnlyWhenNeeded', True):
+                self.menuBar.Enable(self.integrateChordsMenuId, True)
+                return
+            stc = self.text
+            ln = stc.GetCurrentLine()
+            if ln < stc.GetLineCount() - 1:
+                chords = stc.GetLine(ln).strip("\r\n")
+                nxt = stc.GetLine(ln + 1).strip("\r\n")
+                enable = (self._IsTabChordLine(chords)
+                          and nxt.strip() != ''
+                          and not nxt.lstrip().startswith(('{', '#')))
+            self.menuBar.Enable(self.integrateChordsMenuId, enable)
+        except Exception:
+            pass
+
+    def _UpdateConvertTab(self):
+        """"Converti Tab in ChordPro" e' attivo solo se il testo (o la
+        selezione) e' davvero in formato tab, cioe' se testTabFormat lo
+        riconosce. Con l'opzione "solo quando serve" disattivata resta sempre
+        attivo. Il risultato e' in cache: testTabFormat rilegge tutto il testo
+        e questo metodo gira a ogni movimento del cursore."""
+        try:
+            if not getattr(self.pref, 'integrateChordsOnlyWhenNeeded', True):
+                enable = True
+            else:
+                t = self.text.GetTextOrSelection()
+                key = (len(t), hash(t), self.pref.notations[0].id)
+                cache = getattr(self, '_convertTabCache', None)
+                if cache is not None and cache[0] == key:
+                    enable = cache[1]
+                else:
+                    enable = testTabFormat(t, self.pref.notations) is not None
+                    self._convertTabCache = (key, enable)
+            self.menuBar.Enable(self.convertTabMenuId, enable)
+        except Exception:
+            pass
+
+    def _UpdateChordProImport(self):
+        """"Converti accordi in linea in ChordPro" e' attivo solo se la
+        conversione modificherebbe davvero il testo (o la selezione): resta
+        grigio se il testo e' vuoto, se non contiene accordi attaccati al testo
+        nella notazione corrente, o se gli accordi sono gia' in ChordPro. Con
+        l'opzione "solo quando serve" disattivata resta sempre attivo. Il
+        risultato e' in cache perche' gira a ogni movimento del cursore."""
+        try:
+            if not getattr(self.pref, 'integrateChordsOnlyWhenNeeded', True):
+                enable = True
+            elif not self.pref.notations:
+                enable = True   # il comando mostrera' il suo messaggio d'errore
+            else:
+                t = self.text.GetTextOrSelection()
+                notation = self.pref.notations[0]
+                key = (len(t), hash(t), notation.id)
+                cache = getattr(self, '_chordProImportCache', None)
+                if cache is not None and cache[0] == key:
+                    enable = cache[1]
+                else:
+                    try:
+                        roots = get_roots(notation, self.pref.notations)
+                        res = chordpro_convert(t, roots)
+                        enable = res.status not in (chordpro_import.EMPTY,
+                                                    chordpro_import.ALREADY_CHORDPRO,
+                                                    chordpro_import.NO_CHORDS)
+                    except Exception:
+                        enable = True
+                    self._chordProImportCache = (key, enable)
+            self.menuBar.Enable(self.chordProImportMenuId, enable)
+        except Exception:
+            pass
 
     @staticmethod
     def _strip_hash_commands(text):
@@ -7185,7 +7370,37 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.MoveChordLeft()
 
     def OnRemoveChords(self, evt):
-        self.text.RemoveChordsInSelection()
+        import re
+        stc = self.text
+        s, e = stc.GetSelection()
+        len_before = stc.GetLength()
+        stc.RemoveChordsInSelection()
+        # Dopo la rimozione degli accordi, chiede se rimuovere anche le
+        # direttive {beats_time: ...} presenti nella stessa selezione.
+        e2 = e + (stc.GetLength() - len_before)
+        if e2 <= s:
+            return
+        text = stc.GetTextRange(s, e2)
+        beats_line = re.compile(r'^[ \t]*\{\s*beats_time\b[^}]*\}[ \t]*\r?\n?',
+                                re.IGNORECASE | re.MULTILINE)
+        beats_inline = re.compile(r'\{\s*beats_time\b[^}]*\}', re.IGNORECASE)
+        new, n1 = beats_line.subn('', text)
+        new, n2 = beats_inline.subn('', new)
+        n = n1 + n2
+        if n == 0:
+            return
+        d = wx.MessageDialog(
+            self.frame,
+            _("Do you also want to remove the %d {beats_time} directives of the removed chords?") % n,
+            _("Songpress++"), wx.YES_NO | wx.ICON_QUESTION)
+        answer = d.ShowModal()
+        d.Destroy()
+        if answer != wx.ID_YES:
+            return
+        with undo_action(stc):
+            stc.SetSelection(s, e2)
+            stc.ReplaceSelection(new)
+        self._setStatus(_("Removed %d {beats_time} directives") % n, 10000)
 
     def _OnStatusTimerExpired(self, evt):
         if self.statusBar:
@@ -9571,17 +9786,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.InsertWithCaret("{Verse:%s}|" % label)
 
     def OnChorus(self, evt):
-        default = self.pref.decoratorFormat.GetChorusLabel()
-        label = wx.GetTextFromUser(
-            _("Insert a label for chorus, or press Cancel if you want to omit label."),
-            _("Chorus label"),
-            default,
-            self.frame,
-        )
-        if label == default:
-            self.InsertWithCaret("{soc}\n|\n{eoc}\n")
-        else:
-            self.InsertWithCaret("{soc:%s}\n|\n{eoc}\n" % label)
+        # Kept for the toolbar: same dialog as the Insert menu item.
+        self.OnInsertChorusBlock(evt)
 
     def OnComment(self, evt):
         """Chiede il tipo di commento e il testo, poi inserisce la direttiva scelta."""

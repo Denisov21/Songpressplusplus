@@ -308,6 +308,10 @@ class PreferencesDialog(wx.Dialog):
         self.enableSaveOnModifiedCB.SetToolTip(_(u"When enabled, the 'Save' button and menu item are greyed out until the song has unsaved changes."))
         grpGeneral.Add(self.enableSaveOnModifiedCB, 0, wx.ALL, 5)
 
+        self.integrateChordsOnlyWhenNeededCB = wx.CheckBox(_boxGeneral, wx.ID_ANY, _(u"Enable the chord conversion commands only when needed"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.integrateChordsOnlyWhenNeededCB.SetToolTip(_(u"When enabled, 'Integrate chords' is available only when the cursor is on a chord line (tab format) followed by a text line, 'Convert Tab to ChordPro' only when the song (or the selection) is in tab format, and 'Convert inline chords to ChordPro' only when there are chords attached to the text to convert. When disabled, all three are always available."))
+        grpGeneral.Add(self.integrateChordsOnlyWhenNeededCB, 0, wx.ALL, 5)
+
         self.intellisenseCB = wx.CheckBox(_boxGeneral, wx.ID_ANY, _(u"Enable directive intellisense (Ctrl+Space)"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.intellisenseCB.SetToolTip(_(u"When enabled, pressing Ctrl+Space inside the editor shows a list of available ChordPro directives for auto-completion."))
         grpGeneral.Add(self.intellisenseCB, 0, wx.ALL, 5)

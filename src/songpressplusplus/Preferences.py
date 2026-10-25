@@ -205,6 +205,7 @@ class Preferences(object):
         self._LoadShowRestartMenuItem()
         self._LoadShowFullPathInTitle()
         self._LoadSaveOnModified()
+        self._LoadIntegrateChordsOnlyWhenNeeded()
         self._LoadReplaceSpacesInFilenames()
         self._LoadSuggestTitleAsFilename()
         self._LoadToolbarVis()
@@ -460,6 +461,7 @@ class Preferences(object):
         self._SaveShowRestartMenuItem()
         self._SaveShowFullPathInTitle()
         self._SaveSaveOnModified()
+        self._SaveIntegrateChordsOnlyWhenNeeded()
         self._SaveReplaceSpacesInFilenames()
         self._SaveSuggestTitleAsFilename()
         self._SaveToolbarVis()
@@ -858,6 +860,20 @@ class Preferences(object):
     def _SaveSaveOnModified(self):
         self.config.SetPath('/App')
         self.config.Write('enableSaveOnModified', '1' if getattr(self, 'enableSaveOnModified', True) else '0')
+        self.config.SetPath('/')
+
+    def _LoadIntegrateChordsOnlyWhenNeeded(self):
+        """Se True (default) il comando 'Integra accordi' e' attivo solo quando
+        il cursore e' su una riga di accordi in formato tab seguita da una riga
+        di testo; se False e' sempre attivo."""
+        self.config.SetPath('/Editor')
+        v = self.config.Read('integrateChordsOnlyWhenNeeded')
+        self.integrateChordsOnlyWhenNeeded = bool(int(v)) if v != '' else True
+        self.config.SetPath('/')
+
+    def _SaveIntegrateChordsOnlyWhenNeeded(self):
+        self.config.SetPath('/Editor')
+        self.config.Write('integrateChordsOnlyWhenNeeded', '1' if getattr(self, 'integrateChordsOnlyWhenNeeded', True) else '0')
         self.config.SetPath('/')
 
     def _LoadReplaceSpacesInFilenames(self):

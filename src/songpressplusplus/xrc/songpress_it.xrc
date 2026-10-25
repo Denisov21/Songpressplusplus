@@ -369,23 +369,61 @@
           <help>Inserisci un comando per visualizzare il sottotitolo della canzone</help>
           <bitmap>../img/subtitle.png</bitmap>
         </object>
+        <object class="wxMenuItem" name="comment">
+          <label>Co_mmento...</label>
+          <accel>CTRL+M</accel>
+          <help>Inserisci un comando per visualizzare un commento</help>
+          <bitmap>../img/comment.png</bitmap>
+        </object>
+        <object class="separator"/>
         <object class="wxMenuItem" name="chord">
           <label>A_ccordo...</label>
           <accel>CTRL+H</accel>
           <help>Inserisci parentesi quadre che conterranno un accordo</help>
           <bitmap>../img/chord.png</bitmap>
         </object>
-        <object class="wxMenuItem" name="chorus">
-          <label>Rit_ornello...</label>
-          <accel>CTRL+U</accel>
-          <help>Inserisci una coppia di comandi che conterranno il ritornello</help>
-          <bitmap>../img/chorus.png</bitmap>
+        <object class="wxMenuItem" name="insertChordBlock">
+          <label>Accordi di _intro {start__chord}\\{end__chord}...</label>
+          <accel></accel>
+          <bitmap>../img/chord_intro.png</bitmap>
+          <help>Inserisci una sezione di accordi intro con i comandi start__chord / end__chord</help>
         </object>
-        <object class="wxMenuItem" name="comment">
-          <label>Co_mmento...</label>
-          <accel>CTRL+M</accel>
-          <help>Inserisci un comando per visualizzare un commento</help>
-          <bitmap>../img/comment.png</bitmap>
+        <object class="wxMenuItem" name="insertFingering">
+          <label>Diteggiatura _primo accordo {fingering:}...</label>
+          <accel></accel>
+          <help>Inserisci la direttiva per mostrare la tastiera del primo accordo con i numeri delle dita</help>
+          <bitmap>../img/taste2.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="insertTaste">
+          <label>Tastiera _accordo {taste:}...</label>
+          <accel></accel>
+          <help>Inserisci la direttiva per visualizzare una tastiera per accordi in fondo alla canzone</help>
+          <bitmap>../img/taste.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="insertDefine">
+          <label>Diagramma accordo _chitarra {define:}...</label>
+          <accel></accel>
+          <help>Inserisci la direttiva per visualizzare un diagramma di accordo chitarra in fondo alla canzone</help>
+          <bitmap>../img/guitar.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="insertDuration">
+          <label>_Durata accordo {beats__time:}...</label>
+          <accel>Ctrl+Shift+D</accel>
+          <help>Inserisci la direttiva ChordPro per impostare la durata in battute degli accordi (es. 1, 2, 4)</help>
+          <bitmap>../img/beats.png</bitmap>
+        </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="insertVerseNum">
+          <label>Strofa _numerata {start__verse__num}\\{end__verse__num}</label>
+          <accel></accel>
+          <bitmap>../img/verse_num.png</bitmap>
+          <help>Inserisci una strofa numerata con i comandi start__verse__num / end__verse__num</help>
+        </object>
+        <object class="wxMenuItem" name="insertVerse">
+          <label>Strofa _non numerata {start__verse}\\{end__verse}</label>
+          <accel></accel>
+          <bitmap>../img/verse_un_num.png</bitmap>
+          <help>Inserisci una strofa non numerata con i comandi start__verse / end__verse</help>
         </object>
         <object class="wxMenuItem" name="verseWithCustomLabelOrWithoutLabel">
           <label>Strofa con etichetta _personalizzata o senza...</label>
@@ -393,24 +431,11 @@
           <help>Inserisci una strofa con etichetta personalizzata o senza etichetta</help>
           <bitmap>../img/verse.png</bitmap>
         </object>
-        <object class="separator"/>
-        <object class="wxMenuItem" name="insertVerse">
-          <label>Strofa _non numerata {start__verse}\\{end__verse}</label>
-          <accel></accel>
-          <bitmap>../img/verse_un_num.png</bitmap>
-          <help>Inserisci una strofa non numerata con i comandi start__verse / end__verse</help>
-        </object>
         <object class="wxMenuItem" name="insertChorusBlock">
-          <label>_Ritornello {start__chorus}\\{end__chorus}...</label>
-          <accel></accel>
-          <bitmap>../img/repeat.png</bitmap>
-          <help>Inserisci un blocco ritornello con i comandi start__chorus / end__chorus</help>
-        </object>
-        <object class="wxMenuItem" name="insertChordBlock">
-          <label>Accordi di _intro {start__chord}\\{end__chord}...</label>
-          <accel></accel>
-          <bitmap>../img/chord_intro.png</bitmap>
-          <help>Inserisci una sezione di accordi intro con i comandi start__chord / end__chord</help>
+          <label>Rit_ornello...</label>
+          <accel>CTRL+U</accel>
+          <bitmap>../img/chorus.png</bitmap>
+          <help>Inserisci un blocco ritornello (a scelta tra {start_chorus}/{end_chorus} e {soc}/{eoc})</help>
         </object>
         <object class="wxMenuItem" name="insertBridge">
           <label>_Bridge {start__bridge}\\{end__bridge}...</label>
@@ -424,6 +449,7 @@
           <bitmap>../img/grid.png</bitmap>
           <help>Inserisci un blocco griglia di accordi con i comandi start_of_grid / end_of_grid</help>
         </object>
+        <object class="separator"/>
         <object class="wxMenuItem" name="insertTempo">
           <label>_Tempo {tempo:}...</label>
           <accel></accel>
@@ -448,30 +474,7 @@
           <bitmap>../img/key.png</bitmap>
           <help>Inserisci la direttiva ChordPro per impostare la tonalità (es. Am, Do, Sol)</help>
         </object>
-        <object class="wxMenuItem" name="insertDuration">
-          <label>_Durata accordo {beats__time:}...</label>
-          <accel>Ctrl+Shift+D</accel>
-          <help>Inserisci la direttiva ChordPro per impostare la durata in battute degli accordi (es. 1, 2, 4)</help>
-          <bitmap>../img/beats.png</bitmap>
-        </object>
-        <object class="wxMenuItem" name="insertTaste">
-          <label>Tastiera _accordo {taste:}...</label>
-          <accel></accel>
-          <help>Inserisci la direttiva per visualizzare una tastiera per accordi in fondo alla canzone</help>
-          <bitmap>../img/taste.png</bitmap>
-        </object>
-        <object class="wxMenuItem" name="insertFingering">
-          <label>Diteggiatura _primo accordo {fingering:}...</label>
-          <accel></accel>
-          <help>Inserisci la direttiva per mostrare la tastiera del primo accordo con i numeri delle dita</help>
-          <bitmap>../img/taste2.png</bitmap>
-        </object>
-        <object class="wxMenuItem" name="insertDefine">
-          <label>Diagramma accordo _chitarra {define:}...</label>
-          <accel></accel>
-          <help>Inserisci la direttiva per visualizzare un diagramma di accordo chitarra in fondo alla canzone</help>
-          <bitmap>../img/guitar.png</bitmap>
-        </object>
+        <object class="separator"/>
         <object class="wxMenuItem" name="insertImage">
           <label>_Immagine {image:}...</label>
           <accel></accel>
@@ -489,12 +492,6 @@
           <accel>Ctrl+Shift+M</accel>
           <bitmap>../img/symbol.png</bitmap>
           <help>Apre la mappa dei simboli musicali e inserisce un carattere Unicode nel cursore</help>
-        </object>
-        <object class="wxMenuItem" name="insertVerseNum">
-          <label>Strofa _numerata {start__verse__num}\\{end__verse__num}</label>
-          <accel></accel>
-          <bitmap>../img/verse_num.png</bitmap>
-          <help>Inserisci una strofa numerata con i comandi start__verse__num / end__verse__num</help>
         </object>
       </object>
       <object class="wxMenu" name="formatMenu">

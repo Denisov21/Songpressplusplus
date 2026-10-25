@@ -727,8 +727,19 @@ class SDIMainFrame(object):
     def _StopSingleInstanceServer(self):
         """Close the server socket (called from OnClose)."""
         if self._singleInstanceServer is not None:
+            srv = self._singleInstanceServer
+            # Su Linux close() da solo NON sveglia il thread bloccato in
+            # accept(): il socket resta in ascolto finche' il thread non
+            # termina e la porta risulta ancora occupata. Al riavvio la nuova
+            # istanza la troverebbe "piena", inoltrerebbe il file al vecchio
+            # processo ed uscirebbe, senza aprire nessuna finestra.
+            # shutdown() fa uscire subito accept() e libera la porta.
             try:
-                self._singleInstanceServer.close()
+                srv.shutdown(socket.SHUT_RDWR)
+            except Exception:
+                pass  # su Windows (e socket gia' chiuso) e' normale che fallisca
+            try:
+                srv.close()
             except Exception:
                 pass
             self._singleInstanceServer = None

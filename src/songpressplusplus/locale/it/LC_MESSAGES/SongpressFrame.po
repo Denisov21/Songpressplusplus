@@ -1493,3 +1493,45 @@ msgstr "Non richiesto su questo sistema"
 #: src/songpress/SongpressFrame.py
 msgid "Musical font checks"
 msgstr "Verifiche font musicali"
+
+#: SongpressFrame.py OnRemoveChords - ask to remove beats_time too
+#, python-format
+msgid "Do you also want to remove the %d {beats_time} directives of the removed chords?"
+msgstr "Vuoi rimuovere anche le %d direttive {beats_time} degli accordi rimossi?"
+
+#: SongpressFrame.py OnRemoveChords - status message
+#, python-format
+msgid "Removed %d {beats_time} directives"
+msgstr "Rimosse %d direttive {beats_time}"
+
+#: SongpressFrame.py OnInsertChorusBlock dialog title
+msgid "Chorus"
+msgstr "Ritornello"
+
+#: SongpressFrame.py OnInsertChorusBlock label field caption
+msgid "Label (leave empty for the default label):"
+msgstr "Etichetta (lascia vuoto per l'etichetta predefinita):"
+
+#: SongpressFrame.py OnInsertChorusBlock label field tooltip
+msgid "Text shown as the chorus label. If left empty or unchanged, the default label is used."
+msgstr "Testo mostrato come etichetta del ritornello. Se lasciato vuoto o invariato, viene usata l'etichetta predefinita."
+
+#: SongpressFrame.py OnInsertChorusBlock radio box caption
+msgid "Form"
+msgstr "Forma"
+
+#: SongpressFrame.py OnInsertChorusBlock long form radio tooltip
+msgid "Long form: {start_chorus} ... {end_chorus}"
+msgstr "Forma estesa: {start_chorus} ... {end_chorus}"
+
+#: SongpressFrame.py OnInsertChorusBlock short form radio tooltip
+msgid "Short form: {soc} ... {eoc} (start_of_chorus / end_of_chorus)"
+msgstr "Forma abbreviata: {soc} ... {eoc} (start_of_chorus / end_of_chorus)"
+
+#: SongpressFrame.py — OnInsertTaste / OnInsertFingering info note
+msgid ""
+"Note: the chord keyboard is always drawn at the bottom of the page, even if "
+"you can insert the command anywhere in the editor."
+msgstr ""
+"Nota: la tastiera con l'accordo è sempre disegnata in fondo alla pagina, "
+"anche se nell'editor puoi inserire il comando dove vuoi."

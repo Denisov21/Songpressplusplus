@@ -1245,3 +1245,88 @@ msgstr ""
 "Se attivo, il campo Tolleranza compare anche nella barra del righello a "
 "schermo. Se disattivo, la tolleranza si può cambiare solo qui e la barra "
 "diventa più corta."
+
+#: PreferencesDialog.py — editor font group / generic label
+msgid "Font"
+msgstr "Carattere"
+
+#: PreferencesDialog.py — General tab, caret colour label
+msgid "Caret colour"
+msgstr "Colore cursore"
+
+#: PreferencesDialog.py — theme selector label
+msgid "Theme:"
+msgstr "Tema:"
+
+#: PreferencesDialog.py — theme load button
+msgid "Load"
+msgstr "Carica"
+
+#: PreferencesDialog.py — theme save button
+msgid "Save"
+msgstr "Salva"
+
+#: PreferencesDialog.py — General tab title
+msgid "General"
+msgstr "Generale"
+
+#: PreferencesDialog.py — General tab, integrate chords only when needed
+msgid "Enable the chord conversion commands only when needed"
+msgstr "Attiva i comandi di conversione degli accordi solo quando servono"
+
+#: PreferencesDialog.py — General tab, integrate chords only when needed tooltip
+msgid ""
+"When enabled, 'Integrate chords' is available only when the cursor is on a "
+"chord line (tab format) followed by a text line, 'Convert Tab to ChordPro' "
+"only when the song (or the selection) is in tab format, and 'Convert inline "
+"chords to ChordPro' only when there are chords attached to the text to "
+"convert. When disabled, all three are always available."
+msgstr ""
+"Se attivo, 'Integra accordi' è disponibile solo quando il cursore è su una "
+"riga di accordi (formato tab) seguita da una riga di testo, 'Converti Tab in "
+"ChordPro' solo quando il brano (o la selezione) è in formato tab, e "
+"'Converti accordi in linea in ChordPro' solo quando ci sono accordi "
+"attaccati al testo da convertire. Se disattivo, tutti e tre sono sempre "
+"disponibili."
+
+#: PreferencesDialog.py — General tab, show restart menu item checkbox
+msgid "Show 'Restart Songpress++' in the File menu"
+msgstr "Mostra 'Riavvia Songpress++' nel menu File"
+
+#: PreferencesDialog.py — General tab, show full path in title bar checkbox
+msgid "Show the full file path in the title bar"
+msgstr "Mostra il percorso completo del file nella barra del titolo"
+
+#: PreferencesDialog.py — General tab, show full path in title bar tooltip
+msgid ""
+"When enabled, the title bar shows the complete path of the open file (e.g. "
+"C:\\Songs\\ballad.crd) instead of just its name."
+msgstr ""
+"Se attivo, la barra del titolo mostra il percorso completo del file aperto "
+"(es. C:\\Canzoni\\ballata.crd) invece del solo nome."
+
+#: PreferencesDialog.py — General tab, show debug messages checkbox
+msgid "Show debug messages (theme save path)"
+msgstr "Mostra messaggi di debug (percorso di salvataggio del tema)"
+
+#: PreferencesDialog.py — General tab, suggest title as file name checkbox
+msgid "Suggest the song {title:} as file name in 'Save as'"
+msgstr "Proponi il {title:} del brano come nome file in 'Salva con nome'"
+
+#: PreferencesDialog.py — General tab, suggest title as file name tooltip
+msgid ""
+"When enabled, the 'Save as' dialog proposes the value of the {title:} "
+"directive as the default file name. Invalid characters are removed. This "
+"option works together with 'Replace spaces with _': if both are enabled, the "
+"suggested name will use underscores instead of spaces."
+msgstr ""
+"Se attivo, la finestra 'Salva con nome' propone il valore della direttiva "
+"{title:} come nome file predefinito. I caratteri non validi vengono "
+"rimossi. Questa opzione funziona insieme a 'Sostituisci gli spazi con _': se "
+"entrambe sono attive, il nome proposto userà il trattino basso al posto "
+"degli spazi."
+
+#: PreferencesDialog.py — file associations, one checkbox per extension
+#, python-format
+msgid "Associate the .%s file extension with Songpress++."
+msgstr "Associa l'estensione .%s a Songpress++."

@@ -884,6 +884,23 @@
             <property name="unchecked_bitmap">Load From File; </property>
           </object>
           <object class="wxMenuItem" expanded="false">
+            <property name="bitmap">Load From File; ../img/comment.png</property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert a command to display a comment</property>
+            <property name="id">ID_COMMENT</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">Co&amp;mment...</property>
+            <property name="name">comment</property>
+            <property name="permission">none</property>
+            <property name="shortcut">CTRL+M</property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="separator" expanded="false">
+            <property name="name">m_separator_insert1</property>
+            <property name="permission">none</property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
             <property name="bitmap">Load From File; ../img/chord.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
@@ -897,47 +914,86 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap">Load From File; ../img/chorus.png</property>
+            <property name="bitmap">Load From File; ../img/chord_intro.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
-            <property name="help">Insert a couple of commands that will contain chorus</property>
-            <property name="id">ID_CHORUS</property>
+            <property name="help">Insert an intro chord section with start__chord / end__chord commands</property>
+            <property name="id">ID_INSERT_CHORD_BLOCK</property>
             <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">Cho&amp;rus...</property>
-            <property name="name">chorus</property>
-            <property name="permission">none</property>
-            <property name="shortcut">CTRL+U</property>
-            <property name="unchecked_bitmap"></property>
-          </object>
-          <object class="wxMenuItem" expanded="false">
-            <property name="bitmap">Load From File; ../img/comment.png</property>
-            <property name="checked">0</property>
-            <property name="enabled">1</property>
-            <property name="help">Insert a command to display a comment</property>
-            <property name="id">ID_COMMENT</property>
-            <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">Co&amp;mment...</property>
-            <property name="name">comment</property>
-            <property name="permission">none</property>
-            <property name="shortcut">CTRL+M</property>
-            <property name="unchecked_bitmap"></property>
-          </object>
-          <object class="wxMenuItem" expanded="false">
-            <property name="bitmap">Load From File; ../img/verse.png</property>
-            <property name="checked">0</property>
-            <property name="enabled">1</property>
-            <property name="help">Insert a verse with a custom label or without label</property>
-            <property name="id">ID_VERSE</property>
-            <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">&amp;Verse with custom label or without label...</property>
-            <property name="name">verseWithCustomLabelOrWithoutLabel</property>
+            <property name="label">Intro &amp;chords {start__chord}\{end__chord}...</property>
+            <property name="name">insertChordBlock</property>
             <property name="permission">none</property>
             <property name="shortcut"></property>
             <property name="unchecked_bitmap"></property>
           </object>
-          <object class="separator" expanded="false">
-            <property name="name">m_separator_insertmore</property>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap">Load From File; ../img/taste2.png</property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert directive to show the first chord keyboard with finger numbers</property>
+            <property name="id">ID_INSERT_FINGERING</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">&amp;First chord fingering {fingering:}</property>
+            <property name="name">insertFingering</property>
             <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap">Load From File; ../img/taste.png</property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert directive to display a chord keyboard at the end of the song</property>
+            <property name="id">ID_INSERT_TASTE</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">Chord &amp;keyboard {taste:}</property>
+            <property name="name">insertTaste</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap">Load From File; ../img/guitar.png</property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert directive to display a guitar chord diagram at the end of the song</property>
+            <property name="id">ID_INSERT_DEFINE</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">Guitar &amp;chord diagram {define:}</property>
+            <property name="name">insertDefine</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap">Load From File; ../img/beats.png</property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert ChordPro directive to set beat duration of chords (e.g. 1, 2, 4)</property>
+            <property name="id">ID_INSERT_DURATION</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">&amp;Duration {beats_time:}...</property>
+            <property name="name">insertDuration</property>
+            <property name="permission">none</property>
+            <property name="shortcut">CTRL+SHIFT+D</property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="separator" expanded="false">
+            <property name="name">m_separator_insert2</property>
+            <property name="permission">none</property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap">Load From File; ../img/verse_num.png</property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Insert a numbered verse with start__verse__num / end__verse__num commands</property>
+            <property name="id">ID_INSERT_VERSE_NUM</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">Numbered v&amp;erse {start__verse__num}\{end__verse__num}</property>
+            <property name="name">insertVerseNum</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
             <property name="bitmap">Load From File; ../img/verse_un_num.png</property>
@@ -953,29 +1009,29 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap">Load From File; ../img/repeat.png</property>
+            <property name="bitmap">Load From File; ../img/verse.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
-            <property name="help">Insert a chorus block with start__chorus / end__chorus commands</property>
-            <property name="id">ID_INSERT_CHORUS_BLOCK</property>
+            <property name="help">Insert a verse with a custom label or without label</property>
+            <property name="id">ID_VERSE</property>
             <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">&amp;Chorus {start__chorus}\{end__chorus}...</property>
-            <property name="name">insertChorusBlock</property>
+            <property name="label">&amp;Verse with custom label or without label...</property>
+            <property name="name">verseWithCustomLabelOrWithoutLabel</property>
             <property name="permission">none</property>
             <property name="shortcut"></property>
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
-            <property name="bitmap">Load From File; ../img/chord_intro.png</property>
+            <property name="bitmap">Load From File; ../img/chorus.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
-            <property name="help">Insert an intro chord section with start__chord / end__chord commands</property>
-            <property name="id">ID_INSERT_CHORD_BLOCK</property>
+            <property name="help">Insert a chorus block (choose the start_chorus/end_chorus or soc/eoc form)</property>
+            <property name="id">ID_INSERT_CHORUS_BLOCK</property>
             <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">Intro &amp;chords {start__chord}\{end__chord}...</property>
-            <property name="name">insertChordBlock</property>
+            <property name="label">&amp;Chorus...</property>
+            <property name="name">insertChorusBlock</property>
             <property name="permission">none</property>
-            <property name="shortcut"></property>
+            <property name="shortcut">CTRL+U</property>
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
@@ -1003,6 +1059,10 @@
             <property name="permission">none</property>
             <property name="shortcut"></property>
             <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="separator" expanded="false">
+            <property name="name">m_separator_insert3</property>
+            <property name="permission">none</property>
           </object>
           <object class="wxMenuItem" expanded="false">
             <property name="bitmap">Load From File; ../img/metronome.png</property>
@@ -1056,57 +1116,9 @@
             <property name="shortcut"></property>
             <property name="unchecked_bitmap"></property>
           </object>
-          <object class="wxMenuItem" expanded="false">
-            <property name="bitmap">Load From File; ../img/beats.png</property>
-            <property name="checked">0</property>
-            <property name="enabled">1</property>
-            <property name="help">Insert ChordPro directive to set beat duration of chords (e.g. 1, 2, 4)</property>
-            <property name="id">ID_INSERT_DURATION</property>
-            <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">&amp;Duration {beats_time:}...</property>
-            <property name="name">insertDuration</property>
+          <object class="separator" expanded="false">
+            <property name="name">m_separator_insert4</property>
             <property name="permission">none</property>
-            <property name="shortcut">CTRL+SHIFT+D</property>
-            <property name="unchecked_bitmap"></property>
-          </object>
-          <object class="wxMenuItem" expanded="false">
-            <property name="bitmap">Load From File; ../img/taste.png</property>
-            <property name="checked">0</property>
-            <property name="enabled">1</property>
-            <property name="help">Insert directive to display a chord keyboard at the end of the song</property>
-            <property name="id">ID_INSERT_TASTE</property>
-            <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">Chord &amp;keyboard {taste:}</property>
-            <property name="name">insertTaste</property>
-            <property name="permission">none</property>
-            <property name="shortcut"></property>
-            <property name="unchecked_bitmap"></property>
-          </object>
-          <object class="wxMenuItem" expanded="false">
-            <property name="bitmap">Load From File; ../img/taste2.png</property>
-            <property name="checked">0</property>
-            <property name="enabled">1</property>
-            <property name="help">Insert directive to show the first chord keyboard with finger numbers</property>
-            <property name="id">ID_INSERT_FINGERING</property>
-            <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">&amp;First chord fingering {fingering:}</property>
-            <property name="name">insertFingering</property>
-            <property name="permission">none</property>
-            <property name="shortcut"></property>
-            <property name="unchecked_bitmap"></property>
-          </object>
-          <object class="wxMenuItem" expanded="false">
-            <property name="bitmap">Load From File; ../img/guitar.png</property>
-            <property name="checked">0</property>
-            <property name="enabled">1</property>
-            <property name="help">Insert directive to display a guitar chord diagram at the end of the song</property>
-            <property name="id">ID_INSERT_DEFINE</property>
-            <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">Guitar &amp;chord diagram {define:}</property>
-            <property name="name">insertDefine</property>
-            <property name="permission">none</property>
-            <property name="shortcut"></property>
-            <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
             <property name="bitmap">Load From File; ../img/picture.png</property>
@@ -1145,19 +1157,6 @@
             <property name="name">insertMusicalSymbol</property>
             <property name="permission">none</property>
             <property name="shortcut">Ctrl+Shift+M</property>
-            <property name="unchecked_bitmap"></property>
-          </object>
-          <object class="wxMenuItem" expanded="false">
-            <property name="bitmap">Load From File; ../img/verse_num.png</property>
-            <property name="checked">0</property>
-            <property name="enabled">1</property>
-            <property name="help">Insert a numbered verse with start__verse__num / end__verse__num commands</property>
-            <property name="id">ID_INSERT_VERSE_NUM</property>
-            <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">Numbered v&amp;erse {start__verse__num}\{end__verse__num}</property>
-            <property name="name">insertVerseNum</property>
-            <property name="permission">none</property>
-            <property name="shortcut"></property>
             <property name="unchecked_bitmap"></property>
           </object>
         </object>
