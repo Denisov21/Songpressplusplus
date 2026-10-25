@@ -17,7 +17,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 3.9\n"
+"X-Generator: Poedit 3.10\n"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:54
 msgid "Replace"
@@ -32,8 +32,7 @@ msgstr "Il testo immesso non è stato trovato"
 msgid "%d text occurrences have been replaced"
 msgstr "Sono state sostituite %d occorrenze del testo"
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:171
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:181
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:171 /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:181
 msgid "All supported files"
 msgstr "Tutti i file supportati"
 
@@ -117,10 +116,8 @@ msgstr ""
 "\n"
 "Vuoi attivare questa funzionalità?"
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:326
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:331
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:839
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:997
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:326 /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:331
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:839 /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:997
 msgid "Songpress++"
 msgstr "Songpress++"
 
@@ -176,19 +173,16 @@ msgstr "Presentazione PPTX"
 msgid "http://www.skeed.it/songpress-manual"
 msgstr "http://www.skeed.it/songpress-manuale"
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:887
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1049
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:887 /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1049
 msgid "Simplify chords"
 msgstr "Semplifica gli accordi"
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:889
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1047
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:889 /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1047
 #, python-format
 msgid "The key of your song, %s, is not the easiest to play (difficulty: %.1f/5.0).\n"
 msgstr "La canzone è in %s. Questa non è la tonalità più facile da suonare (difficoltà %.1f/5.0).\n"
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:890
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1048
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:890 /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1048
 #, python-format
 msgid "Do you want to transpose the key %s, which is the easiest one (difficulty: %.1f/5.0)?"
 msgstr "Vuoi trasporla in %s, che è la tonalità più semplice (difficoltà: %.1f/5.0)?"
@@ -417,8 +411,8 @@ msgid "Enter chord definition (e.g. C base-fret 1 frets X 3 2 0 1 0):"
 msgstr "Inserisci la definizione dell'accordo (es. DO base-fret 1 frets X 3 2 0 1 0):"
 
 #: SongpressFrame.py
-msgid "Songpress++ Preview Text"
-msgstr "Carattere: Anteprima Songpress++"
+msgid "Songpress++ Page Text"
+msgstr "Carattere: Pagina Songpress++"
 
 #: SongpressFrame.py
 msgid "Songpress++ Editor Font"
@@ -830,8 +824,8 @@ msgid "'Editor' only"
 msgstr "Solo 'Editor'"
 
 #: SongpressFrame.py find dialog — highlight scope radio: editor + preview
-msgid "'Editor' + 'Songpress++ Preview'"
-msgstr "'Editor' + 'Anteprima Songpress++'"
+msgid "'Editor' + 'Songpress++ Page'"
+msgstr "'Editor' + 'Pagina Songpress++'"
 
 #: SongpressFrame.py find dialog — highlight colour box label
 msgid "Highlight colour"
@@ -849,13 +843,11 @@ msgstr "Predefinito"
 msgid "Hand:"
 msgstr "Mano:"
 
-#: SongpressFrame.py fingering dialog — right hand radio button
-#: KlavierRenderer.py label drawn below keyboard
+#: SongpressFrame.py fingering dialog — right hand radio button KlavierRenderer.py label drawn below keyboard
 msgid "Right hand"
 msgstr "Mano destra"
 
-#: SongpressFrame.py fingering dialog — left hand radio button
-#: KlavierRenderer.py label drawn below keyboard
+#: SongpressFrame.py fingering dialog — left hand radio button KlavierRenderer.py label drawn below keyboard
 msgid "Left hand"
 msgstr "Mano sinistra"
 
@@ -1196,8 +1188,7 @@ msgstr "Applica solo alla selezione"
 msgid "Highlight chord rows in editor"
 msgstr "Evidenzia le righe degli accordi nell'editor"
 
-#: SongpressFrame.py — beats_time dialog highlight checkbox tooltip
-#: (multiline)
+#: SongpressFrame.py — beats_time dialog highlight checkbox tooltip (multiline)
 msgid ""
 "Highlight in the editor the chord line each cursor refers to.\n"
 "Active cursor: chosen colour  |  Other cursors: lighter tint"
@@ -1354,8 +1345,7 @@ msgstr "dalla fine"
 #  Secondo %s contiene già la preposizione articolata:
 #    "Raggiunta la fine della canzone, riavvio la ricerca dalla fine"
 #    "Raggiunto l'inizio della canzone, riavvio la ricerca dall'inizio"
-#: SongpressFrame.py — wrap-around search: full message ("%s of the song,
-#: restarting search from %s")
+#: SongpressFrame.py — wrap-around search: full message ("%s of the song, restarting search from %s")
 msgid "%s of the song, restarting search from the %s?"
 msgstr "%s della canzone, riavvio la ricerca %s?"
 
@@ -1368,7 +1358,6 @@ msgid "Show/hide toolbar with insert commands"
 msgstr "Mostra/nascondi la barra degli strumenti di inserimento"
 
 # ── Verifica dipendenze (? → Verifica dipendenze…) ───────────────────────────
-
 msgid "Check dependencies..."
 msgstr "Verifica dipendenze..."
 
@@ -1506,7 +1495,7 @@ msgstr "Rimosse %d direttive {beats_time}"
 
 #: SongpressFrame.py OnInsertChorusBlock dialog title
 msgid "Chorus"
-msgstr "Ritornello"
+msgstr "Rit."
 
 #: SongpressFrame.py OnInsertChorusBlock label field caption
 msgid "Label (leave empty for the default label):"
@@ -1529,9 +1518,5 @@ msgid "Short form: {soc} ... {eoc} (start_of_chorus / end_of_chorus)"
 msgstr "Forma abbreviata: {soc} ... {eoc} (start_of_chorus / end_of_chorus)"
 
 #: SongpressFrame.py — OnInsertTaste / OnInsertFingering info note
-msgid ""
-"Note: the chord keyboard is always drawn at the bottom of the page, even if "
-"you can insert the command anywhere in the editor."
-msgstr ""
-"Nota: la tastiera con l'accordo è sempre disegnata in fondo alla pagina, "
-"anche se nell'editor puoi inserire il comando dove vuoi."
+msgid "Note: the chord keyboard is always drawn at the bottom of the page, even if you can insert the command anywhere in the editor."
+msgstr "Nota: la tastiera con l'accordo è sempre disegnata in fondo alla pagina, anche se nell'editor puoi inserire il comando dove vuoi."

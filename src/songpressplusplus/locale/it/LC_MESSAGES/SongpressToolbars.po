@@ -160,12 +160,12 @@ msgid "Whole song"
 msgstr "Tutta la canzone"
 
 #: SongpressToolbars.py — _BuildFormatToolBar
-msgid "Show Songpress++ Preview"
-msgstr "Anteprima Songpress++"
+msgid "Show Songpress++ Page"
+msgstr "Pagina Songpress++"
 
 #: SongpressToolbars.py — _BuildFormatToolBar
-msgid "Show or hide the Songpress++ Preview panel"
-msgstr "Mostra o nascondi il pannello Anteprima Songpress++"
+msgid "Show or hide the Songpress++ Page panel"
+msgstr "Mostra o nascondi il pannello Pagina Songpress++"
 
 #: SongpressToolbars.py — _BuildFormatToolBar (AddPane label)
 msgid "Format"
@@ -413,5 +413,13 @@ msgstr "Visualizza"
 
 #: SongpressToolbars.py — _BuildFormatToolBar (fontIcon tooltip, fontChooser
 #: tooltip, FORMAT_TOOLBAR_ITEMS label)
-msgid "Font used in the Songpress++ preview"
-msgstr "Carattere usato nell'anteprima Songpress++"
+msgid "Font used in the Songpress++ Page"
+msgstr "Carattere usato nella Pagina Songpress++"
+
+#: SongpressToolbars.py — INSERT_TOOLBAR_ITEMS / _BuildInsertToolBar (chorus help)
+msgid ""
+"Insert a chorus block (choose the {start_chorus}/{end_chorus} or {soc}/{eoc} "
+"form)"
+msgstr ""
+"Inserisce un blocco ritornello (scegli la forma {start_chorus}/{end_chorus} "
+"oppure {soc}/{eoc})"

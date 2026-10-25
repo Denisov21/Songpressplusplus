@@ -717,6 +717,8 @@ A dialog opens that automatically shows the notes of the chord and lets you:
 
 When enabled, the *Show keyboard preview* box at the bottom of the dialog reflects all these choices in real time. The *Chord keys* dialog (`{taste:}`) offers the same **Start note**, **Highlight note on both octaves** and **Uppercase chord** controls.
 
+> **Note — keyboard position.** In both dialogs a note with the ℹ icon reminds you that the chord keyboard is always drawn at the bottom of the page, even though the directive (`{taste:}` or `{fingering:}`) can be inserted anywhere in the editor.
+
 **Finger number color:**
 The color of the numbers displayed on the keys is set in *Options → Format → Chords and tempo → Finger number colour*. The default is near-black (`#1A1A1A`); on black keys the number appears in white to ensure contrast.
 
@@ -1166,15 +1168,50 @@ G|--0--0--2--0--|
 
 All main directives are accessible via the **Insert** menu, which opens support dialogs to fill in values. The cursor `|` in InsertWithCaret indicates the position where the cursor will be placed after insertion.
 
+#### Insert menu layout
+
+The items are arranged in five groups separated by lines:
+
+1. **Header** — Title, Subtitle, Comment
+2. **Chords** — Chord, Intro chords, First chord fingering, Chord keyboard, Guitar chord diagram, Chord duration
+3. **Song structure** — Numbered verse, Unnumbered verse, Verse with custom label or without label, Chorus, Bridge, Grid
+4. **Tempo and key** — Tempo, Tempo marking, Time signature, Key
+5. **Images and symbols** — Image, Transposer image, Musical symbol (Unicode)
+
+#### Chorus (<kbd>Ctrl</kbd>+<kbd>U</kbd>)
+
+A single item, **Insert → Chorus…**, inserts the chorus block. The same dialog opens from the *Chorus…* icon of the Insert toolbar. The dialog contains:
+
+| Field | Description |
+| --- | --- |
+| **Label** | Text shown as the chorus label. If left empty or unchanged, the default label is used (the one set in *Options → Format*, usually "Chorus") and the command is written without a label. |
+| **Form** | Radio buttons to choose how the block is written: **`{start_chorus} ... {end_chorus}`** (long form, default) or **`{soc} ... {eoc}`** (short form of `start_of_chorus` / `end_of_chorus`). |
+
+Examples of the inserted text (the `|` cursor is placed inside the block):
+
+```chordpro
+{start_chorus}
+|
+{end_chorus}
+```
+
+```chordpro
+{soc:Final}
+|
+{eoc}
+```
+
+The chosen form is remembered while the program stays open. Hovering the label field and the two radio buttons shows a tooltip, identical on Windows and Linux.
+
 ### Chord Management
 
 - **Insert chord** — inserts `[|]` with the cursor inside the brackets
 - **Move chord right / left** — moves the chord under the cursor by one character
-- **Remove chords** — deletes all chords from the selection
+- **Remove chords** — deletes all chords from the selection. The command is enabled only if the selection contains at least one chord between `[ ]`; otherwise it stays greyed out
 - **Paste chords** — pastes only the chords (without text) from the copied selection
 - **Propagate chords to verses** — copies chords from the first verse to all verses with the same number of lines
 - **Propagate chords to choruses** — same for choruses
-- **Integrate chords** — converts two separate lines (chords above / text below) to inline ChordPro format
+- **Integrate chords** — converts two separate lines (chords above / text below) to inline ChordPro format. It acts on the cursor line (chords) and the next one (text), and is enabled only when the cursor is on a chords-only line in tab format followed by a text line
 
 ### Transposition and Notation
 
@@ -1195,8 +1232,10 @@ All main directives are accessible via the **Insert** menu, which opens support 
 - **Simplify chords** — finds the easiest key to play
 - **Change notation** — converts between Anglo-Saxon notation (C D E…) and solfège (Do Re Mi…)
 - **Normalize chords** — standardizes chord spelling (e.g. `Hm` → `Bm`)
-- **Convert Tab → ChordPro** — automatically converts tab format (chords above text) to inline ChordPro
-- **Convert inline chords to ChordPro** — wraps in `[ ]` the chords *glued* to the lyrics (see below)
+- **Convert Tab → ChordPro** — automatically converts tab format (chords above text) to inline ChordPro. It acts on the selection or the whole song and is enabled only if the text is in tab format
+- **Convert inline chords to ChordPro** — wraps in `[ ]` the chords *glued* to the lyrics (see below). It is enabled only when there is something to convert
+
+> **Commands enabled only when needed** — **Integrate chords**, **Convert Tab → ChordPro** and **Convert inline chords to ChordPro** stay greyed out when they would have no effect: for example with an empty editor, with no chords, or with chords already in ChordPro. They enable themselves as soon as the text, the selection or the cursor position allows it. If you prefer to have them always available, turn off *Options → General → Enable the chord conversion commands only when needed*. **Remove chords**, instead, always follows the selection (enabled only if it contains chords).
 
 #### Convert Inline Chords to ChordPro
 
@@ -1772,7 +1811,7 @@ Opened from **Tools → Options…** (window title: *Songpress++ options*). It i
 | **OK** | Saves all preferences (`Preferences.Save()`) and closes the window. |
 | **Cancel** | Closes without saving. Interactive previews (syntax colours, editor background…) are discarded. |
 
-> **Restarting Songpress++** — Some settings only take effect after a restart; in practice the only one is the **interface language**. Songpress++ can restart itself: it saves the preferences, closes the current window and reopens automatically. There are two ways to trigger it:
+> **Restarting Songpress++** — Some settings only take effect after a restart; in practice the only one is the **interface language**. Songpress++ can restart itself: it saves the preferences, closes the current window and reopens automatically. If the song has unsaved changes, Songpress++ asks **first** whether to save them: pressing **Cancel** stops the restart and no second window is opened. The new instance starts only after the current one has closed successfully. There are two ways to trigger it:
 >
 > - **Language change.** When you pick a different language (**Language** field, *Song* group below) and confirm, a message appears with two buttons: **OK** (the new language is applied at the next launch) and **Restart now** (restarts Songpress++ immediately, applying the language right away).
 > - **File menu → 'Restart Songpress++'.** A quick-restart item, available at any time without having to close and reopen the app manually (it can be shown/hidden from the *General* group below).
@@ -1804,6 +1843,7 @@ Opened from **Tools → Options…** (window title: *Songpress++ options*). It i
 | **Clear recent files** (button) | — | Empties the recent-files list. The removal happens when you confirm with OK. |
 | **Open templates folder** (button) | — | Opens the **user** templates folder (`templates/`, also used for colour themes) in the system file manager — the same one the app reads from. `.crd` files placed in `songs/` appear under *File → New from template* (see the *New from template* chapter). |
 | **Enable 'Save' button only when the song is modified** | ✓ | Save (menu and toolbar) stays greyed out until there are unsaved changes. |
+| **Enable the chord conversion commands only when needed** | ✓ | **Integrate chords**, **Convert Tab to ChordPro** and **Convert inline chords to ChordPro** stay greyed out when they have nothing to do (see *Chord Management*). When unchecked, they are always enabled. The value is saved on exit and restored at startup. |
 | **Enable directive intellisense (Ctrl+Space)** | ✓ | Auto-completion of ChordPro directives in the editor. |
 | **Enable multi-cursor (Alt+Click, Ctrl+D)** | ☐ | Alt+Click adds a cursor; Ctrl+D selects the next occurrence of the current word. |
 | **Single instance: open files in the existing window** | ✓ | Files opened from Explorer or the command line reuse the existing window. See *Single instance mode*. |
@@ -1843,7 +1883,7 @@ Options for the *Screen ruler* (<kbd>F9</kbd>) toolbar. They take effect the nex
 | **Selection colour** | `#C0C0C0` | Background of selected text. |
 | **Caret colour** | `#000000` | Colour of the insertion caret. |
 | **Editor caption colour** | `#4682C8` | Title bar colour of the *Editor* AUI pane. |
-| **Preview caption colour** | `#329B82` | Title bar colour of the *Preview* AUI pane. |
+| **Page caption colour** | `#329B82` | Title bar colour of the *Page* AUI pane. |
 
 Each colour has three controls: the **hex** field (`#RRGGBB`, editable by hand), the **Pick…** button (system colour picker) and the **swatch** preview.
 
@@ -1939,11 +1979,11 @@ Below, the scrollable **chord simplification** panel has one slider per chord gr
 
 ---
 
-### *Songpress++ Preview* tab
+### *Songpress++ Page* tab
 
-Holds three groups already described in detail in the *Preview options*, *Printing and Preview* and *No chords: blocks to hide* chapters:
+Holds three groups already described in detail in the *Page options*, *Printing and Preview* and *No chords: blocks to hide* chapters:
 
-- **Songpress++ Preview** — Double-click jumps to the editor (✓), Minimum panel size 370×520 (✓), Show page indicator (✓), Delay preview refresh while typing — debounce (✓), Grey background (✓).
+- **Songpress++ Page** — Double-click jumps to the editor (✓), Minimum panel size 370×520 (✓), Show page indicator (✓), Delay preview refresh while typing — debounce (✓), Grey background (✓).
 - **Print** — Live update of duplex/colour status in the print preview every 1.5 s (✓), Keep print preview always on top (☐), Show print preview before printing (✓).
 - **No chords: blocks to hide** — Intro chords, Bridge, Grid, Time signature `{time}`, Tempo `{tempo_*}` (all ☐).
 
@@ -2000,8 +2040,8 @@ Open **Tools → Options…** and select the **Toolbars** tab. The tab contains 
 |-----------|----------------------|--------------------|
 | Standard  | Standard toolbar     | New, Open, Save, Print preview, Print, Undo, Redo, Cut, Copy, Copy as image, Paste, Paste chords, Check syntax, Options… |
 | Format    | Format toolbar       | Font, Show/hide chords, Linespacing |
-| Insert    | Insert toolbar       | All insert icons (title, chords, verses, musical metadata, images, symbols, etc.) |
-| View      | View toolbar         | Show Songpress++ Preview, Show verse and chorus labels |
+| Insert    | Insert toolbar       | All insert icons (title, chords, verses, musical metadata, images, symbols, etc.). The chorus has a single icon, *Chorus…*, which opens the same dialog as the menu item |
+| View      | View toolbar         | Show Songpress++ Page, Show verse and chorus labels |
 
 ### How to show or hide an icon
 
@@ -2092,7 +2132,7 @@ The following controls are found in the **Formatting** tab of preferences and af
 
 > **Automatic selection handling** — the print preview automatically detects whether a text selection is active in the editor (`_print_scope = 'auto'`): if a selection exists, only that portion is printed; otherwise the entire document is printed. No manual configuration is needed.
 
-### Print preferences (*Preview Songpress++* tab)
+### Print preferences (*Songpress++ Page* tab)
 
 > **Note — Automatic sorting** — The checkboxes in this group are sorted alphabetically according to the **active interface language**. The order may therefore differ from the one shown in this table.
 
@@ -2300,7 +2340,7 @@ The **Watermark** command (*File* menu) overlays a diagonal caption on the song 
 | Field | Default | Description |
 | ----- | ------- | ----------- |
 | Enable watermark | ☐ off | Turns the watermark on or off for the current song. When unchecked, all other fields are disabled |
-| Show in Songpress preview++ | ✅ on | If on, the watermark also appears in the preview panel; print and export apply it regardless of this option |
+| Show in Songpress++ Page | ✅ on | If on, the watermark also appears in the Page panel; print and export apply it regardless of this option |
 | Text | `DRAFT` | Watermark text. May contain spaces and symbols; if empty, no watermark is drawn |
 | Opacity (%) | 12 | Caption intensity, from 2 to 100. **Higher = darker**. Transparency is simulated by blending the colour toward the white of the sheet, so the result is identical in every format (including SVG and EPS, which have no alpha support) |
 | Angle (°) | 45 | Caption tilt, from −90 to +90 degrees |
@@ -2487,21 +2527,21 @@ When merging is complete, a dialog appears with:
 
 ---
 
-## Guide: Preview Panel — Songpress++
+## Guide: Page Panel — Songpress++
 
-The **Preview** panel (PreviewCanvas) shows in real time the graphical rendering of the ChordPro song as you type in the editor. It is docked as an AUI panel on the right side of the main window and can be resized, hidden, or undocked like any other AUI panel.
+The **Page** panel (PreviewCanvas) shows in real time the graphical rendering of the ChordPro song as you type in the editor. It is docked as an AUI panel on the right side of the main window and can be resized, hidden, or undocked like any other AUI panel.
 
 ---
 
 ## Visual Structure
 
-![Songpress++ Preview Panel](./img/GUIDE/AnteprimaSonpress++_en.png)
+![Songpress++ Page Panel](./img/GUIDE/AnteprimaSonpress++_en.png)
 
 The compact toolbar at the top groups all controls; below it is the scrollable area with the rendered song content.
 
 ---
 
-## Preview Toolbar
+## Page Toolbar
 
 ### 📋 Copy to Clipboard
 
@@ -2591,7 +2631,7 @@ This function can be disabled in preferences.
 
 ## Layout and Background
 
-![Songpress++ Preview Preferences](./img/GUIDE/AnteprimaSonpress++Preferenze_en.png)
+![Songpress++ Page Preferences](./img/GUIDE/AnteprimaSonpress++Preferenze_en.png)
 
 ### Page Background
 
@@ -2619,13 +2659,13 @@ To avoid continuous redraws during fast typing, the preview refresh is governed 
 
 ## Minimum Panel Size
 
-By default the preview panel has a minimum size of **370 × 520 px**: dragging the AUI splitter below this threshold is not possible, either at startup or during the session. The threshold can be removed in preferences for those working on small monitors or wanting to maximize editor space.
+By default the Page panel has a minimum size of **370 × 520 px**: dragging the AUI splitter below this threshold is not possible, either at startup or during the session. The threshold can be removed in preferences for those working on small monitors or wanting to maximize editor space.
 
 ---
 
-## Preview Options
+## Page Options
 
-Options are found in **Tools → Options... → Songpress++ Preview tab**.
+Options are found in **Tools → Options... → Songpress++ Page tab**.
 All changes are applied **immediately** to the open panel, without needing to restart.
 
 > **Note — Automatic sorting** — The checkboxes in this group (as well as those in the *Print* and *No chords: blocks to hide* groups) are sorted alphabetically according to the **active interface language**. The order may therefore differ from the one shown in this table.
@@ -2646,7 +2686,7 @@ All changes are applied **immediately** to the open panel, without needing to re
 
 When the **Show chords** slider (Format toolbar) is set to **None**, the preview and print output omit all inline `[…]` chords. With this setting active, you can also hide structural blocks that contain only chords and would be meaningless without them.
 
-Options are found in **Tools → Options... → Songpress++ Preview tab → No chords: blocks to hide**.
+Options are found in **Tools → Options... → Songpress++ Page tab → No chords: blocks to hide**.
 
 > **Note — Automatic sorting** — The checkboxes in this group are sorted alphabetically according to the **active interface language**. The order may therefore differ from the one shown in this table.
 

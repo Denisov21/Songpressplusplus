@@ -227,7 +227,7 @@ class SongpressFindReplaceDialog(object):
                                           label=_(u"'Editor' only"),
                                           style=wx.RB_GROUP)
         self.rbHlBoth    = wx.RadioButton(self.dialog,
-                                          label=_(u"'Editor' + 'Songpress++ Preview'"))
+                                          label=_(u"'Editor' + 'Songpress++ Page'"))
         self.rbHlBoth.SetValue(True)
         hl_scope_box.Add(self.rbHlEditor, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4)
         hl_scope_box.Add(self.rbHlBoth,   0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4)
@@ -895,7 +895,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         _preview_min = wx.Size(370, 530) if getattr(self.pref, 'previewMinSize', True) else wx.Size(-1, -1)
         self.AddPane(self.previewCanvas.main_panel,
                      aui.AuiPaneInfo().Right().BestSize(370, 530).MinSize(_preview_min),
-                     _('Songpress++ Preview'), 'preview')
+                     _('Songpress++ Page'), 'preview')
         self.previewCanvas.main_panel.Bind(wx.adv.EVT_HYPERLINK, self.OnCopyAsImage, self.previewCanvas.link)
 
         # ── Caption bar personalizzata per Editor e Anteprima ──────────
@@ -1054,7 +1054,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.FinalizePaneInitialization()
         # Reassign caption value to override caption saved in preferences (it could be another language)
         self._mgr.GetPane('_main').caption = _('Editor')
-        self._mgr.GetPane('preview').caption = _('Songpress++ Preview')
+        self._mgr.GetPane('preview').caption = _('Songpress++ Page')
         self._mgr.GetPane('standard').caption = _('Standard')
         self._mgr.GetPane('format').caption = _('Format')
         self._mgr.GetPane('insert').caption = _('Insert')
@@ -9282,7 +9282,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         f = FontFaceDialog(
             self.frame,
             wx.ID_ANY,
-            _("Songpress++ Preview Text"),
+            _("Songpress++ Page Text"),
             self.pref.format,
             self.pref.decorator,
             self.pref.decoratorFormat,

@@ -34,7 +34,9 @@ Then launch the NSIS compiler and compile the appropriate `.nsi` script:
 
 ## NSI file
 
-NSI file encoding: **UTF-16 LE with BOM** (required by NSIS Unicode mode).
+NSI file encoding: **UTF-8 with BOM** (`EF BB BF`) or **UTF-16 LE with BOM** (`FF FE`).
+The BOM is required by NSIS Unicode mode: without it the file is read as ANSI and
+accents and symbols (e.g. `⚠`) appear garbled (`installerÃ`, `âš`).
 
 The script contains:
 
@@ -43,8 +45,8 @@ Unicode true
 !include "MUI2.nsh"
 ```
 
-No external DLLs or `!addplugindir` directives are needed: both installers use
-**NScurl**, which is bundled with NSIS.
+No external DLLs or `!addplugindir` directives are needed: both installers use the
+**NScurl**, **ExecDos**, **nsExec** and **System** plugins, all bundled with NSIS.
 
 The version number is read automatically from `pyproject.toml` via `!searchparse`,
 so it does not need to be updated manually in the NSI script.
@@ -61,6 +63,34 @@ Delete "$INSTDIR\nettest.tmp"
 
 URL: `http://1.1.1.1/` — Cloudflare's IP, always responds in milliseconds without SSL,
 avoiding potential TLS hangs.
+
+## Plugins used and Unicode folders
+
+The scripts use `Unicode true`, so NSIS loads plugins only from the `*-unicode` folders
+of its `Plugins\` directory:
+
+| Installer | Plugin folder |
+|-----------|---------------|
+| 64-bit (`songpress__x64.nsi`) | `amd64-unicode` |
+| 32-bit (`songpress__x86.nsi`) | `x86-unicode` |
+
+The `*-ansi` folders are not used. Plugins used: `NScurl`, `ExecDos`, `nsExec`,
+`nsDialogs`, `System`, `StartMenu`. All of them ship with the standard NSIS installation.
+
+## Install screen: progress bar, spinner and uv log
+
+`uv tool install` can take several minutes. To keep the installer from looking frozen
+(stuck bar and motionless log) the scripts use three functions:
+
+| Function | What it does |
+|----------|--------------|
+| `BusyBarStart` / `BusyBarStop` | While `uv` runs, the progress bar switches to "marquee" mode (`PBS_MARQUEE`, `PBM_SETMARQUEE`) and scrolls continuously; it returns to normal afterwards. |
+| `RunUvSpinner` | Starts `uv` asynchronously through `ExecDos` and, while it runs, shows a text spinner (`\|/-`) in the window subtitle, updated every 120 ms. When finished it restores the original subtitle. If `ExecDos` fails to start, it falls back to `nsExec` (no spinner). |
+| `UvLogPump` | `uv` writes its output to a file (`cmd.exe /c ... > uv_install.log 2>&1`); on every loop the file is copied with `CopyFile` (because `uv` keeps it open for writing and `FileOpen` could not read it) and the new complete lines are shown in the log via `DetailPrint`. |
+
+The spinner text is localized (`STR_WAIT_SPIN`, Italian/English). The temporary files
+(`uv_install.log` and its copy `uv_install.log.rd`) live in `$PLUGINSDIR`, which NSIS
+deletes when the installation ends.
 
 ## Folder structure
 
@@ -81,8 +111,8 @@ installer/
     └── set_iconx86.bat
 ```
 
-> The `plugins/` folder is not needed: both installers use NScurl (built-in NSIS)
-> and require no external DLLs.
+> The `plugins/` folder is not needed: both installers only use plugins already
+> bundled with NSIS (NScurl, ExecDos, nsExec, ...) and require no external DLLs.
 
 ## tools/ folder
 
@@ -176,7 +206,7 @@ menu shortcuts. The options page lets you configure:
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| **Associate extensions** | ✔ | Associates `.crd .pro .chopro .chordpro .cho .tab` with Songpress++ |
+| **Associate extensions** | ✔ | Associates `.crd .pro .chopro .chordpro .cho .tab .sng` with Songpress++ |
 | **Check connection** | ✔ | Tests the Internet connection before downloading packages |
 | **Desktop shortcut** | ✔ | Creates a `.lnk` shortcut on the Desktop |
 
@@ -205,21 +235,26 @@ legacy ProgIDs:
 
 ## Required disk space shown by the wizard
 
-The wizard always shows **100 KB** as required space, because NSIS only counts the files
+On the folder selection page the wizard shows the required space (for example
+`Space required: 249.0 MB`). The value is **not calculated by NSIS**: it must be written **by hand**
+in the `.nsi` file, on the `AddSize` line of `Section "Songpress++"`. When the real
+installation size changes, update it by hand in **both** files
+(`songpress__x64.nsi` and `songpress__x86.nsi`).
+
+Without `AddSize` the wizard would show only **100 KB**, because NSIS only counts the files
 physically included in the package (in this case just the `.ico` icon). The bulk of the
 installation — Python, uv packages, tools — is downloaded and installed at runtime by
-`uv tool install`, and NSIS has no way to calculate it in advance.
-
-To show a realistic estimate, the script includes the `AddSize` directive:
+`uv tool install`, and NSIS has no way to calculate it in advance: that is why the script
+declares an estimate with `AddSize`:
 
 ```nsi
 Section "Songpress++" SongpressSection
   SectionIn RO
-  AddSize 117760   ; estimated size: ~115 MB (uv + Python + packages)
+  AddSize 255000   ; estimated size: ~250 MB (uv + Python + packages)
   SetOutPath "$INSTDIR"
 ```
 
-The value `117760` equals 115 MB (115 × 1024 KB). If the real installation size changes
+The value `255000` is expressed in KB and equals about 250 MB (255000 ÷ 1024 ≈ 249 MB). If the real installation size changes
 in the future, update this value by measuring the `$INSTDIR\bin`, `$INSTDIR\tools` and
 `$INSTDIR\python` folders after a complete installation.
 
@@ -315,9 +350,10 @@ System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, i 0, i 0)'
 3. Navigate to `%LOCALAPPDATA%\Songpress++\bin\`, right-click `SongPressPlusPlus.exe` → *Create shortcut*
 4. Move the shortcut into the folder created in step 2
 
-> **Note on the BOM:** NSIS requires `.nsi` files to be in UTF-16 LE with a 2-byte BOM
-> (`FF FE`). A double BOM causes `Invalid command: "﻿;"` on line 1.
-> Verify that the file starts with exactly `FF FE` followed by the first character `;`.
+> **Note on the BOM:** NSIS requires `.nsi` files to have a BOM: UTF-8 (`EF BB BF`) or
+> UTF-16 LE (`FF FE`). Without it accents and symbols appear garbled; a double BOM causes
+> `Invalid command: "﻿;"` on line 1. Verify that the file starts with a single BOM
+> followed by the first character `;`. When editing the file, save it as "UTF-8 with BOM".
 
 ## Notes
 

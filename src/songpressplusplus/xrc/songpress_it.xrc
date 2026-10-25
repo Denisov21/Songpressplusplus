@@ -295,7 +295,7 @@
           <object class="wxMenuItem" name="format">
             <label>_Formato</label>
             <accel></accel>
-            <help>Mostra/nascondi la barra degli strumenti di formattazione (Anteprima Songpress++)</help>
+            <help>Mostra/nascondi la barra degli strumenti di formattazione (Pagina Songpress++)</help>
             <checkable>1</checkable>
             <checked>1</checked>
           </object>
@@ -315,9 +315,9 @@
           </object>
         </object>
         <object class="wxMenuItem" name="preview">
-          <label>_Anteprima Songpress++</label>
+          <label>_Pagina Songpress++</label>
           <accel></accel>
-          <help>Mostra/nascondi il pannello di Anteprima Songpress++</help>
+          <help>Mostra/nascondi il pannello Pagina Songpress++</help>
           <checkable>1</checkable>
           <checked>1</checked>
           <bitmap>../img/preview.png</bitmap>
@@ -497,7 +497,7 @@
       <object class="wxMenu" name="formatMenu">
         <label>F_ormato</label>
         <object class="wxMenuItem" name="songFont">
-          <label>Carattere: Anteprima Songpress++...</label>
+          <label>Carattere: Pagina Songpress++...</label>
           <accel></accel>
           <bitmap>../img/font1.png</bitmap>
           <help>Seleziona il carattere della canzone</help>

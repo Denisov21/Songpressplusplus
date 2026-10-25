@@ -458,7 +458,7 @@ class SongpressToolbarsMixin:
     # ------------------------------------------------------------------
 
     FORMAT_TOOLBAR_ITEMS = [
-        ('fontChooser',       _(u'Font used in the Songpress++ preview'),      'tbf_fontChooser'),
+        ('fontChooser',       _(u'Font used in the Songpress++ Page'),      'tbf_fontChooser'),
         ('showChordsChooser', _(u'Hide or show chords in the formatted song'), 'tbf_showChords'),
         ('insertLinespacing', _(u'Linespacing'),                               'tbf_insertLinespacing'),
     ]
@@ -500,10 +500,10 @@ class SongpressToolbarsMixin:
                 self.formatToolBar, -1,
                 self._scaledToolbarBitmap('img/font1.png')
             )
-            fontIcon.SetToolTip(_("Font used in the Songpress++ preview"))
+            fontIcon.SetToolTip(_("Font used in the Songpress++ Page"))
             self.formatToolBar.AddControl(fontIcon)
             self.fontChooser = FontComboBox(self.formatToolBar, -1, saved_font_face)
-            self.fontChooser.SetToolTip(_("Font used in the Songpress++ preview"))
+            self.fontChooser.SetToolTip(_("Font used in the Songpress++ Page"))
             self.formatToolBar.AddControl(self.fontChooser)
             self.frame.Bind(wx.EVT_COMBOBOX,        self.OnFontSelected, self.fontChooser)
             self.fontChooser.Bind(wx.EVT_TEXT_ENTER, self.OnFontSelected, self.fontChooser)
@@ -622,10 +622,10 @@ class SongpressToolbarsMixin:
             self.formatToolBar, -1,
             self._scaledToolbarBitmap('img/font1.png')
         )
-        fontIcon.SetToolTip(_("Font used in the Songpress++ preview"))
+        fontIcon.SetToolTip(_("Font used in the Songpress++ Page"))
         self.formatToolBar.AddControl(fontIcon)
         self.fontChooser = FontComboBox(self.formatToolBar, -1, self.pref.format.face)
-        self.fontChooser.SetToolTip(_("Font used in the Songpress++ preview"))
+        self.fontChooser.SetToolTip(_("Font used in the Songpress++ Page"))
         self.formatToolBar.AddControl(self.fontChooser)
         self.frame.Bind(wx.EVT_COMBOBOX,    self.OnFontSelected, self.fontChooser)
         self.fontChooser.Bind(wx.EVT_TEXT_ENTER, self.OnFontSelected, self.fontChooser)
@@ -829,7 +829,7 @@ class SongpressToolbarsMixin:
     # ------------------------------------------------------------------
 
     VIEW_TOOLBAR_ITEMS = [
-        ('preview',    _(u'Show Songpress++ Preview'),    'tbv_preview'),
+        ('preview',    _(u'Show Songpress++ Page'),    'tbv_preview'),
         ('labelVerses',_(u'Show verse and chorus labels'),'tbv_labelVerses'),
     ]
 
@@ -889,19 +889,19 @@ class SongpressToolbarsMixin:
             'labelVerses':'img/labelVerses.png',
         }
         self._view_toolbar_helps = {
-            'preview':    _(u"Show or hide the Songpress++ Preview panel"),
+            'preview':    _(u"Show or hide the Songpress++ Page panel"),
             'labelVerses':_(u"Show or hide verse and chorus labels"),
         }
 
-        # Toggle "Mostra anteprima Songpress++"
+        # Toggle "Mostra Pagina Songpress++"
         togglePreviewViewTool = self.viewToolBar.AddToggleTool(
             wx.xrc.XRCID('preview'),
             self._scaledToolbarBitmap("img/preview.png"),
             wx.NullBitmap,
             True,
             None,
-            _("Show Songpress++ Preview"),
-            _("Show or hide the Songpress++ Preview panel"),
+            _("Show Songpress++ Page"),
+            _("Show or hide the Songpress++ Page panel"),
         )
         self.togglePreviewViewToolId = togglePreviewViewTool.GetId()
         self.frame.Bind(wx.EVT_TOOL, self.OnTogglePaneView, id=self.togglePreviewViewToolId)

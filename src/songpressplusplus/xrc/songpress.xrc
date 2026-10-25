@@ -98,7 +98,7 @@
           <label>Create _Index PDF...</label>
           <accel></accel>
           <help>Create a PDF index (table of contents) from a folder of songs, sorted by song number</help>
-          <bitmap>../img/createIndex.png</bitmap>
+          <bitmap>../img/CreateIndex.png</bitmap>
         </object>
         <object class="wxMenuItem" name="canzonatore">
           <label>_Mocker (combine songs)...</label>
@@ -126,7 +126,7 @@
         <object class="wxMenuItem" name="watermark">
           <label>_Watermark...</label>
           <accel></accel>
-          <bitmap>../img/printPreview.png</bitmap>
+          <bitmap>../img/watermark.png</bitmap>
           <help>Add or remove a watermark on printed and exported output</help>
         </object>
         <object class="separator"/>
@@ -315,9 +315,9 @@
           </object>
         </object>
         <object class="wxMenuItem" name="preview">
-          <label>Songpress++ _Preview</label>
+          <label>Songpress++ _Page</label>
           <accel></accel>
-          <help>Show/hide Songpress++ Preview pane</help>
+          <help>Show/hide Songpress++ Page pane</help>
           <checkable>1</checkable>
           <checked>1</checked>
           <bitmap>../img/preview.png</bitmap>
@@ -497,10 +497,10 @@
       <object class="wxMenu" name="formatMenu">
         <label>F_ormat</label>
         <object class="wxMenuItem" name="songFont">
-          <label>_Songpress++ Preview Text...</label>
+          <label>_Songpress++ Page Text...</label>
           <accel></accel>
           <bitmap>../img/font1.png</bitmap>
-          <help>Select Songpress++ Preview Text font</help>
+          <help>Select Songpress++ Page Text font</help>
         </object>
         <object class="wxMenuItem" name="textFont">
           <label>_Songpress++ Editor Font...</label>

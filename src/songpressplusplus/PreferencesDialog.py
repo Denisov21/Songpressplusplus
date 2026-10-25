@@ -114,7 +114,7 @@ class PreferencesDialog(wx.Dialog):
 
         # Caption Preview colour row
         bSizerCapPreview = wx.BoxSizer(wx.HORIZONTAL)
-        self.labelCapPreview = wx.StaticText(self.general, wx.ID_ANY, _(u"Preview caption colour"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelCapPreview = wx.StaticText(self.general, wx.ID_ANY, _(u"Page caption colour"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.labelCapPreview.Wrap(-1)
         bSizerCapPreview.Add(self.labelCapPreview, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         self.capPreviewHexCtrl = wx.TextCtrl(self.general, wx.ID_ANY, u"#329B82", wx.DefaultPosition, wx.Size(80, -1), 0)
@@ -761,7 +761,7 @@ class PreferencesDialog(wx.Dialog):
         self.symbolValignSpin.SetToolTip(
             _(u"Lowers musical symbols to line them up with the text row.\n"
               u"0 = raw position; about 5 aligns them (default); higher values lower them more.\n"
-              u"Saved and applied to Songpress++ Preview, print preview and printing.")
+              u"Saved and applied to Songpress++ Page, print preview and printing.")
         )
         szValign.Add(self.symbolValignLbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
         szValign.Add(self.symbolValignSpin, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -783,7 +783,7 @@ class PreferencesDialog(wx.Dialog):
         )
         self.symbolOversampleSpin.SetMinSize(wx.Size(60 + _SPIN_EXTRA_WIDTH, -1))
         self.symbolOversampleSpin.SetToolTip(
-            _(u"Linux only: sharpens SMP musical symbols in the 'Songpress++ Preview'.\n"
+            _(u"Linux only: sharpens SMP musical symbols in the 'Songpress++ Page'.\n"
               u"On Linux these symbols are drawn from a bitmap and can look\n"
               u"low-resolution; higher values render them at higher resolution.\n"
               u"1 = off, 3 = recommended (default), 4 = maximum (more memory).\n"
@@ -882,7 +882,7 @@ class PreferencesDialog(wx.Dialog):
         bSizerSongpress = wx.BoxSizer(wx.VERTICAL)
 
         # Gruppo: Anteprima
-        _boxPreview = wx.StaticBox(self.songpressPanel, wx.ID_ANY, _(u"Songpress++ Preview"))
+        _boxPreview = wx.StaticBox(self.songpressPanel, wx.ID_ANY, _(u"Songpress++ Page"))
         grpPreview = wx.StaticBoxSizer(_boxPreview, wx.VERTICAL)
 
         # Ordine alfabetico italiano:
@@ -904,10 +904,10 @@ class PreferencesDialog(wx.Dialog):
 
         self.previewMinSizeCB = wx.CheckBox(
             _boxPreview, wx.ID_ANY,
-            _(u"Set minimum size for the preview panel at startup (370×530)")
+            _(u"Set minimum size for the Page panel at startup (370×530)")
         )
         self.previewMinSizeCB.SetToolTip(
-            _(u"When enabled, the preview panel cannot be resized below 370×530 pixels. "
+            _(u"When enabled, the Page panel cannot be resized below 370×530 pixels. "
               u"This prevents the panel from appearing too small when the application starts.")
         )
         grpPreview.Add(self.previewMinSizeCB, 0, wx.ALL, 5)
@@ -917,7 +917,7 @@ class PreferencesDialog(wx.Dialog):
             _(u"Show page indicator (e.g. 'Page 1 of 3')")
         )
         self.showPageIndicatorCB.SetToolTip(
-            _(u"Show or hide the page counter label at the top right of the preview panel")
+            _(u"Show or hide the page counter label at the top right of the Page panel")
         )
         grpPreview.Add(self.showPageIndicatorCB, 0, wx.ALL, 5)
 
@@ -1057,7 +1057,7 @@ class PreferencesDialog(wx.Dialog):
         self.songpressPanel.SetSizer(bSizerSongpress)
         self.songpressPanel.Layout()
         bSizerSongpress.Fit(self.songpressPanel)
-        self.notebook.AddPage(self.songpressPanel, _(u"Songpress++ Preview"), False)
+        self.notebook.AddPage(self.songpressPanel, _(u"Songpress++ Page"), False)
         # --- Fine Tab "Songpress" ---
 
         # --- Tab "Guida rapida" ---

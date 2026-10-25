@@ -279,8 +279,8 @@ msgid "Propagate chorus chords"
 msgstr "Propaga accordi ritornello"
 
 #: PreferencesDialog.py
-msgid "Songpress++ Preview"
-msgstr "Anteprima Songpress++"
+msgid "Songpress++ Page"
+msgstr "Pagina Songpress++"
 
 #: PreferencesDialog.py
 msgid "Show page indicator (e.g. 'Page 1 of 3')"
@@ -288,10 +288,10 @@ msgstr "Mostra indicatore di pagina (es. 'Pagina 1 di 3')"
 
 #: PreferencesDialog.py
 msgid ""
-"Show or hide the page counter label at the top right of the preview panel"
+"Show or hide the page counter label at the top right of the Page panel"
 msgstr ""
 "Mostra o nasconde il contatore di pagine in alto a destra del pannello "
-"anteprima"
+"Pagina"
 
 #: PreferencesDialog.py
 msgid "Grey background in preview (page style)"
@@ -336,16 +336,16 @@ msgstr ""
 "sposta il cursore alla riga corrispondente nell'editor."
 
 #: PreferencesDialog.py
-msgid "Set minimum size for the preview panel at startup (370×530)"
+msgid "Set minimum size for the Page panel at startup (370×530)"
 msgstr ""
-"Imposta la dimensione minima del pannello anteprima all'avvio (370×530)"
+"Imposta la dimensione minima del pannello Pagina all'avvio (370×530)"
 
 #: PreferencesDialog.py
 msgid ""
-"When enabled, the preview panel cannot be resized below 370×530 pixels. This"
+"When enabled, the Page panel cannot be resized below 370×530 pixels. This"
 " prevents the panel from appearing too small when the application starts."
 msgstr ""
-"Se abilitato, il pannello anteprima non può essere ridimensionato al di "
+"Se abilitato, il pannello Pagina non può essere ridimensionato al di "
 "sotto di 370×530 pixel. In questo modo il pannello non appare troppo piccolo"
 " all'avvio."
 
@@ -498,9 +498,9 @@ msgstr "Solo altezza"
 msgid "Editor caption colour"
 msgstr "Colore barra Editor"
 
-#: PreferencesDialog.py general tab — preview caption bar colour
-msgid "Preview caption colour"
-msgstr "Colore barra Anteprima"
+#: PreferencesDialog.py general tab — Page caption bar colour
+msgid "Page caption colour"
+msgstr "Colore barra Pagina"
 
 #: PreferencesDialog.py general tab — open templates folder button
 msgid "Open templates folder"
@@ -544,11 +544,11 @@ msgstr "Abbassamento simbolo (0–25%):"
 msgid ""
 "Lowers musical symbols to line them up with the text row.\n"
 "0 = raw position; about 5 aligns them (default); higher values lower them more.\n"
-"Saved and applied to Songpress++ Preview, print preview and printing."
+"Saved and applied to Songpress++ Page, print preview and printing."
 msgstr ""
 "Abbassa i simboli musicali per allinearli alla riga di testo.\n"
 "0 = posizione grezza; circa 5 li allinea (predefinito); valori più alti li abbassano di più.\n"
-"Salvato e applicato ad Anteprima Songpress++, anteprima di stampa e stampa."
+"Salvato e applicato a Pagina Songpress++, anteprima di stampa e stampa."
 
 #: PreferencesDialog.py format tab — SMP symbol quality (Linux only) label
 msgid "SMP symbol quality — Linux only (1-4):"
@@ -556,13 +556,13 @@ msgstr "Qualità simbolo SMP — solo Linux (1-4):"
 
 #: PreferencesDialog.py format tab — SMP symbol quality (Linux only) tooltip
 msgid ""
-"Linux only: sharpens SMP musical symbols in the 'Songpress++ Preview'.\n"
+"Linux only: sharpens SMP musical symbols in the 'Songpress++ Page'.\n"
 "On Linux these symbols are drawn from a bitmap and can look\n"
 "low-resolution; higher values render them at higher resolution.\n"
 "1 = off, 3 = recommended (default), 4 = maximum (more memory).\n"
 "No effect on Windows/macOS, where the symbol is vector."
 msgstr ""
-"Solo Linux: rende più nitidi i simboli musicali SMP nell''Anteprima Songpress++'.\n"
+"Solo Linux: rende più nitidi i simboli musicali SMP nella 'Pagina Songpress++'.\n"
 "Su Linux questi simboli sono disegnati da una bitmap e possono apparire\n"
 "a bassa risoluzione; valori più alti li rendono a risoluzione maggiore.\n"
 "1 = disattivato, 3 = consigliato (predefinito), 4 = massimo (più memoria).\n"
@@ -822,7 +822,7 @@ msgstr ""
 "Se attivo, aprire un file da Explorer o dalla riga di comando riutilizza la "
 "finestra di Songpress++ già aperta, invece di avviarne una nuova."
 
-# — Preferenze — gruppo Stampa (tab Songpress++ Preview)
+# — Preferenze — gruppo Stampa (tab Songpress++ Page)
 msgid "Print"
 msgstr "Stampa"
 

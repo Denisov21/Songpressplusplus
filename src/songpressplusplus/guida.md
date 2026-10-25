@@ -724,6 +724,8 @@ Si apre una finestra che mostra automaticamente le note dell'accordo e permette 
 
 Se attiva, la casella *Mostra anteprima tastiera* in fondo alla finestra riflette in tempo reale tutte queste scelte. La finestra *Tasti accordo* (`{taste:}`) offre gli stessi controlli **Nota di partenza**, **Evidenzia la nota su entrambe le ottave** e **Accordo in maiuscolo**.
 
+> **Nota — posizione della tastiera.** In entrambe le finestre una nota con l'icona ℹ ricorda che la tastiera con l'accordo viene sempre disegnata in fondo alla pagina, anche se nell'editor la direttiva (`{taste:}` o `{fingering:}`) può essere inserita in qualunque punto.
+
 **Colore dei numeri delle dita:**
 Il colore dei numeri visualizzati sui tasti si imposta in *Opzioni → Formattazione → Accordi e tempo → Colore numeri diteggiatura*. Per impostazione predefinita è quasi nero (`#1A1A1A`); su tasti neri il numero appare in bianco per garantire il contrasto.
 
@@ -1173,15 +1175,50 @@ G|--0--0--2--0--|
 
 Tutte le principali direttive sono accessibili tramite il menu **Inserisci**, che apre finestre di dialogo di supporto per compilare i valori. Il cursore `|` in InsertWithCaret indica la posizione in cui il cursore verrà posizionato dopo l'inserimento.
 
+#### Ordine del menu Inserisci
+
+Le voci sono raggruppate in cinque blocchi, separati da linee:
+
+1. **Intestazione** — Titolo, Sottotitolo, Commento
+2. **Accordi** — Accordo, Accordi di intro, Diteggiatura primo accordo, Tastiera accordo, Diagramma accordo chitarra, Durata accordo
+3. **Struttura della canzone** — Strofa numerata, Strofa non numerata, Strofa con etichetta personalizzata o senza, Ritornello, Bridge, Griglia
+4. **Tempo e tonalità** — Tempo, Indicazione agogica, Indicazione del tempo, Tonalità
+5. **Immagini e simboli** — Immagine, Immagine Transposer, Simbolo musicale (Unicode)
+
+#### Ritornello (<kbd>Ctrl</kbd>+<kbd>U</kbd>)
+
+Una sola voce, **Inserisci → Ritornello…**, inserisce il blocco del ritornello. La stessa finestra si apre anche dall'icona *Ritornello…* della toolbar Inserisci. La finestra contiene:
+
+| Campo | Descrizione |
+| --- | --- |
+| **Etichetta** | Testo mostrato come etichetta del ritornello. Se lasciato vuoto o invariato, viene usata l'etichetta predefinita (quella impostata in *Opzioni → Formattazione*, di solito «Rit.») e il comando viene scritto senza etichetta. |
+| **Forma** | Radio button per scegliere come scrivere il blocco: **`{start_chorus} ... {end_chorus}`** (forma estesa, predefinita) oppure **`{soc} ... {eoc}`** (forma abbreviata di `start_of_chorus` / `end_of_chorus`). |
+
+Esempi di testo inserito (il cursore `|` si posiziona all'interno del blocco):
+
+```chordpro
+{start_chorus}
+|
+{end_chorus}
+```
+
+```chordpro
+{soc:Finale}
+|
+{eoc}
+```
+
+La forma scelta viene ricordata finché il programma resta aperto. Passando il mouse sul campo etichetta e sui due radio button compare un suggerimento (tooltip), uguale su Windows e Linux.
+
 ### Gestione degli accordi
 
 - **Inserisci accordo** — inserisce `[|]` con il cursore all'interno delle parentesi
 - **Sposta accordo a destra / sinistra** — sposta l'accordo sotto il cursore di un carattere
-- **Rimuovi accordi** — elimina tutti gli accordi dalla selezione
+- **Rimuovi accordi** — elimina tutti gli accordi dalla selezione. Il comando è attivo solo se la selezione contiene almeno un accordo tra `[ ]`; altrimenti resta grigio
 - **Incolla accordi** — incolla solo gli accordi (senza testo) dalla selezione copiata
 - **Propaga accordi alle strofe** — copia gli accordi dalla prima strofa a tutte le strofe con lo stesso numero di righe
 - **Propaga accordi ai ritornelli** — come sopra, per i ritornelli
-- **Integra accordi** — converte due righe separate (accordi sopra / testo sotto) nel formato ChordPro inline
+- **Integra accordi** — converte due righe separate (accordi sopra / testo sotto) nel formato ChordPro inline. Agisce sulla riga del cursore (accordi) e su quella successiva (testo) ed è attivo solo quando il cursore è su una riga di soli accordi in formato tab seguita da una riga di testo
 
 ### Trasposizione e notazione
 
@@ -1202,8 +1239,10 @@ Tutte le principali direttive sono accessibili tramite il menu **Inserisci**, ch
 - **Semplifica accordi** — trova la tonalità più facile da suonare
 - **Cambia notazione** — converte tra notazione anglosassone (C D E…) e solfeggio (Do Re Mi…)
 - **Normalizza accordi** — standardizza la scrittura degli accordi (es. `Hm` → `Bm`)
-- **Converti Tab → ChordPro** — converte automaticamente il formato tab (accordi sopra il testo) in ChordPro inline
-- **Converti accordi in linea in ChordPro** — racchiude tra `[ ]` gli accordi *attaccati* alle parole del testo (vedi sotto)
+- **Converti Tab → ChordPro** — converte automaticamente il formato tab (accordi sopra il testo) in ChordPro inline. Agisce sulla selezione o sull'intero brano ed è attivo solo se il testo è in formato tab
+- **Converti accordi in linea in ChordPro** — racchiude tra `[ ]` gli accordi *attaccati* alle parole del testo (vedi sotto). È attivo solo se c'è qualcosa da convertire
+
+> **Comandi attivi solo quando servono** — **Integra accordi**, **Converti Tab → ChordPro** e **Converti accordi in linea in ChordPro** restano grigi quando non avrebbero alcun effetto: ad esempio con un editor vuoto, senza accordi o con accordi già in ChordPro. Si attivano da soli appena il testo, la selezione o la posizione del cursore lo permettono. Se preferisci averli sempre disponibili, disattiva *Opzioni → Generale → Attiva i comandi di conversione degli accordi solo quando servono*. **Rimuovi accordi** segue invece sempre la selezione (attivo solo se contiene accordi).
 
 #### Converti accordi in linea in ChordPro
 
@@ -1779,7 +1818,7 @@ Si apre da **Strumenti → Opzioni…** (titolo della finestra: *Opzioni Songpre
 | **OK** | Salva tutte le preferenze (`Preferences.Save()`) e chiude la finestra. |
 | **Annulla** | Chiude senza salvare. Le anteprime interattive (colori sintassi, sfondo editor…) vengono comunque scartate. |
 
-> **Riavvio di Songpress++** — Alcune impostazioni hanno effetto solo dopo il riavvio; in pratica l'unica è la **lingua dell'interfaccia**. Songpress++ è in grado di riavviarsi da solo: salva le preferenze, chiude la finestra corrente e si riapre automaticamente. Ci sono due modi per avviarlo:
+> **Riavvio di Songpress++** — Alcune impostazioni hanno effetto solo dopo il riavvio; in pratica l'unica è la **lingua dell'interfaccia**. Songpress++ è in grado di riavviarsi da solo: salva le preferenze, chiude la finestra corrente e si riapre automaticamente. Se il brano ha modifiche non salvate, Songpress++ chiede **prima** se salvarle: premendo **Annulla** il riavvio viene interrotto e non si apre nessuna seconda finestra. La nuova istanza parte solo dopo la chiusura riuscita di quella corrente. Ci sono due modi per avviarlo:
 >
 > - **Cambio lingua.** Quando si sceglie una lingua diversa (campo **Lingua**, gruppo *Canzone* qui sotto) e si conferma, appare un messaggio con due pulsanti: **OK** (la nuova lingua verrà applicata al prossimo avvio) e **Riavvia ora** (riavvia subito Songpress++, applicando immediatamente la lingua).
 > - **Menu File → «Riavvia Songpress++».** Voce di riavvio rapido, disponibile in qualsiasi momento senza dover chiudere e riaprire a mano (si può mostrare/nascondere dal gruppo *Generale* qui sotto).
@@ -1811,6 +1850,7 @@ Si apre da **Strumenti → Opzioni…** (titolo della finestra: *Opzioni Songpre
 | **Cancella file recenti** (pulsante) | — | Svuota l'elenco dei file recenti. La cancellazione avviene alla conferma con OK. |
 | **Apri cartella modelli** (pulsante) | — | Apre nel file manager di sistema la cartella modelli **utente** (`templates/`, usata anche per i temi dei colori) — la stessa che l'app rilegge. I file `.crd` messi in `songs/` compaiono in *File → Nuovo da template* (vedi il capitolo *Nuovo da template*). |
 | **Abilita il pulsante «Salva» solo quando la canzone è modificata** | ✓ | Il comando Salva (menu e toolbar) resta disabilitato finché non ci sono modifiche non salvate. |
+| **Attiva i comandi di conversione degli accordi solo quando servono** | ✓ | **Integra accordi**, **Converti Tab in ChordPro** e **Converti accordi in linea in ChordPro** restano grigi quando non hanno nulla da fare (vedi *Gestione degli accordi*). Se disattivata, sono sempre attivi. Il valore viene salvato alla chiusura e ripristinato all'avvio. |
 | **Abilita intellisense direttive (Ctrl+Spazio)** | ✓ | Attiva il completamento automatico delle direttive ChordPro nell'editor. |
 | **Abilita multicursore (Alt+Clic, Ctrl+D)** | ☐ | Alt+Clic aggiunge un cursore; Ctrl+D seleziona l'occorrenza successiva della parola corrente. |
 | **Istanza singola: apri i file nella finestra esistente** | ✓ | I file aperti da Esplora risorse o da riga di comando riutilizzano la finestra già aperta. Vedi il capitolo *Modalità istanza singola*. |
@@ -1850,7 +1890,7 @@ Opzioni della barra del *Righello a schermo* (<kbd>F9</kbd>). Valgono dalla succ
 | **Colore selezione** | `#C0C0C0` | Sfondo del testo selezionato. |
 | **Colore cursore (caret)** | `#000000` | Colore della barra di inserimento. |
 | **Colore didascalia Editor** | `#4682C8` | Colore della barra titolo del riquadro AUI *Editor*. |
-| **Colore didascalia Anteprima** | `#329B82` | Colore della barra titolo del riquadro AUI *Anteprima*. |
+| **Colore didascalia Pagina** | `#329B82` | Colore della barra titolo del riquadro AUI *Pagina*. |
 
 Ogni colore ha tre controlli: il campo **esadecimale** (`#RRGGBB`, modificabile a mano), il pulsante **Scegli…** (apre il selettore colore di sistema) e il **quadratino di anteprima**.
 
@@ -1946,11 +1986,11 @@ Sotto, il pannello scorrevole **semplificazione accordi** contiene un cursore pe
 
 ---
 
-### Scheda *Anteprima Songpress++*
+### Scheda *Pagina Songpress++*
 
-Contiene tre gruppi già descritti in dettaglio nei capitoli *Opzioni anteprima*, *Stampa e anteprima* e *Nessun accordo: blocchi da nascondere*:
+Contiene tre gruppi già descritti in dettaglio nei capitoli *Opzioni Pagina*, *Stampa e anteprima* e *Nessun accordo: blocchi da nascondere*:
 
-- **Anteprima Songpress++** — Doppio clic porta il focus all'editor (✓), Dimensione minima pannello 370×520 (✓), Mostra indicatore pagina (✓), Ritarda aggiornamento durante la digitazione — debounce (✓), Sfondo grigio (✓).
+- **Pagina Songpress++** — Doppio clic porta il focus all'editor (✓), Dimensione minima pannello 370×520 (✓), Mostra indicatore pagina (✓), Ritarda aggiornamento durante la digitazione — debounce (✓), Sfondo grigio (✓).
 - **Stampa** — Aggiornamento in tempo reale dello stato duplex/colore nell'anteprima ogni 1,5 s (✓), Mantieni l'anteprima di stampa sempre in primo piano (☐), Mostra anteprima di stampa prima di stampare (✓).
 - **Nessun accordo: blocchi da nascondere** — Accordi di intro, Bridge, Griglia, Indicazione di tempo `{time}`, Tempo `{tempo_*}` (tutti ☐).
 
@@ -2007,8 +2047,8 @@ Aprire **Strumenti → Opzioni…** e selezionare la scheda **Toolbar**. La sche
 |-----------------|----------------------|---------------------|
 | Standard        | Barra standard       | Nuovo, Apri, Salva, Anteprima di stampa, Stampa, Annulla, Ripeti, Taglia, Copia, Copia come immagine, Incolla, Incolla accordi, Verifica sintassi, Opzioni… |
 | Formattazione   | Barra di formattazione | Font, Mostra/nascondi accordi, Interlinea |
-| Inserisci       | Barra di inserimento | Tutte le icone di inserimento (titolo, accordi, strofe, metadati musicali, immagini, simboli, ecc.) |
-| Visualizza      | Barra di visualizzazione | Mostra anteprima Songpress++, Mostra etichette strofe e ritornelli |
+| Inserisci       | Barra di inserimento | Tutte le icone di inserimento (titolo, accordi, strofe, metadati musicali, immagini, simboli, ecc.). Il ritornello ha un'unica icona, *Ritornello…*, che apre la stessa finestra della voce di menu |
+| Visualizza      | Barra di visualizzazione | Mostra Pagina Songpress++, Mostra etichette strofe e ritornelli |
 
 ### Come mostrare o nascondere un'icona
 
@@ -2099,7 +2139,7 @@ I seguenti controlli si trovano nella scheda **Formattazione** delle preferenze 
 
 > **Gestione automatica della selezione** — l'anteprima di stampa rileva automaticamente se è attiva una selezione di testo nell'editor (`_print_scope = 'auto'`): se c'è una selezione, viene stampata solo quella; altrimenti viene stampato l'intero documento. Non è necessaria alcuna impostazione manuale.
 
-### Preferenze di stampa (scheda *Anteprima Songpress++*)
+### Preferenze di stampa (scheda *Pagina Songpress++*)
 
 > **Nota — Ordinamento automatico** — Le checkbox di questo gruppo vengono ordinate alfabeticamente in base alla **lingua dell'interfaccia** attiva. L'ordine può quindi differire da quello mostrato in questa tabella.
 
@@ -2307,7 +2347,7 @@ Il comando **Filigrana** (menu *File*) sovrappone al brano una scritta diagonale
 | Campo | Predefinito | Descrizione |
 | ----- | ----------- | ----------- |
 | Abilita filigrana | ☐ disattivo | Attiva o disattiva la filigrana per il brano corrente. Con la casella deselezionata tutti gli altri campi sono disabilitati |
-| Mostra nell'anteprima Songpress++ | ✅ attivo | Se attivo, la filigrana compare anche nel pannello di anteprima; stampa ed export la applicano comunque, indipendentemente da questa opzione |
+| Mostra nella Pagina Songpress++ | ✅ attivo | Se attivo, la filigrana compare anche nel pannello Pagina; stampa ed export la applicano comunque, indipendentemente da questa opzione |
 | Testo | `DRAFT` | Testo della filigrana. Può contenere spazi e simboli; se vuoto, la filigrana non viene disegnata |
 | Opacità (%) | 12 | Intensità della scritta, da 2 a 100. Valori **alti = più scuro**. La trasparenza è simulata fondendo il colore verso il bianco del foglio, così il risultato è identico su ogni formato (anche SVG ed EPS, che non supportano l'alpha) |
 | Angolo (°) | 45 | Inclinazione della scritta, da −90 a +90 gradi |
@@ -2494,21 +2534,21 @@ Al termine dell'unione appare un dialogo con:
 
 ---
 
-## Guida: Pannello anteprima — Songpress++
+## Guida: Pannello Pagina — Songpress++
 
-Il pannello **Anteprima** (PreviewCanvas) mostra in tempo reale il rendering grafico della canzone ChordPro mentre si digita nell'editor. È ancorato come pannello AUI sul lato destro della finestra principale e può essere ridimensionato, nascosto o sganciato come qualsiasi altro pannello AUI.
+Il pannello **Pagina** (PreviewCanvas) mostra in tempo reale il rendering grafico della canzone ChordPro mentre si digita nell'editor. È ancorato come pannello AUI sul lato destro della finestra principale e può essere ridimensionato, nascosto o sganciato come qualsiasi altro pannello AUI.
 
 ---
 
 ## Struttura visiva
 
-![Songpress++ Pannello anteprima](./img/GUIDE/AnteprimaSonpress++_it.png)
+![Songpress++ Pannello Pagina](./img/GUIDE/AnteprimaSonpress++_it.png)
 
 La barra degli strumenti compatta in alto raggruppa tutti i controlli; al di sotto si trova l'area scorrevole con il contenuto della canzone renderizzato.
 
 ---
 
-## Barra degli strumenti dell'anteprima
+## Barra degli strumenti della Pagina
 
 ### 📋 Copia negli appunti
 
@@ -2598,7 +2638,7 @@ Questa funzione può essere disabilitata nelle preferenze.
 
 ## Layout e sfondo
 
-![Songpress++ Preferenze anteprima](./img/GUIDE/AnteprimaSonpress++Preferenze_it.png)
+![Songpress++ Preferenze Pagina](./img/GUIDE/AnteprimaSonpress++Preferenze_it.png)
 
 ### Sfondo della pagina
 
@@ -2626,13 +2666,13 @@ Per evitare ridisegni continui durante la digitazione rapida, il refresh dell'an
 
 ## Dimensione minima del pannello
 
-Per impostazione predefinita il pannello di anteprima ha una dimensione minima di **370 × 520 px**: trascinare il divisore AUI al di sotto di questa soglia non è possibile, né all'avvio né durante la sessione. La soglia può essere rimossa nelle preferenze per chi lavora su monitor piccoli o vuole massimizzare lo spazio dell'editor.
+Per impostazione predefinita il pannello Pagina ha una dimensione minima di **370 × 520 px**: trascinare il divisore AUI al di sotto di questa soglia non è possibile, né all'avvio né durante la sessione. La soglia può essere rimossa nelle preferenze per chi lavora su monitor piccoli o vuole massimizzare lo spazio dell'editor.
 
 ---
 
-## Opzioni anteprima
+## Opzioni Pagina
 
-Le opzioni si trovano in **Strumenti → Opzioni... → scheda Anteprima Songpress++**.
+Le opzioni si trovano in **Strumenti → Opzioni... → scheda Pagina Songpress++**.
 Tutte le modifiche vengono applicate **immediatamente** al pannello aperto, senza necessità di riavvio.
 
 > **Nota — Ordinamento automatico** — Le checkbox di questo gruppo (come quelle dei gruppi *Stampa* e *Nessun accordo: blocchi da nascondere*) vengono ordinate alfabeticamente in base alla **lingua dell'interfaccia** attiva. L'ordine può quindi differire da quello mostrato in questa tabella.
@@ -2653,7 +2693,7 @@ Tutte le modifiche vengono applicate **immediatamente** al pannello aperto, senz
 
 Quando lo slider **Mostra accordi** (barra degli strumenti Formato) è impostato su **Nessuno**, l'anteprima e la stampa omettono tutti gli accordi inline `[…]`. Con questa impostazione attiva è possibile nascondere anche i blocchi di struttura che contengono solo accordi e che diventerebbero privi di significato senza di essi.
 
-Le opzioni si trovano in **Strumenti → Opzioni... → scheda Anteprima Songpress++ → Nessun accordo: blocchi da nascondere**.
+Le opzioni si trovano in **Strumenti → Opzioni... → scheda Pagina Songpress++ → Nessun accordo: blocchi da nascondere**.
 
 > **Nota — Ordinamento automatico** — Le checkbox di questo gruppo vengono ordinate alfabeticamente in base alla **lingua dell'interfaccia** attiva. L'ordine può quindi differire da quello mostrato in questa tabella.
 
