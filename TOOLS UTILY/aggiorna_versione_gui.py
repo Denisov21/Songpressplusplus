@@ -91,7 +91,12 @@ _HISTORICAL_HINTS = ("up to", "fino alla", "fino a ", "earlier version",
 # quasi certamente NON è quella del programma (es. "wxPython 4.2.3").
 _DEP_HINTS = ("wxpython", "requests", "python-pptx", "pptx", "pyshortcuts",
               "reportlab", "pypdf", "markdown", "mistune", "hatchling",
-              "cx_freeze", "cxfreeze", "python 3", "python3")
+              "cx_freeze", "cxfreeze", "python 3", "python3",
+              "pyenchant", "pillow")
+
+# Operatore di vincolo di versione subito prima del numero (>=, <=, ==, ~=,
+# !=, <, >, ^, ~): indica la versione di una DIPENDENZA, non del programma.
+_SPECIFIER_BEFORE_RE = re.compile(r"(?:>=|<=|==|~=|!=|===|[<>^~])\s*$")
 
 # Etichette leggibili per ogni tipologia di occorrenza.
 KIND_LABEL = {
@@ -212,6 +217,10 @@ def _classify(line: str, start: int, end: int) -> str:
         return "historical"
     # 5) versione di una dipendenza citata nel testo (es. wxPython 4.2.3)
     if any(h in low for h in _DEP_HINTS):
+        return "dependency"
+    #    ...oppure è un vincolo di versione (>=3.2.0, <4.0.0, ==1.0.0, ~=2.1.0,
+    #    ^1.2.3): è sempre una dipendenza, qualunque sia il nome del pacchetto.
+    if _SPECIFIER_BEFORE_RE.search(line[:start]):
         return "dependency"
     # 6) tag di versione  vX.Y.Z  (una 'v' subito prima, a inizio parola)
     #    -> versione del programma (es. "git tag v3.0.1")
@@ -343,6 +352,7 @@ def send_to_trash(path: Path) -> None:
 
 # ─── Metadati applicazione (crediti / licenza) ───────────────────────────────
 # Modifica liberamente autore, anno e URL secondo le tue esigenze.
+APP_VERSION = "1.0"
 APP_AUTHOR = "Denisov21"
 APP_URL = "https://github.com/Denisov21/Songpressplusplus"
 APP_COPYRIGHT = "Copyright (C) 2026  Denisov21"
@@ -503,7 +513,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         # informazioni / crediti
         "about_title": "Informazioni",
         "about_body": (
-            "{title}\n\n"
+            "{title}\n"
+            "Versione {version}\n\n"
             "Aggiorna in modo sicuro il numero di versione nei file del\n"
             "progetto (pyproject.toml, README.md, README_italian.md e, se\n"
             "presenti, i README della build portabile e le guide di\n"
@@ -656,7 +667,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         # about / credits
         "about_title": "About",
         "about_body": (
-            "{title}\n\n"
+            "{title}\n"
+            "Version {version}\n\n"
             "Safely updates the version number across the project files\n"
             "(pyproject.toml, README.md, README_italian.md and, if present,\n"
             "the portable-build READMEs and the .deb installation guides in\n"
@@ -859,6 +871,11 @@ def _launch_gui() -> None:
             self._cursor_widgets: list[ttk.Widget] = []
 
             self._build_ui()
+            # Casella "Crea backup" salvata nel JSON (se presente).
+            saved_sel = prefs.get("checkbox_state")
+            if isinstance(saved_sel, dict) and isinstance(
+                    saved_sel.get("backup"), bool):
+                self.backup_var.set(saved_sel["backup"])
             # Prova a caricare la cartella corrente all'avvio.
             self._try_load(Path.cwd())
             # Se il font salvato è grande, allarga la finestra di conseguenza.
@@ -997,6 +1014,7 @@ def _launch_gui() -> None:
             messagebox.showinfo(
                 self.t("about_title"),
                 self.t("about_body", title=self.t("app_title"),
+                       version=APP_VERSION,
                        author=APP_AUTHOR, url=APP_URL, copyright=APP_COPYRIGHT),
                 parent=self)
 
@@ -1008,7 +1026,7 @@ def _launch_gui() -> None:
             win.transient(self)
 
             ttk.Label(
-                win, text=f"{self.t('app_title')}\n{APP_COPYRIGHT}",
+                win, text=f"{self.t('app_title')} {APP_VERSION}\n{APP_COPYRIGHT}",
                 font=self.font_bold, justify="left"
             ).pack(fill="x", padx=12, pady=(12, 6))
 
@@ -1595,6 +1613,8 @@ def _launch_gui() -> None:
             self.apply_btn.configure(state="normal")
             self.save_sel_btn.configure(state="normal")
             self._update_restore_state()
+            # Carica automaticamente lo stato delle caselle salvato nel JSON.
+            self._restore_selection(auto=True)
 
         def _add_row(self, c: Candidate, new_v: str) -> None:
             var = tk.BooleanVar(value=c.selected)
@@ -1673,14 +1693,19 @@ def _launch_gui() -> None:
             self._log(self.t("sel_saved", path=path.name), "ok")
             self._update_restore_state()
 
-        def _restore_selection(self) -> None:
-            """Riapplica alle righe correnti lo stato salvato nel JSON."""
+        def _restore_selection(self, auto: bool = False) -> None:
+            """Riapplica alle righe correnti lo stato salvato nel JSON.
+
+            Con auto=True (chiamata automatica dopo l'analisi) non mostra
+            avvisi se non c'è nulla da ripristinare."""
             if not self.row_vars:
-                self._log(self.t("sel_no_rows"), "warn")
+                if not auto:
+                    self._log(self.t("sel_no_rows"), "warn")
                 return
             state = load_prefs().get("checkbox_state")
             if not isinstance(state, dict):
-                self._log(self.t("sel_none_saved"), "warn")
+                if not auto:
+                    self._log(self.t("sel_none_saved"), "warn")
                 return
             files_state = state.get("files")
             if not isinstance(files_state, dict):

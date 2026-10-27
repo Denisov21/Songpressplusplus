@@ -35,7 +35,7 @@
           true,
           true,
           true,
-          false
+          true
         ]
       },
       "build/README_PORTABLE_BUILD_en.md": {
