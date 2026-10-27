@@ -83,20 +83,20 @@ Lo script esegue automaticamente:
 Al termine vedrai (il numero di versione mostrato è solo un **esempio**, dipende da quello in `pyproject.toml`):
 
 ```
-✅  Pacchetto creato: build_deb/songpressplusplus_8.0.4_all.deb
+✅  Pacchetto creato: build_deb/songpressplusplus_8.1.0_all.deb
 ```
 
 ### Struttura della cartella `build_deb/`
 
 Al termine della build, la cartella `build_deb/` contiene i due file di
 documentazione (questa guida e la sua versione inglese) più tre elementi
-generati (il numero di versione — qui `8.0.4` — dipende da `pyproject.toml`):
+generati (il numero di versione — qui `8.1.0` — dipende da `pyproject.toml`):
 
 ```
 build_deb/
 ├── INSTALLAZIONE_DEB.md              ← questa guida (italiano)
 ├── DEB_INSTALLATION.md               ← guida inglese
-├── songpressplusplus_8.0.4/          ← albero di staging del pacchetto
+├── songpressplusplus_8.1.0/          ← albero di staging del pacchetto
 │   ├── DEBIAN/                        ← metadati e script di manutenzione
 │   │   ├── control                    ← nome, versione, Depends, Maintainer…
 │   │   ├── preinst                    ← rimozione dei residui in /usr/local
@@ -107,8 +107,8 @@ build_deb/
 │       ├── lib/python3/dist-packages/songpressplusplus/   ← codice del programma
 │       └── share/                     ← .desktop, MIME, icone hicolor, metainfo
 ├── wheel/                            ← wheel Python intermedia (.whl)
-│   └── songpressplusplus-8.0.4-py3-none-any.whl
-└── songpressplusplus_8.0.4_all.deb   ← pacchetto finale da installare
+│   └── songpressplusplus-8.1.0-py3-none-any.whl
+└── songpressplusplus_8.1.0_all.deb   ← pacchetto finale da installare
 ```
 
 Cosa sono e a cosa servono:
@@ -138,10 +138,10 @@ Cosa sono e a cosa servono:
 
 ## Installazione del pacchetto `.deb`
 
-> **⚠️ Nota:** il numero di versione (`8.0.4`) è solo un **esempio** ed è **da verificare**: usa quello effettivamente prodotto dallo script, mostrato a schermo al termine della build.
+> **⚠️ Nota:** il numero di versione (`8.1.0`) è solo un **esempio** ed è **da verificare**: usa quello effettivamente prodotto dallo script, mostrato a schermo al termine della build.
 
 ```bash
-sudo dpkg -i "build_deb/songpressplusplus_8.0.4_all.deb"
+sudo dpkg -i "build_deb/songpressplusplus_8.1.0_all.deb"
 ```
 
 In caso di dipendenze mancanti:
@@ -156,7 +156,7 @@ sudo apt-get install -f
 > `apt-get install -f` non serve):
 >
 > ```bash
-> sudo apt install "build_deb/songpressplusplus_8.0.4_all.deb"
+> sudo apt install "build_deb/songpressplusplus_8.1.0_all.deb"
 > ```
 >
 > Il percorso contiene una `/`, quindi `apt` lo riconosce come file locale e non
@@ -279,10 +279,10 @@ Dopodiché, in Dolphin: tasto destro sul `.deb` → _Apri con…_ → scegli "Pr
 > **✅ In alternativa (più robusto): `apt` da terminale.** Usa `apt` invece di `dpkg`, così risolve automaticamente le dipendenze dai repository:
 >
 > ```bash
-> sudo apt install ./songpressplusplus_8.0.4_all.deb
+> sudo apt install ./songpressplusplus_8.1.0_all.deb
 > ```
 >
-> Il prefisso `./` (o un percorso completo) è **obbligatorio**: senza almeno una `/` nel nome, `apt` interpreta l'argomento come il nome di un pacchetto da cercare nei repository e restituisce "impossibile trovare il pacchetto". Se non sei nella cartella del `.deb`, passa il percorso completo, ad esempio `sudo apt install ~/…/build_deb/songpressplusplus_8.0.4_all.deb`.
+> Il prefisso `./` (o un percorso completo) è **obbligatorio**: senza almeno una `/` nel nome, `apt` interpreta l'argomento come il nome di un pacchetto da cercare nei repository e restituisce "impossibile trovare il pacchetto". Se non sei nella cartella del `.deb`, passa il percorso completo, ad esempio `sudo apt install ~/…/build_deb/songpressplusplus_8.1.0_all.deb`.
 
 ---
 
@@ -314,7 +314,7 @@ aggiornando la cache e rilascia il lock da solo. Riprova dopo un paio di minuti.
 
 ```bash
 sudo systemctl stop packagekit
-sudo dpkg -i "build_deb/songpressplusplus_8.0.4_all.deb" && sudo apt-get install -f
+sudo dpkg -i "build_deb/songpressplusplus_8.1.0_all.deb" && sudo apt-get install -f
 ```
 
 Se il servizio riparte subito e rioccupa il lock, **mascheralo
@@ -369,7 +369,7 @@ Succede solo su **Wayland**. Controlla, in quest'ordine:
 
 ```toml
 [project]
-version = "8.0.4"   # ← modifica questo numero
+version = "8.1.0"   # ← modifica questo numero
 ```
 
 ### 2. Rimuovi la versione installata, ricostruisci e reinstalla
@@ -383,7 +383,7 @@ Al termine dello script, `build_deb/` conterrà il nuovo `.deb` con il numero
 di versione aggiornato. Installalo con il comando suggerito a schermo, ad esempio:
 
 ```bash
-sudo dpkg -i "build_deb/songpressplusplus_8.0.4_all.deb"
+sudo dpkg -i "build_deb/songpressplusplus_8.1.0_all.deb"
 ```
 
 > **Suggerimento:** non è necessario ricordare il numero di versione esatto —
