@@ -13,6 +13,8 @@ from typing import List
 
 import wx
 
+from .ChordArrow import split_arrow
+
 def _(s):
     """Lazy wrapper for wx.GetTranslation.
     Chiamare wx.GetTranslation a livello di modulo può fallire se wx non è
@@ -312,7 +314,7 @@ def _validate_kbd_option(token: str, line_num: int, col: int,
 def _check_chord_name(content: str, line_num: int, col: int,
                       result: SyntaxCheckResult):
     """Segnala un errore se il contenuto di [...] non è un accordo valido."""
-    name = content.strip()
+    name = split_arrow(content.strip())[0]
     if not name:
         return
     if name.lower() in _NON_CHORD_TOKENS:
@@ -792,6 +794,7 @@ _BEATS_TIME_RE = re.compile(r'\{\s*beats_time\s*:([^}]*)\}', re.IGNORECASE)
 def _normalize_chord_token(tok: str) -> str:
     """Normalizza un accordo per il confronto: rimuove le parentesi tonde e gli
     spazi, e riduce a minuscolo. '(Do)', 'DO' e 'do' diventano tutti 'do'."""
+    tok = split_arrow(tok.strip())[0]
     return tok.replace('(', '').replace(')', '').strip().lower()
 
 

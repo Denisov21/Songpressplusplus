@@ -414,10 +414,10 @@
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="insertVerseNum">
-          <label>Strofa _numerata {start__verse__num}\\{end__verse__num}</label>
+          <label>Strofa _numerata...</label>
           <accel></accel>
           <bitmap>../img/verse_num.png</bitmap>
-          <help>Inserisci una strofa numerata con i comandi start__verse__num / end__verse__num</help>
+          <help>Inserisci una strofa numerata (a scelta tra {start__verse__num}/{end__verse__num} e {sov}/{eov})</help>
         </object>
         <object class="wxMenuItem" name="insertVerse">
           <label>Strofa _non numerata {start__verse}\\{end__verse}</label>

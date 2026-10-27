@@ -414,10 +414,10 @@
         </object>
         <object class="separator"/>
         <object class="wxMenuItem" name="insertVerseNum">
-          <label>Numbered v_erse {start__verse__num}\\{end__verse__num}</label>
+          <label>Numbered v_erse...</label>
           <accel></accel>
           <bitmap>../img/verse_num.png</bitmap>
-          <help>Insert a numbered verse with start__verse__num / end__verse__num commands</help>
+          <help>Insert a numbered verse (choose the {start__verse__num}/{end__verse__num} or {sov}/{eov} form)</help>
         </object>
         <object class="wxMenuItem" name="insertVerse">
           <label>Unnumbered _verse {start__verse}\\{end__verse}</label>

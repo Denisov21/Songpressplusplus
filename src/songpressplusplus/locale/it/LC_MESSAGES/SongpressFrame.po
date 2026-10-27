@@ -169,10 +169,6 @@ msgstr "Esporta come PowerPoint"
 msgid "PPTX presentation"
 msgstr "Presentazione PPTX"
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:817
-msgid "http://www.skeed.it/songpress-manual"
-msgstr "http://www.skeed.it/songpress-manuale"
-
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:887 /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1049
 msgid "Simplify chords"
 msgstr "Semplifica gli accordi"
@@ -1520,3 +1516,223 @@ msgstr "Forma abbreviata: {soc} ... {eoc} (start_of_chorus / end_of_chorus)"
 #: SongpressFrame.py — OnInsertTaste / OnInsertFingering info note
 msgid "Note: the chord keyboard is always drawn at the bottom of the page, even if you can insert the command anywhere in the editor."
 msgstr "Nota: la tastiera con l'accordo è sempre disegnata in fondo alla pagina, anche se nell'editor puoi inserire il comando dove vuoi."
+
+#: SongpressFrame.py:143
+msgid "Find"
+msgstr "Trova"
+
+#: SongpressFrame.py:1057
+msgid "Songpress++ Page"
+msgstr "Pagina Songpress++"
+
+#: SongpressFrame.py:1058
+msgid "Standard"
+msgstr "Standard"
+
+#: SongpressFrame.py:1059
+msgid "Format"
+msgstr "Formato"
+
+#: SongpressFrame.py:1060
+msgid "Insert"
+msgstr "Inserisci"
+
+#: SongpressFrame.py:1219
+msgid "Restart Songpress++"
+msgstr "Riavvia Songpress++"
+
+#: SongpressFrame.py:2458
+msgid "Capo"
+msgstr "Capotasto"
+
+#: SongpressFrame.py:2460
+msgid "Duration"
+msgstr "Durata"
+
+#: SongpressFrame.py:2474
+msgid "Show all ▼"
+msgstr "Mostra tutto ▼"
+
+#: SongpressFrame.py:2521
+msgid "Collapse ▲"
+msgstr "Comprimi ▲"
+
+#: SongpressFrame.py:2603
+msgid "Numbered verse"
+msgstr "Strofa numerata"
+
+#: SongpressFrame.py:2613
+msgid "Long form: {start_verse_num} ... {end_verse_num}"
+msgstr "Forma estesa: {start_verse_num} ... {end_verse_num}"
+
+#: SongpressFrame.py:2614
+msgid "Short form: {sov} ... {eov} (start_of_verse / end_of_verse)"
+msgstr "Forma abbreviata: {sov} ... {eov} (start_of_verse / end_of_verse)"
+
+#: SongpressFrame.py:2787
+msgid "Grid"
+msgstr "Griglia"
+
+#: SongpressFrame.py:2846
+msgid "Tempo"
+msgstr "Tempo"
+
+#: SongpressFrame.py:2872
+msgid "Tempo:"
+msgstr "Tempo:"
+
+#: SongpressFrame.py:3482
+#, python-format
+msgid "Showing first %d rows of %d"
+msgstr "Visualizzazione delle prime %d righe di %d"
+
+#: SongpressFrame.py:3625
+#, python-format
+msgid "Preview (%s 1):"
+msgstr "Anteprima (%s 1):"
+
+#: SongpressFrame.py:3679
+msgid "OK"
+msgstr "OK"
+
+#: SongpressFrame.py:3683
+msgid "OK +"
+msgstr "OK +"
+
+#: SongpressFrame.py:3699
+msgid "Cancel"
+msgstr "Annulla"
+
+#: SongpressFrame.py:5678
+msgid "the option is disabled"
+msgstr "l'opzione è disattivata"
+
+#: SongpressFrame.py:5680
+msgid "no {title:} directive found in the song (check that it is not on a line starting with '#')"
+msgstr "nessuna direttiva {title:} trovata nella canzone (controlla che non sia su una riga che inizia con '#')"
+
+#: SongpressFrame.py:5683
+msgid "the title contains no characters valid for a file name"
+msgstr "il titolo non contiene caratteri validi per un nome di file"
+
+#: SongpressFrame.py:5685
+#, python-format
+msgid "DEBUG: file name not suggested because %s."
+msgstr "DEBUG: nome file non suggerito perché %s."
+
+#: SongpressFrame.py:6292
+msgid "There is nothing to export: the song is empty."
+msgstr "Non c'è nulla da esportare: la canzone è vuota."
+
+#: SongpressFrame.py:6658
+msgid ""
+"Could not build the image to copy:\n"
+"\n"
+msgstr ""
+"Impossibile creare l'immagine da copiare:\n"
+"\n"
+
+#: SongpressFrame.py:6670
+msgid ""
+"On Wayland, copying an image needs the 'wl-clipboard' package.\n"
+"\n"
+"Install it with:\n"
+"    sudo apt install wl-clipboard"
+msgstr ""
+"Su Wayland, per copiare un'immagine serve il pacchetto 'wl-clipboard'.\n"
+"\n"
+"Installalo con:\n"
+"    sudo apt install wl-clipboard"
+
+#: SongpressFrame.py:6680
+msgid "wl-copy could not set the clipboard."
+msgstr "wl-copy non è riuscito a impostare gli appunti."
+
+#: SongpressFrame.py:6699
+msgid "Could not access the system clipboard."
+msgstr "Impossibile accedere agli appunti di sistema."
+
+#: SongpressFrame.py:6718
+msgid "The clipboard refused the image data."
+msgstr "Gli appunti hanno rifiutato i dati dell'immagine."
+
+#: SongpressFrame.py:8209
+msgid "Copy"
+msgstr "Copia"
+
+#: SongpressFrame.py:8851
+msgid "Commands guide file not found in the program folder."
+msgstr "File della guida dei comandi non trovato nella cartella del programma."
+
+#: SongpressFrame.py:9454
+msgid "No chord notation is available. Check Options > General."
+msgstr "Nessuna notazione degli accordi disponibile. Controlla Opzioni > Generale."
+
+#: SongpressFrame.py:9455
+msgid "Convert glued chords"
+msgstr "Converti accordi in linea"
+
+#: SongpressFrame.py:9466
+#, python-format
+msgid "Cannot convert chords: %s"
+msgstr "Impossibile convertire gli accordi: %s"
+
+#: SongpressFrame.py:9472
+msgid "Nothing to convert: the text is empty"
+msgstr "Niente da convertire: il testo è vuoto"
+
+#: SongpressFrame.py:9477
+msgid "Nothing to convert: chords are already in ChordPro format"
+msgstr "Niente da convertire: gli accordi sono già in formato ChordPro"
+
+#: SongpressFrame.py:9482
+#, python-format
+msgid ""
+"No glued chords were found using the %(desc)s notation.\n"
+"\n"
+"Chords must be attached to the lyrics, e.g. %(example)s\n"
+"\n"
+"If the song uses a different notation, change it in Options > General > Default notation."
+msgstr ""
+"Non sono stati trovati accordi attaccati al testo con la notazione %(desc)s.\n"
+"\n"
+"Gli accordi devono essere attaccati al testo, ad es. %(example)s\n"
+"\n"
+"Se la canzone usa un'altra notazione, cambiala in Opzioni > Generale > Notazione predefinita."
+
+#: SongpressFrame.py:9495
+#, python-format
+msgid "%d chords converted to ChordPro"
+msgstr "%d accordi convertiti in ChordPro"
+
+#: SongpressFrame.py:9725
+msgid "Insert chord"
+msgstr "Inserisci accordo"
+
+#: SongpressFrame.py — Insert chord dialog, direction arrow: none
+msgid "None"
+msgstr "Nessuna"
+
+#: SongpressFrame.py — Insert chord dialog, direction: none tooltip
+msgid "Insert the chord without a direction arrow."
+msgstr "Inserisce l'accordo senza freccia di direzione."
+
+#: SongpressFrame.py — Insert chord dialog, direction: up tooltip
+msgid ""
+"Insert the chord with an up arrow: the chord is played upwards (written as "
+"[Cm^])."
+msgstr ""
+"Inserisce l'accordo con la freccia su: l'accordo si suona verso l'alto "
+"(scritto come [Cm^])."
+
+#: SongpressFrame.py — Insert chord dialog, direction: down tooltip
+msgid ""
+"Insert the chord with a down arrow: the chord is played downwards (written "
+"as [Cmv])."
+msgstr ""
+"Inserisce l'accordo con la freccia giù: l'accordo si suona verso il basso "
+"(scritto come [Cmv])."
+
+#: SongpressFrame.py — Insert chord dialog, direction group tooltip
+msgid "Direction arrow shown next to the chord in the preview."
+msgstr "Freccia di direzione mostrata accanto all'accordo nell'anteprima."

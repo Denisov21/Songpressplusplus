@@ -58,7 +58,7 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 | `{tempo_c:BPM}`     |              | 🔧  | 🖊    | Tempo con icona **croma** fissa                                                           |
 | `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo con icona **croma puntata** fissa                                                   |
 | `{tempo_label:Testo}` |            | 🔧  | ⌨️   | Indicazione agogica testuale (es. `{tempo_label:Andante}`, `{tempo_label:Allegro moderato}`); visualizzata come testo accanto alle altre direttive di tempo |
-| `{time:N/M}`        |              | ✅  | ⌨️   | Indicazione di tempo (es. `{time:4/4}`, `{time:3/4}`); visualizzata con simbolo grafico   |
+| `{time:N/M}`        |              | ✅  | ⌨️   | Indicazione di tempo (es. `{time:4/4}`, `{time:3/4}`); visualizzata con simbolo grafico. Dentro una strofa o un ritornello vale solo per quel blocco (mostrata di lato al blocco, sotto l'etichetta) e non spezza il blocco |
 | `{beats_time: Acc=N …}` |            | 🔧  | ⌨️   | Durata in battiti degli accordi (es. `{beats_time: Do=2 Sol=1}`); visualizza numero, punti o entrambi sopra gli accordi (configurabile nelle preferenze) |
 | `{duration:mm:ss}`  |              | ✅  | 🖊    | Durata totale della canzone (es. `{duration:12:45}`); non visualizzata nell'anteprima né in stampa, ma riportata nelle **Statistiche brano** come «Durata» effettiva al posto della stima automatica. Commentando la riga con `#` la durata torna ad essere calcolata automaticamente. |
 | `{sorttitle:Testo}` |              | ✅  | 🖊    | Titolo alternativo usato per l'ordinamento alfabetico (metadato, non visualizzato)        |
@@ -103,9 +103,10 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 
 | Direttiva                                 | Std | Menu | Descrizione                                                                                                                          |
 | ----------------------------------------- | --- | ---- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `{start_of_verse}`/`{end_of_verse}`       | ✅  | ⌨️   | Strofa non numerata, senza etichetta                                                                                                 |
+| `{start_of_verse}`/`{end_of_verse}`       | ✅  | ⌨️   | Strofa numerata automaticamente (come `{start_verse_num}`)                                                                           |
 | `{start_verse:Etichetta}`/`{end_verse}`   | 🔧  | ⌨️   | Strofa non numerata con etichetta opzionale                                                                                          |
-| `{start_verse_num}`/`{end_verse_num}`     | 🔧  | ⌨️   | Strofa numerata automaticamente                                                                                                      |
+| `{start_verse_num}`/`{end_verse_num}`     | 🔧  | ⌨️   | Strofa numerata automaticamente (forma estesa)                                                                                       |
+| `{sov}`/`{eov}`                           | ✅  | ⌨️   | Abbreviazione di `start_of_verse`/`end_of_verse`: strofa numerata automaticamente                                                    |
 | `{verse:Etichetta}`                       | ✅  | ⌨️   | Apre una strofa con etichetta personalizzata (es. `{verse:1}`)                                                                       |
 | `{start_of_chorus}`/`{end_of_chorus}`     | ✅  | ⌨️   | Ritornello                                                                                                                           |
 | `{soc}`/`{eoc}`                           | ✅  | ⌨️   | Abbreviazione di `start_of_chorus`/`end_of_chorus`                                                                                   |
@@ -171,6 +172,29 @@ Gli accordi si inseriscono nel testo con le parentesi quadre, immediatamente pri
 ```chordpro
 [Am]Nel [F]blu [C]dipinto di [G]blu
 ```
+
+### Freccia di direzione dell'accordo — `[DO^]` / `[DOv]`
+
+A un accordo si può aggiungere una piccola **freccia** che indica se l'accordo va suonato verso l'alto o verso il basso. La freccia si scrive come suffisso dentro le parentesi quadre:
+
+| Scrittura | Risultato |
+| --------- | --------- |
+| `[DO]` | accordo senza freccia |
+| `[DO^]` | accordo con freccia **su** |
+| `[DOv]` | accordo con freccia **giù** |
+
+```chordpro
+[FA]si compia [DO^]in me [LA-v]la tua [SOL]volontà
+```
+
+- Il nome dell'accordo resta quello normale (`DO`): trasposizione, controllo sintassi, statistiche e `{beats_time:}` funzionano come sempre, e la freccia viene conservata. Trasponendo `[DO^]` si ottiene, per esempio, `[RE^]`.
+- Si possono scrivere anche i caratteri `↑` e `↓` al posto di `^` e `v`.
+- Le frecce non sono supportate dentro le celle di `{start_of_grid}`.
+- Nel numero di `{beats_time:}` l'allineamento tiene conto dell'ingombro della freccia.
+
+**Inserimento dal menu.** Nel dialogo **Inserisci accordo** il riquadro **Direzione** offre tre scelte: *Nessuna*, *↑ Su*, *↓ Giù* (con suggerimenti al passaggio del mouse). Dopo ogni inserimento la scelta torna su *Nessuna*. La casella «Accordo maiuscolo» non altera il suffisso della freccia.
+
+**Aspetto.** La freccia è disegnata in vettoriale, nitida a ogni zoom, ed è stampata correttamente anche in PDF e anteprima di stampa. Dimensione e colori si regolano in *Opzioni → Formattazione → Accordi e tastiera* (vedi la tabella della finestra Opzioni).
 
 ### Font e colori locali
 
@@ -1169,6 +1193,32 @@ G|--0--0--2--0--|
 
 ---
 
+### Tempo valido solo per un blocco
+
+`{time:}` può avere un **ambito di blocco**. Scritto **fuori** da strofe e ritornelli (di solito in testa al brano) è l'indicazione di tempo generale e viene mostrata come sottotitolo, con il simbolo grafico. Scritto **dentro** una strofa o un ritornello vale **solo per quel blocco**: non lo spezza e, quando il blocco finisce, il tempo generale resta quello di prima.
+
+```chordpro
+{time:4/4}
+
+{start_verse_num}
+{time:4/4}
+[DO]Testo della strofa...
+{end_verse_num}
+
+{start_chorus}
+{time:2/4}
+[SOL]Testo del ritornello...
+{end_chorus}
+```
+
+- Deve stare **dentro** il blocco, subito dopo l'apertura: per le strofe numerate tra `{start_verse_num}` e `{end_verse_num}` oppure, nella forma breve, tra `{sov}` e `{eov}` (equivalente a `{start_verse_num}`), per le strofe non numerate tra `{start_verse}` e `{end_verse}`, per i ritornelli tra `{start_chorus}` e `{end_chorus}` oppure, nella forma breve, tra `{soc}` e `{eoc}`. Scritto prima dell'apertura del blocco, è il tempo generale.
+- L'indicazione del blocco è disegnata **di lato**, come frazione impilata (numeratore, linea, denominatore), nella colonna dell'etichetta, **sotto** il riquadro («Rit.», numero della strofa). Il testo parte sulla stessa riga dell'etichetta.
+- Vale la **prima** `{time:}` incontrata nel blocco. Una seconda `{time:}` nello stesso blocco (cambio di tempo a metà) viene mostrata **in linea**, tra parentesi, come un commento.
+- Se *Indicazione di tempo* è disattivata (opzione «Nessun accordo: blocchi da nascondere»), anche `{time:}` dentro i blocchi viene nascosto.
+- Non esiste una direttiva dedicata: si usa la normale `{time:}`.
+
+---
+
 ## Funzionalità dell'editor
 
 ### Inserimento guidato (menu Inserisci)
@@ -1184,6 +1234,33 @@ Le voci sono raggruppate in cinque blocchi, separati da linee:
 3. **Struttura della canzone** — Strofa numerata, Strofa non numerata, Strofa con etichetta personalizzata o senza, Ritornello, Bridge, Griglia
 4. **Tempo e tonalità** — Tempo, Indicazione agogica, Indicazione del tempo, Tonalità
 5. **Immagini e simboli** — Immagine, Immagine Transposer, Simbolo musicale (Unicode)
+
+#### Strofa numerata
+
+**Inserisci → Strofa numerata…** apre una piccola finestra con il gruppo **Forma**, in cui un radio button permette di scegliere come scrivere il blocco:
+
+| Forma | Descrizione |
+| --- | --- |
+| **`{start_verse_num} ... {end_verse_num}`** | Forma estesa (predefinita). |
+| **`{sov} ... {eov}`** | Forma abbreviata di `start_of_verse` / `end_of_verse`. |
+
+Le due forme sono equivalenti: la strofa viene numerata automaticamente allo stesso modo e il risultato nell'anteprima, nella stampa e nelle esportazioni è identico. Cambia soltanto il testo che compare nell'editor.
+
+Esempi di testo inserito (il cursore `|` si posiziona all'interno del blocco):
+
+```chordpro
+{start_verse_num}
+|
+{end_verse_num}
+```
+
+```chordpro
+{sov}
+|
+{eov}
+```
+
+La finestra non ha un campo etichetta: per una strofa con etichetta personalizzata o senza etichetta usare **Strofa con etichetta personalizzata o senza…**, oppure aggiungere l'etichetta a mano (`{sov:Etichetta}`; in questo caso la strofa non è più numerata automaticamente). La forma scelta viene ricordata finché il programma resta aperto. Passando il mouse sui due radio button compare un suggerimento (tooltip).
 
 #### Ritornello (<kbd>Ctrl</kbd>+<kbd>U</kbd>)
 
@@ -1212,7 +1289,7 @@ La forma scelta viene ricordata finché il programma resta aperto. Passando il m
 
 ### Gestione degli accordi
 
-- **Inserisci accordo** — inserisce `[|]` con il cursore all'interno delle parentesi
+- **Inserisci accordo** — inserisce `[|]` con il cursore all'interno delle parentesi; nel dialogo si può anche scegliere una freccia di direzione (*Nessuna*, *Su*, *Giù*)
 - **Sposta accordo a destra / sinistra** — sposta l'accordo sotto il cursore di un carattere
 - **Rimuovi accordi** — elimina tutti gli accordi dalla selezione. Il comando è attivo solo se la selezione contiene almeno un accordo tra `[ ]`; altrimenti resta grigio
 - **Incolla accordi** — incolla solo gli accordi (senza testo) dalla selezione copiata
@@ -1950,6 +2027,9 @@ Sotto, il pannello scorrevole **semplificazione accordi** contiene un cursore pe
 | **Colore tasti Klavier** | `#D23C3C` | Evidenziazione dei tasti nel diagramma di tastiera. |
 | **Colore diverso per il tasto dell'ottava superiore** | disattivato, `#3C78D2` | Nelle tastiere a 8 tasti colora con un secondo colore il tasto più a destra uguale al primo (es. Si alto in Si…Si). |
 | **Colore numeri diteggiatura** | `#1A1A1A` | Colore dei numeri di `{fingering:}`. |
+| **Dimensione freccia accordo (%)** | 90 | Dimensione della freccia di direzione `[DO^]` / `[DOv]`, in percentuale dell'altezza dell'accordo (30–150). |
+| **Colore personalizzato per la freccia su** | disattivato, `#2E7D32` | Se attivo, la freccia su usa questo colore; altrimenti usa il colore dell'accordo. |
+| **Colore personalizzato per la freccia giù** | disattivato, `#C03030` | Se attivo, la freccia giù usa questo colore; altrimenti usa il colore dell'accordo. |
 
 #### Gruppo **Tempo**
 

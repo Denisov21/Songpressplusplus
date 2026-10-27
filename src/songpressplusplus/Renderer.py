@@ -16,6 +16,7 @@ from .SongTokenizer import *
 from .GuitarDiagramRenderer import draw_guitar_diagram_section
 from .SongFormat import *
 from .SongBoxes import *
+from .ChordArrow import split_arrow, arrow_glyph
 from .Transpose import translateChord, autodetectNotation
 from .EditDistance import minEditDist
 
@@ -91,6 +92,12 @@ class Renderer(object):
     def EndBlock(self):
         if self.currentBlock is not None:
             self.EndLine()
+            # Blocco con {time:} locale: scarta le righe vuote iniziali (senza
+            # box) che spingerebbero il testo sotto l'etichetta del blocco.
+            if getattr(self.currentBlock, 'time_sig', None) is not None:
+                _bx = self.currentBlock.boxes
+                while _bx and not any((t.text or '').strip() for t in _bx[0].boxes):
+                    _bx.pop(0)
             # Rete di sicurezza: scarta i blocchi verse auto-numerati (label
             # is None) privi di contenuto visibile (vuoti, soli spazi, soli
             # commenti {c:} o righe '#...'). Senza questo un blocco strofa senza
@@ -345,6 +352,9 @@ class Renderer(object):
         self.EndBlock()
 
     def AddText(self, text, type=SongText.text):
+        arrow = ''
+        if type == SongText.chord:
+            text, arrow = split_arrow(text)
         # Dentro un blocco {start_of_tab} gli accordi non vengono visualizzati:
         # il tab ASCII è già notazione completa, i chord marker sono ridondanti.
         if type == SongText.chord and self.currentBlock is not None and getattr(self.currentBlock, 'is_tab', False):
@@ -391,6 +401,7 @@ class Renderer(object):
             else:
                 font = format.wxFont
         t = SongText(text, font, type, format.color)
+        t.arrow = arrow
         if type == SongText.chord and self._pending_duration:
             # Associa la durata in battiti all'accordo corrispondente.
             # Prima cerca per nome accordo (case-insensitive), poi usa
@@ -632,6 +643,14 @@ class Renderer(object):
                     elif cmd == 'end_verse_num':
                         if state == SongBlock.verse:
                             self.EndBlock()
+                    elif cmd == 'sov' or cmd == 'start_of_verse':
+                        # Forma breve ChordPro della strofa numerata: equivale a
+                        # {start_verse_num} (etichetta opzionale, altrimenti auto-numerata)
+                        a = self.GetAttribute()
+                        self.BeginBlock(SongBlock.verse, a if (a and a.strip()) else None)
+                    elif cmd == 'eov' or cmd == 'end_of_verse':
+                        if state == SongBlock.verse:
+                            self.EndBlock()
                     elif cmd == 'start_chorus':
                         a = self.GetAttribute()
                         self.BeginChorus(a if (a and a.strip()) else None)
@@ -823,9 +842,27 @@ class Renderer(object):
                     elif cmd == 'time':
                         a = self.GetAttribute()
                         if a is not None and a.strip() != '' and self.timeDisplay:
-                            self.AddSubTitle(a.strip())
-                            if self.currentLine is not None and self.currentLine.boxes:
-                                self.currentLine.boxes[-1].is_time_sig = True
+                            _cur_state = self.GetState()
+                            if _cur_state == SongBlock.verse or _cur_state == SongBlock.chorus:
+                                # Tempo con ambito di blocco: dentro una strofa o un
+                                # ritornello {time:X} vale solo per quel blocco. Non
+                                # si chiama AddSubTitle (chiuderebbe il blocco e ne
+                                # aprirebbe uno titolo): l'indicazione viene mostrata
+                                # di lato al blocco. Il tempo globale
+                                # (quello dichiarato fuori dai blocchi) non viene
+                                # toccato e resta valido alla chiusura del blocco.
+                                if getattr(self.currentBlock, 'time_sig', None) is None:
+                                    # Primo {time:} del blocco: indicazione laterale
+                                    # (disegnata dal decorator nella colonna
+                                    # dell'etichetta), nessun testo in linea.
+                                    self.currentBlock.time_sig = a.strip()
+                                else:
+                                    # Cambio di tempo a meta' blocco: in linea.
+                                    self.AddText(a.strip(), SongText.comment)
+                            else:
+                                self.AddSubTitle(a.strip())
+                                if self.currentLine is not None and self.currentLine.boxes:
+                                    self.currentLine.boxes[-1].is_time_sig = True
                     elif cmd == 'key':
                         a = self.GetAttribute()
                         if a is not None and a.strip() != '' and self.keyDisplay:

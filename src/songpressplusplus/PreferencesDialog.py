@@ -556,6 +556,34 @@ class PreferencesDialog(wx.Dialog):
         bSizerFingerNum.Add(self.fingerNumColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
         grpChords.Add(bSizerFingerNum, 0, wx.EXPAND | wx.ALL, 5)
 
+        # Freccia di direzione dell'accordo ([DO^] su, [DOv] giù)
+        bSizerArrowSize = wx.BoxSizer(wx.HORIZONTAL)
+        self.labelChordArrowSize = wx.StaticText(_boxChords, wx.ID_ANY, _(u"Chord arrow size (%)"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelChordArrowSize.Wrap(-1)
+        bSizerArrowSize.Add(self.labelChordArrowSize, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.chordArrowSizeSpin = wx.SpinCtrl(_boxChords, wx.ID_ANY, "90", wx.DefaultPosition, wx.Size(70 + _SPIN_EXTRA_WIDTH, -1), wx.SP_ARROW_KEYS, 30, 150, 90)
+        bSizerArrowSize.Add(self.chordArrowSizeSpin, 0, wx.ALIGN_CENTER_VERTICAL)
+        grpChords.Add(bSizerArrowSize, 0, wx.EXPAND | wx.ALL, 5)
+
+        for _dir, _lbl, _defcol in (
+                ('Up',   _(u"Custom colour for the up arrow"),   u"#2E7D32"),
+                ('Down', _(u"Custom colour for the down arrow"), u"#C03030")):
+            _row = wx.BoxSizer(wx.HORIZONTAL)
+            _cb = wx.CheckBox(_boxChords, wx.ID_ANY, _lbl, wx.DefaultPosition, wx.DefaultSize, 0)
+            _cb.SetToolTip(_(u"If unchecked, the arrow uses the chord colour."))
+            _row.Add(_cb, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+            _hex = wx.TextCtrl(_boxChords, wx.ID_ANY, _defcol, wx.DefaultPosition, wx.Size(80, -1), 0)
+            _row.Add(_hex, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+            _btn = wx.Button(_boxChords, wx.ID_ANY, _(u"Pick\u2026"), wx.DefaultPosition, wx.Size(60, -1), 0)
+            _row.Add(_btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+            _sw = wx.Panel(_boxChords, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
+            _row.Add(_sw, 0, wx.ALIGN_CENTER_VERTICAL)
+            setattr(self, 'chordArrow%sColourCB' % _dir, _cb)
+            setattr(self, 'chordArrow%sHexCtrl' % _dir, _hex)
+            setattr(self, 'chordArrow%sColourBtn' % _dir, _btn)
+            setattr(self, 'chordArrow%sColourSwatch' % _dir, _sw)
+            grpChords.Add(_row, 0, wx.EXPAND | wx.ALL, 5)
+
         bSizerFormat.Add(grpChords, 0, wx.EXPAND | wx.ALL, 8)
 
         # ── Gruppo: Tempo ────────────────────────────────────────────
@@ -1230,166 +1258,6 @@ class PreferencesDialog(wx.Dialog):
             btnUnassocAll.Bind(wx.EVT_BUTTON, self.OnUnassociateAll)
             self._btnAssocAll   = btnAssocAll
             self._btnUnassocAll = btnUnassocAll
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
-            import platform as _pl
-            if _pl.system() == 'Linux':
-                btnAssocAll.Disable()
-                btnUnassocAll.Disable()
             # Su Linux con pacchetto .deb le associazioni sono gestite dal sistema:
             # disabilita i pulsanti per evitare conflitti con /usr/share/mime
             import platform as _pl
@@ -1402,126 +1270,6 @@ class PreferencesDialog(wx.Dialog):
             bSizerFA.Add(btnApply, 0, wx.ALL, 8)
             btnApply.Bind(wx.EVT_BUTTON, self.OnApplyFileAssoc)
             self._btnApplyFileAssoc = btnApply
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
-            import platform as _pl2
-            if _pl2.system() == 'Linux':
-                btnApply.Disable()
             import platform as _pl2
             if _pl2.system() == 'Linux':
                 btnApply.Disable()

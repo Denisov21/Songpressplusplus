@@ -139,6 +139,23 @@ class MyPreferencesDialog(PreferencesDialog):
             self.fingerNumHexCtrl.SetValue(fn_hex)
             self.fingerNumColourSwatch.SetBackgroundColour(self._hex_to_colour(fn_hex))
 
+        # Chord arrow (size + colour)
+        if hasattr(self, 'chordArrowSizeSpin'):
+            self.chordArrowSizeSpin.SetValue(getattr(self.pref, 'chordArrowSizePct', 90))
+            for _d in ('Up', 'Down'):
+                _ca_hex = getattr(self.pref, 'chordArrow%sColourHex' % _d, '')
+                _cb = getattr(self, 'chordArrow%sColourCB' % _d)
+                _hx = getattr(self, 'chordArrow%sHexCtrl' % _d)
+                _sw = getattr(self, 'chordArrow%sColourSwatch' % _d)
+                _bt = getattr(self, 'chordArrow%sColourBtn' % _d)
+                _cb.SetValue(bool(_ca_hex))
+                _hx.SetValue(_ca_hex or _hx.GetValue())
+                _sw.SetBackgroundColour(self._hex_to_colour(_hx.GetValue()))
+                self._UpdateChordArrowEnable(_d)
+                _cb.Bind(wx.EVT_CHECKBOX, lambda e, d=_d: self._OnChordArrowToggled(e, d))
+                _hx.Bind(wx.EVT_TEXT, lambda e, d=_d: self._OnChordArrowHexChanged(e, d))
+                _bt.Bind(wx.EVT_BUTTON, lambda e, d=_d: self._OnChordArrowPickColour(e, d))
+
         # Tempo icon colour
         ti_hex = getattr(self.pref, 'tempoIconColourHex', '#000000')
         if hasattr(self, 'tempoIconColourHexCtrl'):
@@ -565,6 +582,39 @@ class MyPreferencesDialog(PreferencesDialog):
             self.fingerNumHexCtrl.SetValue(self._colour_to_hex(chosen))
             self.fingerNumColourSwatch.SetBackgroundColour(chosen)
             self.fingerNumColourSwatch.Refresh()
+        dlg.Destroy()
+
+    def _UpdateChordArrowEnable(self, d):
+        on = getattr(self, 'chordArrow%sColourCB' % d).GetValue()
+        getattr(self, 'chordArrow%sHexCtrl' % d).Enable(on)
+        getattr(self, 'chordArrow%sColourBtn' % d).Enable(on)
+        getattr(self, 'chordArrow%sColourSwatch' % d).Enable(on)
+
+    def _OnChordArrowToggled(self, evt, d):
+        self._UpdateChordArrowEnable(d)
+        evt.Skip()
+
+    def _OnChordArrowHexChanged(self, evt, d):
+        sw = getattr(self, 'chordArrow%sColourSwatch' % d)
+        sw.SetBackgroundColour(self._hex_to_colour(getattr(self, 'chordArrow%sHexCtrl' % d).GetValue()))
+        sw.Refresh()
+        evt.Skip()
+
+    def _OnChordArrowPickColour(self, evt, d):
+        hx = getattr(self, 'chordArrow%sHexCtrl' % d)
+        sw = getattr(self, 'chordArrow%sColourSwatch' % d)
+        data = wx.ColourData()
+        data.SetColour(self._hex_to_colour(hx.GetValue()))
+        data.SetChooseFull(True)
+        self._apply_custom_colours(data, 'customColoursChordArrow')
+        dlg = wx.ColourDialog(self, data)
+        if dlg.ShowModal() == wx.ID_OK:
+            result_data = dlg.GetColourData()
+            chosen = result_data.GetColour()
+            self._read_custom_colours(result_data, 'customColoursChordArrow')
+            hx.SetValue(self._colour_to_hex(chosen))
+            sw.SetBackgroundColour(chosen)
+            sw.Refresh()
         dlg.Destroy()
 
     def OnTempoIconColourHexChanged(self, evt):
@@ -1914,6 +1964,12 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.decoSliderBarColourHex = self.decoBarHexCtrl.GetValue().strip()
         if hasattr(self, 'fingerNumHexCtrl'):
             self.pref.fingerNumColourHex = self.fingerNumHexCtrl.GetValue().strip()
+        if hasattr(self, 'chordArrowSizeSpin'):
+            self.pref.chordArrowSizePct = max(30, min(int(self.chordArrowSizeSpin.GetValue()), 150))
+            for _d in ('Up', 'Down'):
+                setattr(self.pref, 'chordArrow%sColourHex' % _d,
+                        getattr(self, 'chordArrow%sHexCtrl' % _d).GetValue().strip()
+                        if getattr(self, 'chordArrow%sColourCB' % _d).GetValue() else '')
         if hasattr(self, 'tempoIconColourHexCtrl'):
             self.pref.tempoIconColourHex = self.tempoIconColourHexCtrl.GetValue().strip()
         if hasattr(self, 'editorBgHexCtrl'):

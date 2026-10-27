@@ -12,6 +12,7 @@
 import wx
 from .SongFormat import *
 from .SongBoxes import *
+from .ChordArrow import arrow_points, render_icon, ARROW_ASPECT
 from .KlavierRenderer import draw_klavier_section, start_note_to_semitone
 from .GuitarDiagramRenderer import draw_guitar_diagram_section
 from .Globals import glb as _glb
@@ -278,6 +279,12 @@ class SongDecorator(object):
                 self.SetMarginChord(t)
                 chordMaxH = max(chordMaxH, t.h)
                 chordMaxTH = max(chordMaxTH, t.GetTotalHeight())
+                if getattr(t, 'arrow', ''):
+                    ah = max(8, int(t.h * getattr(self, 'chord_arrow_pct', 90) / 100))
+                    t.arrow_w = max(6, int(ah * 0.8))
+                    t.arrow_h = max(4, int(t.arrow_w / ARROW_ASPECT))
+                    t.arrow_off = t.w + 3
+                    t.w += 3 + t.arrow_w
                 t.w += self.dc.GetTextExtent(" ")[0] / 2
             else:
                 if text.strip() != '':
@@ -640,7 +647,47 @@ class SongDecorator(object):
             self.dc.SetPen(wx.Pen(block.format.color, max(1, int(self.verseBoxWidth / self.pen_scale)))) #stabilisce spessore bordo versetti
             self.dc.SetBrush(wx.TRANSPARENT_BRUSH)
             self.dc.DrawRectangle(x, y, w, h)
-        
+
+    def _DrawBlockTimeSig(self, block, bx, by):
+        """Tempo con ambito di blocco ({time:X} dentro strofa/ritornello):
+        frazione impilata nella colonna laterale, sotto l'etichetta. Chiamato
+        da DrawBoxes dopo PreDrawBlock, cosi' funziona anche se una sottoclasse
+        ridefinisce PreDrawBlock."""
+        ts = getattr(block, 'time_sig', None)
+        if not ts:
+            return
+        self.dc.SetFont(block.format.wxFont)
+        rect = getattr(block, '_label_rect', None)
+        if rect:
+            # Sotto il riquadro dell'etichetta (registrato dal decoratore)
+            x = rect[0]
+            y = rect[1] + rect[3] + 4
+        else:
+            x = int(bx + block.marginLeft) - 3
+            y = int(by + block.marginTop) - 3
+        self.dc.SetTextForeground(block.format.color)
+        self._DrawStackedTimeSig(ts, x, y, block.format.color)
+        self.dc.SetTextForeground(wx.BLACK)
+
+    def _DrawStackedTimeSig(self, txt, bx, by, color):
+        """Disegna 'N/M' come frazione (numeratore, linea, denominatore) con
+        angolo in alto a sinistra in (bx, by). Se non e' nel formato N/M
+        disegna il testo semplice."""
+        parts = txt.split('/')
+        if len(parts) != 2:
+            self.dc.DrawText(txt, bx, by)
+            return
+        num, den = parts[0].strip(), parts[1].strip()
+        nw, nh = self.dc.GetTextExtent(num)
+        dw, dh = self.dc.GetTextExtent(den)
+        max_w = max(nw, dw)
+        gap = max(2, nh // 4)
+        line_y = by + nh + gap
+        self.dc.DrawText(num, bx + (max_w - nw) // 2, by)
+        self.dc.SetPen(wx.Pen(color, max(1, int(1 / self.pen_scale))))
+        self.dc.DrawLine(bx, line_y, bx + max_w, line_y)
+        self.dc.DrawText(den, bx + (max_w - dw) // 2, line_y + gap)
+
     def PreDrawLine(self, line, lx, ly):
         # lx, ly: coordinates of top-left corner of drawable area
         pass
@@ -1203,6 +1250,27 @@ class SongDecorator(object):
     _SMP_OVERSAMPLE_MIN      = 1
     _SMP_OVERSAMPLE_MAX      = 4
 
+    def _read_chord_arrow_prefs(self):
+        """(percentuale dimensione, {'up': colore|None, 'down': colore|None})."""
+        pct, cols = 90, {'up': None, 'down': None}
+        try:
+            cfg = wx.Config.Get()
+            old = cfg.GetPath()
+            try:
+                cfg.SetPath('/Rendering')
+                pct = max(30, min(150, cfg.ReadInt('chord_arrow_size_pct', 90)))
+                legacy = cfg.Read('chord_arrow_colour', '').strip()
+                for k, key in (('up', 'chord_arrow_up_colour'), ('down', 'chord_arrow_down_colour')):
+                    h = cfg.Read(key, '').strip() if cfg.HasEntry(key) else legacy
+                    if h:
+                        c = wx.Colour(h)
+                        cols[k] = c if c.IsOk() else None
+            finally:
+                cfg.SetPath(old)
+        except Exception:
+            pass
+        return pct, cols
+
     def _read_smp_oversample(self):
         """Pavimento di sovracampionamento SMP scelto dall'utente (1..4).
         Riletto a ogni render (come l'abbassamento) così un cambio in Preferenze
@@ -1386,7 +1454,54 @@ class SongDecorator(object):
             self.dc.SetPen(wx.Pen(text.color, max(1, int(1 / self.pen_scale))))
             self.dc.SetBrush(wx.TRANSPARENT_BRUSH)
             self.dc.DrawRectangle(x, y, w, h)
-        
+        arrow = getattr(text, 'arrow', '')
+        if arrow and hasattr(text, 'arrow_w'):
+            col = (getattr(self, 'chord_arrow_colours', None) or {}).get(arrow) or text.color
+            aw, ah = text.arrow_w, text.arrow_h
+            x0 = int(tx + text.marginLeft + text.arrow_off)
+            top = int(ty + text.marginTop + (text.h - ah) // 2)
+            # Stampa / PDF / anteprima di stampa (flag smp_via_bitmap): il PrinterDC non
+            # gestisce la trasparenza delle bitmap (usciva un quadrato pieno), quindi
+            # si disegna la sagoma vettoriale direttamente, senza bitmap.
+            if getattr(self, 'smp_via_bitmap', False) or not self._draw_chord_arrow_bitmap(arrow, col, x0, top, aw, ah):
+                pts = arrow_points(arrow, x0, top, aw, ah)
+                self.dc.SetPen(wx.Pen(col, 1))
+                self.dc.SetBrush(wx.Brush(col, wx.BRUSHSTYLE_SOLID))
+                self.dc.DrawPolygon([wx.Point(int(round(x)), int(round(y))) for x, y in pts])
+                self.dc.SetBrush(wx.NullBrush)
+                self.dc.SetPen(wx.NullPen)
+
+    def _draw_chord_arrow_bitmap(self, arrow, col, x0, top, aw, ah):
+        """Disegna la freccia come bitmap anti-aliased a risoluzione device.
+        True se ha disegnato, False per usare il ripiego a tratti."""
+        try:
+            sx, sy = self.dc.GetUserScale()
+            dw = max(4, int(round(aw * sx)))
+            dh = max(4, int(round(ah * sy)))
+            rgb = (col.Red(), col.Green(), col.Blue())
+            icon = render_icon(arrow, dw, dh, rgb)
+            if icon is None:
+                return False
+            w, h, rgbb, alpha = icon
+            img = wx.Image(w, h)
+            img.SetData(rgbb)
+            img.SetAlpha(alpha)
+            bmp = wx.Bitmap(img)
+            dx = int(round(x0 * sx))
+            dy = int(round(top * sy))
+            self.dc.SetUserScale(1.0, 1.0)
+            try:
+                self.dc.DrawBitmap(bmp, dx, dy, True)
+            finally:
+                self.dc.SetUserScale(sx, sy)
+            return True
+        except Exception:
+            try:
+                self.dc.SetUserScale(sx, sy)
+            except Exception:
+                pass
+            return False
+
     def PostDrawLine(self, line, lx, ly):
         # lx, ly: coordinates of top-left corner of drawable area
         # ── Numero/puntini battiti sopra ogni accordo ({beats_time: ...}) ─
@@ -1524,6 +1639,7 @@ class SongDecorator(object):
                 if not (self.exportMode is False and self.showColumnBreakLines):
                     block.columnBreakBefore = False
                 self.PreDrawBlock(block, bx, by)
+                self._DrawBlockTimeSig(block, bx, by)
                 block.pageBreakBefore   = saved_page
                 block.columnBreakBefore = saved_col
                 for line in block.boxes:
@@ -1756,6 +1872,7 @@ class SongDecorator(object):
         # render così un cambio dell'impostazione si riflette subito in anteprima.
         self.smp_valign_frac = self._read_smp_valign_frac()
         self.smp_oversample = self._read_smp_oversample()
+        self.chord_arrow_pct, self.chord_arrow_colours = self._read_chord_arrow_prefs()
         self.InitDraw()
         self.LayoutCompose()
         self.LayoutMove()

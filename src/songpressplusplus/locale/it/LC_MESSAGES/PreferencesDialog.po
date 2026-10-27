@@ -1330,3 +1330,19 @@ msgstr ""
 #, python-format
 msgid "Associate the .%s file extension with Songpress++."
 msgstr "Associa l'estensione .%s a Songpress++."
+
+#: PreferencesDialog.py format tab — chord arrow size label
+msgid "Chord arrow size (%)"
+msgstr "Dimensione freccia accordo (%)"
+
+#: PreferencesDialog.py format tab — chord arrow up colour checkbox
+msgid "Custom colour for the up arrow"
+msgstr "Colore personalizzato per la freccia su"
+
+#: PreferencesDialog.py format tab — chord arrow down colour checkbox
+msgid "Custom colour for the down arrow"
+msgstr "Colore personalizzato per la freccia giù"
+
+#: PreferencesDialog.py format tab — chord arrow custom colour tooltip
+msgid "If unchecked, the arrow uses the chord colour."
+msgstr "Se disattivo, la freccia usa il colore dell'accordo."

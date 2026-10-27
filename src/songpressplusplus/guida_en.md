@@ -58,7 +58,7 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | `{tempo_c:BPM}`     |              | 🔧  | 🖊    | Tempo with fixed **eighth note** icon                                                    |
 | `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo with fixed **dotted eighth note** icon                                             |
 | `{tempo_label:Text}` |             | 🔧  | ⌨️   | Textual tempo marking (e.g. `{tempo_label:Andante}`, `{tempo_label:Allegro moderato}`); displayed as text alongside other tempo directives |
-| `{time:N/M}`        |              | ✅  | ⌨️   | Time signature (e.g. `{time:4/4}`, `{time:3/4}`); rendered with a graphical time symbol  |
+| `{time:N/M}`        |              | ✅  | ⌨️   | Time signature (e.g. `{time:4/4}`, `{time:3/4}`); rendered with a graphical time symbol. Inside a verse or chorus it applies only to that block (shown beside the block, under its label) and does not split the block |
 | `{beats_time: Ch=N …}` |           | 🔧  | ⌨️   | Beat duration of chords (e.g. `{beats_time: C=2 G=1}`); displays a number, dots, or both above chords (configurable in preferences) |
 | `{duration:mm:ss}`  |              | ✅  | 🖊    | Total song duration (e.g. `{duration:12:45}`); not shown in preview or print, but displayed in **Song Statistics** as the actual «Duration» instead of the automatic estimate. Commenting out the line with `#` restores automatic duration calculation. |
 | `{sorttitle:Text}`  |              | ✅  | 🖊    | Alternative title used for alphabetical sorting (metadata only, not displayed)           |
@@ -103,9 +103,10 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 
 | Directive                                 | Std | Menu | Description                                                                                                            |
 | ----------------------------------------- | --- | ---- | ---------------------------------------------------------------------------------------------------------------------- |
-| `{start_of_verse}`/`{end_of_verse}`       | ✅  | ⌨️   | Unnumbered verse, no label                                                                                             |
+| `{start_of_verse}`/`{end_of_verse}`       | ✅  | ⌨️   | Automatically numbered verse (same as `{start_verse_num}`)                                                             |
 | `{start_verse:Label}`/`{end_verse}`       | 🔧  | ⌨️   | Unnumbered verse with optional label                                                                                   |
-| `{start_verse_num}`/`{end_verse_num}`     | 🔧  | ⌨️   | Automatically numbered verse                                                                                           |
+| `{start_verse_num}`/`{end_verse_num}`     | 🔧  | ⌨️   | Automatically numbered verse (long form)                                                                               |
+| `{sov}`/`{eov}`                           | ✅  | ⌨️   | Abbreviation for `start_of_verse`/`end_of_verse`: automatically numbered verse                                         |
 | `{verse:Label}`                           | ✅  | ⌨️   | Opens a verse with a custom label (e.g. `{verse:1}`)                                                                   |
 | `{start_of_chorus}`/`{end_of_chorus}`     | ✅  | ⌨️   | Chorus                                                                                                                 |
 | `{soc}`/`{eoc}`                           | ✅  | ⌨️   | Abbreviation for `start_of_chorus`/`end_of_chorus`                                                                     |
@@ -171,6 +172,29 @@ Chords are inserted in the text with square brackets, immediately before the syl
 ```chordpro
 [Am]In the [F]blue [C]painted [G]blue
 ```
+
+### Chord Direction Arrow — `[C^]` / `[Cv]`
+
+A small **arrow** can be added to a chord to show whether the chord should be played upwards or downwards. The arrow is written as a suffix inside the square brackets:
+
+| Written | Result |
+| ------- | ------ |
+| `[C]` | chord without an arrow |
+| `[C^]` | chord with an **up** arrow |
+| `[Cv]` | chord with a **down** arrow |
+
+```chordpro
+[F]thy will be [C^]done in [Amv]me, [G]amen
+```
+
+- The chord name stays the normal one (`C`): transposition, syntax check, statistics and `{beats_time:}` work as usual, and the arrow is preserved. Transposing `[C^]` gives, for example, `[D^]`.
+- The characters `↑` and `↓` can also be typed instead of `^` and `v`.
+- Arrows are not supported inside `{start_of_grid}` cells.
+- In the `{beats_time:}` number, alignment takes the width of the arrow into account.
+
+**Insertion from the menu.** In the **Insert chord** dialog the **Direction** box offers three choices: *None*, *↑ Up*, *↓ Down* (with tooltips on mouse hover). After each insertion the choice goes back to *None*. The "Uppercase chord" checkbox does not alter the arrow suffix.
+
+**Appearance.** The arrow is drawn as a vector shape, sharp at any zoom, and prints correctly in PDF and print preview too. Size and colours are set in *Options → Format → Chords and keyboard* (see the Options window table).
 
 ### Local Fonts and Colors
 
@@ -1162,6 +1186,32 @@ G|--0--0--2--0--|
 
 ---
 
+### Time signature scoped to a block
+
+`{time:}` can have a **block scope**. Written **outside** verses and choruses (usually at the top of the song) it is the general time signature and is shown as a subtitle, with the graphical symbol. Written **inside** a verse or chorus it applies **only to that block**: it does not split it and, when the block ends, the general time signature is unchanged.
+
+```chordpro
+{time:4/4}
+
+{start_verse_num}
+{time:4/4}
+[C]Verse text...
+{end_verse_num}
+
+{start_chorus}
+{time:2/4}
+[G]Chorus text...
+{end_chorus}
+```
+
+- It must be **inside** the block, right after the opening tag: for numbered verses between `{start_verse_num}` and `{end_verse_num}` or, in the short form, between `{sov}` and `{eov}` (equivalent to `{start_verse_num}`), for unnumbered verses between `{start_verse}` and `{end_verse}`, for choruses between `{start_chorus}` and `{end_chorus}` or, in the short form, between `{soc}` and `{eoc}`. Written before the block opens, it is the general time signature.
+- The block's time signature is drawn **at the side**, as a stacked fraction (numerator, line, denominator), in the label column, **below** the label box («Rit.», verse number). The text starts on the same line as the label.
+- The **first** `{time:}` found in the block is the one used. A second `{time:}` in the same block (a mid-block change) is shown **inline**, in parentheses, like a comment.
+- If *Time signature* is switched off (option «No chords: blocks to hide»), `{time:}` inside blocks is hidden too.
+- There is no dedicated directive: the normal `{time:}` is used.
+
+---
+
 ## Editor Features
 
 ### Guided Insertion (Insert Menu)
@@ -1177,6 +1227,33 @@ The items are arranged in five groups separated by lines:
 3. **Song structure** — Numbered verse, Unnumbered verse, Verse with custom label or without label, Chorus, Bridge, Grid
 4. **Tempo and key** — Tempo, Tempo marking, Time signature, Key
 5. **Images and symbols** — Image, Transposer image, Musical symbol (Unicode)
+
+#### Numbered verse
+
+**Insert → Numbered verse…** opens a small dialog with a **Form** group, where radio buttons let you choose how the block is written:
+
+| Form | Description |
+| --- | --- |
+| **`{start_verse_num} ... {end_verse_num}`** | Long form (default). |
+| **`{sov} ... {eov}`** | Short form of `start_of_verse` / `end_of_verse`. |
+
+The two forms are equivalent: the verse is numbered automatically in the same way, and the result in the preview, in print and in exports is identical. Only the text shown in the editor changes.
+
+Examples of the inserted text (the `|` cursor is placed inside the block):
+
+```chordpro
+{start_verse_num}
+|
+{end_verse_num}
+```
+
+```chordpro
+{sov}
+|
+{eov}
+```
+
+The dialog has no label field: for a verse with a custom label or without a label use **Verse with custom label or without label…**, or add the label by hand (`{sov:Label}`; in that case the verse is no longer numbered automatically). The chosen form is remembered while the program stays open. Hovering the two radio buttons shows a tooltip.
 
 #### Chorus (<kbd>Ctrl</kbd>+<kbd>U</kbd>)
 
@@ -1205,7 +1282,7 @@ The chosen form is remembered while the program stays open. Hovering the label f
 
 ### Chord Management
 
-- **Insert chord** — inserts `[|]` with the cursor inside the brackets
+- **Insert chord** — inserts `[|]` with the cursor inside the brackets; the dialog also lets you choose a direction arrow (*None*, *Up*, *Down*)
 - **Move chord right / left** — moves the chord under the cursor by one character
 - **Remove chords** — deletes all chords from the selection. The command is enabled only if the selection contains at least one chord between `[ ]`; otherwise it stays greyed out
 - **Paste chords** — pastes only the chords (without text) from the copied selection
@@ -1943,6 +2020,9 @@ Below, the scrollable **chord simplification** panel has one slider per chord gr
 | **Klavier key colour** | `#D23C3C` | Key highlight in the keyboard diagram. |
 | **Different colour for the upper octave key** | off, `#3C78D2` | On 8-key keyboards, draws the rightmost key matching the first one in a second colour (e.g. high B on B…B). |
 | **Finger number colour** | `#1A1A1A` | Colour of `{fingering:}` numbers. |
+| **Chord arrow size (%)** | 90 | Size of the `[C^]` / `[Cv]` direction arrow, as a percentage of the chord height (30–150). |
+| **Custom colour for the up arrow** | off, `#2E7D32` | When on, the up arrow uses this colour; otherwise it uses the chord colour. |
+| **Custom colour for the down arrow** | off, `#C03030` | When on, the down arrow uses this colour; otherwise it uses the chord colour. |
 
 #### **Tempo** group
 

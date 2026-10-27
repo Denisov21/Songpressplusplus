@@ -106,6 +106,7 @@ class Decorator(SongDecorator):
             self.dc.DrawText(label_txt, tx, ty)
             self.dc.SetTextForeground(wx.BLACK)
 
+        block._label_rect = None
         if block.type != block.title and len(block.boxes) > 0:
             # Non mostrare il numero se il blocco non ha testo visibile:
             # vuoto, soli spazi, o soli commenti {c:} / righe '#...'.
@@ -146,10 +147,17 @@ class Decorator(SongDecorator):
                 tx = (rx
                     + baseWidth * self.format.leftPadding
                     + 0.5 * (w - realW))
-                ty = by + block.boxes[0].textBaseline + block.marginTop - h
+                # Allinea l'etichetta alla prima riga che contiene davvero dei box
+                # (ignora eventuali righe vuote iniziali).
+                first = next((l for l in block.boxes
+                              if any((t.text or '').strip() for t in l.boxes)),
+                             block.boxes[0])
+                ty = by + first.y + first.textBaseline + block.marginTop - h
                 ry = ty - self.format.topPadding * baseHeight
                 rw = int(w + baseWidth * (self.format.leftPadding + self.format.rightPadding))
                 rh = int(h + baseHeight * (self.format.topPadding + self.format.bottomPadding))
+                # Memorizza il rettangolo dell'etichetta: lo usa il tempo di blocco
+                block._label_rect = (int(rx), int(ry), rw, rh)
                 # Step 1: fill background
                 self.dc.SetBrush(wx.Brush(background, wx.SOLID))
                 self.dc.SetPen(wx.TRANSPARENT_PEN)

@@ -195,6 +195,7 @@ class Preferences(object):
         self._LoadMusicalSymbol()
         self._LoadSmpValign()
         self._LoadSmpOversample()
+        self._LoadChordArrow()
         self._LoadSyntaxColours()
         self._LoadColourPreview()
         self._LoadDebugOptions()
@@ -451,6 +452,7 @@ class Preferences(object):
         self._SaveMusicalSymbol()
         self._SaveSmpValign()
         self._SaveSmpOversample()
+        self._SaveChordArrow()
         self._SaveSyntaxColours()
         self._SaveColourPreview()
         self._SaveDebugOptions()
@@ -817,6 +819,30 @@ class Preferences(object):
             self._SMP_OVERSAMPLE_CFG_KEY,
             max(self._SMP_OVERSAMPLE_MIN, min(int(getattr(self, 'symbolOversample', self._SMP_OVERSAMPLE_DEFAULT)), self._SMP_OVERSAMPLE_MAX)),
         )
+        self.config.SetPath('/')
+
+    def _LoadChordArrow(self):
+        self.config.SetPath('/Rendering')
+        try:
+            v = self.config.ReadInt('chord_arrow_size_pct', 90)
+        except Exception:
+            v = 90
+        self.chordArrowSizePct = max(30, min(int(v), 150))
+        old = (self.config.Read('chord_arrow_colour') or '').strip()   # compat. versione precedente
+        for name, key, default in (('Up', 'chord_arrow_up_colour', old),
+                                   ('Down', 'chord_arrow_down_colour', old)):
+            if self.config.HasEntry(key):
+                h = (self.config.Read(key) or '').strip()
+            else:
+                h = default
+            setattr(self, 'chordArrow%sColourHex' % name, h)
+        self.config.SetPath('/')
+
+    def _SaveChordArrow(self):
+        self.config.SetPath('/Rendering')
+        self.config.WriteInt('chord_arrow_size_pct', max(30, min(int(getattr(self, 'chordArrowSizePct', 90)), 150)))
+        self.config.Write('chord_arrow_up_colour', getattr(self, 'chordArrowUpColourHex', '') or '')
+        self.config.Write('chord_arrow_down_colour', getattr(self, 'chordArrowDownColourHex', '') or '')
         self.config.SetPath('/')
 
     def _LoadDecoSliderColour(self):

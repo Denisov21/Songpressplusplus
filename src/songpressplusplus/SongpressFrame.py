@@ -31,6 +31,7 @@ from .Editor import *
 from .PreviewCanvas import *
 from .Renderer import *
 from .FontComboBox import FontComboBox
+from .ChordArrow import split_arrow, SUFFIX
 from .FontFaceDialog import FontFaceDialog
 from .MyPreferencesDialog import MyPreferencesDialog
 from .HTML import HtmlExporter, TabExporter
@@ -2020,11 +2021,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 return False
             if _notation is None:
                 return True
-            root, _ = splitChord(raw.strip(), _notation)
+            root, _ = splitChord(split_arrow(raw.strip())[0], _notation)
             return bool(root)
 
         def _chord_root(raw):
-            c = raw.strip().split('/')[0].strip()
+            c = split_arrow(raw.strip())[0].split('/')[0].strip()
             if _notation is None:
                 return c
             root, suffix = splitChord(c, _notation)
@@ -2598,8 +2599,40 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.InsertWithCaret("{start_verse}\n|\n{end_verse}\n")
 
     def OnInsertVerseNum(self, evt):
-        """Inserisce una strofa numerata: {start_verse_num} ... {end_verse_num}"""
-        self.InsertWithCaret("{start_verse_num}\n|\n{end_verse_num}\n")
+        """Inserisce una strofa numerata, scegliendo la forma con un radio button:
+        {start_verse_num} ... {end_verse_num}  oppure  {sov} ... {eov}"""
+        dlg = wx.Dialog(self.frame, title=_("Numbered verse"))
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        # I radio button sono figli dello StaticBox (non del dialogo): su
+        # Linux/GTK e' necessario perche' ricevano correttamente click e
+        # tooltip; su Windows il comportamento e' identico.
+        sbox = wx.StaticBox(dlg, label=_("Form"))
+        box = wx.StaticBoxSizer(sbox, wx.VERTICAL)
+        rb_long = wx.RadioButton(sbox, label="{start_verse_num} ... {end_verse_num}",
+                                 style=wx.RB_GROUP)
+        rb_short = wx.RadioButton(sbox, label="{sov} ... {eov}")
+        rb_long.SetToolTip(_("Long form: {start_verse_num} ... {end_verse_num}"))
+        rb_short.SetToolTip(_("Short form: {sov} ... {eov} (start_of_verse / end_of_verse)"))
+        if getattr(self, '_lastVerseNumShort', False):
+            rb_short.SetValue(True)
+        else:
+            rb_long.SetValue(True)
+        box.Add(rb_long, 0, wx.ALL, 5)
+        box.Add(rb_short, 0, wx.ALL, 5)
+        sizer.Add(box, 0, wx.EXPAND | wx.ALL, 10)
+        btns = dlg.CreateButtonSizer(wx.OK | wx.CANCEL)
+        if btns:
+            sizer.Add(btns, 0, wx.EXPAND | wx.ALL, 10)
+        dlg.SetSizerAndFit(sizer)
+        dlg.CentreOnParent()
+        if dlg.ShowModal() != wx.ID_OK:
+            dlg.Destroy()
+            return
+        short = rb_short.GetValue()
+        dlg.Destroy()
+        self._lastVerseNumShort = short
+        start, end = ("sov", "eov") if short else ("start_verse_num", "end_verse_num")
+        self.InsertWithCaret("{%s}\n|\n{%s}\n" % (start, end))
 
     def OnInsertChorusBlock(self, evt):
         """Insert a chorus block, choosing the form with a radio button:
@@ -3131,7 +3164,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         def _extract_roots(line_text):
             raw = re.findall(r'\[([^\]]+)\]', line_text)
-            return [c.strip() for c in raw if c.strip()]
+            return [split_arrow(c.strip())[0] for c in raw if c.strip()]
 
         # ── Rilevamento accordi dentro i blocchi ──────────────────────────
         # Nei blocchi {start_of_grid} gli accordi si scrivono normalmente SENZA
@@ -7928,7 +7961,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         return None
 
     def OnGuide(self, evt):
-        wx.LaunchDefaultBrowser(_("http://www.skeed.it/songpress-manual"))
+        wx.LaunchDefaultBrowser("https://www.chordpro.org/chordpro/chordpro-directives/")
 
     def OnGuideMarkdown(self, evt):
         import os
@@ -8492,6 +8525,16 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         # Applica zoom e tema iniziali (dopo che tutti i controlli sono creati)
         _apply_zoom(_zoom_pct[0])
+
+        # Con wxWidgets 3.3 (wxPython 4.3) la pagina caricata PRIMA che la finestra
+        # sia mostrata e dimensionata viene disegnata con riquadri puntinati attorno
+        # a ogni blocco. Si ricarica quindi la pagina a finestra già visibile e si
+        # sposta il focus sul pulsante Chiudi (così la HtmlWindow non lo ha all'avvio).
+        def _late_init():
+            _rebuild_page(_dark_mode[0])
+            _apply_zoom(_zoom_pct[0])
+            btn_close.SetFocus()
+        wx.CallAfter(_late_init)
 
         dlg.ShowModal()
 
@@ -9257,6 +9300,16 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         dlg.Layout()
         _apply_zoom(_zoom_pct[0])
 
+        # Con wxWidgets 3.3 (wxPython 4.3) la pagina caricata PRIMA che la finestra
+        # sia mostrata e dimensionata viene disegnata con riquadri puntinati attorno
+        # a ogni blocco. Si ricarica quindi la pagina a finestra già visibile e si
+        # sposta il focus sul pulsante Chiudi (così la HtmlWindow non lo ha all'avvio).
+        def _late_init():
+            _rebuild_page(_dark_mode[0])
+            _apply_zoom(_zoom_pct[0])
+            btn_close.SetFocus()
+        wx.CallAfter(_late_init)
+
         dlg.ShowModal()
 
         # Salva zoom e tema nelle preferenze (condivise con OnGuideMarkdown)
@@ -9716,6 +9769,21 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             lambda e: setattr(self.pref, 'chordUppercase', cb_upper.GetValue()))
         vbox.Add(cb_upper, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
+        # Direzione dell'accordo: nessuna / su / giu' (suffisso ^ o v nel .crd)
+        arrow_box = wx.StaticBoxSizer(wx.StaticBox(dlg, label=_(u"Direction")), wx.HORIZONTAL)
+        _sb = arrow_box.GetStaticBox()
+        rb_none = wx.RadioButton(_sb, label=_(u"None"), style=wx.RB_GROUP)
+        rb_up   = wx.RadioButton(_sb, label=u"\u2191 " + _(u"Up"))
+        rb_down = wx.RadioButton(_sb, label=u"\u2193 " + _(u"Down"))
+        rb_none.SetValue(True)
+        rb_none.SetToolTip(_(u"Insert the chord without a direction arrow."))
+        rb_up.SetToolTip(_(u"Insert the chord with an up arrow: the chord is played upwards (written as [Cm^])."))
+        rb_down.SetToolTip(_(u"Insert the chord with a down arrow: the chord is played downwards (written as [Cmv])."))
+        _sb.SetToolTip(_(u"Direction arrow shown next to the chord in the preview."))
+        for rb in (rb_none, rb_up, rb_down):
+            arrow_box.Add(rb, 0, wx.ALL, 4)
+        vbox.Add(arrow_box, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
         # Bottoni: [📌] [OK] [Annulla]
         btn_pin    = wx.Button(dlg, wx.ID_ANY,
                                PIN_ON if self._chord_dialog_pinned else PIN_OFF,
@@ -9738,11 +9806,14 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         def _insert():
             chord = txt.GetValue().strip()
             if chord:
+                name, typed = split_arrow(chord)
                 if cb_upper.GetValue():
-                    chord = chord.upper()
-                self.InsertWithCaret("[%s]" % chord)
+                    name = name.upper()
+                arrow = 'up' if rb_up.GetValue() else 'down' if rb_down.GetValue() else typed
+                self.InsertWithCaret("[%s%s]" % (name, SUFFIX[arrow]))
             else:
                 self.InsertWithCaret("[|]")
+            rb_none.SetValue(True)
             # Dopo inserimento: focus torna all'editor per usare le frecce
             self.text.SetFocus()
 

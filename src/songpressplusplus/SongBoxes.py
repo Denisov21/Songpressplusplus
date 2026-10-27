@@ -124,6 +124,7 @@ class SongText(SongBox):
           self.font = font
           self.type = type
           self.color = color
+          self.arrow = ''   # '' | 'up' | 'down'
 
 
 class SongImageBox(SongBox):

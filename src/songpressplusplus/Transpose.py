@@ -16,6 +16,8 @@ import unicodedata
 
 import wx
 
+from .ChordArrow import split_arrow, SUFFIX
+
 
 def _nfc(s):
     """Normalizza a Unicode NFC.
@@ -464,12 +466,13 @@ def transpose(s, d, chord, notation=enNotation, accidentals=ACCIDENTALS_AUTO):
     sl = chord.find("/")
     if sl > -1:
         return "%s/%s" % (transpose(s, d, chord[:sl], notation, accidentals), transpose(s, d, chord[sl + 1:], notation, accidentals))
+    chord, arrow = split_arrow(chord)
     chord = translateChord(chord, notation, enNotation)
     c, v = splitChord(chord)
     if c == "":
-        return chord
+        return chord + SUFFIX[arrow]
     p = chord2pos(c, s)
-    return translateChord(__pos2chord(p, d, accidentals) + v, enNotation, notation)
+    return translateChord(__pos2chord(p, d, accidentals) + v, enNotation, notation) + SUFFIX[arrow]
 
 
 def translateChord(chord, sNotation=enNotation, dNotation=enNotation):
@@ -478,21 +481,22 @@ def translateChord(chord, sNotation=enNotation, dNotation=enNotation):
     sl = chord.find("/")
     if sl > -1:
         return "%s/%s" % (translateChord(chord[:sl], sNotation, dNotation), translateChord(chord[sl + 1:], sNotation, dNotation))
+    chord, arrow = split_arrow(chord)
     chord = sNotation.PreprocessingToStandard(chord)
     c, a = splitChord(chord, sNotation)
     if c == "":
-        return chord
+        return chord + SUFFIX[arrow]
     alt = c[-1]
     if alt == '#' or alt == 'b':
         c = c[:-1]
     else:
         alt = ""
     if c == "":
-        return chord
+        return chord + SUFFIX[arrow]
     d = dNotation.Ord2Chord(sNotation.Chord2Ord(c)) + alt
     b = dNotation.AlterationFromStandard(sNotation.AlterationToStandard(a))
     d, b = dNotation.PostprocessingFromStandard(d, b)
-    return d + b
+    return d + b + SUFFIX[arrow]
 
 
 def transposeChordPro(s, d, text, notation=enNotation, accidentals=ACCIDENTALS_AUTO):
@@ -554,7 +558,7 @@ def vectorizeChords(text, notation=enNotation):
     r = re.compile(r'\[([^]]*)\]')
     v = [0 for x in range(12 * len(vectorModes))]
     for m in r.finditer(text):
-        chord = translateChord(m.group(1), notation, enNotation)
+        chord = split_arrow(translateChord(m.group(1), notation, enNotation))[0]
         c, a = splitChord(chord)
         if c != "" and a in vectorModes:
             v[chord2pos(c, "C") * len(vectorModes) + vectorModes.index(a)] += 1
@@ -715,7 +719,7 @@ def findEasiestKey(text, fav, notation=enNotation):
     count = 0
     for m in r.finditer(text):
         count += 1
-        chord = translateChord(m.group(1), notation)
+        chord = split_arrow(translateChord(m.group(1), notation))[0]
         for k in ws:
             c = transpose(current_key, k, chord)
             if c in fav:
