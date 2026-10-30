@@ -2814,6 +2814,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         vbox.Add(wx.StaticText(d, -1, _("Enter the time signature (e.g. 4/4, 3/4, 6/8):")), 0, wx.ALL, 8)
         txt = wx.TextCtrl(d, -1, "4/4")
         vbox.Add(txt, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 8)
+        self._PrefillFromDirective(txt, 'time')
 
         cb_meta = wx.CheckBox(d, -1, _("Metadata"))
         vbox.Add(cb_meta, 0, wx.LEFT | wx.TOP | wx.BOTTOM, 8)
@@ -2835,10 +2836,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self.pref.timeDisplay = not cb_meta.GetValue()
             self.previewCanvas.SetTimeDisplay(self.pref.timeDisplay)
             val = txt.GetValue().strip()
-            if val:
-                self.InsertWithCaret("{time:%s}" % val)
-            else:
-                self.InsertWithCaret("{time:|}")
+            self._InsertDirectiveValue('time', val)
             self.previewCanvas.Refresh(self._get_display_text())
         d.Destroy()
 
@@ -2850,6 +2848,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         vbox.Add(wx.StaticText(d, -1, _("Enter the song tempo (e.g. 120):")), 0, wx.ALL, 8)
         txt = wx.TextCtrl(d, -1, "")
         vbox.Add(txt, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 8)
+        self._PrefillFromDirective(txt, 'tempo')
 
         vbox.Add(wx.StaticText(d, -1, _("Display as:")), 0, wx.LEFT | wx.TOP, 8)
 
@@ -2942,10 +2941,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self.previewCanvas.SetTempoIconSize(getattr(self.pref, 'tempoIconSize', 24))
             self.previewCanvas.SetTempoIconColour(self._getTempoIconColour())
             self._SaveTempoDisplay()
-            if val:
-                self.InsertWithCaret("{tempo:%s}" % val)
-            else:
-                self.InsertWithCaret("{tempo:|}")
+            self._InsertDirectiveValue('tempo', val)
             self.previewCanvas.Refresh(self._get_display_text())
         d.Destroy()
 
@@ -2985,6 +2981,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             style=wx.CB_DROPDOWN
         )
         vbox.Add(combo, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 8)
+        self._PrefillFromDirective(combo, 'tempo_label')
 
         vbox.Add(
             wx.StaticText(
@@ -3002,10 +2999,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         if d.ShowModal() == wx.ID_OK:
             val = combo.GetValue().strip()
-            if val:
-                self.InsertWithCaret("{tempo_label:%s}" % val)
-            else:
-                self.InsertWithCaret("{tempo_label:|}")
+            self._InsertDirectiveValue('tempo_label', val)
             self.previewCanvas.Refresh(self._get_display_text())
         d.Destroy()
 
@@ -3034,6 +3028,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         is_meta = not getattr(self.pref, 'keyDisplay', True)
         cb_meta.SetValue(is_meta)
         txt.Enable(not is_meta)
+
+        # Cursore dentro una direttiva {key:...} esistente: la finestra parte
+        # con il valore attuale e, alla conferma, viene cambiato solo quello
+        # (la direttiva non viene riscritta una seconda volta).
+        self._PrefillFromDirective(txt, 'key')
 
         def _do_detect():
             """Rileva la tonalità dagli accordi del brano corrente.
@@ -3094,16 +3093,213 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         d.SetSizer(vbox)
         vbox.Fit(d)
 
-        if d.ShowModal() == wx.ID_OK:
+        # Stato di "Rileva automaticamente" ricordato fra una apertura e l'altra
+        # della finestra (e fra un avvio e l'altro del programma).
+        if self._LoadKeyAutoDetect():
+            cb_detect.SetValue(True)
+            txt.Enable(False)
+            _do_detect()
+
+        res = d.ShowModal()
+        # Salvato alla chiusura, sia con OK sia con Annulla
+        self._SaveKeyAutoDetect(cb_detect.GetValue())
+        if res == wx.ID_OK:
             self.pref.keyDisplay = not cb_meta.GetValue()
             self.previewCanvas.SetKeyDisplay(self.pref.keyDisplay)
             val = txt.GetValue().strip()
-            if val:
-                self.InsertWithCaret(u"{key:%s}" % val)
-            else:
-                self.InsertWithCaret(u"{key:|}")
+            self._InsertDirectiveValue('key', val)
             self.previewCanvas.Refresh(self._get_display_text())
         d.Destroy()
+
+    def _LoadKeyAutoDetect(self):
+        """True se alla chiusura precedente "Rileva automaticamente dagli
+        accordi" (finestra Tonalita') era selezionato."""
+        try:
+            cfg = wx.Config.Get()
+            old = cfg.GetPath()
+            cfg.SetPath('/KeyDialog')
+            v = cfg.Read('autoDetect')
+            cfg.SetPath(old)
+            return v == '1'
+        except Exception:
+            return False
+
+    def _SaveKeyAutoDetect(self, on):
+        try:
+            cfg = wx.Config.Get()
+            old = cfg.GetPath()
+            cfg.SetPath('/KeyDialog')
+            cfg.Write('autoDetect', '1' if on else '0')
+            cfg.SetPath(old)
+        except Exception:
+            pass
+
+    def _FindDirectiveSpan(self, names):
+        """Se il cursore e' dentro una direttiva {nome:...} della riga corrente
+        (nome = stringa o tuple di alias), restituisce un dict con 'name',
+        'ds'/'de' (inizio/fine dell'intera direttiva, '}' compresa) e
+        'vs'/'ve'/'value' (testo dopo i ':'); posizioni nel formato
+        dell'editor (byte). Altrimenti None."""
+        import re
+        if isinstance(names, str):
+            names = (names,)
+        try:
+            pos = self.text.GetCurrentPos()
+            line = self.text.GetCurrentLine()
+            ls = self.text.PositionFromLine(line)
+            txt = self.text.GetLine(line).rstrip('\r\n')
+            col = len(self.text.GetTextRange(ls, pos))   # colonna in caratteri
+            alt = '|'.join(re.escape(n) for n in sorted(names, key=len, reverse=True))
+            rx = r'\{\s*(' + alt + r')\s*:'
+
+            def b(i):
+                return ls + len(txt[:i].encode('utf-8'))
+            for m in re.finditer(rx, txt, re.IGNORECASE):
+                close = txt.find('}', m.end())
+                end = close if close != -1 else len(txt)
+                if m.start() < col <= end:
+                    return {'name': m.group(1).lower(),
+                            'ds': b(m.start()),
+                            'de': b(end + 1 if close != -1 else end),
+                            'vs': b(m.end()), 've': b(end),
+                            'value': txt[m.end():end]}
+        except Exception:
+            pass
+        return None
+
+    def _FindDirectiveAtCaret(self, name):
+        """Come _FindDirectiveSpan ma restituisce (inizio, fine, valore) del
+        testo dopo i ':' oppure None."""
+        sp = self._FindDirectiveSpan(name)
+        return None if sp is None else (sp['vs'], sp['ve'], sp['value'])
+
+    def _FindHashCommentAtCaret(self):
+        """Se il cursore e' su una riga di commento '# ...', restituisce un dict
+        come _FindDirectiveSpan (value = testo dopo '# '); altrimenti None."""
+        try:
+            pos = self.text.GetCurrentPos()
+            line = self.text.GetCurrentLine()
+            ls = self.text.PositionFromLine(line)
+            txt = self.text.GetLine(line).rstrip('\r\n')
+            col = len(self.text.GetTextRange(ls, pos))
+            h = len(txt) - len(txt.lstrip())
+            if txt[h:h + 1] != '#' or col <= h:
+                return None
+            v = h + 1
+            while v < len(txt) and txt[v] == ' ':
+                v += 1
+
+            def b(i):
+                return ls + len(txt[:i].encode('utf-8'))
+            return {'name': '#', 'ds': b(h), 'de': b(len(txt)),
+                    'vs': b(v), 've': b(len(txt)), 'value': txt[v:]}
+        except Exception:
+            return None
+
+    def _ReplaceRange(self, start, end, text, caret=None):
+        """Sostituisce [start, end) con text; il cursore va dopo il testo
+        (o in start + caret byte se indicato)."""
+        self.text.SetSelection(start, end)
+        self.text.ReplaceSelection(text)
+        p = start + (len(text.encode('utf-8')) if caret is None else caret)
+        self.text.SetSelection(p, p)
+
+    def _InsertOrSelectDirective(self, names, st):
+        """Per le direttive senza finestra (titolo, sottotitolo): se il cursore
+        e' gia' dentro {nome:...} non ne apre una seconda, ma seleziona il valore
+        esistente perche' lo si possa riscrivere; altrimenti inserisce st."""
+        try:
+            plain = (self.text.GetSelections() <= 1
+                     and self.text.GetSelection()[0] == self.text.GetSelection()[1])
+        except Exception:
+            plain = False
+        sp = self._FindDirectiveSpan(names) if plain else None
+        if sp is None:
+            self.InsertWithCaret(st)
+            return
+        old = sp['value']
+        lead = old[:len(old) - len(old.lstrip())]
+        trail = old[len(old.rstrip()):] if old.strip() else u""
+        a = sp['vs'] + len(lead.encode('utf-8'))
+        e = sp['ve'] - len(trail.encode('utf-8'))
+        self.text.SetSelection(a, max(a, e))
+
+    def _InsertBuiltDirective(self, name, directive, empty_directive=None):
+        """Inserisce una direttiva gia' costruita da una finestra (es.
+        u"{fingering: C 1 3 5}"). Se il cursore e' dentro una {name:...}
+        esistente sostituisce solo il valore dopo i ':', altrimenti inserisce
+        la direttiva intera. Con valore vuoto inserisce empty_directive (se
+        indicata e se non si e' dentro una direttiva esistente)."""
+        import re
+        m = re.match(r'^\{\s*[^:}]*:(.*)\}$', directive, re.S)
+        inner = m.group(1) if m else u""
+        val = inner.strip()
+        sp = self._FindDirectiveSpan(name)
+        if sp is None:
+            if val:
+                self.InsertWithCaret(directive)
+            elif empty_directive:
+                self.InsertWithCaret(empty_directive)
+            return
+        if not val:
+            return
+        old = sp['value']
+        if old.strip():
+            lead = old[:len(old) - len(old.lstrip())]
+            trail = old[len(old.rstrip()):]
+        else:
+            lead = u" " if inner.startswith(u" ") else u""
+            trail = u""
+        self._ReplaceRange(sp['vs'], sp['ve'], lead + val + trail)
+
+    def _FindChordAtCaret(self):
+        """Se il cursore e' dentro un accordo [..] della riga corrente (senza
+        selezione), restituisce (inizio, fine, testo) del contenuto fra le
+        parentesi quadre, in byte; altrimenti None."""
+        import re
+        try:
+            if self.text.GetSelections() > 1:
+                return None
+            a, b = self.text.GetSelection()
+            if a != b:
+                return None
+            line = self.text.GetCurrentLine()
+            ls = self.text.PositionFromLine(line)
+            txt = self.text.GetLine(line).rstrip('\r\n')
+            col = len(self.text.GetTextRange(ls, b))
+            for m in re.finditer(r'\[([^\[\]]*)\]', txt):
+                if m.start() < col <= m.end() - 1:
+                    vs = ls + len(txt[:m.start() + 1].encode('utf-8'))
+                    ve = ls + len(txt[:m.end() - 1].encode('utf-8'))
+                    return vs, ve, m.group(1)
+        except Exception:
+            pass
+        return None
+
+    def _PrefillFromDirective(self, ctrl, name):
+        """Se il cursore e' dentro {name:valore}, precompila il campo della
+        finestra con il valore attuale."""
+        ex = self._FindDirectiveAtCaret(name)
+        if ex is not None and ex[2].strip():
+            ctrl.SetValue(ex[2].strip())
+
+    def _InsertDirectiveValue(self, name, val):
+        """Inserisce {name:val}. Se il cursore e' gia' dentro una direttiva
+        {name:...} non la riscrive: cambia solo il valore dopo i ':' (con valore
+        vuoto lascia il testo com'e')."""
+        ex = self._FindDirectiveAtCaret(name)
+        if ex is None:
+            self.InsertWithCaret(u"{%s:%s}" % (name, val) if val else u"{%s:|}" % name)
+            return
+        if not val:
+            return
+        vs, ve, old = ex
+        lead = old[:len(old) - len(old.lstrip())]
+        trail = old[len(old.rstrip()):] if old.strip() else u""
+        self.text.SetSelection(vs, ve)
+        self.text.ReplaceSelection(lead + val + trail)
+        p = vs + len((lead + val).encode('utf-8'))
+        self.text.SetSelection(p, p)
 
     def _InsertSimpleDirective(self, directive, label, example):
         """Helper generico: chiede un testo e inserisce {directive:testo}."""
@@ -4263,9 +4459,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 if (KlavierRenderer.keyboard_has_octave_key(start_semi)
                         and not cb_octave.GetValue()):
                     chord = u"%s octave=one" % chord
-                self.InsertWithCaret(u"{taste:%s}" % chord)
+                self._InsertBuiltDirective('taste', u"{taste:%s}" % chord, u"{taste:|}")
             else:
-                self.InsertWithCaret(u"{taste:|}")
+                self._InsertBuiltDirective('taste', u"{taste:}", u"{taste:|}")
         dlg.Destroy()
 
     def _MakeInfoNote(self, parent, text, wrap=260):
@@ -4297,18 +4493,19 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
     def OnInsertDefine(self, evt):
         """Inserts the {define:} directive for a guitar chord diagram."""
+        # Cursore dentro un {define:...} esistente: parte dal valore attuale e
+        # alla conferma cambia solo quello.
+        _ex = self._FindDirectiveAtCaret('define')
         d = wx.TextEntryDialog(
             self.frame,
             _("Enter chord definition (e.g. C base-fret 1 frets X 3 2 0 1 0):"),
             _("Guitar chord diagram"),
-            "",
+            _ex[2].strip() if _ex is not None else "",
         )
         if d.ShowModal() == wx.ID_OK:
             value = d.GetValue().strip()
-            if value:
-                self.InsertWithCaret("{define: %s}" % value)
-            else:
-                self.InsertWithCaret("{define: |}")
+            self._InsertBuiltDirective(
+                'define', "{define: %s}" % value, "{define: |}")
         d.Destroy()
 
     def OnInsertFingering(self, evt):
@@ -4724,11 +4921,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         dlg.CentreOnParent()
 
         if dlg.ShowModal() == wx.ID_OK:
-            directive = _build()
-            if directive != u"{fingering: }":
-                self.InsertWithCaret(directive)
-            else:
-                self.InsertWithCaret(u"{fingering: |}")
+            self._InsertBuiltDirective('fingering', _build(), u"{fingering: |}")
         dlg.Destroy()
 
     def OnImportFromPdf(self, evt):
@@ -5048,9 +5241,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         btn_browse.Bind(wx.EVT_BUTTON, _on_browse)
 
         if d.ShowModal() == wx.ID_OK:
-            directive = _build_directive(for_insert=True)
-            if directive != "{image: }":
-                self.InsertWithCaret(directive)
+            self._InsertBuiltDirective('image', _build_directive(for_insert=True))
         d.Destroy()
 
     # ------------------------------------------------------------------
@@ -8470,6 +8661,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                      base + 2, base + 4, base + 6]
             hw.SetFonts("", "", sizes)
             hw.Refresh()
+            self._FixHtmlScrollbars(hw)
 
         def _on_zoom_out(e):
             _apply_zoom(_zoom_pct[0] - 10)
@@ -8533,8 +8725,17 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         def _late_init():
             _rebuild_page(_dark_mode[0])
             _apply_zoom(_zoom_pct[0])
+            self._FixHtmlScrollbars(hw)
             btn_close.SetFocus()
         wx.CallAfter(_late_init)
+
+        # Su Linux la scrollbar va risincronizzata anche quando la finestra
+        # viene ridimensionata/massimizzata (pulsante "Schermo intero").
+        if wx.Platform != '__WXMSW__':
+            def _on_dlg_size(e):
+                self._FixHtmlScrollbars(hw)
+                e.Skip()
+            dlg.Bind(wx.EVT_SIZE, _on_dlg_size)
 
         dlg.ShowModal()
 
@@ -8543,6 +8744,33 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.pref.guideDarkMode = _dark_mode[0]
 
         dlg.Destroy()
+
+    @staticmethod
+    def _FixHtmlScrollbars(hw):
+        """Risincronizza la barra di scorrimento verticale di una HtmlWindow.
+
+        Su wxGTK (Linux), dopo SetPage()/SetFonts() la barra verticale resta
+        con il range del contenuto precedente: il cursore non segue la pagina
+        e la rotella/trascinamento non scorrono correttamente. Ricalcolare
+        layout e scrollbar DOPO che il ciclo eventi ha elaborato il nuovo
+        contenuto risolve il problema. No-op su Windows, dove non serve.
+        """
+        if wx.Platform == '__WXMSW__':
+            return
+
+        def _do():
+            try:
+                if not hw:
+                    return
+                hw.Layout()
+                if hasattr(hw, 'AdjustScrollbars'):
+                    hw.AdjustScrollbars()
+                hw.SendSizeEvent()
+                hw.Refresh()
+            except Exception:
+                pass   # finestra già distrutta
+
+        wx.CallAfter(_do)
 
     def _md_to_html(self, md_text):
         """Converte Markdown in HTML per wx.html.HtmlWindow.
@@ -9249,6 +9477,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             sizes = [base - 2, base - 1, base, base + 1, base + 2, base + 4, base + 6]
             hw.SetFonts("", "", sizes)
             hw.Refresh()
+            self._FixHtmlScrollbars(hw)
 
         btn_zoom_out.Bind(wx.EVT_BUTTON, lambda e: _apply_zoom(_zoom_pct[0] - 10))
         btn_zoom_in.Bind(wx.EVT_BUTTON,  lambda e: _apply_zoom(_zoom_pct[0] + 10))
@@ -9307,8 +9536,17 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         def _late_init():
             _rebuild_page(_dark_mode[0])
             _apply_zoom(_zoom_pct[0])
+            self._FixHtmlScrollbars(hw)
             btn_close.SetFocus()
         wx.CallAfter(_late_init)
+
+        # Su Linux la scrollbar va risincronizzata anche quando la finestra
+        # viene ridimensionata/massimizzata (pulsante "Schermo intero").
+        if wx.Platform != '__WXMSW__':
+            def _on_dlg_size(e):
+                self._FixHtmlScrollbars(hw)
+                e.Skip()
+            dlg.Bind(wx.EVT_SIZE, _on_dlg_size)
 
         dlg.ShowModal()
 
@@ -9722,10 +9960,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 self.text.SetSelection(s + len(st), s + len(st))
 
     def OnTitle(self, evt):
-        self.InsertWithCaret("{title:|}")
+        self._InsertOrSelectDirective(('title', 't'), "{title:|}")
 
     def OnSubtitle(self, evt):
-        self.InsertWithCaret("{subtitle:|}")
+        self._InsertOrSelectDirective(('subtitle', 'st'), "{subtitle:|}")
 
     def OnChord(self, evt):
         # Se il dialogo è già aperto (modalità pinnata), riportalo in primo piano
@@ -9757,6 +9995,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         txt = wx.TextCtrl(dlg, size=(140, -1), style=wx.TE_PROCESS_ENTER)
         row.Add(txt, 1, wx.EXPAND)
         vbox.Add(row, 0, wx.EXPAND | wx.ALL, 10)
+        # Cursore dentro un accordo [..] esistente: parte dall'accordo attuale
+        # e alla conferma lo sostituisce invece di inserirne un secondo.
+        _ex = self._FindChordAtCaret()
+        if _ex is not None and _ex[2].strip():
+            txt.SetValue(_ex[2].strip())
 
         # Casella: inserisce l'accordo in maiuscolo. Non attiva di default.
         # Lo stato è salvato nelle preferenze (self.pref.chordUppercase), quindi
@@ -9810,8 +10053,13 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 if cb_upper.GetValue():
                     name = name.upper()
                 arrow = 'up' if rb_up.GetValue() else 'down' if rb_down.GetValue() else typed
-                self.InsertWithCaret("[%s%s]" % (name, SUFFIX[arrow]))
-            else:
+                _ex2 = self._FindChordAtCaret()
+                if _ex2 is not None:
+                    # Dentro [..]: cambia solo l'accordo, le parentesi restano
+                    self._ReplaceRange(_ex2[0], _ex2[1], u"%s%s" % (name, SUFFIX[arrow]))
+                else:
+                    self.InsertWithCaret("[%s%s]" % (name, SUFFIX[arrow]))
+            elif self._FindChordAtCaret() is None:
                 self.InsertWithCaret("[|]")
             rb_none.SetValue(True)
             # Dopo inserimento: focus torna all'editor per usare le frecce
@@ -9877,6 +10125,21 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         txt = wx.TextCtrl(d, -1, u"")
         vbox.Add(txt, 0, wx.EXPAND | wx.ALL, 8)
 
+        # Cursore dentro un commento esistente ({comment:}, {comment_box:} o
+        # riga '# ...'): la finestra parte con tipo e testo attuali.
+        def _find_existing():
+            sp = self._FindDirectiveSpan(('comment_box', 'cb', 'comment', 'c'))
+            if sp is not None:
+                return ('box' if sp['name'] in ('comment_box', 'cb') else 'comment'), sp
+            sp = self._FindHashCommentAtCaret()
+            return ('hash', sp) if sp is not None else None
+        existing = _find_existing()
+        if existing is not None:
+            rb_comment.SetValue(existing[0] == 'comment')
+            rb_box.SetValue(existing[0] == 'box')
+            rb_hash.SetValue(existing[0] == 'hash')
+            txt.SetValue(existing[1]['value'].strip())
+
         btn_sizer = d.CreateButtonSizer(wx.OK | wx.CANCEL)
         vbox.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_RIGHT, 8)
         d.SetSizer(vbox)
@@ -9884,7 +10147,28 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         if d.ShowModal() == wx.ID_OK:
             val = txt.GetValue()
-            if rb_box.GetValue():
+            new_kind = 'box' if rb_box.GetValue() else ('hash' if rb_hash.GetValue() else 'comment')
+            if existing is not None:
+                kind, sp = existing
+                if new_kind == kind:
+                    # Stesso tipo: cambia solo il testo, senza riscrivere la direttiva
+                    if val.strip():
+                        old = sp['value']
+                        lead = trail = u""
+                        if kind != 'hash':
+                            lead = old[:len(old) - len(old.lstrip())]
+                            trail = old[len(old.rstrip()):] if old.strip() else u""
+                        self._ReplaceRange(sp['vs'], sp['ve'], lead + val.strip() + trail)
+                else:
+                    # Tipo cambiato: si riscrive l'intero commento nel nuovo tipo
+                    if new_kind == 'hash':
+                        self._ReplaceRange(sp['ds'], sp['de'], u"# %s" % val.strip())
+                    else:
+                        dn = u"comment_box" if new_kind == 'box' else u"comment"
+                        new = u"{%s:%s}" % (dn, val.strip())
+                        self._ReplaceRange(sp['ds'], sp['de'], new,
+                                           None if val.strip() else len(new.encode('utf-8')) - 1)
+            elif rb_box.GetValue():
                 directive = u"comment_box"
                 self.InsertWithCaret(u"{%s:%s|}" % (directive, val) if not val else u"{%s:%s}" % (directive, val))
             elif rb_hash.GetValue():

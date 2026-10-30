@@ -1565,10 +1565,10 @@
             <property name="bitmap"></property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
-            <property name="help">Show user&apos;s manual</property>
+            <property name="help">Open the official ChordPro directives page (chordpro.org) in the browser (requires an Internet connection)</property>
             <property name="id">ID_GUIDE</property>
             <property name="kind">wxITEM_NORMAL</property>
-            <property name="label">&amp;Guide</property>
+            <property name="label">Official ChordPro directives &amp;Guide (online)</property>
             <property name="name">guide</property>
             <property name="permission">none</property>
             <property name="shortcut">F1</property>

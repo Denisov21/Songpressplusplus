@@ -87,24 +87,10 @@ class Decorator(SongDecorator):
         block.SetMargin(0, 0, 0, w)
 
     def PreDrawBlock(self, block, bx, by):
-        # Disegna solo la linea di interruzione pagina dal parent, NON il rettangolo label
+        # Separatore di interruzione pagina: disegnato dal metodo condiviso della
+        # classe base (NON il rettangolo label, che qui e' gestito sotto).
         if getattr(block, 'pageBreakBefore', False):
-            song_w = self.s.GetTotalWidth()
-            x1 = int(self.s.marginLeft)
-            x2 = int(self.s.marginLeft + max(song_w - self.s.marginLeft, 40))
-            y  = max(0, int(by - 6))
-            pen = wx.Pen(wx.Colour(100, 100, 220), 1, wx.PENSTYLE_SHORT_DASH)
-            self.dc.SetPen(pen)
-            self.dc.DrawLine(x1, y, x2, y)
-            self.dc.SetFont(wx.Font(7, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_ITALIC,
-                                    wx.FONTWEIGHT_NORMAL, False, "Arial"))
-            self.dc.SetTextForeground(wx.Colour(100, 100, 220))
-            label_txt = "———  interruzione di pagina  ———"
-            lw, lh = self.dc.GetTextExtent(label_txt)
-            tx = int(x1 + (x2 - x1 - lw) / 2)
-            ty = max(0, int(y - lh))
-            self.dc.DrawText(label_txt, tx, ty)
-            self.dc.SetTextForeground(wx.BLACK)
+            self._DrawPageBreakMarker(block, by)
 
         block._label_rect = None
         if block.type != block.title and len(block.boxes) > 0:

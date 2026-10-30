@@ -612,29 +612,82 @@ class SongDecorator(object):
     def PreDrawSong(self, song):
         pass
         
+    def _BlockBeatsTop(self, block, by):
+        """Y (coordinate DC) del bordo superiore della banda dei battiti
+        ({beats_time}) della prima riga del blocco che ne contiene, oppure
+        None se il blocco non ha battiti visibili.
+
+        I numeri/puntini sono disegnati da PostDrawLine sopra l'accordo
+        (chord_top - altezza apice), quindi con {linespacing: N rel}, o con
+        chordtopspacing piccolo, sporgono sopra il bordo superiore del blocco.
+        NOTA: altera il font del DC (via _BeatsApexHeight).
+        """
+        if not getattr(self, 'showDurationBeats', True):
+            return None
+        top = None
+        for line in block.boxes:
+            for t in line.boxes:
+                if t.type != SongText.chord or getattr(t, 'duration_beats', 0) < 1:
+                    continue
+                apex_h = self._BeatsApexHeight(t.font)
+                if not apex_h:
+                    continue
+                # Stesse coordinate usate da DrawBoxes/PostDrawLine
+                chord_top = (by + block.marginTop + line.y + line.marginTop
+                             + t.y + t.marginTop)
+                v = chord_top - apex_h
+                top = v if top is None else min(top, v)
+            if top is not None:
+                break   # le righe successive stanno più in basso
+        return top
+
+    def _DrawPageBreakMarker(self, block, by):
+        """Disegna il separatore di interruzione di pagina sopra il blocco.
+
+        Metodo unico, condiviso da SongDecorator.PreDrawBlock e dai decorator
+        che ridefiniscono PreDrawBlock (es. StandardVerseNumbers). `by` e' la
+        coordinata Y del blocco nel DC (firstBlockOffsetY gia' sottratto da
+        DrawBoxes). Non controlla exportMode/showPageBreakLines: DrawBoxes
+        azzera pageBreakBefore quando la visualizzazione e' disattivata.
+
+        Etichetta centrata con due linee continue ai lati, fino ai margini, in
+        una fascia posta sopra i numeri dei battiti ({beats_time}) del primo
+        accordo del blocco, cosi' non li taglia.
+        """
+        song_w = self.s.GetTotalWidth()
+        x1 = int(self.s.marginLeft)
+        x2 = int(self.s.marginLeft + max(song_w - self.s.marginLeft, 40))
+        y  = int(by - 6)
+        # Se i numeri dei battiti sporgono oltre by-6, sale sopra di essi.
+        beats_top = self._BlockBeatsTop(block, by)
+        if beats_top is not None:
+            y = min(y, int(beats_top) - 3)
+        y = max(0, y)
+        colour = wx.Colour(100, 100, 220)
+        self.dc.SetFont(wx.Font(7, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_ITALIC,
+                                wx.FONTWEIGHT_NORMAL, False, "Arial"))
+        self.dc.SetTextForeground(colour)
+        self.dc.SetBackgroundMode(wx.TRANSPARENT)
+        label_txt = "interruzione di pagina"
+        lw, lh = self.dc.GetTextExtent(label_txt)
+        ty = max(0, int(y - lh))
+        tx = int(x1 + (x2 - x1 - lw) / 2)
+        self.dc.DrawText(label_txt, tx, ty)
+        # Linee continue a meta' altezza dell'etichetta, dai margini al testo
+        gap = 6
+        ly_mid = ty + lh // 2
+        self.dc.SetPen(wx.Pen(colour, 1, wx.PENSTYLE_SOLID))
+        if tx - gap > x1:
+            self.dc.DrawLine(x1, ly_mid, tx - gap, ly_mid)
+        if tx + lw + gap < x2:
+            self.dc.DrawLine(tx + lw + gap, ly_mid, x2, ly_mid)
+        self.dc.SetTextForeground(wx.BLACK)
+
     def PreDrawBlock(self, block, bx, by):
         # bx, by: coordinates of top-left corner of drawable area
-        # Disegna una linea tratteggiata se c'è un'interruzione di pagina prima di questo blocco
+        # Disegna il separatore se c'e' un'interruzione di pagina prima di questo blocco
         if getattr(block, 'pageBreakBefore', False) and not self.exportMode and self.showPageBreakLines:
-            # bx/by sono già le coordinate corrette nel DC (firstBlockOffsetY già sottratto
-            # da DrawBoxes prima di chiamare PreDrawBlock)
-            song_w = self.s.GetTotalWidth()
-            x1 = int(self.s.marginLeft)
-            x2 = int(self.s.marginLeft + max(song_w - self.s.marginLeft, 40))
-            y  = max(0, int(by - 6))
-            pen = wx.Pen(wx.Colour(100, 100, 220), 1, wx.PENSTYLE_SHORT_DASH)
-            self.dc.SetPen(pen)
-            self.dc.DrawLine(x1, y, x2, y)
-            # Etichetta testuale centrata sulla linea
-            self.dc.SetFont(wx.Font(7, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_ITALIC,
-                                    wx.FONTWEIGHT_NORMAL, False, "Arial"))
-            self.dc.SetTextForeground(wx.Colour(100, 100, 220))
-            label_txt = "———  interruzione di pagina  ———"
-            lw, lh = self.dc.GetTextExtent(label_txt)
-            tx = int(x1 + (x2 - x1 - lw) / 2)
-            ty = max(0, int(y - lh))
-            self.dc.DrawText(label_txt, tx, ty)
-            self.dc.SetTextForeground(wx.BLACK)
+            self._DrawPageBreakMarker(block, by)
         # Disegna rettangolo con linea sottile attorno all'etichetta della strofa
         if self.drawLabels and block.label is not None:
             self.dc.SetFont(block.format.wxFont)

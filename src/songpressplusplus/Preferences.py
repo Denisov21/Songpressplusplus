@@ -9,6 +9,7 @@
 # License:     GNU GPL v2
 ##############################################################
 
+import json
 import os
 import re
 
@@ -1177,3 +1178,111 @@ class Preferences(object):
         self.config.SetPath('/App')
         self.config.Write('showFullPathInTitle', '1' if getattr(self, 'showFullPathInTitle', False) else '0')
         self.config.SetPath('/')
+
+    # ── Esporta / Importa le opzioni ─────────────────────────────────────
+    # Le opzioni vivono in wx.Config (registro di Windows, file su Linux).
+    # L'esportazione le copia TUTTE in un file JSON leggibile, senza elenco
+    # fisso di chiavi: le opzioni aggiunte in futuro vengono incluse da sole.
+    # Restano fuori le sezioni legate alla macchina o alla sessione
+    # (posizione/dimensione finestre, layout, file recenti, ecc.) e quelle
+    # che il programma riscrive per conto proprio alla chiusura.
+    EXPORT_FORMAT_ID = 'songpress-preferences'
+    EXPORT_FORMAT_VERSION = 1
+    _EXPORT_SKIP_TOP = ('Window', 'SDIMainFrame', 'TempoDisplay', 'TimeDisplay',
+                        'KeyDisplay', 'GuidePrefs', 'Transposer')
+
+    def _ExportSkip(self, path):
+        parts = path.split('/')
+        # path assoluto 'a/b/c' -> ['', 'a', 'b', 'c']; le voci direttamente
+        # nella radice (storico file recenti, ecc.) non si esportano
+        if len(parts) < 3 or '..' in parts or not parts[-1]:
+            return True
+        top = parts[1]
+        return top in self._EXPORT_SKIP_TOP or top.startswith('CustomColours')
+
+    def _CollectConfig(self, group='/'):
+        cfg = self.config
+        out = []
+        old = cfg.GetPath()
+        try:
+            cfg.SetPath(group)
+            entries, groups = [], []
+            more, name, idx = cfg.GetFirstEntry()
+            while more:
+                entries.append(name)
+                more, name, idx = cfg.GetNextEntry(idx)
+            more, name, idx = cfg.GetFirstGroup()
+            while more:
+                groups.append(name)
+                more, name, idx = cfg.GetNextGroup(idx)
+            base = group.rstrip('/')
+            for n in entries:
+                full = base + '/' + n
+                if self._ExportSkip(full):
+                    continue
+                if cfg.GetEntryType(n) == wx.ConfigBase.Type_Integer:
+                    out.append([full, 'int', int(cfg.ReadInt(n))])
+                else:
+                    out.append([full, 'str', cfg.Read(n)])
+            for g in groups:
+                gp = base + '/' + g
+                if gp.count('/') == 1 and (g in self._EXPORT_SKIP_TOP
+                                           or g.startswith('CustomColours')):
+                    continue
+                out.extend(self._CollectConfig(gp))
+        finally:
+            cfg.SetPath(old)
+        return out
+
+    def ExportToFile(self, path):
+        """Scrive tutte le opzioni salvate in un file JSON. Ritorna il numero
+        di voci esportate."""
+        entries = sorted(self._CollectConfig('/'), key=lambda e: e[0])
+        data = {
+            'format': self.EXPORT_FORMAT_ID,
+            'version': self.EXPORT_FORMAT_VERSION,
+            'entries': entries,
+        }
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=1)
+        return len(entries)
+
+    def ImportFromFile(self, path):
+        """Legge un file creato da ExportToFile, scrive le voci in wx.Config e
+        ricarica le opzioni. Ritorna il numero di voci importate; solleva
+        ValueError se il file non e' valido (in tal caso non cambia nulla)."""
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except (OSError, ValueError) as e:
+            raise ValueError(str(e))
+        if (not isinstance(data, dict)
+                or data.get('format') != self.EXPORT_FORMAT_ID
+                or not isinstance(data.get('entries'), list)):
+            raise ValueError(_("This is not a Songpress++ preferences file."))
+        todo = []
+        for e in data['entries']:
+            if (not isinstance(e, list) or len(e) != 3
+                    or not isinstance(e[0], str) or e[1] not in ('int', 'str')):
+                continue
+            if self._ExportSkip(e[0]):
+                continue
+            try:
+                v = int(e[2]) if e[1] == 'int' else str(e[2])
+            except (TypeError, ValueError):
+                continue
+            todo.append((e[0], e[1], v))
+        if not todo:
+            raise ValueError(_("The file contains no preferences."))
+        cfg = self.config
+        for full, t, v in todo:
+            group, name = full.rsplit('/', 1)
+            cfg.SetPath(group or '/')
+            if t == 'int':
+                cfg.WriteInt(name, v)
+            else:
+                cfg.Write(name, v)
+        cfg.SetPath('/')
+        cfg.Flush()
+        self.Load()
+        return len(todo)

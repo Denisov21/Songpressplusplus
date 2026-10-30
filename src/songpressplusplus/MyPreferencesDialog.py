@@ -9,6 +9,7 @@
 # License:     GNU GPL v2
 ##############################################################
 
+import os
 import wx
 
 from . import i18n
@@ -39,6 +40,7 @@ class MyPreferencesDialog(PreferencesDialog):
         # ── Scheda "Toolbar Inserisci" — costruita programmaticamente ──
         self._BuildInsertToolBarTab()
         # ────────────────────────────────────────────────────────────────
+        self._AddExportImportButtons()
 
         self.fontCB.Bind(wx.EVT_TEXT_ENTER, self.OnFontSelected, self.fontCB)
         self.fontCB.Bind(wx.EVT_COMBOBOX, self.OnFontSelected, self.fontCB)
@@ -2182,6 +2184,76 @@ class MyPreferencesDialog(PreferencesDialog):
                     ds.panel.Refresh()
         except Exception:
             pass
+
+    def _AddExportImportButtons(self):
+        """Aggiunge «Esporta…» e «Importa…» nella barra bottoni, dopo il pin."""
+        sizer = self.btnPin.GetContainingSizer()
+        self.exportPrefsBtn = wx.Button(self, wx.ID_ANY, _(u"Export…"))
+        self.importPrefsBtn = wx.Button(self, wx.ID_ANY, _(u"Import…"))
+        self.exportPrefsBtn.SetToolTip(_(u"Save all preferences to a file (backup, or to move them to another computer)"))
+        self.importPrefsBtn.SetToolTip(_(u"Load preferences from a file created with Export"))
+        flags = wx.ALL | wx.ALIGN_CENTER_VERTICAL
+        sizer.Insert(1, self.exportPrefsBtn, 0, flags, 4)
+        sizer.Insert(2, self.importPrefsBtn, 0, flags, 4)
+        self.exportPrefsBtn.Bind(wx.EVT_BUTTON, self.OnExportPrefs)
+        self.importPrefsBtn.Bind(wx.EVT_BUTTON, self.OnImportPrefs)
+        self.Layout()
+
+    def OnExportPrefs(self, evt):
+        dlg = wx.FileDialog(
+            self, _(u"Export preferences"), wildcard=_(u"Songpress++ preferences (*.json)|*.json"),
+            defaultFile=u"songpress-preferences.json",
+            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+        try:
+            if dlg.ShowModal() != wx.ID_OK:
+                return
+            path = dlg.GetPath()
+        finally:
+            dlg.Destroy()
+        if not os.path.splitext(path)[1]:
+            path += u".json"
+        try:
+            n = self.pref.ExportToFile(path)
+        except Exception as e:
+            wx.MessageBox(_(u"Could not export the preferences:\n%s") % e,
+                          _(u"Songpress++"), wx.OK | wx.ICON_ERROR, self)
+            return
+        wx.MessageBox(
+            _(u"%d preferences exported.\n\nOnly saved preferences are included: "
+              u"press OK in this window first to include the changes you just made.") % n,
+            _(u"Songpress++"), wx.OK | wx.ICON_INFORMATION, self)
+
+    def OnImportPrefs(self, evt):
+        dlg = wx.FileDialog(
+            self, _(u"Import preferences"), wildcard=_(u"Songpress++ preferences (*.json)|*.json"),
+            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
+        try:
+            if dlg.ShowModal() != wx.ID_OK:
+                return
+            path = dlg.GetPath()
+        finally:
+            dlg.Destroy()
+        if wx.MessageBox(
+                _(u"Importing will replace your current preferences with those in the file. Continue?"),
+                _(u"Songpress++"), wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION, self) != wx.YES:
+            return
+        try:
+            n = self.pref.ImportFromFile(path)
+        except ValueError as e:
+            wx.MessageBox(_(u"Could not import the preferences:\n%s") % e,
+                          _(u"Songpress++"), wx.OK | wx.ICON_ERROR, self)
+            return
+        d = wx.GenericMessageDialog(
+            self, _(u"%d preferences imported. Restart Songpress++ to apply them everywhere.") % n,
+            _(u"Songpress++"), wx.YES_NO | wx.NO_DEFAULT | wx.ICON_INFORMATION)
+        d.SetEscapeId(wx.ID_NONE)
+        d.SetYesNoLabels(_(u"Restart now"), _(u"Restart later"))
+        if d.ShowModal() == wx.ID_YES:
+            self._restart_requested = True
+        d.Destroy()
+        # Il dialogo mostra ancora i vecchi valori: chiuderlo senza passare da
+        # OnOk, che li riscriverebbe sopra quelli importati.
+        self.EndModal(wx.ID_OK)
 
     def OnPin(self, evt):
         """Toggling del pin button: mantiene il dialogo aperto dopo OK."""

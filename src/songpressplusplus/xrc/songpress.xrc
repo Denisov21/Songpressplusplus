@@ -669,9 +669,9 @@
       <object class="wxMenu" name="helpMenu">
         <label>_?</label>
         <object class="wxMenuItem" name="guide">
-          <label>_Guide</label>
+          <label>Official ChordPro directives _Guide (online)</label>
           <accel>F1</accel>
-          <help>Show user&apos;s manual</help>
+          <help>Open the official ChordPro directives page (chordpro.org) in the browser (requires an Internet connection)</help>
         </object>
         <object class="wxMenuItem" name="guideMarkdown">
           <label>_Songpress++ Guide...</label>

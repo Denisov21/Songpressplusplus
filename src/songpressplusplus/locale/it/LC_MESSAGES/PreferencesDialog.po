@@ -1346,3 +1346,86 @@ msgstr "Colore personalizzato per la freccia giù"
 #: PreferencesDialog.py format tab — chord arrow custom colour tooltip
 msgid "If unchecked, the arrow uses the chord colour."
 msgstr "Se disattivo, la freccia usa il colore dell'accordo."
+
+#: MyPreferencesDialog.py — export/import preferences, button
+msgid "Export…"
+msgstr "Esporta…"
+
+#: MyPreferencesDialog.py — export/import preferences, button
+msgid "Import…"
+msgstr "Importa…"
+
+#: MyPreferencesDialog.py — export button tooltip
+msgid ""
+"Save all preferences to a file (backup, or to move them to another computer)"
+msgstr ""
+"Salva tutte le opzioni in un file (copia di sicurezza, o per trasferirle su "
+"un altro computer)"
+
+#: MyPreferencesDialog.py — import button tooltip
+msgid "Load preferences from a file created with Export"
+msgstr "Carica le opzioni da un file creato con Esporta"
+
+#: MyPreferencesDialog.py — export file dialog title
+msgid "Export preferences"
+msgstr "Esporta opzioni"
+
+#: MyPreferencesDialog.py — export/import file dialog filter
+msgid "Songpress++ preferences (*.json)|*.json"
+msgstr "Opzioni di Songpress++ (*.json)|*.json"
+
+#: MyPreferencesDialog.py — export error
+#, python-format
+msgid ""
+"Could not export the preferences:\n"
+"%s"
+msgstr ""
+"Impossibile esportare le opzioni:\n"
+"%s"
+
+#: MyPreferencesDialog.py — export done
+#, python-format
+msgid ""
+"%d preferences exported.\n"
+"\n"
+"Only saved preferences are included: press OK in this window first to "
+"include the changes you just made."
+msgstr ""
+"%d opzioni esportate.\n"
+"\n"
+"Vengono incluse solo le opzioni già salvate: premi prima OK in questa "
+"finestra per includere le modifiche appena fatte."
+
+#: MyPreferencesDialog.py — import file dialog title
+msgid "Import preferences"
+msgstr "Importa opzioni"
+
+#: MyPreferencesDialog.py — import confirmation
+msgid ""
+"Importing will replace your current preferences with those in the file. "
+"Continue?"
+msgstr ""
+"L'importazione sostituirà le opzioni attuali con quelle del file. Continuare?"
+
+#: MyPreferencesDialog.py — import error
+#, python-format
+msgid ""
+"Could not import the preferences:\n"
+"%s"
+msgstr ""
+"Impossibile importare le opzioni:\n"
+"%s"
+
+#: MyPreferencesDialog.py — import done
+#, python-format
+msgid "%d preferences imported. Restart Songpress++ to apply them everywhere."
+msgstr ""
+"%d opzioni importate. Riavvia Songpress++ per applicarle ovunque."
+
+#: Preferences.py — import, wrong file
+msgid "This is not a Songpress++ preferences file."
+msgstr "Questo non è un file di opzioni di Songpress++."
+
+#: Preferences.py — import, empty file
+msgid "The file contains no preferences."
+msgstr "Il file non contiene opzioni."
