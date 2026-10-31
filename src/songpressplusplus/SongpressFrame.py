@@ -3252,6 +3252,24 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             trail = u""
         self._ReplaceRange(sp['vs'], sp['ve'], lead + val + trail)
 
+    def _InsertDirectiveLineOnce(self, names, st, already_msg):
+        """Per le direttive senza valore (interruzione di pagina/colonna): se la
+        riga del cursore e' gia' quella direttiva (cursore sopra o dentro le
+        graffe) non ne inserisce una seconda e lo dice nella barra di stato."""
+        import re
+        try:
+            plain = (self.text.GetSelections() <= 1
+                     and self.text.GetSelection()[0] == self.text.GetSelection()[1])
+            if plain:
+                txt = self.text.GetLine(self.text.GetCurrentLine()).rstrip('\r\n')
+                alt = '|'.join(re.escape(n) for n in names)
+                if re.match(r'^\s*\{\s*(?:' + alt + r')\s*\}\s*$', txt, re.IGNORECASE):
+                    self._setStatus(already_msg, 5000)
+                    return
+        except Exception:
+            pass
+        self.InsertWithCaret(st)
+
     def _FindChordAtCaret(self):
         """Se il cursore e' dentro un accordo [..] della riga corrente (senza
         selezione), restituisce (inizio, fine, testo) del contenuto fra le
@@ -10180,11 +10198,15 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
     def OnInsertPageBreak(self, evt):
         """Inserisce un'interruzione di pagina esplicita per la stampa."""
-        self.InsertWithCaret("{new_page}\n")
+        self._InsertDirectiveLineOnce(
+            ('new_page', 'np'), "{new_page}\n",
+            _("A page break is already here."))
 
     def OnInsertColumnBreak(self, evt):
         """Inserisce un'interruzione di colonna esplicita per il layout a due colonne."""
-        self.InsertWithCaret("{column_break}\n")
+        self._InsertDirectiveLineOnce(
+            ('column_break', 'colb'), "{column_break}\n",
+            _("A column break is already here."))
 
     def OnLabelVerses(self, evt):
         self.pref.labelVerses = not self.pref.labelVerses

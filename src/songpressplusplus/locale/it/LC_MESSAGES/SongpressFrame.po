@@ -1736,3 +1736,11 @@ msgstr ""
 #: SongpressFrame.py — Insert chord dialog, direction group tooltip
 msgid "Direction arrow shown next to the chord in the preview."
 msgstr "Freccia di direzione mostrata accanto all'accordo nell'anteprima."
+
+#: SongpressFrame.py — Insert page break, status message when already present
+msgid "A page break is already here."
+msgstr "Qui c'è già un'interruzione di pagina."
+
+#: SongpressFrame.py — Insert column break, status message when already present
+msgid "A column break is already here."
+msgstr "Qui c'è già un'interruzione di colonna."
