@@ -323,8 +323,8 @@ msgid "Chord keys"
 msgstr "Tasti accordo"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
-msgid "Enter the chord name (e.g. C, G, Am, D7):"
-msgstr "Inserisci il nome dell'accordo (es. C, G, Am, D7):"
+msgid "Enter the chord name (e.g. %s):"
+msgstr "Inserisci il nome dell'accordo (es. %s):"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Enter the song key (e.g. Am, C, G, F#m):"
@@ -1459,18 +1459,18 @@ msgid "Uppercase chord"
 msgstr "Accordo in maiuscolo"
 
 #: SongpressFrame.py — Chord keys / First chord fingering dialogs, middle C checkbox
-msgid "Show middle C"
-msgstr "Mostra il Do centrale"
+msgid "Show middle %s"
+msgstr "Mostra il %s centrale"
 
 #: SongpressFrame.py — Chord keys / First chord fingering dialogs, middle C checkbox tooltip
-msgid "Marks the middle C key with a dot. Available when the start note is not C."
+msgid "Marks the middle %s key with a dot. Available when the start note is not %s."
 msgstr ""
-"Segna il tasto Do centrale con un pallino. Disponibile quando la nota di "
-"partenza non è Do."
+"Segna il tasto %s centrale con un pallino. Disponibile quando la nota di "
+"partenza non è %s."
 
 #: SongpressFrame.py — Chord keys / First chord fingering dialogs, middle C colour swatch tooltip
-msgid "Colour of the middle C dot."
-msgstr "Colore del pallino del Do centrale."
+msgid "Colour of the middle %s dot."
+msgstr "Colore del pallino del %s centrale."
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "File \"%s\" already exists. Do you want to overwrite it?"
@@ -1758,3 +1758,267 @@ msgstr "Qui c'è già un'interruzione di pagina."
 #: SongpressFrame.py — Insert column break, status message when already present
 msgid "A column break is already here."
 msgstr "Qui c'è già un'interruzione di colonna."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Album the song belongs to."
+msgstr "Album a cui appartiene il brano."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Arranger of the song."
+msgstr "Arrangiatore del brano."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Artist or performer."
+msgstr "Artista o interprete."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Author of the lyrics."
+msgstr "Autore del testo."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Beats per chord (Songpress++)."
+msgstr "Battiti per accordo (Songpress++)."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Begins a bridge."
+msgstr "Inizia un ponte."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Begins a chord grid."
+msgstr "Inizia una griglia di accordi."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Begins a chord-only block (Songpress++)."
+msgstr "Inizia un blocco di soli accordi (Songpress++)."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Begins a chorus."
+msgstr "Inizia un ritornello."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Begins a generic part (Songpress++)."
+msgstr "Inizia una parte generica (Songpress++)."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Begins a numbered verse (Songpress++)."
+msgstr "Inizia una strofa numerata (Songpress++)."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Begins a tablature block (monospaced)."
+msgstr "Inizia un blocco di intavolatura (a spaziatura fissa)."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Begins a verse (Songpress++)."
+msgstr "Inizia una strofa (Songpress++)."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Begins a verse."
+msgstr "Inizia una strofa."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Capo position (fret number)."
+msgstr "Posizione del capotasto (numero del tasto)."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Chords in bold (Songpress++)."
+msgstr "Accordi in grassetto (Songpress++)."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Chords in italic (Songpress++)."
+msgstr "Accordi in corsivo (Songpress++)."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Chords underlined (Songpress++)."
+msgstr "Accordi sottolineati (Songpress++)."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Collection or songbook the song belongs to."
+msgstr "Raccolta o canzoniere a cui appartiene il brano."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Colour of the chords from here on."
+msgstr "Colore degli accordi da qui in avanti."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Colour of the lyrics from here on."
+msgstr "Colore del testo da qui in avanti."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Comment line in italic."
+msgstr "Riga di commento in corsivo."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Comment line inside a box."
+msgstr "Riga di commento dentro un riquadro."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Comment line, shown highlighted."
+msgstr "Riga di commento, mostrata evidenziata."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Composer of the music."
+msgstr "Compositore della musica."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Copyright notice."
+msgstr "Nota sul copyright."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Custom metadata: name followed by its value."
+msgstr "Metadato personalizzato: nome seguito dal valore."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Defines the fingering of a chord."
+msgstr "Definisce la diteggiatura di un accordo."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Draws a keyboard with finger numbers on the keys. Options: hand=L|R, start=, octave=, middlec=."
+msgstr "Disegna una tastiera con i numeri delle dita sui tasti. Opzioni: hand=L|R, start=, octave=, middlec=."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Draws a piano keyboard with the chord notes highlighted. Options: start=, octave=, hand=, middlec=. Add ^ or v after the chord for an arrow. A blank line before the next directive starts a new row."
+msgstr "Disegna una tastiera di pianoforte con le note dell'accordo evidenziate. Opzioni: start=, octave=, hand=, middlec=. Aggiungi ^ o v dopo l'accordo per una freccia. Una riga vuota prima della direttiva successiva inizia una nuova riga."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Duration of the song."
+msgstr "Durata del brano."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Ends the bridge."
+msgstr "Termina il ponte."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Ends the chord grid."
+msgstr "Termina la griglia di accordi."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Ends the chord-only block."
+msgstr "Termina il blocco di soli accordi."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Ends the chorus."
+msgstr "Termina il ritornello."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Ends the numbered verse."
+msgstr "Termina la strofa numerata."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Ends the part."
+msgstr "Termina la parte."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Ends the tablature block."
+msgstr "Termina il blocco di intavolatura."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Ends the verse."
+msgstr "Termina la strofa."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Font of the chords from here on."
+msgstr "Carattere degli accordi da qui in avanti."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Font of the lyrics from here on."
+msgstr "Carattere del testo da qui in avanti."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Forces a column break."
+msgstr "Forza un'interruzione di colonna."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Forces a page break."
+msgstr "Forza un'interruzione di pagina."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Inserts a bar line (Songpress++)."
+msgstr "Inserisce una barra di battuta (Songpress++)."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Inserts an image."
+msgstr "Inserisce un'immagine."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Keywords for searching."
+msgstr "Parole chiave per la ricerca."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Language of the lyrics."
+msgstr "Lingua del testo."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Line spacing (Songpress++)."
+msgstr "Interlinea (Songpress++)."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Lyrics in bold (Songpress++)."
+msgstr "Testo in grassetto (Songpress++)."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Lyrics in italic (Songpress++)."
+msgstr "Testo in corsivo (Songpress++)."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Lyrics underlined (Songpress++)."
+msgstr "Testo sottolineato (Songpress++)."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Musical key of the song."
+msgstr "Tonalità del brano."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Size of the chords from here on."
+msgstr "Dimensione degli accordi da qui in avanti."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Size of the lyrics from here on."
+msgstr "Dimensione del testo da qui in avanti."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Song title."
+msgstr "Titolo del brano."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Space above the chords (Songpress++)."
+msgstr "Spazio sopra gli accordi (Songpress++)."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Starts a new row (Songpress++)."
+msgstr "Inizia una nuova riga (Songpress++)."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Starts a new song in the same file."
+msgstr "Inizia un nuovo brano nello stesso file."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Subtitle, shown under the title."
+msgstr "Sottotitolo, mostrato sotto il titolo."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Tempo in beats per minute."
+msgstr "Velocità in battiti al minuto."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Tempo marking in words (e.g. Allegro)."
+msgstr "Indicazione di tempo a parole (es. Allegro)."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Tempo variant (Songpress++)."
+msgstr "Variante del tempo (Songpress++)."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Time signature."
+msgstr "Tempo (indicazione di metro)."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Title used for sorting in indexes."
+msgstr "Titolo usato per l'ordinamento negli indici."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Topic of the song."
+msgstr "Argomento del brano."
+
+#: ChordProDirectiveHelp.py — directive tooltip
+msgid "Year of publication."
+msgstr "Anno di pubblicazione."

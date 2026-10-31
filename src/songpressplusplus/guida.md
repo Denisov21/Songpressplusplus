@@ -1729,6 +1729,8 @@ Per misurare lo **spazio tra due righe** usa invece la modalità **Verticale** e
 
 Premendo `Ctrl+Spazio` con il cursore posizionato all'interno di una coppia di parentesi graffe `{…}`, l'editor mostra un elenco a comparsa con tutte le direttive ChordPro supportate da Songpress++. Selezionando una voce dall'elenco (con `Enter` o doppio clic), la direttiva viene inserita nella posizione corretta.
 
+Mentre scorri l'elenco, accanto alla riga corrente compare un piccolo **tooltip** con una breve descrizione della direttiva evidenziata e, dove utile, un esempio d'uso (ad esempio per `taste` o `fingering` sono indicate le opzioni disponibili). Le direttive senza descrizione non mostrano alcun tooltip.
+
 Questa funzionalità può essere abilitata o disabilitata in **Strumenti → Opzioni… → scheda Generale → Abilita intellisense direttive (Ctrl+Spazio)**.
 
 ---

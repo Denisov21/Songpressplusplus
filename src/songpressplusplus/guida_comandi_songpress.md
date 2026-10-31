@@ -936,7 +936,7 @@ Il diagramma viene visualizzato nell'anteprima (se l'opzione "Mostra diagrammi c
 
 ### `taste`
 
-**Sintassi:** `{taste: NomeAccordo [start=Nota] [octave=both|one]}`
+**Sintassi:** `{taste: NomeAccordo[^|v] [start=Nota] [octave=both|one] [middlec=show|hide]}`
 
 Mostra la **tastiera di pianoforte** con le note dell'accordo evidenziate (funzione Klavier). È l'equivalente pianistico di `define`. La tastiera viene renderizzata graficamente con i tasti premuti colorati.
 
@@ -944,12 +944,24 @@ Mostra la **tastiera di pianoforte** con le note dell'accordo evidenziate (funzi
 {taste: Cmaj7}
 {taste: Am}
 {taste: Si start=Si}
+{taste: MI- start=SI octave=one middlec=show}
 ```
 
 **Opzioni:**
 
 - `start=Nota` — nota di partenza della tastiera (nota naturale, `Do..Si` o `C..B`). Predefinito: `Do`. Partendo da una nota diversa da `Do`/`Fa` viene aggiunto un ottavo tasto bianco in fondo (l'ottava della nota iniziale) per mostrare tutti i tasti neri.
 - `octave=both|one` — nelle tastiere a 8 tasti la nota iniziale compare a entrambe le estremità: `both` (predefinito) la evidenzia su entrambe, `one` solo su quella di sinistra. Ininfluente con `start=Do`/`Fa`.
+- `middlec=show|hide` — con `show` disegna un **puntino** in basso sul tasto DO (il Do centrale) come riferimento visivo. Ha senso solo quando `start=` è diverso da `Do`; predefinito: `hide`. Il colore del puntino si sceglie dal quadratino colorato accanto alla casella *Mostra il Do centrale* nella finestra di inserimento (impostazione generale, grigio scuro `#464646` di default).
+- `^` / `v` dopo il nome dell'accordo (es. `Do^`, `Sol-v`) — mostra una **freccia** di direzione (su/giù) sulla tastiera, come per gli accordi nel testo.
+
+**Più tastiere e righe:** le direttive `{taste:}` / `{fingering:}` consecutive vengono disposte affiancate sulla stessa riga. Lasciando una **riga vuota** nell'editor tra due direttive, la tastiera successiva va su una **nuova riga** sotto; senza riga vuota il layout resta invariato.
+
+```chordpro
+{taste: LA-}
+{taste: DO}
+
+{taste: MI-}
+```
 
 > Il colore dei tasti evidenziati è configurabile in *Preferenze → Formato → Colore tasti Klavier*.
 
@@ -957,7 +969,7 @@ Mostra la **tastiera di pianoforte** con le note dell'accordo evidenziate (funzi
 
 ### `fingering`
 
-**Sintassi:** `{fingering: NomeAccordo [hand=R|L] [start=Nota] [octave=both|one] N=Nota [N=Nota ...]}`
+**Sintassi:** `{fingering: NomeAccordo[^|v] [hand=R|L] [start=Nota] [octave=both|one] [middlec=show|hide] N=Nota [N=Nota ...]}`
 
 Mostra la **tastiera di pianoforte** di un accordo con la **diteggiatura numerata**: sopra ogni tasto premuto viene visualizzato il numero del dito corrispondente. Estende `{taste}` aggiungendo una mappa dito→nota.
 
@@ -967,6 +979,7 @@ Il formato è: nome dell'accordo, seguito da coppie `numero_dito=nota` (es. `1=D
 {fingering: Am 1=Do 2=Mi 3=La}
 {fingering: C 1=Mi 2=Sol 3=Do}
 {fingering: Si hand=R start=Si 1=Si 2=Re# 3=Fa#}
+{fingering: LA- hand=R start=RE middlec=show 1=Do 2=Mi 5=La}
 ```
 
 **Opzioni** (comuni a `{taste}`, più `hand=`):
@@ -974,10 +987,14 @@ Il formato è: nome dell'accordo, seguito da coppie `numero_dito=nota` (es. `1=D
 - `hand=R|L` — mostra l'etichetta della mano (destra/sinistra) sotto la tastiera. Case-insensitive.
 - `start=Nota` — nota di partenza della tastiera; vedi `{taste}`.
 - `octave=both|one` — evidenziazione della nota iniziale nelle tastiere a 8 tasti; vedi `{taste}`.
+- `middlec=show|hide` — puntino sul Do centrale quando la partenza non è `Do`; vedi `{taste}`. Se sul tasto DO c'è anche il numero di un dito, il numero viene spostato sopra il puntino.
+- `^` / `v` dopo il nome dell'accordo — freccia di direzione; vedi `{taste}`.
 
 > I comandi `{taste}` e `{fingering}` utilizzano la stessa lista interna (`klavier_list`): possono coesistere liberamente nello stesso file.
 
 ---
+
+### `image`
 
 **Sintassi:**
 ```

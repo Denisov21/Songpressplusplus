@@ -254,6 +254,8 @@ _NON_CHORD_TOKENS = {'n.c.', 'nc', 'tacet', '%', '|', '||', '*'}
 _WHITE_SEMITONES = {0, 2, 4, 5, 7, 9, 11}   # Do Re Mi Fa Sol La Si
 # Valori ammessi per octave=
 _OCTAVE_VALUES = {'both', 'one', 'single', 'first'}
+# Valori ammessi per middlec= (puntino sul Do centrale)
+_MIDDLEC_VALUES = {'show', 'hide'}
 
 
 def _validate_kbd_option(token: str, line_num: int, col: int,
@@ -263,8 +265,9 @@ def _validate_kbd_option(token: str, line_num: int, col: int,
     Valida un token opzione della tastiera comune a {taste:} e {fingering:}:
         start=<nota naturale>   → nota di partenza (Do..Si / C..B)
         octave=<both|one>       → evidenziazione dell'ottava (layout a 8 tasti)
+        middlec=<show|hide>     → puntino sul Do centrale
 
-    Restituisce True se il token È un'opzione riconosciuta (start=/octave=),
+    Restituisce True se il token È un'opzione riconosciuta (start=/octave=/middlec=),
     così il chiamante non lo tratta come accordo/nota; False altrimenti.
     Gli eventuali errori vengono aggiunti a `result`; `seen` rileva i duplicati.
     `directive` è l'etichetta usata nei messaggi (es. "{taste}" o "{fingering}").
@@ -305,6 +308,23 @@ def _validate_kbd_option(token: str, line_num: int, col: int,
                 line=line_num, column=col,
                 message=_(
                     "%s: 'octave' must be both or one, got '%s'"
+                ) % (directive, val)))
+        return True
+
+    # ── middlec=<show|hide> ───────────────────────────────────────
+    m = re.match(r'^middlec=(.*)$', token, re.IGNORECASE)
+    if m:
+        if 'middlec' in seen:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_("%s: 'middlec' specified more than once") % directive))
+        seen.add('middlec')
+        val = m.group(1)
+        if val.lower() not in _MIDDLEC_VALUES:
+            result.errors.append(SyntaxError(
+                line=line_num, column=col,
+                message=_(
+                    "%s: 'middlec' must be show or hide, got '%s'"
                 ) % (directive, val)))
         return True
 

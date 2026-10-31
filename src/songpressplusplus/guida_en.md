@@ -1722,6 +1722,8 @@ To measure the **space between two lines**, use **Vertical** mode instead and pl
 
 Pressing `Ctrl+Space` while the cursor is inside a pair of curly braces `{…}` opens a pop-up list of all ChordPro directives supported by Songpress++. Selecting an entry from the list (with `Enter` or double-click) inserts the directive at the correct position.
 
+While you scroll through the list, a small **tooltip** appears next to the current line with a short description of the highlighted directive and, where useful, a usage example (for instance `taste` and `fingering` list their available options). Directives without a description show no tooltip.
+
 This feature can be enabled or disabled in **Tools → Options… → General tab → Enable directive intellisense (Ctrl+Space)**.
 
 ---

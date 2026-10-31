@@ -937,7 +937,7 @@ The diagram is displayed in the preview (if the "Show guitar diagrams" option is
 
 ### `taste`
 
-**Syntax:** `{taste: ChordName [start=Note] [octave=both|one]}`
+**Syntax:** `{taste: ChordName[^|v] [start=Note] [octave=both|one] [middlec=show|hide]}`
 
 Shows the **piano keyboard** with the chord notes highlighted (Klavier function). It is the keyboard equivalent of `define`. The keyboard is rendered graphically with the pressed keys coloured.
 
@@ -945,12 +945,24 @@ Shows the **piano keyboard** with the chord notes highlighted (Klavier function)
 {taste: Cmaj7}
 {taste: Am}
 {taste: B start=B}
+{taste: E- start=B octave=one middlec=show}
 ```
 
 **Options:**
 
 - `start=Note` — keyboard start note (a natural note, `C..B` or `Do..Si`). Default: `C`. Starting from a note other than `C`/`F` adds an eighth white key at the end (the octave of the start note) so that all black keys are shown.
 - `octave=both|one` — on 8-key keyboards the start note appears at both ends: `both` (default) highlights it on both, `one` only on the left one. Has no effect with `start=C`/`F`.
+- `middlec=show|hide` — with `show` a **dot** is drawn at the bottom of the C key (middle C) as a visual reference. Only meaningful when `start=` is not `C`; default: `hide`. The dot colour is chosen with the colour swatch next to the *Show middle C* checkbox in the insert dialog (a global setting, dark grey `#464646` by default).
+- `^` / `v` after the chord name (e.g. `C^`, `G-v`) — shows a direction **arrow** (up/down) on the keyboard, as for chords in the text.
+
+**Several keyboards and rows:** consecutive `{taste:}` / `{fingering:}` directives are laid out side by side on the same row. Leaving a **blank line** in the editor between two directives puts the next keyboard on a **new row** below; without a blank line the layout is unchanged.
+
+```chordpro
+{taste: A-}
+{taste: C}
+
+{taste: E-}
+```
 
 > The colour of the highlighted keys is configurable in *Preferences → Format → Klavier key colour*.
 
@@ -958,7 +970,7 @@ Shows the **piano keyboard** with the chord notes highlighted (Klavier function)
 
 ### `fingering`
 
-**Syntax:** `{fingering: ChordName [hand=R|L] [start=Note] [octave=both|one] N=Note [N=Note ...]}`
+**Syntax:** `{fingering: ChordName[^|v] [hand=R|L] [start=Note] [octave=both|one] [middlec=show|hide] N=Note [N=Note ...]}`
 
 Shows the **piano keyboard** of a chord with **numbered fingering**: the finger number is displayed above each pressed key. Extends `{taste}` by adding a finger→note map.
 
@@ -968,6 +980,7 @@ The format is: chord name, followed by `finger_number=note` pairs (e.g. `1=C`, `
 {fingering: Am 1=C 2=E 3=A}
 {fingering: C 1=E 2=G 3=C}
 {fingering: B hand=R start=B 1=B 2=D# 3=F#}
+{fingering: A- hand=R start=D middlec=show 1=C 2=E 5=A}
 ```
 
 **Options** (shared with `{taste}`, plus `hand=`):
@@ -975,6 +988,8 @@ The format is: chord name, followed by `finger_number=note` pairs (e.g. `1=C`, `
 - `hand=R|L` — shows the hand label (right/left) below the keyboard. Case-insensitive.
 - `start=Note` — keyboard start note; see `{taste}`.
 - `octave=both|one` — highlighting of the start note on 8-key keyboards; see `{taste}`.
+- `middlec=show|hide` — dot on middle C when the start note is not `C`; see `{taste}`. If the C key also carries a finger number, the number moves above the dot.
+- `^` / `v` after the chord name — direction arrow; see `{taste}`.
 
 > The `{taste}` and `{fingering}` commands use the same internal list (`klavier_list`): they can coexist freely in the same file.
 

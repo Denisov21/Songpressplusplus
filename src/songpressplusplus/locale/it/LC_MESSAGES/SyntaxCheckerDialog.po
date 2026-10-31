@@ -422,7 +422,7 @@ msgid "{duration}: invalid format '%s' — expected mm:ss or hh:mm:ss (e.g. '3:4
 msgstr "{duration}: formato non valido '%s' — atteso mm:ss o hh:mm:ss (es. '3:45' oppure '1:02:30')"
 
 # -----------------------------------------------------------------------
-# Opzioni tastiera start= / octave= (comuni a {taste:} e {fingering:})
+# Opzioni tastiera start= / octave= / middlec= (comuni a {taste:} e {fingering:})
 # -----------------------------------------------------------------------
 #: SyntaxChecker.py
 msgid "%s: unrecognized start note '%s'"
@@ -443,6 +443,14 @@ msgstr "%s: 'start' specificato più di una volta"
 #: SyntaxChecker.py
 msgid "%s: 'octave' specified more than once"
 msgstr "%s: 'octave' specificato più di una volta"
+
+#: SyntaxChecker.py
+msgid "%s: 'middlec' specified more than once"
+msgstr "%s: 'middlec' specificato più di una volta"
+
+#: SyntaxChecker.py
+msgid "%s: 'middlec' must be show or hide, got '%s'"
+msgstr "%s: 'middlec' deve essere show o hide, trovato '%s'"
 
 # -----------------------------------------------------------------------
 # Opzione {linespacing: N rel} (modalità relativa, esclude i beats_time)

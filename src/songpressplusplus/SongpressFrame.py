@@ -4418,8 +4418,17 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                         style=wx.DEFAULT_DIALOG_STYLE)
         vbox = wx.BoxSizer(wx.VERTICAL)
 
+        # Esempi di accordi nella notazione scelta nelle opzioni (C, G, Am, D7 / Do, Sol, Lam, Re7)
+        def _example_chord(it_chord):
+            if _cur_notation is None or _it_notation is None:
+                return it_chord
+            try:
+                return translateChord(it_chord, _it_notation, _cur_notation)
+            except Exception:
+                return it_chord
+        _examples = u", ".join(_example_chord(c) for c in (u"Do", u"Sol", u"Lam", u"Re7"))
         vbox.Add(wx.StaticText(
-            dlg, -1, _(u"Enter the chord name (e.g. C, G, Am, D7):")),
+            dlg, -1, _(u"Enter the chord name (e.g. %s):") % _examples),
             0, wx.ALL, 10)
         txt_chord = wx.TextCtrl(dlg, -1, u"", size=(180, -1))
         vbox.Add(txt_chord, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
@@ -4447,14 +4456,17 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         # Casella: mostra un puntino sul DO centrale della tastiera disegnata.
         # Disattivata di default; abilitata solo se la partenza è diversa da DO
         # (partendo da DO il primo tasto è già il DO).
-        cb_midc = wx.CheckBox(dlg, -1, _(u"Show middle C"))
+        # Il nome del DO segue la notazione scelta nelle opzioni (Do, C, ...)
+        _c_name = _semi_to_note(0)
+        cb_midc = wx.CheckBox(dlg, -1, _(u"Show middle %s") % _c_name)
         cb_midc.SetValue(False)
-        cb_midc.SetToolTip(_(u"Marks the middle C key with a dot. "
-                             u"Available when the start note is not C."))
+        cb_midc.SetToolTip(_(u"Marks the middle %s key with a dot. "
+                             u"Available when the start note is not %s.")
+                           % (_c_name, _c_name))
         # Selettore del colore del puntino (preferenza globale)
         pk_midc = self._MakeColourSwatch(
             dlg, self._getKlavierMiddleCColour(), self._SetKlavierMiddleCColour,
-            _(u"Colour of the middle C dot."))
+            _(u"Colour of the middle %s dot.") % _c_name)
         hbox_midc = wx.BoxSizer(wx.HORIZONTAL)
         hbox_midc.Add(cb_midc, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
         hbox_midc.Add(pk_midc, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -4690,10 +4702,13 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         # Casella: mostra un puntino sul DO centrale. Disattivata di default;
         # abilitata solo se la partenza è diversa da DO.
-        cb_midc = wx.CheckBox(dlg, -1, _(u"Show middle C"))
+        # Il nome del DO segue la notazione scelta nelle opzioni (Do, C, ...)
+        _c_name = _semi_to_note(0)
+        cb_midc = wx.CheckBox(dlg, -1, _(u"Show middle %s") % _c_name)
         cb_midc.SetValue(False)
-        cb_midc.SetToolTip(_(u"Marks the middle C key with a dot. "
-                             u"Available when the start note is not C."))
+        cb_midc.SetToolTip(_(u"Marks the middle %s key with a dot. "
+                             u"Available when the start note is not %s.")
+                           % (_c_name, _c_name))
         # Selettore del colore del puntino (preferenza globale); l'anteprima
         # tastiera del dialogo si aggiorna subito (_refresh_kbd è definita più sotto).
         def _on_midc_colour(colour):
@@ -4701,7 +4716,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             _refresh_kbd()
         pk_midc = self._MakeColourSwatch(
             dlg, self._getKlavierMiddleCColour(), _on_midc_colour,
-            _(u"Colour of the middle C dot."))
+            _(u"Colour of the middle %s dot.") % _c_name)
         hbox_midc = wx.BoxSizer(wx.HORIZONTAL)
         hbox_midc.Add(cb_midc, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
         hbox_midc.Add(pk_midc, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -6756,6 +6771,87 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         stc.AutoCompSetAutoHide(True)
         stc.AutoCompSetDropRestOfWord(False)
         stc.AutoCompShow(typed_len, ' '.join(_tagged(d) for d in matches))
+        self._StartDirectiveTips()
+
+    # ── Tooltip descrittivo per le voci del popup intellisense ──────────────
+    # Non si usa CallTipShow: Scintilla chiude la lista di autocompletamento
+    # quando compare un calltip. Si usa invece un wx.PopupWindow, aggiornato
+    # da un timer che segue la voce evidenziata.
+    def _StartDirectiveTips(self):
+        if getattr(self, '_dirTipTimer', None) is None:
+            self._dirTipTimer = wx.Timer()
+            self._dirTipTimer.Bind(wx.EVT_TIMER, self._OnDirectiveTipTimer)
+        self._dirTipLast = None
+        if not self._dirTipTimer.IsRunning():
+            self._dirTipTimer.Start(150)
+
+    def _StopDirectiveTips(self):
+        t = getattr(self, '_dirTipTimer', None)
+        if t is not None and t.IsRunning():
+            t.Stop()
+        self._dirTipLast = None
+        self._HideDirectiveTip()
+
+    def _HideDirectiveTip(self):
+        win = getattr(self, '_dirTipWin', None)
+        if win is not None and win.IsShown():
+            win.Hide()
+
+    def _OnDirectiveTipTimer(self, evt):
+        stc = self.text
+        try:
+            if not stc.AutoCompActive():
+                self._StopDirectiveTips()
+                return
+            current = stc.AutoCompGetCurrentText()
+        except Exception:
+            self._StopDirectiveTips()
+            return
+        # il testo può contenere il suffisso immagine '?N'
+        current = current.split('?')[0].strip()
+        if current == self._dirTipLast:
+            return
+        self._dirTipLast = current
+        from . import ChordProDirectiveHelp
+        text = ChordProDirectiveHelp.get_directive_help(current)
+        if not text:
+            self._HideDirectiveTip()
+            return
+        self._ShowDirectiveTip(text)
+
+    def _ShowDirectiveTip(self, text):
+        stc = self.text
+        win = getattr(self, '_dirTipWin', None)
+        if win is None:
+            win = wx.PopupWindow(self.frame, wx.SIMPLE_BORDER)
+            win.SetBackgroundColour(wx.Colour(255, 255, 225))
+            lbl = wx.StaticText(win, label='', pos=(6, 4))
+            lbl.SetForegroundColour(wx.Colour(30, 30, 30))
+            win._lbl = lbl
+            self._dirTipWin = win
+        lbl = win._lbl
+        lbl.SetLabel(text)
+        lbl.Wrap(self.frame.FromDIP(300))
+        sz = lbl.GetBestSize()
+        win.SetSize((sz.width + 12, sz.height + 8))
+
+        pos = stc.AutoCompPosStart()
+        pt = stc.PointFromPosition(pos)
+        line_h = stc.TextHeight(stc.LineFromPosition(pos))
+        screen_pt = stc.ClientToScreen(pt)
+        # La lista si apre sotto la riga se c'è spazio, altrimenti sopra:
+        # il tooltip va dalla parte opposta per non coprirla.
+        disp = wx.Display(wx.Display.GetFromWindow(stc) if wx.Display.GetFromWindow(stc) >= 0 else 0)
+        area = disp.GetClientArea()
+        room_below = area.GetBottom() - (screen_pt.y + line_h)
+        if room_below >= self.frame.FromDIP(170):
+            y = screen_pt.y - win.GetSize().height - 2     # lista sotto → tip sopra
+        else:
+            y = screen_pt.y + line_h + 2                   # lista sopra → tip sotto
+        x = min(screen_pt.x, area.GetRight() - win.GetSize().width)
+        win.SetPosition((max(area.x, x), max(area.y, y)))
+        win.Show()
+        stc.SetFocus()
 
     # Direttive che non accettano valore (si chiudono con '}' direttamente)
     _DIRECTIVES_NO_VALUE = ChordProDirectives.DIRECTIVES_NO_VALUE
@@ -6768,6 +6864,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         solo dopo che Scintilla ha completato l'inserimento.
         """
         directive = evt.GetText().lower()
+        self._StopDirectiveTips()
         wx.CallAfter(self._ApplyDirectiveSuffix, directive)
         evt.Skip()   # lascia che Scintilla proceda con l'inserimento normale
 
