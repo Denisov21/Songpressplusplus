@@ -724,6 +724,17 @@ The token only has an effect on 8-key layouts (start other than C/F); otherwise 
 {fingering: B hand=R start=B octave=one 1=B 2=D# 3=F#}
 ```
 
+**Middle C (`middlec=`):**
+
+When the keyboard starts from a note **other than C** a visual reference can be useful. With the `middlec=show` token Songpress++ draws a **dot** at the bottom of the C key (middle C). With `middlec=hide`, or without the token, no dot is shown. Starting from C the token has no effect, since the first key on the left is already C. If the C key also carries a finger number, the number moves above the dot.
+
+**Dot colour:** choose it by clicking the coloured square next to the *Show middle C* checkbox, in the *Chord keys* and *First chord fingering* dialogs (the colour chooser opens). It is a general setting: it applies to all songs and to preview, print and export. Default: dark grey (`#464646`).
+
+```chordpro
+{taste: E start=B middlec=show}
+{fingering: B hand=R start=B middlec=show 1=B 2=D# 3=F#}
+```
+
 **Upper octave key colour:** with `octave=both` the two identical notes share the same colour by default. To tell the rightmost one apart (e.g. the **high B** on a B…B keyboard) enable *Options → Format → Chords and keyboard → Different colour for the upper octave key* and pick the colour (default `#3C78D2`, blue). The setting applies to preview, print, export and the dialog preview.
 
 Notes can be written in Italian notation (`Do`, `Re`, `Mi`, `Fa`, `Sol`, `La`, `Si`, with `#` for sharps) or English notation (`C`, `D`, `E`, `F`, `G`, `A`, `B`).
@@ -737,11 +748,65 @@ A dialog opens that automatically shows the notes of the chord and lets you:
 - select the hand (Right / Left / None);
 - choose the keyboard **Start note** from the drop-down of the same name;
 - enable **Highlight note on both octaves** (only enabled when the start note produces 8 keys);
+- enable **Show middle C** (only enabled when the start note is not C): adds `middlec=show` and draws a dot on the C key;
 - enable **Uppercase chord** (on by default): always writes the chord name in uppercase in the directive. Chord recognition is case-insensitive anyway, so `Am` → `AM` is still A minor.
 
-When enabled, the *Show keyboard preview* box at the bottom of the dialog reflects all these choices in real time. The *Chord keys* dialog (`{taste:}`) offers the same **Start note**, **Highlight note on both octaves** and **Uppercase chord** controls.
+When enabled, the *Show keyboard preview* box at the bottom of the dialog reflects all these choices in real time. The *Chord keys* dialog (`{taste:}`) offers the same **Start note**, **Highlight note on both octaves**, **Show middle C** and **Uppercase chord** controls.
 
 > **Note — keyboard position.** In both dialogs a note with the ℹ icon reminds you that the chord keyboard is always drawn at the bottom of the page, even though the directive (`{taste:}` or `{fingering:}`) can be inserted anywhere in the editor.
+
+**Direction arrow (`^` / `v`):**
+
+As with chords in the text (`[Am^]`, `[Amv]`), in the `{taste:}` and `{fingering:}` directives you can also append `^` (up) or `v` (down) to the chord name. The symbol itself is not shown: an arrow ↑ or ↓ appears next to the name, above the keyboard. Colour and size are the same as for the chord arrows in the text.
+
+```chordpro
+{taste:DO^}
+{taste:SOLv}
+{fingering: LA-^ hand=R 1=DO 2=MI 5=LA}
+```
+
+Result: the DO keyboard with ↑ next to its name, the SOL one with ↓, and the LA- fingering with ↑. The symbol must be written **attached** to the name (`LA-^`, not `LA- ^`) and does not change the highlighted notes. Without the symbol no arrow is shown.
+
+**Starting a new keyboard row (blank line):**
+
+Keyboards are laid out one after another and wrap automatically when space runs out. To choose where the row changes yourself, **leave a blank line in the editor** between two consecutive `{taste:}` / `{fingering:}` directives: the keyboard that follows the blank line starts a **new row**, and the next ones continue after it. Without a blank line nothing changes from the normal behaviour.
+
+*Without a blank line:*
+
+```chordpro
+{fingering: LA- hand=R 1=DO 2=MI 5=LA}
+{taste:SI-}
+{taste:MI start=SI}
+{taste:RE start=LA}
+{taste:DO start=SOL}
+{taste:LA}
+{taste:SOL start=SI}
+```
+
+Result (with three keyboards per row): `LA-` `SI-` `MI` / `RE` `DO` `LA` / `SOL`.
+
+*With a blank line after `{taste:SI-}`:*
+
+```chordpro
+{fingering: LA- hand=R 1=DO 2=MI 5=LA}
+{taste:SI-}
+
+{taste:MI start=SI}
+{taste:RE start=LA}
+{taste:DO start=SOL}
+{taste:LA}
+{taste:SOL start=SI}
+```
+
+Result: `LA-` `SI-` / `MI` `RE` `DO` / `LA` `SOL`. The `MI` keyboard moves to the row below and the others follow it.
+
+Rules:
+
+- The blank line only counts **between two consecutive keyboard directives**. If there is text or another directive in between, the keyboards do not wrap.
+- Several blank lines in a row are the same as one.
+- It works for `{taste:}` and `{fingering:}`, which can be mixed.
+- Even after a manual break, keyboards still wrap on their own when a row is too wide.
+- As always, the keyboard group stays at the bottom of the page: the blank line only changes its arrangement.
 
 **Finger number color:**
 The color of the numbers displayed on the keys is set in *Options → Format → Chords and tempo → Finger number colour*. The default is near-black (`#1A1A1A`); on black keys the number appears in white to ensure contrast.

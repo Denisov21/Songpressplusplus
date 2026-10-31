@@ -1610,6 +1610,12 @@ class SongDecorator(object):
                     finger_num_color=self.fingerNumColor,
                     content_w=content_w,
                     start_note=start_note_to_semitone(self.klavierStartNote),
+                    # Frecce di direzione (^ / v) accanto al nome accordo:
+                    # stessi colori, dimensione e modalità di disegno
+                    # delle frecce degli accordi nel testo.
+                    arrow_colours=getattr(self, 'chord_arrow_colours', None),
+                    arrow_pct=getattr(self, 'chord_arrow_pct', 90),
+                    arrow_bitmap=not getattr(self, 'smp_via_bitmap', False),
                 )
                 current_extra_h += h + 20
                 # Se il klavier è più largo del testo, memorizza la larghezza extra

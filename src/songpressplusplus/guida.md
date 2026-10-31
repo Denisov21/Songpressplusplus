@@ -731,6 +731,17 @@ Il token ha effetto solo nei layout a 8 tasti (partenza diversa da DO/FA); negli
 {fingering: Si hand=R start=Si octave=one 1=Si 2=Re# 3=Fa#}
 ```
 
+**Do centrale (`middlec=`):**
+
+Quando la tastiera parte da una nota **diversa da DO** può essere utile avere un riferimento visivo. Con il token `middlec=show` Songpress++ disegna un **puntino** in basso sul tasto DO (il Do centrale). Con `middlec=hide`, o senza il token, il puntino non compare. Partendo da DO il token è ininfluente, perché il primo tasto a sinistra è già il DO. Se sul tasto DO c'è anche il numero di un dito, il numero sale sopra il puntino.
+
+**Colore del pallino:** si sceglie cliccando sul quadratino colorato accanto alla casella *Mostra il Do centrale*, nelle finestre *Tasti accordo* e *Diteggiatura primo accordo* (si apre la finestra di scelta del colore). È un'impostazione generale: vale per tutte le canzoni e per anteprima, stampa ed esportazione. Predefinito: grigio scuro (`#464646`).
+
+```chordpro
+{taste: Mi start=Si middlec=show}
+{fingering: Si hand=R start=Si middlec=show 1=Si 2=Re# 3=Fa#}
+```
+
 **Colore del tasto d'ottava:** con `octave=both` le due note uguali hanno per impostazione predefinita lo stesso colore. Per distinguere quella più a destra (es. il **Si alto** in una tastiera Si…Si) attiva *Opzioni → Formattazione → Accordi e tastiera → Colore diverso per il tasto dell'ottava superiore* e scegli il colore (predefinito `#3C78D2`, blu). L'impostazione vale per anteprima, stampa, esportazione e anteprima del dialogo.
 
 Le note si scrivono in notazione italiana (`Do`, `Re`, `Mi`, `Fa`, `Sol`, `La`, `Si`, con `#` per i diesis) o inglese (`C`, `D`, `E`, `F`, `G`, `A`, `B`).
@@ -744,11 +755,65 @@ Si apre una finestra che mostra automaticamente le note dell'accordo e permette 
 - selezionare la mano (Destra / Sinistra / Nessuna indicazione);
 - scegliere la **Nota di partenza** della tastiera dal menu a tendina omonimo;
 - attivare **Evidenzia la nota su entrambe le ottave** (abilitata solo quando la partenza genera 8 tasti);
+- attivare **Mostra il Do centrale** (abilitata solo quando la partenza non è DO): aggiunge `middlec=show` e disegna un puntino sul tasto DO;
 - attivare **Accordo in maiuscolo** (attiva per impostazione predefinita): scrive il nome dell'accordo sempre in maiuscolo nella direttiva. Il riconoscimento dell'accordo è comunque insensibile alle maiuscole, quindi `Am` → `AM` resta La minore.
 
-Se attiva, la casella *Mostra anteprima tastiera* in fondo alla finestra riflette in tempo reale tutte queste scelte. La finestra *Tasti accordo* (`{taste:}`) offre gli stessi controlli **Nota di partenza**, **Evidenzia la nota su entrambe le ottave** e **Accordo in maiuscolo**.
+Se attiva, la casella *Mostra anteprima tastiera* in fondo alla finestra riflette in tempo reale tutte queste scelte. La finestra *Tasti accordo* (`{taste:}`) offre gli stessi controlli **Nota di partenza**, **Evidenzia la nota su entrambe le ottave**, **Mostra il Do centrale** e **Accordo in maiuscolo**.
 
 > **Nota — posizione della tastiera.** In entrambe le finestre una nota con l'icona ℹ ricorda che la tastiera con l'accordo viene sempre disegnata in fondo alla pagina, anche se nell'editor la direttiva (`{taste:}` o `{fingering:}`) può essere inserita in qualunque punto.
+
+**Freccia di direzione (`^` / `v`):**
+
+Come per gli accordi nel testo (`[Am^]`, `[Amv]`), anche nelle direttive `{taste:}` e `{fingering:}` si può aggiungere in coda al nome dell'accordo il simbolo `^` (su) oppure `v` (giù). Il simbolo non viene mostrato: al suo posto compare una freccia ↑ o ↓ accanto al nome, sopra la tastiera. Colore e dimensione sono gli stessi delle frecce degli accordi nel testo.
+
+```chordpro
+{taste:DO^}
+{taste:SOLv}
+{fingering: LA-^ hand=R 1=DO 2=MI 5=LA}
+```
+
+Risultato: la tastiera di DO con ↑ accanto al nome, quella di SOL con ↓, e la diteggiatura di LA- con ↑. Il simbolo va scritto **attaccato** al nome (`LA-^`, non `LA- ^`) e non cambia le note evidenziate. Senza simbolo non compare nessuna freccia.
+
+**Andare a capo tra le tastiere (riga vuota):**
+
+Le tastiere vengono disposte una di seguito all'altra, andando a capo da sole quando lo spazio finisce. Per decidere tu dove cambiare riga, **lascia una riga vuota nell'editor** tra due direttive `{taste:}` / `{fingering:}` consecutive: la tastiera che segue la riga vuota inizia una **nuova riga** e le successive continuano di seguito a lei. Senza riga vuota non cambia nulla rispetto al comportamento normale.
+
+*Senza riga vuota:*
+
+```chordpro
+{fingering: LA- hand=R 1=DO 2=MI 5=LA}
+{taste:SI-}
+{taste:MI start=SI}
+{taste:RE start=LA}
+{taste:DO start=SOL}
+{taste:LA}
+{taste:SOL start=SI}
+```
+
+Risultato (con tre tastiere per riga): `LA-` `SI-` `MI` / `RE` `DO` `LA` / `SOL`.
+
+*Con una riga vuota dopo `{taste:SI-}`:*
+
+```chordpro
+{fingering: LA- hand=R 1=DO 2=MI 5=LA}
+{taste:SI-}
+
+{taste:MI start=SI}
+{taste:RE start=LA}
+{taste:DO start=SOL}
+{taste:LA}
+{taste:SOL start=SI}
+```
+
+Risultato: `LA-` `SI-` / `MI` `RE` `DO` / `LA` `SOL`. La tastiera `MI` passa alla riga sotto e le altre la seguono.
+
+Regole:
+
+- La riga vuota conta solo **tra due direttive tastiera consecutive**. Se tra le due c'è del testo o un'altra direttiva, le tastiere non vanno a capo.
+- Più righe vuote di seguito equivalgono a una sola.
+- Vale per `{taste:}` e `{fingering:}`, che si possono mescolare.
+- Anche dopo l'a capo manuale, le tastiere vanno comunque a capo da sole se la riga è troppo larga.
+- Come sempre, il gruppo di tastiere resta in fondo alla pagina: la riga vuota ne cambia solo la disposizione.
 
 **Colore dei numeri delle dita:**
 Il colore dei numeri visualizzati sui tasti si imposta in *Opzioni → Formattazione → Accordi e tempo → Colore numeri diteggiatura*. Per impostazione predefinita è quasi nero (`#1A1A1A`); su tasti neri il numero appare in bianco per garantire il contrasto.

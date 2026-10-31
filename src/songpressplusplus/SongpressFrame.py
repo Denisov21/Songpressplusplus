@@ -794,6 +794,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self.pref.klavierOctaveColourEnabled = False
         if not hasattr(self.pref, 'klavierOctaveHex'):
             self.pref.klavierOctaveHex = '#3C78D2'
+        # Colore del puntino sul DO centrale (grigio scuro di default)
+        if not hasattr(self.pref, 'klavierMiddleCHex'):
+            self.pref.klavierMiddleCHex = '#464646'
         # Filigrana (watermark): stampata ed esportata (vedi Watermark.py).
         # I campi di STILE (opacita', angolo, dimensione, colore, mosaico) sono
         # preferenze globali persistite in Preferences.py come pref.watermarkStyle;
@@ -4441,10 +4444,29 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         cb_octave.SetValue(True)
         vbox.Add(cb_octave, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
+        # Casella: mostra un puntino sul DO centrale della tastiera disegnata.
+        # Disattivata di default; abilitata solo se la partenza è diversa da DO
+        # (partendo da DO il primo tasto è già il DO).
+        cb_midc = wx.CheckBox(dlg, -1, _(u"Show middle C"))
+        cb_midc.SetValue(False)
+        cb_midc.SetToolTip(_(u"Marks the middle C key with a dot. "
+                             u"Available when the start note is not C."))
+        # Selettore del colore del puntino (preferenza globale)
+        pk_midc = self._MakeColourSwatch(
+            dlg, self._getKlavierMiddleCColour(), self._SetKlavierMiddleCColour,
+            _(u"Colour of the middle C dot."))
+        hbox_midc = wx.BoxSizer(wx.HORIZONTAL)
+        hbox_midc.Add(cb_midc, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        hbox_midc.Add(pk_midc, 0, wx.ALIGN_CENTER_VERTICAL)
+        vbox.Add(hbox_midc, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
         def _sync_octave_cb(e=None):
-            has8 = KlavierRenderer.keyboard_has_octave_key(
-                _WHITE_SEMIS[ch_start.GetSelection()])
+            _start = _WHITE_SEMIS[ch_start.GetSelection()]
+            has8 = KlavierRenderer.keyboard_has_octave_key(_start)
             cb_octave.Enable(has8)
+            _midc_ok = KlavierRenderer.keyboard_has_middle_c_option(_start)
+            cb_midc.Enable(_midc_ok)
+            pk_midc.SetSwatchEnabled(_midc_ok)
         _sync_octave_cb()
         ch_start.Bind(wx.EVT_CHOICE, _sync_octave_cb)
 
@@ -4477,6 +4499,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 if (KlavierRenderer.keyboard_has_octave_key(start_semi)
                         and not cb_octave.GetValue()):
                     chord = u"%s octave=one" % chord
+                # middlec=show solo se la casella è attiva e la partenza non è DO
+                if (KlavierRenderer.keyboard_has_middle_c_option(start_semi)
+                        and cb_midc.GetValue()):
+                    chord = u"%s middlec=show" % chord
                 self._InsertBuiltDirective('taste', u"{taste:%s}" % chord, u"{taste:|}")
             else:
                 self._InsertBuiltDirective('taste', u"{taste:}", u"{taste:|}")
@@ -4662,6 +4688,25 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         cb_octave.SetValue(True)
         vbox.Add(cb_octave, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
+        # Casella: mostra un puntino sul DO centrale. Disattivata di default;
+        # abilitata solo se la partenza è diversa da DO.
+        cb_midc = wx.CheckBox(dlg, -1, _(u"Show middle C"))
+        cb_midc.SetValue(False)
+        cb_midc.SetToolTip(_(u"Marks the middle C key with a dot. "
+                             u"Available when the start note is not C."))
+        # Selettore del colore del puntino (preferenza globale); l'anteprima
+        # tastiera del dialogo si aggiorna subito (_refresh_kbd è definita più sotto).
+        def _on_midc_colour(colour):
+            self._SetKlavierMiddleCColour(colour)
+            _refresh_kbd()
+        pk_midc = self._MakeColourSwatch(
+            dlg, self._getKlavierMiddleCColour(), _on_midc_colour,
+            _(u"Colour of the middle C dot."))
+        hbox_midc = wx.BoxSizer(wx.HORIZONTAL)
+        hbox_midc.Add(cb_midc, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        hbox_midc.Add(pk_midc, 0, wx.ALIGN_CENTER_VERTICAL)
+        vbox.Add(hbox_midc, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
         # Istruzione
         lbl_info = wx.StaticText(
             dlg, -1,
@@ -4741,6 +4786,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             if oct_both is None:
                 oct_both = True
 
+            # DO centrale dalla direttiva (None -> nascosto)
+            show_midc = bool(KlavierRenderer.parse_middle_c(inner))
+
             keys = KlavierRenderer.get_chord_keys(chord_name)
             if keys is None:
                 return
@@ -4791,6 +4839,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 hand=None,
                 start_note=start_semi,
                 highlight_octave_both=oct_both,
+                show_middle_c=show_midc,
             )
 
         kbd_panel.Bind(wx.EVT_PAINT, _draw_kbd_preview)
@@ -4840,6 +4889,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             if (KlavierRenderer.keyboard_has_octave_key(start_semi)
                     and not cb_octave.GetValue()):
                 parts.append(u"octave=one")
+            # middlec=show solo se casella attiva e partenza diversa da DO
+            if (KlavierRenderer.keyboard_has_middle_c_option(start_semi)
+                    and cb_midc.GetValue()):
+                parts.append(u"middlec=show")
             for i, (lbl, ch) in enumerate(note_rows):
                 sel = ch.GetSelection()
                 if sel > 0:
@@ -4924,6 +4977,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             has8 = KlavierRenderer.keyboard_has_octave_key(
                 _WHITE_SEMIS[ch_start.GetSelection()])
             cb_octave.Enable(has8)
+            # La casella "DO centrale" ha senso solo se la partenza non è DO
+            _midc_ok = KlavierRenderer.keyboard_has_middle_c_option(
+                _WHITE_SEMIS[ch_start.GetSelection()])
+            cb_midc.Enable(_midc_ok)
+            pk_midc.SetSwatchEnabled(_midc_ok)
             # Cambiando la partenza cambia anche l'ordine "come sulla tastiera":
             # ricostruisce la griglia (conserva le dita già scelte) e l'anteprima.
             _on_chord_change()
@@ -4931,6 +4989,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         _on_start_change()   # stato iniziale della casella
         ch_start.Bind(wx.EVT_CHOICE, _on_start_change)
         cb_octave.Bind(wx.EVT_CHECKBOX, lambda e: (_update_preview(), _refresh_kbd()))
+        cb_midc.Bind(wx.EVT_CHECKBOX, lambda e: (_update_preview(), _refresh_kbd()))
         cb_upper.Bind(wx.EVT_CHECKBOX, lambda e: (_update_preview(), _refresh_kbd()))
         # Cambiare l'ordinamento ricostruisce la griglia mantenendo le dita già scelte
         cb_order.Bind(wx.EVT_CHECKBOX, _on_chord_change)
@@ -9849,6 +9908,94 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.pref.decorator.klavierHighlightColor = self._getKlavierHighlightColour()
         try:
             KlavierRenderer.set_octave_highlight_color(self._getKlavierOctaveColour())
+        except Exception:
+            pass
+        try:
+            KlavierRenderer.set_middle_c_color(self._getKlavierMiddleCColour())
+        except Exception:
+            pass
+
+    def _MakeColourSwatch(self, parent, colour, on_change, tooltip=u""):
+        """Quadratino colorato cliccabile (stile del colore di evidenziazione
+        di Trova/Sostituisci): al clic apre il selettore colori di sistema e,
+        se confermato, chiama on_change(colour).
+
+        Usa gli stessi colori personalizzati della tastiera
+        (pref.customColoursKlavier). Il pannello espone SetSwatchEnabled(bool)
+        per abilitarlo/disabilitarlo (da disabilitato appare grigio chiaro).
+        """
+        sw = wx.Panel(parent, size=(24, 24), style=wx.BORDER_SIMPLE)
+        sw._colour = colour
+        sw.SetBackgroundColour(colour)
+        try:
+            sw.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        except Exception:
+            pass
+        if tooltip:
+            sw.SetToolTip(tooltip)
+
+        def _set_enabled(en):
+            sw.Enable(bool(en))
+            sw.SetBackgroundColour(sw._colour if en else wx.Colour(225, 225, 225))
+            sw.Refresh()
+        sw.SetSwatchEnabled = _set_enabled
+
+        def _on_click(e):
+            if not sw.IsEnabled():
+                return
+            data = wx.ColourData()
+            data.SetColour(sw._colour)
+            data.SetChooseFull(True)
+            for i, hx in enumerate(getattr(self.pref, 'customColoursKlavier', [])[:16]):
+                try:
+                    h = hx.strip().lstrip('#')
+                    data.SetCustomColour(
+                        i, wx.Colour(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)))
+                except Exception:
+                    pass
+            dlg = wx.ColourDialog(parent, data)
+            if dlg.ShowModal() == wx.ID_OK:
+                cd = dlg.GetColourData()
+                chosen = cd.GetColour()
+                try:
+                    saved = []
+                    for i in range(16):
+                        c = cd.GetCustomColour(i)
+                        saved.append(u'#%02X%02X%02X' % (c.Red(), c.Green(), c.Blue())
+                                     if c.IsOk() else u'#FFFFFF')
+                    self.pref.customColoursKlavier = saved
+                    self._SaveCustomColours()
+                except Exception:
+                    pass
+                sw._colour = chosen
+                sw.SetBackgroundColour(chosen)
+                sw.Refresh()
+                on_change(chosen)
+            dlg.Destroy()
+        sw.Bind(wx.EVT_LEFT_DOWN, _on_click)
+        return sw
+
+    def _getKlavierMiddleCColour(self):
+        """Colore del puntino sul DO centrale (wx.Colour dal valore hex salvato)."""
+        hex_str = getattr(self.pref, 'klavierMiddleCHex', '#464646')
+        try:
+            h = hex_str.strip().lstrip('#')
+            r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+            return wx.Colour(r, g, b)
+        except Exception:
+            return wx.Colour(70, 70, 70)
+
+    def _SetKlavierMiddleCColour(self, colour):
+        """Memorizza il colore scelto per il puntino del DO centrale, lo applica
+        al renderer e aggiorna l'anteprima."""
+        self.pref.klavierMiddleCHex = u'#%02X%02X%02X' % (
+            colour.Red(), colour.Green(), colour.Blue())
+        try:
+            KlavierRenderer.set_middle_c_color(colour)
+        except Exception:
+            pass
+        try:
+            self.previewCanvas.Refresh(self._get_display_text(ignore_selection=True))
         except Exception:
             pass
 

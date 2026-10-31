@@ -17,6 +17,17 @@ try:
 except ImportError:
     _has_transpose = False
 
+# Frecce di direzione (suffisso ^ = su, v = giù) come per gli accordi nel testo
+try:
+    from .ChordArrow import split_arrow, arrow_points, render_icon, ARROW_ASPECT
+    _has_arrow = True
+except ImportError:
+    _has_arrow = False
+    ARROW_ASPECT = 1.0
+
+    def split_arrow(text):
+        return text, ''
+
 # Note italiane -> semitono (ordinate per lunghezza decrescente per match corretto)
 _ITALIAN_NOTES = [
     ('sol#', 8), ('solb', 6), ('sol', 7),
@@ -74,6 +85,74 @@ _octave_highlight_color = None
 # Sentinella: "parametro non passato, usa il default globale"
 _USE_GLOBAL = object()
 
+# Token che il Renderer aggiunge in coda a una voce della lista tastiere quando,
+# nell'editor, tra la direttiva precedente ({taste:}/{fingering:}) e questa è
+# stata lasciata una riga vuota. Significa "questa tastiera va su una nuova
+# riga". Non contiene '=' né coincide con 'hand=', 'start=' o 'octave=', quindi
+# parse_fingering / parse_start_note / parse_octave_both lo ignorano.
+NEW_ROW_TOKEN = '<newrow>'
+
+
+def has_new_row(entry):
+    """True se la voce (stringa direttiva) è marcata come 'inizia nuova riga'."""
+    return NEW_ROW_TOKEN in entry.split()
+
+
+def _split_chord_arrow(chord_name):
+    """
+    Separa dal nome accordo l'eventuale suffisso di direzione: '^' = su,
+    'v' = giù (es. 'DO^', 'LA-v'), come per gli accordi nel testo.
+
+    Restituisce (nome_senza_suffisso, arrow) con arrow in {'', 'up', 'down'}.
+    Se togliendo il suffisso non resta nulla, lascia il nome com'era.
+    """
+    name, arrow = split_arrow(chord_name)
+    if not name or not name.strip():
+        return chord_name, ''
+    return name, arrow
+
+
+def _draw_arrow(dc, arrow, col, x0, top, aw, ah, use_bitmap=True):
+    """
+    Disegna la freccia di direzione: bitmap anti-aliased a risoluzione device
+    (schermo) oppure sagoma vettoriale (stampa/PDF, dove le bitmap con
+    trasparenza non sono affidabili). Stessa resa delle frecce degli accordi.
+    """
+    if not _has_arrow:
+        return
+    if use_bitmap:
+        sx = sy = 1.0
+        try:
+            sx, sy = dc.GetUserScale()
+            dw = max(4, int(round(aw * sx)))
+            dh = max(4, int(round(ah * sy)))
+            icon = render_icon(arrow, dw, dh, (col.Red(), col.Green(), col.Blue()))
+            if icon is not None:
+                w, h, rgb, alpha = icon
+                img = wx.Image(w, h)
+                img.SetData(rgb)
+                img.SetAlpha(alpha)
+                bmp = wx.Bitmap(img)
+                dx = int(round(x0 * sx))
+                dy = int(round(top * sy))
+                dc.SetUserScale(1.0, 1.0)
+                try:
+                    dc.DrawBitmap(bmp, dx, dy, True)
+                finally:
+                    dc.SetUserScale(sx, sy)
+                return
+        except Exception:
+            try:
+                dc.SetUserScale(sx, sy)
+            except Exception:
+                pass
+    pts = arrow_points(arrow, x0, top, aw, ah)
+    dc.SetPen(wx.Pen(col, 1))
+    dc.SetBrush(wx.Brush(col, wx.BRUSHSTYLE_SOLID))
+    dc.DrawPolygon([wx.Point(int(round(px)), int(round(py))) for px, py in pts])
+    dc.SetBrush(wx.NullBrush)
+    dc.SetPen(wx.NullPen)
+
 
 def set_octave_highlight_color(colour):
     """
@@ -88,6 +167,26 @@ def set_octave_highlight_color(colour):
 def get_octave_highlight_color():
     """Restituisce il colore di default del tasto d'ottava (o None)."""
     return _octave_highlight_color
+
+
+# Colore globale del puntino sul DO centrale (vedi show_middle_c in
+# draw_keyboard). None = grigio scuro predefinito. Impostato
+# dall'applicazione in base alle preferenze, come per il tasto d'ottava.
+_middle_c_color = None
+_MIDDLE_C_DEFAULT = (70, 70, 70)
+
+
+def set_middle_c_color(colour):
+    """Imposta il colore di default del puntino del DO centrale (None = predefinito)."""
+    global _middle_c_color
+    _middle_c_color = colour
+
+
+def get_middle_c_color():
+    """Restituisce il colore di default del puntino del DO centrale (o None)."""
+    return _middle_c_color
+
+
 
 
 def _keyboard_layout(start_semi):
@@ -387,6 +486,37 @@ def parse_octave_both(fingering_str):
     return None
 
 
+def parse_middle_c(fingering_str):
+    """
+    Estrae dall'eventuale token 'middlec=...' se vada mostrato il DO centrale
+    (un puntino sul tasto DO) nella tastiera disegnata.
+
+    Valori riconosciuti (insensibili alle maiuscole):
+        middlec=show | on | yes | 1   -> True  (mostra)
+        middlec=hide | off | no | 0   -> False (nascondi)
+
+    Restituisce True/False, oppure None se il token è assente (il chiamante
+    usa il proprio default). Ha effetto solo se la tastiera NON parte da DO
+    (vedi keyboard_has_middle_c_option).
+    """
+    for token in fingering_str.strip().split():
+        m = re.match(r'^middlec=(show|hide|on|off|yes|no|1|0)$', token,
+                     re.IGNORECASE)
+        if m:
+            return m.group(1).lower() in ('show', 'on', 'yes', '1')
+    return None
+
+
+def keyboard_has_middle_c_option(start_note):
+    """
+    True se ha senso mostrare/nascondere il DO centrale, cioè se la tastiera
+    parte da una nota diversa da DO. Partendo da DO il primo tasto a sinistra
+    è già il DO e non serve alcun segnaposto.
+    Accetta un semitono intero o un nome di nota (vedi start_note_to_semitone).
+    """
+    return start_note_to_semitone(start_note) != 0
+
+
 def keyboard_has_octave_key(start_note):
     """
     True se la tastiera che parte da `start_note` usa 8 tasti bianchi, cioè
@@ -435,9 +565,26 @@ def keyboard_header_height(dc, label_font, chord_name, hand=None):
 def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
                   label_font=None, highlight_color=None, finger_map=None,
                   finger_num_color=None, hand=None, start_note=0,
-                  highlight_octave_both=True, octave_color=_USE_GLOBAL):
+                  highlight_octave_both=True, octave_color=_USE_GLOBAL,
+                  arrow='', arrow_colours=None, arrow_pct=90,
+                  arrow_bitmap=True, show_middle_c=False,
+                  middle_c_color=_USE_GLOBAL):
     """
     Disegna una tastiera di un'ottava su dc.
+
+    arrow            : '' | 'up' | 'down' — freccia di direzione disegnata
+                       accanto al nome accordo (suffisso ^ / v nella direttiva).
+    arrow_colours    : dict {'up': colour, 'down': colour}; se manca la
+                       direzione, la freccia ha il colore del testo (nero).
+    arrow_pct        : altezza della freccia in % dell'altezza del testo.
+    arrow_bitmap     : True = bitmap anti-aliased (schermo); False = sagoma
+                       vettoriale (stampa / PDF).
+    show_middle_c    : se True disegna un puntino sul tasto DO (il DO centrale)
+                       quando la tastiera parte da una nota diversa da DO, per
+                       orientarsi sulla tastiera. Con partenza DO è ininfluente.
+    middle_c_color   : colore del puntino del DO centrale. Se omesso usa il
+                       default globale impostato con set_middle_c_color(); se
+                       None (o default globale None) usa il grigio scuro.
 
     highlighted_keys : lista di semitoni (0-11) da evidenziare.
     highlight_color  : wx.Colour per i tasti evidenziati (default rosso).
@@ -509,6 +656,22 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
         dc.SetPen(wx.Pen(wx.Colour(40, 40, 40), 1))
         dc.DrawRectangle(kx, y, black_w, black_h)
 
+    # ── DO centrale: puntino in basso sul tasto DO ────────────────
+    # Solo se la tastiera non parte da DO (altrimenti il DO è il primo tasto).
+    mc_idx = None
+    mc_h = 0   # altezza del puntino (serve a spostare il numero del dito)
+    if show_middle_c and white_order[0] != 0 and 0 in white_order:
+        mc_idx = white_order.index(0)
+        mc_col = _middle_c_color if middle_c_color is _USE_GLOBAL else middle_c_color
+        if mc_col is None:
+            mc_col = wx.Colour(*_MIDDLE_C_DEFAULT)
+        # Pallino pieno nel colore scelto, in basso al centro del tasto.
+        mc_r = max(3, white_w // 5)
+        mc_h = 2 * mc_r
+        dc.SetBrush(wx.Brush(mc_col))
+        dc.SetPen(wx.Pen(mc_col, 1))
+        dc.DrawCircle(x + mc_idx * white_w + white_w // 2, y + h - mc_r - 4, mc_r)
+
     # ── Numeri delle dita sui tasti ───────────────────────────────
     if finger_map:
         finger_font = wx.Font(
@@ -545,6 +708,9 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
                 kx = x + white_idx * white_w
                 cx = kx + white_w // 2
                 cy = y + h - lh - 3
+                # Sul DO con puntino il numero sale sopra il puntino
+                if mc_idx is not None and white_idx == mc_idx:
+                    cy -= mc_h + 3
                 # Colore custom o nero di default (contrasto su bianco)
                 dc.SetTextForeground(finger_num_color if finger_num_color else wx.BLACK)
 
@@ -557,6 +723,15 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
     if label_font:
         dc.SetFont(label_font)
     chord_lw, chord_lh = dc.GetTextExtent(chord_name)
+
+    # Freccia accanto al nome: stesse proporzioni di quella degli accordi nel testo
+    arrow_w = arrow_h = 0
+    if arrow and _has_arrow:
+        _ah0 = max(8, int(chord_lh * arrow_pct / 100))
+        arrow_w = max(6, int(_ah0 * 0.8))
+        arrow_h = max(4, int(arrow_w / ARROW_ASPECT))
+    arrow_gap = 3 if arrow_w else 0
+    label_w = chord_lw + arrow_gap + arrow_w   # nome + freccia, centrati insieme
 
     if hand in ('R', 'L'):
         # 2) Font mano e misura
@@ -583,16 +758,25 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
         if label_font:
             dc.SetFont(label_font)
         dc.SetTextForeground(wx.BLACK)
-        dc.DrawText(chord_name, x + (kbd_w - chord_lw) // 2, chord_ty)
     else:
+        chord_ty = y - chord_lh - 3
         dc.SetTextForeground(wx.BLACK)
-        dc.DrawText(chord_name, x + (kbd_w - chord_lw) // 2, y - chord_lh - 3)
+
+    label_x = x + (kbd_w - label_w) // 2
+    dc.DrawText(chord_name, label_x, chord_ty)
+    if arrow_w:
+        col = (arrow_colours or {}).get(arrow) or wx.BLACK
+        _draw_arrow(dc, arrow, col,
+                    label_x + chord_lw + arrow_gap,
+                    chord_ty + (chord_lh - arrow_h) // 2,
+                    arrow_w, arrow_h, arrow_bitmap)
 
 
 def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
                          pen_scale=1.0, notations=None, highlight_color=None,
                          finger_num_color=None, content_w=None, start_note=0,
-                         highlight_octave_both=True):
+                         highlight_octave_both=True, arrow_colours=None,
+                         arrow_pct=90, arrow_bitmap=True, show_middle_c=False):
     """
     Disegna tutte le tastiere in klavier_list in fondo alla canzone.
     Ogni elemento può essere una stringa accordo semplice ("Am")
@@ -654,12 +838,21 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
     cur_x = start_x
     cur_y = sep_y + 26
     max_drawn_x = start_x  # tiene traccia della x destra massima usata
+    force_new_row = False  # riga vuota nell'editor -> prossima tastiera a capo
 
     for entry in klavier_list:
+        # Riga vuota nell'editor prima di questa direttiva: va a capo. Il flag
+        # resta attivo finché non viene disegnata una tastiera (se la voce non
+        # è riconosciuta e viene saltata, vale per la successiva).
+        if has_new_row(entry):
+            force_new_row = True
+
         # Parsa: potrebbe essere "Am" oppure "Am hand=R 1=Do 2=Mi 3=La"
         chord_name, finger_map, hand = parse_fingering(entry)
         if chord_name is None:
             continue
+        # Suffisso di direzione: "Am^" (su) / "Amv" (giù) -> freccia
+        chord_name, arrow = _split_chord_arrow(chord_name)
 
         # Nota di partenza: token 'start=' della direttiva se presente,
         # altrimenti il default passato dal chiamante (impostazione globale).
@@ -670,12 +863,23 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
         entry_oct = parse_octave_both(entry)
         eff_oct = entry_oct if entry_oct is not None else highlight_octave_both
 
+        # DO centrale: token 'middlec=' se presente, altrimenti default
+        entry_mc = parse_middle_c(entry)
+        eff_mc = entry_mc if entry_mc is not None else show_middle_c
+
         normalized = _normalize_chord(chord_name, notations)
         keys = get_chord_keys(normalized)
         if keys is None:
             keys = get_chord_keys(chord_name)   # fallback
         if keys is None:
             continue
+
+        # A capo forzato (solo se la riga corrente contiene già qualcosa:
+        # sulla prima tastiera non c'è nulla da spezzare)
+        if force_new_row and cur_x > start_x:
+            cur_x = start_x
+            cur_y += row_h
+        force_new_row = False
 
         if cur_x + kbd_w > max_x:
             cur_x = start_x
@@ -689,6 +893,11 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
             hand=hand,
             start_note=eff_start,
             highlight_octave_both=eff_oct,
+            arrow=arrow,
+            arrow_colours=arrow_colours,
+            arrow_pct=arrow_pct,
+            arrow_bitmap=arrow_bitmap,
+            show_middle_c=eff_mc,
         )
         cur_x += kbd_w + padding_x
         max_drawn_x = max(max_drawn_x, cur_x)
@@ -701,7 +910,9 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
 def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
                            pen_scale=1.0, notations=None, highlight_color=None,
                            finger_num_color=None, content_w=None, start_note=0,
-                           highlight_octave_both=True):
+                           highlight_octave_both=True, arrow_colours=None,
+                           arrow_pct=90, arrow_bitmap=True,
+                           show_middle_c=False):
     """
     Identico a draw_klavier_section ma destinato alle tastiere {fingering:}.
     Non mostra titolo di sezione.
@@ -744,11 +955,18 @@ def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
     cur_x = start_x
     cur_y = sep_y + 8
     max_drawn_x = start_x
+    force_new_row = False  # riga vuota nell'editor -> prossima tastiera a capo
 
     for entry in fingering_list:
+        # Riga vuota nell'editor prima di questa direttiva: va a capo.
+        if has_new_row(entry):
+            force_new_row = True
+
         chord_name, finger_map, hand = parse_fingering(entry)
         if chord_name is None:
             continue
+        # Suffisso di direzione: "Am^" (su) / "Amv" (giù) -> freccia
+        chord_name, arrow = _split_chord_arrow(chord_name)
 
         # Nota di partenza: token 'start=' della direttiva se presente,
         # altrimenti il default passato dal chiamante (impostazione globale).
@@ -759,12 +977,21 @@ def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
         entry_oct = parse_octave_both(entry)
         eff_oct = entry_oct if entry_oct is not None else highlight_octave_both
 
+        # DO centrale: token 'middlec=' se presente, altrimenti default
+        entry_mc = parse_middle_c(entry)
+        eff_mc = entry_mc if entry_mc is not None else show_middle_c
+
         normalized = _normalize_chord(chord_name, notations)
         keys = get_chord_keys(normalized)
         if keys is None:
             keys = get_chord_keys(chord_name)
         if keys is None:
             continue
+
+        if force_new_row and cur_x > start_x:
+            cur_x = start_x
+            cur_y += row_h
+        force_new_row = False
 
         if cur_x + kbd_w > max_x:
             cur_x = start_x
@@ -778,6 +1005,11 @@ def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
             hand=hand,
             start_note=eff_start,
             highlight_octave_both=eff_oct,
+            arrow=arrow,
+            arrow_colours=arrow_colours,
+            arrow_pct=arrow_pct,
+            arrow_bitmap=arrow_bitmap,
+            show_middle_c=eff_mc,
         )
         cur_x += kbd_w + padding_x
         max_drawn_x = max(max_drawn_x, cur_x)

@@ -48,6 +48,17 @@ class SDIDropTarget(wx.FileDropTarget):
         return self.sdi.OnDropFiles(arr)
 
 
+class _WinMutexHandle(object):
+    """Tiene aperto l'handle del mutex; close() lo rilascia."""
+    def __init__(self, k32, handle):
+        self._k32, self._h = k32, handle
+
+    def close(self):
+        if self._h:
+            self._k32.CloseHandle(self._h)
+            self._h = None
+
+
 class SDIMainFrame(object):
     """Abstract class. Override methods New, Open, Save"""
     ###UI generation###
@@ -575,6 +586,7 @@ class SDIMainFrame(object):
     # esiste sempre come attributo (default None) anche prima che venga
     # eventualmente valorizzato dall'acquisizione anticipata su Linux.
     _singleInstanceServer = None
+    _singleInstanceLock = None   # file con flock tenuto dal primario (Linux)
 
     @classmethod
     def _TrySendToExistingInstance(cls, filepath):
@@ -593,68 +605,119 @@ class SDIMainFrame(object):
         except (ConnectionRefusedError, OSError):
             return False
 
-    def _AcquireSingleInstanceEarly(self, single_instance):
-        """Elezione del primario ANTICIPATA e atomica — SOLO su Linux.
+    def _AcquireSingleInstanceEarlyWindows(self):
+        """Elezione del primario anticipata e atomica su Windows.
 
-        Perché serve (e perché solo su Linux):
-        Su Linux, cliccando due o più volte in rapida successione su un file
-        nel file manager, vengono lanciati due o più processi quasi nello
-        stesso istante. Con il vecchio codice il server single-instance
-        veniva messo in ascolto molto tardi (dopo aver costruito e mostrato
-        l'intera finestra, in FinalizePaneInitialization). In quella finestra
-        temporale ogni processo, controllando se esiste già un'istanza, la
-        trovava assente e apriva la propria copia: risultato, più finestre.
-
-        La soluzione è usare il bind della porta come arbitro: il kernel
-        garantisce che un solo processo alla volta possa fare bind su
-        127.0.0.1:<porta>. Chi vince il bind è il primario e tiene il socket
-        per tutta la sessione; ogni altro processo fallisce il bind, inoltra
-        il proprio file al primario ed esce PRIMA di costruire una seconda
-        finestra. Poiché il bind è atomico a livello di kernel, la corsa è
-        chiusa anche per avvii perfettamente simultanei.
-
-        Non fa nulla se non siamo su Linux o se la modalità istanza singola è
-        disattivata. In caso di errore imprevisto non impedisce mai l'avvio:
-        si prosegue con un avvio normale.
-
-        Va chiamata il prima possibile (in cima a __init__ della sottoclasse),
-        prima di costruire la finestra.
+        Come su Linux, ma l'arbitro e' un mutex con nome (CreateMutexW):
+        creazione atomica a livello di kernel, rilasciato da solo se il
+        processo muore. Chi lo crea per primo e' il primario, tiene il mutex
+        e mette subito in listen() il socket; chi trova il mutex gia' esistente
+        (ERROR_ALREADY_EXISTS) inoltra il file al primario, riprovando fino a
+        ~10 s, ed esce con os._exit(0) senza aprire una seconda finestra.
+        Su Windows SO_REUSEADDR permette a piu' processi di fare bind sulla
+        stessa porta: per questo il socket del primario usa
+        SO_EXCLUSIVEADDRUSE e non ci si affida al bind come arbitro.
         """
-        if platform.system() != 'Linux' or not single_instance:
+        try:
+            import ctypes
+            from ctypes import wintypes
+            k32 = ctypes.WinDLL('kernel32', use_last_error=True)
+            k32.CreateMutexW.restype = wintypes.HANDLE
+            k32.CreateMutexW.argtypes = [wintypes.LPVOID, wintypes.BOOL,
+                                         wintypes.LPCWSTR]
+            k32.CloseHandle.argtypes = [wintypes.HANDLE]
+        except Exception:
             return
-        port = self._SINGLE_INSTANCE_PORT
-        # Messaggio da inoltrare: il file passato da riga di comando, oppure
-        # una semplice richiesta di portare in primo piano la finestra
-        # esistente quando siamo stati avviati senza file.
-        if len(sys.argv) > 1:
-            payload = sys.argv[1]
-        else:
-            payload = '__RAISE__'
-        for _attempt in range(2):
+        ERROR_ALREADY_EXISTS = 183
+        payload = sys.argv[1] if len(sys.argv) > 1 else '__RAISE__'
+        name = 'Local\\SongpressPlusPlusSingleInstance'
+        for _attempt in range(100):
+            ctypes.set_last_error(0)
+            h = k32.CreateMutexW(None, False, name)
+            if not h:
+                return   # errore imprevisto: avvio normale
+            if ctypes.get_last_error() != ERROR_ALREADY_EXISTS:
+                # Mutex creato da noi: siamo il primario.
+                self._singleInstanceLock = _WinMutexHandle(k32, h)
+                try:
+                    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    srv.setsockopt(socket.SOL_SOCKET,
+                                   getattr(socket, 'SO_EXCLUSIVEADDRUSE', -5), 1)
+                    srv.bind(('127.0.0.1', self._SINGLE_INSTANCE_PORT))
+                    srv.listen(16)
+                    self._singleInstanceServer = srv
+                except OSError:
+                    pass  # _StartSingleInstanceServer riprovera'
+                return
+            # Un primario esiste: rilascia il nostro handle e inoltra il file.
+            k32.CloseHandle(h)
+            if self._TrySendToExistingInstance(payload):
+                os._exit(0)
+            time.sleep(0.1)
+
+    def _AcquireSingleInstanceEarly(self, single_instance):
+        """Elezione del primario ANTICIPATA e atomica - SOLO su Linux.
+
+        L'arbitro e' un lock di file (fcntl.flock) invece del solo bind della
+        porta TCP: con SO_REUSEADDR, su Linux, due processi possono fare bind
+        sulla stessa porta finche' nessuno e' ancora in listen(), quindi con
+        click ravvicinati piu' processi potevano credersi "primari". flock e'
+        atomico a livello di kernel e si libera da solo se il processo muore.
+
+        - Vince il lock  -> primario: tiene il lock per tutta la sessione e
+          mette subito in listen() il socket (i file inoltrati dagli altri
+          processi si accodano nel backlog finche' parte il thread).
+        - Perde il lock  -> inoltra il file al primario riprovando per qualche
+          secondo (il primario potrebbe non essere ancora in ascolto, oppure
+          essere in chiusura/riavvio) ed esce con os._exit(0), che non puo'
+          essere intercettato da wx: nessuna seconda finestra.
+        - Se dopo ~10 s non e' riuscito ne' a prendere il lock ne' a inoltrare,
+          avvio normale (meglio una finestra in piu' che un click che non fa
+          nulla).
+        """
+        if not single_instance:
+            return
+        if platform.system() == 'Windows':
+            self._AcquireSingleInstanceEarlyWindows()
+            return
+        if platform.system() != 'Linux':
+            return
+        try:
+            import fcntl
+        except ImportError:
+            return
+        import tempfile
+        base = os.environ.get('XDG_RUNTIME_DIR') or tempfile.gettempdir()
+        lock_path = os.path.join(base, 'songpressplusplus-%d.lock' % os.getuid())
+        try:
+            fd = open(lock_path, 'a+')
+        except OSError:
+            return
+        payload = sys.argv[1] if len(sys.argv) > 1 else '__RAISE__'
+        for _attempt in range(100):
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError:
+                # Un primario esiste: gli passiamo il file e ci ritiriamo.
+                if self._TrySendToExistingInstance(payload):
+                    os._exit(0)
+                time.sleep(0.1)
+                continue
+            # Lock acquisito: siamo il primario.
+            self._singleInstanceLock = fd
             try:
                 srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                srv.bind(('127.0.0.1', port))
-                srv.listen(5)
-            except OSError:
-                # Porta già occupata: un primario è (probabilmente) in
-                # esecuzione. Gli inoltriamo il nostro file e ci ritiriamo
-                # senza aprire una seconda finestra.
-                if self._TrySendToExistingInstance(payload):
-                    raise SystemExit(0)
-                # Il detentore è sparito tra il nostro bind e la connessione:
-                # riproviamo una volta a prenderci noi la porta.
-                time.sleep(0.15)
-                continue
-            else:
-                # Abbiamo vinto la corsa: teniamo il socket già in bind+listen.
-                # Il thread di ascolto verrà avviato più tardi da
-                # _StartSingleInstanceServer (che riutilizzerà questo socket).
+                srv.bind(('127.0.0.1', self._SINGLE_INSTANCE_PORT))
+                srv.listen(16)
                 self._singleInstanceServer = srv
-                return
-        # Non siamo riusciti né a fare bind né a inoltrare: avvio normale
-        # (meglio una finestra in più che un click che non fa nulla).
-        return
+            except OSError:
+                pass  # porta occupata da altro: _StartSingleInstanceServer riprovera'
+            return
+        try:
+            fd.close()
+        except Exception:
+            pass
 
     def _StartSingleInstanceServer(self):
         """Bind to the local port and listen for file-open requests.
@@ -722,6 +785,18 @@ class SDIMainFrame(object):
         self.frame.Raise()
         self.frame.RequestUserAttention()
         if filepath and os.path.isfile(filepath):
+            # Stesso file gia' aperto in questa finestra: niente riapertura
+            # (eviterebbe anche la richiesta "Salvare?"), solo un avviso.
+            try:
+                if self.document and os.path.samefile(self.document, filepath):
+                    msg = _("File already open")
+                    if hasattr(self, '_setStatus'):
+                        self._setStatus(msg, 5000)
+                    elif getattr(self, 'statusBar', None):
+                        self.statusBar.SetStatusText(msg, 0)
+                    return
+            except OSError:
+                pass
             self.OnDropFiles([filepath])
 
     def _StopSingleInstanceServer(self):
@@ -743,3 +818,10 @@ class SDIMainFrame(object):
             except Exception:
                 pass
             self._singleInstanceServer = None
+        lock = self._singleInstanceLock
+        if lock is not None:
+            try:
+                lock.close()   # chiudere il file rilascia il flock
+            except Exception:
+                pass
+            self._singleInstanceLock = None

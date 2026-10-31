@@ -1458,6 +1458,20 @@ msgstr "Evidenzia la nota su entrambe le ottave"
 msgid "Uppercase chord"
 msgstr "Accordo in maiuscolo"
 
+#: SongpressFrame.py — Chord keys / First chord fingering dialogs, middle C checkbox
+msgid "Show middle C"
+msgstr "Mostra il Do centrale"
+
+#: SongpressFrame.py — Chord keys / First chord fingering dialogs, middle C checkbox tooltip
+msgid "Marks the middle C key with a dot. Available when the start note is not C."
+msgstr ""
+"Segna il tasto Do centrale con un pallino. Disponibile quando la nota di "
+"partenza non è Do."
+
+#: SongpressFrame.py — Chord keys / First chord fingering dialogs, middle C colour swatch tooltip
+msgid "Colour of the middle C dot."
+msgstr "Colore del pallino del Do centrale."
+
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "File \"%s\" already exists. Do you want to overwrite it?"
 msgstr "Il file \"%s\" esiste già. Vuoi sovrascriverlo?"

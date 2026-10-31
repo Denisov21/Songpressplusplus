@@ -14,6 +14,7 @@ import wx
 from .SongDecorator import *
 from .SongTokenizer import *
 from .GuitarDiagramRenderer import draw_guitar_diagram_section
+from .KlavierRenderer import NEW_ROW_TOKEN
 from .SongFormat import *
 from .SongBoxes import *
 from .ChordArrow import split_arrow, arrow_glyph
@@ -338,6 +339,22 @@ class Renderer(object):
         words = [_clean_cell(w) for w in stripped.split()]
         return [w for w in words if w]
 
+    def _AddKlavierEntry(self, entry):
+        """Aggiunge una voce ({taste:} / {fingering:}) alla lista delle tastiere.
+
+        Se nell'editor, tra la direttiva tastiera precedente e questa, è stata
+        lasciata almeno una riga vuota, alla voce viene accodato NEW_ROW_TOKEN:
+        il KlavierRenderer la disegnerà su una nuova riga. Senza riga vuota la
+        voce resta identica a prima (le tastiere si dispongono di seguito, con
+        il solo a capo automatico a fine riga).
+        """
+        entry = entry.strip()
+        if self._klavier_blank and self.song.klavier_list:
+            entry += ' ' + NEW_ROW_TOKEN
+        self._klavier_blank = False   # la riga vuota è "consumata"
+        self._klavier_line = True     # questa riga contiene una direttiva tastiera
+        self.song.klavier_list.append(entry)
+
     def RowSpacer(self):
         """Inserisce mezza riga vuota come blocco autonomo (comando {row} / {r})."""
         self.EndBlock()
@@ -519,6 +536,12 @@ class Renderer(object):
         self.song.chordsBelow = self.chordsBelow
         self.song.klavier_list = []  # accordi da mostrare come tastiere
         self.song.define_list  = []  # diagrammi chitarra da mostrare
+        # Stato per il "vai a capo" tra tastiere: una riga vuota nell'editor tra
+        # due direttive {taste:}/{fingering:} consecutive sposta la seconda su
+        # una nuova riga di tastiere (vedi _AddKlavierEntry).
+        self._klavier_last = False   # l'ultima riga significativa era una direttiva tastiera
+        self._klavier_blank = False  # ...ed è seguita da almeno una riga vuota
+        self._klavier_line = False   # la riga corrente contiene una direttiva tastiera
         # Dizionario durate accordi dalla direttiva {beats_time: ACCORDO=battiti ...}
         # Attivo per la riga immediatamente successiva alla direttiva.
         self._pending_duration = []   # lista di (accordo, battiti) in ordine
@@ -554,6 +577,9 @@ class Renderer(object):
 
             # ── Blocco grid: raccoglie le righe in _grid_rows ─────────
             if getattr(self, '_grid_rows', None) is not None:
+                # Il contenuto di una grid interrompe la sequenza di tastiere
+                self._klavier_last = False
+                self._klavier_blank = False
                 stripped_l = l.strip()
                 # {beats_time: ...} da solo sulla riga → battiti per la riga di celle
                 # successiva. Dentro la grid non si passa dal tokenizer, quindi la
@@ -591,6 +617,7 @@ class Renderer(object):
             # ─────────────────────────────────────────────────────────
 
             self.tkz = SongTokenizer(l)
+            self._klavier_line = False
             empty = True
             # Riga di commento ChordPro '#...': va ignorata come una riga vuota
             # (chiude il blocco corrente) a prescindere da come SongTokenizer
@@ -1080,7 +1107,7 @@ class Renderer(object):
                     elif cmd == 'taste':
                         a = self.GetAttribute()
                         if a is not None and a.strip() != '':
-                            self.song.klavier_list.append(a.strip())
+                            self._AddKlavierEntry(a)
                     elif cmd == 'define':
                         a = self.GetAttribute()
                         if a is not None and a.strip() != '':
@@ -1092,7 +1119,7 @@ class Renderer(object):
                         # il KlavierRenderer aggiornato la parsa e disegna i numeri.
                         a = self.GetAttribute()
                         if a is not None and a.strip() != '':
-                            self.song.klavier_list.append(a.strip())
+                            self._AddKlavierEntry(a)
                     elif cmd == 'image':
                         a = self.GetAttribute()
                         if a is not None and a.strip():
@@ -1114,6 +1141,18 @@ class Renderer(object):
                             self._beats_time_format_snapshot = ParagraphFormat(self.format)
 
             self.EndLine()
+            # Aggiorna lo stato "riga vuota tra due tastiere": una riga vuota
+            # conta solo se l'ultima riga significativa era una direttiva
+            # tastiera; qualunque altra riga con contenuto interrompe la
+            # sequenza (le tastiere separate da testo non vanno a capo).
+            if self._klavier_line:
+                self._klavier_last = True
+            elif l.strip() == '':
+                if self._klavier_last:
+                    self._klavier_blank = True
+            else:
+                self._klavier_last = False
+                self._klavier_blank = False
             if empty:
                 if state in {SongBlock.verse, SongBlock.title}:
                     self.EndBlock()
