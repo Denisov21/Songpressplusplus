@@ -50,7 +50,7 @@ Lo script `build_deb.sh` si trova nella root del progetto, accanto a `pyproject.
 > **⚠️ Nota:** il percorso qui sotto è solo un **esempio** ed è **da verificare**. Sostituiscilo con il percorso effettivo in cui si trova il progetto sul tuo sistema.
 
 ```bash
-cd /home/denis/Songpress_DEFINitiVO3/SongpressPlusPlus
+cd ~/Songpress_DEFINitiVO3/SongpressPlusPlus
 ```
 
 ### 2. Rendi eseguibile lo script (solo la prima volta)
