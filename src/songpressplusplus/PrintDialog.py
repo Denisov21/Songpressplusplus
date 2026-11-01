@@ -1652,6 +1652,18 @@ class PrintOptionsDialog:
         row_dbg.Add(self.cb_debug, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         self.btn_open_log = wx.Button(dlg, wx.ID_ANY, _("Open folder"), style=wx.BU_EXACTFIT)
         self.btn_open_log.SetToolTip(_("Open the folder that contains the log file"))
+        # Icona 16x16 sul pulsante «Apri cartella»
+        try:
+            _p = glb.AddPath('img/open_log_folder.png')
+            if os.path.isfile(_p):
+                _img = wx.Image(_p, wx.BITMAP_TYPE_PNG)
+                if _img.GetWidth() != 16 or _img.GetHeight() != 16:
+                    _img = _img.Scale(16, 16, wx.IMAGE_QUALITY_HIGH)
+                self.btn_open_log.SetBitmap(wx.Bitmap(_img))
+                self.btn_open_log.SetBitmapPosition(wx.LEFT)
+                self.btn_open_log.SetBitmapMargins(4, 0)
+        except Exception:
+            pass
         row_dbg.Add(self.btn_open_log, 0, wx.ALIGN_CENTER_VERTICAL)
         box_diag.Add(row_dbg, 0, wx.EXPAND | wx.ALL, _GAP)
         lbl_path = wx.StaticText(dlg, label=_debug_log_path())
