@@ -7184,6 +7184,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         stc.AutoCompSetIgnoreCase(True)
         stc.AutoCompSetAutoHide(True)
         stc.AutoCompSetDropRestOfWord(False)
+        self._dirTipItemCount = len(matches)
         stc.AutoCompShow(typed_len, ' '.join(_tagged(d) for d in matches))
         self._StartDirectiveTips()
 
@@ -7241,6 +7242,25 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             return
         self._ShowDirectiveTip(text)
 
+    def _GetAutoCompListRect(self):
+        """Rettangolo (coordinate schermo) della lista di autocompletamento, o
+        None se non si trova. wxSTC la realizza come un wx.PopupWindow figlio
+        del controllo di testo: si cerca tra i suoi figli la finestra visibile
+        (escluso il nostro tooltip)."""
+        try:
+            own = getattr(self, '_dirTipWin', None)
+            for c in self.text.GetChildren():
+                if c is own or not isinstance(c, wx.PopupWindow):
+                    continue
+                if not c.IsShown():
+                    continue
+                r = c.GetScreenRect()
+                if r.width > 0 and r.height > 0:
+                    return r
+        except Exception:
+            pass
+        return None
+
     def _ShowDirectiveTip(self, text):
         stc = self.text
         win = getattr(self, '_dirTipWin', None)
@@ -7261,21 +7281,61 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         pt = stc.PointFromPosition(pos)
         line_h = stc.TextHeight(stc.LineFromPosition(pos))
         screen_pt = stc.ClientToScreen(pt)
-        # La lista si apre sotto la riga se c'è spazio, altrimenti sopra.
-        # Il tooltip va a SINISTRA della lista, alla stessa altezza, così non
-        # ne copre le voci. Se a sinistra non c'è spazio, passa sopra/sotto
-        # la riga dalla parte opposta alla lista.
         disp = wx.Display(wx.Display.GetFromWindow(stc) if wx.Display.GetFromWindow(stc) >= 0 else 0)
         area = disp.GetClientArea()
+
+        # Si legge il rettangolo REALE della lista di autocompletamento e
+        # il tooltip le si affianca (a destra, altrimenti a sinistra, altrimenti
+        # sopra/sotto): la posizione stimata non e' affidabile, perche' la lista
+        # viene spostata da Windows quando e' vicina al bordo dello schermo.
+        lrect = self._GetAutoCompListRect()
+        if lrect is not None:
+            w, h = win.GetSize().width, win.GetSize().height
+            gap = 4
+            top_ref = min(lrect.y, screen_pt.y)   # non coprire nemmeno la riga corrente
+            if top_ref - h - gap >= area.y:
+                # caso normale: SOPRA la lista (e la riga), allineato a sinistra
+                x = min(max(area.x, lrect.x), area.GetRight() - w)
+                y = top_ref - h - gap
+            else:
+                # niente spazio sopra: a destra, altrimenti a sinistra,
+                # altrimenti sotto la lista
+                y = lrect.y
+                x = lrect.GetRight() + gap
+                if x + w > area.GetRight():
+                    x = lrect.x - w - gap
+                if x < area.x:
+                    x = min(max(area.x, lrect.x), area.GetRight() - w)
+                    y = lrect.GetBottom() + gap
+            y = min(y, area.GetBottom() - h)
+            win.SetPosition((max(area.x, x), max(area.y, y)))
+            win.Show()
+            stc.SetFocus()
+            return
+
+        # Altre piattaforme: la lista si apre sotto la riga se c'è spazio,
+        # altrimenti sopra. Il tooltip va dalla parte VERTICALE opposta.
+        try:
+            max_rows = max(1, stc.AutoCompGetMaxHeight())
+        except Exception:
+            max_rows = 5
+        rows = min(max_rows, max(1, getattr(self, '_dirTipItemCount', max_rows)))
+        # altezza stimata della lista (con margine per bordi e differenze Win/GTK)
+        list_h = rows * (line_h + self.frame.FromDIP(6)) + self.frame.FromDIP(16)
         room_below = area.GetBottom() - (screen_pt.y + line_h)
-        list_below = room_below >= self.frame.FromDIP(170)
+        list_below = room_below >= list_h
         w, h = win.GetSize().width, win.GetSize().height
-        x = screen_pt.x - w - 4
-        if x >= area.x:
-            y = (screen_pt.y + line_h + 2) if list_below else (screen_pt.y - h - 2)
+        if list_below:
+            y = screen_pt.y - h - 2
+            if y < area.y:
+                # niente spazio sopra la riga: lo metto sotto la lista
+                y = screen_pt.y + line_h + list_h + 2
         else:
-            x = min(screen_pt.x, area.GetRight() - w)
-            y = (screen_pt.y - h - 2) if list_below else (screen_pt.y + line_h + 2)
+            y = screen_pt.y + line_h + 2
+            if y + h > area.GetBottom():
+                # niente spazio sotto la riga: lo metto sopra la lista
+                y = screen_pt.y - list_h - h - 2
+        x = min(screen_pt.x, area.GetRight() - w)
         win.SetPosition((max(area.x, x), max(area.y, y)))
         win.Show()
         stc.SetFocus()

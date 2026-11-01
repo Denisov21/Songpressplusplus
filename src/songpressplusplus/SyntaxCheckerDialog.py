@@ -242,6 +242,13 @@ class SyntaxCheckerDialog(wx.Dialog):
         self._list.InsertColumn(2, _("Column"),      width=70)
         self._list.InsertColumn(3, _("Description"), width=-1)  # si espande automaticamente
 
+        # Colori righe: sfondo E testo vanno impostati insieme. Con i temi
+        # scuri (GTK/Linux) il testo di sistema e' chiaro e sparirebbe sui
+        # fondi pastello; si fissa quindi anche il colore del testo.
+        row_text = wx.Colour(30, 30, 30)
+        bg_warn = wx.Colour(255, 246, 220)
+        bg_err = wx.Colour(255, 240, 238)
+
         for err in self._result.errors:
             if err.severity == SEVERITY_WARNING:
                 img, sev_label = self._img_warning, _("Warning")
@@ -252,8 +259,8 @@ class SyntaxCheckerDialog(wx.Dialog):
             self._list.SetItem(idx, 2, str(err.column))
             self._list.SetItem(idx, 3, err.message)
             self._list.SetItemBackgroundColour(
-                idx, wx.Colour(255, 246, 220) if err.severity == SEVERITY_WARNING
-                else wx.Colour(255, 240, 238))
+                idx, bg_warn if err.severity == SEVERITY_WARNING else bg_err)
+            self._list.SetItemTextColour(idx, row_text)
 
         self._list.Bind(wx.EVT_LIST_ITEM_SELECTED,  self._on_item_selected)
         self._list.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self._on_goto)
