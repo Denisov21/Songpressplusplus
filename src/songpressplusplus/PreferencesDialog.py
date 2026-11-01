@@ -1047,6 +1047,7 @@ class PreferencesDialog(wx.Dialog):
         # G - Griglia…
         # I - Indicazione di tempo…
         # T - Tempo…
+        # P - Pausa (simbolo musicale)…
 
         self.hideIntroChordCB = wx.CheckBox(
             _boxNoChords, wx.ID_ANY,
@@ -1092,6 +1093,33 @@ class PreferencesDialog(wx.Dialog):
             _(u"Hide {tempo_m}, {tempo_s}, {tempo_sp}, {tempo_c}, {tempo_cp} directives when no chords are shown.")
         )
         grpNoChords.Add(self.hideTempoCB, 0, wx.ALL, 5)
+
+        self.hideRestSymbolCB = wx.CheckBox(
+            _boxNoChords, wx.ID_ANY,
+            _(u"Musical symbols  {textsize:N}\U0001D13D{textsize}")
+        )
+        self.hideRestSymbolCB.SetToolTip(
+            _(u"Hide the {textsize:N}\U0001D13D{textsize} quarter rest symbol when no chords are shown.")
+        )
+        grpNoChords.Add(self.hideRestSymbolCB, 0, wx.ALL, 5)
+
+        self.hideImageCB = wx.CheckBox(
+            _boxNoChords, wx.ID_ANY,
+            _(u"Image  {image:}")
+        )
+        self.hideImageCB.SetToolTip(
+            _(u"Hide {image:...} directives when no chords are shown.")
+        )
+        grpNoChords.Add(self.hideImageCB, 0, wx.ALL, 5)
+
+        self.hideTransposerImageCB = wx.CheckBox(
+            _boxNoChords, wx.ID_ANY,
+            _(u"Transposer image  {start_of_tab:TP}\\{end_of_tab}")
+        )
+        self.hideTransposerImageCB.SetToolTip(
+            _(u"Hide {start_of_tab:TP}…{end_of_tab} blocks when no chords are shown.")
+        )
+        grpNoChords.Add(self.hideTransposerImageCB, 0, wx.ALL, 5)
 
         bSizerSongpress.Add(grpNoChords, 0, wx.EXPAND | wx.ALL, 8)
 

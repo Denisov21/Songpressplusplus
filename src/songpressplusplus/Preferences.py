@@ -875,6 +875,9 @@ class Preferences(object):
         self.hideGrid       = _rb('hideGrid',        False)
         self.hideTempo      = _rb('hideTempo',       False)
         self.hideTime       = _rb('hideTime',        False)
+        self.hideRestSymbol = _rb('hideRestSymbol',  False)
+        self.hideImage      = _rb('hideImage',       False)
+        self.hideTransposerImage = _rb('hideTransposerImage', False)
         self.config.SetPath('/')
 
     def _SaveNoChordHide(self):
@@ -884,6 +887,9 @@ class Preferences(object):
         self.config.Write('hideGrid',        '1' if getattr(self, 'hideGrid',        False) else '0')
         self.config.Write('hideTempo',       '1' if getattr(self, 'hideTempo',       False) else '0')
         self.config.Write('hideTime',        '1' if getattr(self, 'hideTime',        False) else '0')
+        self.config.Write('hideRestSymbol',  '1' if getattr(self, 'hideRestSymbol',  False) else '0')
+        self.config.Write('hideImage',       '1' if getattr(self, 'hideImage',       False) else '0')
+        self.config.Write('hideTransposerImage', '1' if getattr(self, 'hideTransposerImage', False) else '0')
         self.config.SetPath('/')
 
     def _LoadSaveOnModified(self):

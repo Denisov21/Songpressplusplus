@@ -3274,6 +3274,23 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                     return m.group(1).lower(), max(pos, after_brace)
         except Exception:
             pass
+        # Indicatore Transposer: {start_of_tab: TP} ... {end_of_tab}; solo dalla
+        # riga di apertura.
+        try:
+            if pos is None or pos < 0:
+                pos = stc.GetCurrentPos()
+            ln = stc.LineFromPosition(pos)
+            if self._FindTransposerBlock(ln) is not None:
+                return 'transposer', stc.PositionFromLine(ln)
+        except Exception:
+            pass
+        # Simbolo musicale con dimensione: {textsize:12}𝅗{textsize}
+        try:
+            sym = self._FindMusicalSymbolAt(pos)
+            if sym is not None:
+                return 'musical_symbol', max(sym['ds'], min(pos, sym['de']))
+        except Exception:
+            pass
         # Direttive a piu' righe con opzioni: la finestra si apre solo dalla
         # riga di apertura ({start_of_grid ...}), mai da {end_of_grid} o dalle
         # righe interne.
@@ -3324,6 +3341,80 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 'de': ls + len(txt[:m.end()].encode('utf-8')),
                 'rest': m.group(4).strip()}
 
+    _TRANSPOSER_OPEN_RE = None
+
+    def _FindTransposerBlock(self, line):
+        """Se `line` e' la riga {start_of_tab: TP} di un indicatore Transposer
+        (seguita da riga dei pallini, riga delle note e {end_of_tab}), restituisce
+        un dict con 'ds'/'de' (inizio/fine del blocco, in byte), 'pressed' (il
+        simbolo del tasto premuto), 'free' (quello dei tasti liberi) e 'note'
+        (indice 0-5 del tasto premuto, o None); altrimenti None."""
+        import re
+        from collections import Counter
+        cls = SongpressFrame
+        if cls._TRANSPOSER_OPEN_RE is None:
+            cls._TRANSPOSER_OPEN_RE = re.compile(
+                r'^\s*\{\s*(?:start_of_tab|sot)\s*:\s*TP\s*\}\s*$', re.IGNORECASE)
+        stc = self.text
+        if line < 0 or line + 3 >= stc.GetLineCount():
+            return None
+        if not cls._TRANSPOSER_OPEN_RE.match(stc.GetLine(line).rstrip('\r\n')):
+            return None
+        end_txt = stc.GetLine(line + 3).rstrip('\r\n')
+        if not re.match(r'^\s*\{\s*(?:end_of_tab|eot)\s*\}\s*$', end_txt, re.IGNORECASE):
+            return None
+        dots = stc.GetLine(line + 1).rstrip('\r\n')
+        syms = [dots[3 * i + 1] for i in range(6) if 3 * i + 1 < len(dots)]
+        pressed = free = note = None
+        if len(syms) >= 2:
+            cnt = Counter(syms)
+            if len(cnt) == 2:
+                (free, _n1), (pressed, _n2) = cnt.most_common()
+                if _n2 == 1:
+                    note = syms.index(pressed)
+        ds = stc.PositionFromLine(line)
+        ls_end = stc.PositionFromLine(line + 3)
+        de = ls_end + len(end_txt.rstrip().encode('utf-8'))
+        return {'ds': ds, 'de': de, 'pressed': pressed, 'free': free, 'note': note}
+
+    _MUSICAL_SYMBOL_RE = None
+
+    def _FindMusicalSymbolAt(self, pos):
+        """Se `pos` (byte) e' dentro un simbolo musicale inserito con la
+        dimensione, cioe' {textsize:N}SIMBOLO{textsize}, restituisce un dict con
+        'ds'/'de' (inizio/fine in byte) e 'size' (N); altrimenti None."""
+        import re
+        cls = SongpressFrame
+        if cls._MUSICAL_SYMBOL_RE is None:
+            cls._MUSICAL_SYMBOL_RE = re.compile(
+                r'\{\s*textsize\s*:\s*(\d+)\s*\}([^{}\s]+)\{\s*textsize\s*\}',
+                re.IGNORECASE)
+        stc = self.text
+        if pos is None or pos < 0:
+            pos = stc.GetCurrentPos()
+        line = stc.LineFromPosition(pos)
+        ls = stc.PositionFromLine(line)
+        txt = stc.GetLine(line).rstrip('\r\n')
+        col = len(stc.GetTextRange(ls, pos))
+        for m in cls._MUSICAL_SYMBOL_RE.finditer(txt):
+            if m.start() <= col <= m.end():
+                return {'ds': ls + len(txt[:m.start()].encode('utf-8')),
+                        'de': ls + len(txt[:m.end()].encode('utf-8')),
+                        'size': int(m.group(1))}
+        return None
+
+    def _EditMusicalSymbol(self, info):
+        """Riapre la mappa dei simboli musicali con la dimensione attuale e, alla
+        conferma, sostituisce l'intero {textsize:N}simbolo{textsize}."""
+        dlg = MusicalSymbolDialog(self.frame, scale_enabled=True,
+                                  font_size=max(6, min(info['size'], 144)),
+                                  insert_verse=False)
+        if dlg.ShowModal() == wx.ID_OK:
+            sym = dlg.GetSymbol()
+            if sym:
+                self._ReplaceRange(info['ds'], info['de'], sym)
+        dlg.Destroy()
+
     def _EditBlockLabel(self, info):
         """Modifica l'etichetta della riga di apertura di un blocco bridge,
         ritornello o intro; il contenuto e la riga di chiusura restano intatti."""
@@ -3350,6 +3441,20 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
     def EditDirectiveAt(self, name, caret):
         """Porta il cursore dentro la direttiva e apre la finestra che la crea."""
+        if name == 'transposer':
+            info = self._FindTransposerBlock(self.text.LineFromPosition(caret))
+            if info is not None:
+                self._transposerEditInfo = info
+                try:
+                    self.OnInsertTransposerImage(None)
+                finally:
+                    self._transposerEditInfo = None
+            return
+        if name == 'musical_symbol':
+            info = self._FindMusicalSymbolAt(caret)
+            if info is not None:
+                self._EditMusicalSymbol(info)
+            return
         if name in self._BLOCK_OPENERS:
             info = self._FindBlockOpener(self.text.LineFromPosition(caret))
             if info is not None:
@@ -5774,6 +5879,16 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         _saved_pos   = int(_cfg.Read('posIndex',   '2'))   # default: cursor (indice 2)
         _saved_sym   = int(_cfg.Read('symIndex',   '0'))   # default: bullet (indice 0)
         _cfg.SetPath('/')
+        # Modifica di un indicatore esistente (dal menu contestuale): parte dalla
+        # nota e dal simbolo gia' scritti nel testo.
+        _edit = getattr(self, '_transposerEditInfo', None)
+        if _edit is not None:
+            if _edit.get('note') is not None:
+                _saved_note = _edit['note']
+            for _i, (_lbl, _bf, _be) in enumerate(BULLET_OPTIONS):
+                if _bf == _edit.get('pressed') and _be == _edit.get('free'):
+                    _saved_sym = _i
+                    break
         # Clamp ai range validi
         _saved_note = max(0, min(_saved_note, len(NOTES) - 1))
         _saved_pos  = max(0, min(_saved_pos,  3))
@@ -6252,6 +6367,13 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         text_to_insert = _build_text(tp.GetIndex())
 
+        # Modifica sul posto: sostituisce l'intero blocco, senza toccare le
+        # preferenze di posizione dell'inserimento.
+        if _edit is not None:
+            d.Destroy()
+            self._ReplaceRange(_edit['ds'], _edit['de'], text_to_insert)
+            return
+
         # ── Salva preferenze in wx.Config ────────────────────────────
         _pos_idx = next((i for i, rb in enumerate(rb_group) if rb.GetValue()), 2)
         _sym_idx = _refs.get('bullet_idx', 0)
@@ -6650,6 +6772,14 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             single_tags.update(('tempo_m', 'tempo_s', 'tempo_sp', 'tempo_c', 'tempo_cp'))
         if getattr(self.pref, 'hideTime', False):
             single_tags.add('time')
+
+        # Simbolo di pausa di semiminima: {textsize:N}𝄽{textsize}
+        if getattr(self.pref, 'hideRestSymbol', False):
+            text = re.sub(
+                r'[ \t]*\{\s*textsize\s*:\s*\d+\s*\}\U0001D13D\{\s*textsize\s*\}[ \t]*'
+                .replace(r'\U0001D13D', '\U0001D13D'),
+                ' ', text, flags=re.IGNORECASE)
+            text = re.sub(r'^[ \t]+$', '', text, flags=re.MULTILINE)
 
         if not open_tags and not single_tags:
             return text
@@ -7184,7 +7314,6 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         stc.AutoCompSetIgnoreCase(True)
         stc.AutoCompSetAutoHide(True)
         stc.AutoCompSetDropRestOfWord(False)
-        self._dirTipItemCount = len(matches)
         stc.AutoCompShow(typed_len, ' '.join(_tagged(d) for d in matches))
         self._StartDirectiveTips()
 
@@ -7242,25 +7371,6 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             return
         self._ShowDirectiveTip(text)
 
-    def _GetAutoCompListRect(self):
-        """Rettangolo (coordinate schermo) della lista di autocompletamento, o
-        None se non si trova. wxSTC la realizza come un wx.PopupWindow figlio
-        del controllo di testo: si cerca tra i suoi figli la finestra visibile
-        (escluso il nostro tooltip)."""
-        try:
-            own = getattr(self, '_dirTipWin', None)
-            for c in self.text.GetChildren():
-                if c is own or not isinstance(c, wx.PopupWindow):
-                    continue
-                if not c.IsShown():
-                    continue
-                r = c.GetScreenRect()
-                if r.width > 0 and r.height > 0:
-                    return r
-        except Exception:
-            pass
-        return None
-
     def _ShowDirectiveTip(self, text):
         stc = self.text
         win = getattr(self, '_dirTipWin', None)
@@ -7281,61 +7391,21 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         pt = stc.PointFromPosition(pos)
         line_h = stc.TextHeight(stc.LineFromPosition(pos))
         screen_pt = stc.ClientToScreen(pt)
+        # La lista si apre sotto la riga se c'è spazio, altrimenti sopra.
+        # Il tooltip va a SINISTRA della lista, alla stessa altezza, così non
+        # ne copre le voci. Se a sinistra non c'è spazio, passa sopra/sotto
+        # la riga dalla parte opposta alla lista.
         disp = wx.Display(wx.Display.GetFromWindow(stc) if wx.Display.GetFromWindow(stc) >= 0 else 0)
         area = disp.GetClientArea()
-
-        # Si legge il rettangolo REALE della lista di autocompletamento e
-        # il tooltip le si affianca (a destra, altrimenti a sinistra, altrimenti
-        # sopra/sotto): la posizione stimata non e' affidabile, perche' la lista
-        # viene spostata da Windows quando e' vicina al bordo dello schermo.
-        lrect = self._GetAutoCompListRect()
-        if lrect is not None:
-            w, h = win.GetSize().width, win.GetSize().height
-            gap = 4
-            top_ref = min(lrect.y, screen_pt.y)   # non coprire nemmeno la riga corrente
-            if top_ref - h - gap >= area.y:
-                # caso normale: SOPRA la lista (e la riga), allineato a sinistra
-                x = min(max(area.x, lrect.x), area.GetRight() - w)
-                y = top_ref - h - gap
-            else:
-                # niente spazio sopra: a destra, altrimenti a sinistra,
-                # altrimenti sotto la lista
-                y = lrect.y
-                x = lrect.GetRight() + gap
-                if x + w > area.GetRight():
-                    x = lrect.x - w - gap
-                if x < area.x:
-                    x = min(max(area.x, lrect.x), area.GetRight() - w)
-                    y = lrect.GetBottom() + gap
-            y = min(y, area.GetBottom() - h)
-            win.SetPosition((max(area.x, x), max(area.y, y)))
-            win.Show()
-            stc.SetFocus()
-            return
-
-        # Altre piattaforme: la lista si apre sotto la riga se c'è spazio,
-        # altrimenti sopra. Il tooltip va dalla parte VERTICALE opposta.
-        try:
-            max_rows = max(1, stc.AutoCompGetMaxHeight())
-        except Exception:
-            max_rows = 5
-        rows = min(max_rows, max(1, getattr(self, '_dirTipItemCount', max_rows)))
-        # altezza stimata della lista (con margine per bordi e differenze Win/GTK)
-        list_h = rows * (line_h + self.frame.FromDIP(6)) + self.frame.FromDIP(16)
         room_below = area.GetBottom() - (screen_pt.y + line_h)
-        list_below = room_below >= list_h
+        list_below = room_below >= self.frame.FromDIP(170)
         w, h = win.GetSize().width, win.GetSize().height
-        if list_below:
-            y = screen_pt.y - h - 2
-            if y < area.y:
-                # niente spazio sopra la riga: lo metto sotto la lista
-                y = screen_pt.y + line_h + list_h + 2
+        x = screen_pt.x - w - 4
+        if x >= area.x:
+            y = (screen_pt.y + line_h + 2) if list_below else (screen_pt.y - h - 2)
         else:
-            y = screen_pt.y + line_h + 2
-            if y + h > area.GetBottom():
-                # niente spazio sotto la riga: lo metto sopra la lista
-                y = screen_pt.y - list_h - h - 2
-        x = min(screen_pt.x, area.GetRight() - w)
+            x = min(screen_pt.x, area.GetRight() - w)
+            y = (screen_pt.y - h - 2) if list_below else (screen_pt.y + line_h + 2)
         win.SetPosition((max(area.x, x), max(area.y, y)))
         win.Show()
         stc.SetFocus()

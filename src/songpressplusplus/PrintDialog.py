@@ -38,11 +38,16 @@
 
 import math
 import os
+import re
 
 import wx
 
 from .Globals import glb
 from .Renderer import Renderer, SongDecorator
+# Controllo della riga «# {print_options: ...}»: la logica vive in
+# SyntaxChecker.py (usata anche dal controllo di sintassi dell'editor).
+from .SyntaxChecker import (
+    PRINT_OPTIONS_SPEC, check_print_options_line, check_print_options_text)
 
 _ = wx.GetTranslation
 
@@ -1596,6 +1601,45 @@ class PrintOptionsDialog:
         box_scale.Add(self.btn_scale_reset, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
         outer.Add(box_scale, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
 
+        # ── Sezione Impostazioni nel brano ─────────────────────────────
+        # Salva/carica le impostazioni di stampa in una riga di commento
+        # «# {print_options: ...}» come PRIMA riga dell'editor. Le righe
+        # «# {...}» non compaiono ne' in anteprima ne' in stampa.
+        box_song = wx.StaticBoxSizer(
+            wx.StaticBox(dlg, label=_("Settings in the song")), wx.VERTICAL
+        )
+        row_song = wx.BoxSizer(wx.HORIZONTAL)
+        self.btn_save_to_editor = wx.Button(dlg, wx.ID_ANY, _("Save in editor"))
+        self.btn_save_to_editor.SetToolTip(_(
+            "Write these print settings as a comment line '# {print_options: ...}' "
+            "at the top of the song. The line is not shown in the preview or in print."))
+        self.btn_load_from_editor = wx.Button(dlg, wx.ID_ANY, _("Load from editor"))
+        self.btn_load_from_editor.SetToolTip(_(
+            "Read the print settings saved in the first line of the song "
+            "and show them here. Press OK to apply them."))
+        # Icone 16x16 (stesso metodo degli altri pulsanti con icona)
+        for _btn, _name in ((self.btn_save_to_editor,   'img/save_to_editor.png'),
+                            (self.btn_load_from_editor, 'img/load_from_editor.png')):
+            try:
+                _p = glb.AddPath(_name)
+                if os.path.isfile(_p):
+                    _img = wx.Image(_p, wx.BITMAP_TYPE_PNG)
+                    if _img.GetWidth() != 16 or _img.GetHeight() != 16:
+                        _img = _img.Scale(16, 16, wx.IMAGE_QUALITY_HIGH)
+                    _btn.SetBitmap(wx.Bitmap(_img))
+                    _btn.SetBitmapPosition(wx.LEFT)
+                    _btn.SetBitmapMargins(4, 0)
+            except Exception:
+                pass
+        row_song.Add(self.btn_save_to_editor, 1, wx.RIGHT, 4)
+        row_song.Add(self.btn_load_from_editor, 1)
+        box_song.Add(row_song, 0, wx.EXPAND | wx.ALL, _GAP)
+        self.lbl_song_status = wx.StaticText(dlg, label=u"")
+        self.lbl_song_status.SetForegroundColour(
+            wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT))
+        box_song.Add(self.lbl_song_status, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
+        outer.Add(box_song, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
+
         # ── Sezione Diagnostica ────────────────────────────────────────
         box_diag = wx.StaticBoxSizer(
             wx.StaticBox(dlg, label=_("Diagnostics")), wx.VERTICAL
@@ -1653,6 +1697,8 @@ class PrintOptionsDialog:
         self.btn_scale_reset.Bind(wx.EVT_BUTTON, self._on_scale_reset)
         self.btn_open_log.Bind(wx.EVT_BUTTON, self._on_open_log_folder)
         self.btn_ok.Bind(wx.EVT_BUTTON, self._on_ok)
+        self.btn_save_to_editor.Bind(wx.EVT_BUTTON, self._on_save_to_editor)
+        self.btn_load_from_editor.Bind(wx.EVT_BUTTON, self._on_load_from_editor)
 
     # ── Handler eventi ────────────────────────────────────────────────────────
 
@@ -1740,10 +1786,171 @@ class PrintOptionsDialog:
         if not self._pinned[0]:
             self.dlg.EndModal(wx.ID_OK)
 
+    # ── Impostazioni salvate nel brano (prima riga dell'editor) ───────────────
+
+    _PRINT_LINE_RE = re.compile(r'^\s*#\s*\{\s*print_options\s*:\s*([^}]*)\}\s*$',
+                                re.IGNORECASE)
+
+    def _collect_settings(self):
+        """Raccoglie le impostazioni correnti del dialogo (+ pagina)."""
+        o = self.owner
+        pend = getattr(self, '_pending_page', None) or {}
+        pd = o._print_data
+        margins = pend.get('margins') or (
+            o._margin_top, o._margin_bottom, o._margin_left, o._margin_right)
+        return [
+            ('pages',    2 if self.rb_page2.GetValue() else 1),
+            ('cols',     2 if self.rb_col2.GetValue() else 1),
+            ('fit',      int(self.cb_fit.GetValue())),
+            ('shrink',   int(self.cb_shrink.GetValue())),
+            ('minmargin', self.spin_min_margin.GetValue()),
+            ('nomirror', int(self.cb_no_mirror.GetValue())),
+            ('blank',    int(self.cb_remove_blank.GetValue())),
+            ('blankthr', self.spin_blank_threshold.GetValue()),
+            ('scale',    self.spin_font_scale.GetValue()),
+            ('paper',    pend.get('paper', pd.GetPaperId())),
+            ('orient',   pend.get('orient', pd.GetOrientation())),
+            ('margins',  ','.join(str(int(m)) for m in margins)),
+        ]
+
+    def _first_line(self, stc):
+        if stc is None or not stc.GetLineCount():
+            return u""
+        return stc.GetLine(0).rstrip(u"\r\n")
+
+    def _on_save_to_editor(self, evt):
+        stc = getattr(self.owner, 'text', None)
+        if stc is None:
+            return
+        line = u"# {print_options: " + u"; ".join(
+            u"%s=%s" % kv for kv in self._collect_settings()) + u"}"
+        eol = {0: u"\r\n", 1: u"\r"}.get(stc.GetEOLMode(), u"\n")
+        stc.BeginUndoAction()
+        try:
+            if self._PRINT_LINE_RE.match(self._first_line(stc)):
+                stc.SetTargetStart(0)
+                stc.SetTargetEnd(stc.GetLineEndPosition(0))
+                stc.ReplaceTarget(line)
+            else:
+                stc.InsertText(0, line + eol)
+        finally:
+            stc.EndUndoAction()
+        self.lbl_song_status.SetLabel(_("Settings saved in the first line of the editor."))
+        self.dlg.Layout()
+
+    def _on_load_from_editor(self, evt):
+        stc = getattr(self.owner, 'text', None)
+        first = self._first_line(stc)
+        problems = check_print_options_line(first)
+        m = self._PRINT_LINE_RE.match(first)
+        if not m:
+            if problems:
+                # riga print_options presente ma malformata (es. manca la '}')
+                self._show_print_problems(problems)
+            else:
+                wx.MessageBox(
+                    _("No print settings found in the first line of the editor.\n"
+                      "Use 'Save in editor' first."),
+                    _("Print options"), wx.OK | wx.ICON_INFORMATION, self.dlg)
+            return
+        kv = {}
+        for part in m.group(1).split(u";"):
+            if u"=" in part:
+                k, v = part.split(u"=", 1)
+                kv[k.strip().lower()] = v.strip()
+
+        def _int(key, lo, hi):
+            try:
+                n = int(kv[key])
+            except (KeyError, ValueError):
+                return None
+            return n if lo <= n <= hi else None
+
+        v = _int('pages', 1, 2)
+        if v is not None:
+            self.rb_page1.SetValue(v == 1)
+            self.rb_page2.SetValue(v == 2)
+            self.cb_no_mirror.Enable(v == 2)
+            self._update_scope_labels(v == 2)
+        v = _int('cols', 1, 2)
+        if v is not None:
+            self.rb_col1.SetValue(v == 1)
+            self.rb_col2.SetValue(v == 2)
+        v = _int('fit', 0, 1)
+        if v is not None:
+            self.cb_fit.SetValue(bool(v))
+        v = _int('shrink', 0, 1)
+        if v is not None:
+            self.cb_shrink.SetValue(bool(v))
+            self.lbl_min_margin.Enable(bool(v))
+            self.spin_min_margin.Enable(bool(v))
+        v = _int('minmargin', 0, 50)
+        if v is not None:
+            self.spin_min_margin.SetValue(v)
+        v = _int('nomirror', 0, 1)
+        if v is not None:
+            self.cb_no_mirror.SetValue(bool(v))
+        v = _int('blank', 0, 1)
+        if v is not None:
+            self.cb_remove_blank.SetValue(bool(v))
+            self.lbl_blank_threshold.Enable(bool(v))
+            self.spin_blank_threshold.Enable(bool(v))
+        v = _int('blankthr', 1, 95)
+        if v is not None:
+            self.spin_blank_threshold.SetValue(v)
+        v = _int('scale', 50, 200)
+        if v is not None:
+            self.spin_font_scale.SetValue(v)
+        # Formato carta, orientamento e margini non hanno controlli in questo
+        # dialogo: vengono applicati con OK insieme al resto.
+        pend = {}
+        v = _int('paper', 0, 200)
+        if v is not None:
+            pend['paper'] = v
+        v = _int('orient', 1, 2)
+        if v is not None:
+            pend['orient'] = v
+        try:
+            mg = [int(x) for x in kv.get('margins', u"").split(u",")]
+            if len(mg) == 4 and all(0 <= x <= 100 for x in mg):
+                pend['margins'] = tuple(mg)
+        except ValueError:
+            pass
+        self._pending_page = pend
+        if problems:
+            self.lbl_song_status.SetLabel(_("Settings loaded with warnings. Press OK to apply."))
+            self.dlg.Layout()
+            self._show_print_problems(problems)
+        else:
+            self.lbl_song_status.SetLabel(_("Settings loaded from the editor. Press OK to apply."))
+            self.dlg.Layout()
+
+    def _show_print_problems(self, problems):
+        """Elenca i problemi trovati nella riga print_options."""
+        lines = [u"%s (%s %d): %s" % (
+                    _("Error") if sev == 'error' else _("Warning"),
+                    _("column"), col, msg)
+                 for col, sev, msg in problems]
+        icon = wx.ICON_ERROR if any(s == 'error' for _c, s, _m in problems) \
+            else wx.ICON_WARNING
+        wx.MessageBox(
+            _("Problems found in the print settings line:") + u"\n\n" + u"\n".join(lines),
+            _("Print options"), wx.OK | icon, self.dlg)
+
     # ── Logica ────────────────────────────────────────────────────────────────
 
     def _apply_options(self):
         o = self.owner
+        pend = getattr(self, '_pending_page', None)
+        if pend:
+            if 'margins' in pend:
+                (o._margin_top, o._margin_bottom,
+                 o._margin_left, o._margin_right) = pend['margins']
+            if 'paper' in pend:
+                o._print_data.SetPaperId(pend['paper'])
+            if 'orient' in pend:
+                o._print_data.SetOrientation(pend['orient'])
+            self._pending_page = None
         o._two_pages_per_sheet  = self.rb_page2.GetValue()
         o._columns_per_page     = 2 if self.rb_col2.GetValue() else 1
         o._fit_to_page          = self.cb_fit.GetValue()

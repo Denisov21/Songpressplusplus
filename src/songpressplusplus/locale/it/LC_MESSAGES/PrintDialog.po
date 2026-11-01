@@ -239,3 +239,29 @@ msgstr "Impossibile aprire la cartella:"
 
 msgid "Error"
 msgstr "Errore"
+
+# ── Sezione «Impostazioni nel brano» (salva/carica nella prima riga dell'editor) ──
+
+msgid "Settings in the song"
+msgstr "Impostazioni nel brano"
+
+msgid "Save in editor"
+msgstr "Salva nell'editor"
+
+msgid "Load from editor"
+msgstr "Carica dall'editor"
+
+msgid "Write these print settings as a comment line '# {print_options: ...}' at the top of the song. The line is not shown in the preview or in print."
+msgstr "Scrive queste impostazioni di stampa come riga di commento '# {print_options: ...}' all'inizio del brano. La riga non compare nell'anteprima né in stampa."
+
+msgid "Read the print settings saved in the first line of the song and show them here. Press OK to apply them."
+msgstr "Legge le impostazioni di stampa salvate nella prima riga del brano e le mostra qui. Premi OK per applicarle."
+
+msgid "Settings saved in the first line of the editor."
+msgstr "Impostazioni salvate nella prima riga dell'editor."
+
+msgid "Settings loaded from the editor. Press OK to apply."
+msgstr "Impostazioni caricate dall'editor. Premi OK per applicarle."
+
+msgid "No print settings found in the first line of the editor.\nUse 'Save in editor' first."
+msgstr "Nessuna impostazione di stampa trovata nella prima riga dell'editor.\nUsa prima «Salva nell'editor»."

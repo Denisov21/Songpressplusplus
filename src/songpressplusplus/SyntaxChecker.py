@@ -521,9 +521,136 @@ def _strip_inline_comment(line: str) -> str:
     return line
 
 
+# ── Controllo della riga «# {print_options: ...}» (impostazioni di stampa) ───
+# Funzioni pure usate da check() e dal dialogo «Opzioni di stampa»
+# (PrintDialog.py). Restituiscono liste di tuple con severita 'error' oppure
+# 'warning'; riga/colonna sono 1-based:
+#   (riga, colonna, severita, messaggio)      riga/colonna 1-based
+# con severita 'error' oppure 'warning'.
+
+PRINT_OPTIONS_SPEC = {
+    'pages':     (1, 2),
+    'cols':      (1, 2),
+    'fit':       (0, 1),
+    'shrink':    (0, 1),
+    'minmargin': (0, 50),
+    'nomirror':  (0, 1),
+    'blank':     (0, 1),
+    'blankthr':  (1, 95),
+    'scale':     (50, 200),
+    'paper':     (0, 200),
+    'orient':    (1, 2),
+}
+PRINT_OPTIONS_MARGINS_RANGE = (0, 100)
+_PRINT_HEAD_RE = re.compile(r'^\s*#\s*\{\s*print_options\b', re.IGNORECASE)
+
+
+def check_print_options_line(line):
+    """Controlla UNA riga «# {print_options: ...}».
+    Ritorna [(colonna, severita, messaggio), ...]; lista vuota = tutto ok.
+    Se la riga non e' una print_options ritorna lista vuota."""
+    out = []
+    head = _PRINT_HEAD_RE.match(line)
+    if not head:
+        return out
+    pos = head.end()
+    rest = line[pos:]
+    stripped = rest.lstrip()
+    pos += len(rest) - len(stripped)
+    if not stripped.startswith(':'):
+        out.append((pos + 1, 'error', _("Missing ':' after print_options.")))
+        body_start = pos
+    else:
+        body_start = pos + 1
+    body_full = line[body_start:]
+    close = body_full.find('}')
+    if close < 0:
+        out.append((len(line) + 1, 'error', _("Missing closing '}'.")))
+        body = body_full
+    else:
+        body = body_full[:close]
+        if body_full[close + 1:].strip():
+            out.append((body_start + close + 2, 'warning',
+                        _("Unexpected text after '}'.")))
+    seen = set()
+    offset = body_start
+    for field in body.split(';'):
+        col = offset + (len(field) - len(field.lstrip())) + 1
+        offset += len(field) + 1
+        f = field.strip()
+        if not f:
+            continue
+        if '=' not in f:
+            out.append((col, 'error',
+                        _("Invalid field '{f}': expected key=value.").format(f=f)))
+            continue
+        key, val = [x.strip() for x in f.split('=', 1)]
+        key = key.lower()
+        if key != 'margins' and key not in PRINT_OPTIONS_SPEC:
+            out.append((col, 'warning', _("Unknown option '{key}'.").format(key=key)))
+            continue
+        if key in seen:
+            out.append((col, 'warning', _("Option '{key}' is repeated.").format(key=key)))
+        seen.add(key)
+        if key == 'margins':
+            lo, hi = PRINT_OPTIONS_MARGINS_RANGE
+            try:
+                mg = [int(x) for x in val.split(',')]
+                ok = len(mg) == 4 and all(lo <= x <= hi for x in mg)
+            except ValueError:
+                ok = False
+            if not ok:
+                out.append((col, 'error', _(
+                    "Invalid value for 'margins': expected 4 numbers {lo}-{hi} "
+                    "(top,bottom,left,right).").format(lo=lo, hi=hi)))
+            continue
+        lo, hi = PRINT_OPTIONS_SPEC[key]
+        try:
+            n = int(val)
+            ok = lo <= n <= hi
+        except ValueError:
+            ok = False
+        if not ok:
+            out.append((col, 'error', _(
+                "Invalid value for '{key}': expected a number {lo}-{hi}.").format(
+                    key=key, lo=lo, hi=hi)))
+    missing = [k for k in list(PRINT_OPTIONS_SPEC) + ['margins'] if k not in seen]
+    if missing and close >= 0:
+        out.append((body_start + 1, 'warning',
+                    _("Missing option(s): {names}.").format(names=u", ".join(missing))))
+    return out
+
+
+def check_print_options_text(text):
+    """Controlla tutto il testo del brano.
+    Ritorna [(riga, colonna, severita, messaggio), ...] (riga 1-based).
+    La riga vale solo se e' la PRIMA del brano: altrove viene segnalata."""
+    out = []
+    count = 0
+    for i, line in enumerate(text.split('\n'), 1):
+        line = line.rstrip('\r')
+        if not _PRINT_HEAD_RE.match(line):
+            continue
+        count += 1
+        for col, sev, msg in check_print_options_line(line):
+            out.append((i, col, sev, msg))
+        if i != 1:
+            out.append((i, 1, 'warning', _(
+                "print_options is read only from the first line of the song; "
+                "this line is ignored.")))
+    return out
+
+
 def check(text: str) -> SyntaxCheckResult:
     result = SyntaxCheckResult()
     lines = text.splitlines()
+
+    # Riga delle impostazioni di stampa «# {print_options: ...}»: e' un
+    # commento (saltato dal ciclo sotto), ma il suo contenuto va controllato.
+    for p_line, p_col, p_sev, p_msg in check_print_options_text(text):
+        result.errors.append(SyntaxError(
+            line=p_line, column=p_col, message=p_msg,
+            severity=SEVERITY_ERROR if p_sev == 'error' else SEVERITY_WARNING))
 
     for line_idx, line in enumerate(lines):
         line_num = line_idx + 1

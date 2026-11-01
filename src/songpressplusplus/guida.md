@@ -2153,7 +2153,7 @@ Contiene tre gruppi già descritti in dettaglio nei capitoli *Opzioni Pagina*, *
 
 - **Pagina Songpress++** — Doppio clic porta il focus all'editor (✓), Dimensione minima pannello 370×520 (✓), Mostra indicatore pagina (✓), Ritarda aggiornamento durante la digitazione — debounce (✓), Sfondo grigio (✓).
 - **Stampa** — Aggiornamento in tempo reale dello stato duplex/colore nell'anteprima ogni 1,5 s (✓), Mantieni l'anteprima di stampa sempre in primo piano (☐), Mostra anteprima di stampa prima di stampare (✓).
-- **Nessun accordo: blocchi da nascondere** — Accordi di intro, Bridge, Griglia, Indicazione di tempo `{time}`, Tempo `{tempo_*}` (tutti ☐).
+- **Nessun accordo: blocchi da nascondere** — Accordi di intro, Bridge, Griglia, Indicazione di tempo `{time}`, Tempo `{tempo_*}`, Simboli musicali `{textsize:N}𝄽{textsize}` (tutti ☐).
 
 ---
 
@@ -2494,7 +2494,7 @@ Su Windows il rilevamento del colore usa tre fonti in cascata, ognuna attivata s
 | Canzonatore          | Unisce più file ChordPro in un unico file    |
 | Copia come immagine  | Copia negli appunti come immagine vettoriale |
 | Copia solo testo     | Copia il testo senza accordi                 |
-| Modifica direttiva   | Compare in cima al menu quando si fa clic destro su una direttiva con finestra propria (`{taste:}`, `{fingering:}`, `{define:}`, `{time:}`, `{tempo:}`, `{tempo_label:}`, `{key:}`, `{beats_time:}`, e le righe di apertura dei blocchi `{start_chorus}` / `{soc}` e `{start_chord}`: non le righe di chiusura né quelle interne; si modifica l'etichetta): riapre la finestra che l'ha creata, già compilata con i valori attuali, e alla conferma sostituisce solo il valore. Si può nascondere dalle Opzioni (scheda *Menu contestuale* → *Azioni speciali*). |
+| Modifica direttiva   | Compare in cima al menu quando si fa clic destro su una direttiva con finestra propria (`{taste:}`, `{fingering:}`, `{define:}`, `{time:}`, `{tempo:}`, `{tempo_label:}`, `{key:}`, `{beats_time:}`, l'indicatore Transposer `{start_of_tab: TP}` (solo dalla riga di apertura), il simbolo musicale con dimensione `{textsize:12}𝅗{textsize}` (riapre la mappa dei simboli), e le righe di apertura dei blocchi `{start_chorus}` / `{soc}` e `{start_chord}`: non le righe di chiusura né quelle interne; si modifica l'etichetta): riapre la finestra che l'ha creata, già compilata con i valori attuali, e alla conferma sostituisce solo il valore. Si può nascondere dalle Opzioni (scheda *Menu contestuale* → *Azioni speciali*). |
 
 > **Nota — Esporta PDF:** il flusso di esportazione apre prima il dialogo **Impostazione pagina** (formato carta, orientamento, margini in mm); solo dopo la conferma viene chiesto il nome del file di output. I margini impostati vengono memorizzati e riutilizzati nelle successive esportazioni.
 
@@ -2866,12 +2866,13 @@ Le opzioni si trovano in **Strumenti → Opzioni... → scheda Pagina Songpress+
 | **Griglia `{start_of_grid}`\`{end_of_grid}`** | ☐ | Nasconde i blocchi griglia accordi quando gli accordi sono disabilitati (copre anche le forme `{sog}`, `{grid}`) |
 | **Tempo `{tempo_m}`\`{tempo_s}`\`{tempo_sp}`\`{tempo_c}`\`{tempo_cp}`\`{tempo_label}`** | ☐ | Nasconde tutte le direttive di indicazione del tempo quando gli accordi sono disabilitati |
 | **Indicazione di tempo `{time}`** | ☐ | Nasconde le direttive `{time:…}` (indicazione metrica, es. `4/4`) quando gli accordi sono disabilitati |
+| **Simboli musicali `{textsize:N}𝄽{textsize}`** | ☐ | Nasconde i simboli musicali `{textsize:N}𝄽{textsize}` (con qualsiasi dimensione `N`) e gli spazi che li circondano quando gli accordi sono disabilitati |
 
 > **Nota:** le checkbox agiscono **esclusivamente** quando lo slider Mostra accordi è su *Nessuno* (valore 0). Con le altre modalità (*Solo prima strofa*, *Intera canzone*) i blocchi vengono sempre visualizzati normalmente, indipendentemente da queste impostazioni.
 
 > **Nota:** il filtro agisce sul testo passato al renderer prima del ridisegno. Il documento sorgente nell'editor non viene mai modificato.
 
-> **Nota tecnica:** `{start_chord}`, `{start_bridge}`, `{start_of_grid}` sono **blocchi paired** (apertura + contenuto + chiusura): l'intera sezione viene soppressa. `{tempo_m}`, `{tempo_s}`, `{tempo_sp}`, `{tempo_c}`, `{tempo_cp}`, `{tempo_label}` e `{time}` sono invece **direttive singole**: viene rimossa soltanto la riga che le contiene.
+> **Nota tecnica:** `{start_chord}`, `{start_bridge}`, `{start_of_grid}` sono **blocchi paired** (apertura + contenuto + chiusura): l'intera sezione viene soppressa. `{tempo_m}`, `{tempo_s}`, `{tempo_sp}`, `{tempo_c}`, `{tempo_cp}`, `{tempo_label}` e `{time}` sono invece **direttive singole**: viene rimossa soltanto la riga che le contiene. I simboli musicali `{textsize:N}𝄽{textsize}` non sono un blocco né una riga a sé: viene rimosso solo il simbolo (con gli spazi attorno), il resto della riga resta.
 
 ### Compatibilità di `{new_song}` con i filtri accordi
 

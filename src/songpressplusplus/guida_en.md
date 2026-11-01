@@ -2146,7 +2146,7 @@ Holds three groups already described in detail in the *Page options*, *Printing 
 
 - **Songpress++ Page** — Double-click jumps to the editor (✓), Minimum panel size 370×520 (✓), Show page indicator (✓), Delay preview refresh while typing — debounce (✓), Grey background (✓).
 - **Print** — Live update of duplex/colour status in the print preview every 1.5 s (✓), Keep print preview always on top (☐), Show print preview before printing (✓).
-- **No chords: blocks to hide** — Intro chords, Bridge, Grid, Time signature `{time}`, Tempo `{tempo_*}` (all ☐).
+- **No chords: blocks to hide** — Intro chords, Bridge, Grid, Time signature `{time}`, Tempo `{tempo_*}`, Musical symbols `{textsize:N}𝄽{textsize}` (all ☐).
 
 ---
 
@@ -2487,7 +2487,7 @@ On Windows, color detection uses three sources in cascade, each activated only i
 | Canzonatore         | Merges multiple ChordPro files into one       |
 | Copy as image       | Copies to clipboard as vector image           |
 | Copy text only      | Copies text without chords                    |
-| Edit directive      | Shown at the top of the menu when you right-click a directive that has its own dialog (`{taste:}`, `{fingering:}`, `{define:}`, `{time:}`, `{tempo:}`, `{tempo_label:}`, `{key:}`, `{beats_time:}`, and the opening lines of the blocks `{start_chorus}` / `{soc}` and `{start_chord}`: not the closing or inner lines; the label is edited): reopens the dialog that created it, pre-filled with the current values, and on confirmation replaces only the value. It can be hidden in Options (*Context menu* tab → *Special actions*). |
+| Edit directive      | Shown at the top of the menu when you right-click a directive that has its own dialog (`{taste:}`, `{fingering:}`, `{define:}`, `{time:}`, `{tempo:}`, `{tempo_label:}`, `{key:}`, `{beats_time:}`, the Transposer indicator `{start_of_tab: TP}` (opening line only), a musical symbol with size `{textsize:12}𝅗{textsize}` (reopens the symbol map), and the opening lines of the blocks `{start_chorus}` / `{soc}` and `{start_chord}`: not the closing or inner lines; the label is edited): reopens the dialog that created it, pre-filled with the current values, and on confirmation replaces only the value. It can be hidden in Options (*Context menu* tab → *Special actions*). |
 
 > **Note — Export PDF:** the export flow opens the **Page setup** dialog first (paper size, orientation, margins in mm); only after confirmation is the output filename requested. The margin settings are stored and reused in subsequent exports.
 
@@ -2859,12 +2859,13 @@ Options are found in **Tools → Options... → Songpress++ Page tab → No chor
 | **Grid `{start_of_grid}`\`{end_of_grid}`** | ☐ | Hides chord grid blocks when chords are disabled (also covers `{sog}`, `{grid}`) |
 | **Tempo `{tempo_m}`\`{tempo_s}`\`{tempo_sp}`\`{tempo_c}`\`{tempo_cp}`\`{tempo_label}`** | ☐ | Hides all tempo directives when chords are disabled |
 | **Time signature `{time}`** | ☐ | Hides `{time:…}` directives (e.g. `4/4`) when chords are disabled |
+| **Musical symbols `{textsize:N}𝄽{textsize}`** | ☐ | Hides the musical symbols `{textsize:N}𝄽{textsize}` (any size `N`) and the spaces around them when chords are disabled |
 
 > **Note:** the checkboxes take effect **only** when the Show chords slider is set to *None* (value 0). With the other modes (*First verse only*, *Entire song*) blocks are always rendered normally, regardless of these settings.
 
 > **Note:** the filter acts on the text passed to the renderer before each redraw. The source document in the editor is never modified.
 
-> **Technical note:** `{start_chord}`, `{start_bridge}`, `{start_of_grid}` are **paired blocks** (open tag + content + close tag): the entire section is suppressed. `{tempo_m}`, `{tempo_s}`, `{tempo_sp}`, `{tempo_c}`, `{tempo_cp}`, `{tempo_label}` and `{time}` are **single directives**: only the line containing them is removed.
+> **Technical note:** `{start_chord}`, `{start_bridge}`, `{start_of_grid}` are **paired blocks** (open tag + content + close tag): the entire section is suppressed. `{tempo_m}`, `{tempo_s}`, `{tempo_sp}`, `{tempo_c}`, `{tempo_cp}`, `{tempo_label}` and `{time}` are **single directives**: only the line containing them is removed. The musical symbols `{textsize:N}𝄽{textsize}` are neither a block nor a line of their own: only the symbol (with the spaces around it) is removed, the rest of the line stays.
 
 ### `{new_song}` compatibility with chord filters
 
