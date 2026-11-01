@@ -45,6 +45,58 @@ import wx
 import wx.stc
 
 
+_PORTABLE_CACHE = []   # memorizza il risultato (puo' essere None)
+
+
+def _windows_portable_dir():
+    """Cartella dati 'Songpress' accanto all'eseguibile, se scrivibile.
+
+    Cosi' il dizionario personale e i dizionari scaricati stanno sull'unita'
+    dove Songpress++ e' installato (es. D:\\Songpress++\\Songpress\\...) e il
+    percorso mostrato nelle opzioni ne segue la lettera.
+
+    Vale solo per la build "frozen" (exe). Se la cartella di installazione non
+    e' scrivibile (es. C:\\Program Files) ritorna None e si usa %APPDATA%.
+    Alla prima creazione copia i dati gia' presenti in %APPDATA%\\Songpress.
+    """
+    if _PORTABLE_CACHE:
+        return _PORTABLE_CACHE[0]
+
+    result = None
+    if getattr(sys, 'frozen', False):
+        cand = os.path.join(os.path.dirname(os.path.abspath(sys.executable)),
+                            'Songpress')
+        try:
+            os.makedirs(cand, exist_ok=True)
+            probe = os.path.join(cand, '.write_test')
+            with open(probe, 'w') as f:
+                f.write('x')
+            os.remove(probe)
+            result = cand
+        except OSError:
+            result = None
+
+        if result:
+            # migrazione una tantum dalla vecchia posizione in %APPDATA%
+            try:
+                import shutil
+                old = os.path.join(os.environ.get('APPDATA')
+                                   or os.path.expanduser('~'), 'Songpress')
+                old_pwl = os.path.join(old, 'user_dict.txt')
+                new_pwl = os.path.join(result, 'user_dict.txt')
+                if os.path.isfile(old_pwl) and not os.path.exists(new_pwl):
+                    shutil.copy2(old_pwl, new_pwl)
+                old_enc = os.path.join(old, 'enchant')
+                new_enc = os.path.join(result, 'enchant')
+                if os.path.isdir(old_enc) and not os.path.exists(new_enc):
+                    shutil.copytree(old_enc, new_enc)
+            except Exception:
+                pass
+
+    _PORTABLE_CACHE.append(result)
+    return result
+
+
 # ---------------------------------------------------------------------------
 # Import "morbido" di enchant: se manca, l'app NON deve crashare.
 # ---------------------------------------------------------------------------
@@ -55,11 +107,15 @@ def _app_config_dir():
     quindi non usa wx.StandardPaths ma le variabili d'ambiente standard.
 
     Debian/Linux : $XDG_CONFIG_HOME/songpress  (di norma ~/.config/songpress)
-    Windows      : %APPDATA%\\Songpress
+    Windows      : <cartella di installazione>\\Songpress se scrivibile,
+                   altrimenti %APPDATA%\\Songpress
     macOS        : ~/Library/Application Support/Songpress
     """
     sysname = platform.system()
     if sysname == 'Windows':
+        portable = _windows_portable_dir()
+        if portable:
+            return portable
         base = os.environ.get('APPDATA') or os.path.expanduser('~')
         return os.path.join(base, 'Songpress')
     if sysname == 'Darwin':

@@ -35,15 +35,19 @@ msgstr "Nessun errore sintattico trovato."
 msgid "The song is syntactically correct."
 msgstr "Il brano è sintatticamente corretto."
 
-#. Button: adapt dialog width to fit the longest description text
+#. Checkbox: adapt dialog width to fit the longest description text
 #: SyntaxCheckerDialog.py:56
 msgid "Fit width"
 msgstr "Adatta larghezza"
 
-#. Tooltip for the Fit width button
+#. Tooltip for the Fit width checkbox
 #: SyntaxCheckerDialog.py:58
-msgid "Resize the dialog so the Description column fits the longest text"
-msgstr "Ridimensiona il dialog in modo che la colonna Descrizione contenga il testo più lungo"
+msgid ""
+"When checked, the dialog width follows the longest description; when "
+"unchecked, the default width is used"
+msgstr ""
+"Se attivo, la larghezza del dialog si adatta alla descrizione più lunga; "
+"se disattivo, viene usata la larghezza predefinita"
 
 #. Button: move the editor cursor to the selected issue's line
 #: SyntaxCheckerDialog.py

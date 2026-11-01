@@ -797,6 +797,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         # Colore del puntino sul DO centrale (grigio scuro di default)
         if not hasattr(self.pref, 'klavierMiddleCHex'):
             self.pref.klavierMiddleCHex = '#464646'
+        # Ripristina il colore salvato nel config (sopravvive al riavvio)
+        self._LoadKlavierMiddleCColour()
         # Filigrana (watermark): stampata ed esportata (vedi Watermark.py).
         # I campi di STILE (opacita', angolo, dimensione, colore, mosaico) sono
         # preferenze globali persistite in Preferences.py come pref.watermarkStyle;
@@ -1106,6 +1108,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self._SaveTempoDisplay()
         self._SaveGuidePrefs()
         self._SaveKlavierColour()
+        self._SaveKlavierMiddleCColour()
         self._SaveCustomColours()
         self.pref.Save()
         self.config.Flush()
@@ -1442,6 +1445,28 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         try:
             self.config.SetPath('/KlavierColour')
             self.config.Write('highlightHex', getattr(self.pref, 'klavierHighlightHex', '#D23C3C'))
+        except Exception:
+            pass
+
+    def _SaveKlavierMiddleCColour(self):
+        """Salva il colore del puntino sul DO centrale nel config."""
+        try:
+            old = self.config.GetPath()
+            self.config.SetPath('/KlavierMiddleC')
+            self.config.Write('hex', getattr(self.pref, 'klavierMiddleCHex', '#464646'))
+            self.config.SetPath(old)
+        except Exception:
+            pass
+
+    def _LoadKlavierMiddleCColour(self):
+        """Ripristina il colore del puntino sul DO centrale dal config."""
+        try:
+            old = self.config.GetPath()
+            self.config.SetPath('/KlavierMiddleC')
+            val = self.config.Read('hex')
+            self.config.SetPath(old)
+            if val and wx.Colour(val).IsOk():
+                self.pref.klavierMiddleCHex = val
         except Exception:
             pass
 
@@ -10087,6 +10112,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         al renderer e aggiorna l'anteprima."""
         self.pref.klavierMiddleCHex = u'#%02X%02X%02X' % (
             colour.Red(), colour.Green(), colour.Blue())
+        self._SaveKlavierMiddleCColour()   # subito su config (Flush alla chiusura)
         try:
             KlavierRenderer.set_middle_c_color(colour)
         except Exception:

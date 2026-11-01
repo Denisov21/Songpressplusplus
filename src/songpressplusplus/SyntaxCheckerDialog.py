@@ -35,6 +35,11 @@ class SyntaxCheckerDialog(wx.Dialog):
         self._status_bar.SetStatusText("")
         self.GetSizer().Add(self._status_bar, 0, wx.EXPAND)
         self._fit_height()
+        # Default width (checkbox unchecked), remembered to restore it later
+        self._base_w = self.GetSize().width
+        # If "Fit width" is checked (default), apply it right away
+        if hasattr(self, "_fit_chk") and self._fit_chk.GetValue():
+            self._on_fit_width(None)
         self.CentreOnParent()
 
     # ------------------------------------------------------------------
@@ -85,11 +90,13 @@ class SyntaxCheckerDialog(wx.Dialog):
         vbox.Add(wx.StaticLine(panel), 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 14)
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
         if not self._result.is_valid:
-            self._fit_btn = wx.Button(panel, label=_("Fit width"))
-            self._fit_btn.SetToolTip(
-                _("Resize the dialog so the Description column fits the longest text"))
-            self._fit_btn.Bind(wx.EVT_BUTTON, self._on_fit_width)
-            btn_sizer.Add(self._fit_btn, 0, wx.RIGHT, 8)
+            self._fit_chk = wx.CheckBox(panel, label=_("Fit width"))
+            self._fit_chk.SetToolTip(
+                _("When checked, the dialog width follows the longest description; "
+                  "when unchecked, the default width is used"))
+            self._fit_chk.SetValue(self._load_fit_width())
+            self._fit_chk.Bind(wx.EVT_CHECKBOX, self._on_fit_width_toggled)
+            btn_sizer.Add(self._fit_chk, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
 
 
         if not self._result.is_valid:
@@ -312,6 +319,32 @@ class SyntaxCheckerDialog(wx.Dialog):
         self._on_goto(None)
         event.Skip()
 
+    _FIT_KEY = 'syntaxCheckerFitWidth'
+
+    def _load_fit_width(self):
+        """Reads the saved "Fit width" state (default: True)."""
+        if self._config is not None:
+            return self._config.ReadBool(self._FIT_KEY, True)
+        return True
+
+    def _save_fit_width(self):
+        """Writes the "Fit width" state to the config."""
+        if self._config is not None and hasattr(self, "_fit_chk"):
+            self._config.WriteBool(self._FIT_KEY, self._fit_chk.GetValue())
+            self._config.Flush()
+
+    def _on_fit_width_toggled(self, _event):
+        """Saves the checkbox state and updates the dialog width live:
+        checked -> fit to the longest description, unchecked -> default width."""
+        self._save_fit_width()
+        if self._fit_chk.GetValue():
+            self._on_fit_width(None)
+        else:
+            _cur_w, cur_h = self.GetSize()
+            if _cur_w != self._base_w:
+                self.SetSize(self._base_w, cur_h)
+                self.Layout()
+
     _COLOUR_KEY = 'syntaxErrorHighlightColour'
     _COLOUR_DEFAULT = '#FF7878'
 
@@ -333,6 +366,7 @@ class SyntaxCheckerDialog(wx.Dialog):
 
     def EndModal(self, retCode):
         self._save_colour()
+        self._save_fit_width()
         super().EndModal(retCode)
 
     def _on_colour_changed(self, event):
