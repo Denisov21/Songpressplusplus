@@ -232,6 +232,7 @@ class MyPreferencesDialog(PreferencesDialog):
 
         # Enable Save only when modified
         self.enableSaveOnModifiedCB.SetValue(getattr(self.pref, 'enableSaveOnModified', True))
+        self.openReadOnlyCB.SetValue(getattr(self.pref, 'openReadOnly', False))
 
         # Integra accordi: attivo solo quando serve
         self.integrateChordsOnlyWhenNeededCB.SetValue(getattr(self.pref, 'integrateChordsOnlyWhenNeeded', True))
@@ -2003,6 +2004,7 @@ class MyPreferencesDialog(PreferencesDialog):
         # Anteprima colore al passaggio del mouse
         self.pref.colourPreview = self.colourPreviewCB.GetValue()
         self.pref.enableSaveOnModified = self.enableSaveOnModifiedCB.GetValue()
+        self.pref.openReadOnly = self.openReadOnlyCB.GetValue()
         self.pref.integrateChordsOnlyWhenNeeded = self.integrateChordsOnlyWhenNeededCB.GetValue()
         # Salvataggio geometria finestra
         self.pref.saveWindowGeometry = self.saveWindowGeometryCB.GetValue()

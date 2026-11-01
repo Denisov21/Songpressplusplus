@@ -826,7 +826,8 @@ class Editor(StyledTextCtrl):
     def OnEditorKeyDown(self, evt):
         # Spazio dentro {start_of_grid} → inserisce pipe e sposta il cursore nella cella vuota.
         # Intercettato in KEY_DOWN (prima che STC scriva il carattere).
-        if evt.GetKeyCode() == wx.WXK_SPACE and not evt.ControlDown() and not evt.AltDown():
+        if (evt.GetKeyCode() == wx.WXK_SPACE and not evt.ControlDown() and not evt.AltDown()
+                and not self.GetReadOnly()):
             pref = getattr(self.spframe, 'pref', None)
             space_as_pipe = getattr(pref, 'gridSpaceAsPipe', True)
             if space_as_pipe and self.spframe._GetGridContext() is not None:
@@ -896,11 +897,13 @@ class Editor(StyledTextCtrl):
             menu.Bind(wx.EVT_MENU, handler, item)
 
         has_selection = self.GetSelectedText() != ''
+        # Sola lettura: le voci che modificano il testo restano disattivate
+        ro = self.GetReadOnly()
 
         # --- Modifica direttiva: se si clicca su una direttiva che ha una
         # propria finestra ({taste:}, {fingering:}, {key:}, ...) la riapre ---
         edit_dir = None
-        if cm_pref('cmEditDirective') and not has_selection:
+        if cm_pref('cmEditDirective') and not has_selection and not ro:
             try:
                 sp = evt.GetPosition()
                 if sp == wx.DefaultPosition:      # tasto "menu": usa il cursore
@@ -916,9 +919,9 @@ class Editor(StyledTextCtrl):
                      png_path=img('edit_directive.png'))
             menu.AppendSeparator()
 
-        can_paste = wx.TheClipboard.IsSupported(wx.DataFormat(wx.DF_TEXT))
-        can_undo = self.CanUndo()
-        can_redo = self.CanRedo()
+        can_paste = wx.TheClipboard.IsSupported(wx.DataFormat(wx.DF_TEXT)) and not ro
+        can_undo = self.CanUndo() and not ro
+        can_redo = self.CanRedo() and not ro
 
         # --- Gruppo Cronologia ---
         show_undo = cm_pref('cmUndo')
@@ -936,7 +939,7 @@ class Editor(StyledTextCtrl):
         show_paste  = cm_pref('cmPaste')
         show_delete = cm_pref('cmDelete')
         if show_cut:
-            add_item(_("Cu&t"),    lambda e: self.Cut(),                png_path=img('cut.png'),    enabled=has_selection)
+            add_item(_("Cu&t"),    lambda e: self.Cut(),                png_path=img('cut.png'),    enabled=has_selection and not ro)
         if show_copy:
             add_item(_("&Copy"),   lambda e: self.Copy(),               png_path=img('copy.png'),   enabled=has_selection)
         if show_paste:
@@ -951,7 +954,7 @@ class Editor(StyledTextCtrl):
                     ) != wx.YES:
                         return
                 self.ReplaceSelection('')
-            add_item(_("&Delete"), _do_delete, png_path=img('delete.png'), enabled=has_selection)
+            add_item(_("&Delete"), _do_delete, png_path=img('delete.png'), enabled=has_selection and not ro)
         if show_cut or show_copy or show_paste or show_delete:
             menu.AppendSeparator()
 
@@ -963,9 +966,9 @@ class Editor(StyledTextCtrl):
         if show_paste_chords:
             add_item(_("Paste &chords"),            lambda e: self.PasteChords(),                              png_path=img('pasteChords.png'), enabled=can_paste)
         if show_propagate_verse:
-            add_item(_("Propagate &verse chords"),  lambda e: self.spframe.OnPropagateVerseChords(e))
+            add_item(_("Propagate &verse chords"),  lambda e: self.spframe.OnPropagateVerseChords(e), enabled=not ro)
         if show_propagate_chorus:
-            add_item(_("Propagate c&horus chords"), lambda e: self.spframe.OnPropagateChorusChords(e))
+            add_item(_("Propagate c&horus chords"), lambda e: self.spframe.OnPropagateChorusChords(e), enabled=not ro)
         if show_copy_text_only:
             add_item(_("Copy &text only"),          lambda e: self.CopyOnlyText(),                             png_path=img('copy.png'),        enabled=has_selection)
         if show_paste_chords or show_copy_text_only or show_propagate_verse or show_propagate_chorus:

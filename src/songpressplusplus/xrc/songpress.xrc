@@ -280,6 +280,14 @@
           <accel></accel>
           <help>Integrate chords of current line with text of following line</help>
         </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="readOnly">
+          <label>_Read only</label>
+          <accel></accel>
+          <help>Prevent accidental edits: the song cannot be modified</help>
+          <bitmap>../img/readOnly.png</bitmap>
+          <checkable>1</checkable>
+        </object>
       </object>
       <object class="wxMenu" name="view">
         <label>_View</label>

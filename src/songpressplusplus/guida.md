@@ -1892,6 +1892,39 @@ Per ogni carattere SMP, Songpress++ percorre questa lista e usa il primo font ch
 ---
 
 
+## Sola lettura
+
+La **modalità sola lettura** impedisce di modificare per sbaglio il brano: il testo si può leggere, cercare, copiare, vedere in anteprima, stampare ed esportare, ma non cambiare. È utile, per esempio, quando suoni da un brano già pronto e non vuoi rischiare di cancellare qualcosa con un tasto premuto per errore.
+
+### Come attivarla
+
+- **Modifica → Sola lettura** (voce con spunta, con l'icona del lucchetto): attiva o disattiva la modalità sul brano aperto. La spunta indica che è attiva.
+- **Apertura automatica** — un file si apre già in sola lettura quando è protetto in scrittura (ad esempio con `chmod -w` su Linux o con l'attributo «Sola lettura» di Windows). In questo caso Songpress++ non propone nemmeno le correzioni automatiche all'apertura.
+- **Sempre in sola lettura** — attiva *Opzioni → Generale → Apri sempre i file in sola lettura* per aprire ogni brano bloccato; per modificarlo togli la spunta da *Modifica → Sola lettura*.
+
+Un brano **nuovo** (*File → Nuovo*) è sempre modificabile. La modalità vale per il brano aperto: aprendo un altro file, lo stato viene ricalcolato.
+
+### Come si riconosce
+
+- Il titolo della finestra termina con **[Sola lettura]**.
+- Nella barra di stato, in basso a destra, compare un **lucchetto** (passandoci sopra con il mouse si legge «Sola lettura»).
+- Nel menu **Modifica** la voce *Sola lettura* ha la spunta.
+
+### Cosa resta attivo e cosa no
+
+| Resta attivo | Disattivato |
+| ------------ | ----------- |
+| Copia, Copia solo il testo, Copia come immagine | Taglia, Incolla, Incolla accordi, Elimina |
+| Trova, Trova successivo/precedente | Annulla e Ripeti |
+| Seleziona tutto, Seleziona accordo successivo/precedente | Sostituisci |
+| Anteprima, stampa, esportazione, Songbook | Menu **Inserisci** e relativa barra degli strumenti, interlinea |
+| Controllo sintassi, statistiche | Sposta accordo, Rimuovi/Integra accordi, Propaga accordi |
+| Cambio dei font e delle opzioni di visualizzazione | Trasponi, Semplifica accordi, Cambia notazione, Pulizia accordi, Rimuovi righe vuote, Normalizza spazi, Converti Tab/ChordPro, Controllo ortografico |
+
+Anche il menu del tasto destro nell'editor mostra grigie le voci che modificano il testo, e le scorciatoie da tastiera di modifica (digitazione, spazio come cella nella griglia, Alt+Maiusc+frecce) non hanno effetto.
+
+> **Nota** — La sola lettura è una protezione del programma: non cambia i permessi del file sul disco. Se togli la spunta a un file davvero protetto dal sistema, il salvataggio può comunque fallire. Su Linux, avviando Songpress++ come utente *root* ogni file risulta scrivibile e l'apertura automatica in sola lettura non scatta; resta valida la voce di menu.
+
 ## Modalità istanza singola
 
 **Percorso:** *Opzioni → Generale 2 → Generale → Istanza singola: apri i file nella finestra esistente*
@@ -2007,6 +2040,7 @@ Si apre da **Strumenti → Opzioni…** (titolo della finestra: *Opzioni Songpre
 | **Cancella file recenti** (pulsante) | — | Svuota l'elenco dei file recenti. La cancellazione avviene alla conferma con OK. |
 | **Apri cartella modelli** (pulsante) | — | Apre nel file manager di sistema la cartella modelli **utente** (`templates/`, usata anche per i temi dei colori) — la stessa che l'app rilegge. I file `.crd` messi in `songs/` compaiono in *File → Nuovo da template* (vedi il capitolo *Nuovo da template*). |
 | **Abilita il pulsante «Salva» solo quando la canzone è modificata** | ✓ | Il comando Salva (menu e toolbar) resta disabilitato finché non ci sono modifiche non salvate. |
+| **Apri sempre i file in sola lettura** | ☐ | Ogni brano si apre bloccato (vedi *Sola lettura*). I file protetti in scrittura si aprono comunque in sola lettura. |
 | **Attiva i comandi di conversione degli accordi solo quando servono** | ✓ | **Integra accordi**, **Converti Tab in ChordPro** e **Converti accordi in linea in ChordPro** restano grigi quando non hanno nulla da fare (vedi *Gestione degli accordi*). Se disattivata, sono sempre attivi. Il valore viene salvato alla chiusura e ripristinato all'avvio. |
 | **Abilita intellisense direttive (Ctrl+Spazio)** | ✓ | Attiva il completamento automatico delle direttive ChordPro nell'editor. |
 | **Abilita multicursore (Alt+Clic, Ctrl+D)** | ☐ | Alt+Clic aggiunge un cursore; Ctrl+D seleziona l'occorrenza successiva della parola corrente. |

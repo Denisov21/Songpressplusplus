@@ -1885,6 +1885,39 @@ For each SMP character, Songpress++ walks this list and uses the first font that
 ---
 
 
+## Read-only mode
+
+**Read-only mode** prevents accidental changes to the song: you can read, search, copy, preview, print and export the text, but not change it. It is useful, for example, when you play from a finished song and do not want to risk deleting something with a stray key press.
+
+### How to turn it on
+
+- **Edit → Read only** (checkable item, with a padlock icon): turns the mode on or off for the open song. The check mark shows it is active.
+- **Automatic on opening** — a file opens in read-only mode when it is write-protected (for example with `chmod -w` on Linux or the Windows "Read-only" attribute). In this case Songpress++ does not even offer the automatic corrections on opening.
+- **Always read-only** — turn on *Options → General → Always open files in read-only mode* to open every song locked; to edit it, untick *Edit → Read only*.
+
+A **new** song (*File → New*) is always editable. The mode applies to the open song: when you open another file, the state is evaluated again.
+
+### How to tell it is on
+
+- The window title ends with **[Read only]**.
+- In the status bar, bottom right, a **padlock** appears (hover it to read "Read only").
+- In the **Edit** menu the *Read only* item is checked.
+
+### What stays enabled and what does not
+
+| Stays enabled | Disabled |
+| ------------- | -------- |
+| Copy, Copy only text, Copy as image | Cut, Paste, Paste chords, Delete |
+| Find, Find next/previous | Undo and Redo |
+| Select all, Select next/previous chord | Replace |
+| Preview, print, export, Songbook | **Insert** menu and its toolbar, line spacing |
+| Syntax check, statistics | Move chord, Remove/Integrate chords, Propagate chords |
+| Changing fonts and display options | Transpose, Simplify chords, Change notation, Clean up chords, Remove blank lines, Normalize spaces, Convert Tab/ChordPro, Spell check |
+
+The right-click menu in the editor also greys out the items that change the text, and the editing keyboard shortcuts (typing, space as a cell in the grid, Alt+Shift+arrows) have no effect.
+
+> **Note** — Read-only is a protection inside the program: it does not change the file permissions on disk. If you untick it on a file that is really protected by the system, saving may still fail. On Linux, running Songpress++ as *root* makes every file writable, so automatic read-only opening does not trigger; the menu item still works.
+
 ## Single Instance Mode
 
 **Path:** *Options → General 2 → General → Single instance: open files in the existing window*
@@ -2000,6 +2033,7 @@ Opened from **Tools → Options…** (window title: *Songpress++ options*). It i
 | **Clear recent files** (button) | — | Empties the recent-files list. The removal happens when you confirm with OK. |
 | **Open templates folder** (button) | — | Opens the **user** templates folder (`templates/`, also used for colour themes) in the system file manager — the same one the app reads from. `.crd` files placed in `songs/` appear under *File → New from template* (see the *New from template* chapter). |
 | **Enable 'Save' button only when the song is modified** | ✓ | Save (menu and toolbar) stays greyed out until there are unsaved changes. |
+| **Always open files in read-only mode** | ☐ | Every song opens locked (see *Read-only mode*). Write-protected files open read-only anyway. |
 | **Enable the chord conversion commands only when needed** | ✓ | **Integrate chords**, **Convert Tab to ChordPro** and **Convert inline chords to ChordPro** stay greyed out when they have nothing to do (see *Chord Management*). When unchecked, they are always enabled. The value is saved on exit and restored at startup. |
 | **Enable directive intellisense (Ctrl+Space)** | ✓ | Auto-completion of ChordPro directives in the editor. |
 | **Enable multi-cursor (Alt+Click, Ctrl+D)** | ☐ | Alt+Click adds a cursor; Ctrl+D selects the next occurrence of the current word. |

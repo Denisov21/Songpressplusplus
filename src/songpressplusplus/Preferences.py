@@ -896,11 +896,14 @@ class Preferences(object):
         self.config.SetPath('/App')
         v = self.config.Read('enableSaveOnModified')
         self.enableSaveOnModified = bool(int(v)) if v != '' else True
+        v = self.config.Read('openReadOnly')
+        self.openReadOnly = bool(int(v)) if v != '' else False
         self.config.SetPath('/')
 
     def _SaveSaveOnModified(self):
         self.config.SetPath('/App')
         self.config.Write('enableSaveOnModified', '1' if getattr(self, 'enableSaveOnModified', True) else '0')
+        self.config.Write('openReadOnly', '1' if getattr(self, 'openReadOnly', False) else '0')
         self.config.SetPath('/')
 
     def _LoadIntegrateChordsOnlyWhenNeeded(self):

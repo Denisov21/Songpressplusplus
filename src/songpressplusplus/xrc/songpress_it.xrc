@@ -280,6 +280,14 @@
           <accel></accel>
           <help>Integra gli accordi della riga corrente con il testo della riga seguente</help>
         </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="readOnly">
+          <label>_Sola lettura</label>
+          <accel></accel>
+          <help>Impedisce modifiche accidentali: il brano non può essere modificato</help>
+          <bitmap>../img/readOnly.png</bitmap>
+          <checkable>1</checkable>
+        </object>
       </object>
       <object class="wxMenu" name="view">
         <label>_Visualizza</label>

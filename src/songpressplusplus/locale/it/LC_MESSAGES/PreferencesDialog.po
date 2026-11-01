@@ -937,3 +937,9 @@ msgstr "size=N moltiplica solo il margine orizzontale delle celle; il margine ve
 
 msgid "size=N multiplies only vertical cell padding; horizontal padding stays at its base value."
 msgstr "size=N moltiplica solo il margine verticale delle celle; il margine orizzontale rimane al suo valore base."
+
+msgid "Always open files in read-only mode"
+msgstr "Apri sempre i file in sola lettura"
+
+msgid "When enabled, songs are opened read-only to prevent accidental edits; use Edit > Read only to unlock them. Files that are not writable are always opened read-only."
+msgstr "Se attivo, i brani vengono aperti in sola lettura per evitare modifiche accidentali; usa Modifica > Sola lettura per sbloccarli. I file non scrivibili vengono sempre aperti in sola lettura."

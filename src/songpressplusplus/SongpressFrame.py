@@ -868,7 +868,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.SetDefaultExtension(self.pref.defaultExtension)
         self.statusBar = self.frame.GetStatusBar()
         if self.statusBar:
-            self.statusBar.SetFieldsCount(3)
+            self.statusBar.SetFieldsCount(4)   # 4o campo: lucchetto sola lettura
             self._ResizeStatusFields(u"")
         self._statusTimer = wx.Timer(self.frame)
         self.frame.Bind(wx.EVT_TIMER, self._OnStatusTimerExpired, self._statusTimer)
@@ -1060,6 +1060,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.chordsAboveMenuId = xrc.XRCID('chordsAbove')
         self.chordsBelowMenuId = xrc.XRCID('chordsBelow')
         self.spellLiveMenuId = xrc.XRCID('spellLive')
+        self.readOnlyMenuId = xrc.XRCID('readOnly')
         if platform.system() != 'Windows':
             self.menuBar.GetMenu(0).FindItemById(self.exportMenuId).GetSubMenu().Delete(self.exportAsEmfMenuId)
         self._LocalizeClipboardMenuLabel()
@@ -1754,6 +1755,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         # --- Controllo ortografico ---
         Bind(self.OnSpellCheck, 'spellCheck')
         Bind(self.OnSpellLive, 'spellLive')
+        # --- Sola lettura ---
+        Bind(self.OnReadOnly, 'readOnly')
         Bind(self.OnSpellOptions, 'spellOptions')
         self.frame.Bind(EVT_SYNTAX_GOTO, self.OnSyntaxGoto)
         # --- Riavvia applicazione ---
@@ -6529,6 +6532,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         return target
 
     def New(self):
+        # Un documento nuovo e' sempre modificabile
+        self.text.SetReadOnly(False)
         self.text.AutoChangeMode(True)
         self.text.New()
         self.text.AutoChangeMode(False)
@@ -6544,13 +6549,20 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         user_doc = self._user_template_target(self.document, must_exist=True)
         if user_doc:
             self.document = user_doc
+        # Sblocca l'editor per poter caricare il nuovo testo; la sola lettura
+        # viene poi riapplicata se serve (file non scrivibile / preferenza).
+        self.text.SetReadOnly(False)
         self.text.AutoChangeMode(True)
         self.text.Open()
         self.text.AutoChangeMode(False)
         # Ripristina la filigrana salvata nel documento (direttiva {watermark:}).
         self._load_watermark_from_document()
+        read_only = self._ShouldOpenReadOnly()
+        if read_only:
+            self.text.SetReadOnly(True)
         self.UpdateEverything()
-        self.AutoAdjust(0, self.text.GetLength())
+        if not read_only:
+            self.AutoAdjust(0, self.text.GetLength())
 
     def Save(self):
         # Reindirizza il salvataggio dei template dalla copia del PACCHETTO
@@ -6835,6 +6847,100 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.UpdateUndoRedo()
         self.UpdateCutCopyPaste()
         self.UpdateSave()
+        self.UpdateReadOnly()
+
+    # ── Modalita' sola lettura ──────────────────────────────────────────
+    # Voci di menu i cui stati sono gestiti da altre Update*(): in sola
+    # lettura vengono solo disattivate (alla fine di UpdateEverything).
+    _RO_MANAGED_MENU_NAMES = (
+        'cut', 'paste', 'pasteChords', 'undo', 'redo', 'removeChords',
+        'integrateChords', 'convertTabToChordpro', 'chordProImport',
+    )
+    # Voci non gestite altrove: attive solo quando il testo e' modificabile.
+    _RO_STATIC_MENU_NAMES = (
+        'propagateVerseChords', 'propagateChorusChords', 'replace',
+        'moveChordRight', 'moveChordLeft', 'transpose', 'simplifyChords',
+        'changeChordNotation', 'cleanupChords', 'removeSpuriousBlankLines',
+        'normalizeSpaces', 'spellCheck',
+    )
+
+    def IsReadOnly(self):
+        return bool(self.text.GetReadOnly())
+
+    def SetReadOnlyMode(self, read_only):
+        self.text.SetReadOnly(bool(read_only))
+        self.UpdateEverything()
+
+    def OnReadOnly(self, evt):
+        self.SetReadOnlyMode(not self.IsReadOnly())
+
+    def _ShouldOpenReadOnly(self):
+        """True se il file appena aperto va mostrato in sola lettura:
+        file non scrivibile oppure preferenza "apri sempre in sola lettura"."""
+        if getattr(self.pref, 'openReadOnly', False):
+            return True
+        doc = getattr(self, 'document', None)
+        try:
+            return bool(doc) and os.path.isfile(doc) and not os.access(doc, os.W_OK)
+        except Exception:
+            return False
+
+    def UpdateReadOnly(self):
+        """Allinea menu, barre strumenti e titolo allo stato di sola lettura."""
+        try:
+            ro = self.IsReadOnly()
+            mb = self.menuBar
+            mb.Check(self.readOnlyMenuId, ro)
+            for name in self._RO_STATIC_MENU_NAMES:
+                self._RoEnableMenu(name, not ro)
+            if ro:
+                for name in self._RO_MANAGED_MENU_NAMES:
+                    self._RoEnableMenu(name, False)
+                for tool in ('cutTool', 'pasteTool', 'pasteChordsTool',
+                             'undoTool', 'redoTool'):
+                    tid = getattr(self, tool, None)
+                    if tid is not None:
+                        self.mainToolBar.EnableTool(tid, False)
+            # Menu "Inserisci" (4o menu della barra): ridisegnato solo quando
+            # lo stato cambia, per evitare sfarfallii.
+            if getattr(self, '_roUiState', None) != ro:
+                self._roUiState = ro
+                if mb.GetMenuCount() > 3:
+                    mb.EnableTop(3, not ro)
+                self.UpdateTitle()
+                self._UpdateStatusLock(ro)
+            # Strumenti di modifica delle AuiToolBar (le toolbar vengono
+            # ricostruite quando cambiano le preferenze: si riallinea sempre).
+            self._UpdateReadOnlyTools(ro)
+        except Exception:
+            pass
+
+    def _RoEnableMenu(self, name, enable):
+        try:
+            mid = xrc.XRCID(name)
+            if self.menuBar.FindItemById(mid) is not None:
+                self.menuBar.Enable(mid, enable)
+        except Exception:
+            pass
+
+    def _UpdateReadOnlyTools(self, ro):
+        tools = [(self.insertToolBar, [xrc.XRCID(x[0]) for x in self.INSERT_TOOLBAR_ITEMS]),
+                 (self.formatToolBar, [xrc.XRCID('insertLinespacing')])]
+        for tb, ids in tools:
+            changed = False
+            for tid in ids:
+                if tb.FindTool(tid) is not None and tb.GetToolEnabled(tid) == ro:
+                    tb.EnableTool(tid, not ro)
+                    changed = True
+            if changed:
+                tb.Refresh()
+
+    def UpdateTitle(self):
+        """Titolo della finestra, con l'indicatore [Sola lettura] se serve."""
+        SDIMainFrame.UpdateTitle(self)
+        text = getattr(self, 'text', None)
+        if text is not None and text.GetReadOnly():
+            self.frame.SetTitle(self.frame.GetTitle() + " [%s]" % _("Read only"))
 
     def TextUpdated(self):
         # Rileva una direttiva {watermark:} digitata o modificata a mano
@@ -7176,6 +7282,12 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 self._MoveGridCellRight()
                 evt.Skip(False)
                 return
+
+        if self.text.GetReadOnly() and (tp in map and tp[3] is False
+                                        or tp in ((314, True, True, False), (316, True, True, False))):
+            # sola lettura: niente spostamento di accordi / celle grid
+            evt.Skip(False)
+            return
 
         if (method := map.get(tp)) is not None:
             method()
@@ -8399,7 +8511,41 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         pad = dc.GetTextExtent(u"MM")[0]            # margine laterale
         w1 = (dc.GetTextExtent(text)[0] + pad) if text else 0
         w2 = dc.GetTextExtent(u"CAPS  NUM  SCR")[0] + pad
-        self.statusBar.SetStatusWidths([-1, w1, w2])
+        txt = getattr(self, 'text', None)
+        w3 = 28 if (txt is not None and txt.GetReadOnly()) else 0   # lucchetto
+        self.statusBar.SetStatusWidths([-1, w1, w2, w3])
+        self._PlaceLockIcon()
+
+    def _UpdateStatusLock(self, ro):
+        """Mostra/nasconde il lucchetto nel 4o campo della status bar."""
+        sb = self.statusBar
+        if not sb or sb.GetFieldsCount() < 4:
+            return
+        if getattr(self, '_roLockIcon', None) is None:
+            try:
+                bmp = wx.Bitmap(wx.Image(glb.AddPath('img/lock.png')))
+            except Exception:
+                return
+            if not bmp.IsOk():
+                return
+            self._roLockIcon = wx.StaticBitmap(sb, wx.ID_ANY, bmp)
+            self._roLockIcon.SetToolTip(_("Read only"))
+            sb.Bind(wx.EVT_SIZE, self._OnStatusBarSize)
+        self._roLockIcon.Show(bool(ro))
+        self._ResizeStatusFields()
+
+    def _PlaceLockIcon(self):
+        icon = getattr(self, '_roLockIcon', None)
+        sb = self.statusBar
+        if icon is None or not sb or sb.GetFieldsCount() < 4:
+            return
+        r = sb.GetFieldRect(3)
+        w, h = icon.GetSize()
+        icon.SetPosition((r.x + (r.width - w) // 2, r.y + (r.height - h) // 2))
+
+    def _OnStatusBarSize(self, evt):
+        evt.Skip()
+        wx.CallAfter(self._PlaceLockIcon)
 
     def _UpdateLockKeys(self):
         """Aggiorna il campo 2 della status bar con lo stato di CAPS / NUM / SCR."""

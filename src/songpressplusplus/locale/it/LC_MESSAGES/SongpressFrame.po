@@ -2294,3 +2294,8 @@ msgstr "Applica la dimensione in entrambe le direzioni."
 #: Editor.py
 msgid "&Edit directive..."
 msgstr "&Modifica direttiva..."
+
+#. Songpress++ title bar suffix
+#: SongpressFrame.py
+msgid "Read only"
+msgstr "Sola lettura"
