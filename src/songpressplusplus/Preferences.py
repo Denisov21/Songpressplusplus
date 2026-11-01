@@ -256,6 +256,7 @@ class Preferences(object):
         self.cmPropagateVerseChords  = rb('propagateVerseChords')
         self.cmPropagateChorusChords = rb('propagateChorusChords')
         self.cmCopyTextOnly          = rb('copyTextOnly')
+        self.cmEditDirective         = rb('editDirective')
         self.cmSelectAll    = rb('selectAll')
         v = self.config.Read('showIcons')
         self.cmShowIcons = bool(int(v)) if v != '' else True
@@ -501,6 +502,7 @@ class Preferences(object):
         self.config.Write('propagateVerseChords',  '1' if getattr(self, 'cmPropagateVerseChords',  True) else '0')
         self.config.Write('propagateChorusChords', '1' if getattr(self, 'cmPropagateChorusChords', True) else '0')
         self.config.Write('copyTextOnly',          '1' if getattr(self, 'cmCopyTextOnly',          True) else '0')
+        self.config.Write('editDirective',         '1' if getattr(self, 'cmEditDirective',         True) else '0')
         self.config.Write('selectAll',    '1' if getattr(self, 'cmSelectAll',    True) else '0')
         self.config.Write('showIcons',    '1' if getattr(self, 'cmShowIcons',    True) else '0')
         self.config.SetPath('/')
@@ -829,6 +831,10 @@ class Preferences(object):
         except Exception:
             v = 90
         self.chordArrowSizePct = max(30, min(int(v), 150))
+        # Posizione della freccia: accanto al nome dell'accordo ('chord', default)
+        # oppure accanto al numero dei battiti di {beats_time} ('beats').
+        p = (self.config.Read('chord_arrow_pos') or '').strip()
+        self.chordArrowPos = p if p in ('chord', 'beats') else 'chord'
         old = (self.config.Read('chord_arrow_colour') or '').strip()   # compat. versione precedente
         for name, key, default in (('Up', 'chord_arrow_up_colour', old),
                                    ('Down', 'chord_arrow_down_colour', old)):
@@ -842,6 +848,8 @@ class Preferences(object):
     def _SaveChordArrow(self):
         self.config.SetPath('/Rendering')
         self.config.WriteInt('chord_arrow_size_pct', max(30, min(int(getattr(self, 'chordArrowSizePct', 90)), 150)))
+        _pos = getattr(self, 'chordArrowPos', 'chord')
+        self.config.Write('chord_arrow_pos', _pos if _pos in ('chord', 'beats') else 'chord')
         self.config.Write('chord_arrow_up_colour', getattr(self, 'chordArrowUpColourHex', '') or '')
         self.config.Write('chord_arrow_down_colour', getattr(self, 'chordArrowDownColourHex', '') or '')
         self.config.SetPath('/')

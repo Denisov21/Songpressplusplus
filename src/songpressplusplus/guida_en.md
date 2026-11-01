@@ -191,6 +191,7 @@ A small **arrow** can be added to a chord to show whether the chord should be pl
 - The characters `↑` and `↓` can also be typed instead of `^` and `v`.
 - Arrows are not supported inside `{start_of_grid}` cells.
 - In the `{beats_time:}` number, alignment takes the width of the arrow into account.
+- The arrow can be drawn **next to the chord** (default) or **next to the beat count** of `{beats_time:}`: choose it in *Options → Format → Chords and keyboard → Chord arrow position*. With the second choice, a chord without a visible beat number (no `{beats_time:}`, beats hidden, or *Dots* mode) keeps the arrow next to its name.
 
 **Insertion from the menu.** In the **Insert chord** dialog the **Direction** box offers three choices: *None*, *↑ Up*, *↓ Down* (with tooltips on mouse hover). After each insertion the choice goes back to *None*. The "Uppercase chord" checkbox does not alter the arrow suffix.
 
@@ -931,6 +932,7 @@ The command automatically detects the context:
 The dialog provides three additional controls:
 
 - **All: [N] [Apply to all]** — sets the same number of beats on all chords in the dialog in one click.
+- **Include direction arrow (^ / v) in the directive** — if a chord has an arrow (`[MI-v]`), with the box checked the directive carries it: `{beats_time: MI-v=4 LA-=1 SI=1 MI-=2}`; with the box unchecked it does not: `{beats_time: MI-=4 LA-=1 SI=1 MI-=2}`. In the preview and in print the beats are assigned to the chords in the same way in both cases. The box is enabled only if the song has at least one chord with an arrow; the choice is remembered (default: unchecked).
 - **[Apply to whole song…]** — automatically inserts a `{beats_time:}` directive before every chord line in the entire song, using the values set in the dialog. Lines already preceded by a `{beats_time:}` are skipped. The whole operation is undoable with a single `Ctrl+Z`. For chords that appear in the song but are **not present in the dialog** (because the cursor's reference line had different chords), the default beat count is **1** — unless all the dialog's spin fields are set to **0**, in which case those chords are also omitted from the directive, producing an empty `{beats_time: }`.
 - **[OK +] [↕N] [s]** — confirms and inserts the directive exactly like the **OK** button, but automatically reopens the dialog after the chosen delay. The delay is set with the **SpinCtrl** (1–60 seconds, default 5) placed next to the button: adjust it before clicking, and the value is **saved** in preferences and restored on next opening. This is useful when working through a long song and assigning beat durations line by line: during the configured pause you can move the cursor to the next chord line in the editor, and the dialog will reopen already loaded with the new chords.
 
@@ -1724,6 +1726,17 @@ Pressing `Ctrl+Space` while the cursor is inside a pair of curly braces `{…}` 
 
 While you scroll through the list, a small **tooltip** appears next to the current line with a short description of the highlighted directive and, where useful, a usage example (for instance `taste` and `fingering` list their available options). Directives without a description show no tooltip.
 
+**Options inside an already written directive.** When the cursor is *after* the name of a directive that has options, `Ctrl+Space` offers the options still missing instead of the directive list. Example: with `{taste:SOL start=SI |}` it shows `octave=`, `hand=` and `middlec=` (options already present, such as `start=`, are not offered again). Choosing an option with predefined values, such as `middlec=`, immediately opens a second list with the values (`show`, `hide`, …). Available options:
+
+| Directive | Options |
+|---|---|
+| `taste`, `fingering` | `start=`, `octave=`, `hand=`, `middlec=` |
+| `start_of_grid` (`sog`) | `size=`, `chordtopspacing=`, `linespacing=`, `sizedir=` |
+| `image` | `width=`, `height=`, `scale=`, `align=`, `border=`, `left`, `center`, `right` |
+| `linespacing` | `rel` |
+
+Options and their values (for instance `R`/`L`, `octave=`, `middlec=`) also have a short descriptive tooltip.
+
 This feature can be enabled or disabled in **Tools → Options… → General tab → Enable directive intellisense (Ctrl+Space)**.
 
 ---
@@ -2088,6 +2101,7 @@ Below, the scrollable **chord simplification** panel has one slider per chord gr
 | **Different colour for the upper octave key** | off, `#3C78D2` | On 8-key keyboards, draws the rightmost key matching the first one in a second colour (e.g. high B on B…B). |
 | **Finger number colour** | `#1A1A1A` | Colour of `{fingering:}` numbers. |
 | **Chord arrow size (%)** | 90 | Size of the `[C^]` / `[Cv]` direction arrow, as a percentage of the chord height (30–150). |
+| **Chord arrow position** | Next to the chord | Where to draw the direction arrow: *Next to the chord* (right after the name) or *Next to the beat count (if present)* (beside the `{beats_time:}` number, with the same alignment as the number). When the number is not visible the arrow stays next to the chord. The choice is saved. |
 | **Custom colour for the up arrow** | off, `#2E7D32` | When on, the up arrow uses this colour; otherwise it uses the chord colour. |
 | **Custom colour for the down arrow** | off, `#C03030` | When on, the down arrow uses this colour; otherwise it uses the chord colour. |
 
@@ -2152,7 +2166,7 @@ Chooses which entries appear in the editor's right-click menu.
 | ----- | ----- |
 | **History** | Undo, Redo |
 | **Edit** | Cut, Copy, Paste, Delete + **Ask confirmation before deleting** (☐, sub-option of *Delete*) |
-| **Special actions** | Paste chords, Propagate verse chords, Propagate chorus chords, Copy text only |
+| **Special actions** | Edit directive, Paste chords, Propagate verse chords, Propagate chorus chords, Copy text only |
 | **Selection** | Select all |
 | **Appearance** | **Show icons in context menu** (✓) |
 
@@ -2473,6 +2487,7 @@ On Windows, color detection uses three sources in cascade, each activated only i
 | Canzonatore         | Merges multiple ChordPro files into one       |
 | Copy as image       | Copies to clipboard as vector image           |
 | Copy text only      | Copies text without chords                    |
+| Edit directive      | Shown at the top of the menu when you right-click a directive that has its own dialog (`{taste:}`, `{fingering:}`, `{define:}`, `{time:}`, `{tempo:}`, `{tempo_label:}`, `{key:}`, `{beats_time:}`, and the opening lines of the blocks `{start_chorus}` / `{soc}` and `{start_chord}`: not the closing or inner lines; the label is edited): reopens the dialog that created it, pre-filled with the current values, and on confirmation replaces only the value. It can be hidden in Options (*Context menu* tab → *Special actions*). |
 
 > **Note — Export PDF:** the export flow opens the **Page setup** dialog first (paper size, orientation, margins in mm); only after confirmation is the output filename requested. The margin settings are stored and reused in subsequent exports.
 

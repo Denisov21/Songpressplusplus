@@ -162,10 +162,46 @@ class SongDecorator(object):
             return dot_r * 2 + 2
         return 0
 
-    def _DrawBeatsApex(self, beats, chord_left, chord_w, chord_top, base_font):
+    def _ArrowOnBeats(self, t):
+        """True se la freccia di direzione di questo accordo va disegnata accanto
+        al NUMERO dei battiti invece che accanto al nome dell'accordo.
+
+        Vale solo con l'opzione 'Freccia: accanto al numero dei battiti' e se il
+        numero e' davvero visibile (battiti presenti, visualizzazione attiva,
+        modalita' numero/entrambi). In tutti gli altri casi (accordo senza
+        battiti, modalita' solo puntini, battiti nascosti) la freccia resta
+        accanto all'accordo, cosi' l'informazione di direzione non va persa.
+        Usata sia dal layout sia dal disegno: deve dare lo stesso risultato.
+        """
+        return bool(
+            getattr(self, 'chord_arrow_pos', 'chord') == 'beats'
+            and getattr(t, 'arrow', '')
+            and getattr(t, 'duration_beats', 0) >= 1
+            and getattr(self, 'showDurationBeats', True)
+            and getattr(self, 'durationBeatsMode', 'number') in ('number', 'both')
+        )
+
+    def _DrawArrowGlyph(self, arrow, col, x0, top, aw, ah):
+        """Disegna la freccia (bitmap anti-aliased, oppure sagoma vettoriale per
+        stampa/PDF o se la bitmap non e' disponibile). Unico punto di disegno,
+        condiviso da freccia-accanto-all'accordo e freccia-accanto-ai-battiti."""
+        # Stampa / PDF / anteprima di stampa (flag smp_via_bitmap): il PrinterDC non
+        # gestisce la trasparenza delle bitmap (usciva un quadrato pieno), quindi
+        # si disegna la sagoma vettoriale direttamente, senza bitmap.
+        if getattr(self, 'smp_via_bitmap', False) or not self._draw_chord_arrow_bitmap(arrow, col, x0, top, aw, ah):
+            pts = arrow_points(arrow, x0, top, aw, ah)
+            self.dc.SetPen(wx.Pen(col, 1))
+            self.dc.SetBrush(wx.Brush(col, wx.BRUSHSTYLE_SOLID))
+            self.dc.DrawPolygon([wx.Point(int(round(x)), int(round(y))) for x, y in pts])
+            self.dc.SetBrush(wx.NullBrush)
+            self.dc.SetPen(wx.NullPen)
+
+    def _DrawBeatsApex(self, beats, chord_left, chord_w, chord_top, base_font, arrow=''):
         """Disegna numero e/o puntini dei battiti sopra un accordo.
 
         chord_left/chord_w/chord_top sono in coordinate assolute del DC.
+        arrow: 'up'/'down' (come restituito da split_arrow) per disegnare la
+        freccia di direzione accanto al numero; '' = nessuna freccia.
         NOTA: altera font, colore, pen e brush del DC — il chiamante ripristina.
         """
         if beats is None or beats < 1:
@@ -192,14 +228,33 @@ class SongDecorator(object):
             label = str(beats)
             lw, lh = self.dc.GetTextExtent(label)
             align = getattr(self, 'durationBeatsAlign', 'right')
+            # Freccia accanto al numero: numero + freccia formano un unico gruppo
+            # (numero a sinistra, freccia a destra) che si allinea come prima il
+            # solo numero. Altezza della freccia ricavata da quella del numero.
+            arrow_w = arrow_h = gap = 0
+            if arrow:
+                arrow_pct = getattr(self, 'chord_arrow_pct', 90)
+                ref_h  = max(6, min(lh, int(lh * arrow_pct / 100)))
+                arrow_w = max(6, int(ref_h * 0.8))
+                arrow_h = max(4, int(arrow_w / ARROW_ASPECT))
+                gap = max(2, int(apex_size * 0.2))
+            gw = lw + (gap + arrow_w if arrow else 0)
             if align == 'left':
                 ax = int(chord_left)
             elif align == 'center':
-                ax = int(chord_left) + (int(chord_w) - lw) // 2
+                ax = int(chord_left) + (int(chord_w) - gw) // 2
             else:
-                ax = chord_right - lw
+                ax = chord_right - gw
             ay = int(chord_top) - lh - 1
             self.dc.DrawText(label, ax, ay)
+            if arrow:
+                col = (getattr(self, 'chord_arrow_colours', None) or {}).get(arrow) or colour
+                self._DrawArrowGlyph(arrow, col, ax + lw + gap,
+                                     ay + (lh - arrow_h) // 2, arrow_w, arrow_h)
+                # La freccia ha cambiato pen/brush: il testo dei puntini
+                # (modalita' 'both') ripristina da se' il proprio stato.
+                self.dc.SetFont(apex_font)
+                self.dc.SetTextForeground(colour)
 
         # ── Modalità PUNTINI ─────────────────────────────────────
         if mode in ('dots', 'both'):
@@ -279,7 +334,7 @@ class SongDecorator(object):
                 self.SetMarginChord(t)
                 chordMaxH = max(chordMaxH, t.h)
                 chordMaxTH = max(chordMaxTH, t.GetTotalHeight())
-                if getattr(t, 'arrow', ''):
+                if getattr(t, 'arrow', '') and not self._ArrowOnBeats(t):
                     ah = max(8, int(t.h * getattr(self, 'chord_arrow_pct', 90) / 100))
                     t.arrow_w = max(6, int(ah * 0.8))
                     t.arrow_h = max(4, int(t.arrow_w / ARROW_ASPECT))
@@ -1324,6 +1379,26 @@ class SongDecorator(object):
             pass
         return pct, cols
 
+    def _read_chord_arrow_pos(self):
+        """Posizione della freccia di direzione: 'chord' (accanto al nome
+        dell'accordo, come sempre) oppure 'beats' (accanto al numero dei
+        battiti di {beats_time}). Riletta a ogni render come le altre
+        impostazioni della freccia, cosi' il cambio in Opzioni e' immediato."""
+        pos = 'chord'
+        try:
+            cfg = wx.Config.Get()
+            old = cfg.GetPath()
+            try:
+                cfg.SetPath('/Rendering')
+                v = (cfg.Read('chord_arrow_pos', 'chord') or '').strip()
+                if v in ('chord', 'beats'):
+                    pos = v
+            finally:
+                cfg.SetPath(old)
+        except Exception:
+            pass
+        return pos
+
     def _read_smp_oversample(self):
         """Pavimento di sovracampionamento SMP scelto dall'utente (1..4).
         Riletto a ogni render (come l'abbassamento) così un cambio in Preferenze
@@ -1513,16 +1588,7 @@ class SongDecorator(object):
             aw, ah = text.arrow_w, text.arrow_h
             x0 = int(tx + text.marginLeft + text.arrow_off)
             top = int(ty + text.marginTop + (text.h - ah) // 2)
-            # Stampa / PDF / anteprima di stampa (flag smp_via_bitmap): il PrinterDC non
-            # gestisce la trasparenza delle bitmap (usciva un quadrato pieno), quindi
-            # si disegna la sagoma vettoriale direttamente, senza bitmap.
-            if getattr(self, 'smp_via_bitmap', False) or not self._draw_chord_arrow_bitmap(arrow, col, x0, top, aw, ah):
-                pts = arrow_points(arrow, x0, top, aw, ah)
-                self.dc.SetPen(wx.Pen(col, 1))
-                self.dc.SetBrush(wx.Brush(col, wx.BRUSHSTYLE_SOLID))
-                self.dc.DrawPolygon([wx.Point(int(round(x)), int(round(y))) for x, y in pts])
-                self.dc.SetBrush(wx.NullBrush)
-                self.dc.SetPen(wx.NullPen)
+            self._DrawArrowGlyph(arrow, col, x0, top, aw, ah)
 
     def _draw_chord_arrow_bitmap(self, arrow, col, x0, top, aw, ah):
         """Disegna la freccia come bitmap anti-aliased a risoluzione device.
@@ -1574,7 +1640,9 @@ class SongDecorator(object):
             chord_left = int(lx + line.marginLeft + text.x + text.marginLeft)
             chord_top  = int(ly + line.marginTop + text.y + text.marginTop)
 
-            self._DrawBeatsApex(beats, chord_left, int(text.w), chord_top, text.font)
+            self._DrawBeatsApex(beats, chord_left, int(text.w), chord_top, text.font,
+                                arrow=(getattr(text, 'arrow', '')
+                                       if self._ArrowOnBeats(text) else ''))
 
             # Ripristina font e colore
             self.dc.SetFont(text.font)
@@ -1932,6 +2000,7 @@ class SongDecorator(object):
         self.smp_valign_frac = self._read_smp_valign_frac()
         self.smp_oversample = self._read_smp_oversample()
         self.chord_arrow_pct, self.chord_arrow_colours = self._read_chord_arrow_prefs()
+        self.chord_arrow_pos = self._read_chord_arrow_pos()
         self.InitDraw()
         self.LayoutCompose()
         self.LayoutMove()

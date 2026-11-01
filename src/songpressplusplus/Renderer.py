@@ -183,6 +183,10 @@ class Renderer(object):
         for token in a.strip().split():
             if '=' in token:
                 chord, _sep, beats = token.partition('=')
+                # La freccia di direzione ({beats_time: MI-v=4}) non fa parte del
+                # nome: va tolta perche' il nome combaci con quello dell'accordo
+                # nel testo ([MI-v] -> 'MI-'), che AddText confronta senza freccia.
+                chord = split_arrow(chord.strip())[0] or chord
                 try:
                     dur.append((chord.strip().upper(), int(beats.strip())))
                 except ValueError:

@@ -896,6 +896,26 @@ class Editor(StyledTextCtrl):
             menu.Bind(wx.EVT_MENU, handler, item)
 
         has_selection = self.GetSelectedText() != ''
+
+        # --- Modifica direttiva: se si clicca su una direttiva che ha una
+        # propria finestra ({taste:}, {fingering:}, {key:}, ...) la riapre ---
+        edit_dir = None
+        if cm_pref('cmEditDirective') and not has_selection:
+            try:
+                sp = evt.GetPosition()
+                if sp == wx.DefaultPosition:      # tasto "menu": usa il cursore
+                    click_pos = None
+                else:
+                    click_pos = self.PositionFromPoint(self.ScreenToClient(sp))
+                edit_dir = self.spframe.FindEditableDirective(click_pos)
+            except Exception:
+                edit_dir = None
+        if edit_dir is not None:
+            add_item(_("&Edit directive..."),
+                     lambda e, d=edit_dir: self.spframe.EditDirectiveAt(*d),
+                     png_path=img('edit_directive.png'))
+            menu.AppendSeparator()
+
         can_paste = wx.TheClipboard.IsSupported(wx.DataFormat(wx.DF_TEXT))
         can_undo = self.CanUndo()
         can_redo = self.CanRedo()

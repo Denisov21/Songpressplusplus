@@ -88,6 +88,49 @@ if platform.system() == 'Windows':
     import wx.msw
 
 
+class DirectivePreviewField(wx.ScrolledWindow):
+    """Campo di anteprima direttiva: una riga, sola lettura.
+
+    La barra di scorrimento orizzontale compare SOLO quando il testo e' piu'
+    largo del campo. Espone GetValue/SetValue come un wx.TextCtrl e mostra
+    il testo intero nel tooltip."""
+
+    def __init__(self, parent, value=u""):
+        wx.ScrolledWindow.__init__(
+            self, parent, -1, style=wx.HSCROLL | wx.BORDER_SUNKEN)
+        self.SetBackgroundColour(
+            wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE))
+        self._value = u""
+        self._lbl = wx.StaticText(self, -1, u"", pos=(4, 3))
+        self._lbl.SetBackgroundColour(self.GetBackgroundColour())
+        self.EnableScrolling(True, False)
+        self.SetScrollRate(8, 0)
+        self._text_h = self._lbl.GetCharHeight() + 6
+        sb = wx.SystemSettings.GetMetric(wx.SYS_HSCROLL_Y) or 17
+        # altezza fissa: una riga + spazio per la barra quando compare
+        self.SetMinSize((-1, self._text_h + sb + 2))
+        self.Bind(wx.EVT_SIZE, self._OnSize)
+        self.SetValue(value)
+
+    def GetValue(self):
+        return self._value
+
+    def SetValue(self, value):
+        self._value = value
+        self._lbl.SetLabel(value)
+        self.SetToolTip(value)
+        self._UpdateScroll()
+
+    def _UpdateScroll(self):
+        w = self._lbl.GetBestSize().width + 8
+        self.SetVirtualSize((w, self._text_h))
+        self.Refresh()
+
+    def _OnSize(self, evt):
+        evt.Skip()
+        wx.CallAfter(self._UpdateScroll)
+
+
 class SongpressFindReplaceDialog(object):
     """Dialogo Trova/Sostituisci unificato con due tab (Trova e Sostituisci)."""
 
@@ -3195,6 +3238,129 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             pass
         return None
 
+    # Direttive che hanno una finestra propria e che la finestra sa MODIFICARE
+    # sul posto (cursore dentro {nome:...} -> precompila e sostituisce il valore).
+    # Usato dal comando "Modifica direttiva..." del menu contestuale.
+    _EDITABLE_DIRECTIVES = {
+        'taste':       'OnInsertKlavierChord',
+        'fingering':   'OnInsertFingering',
+        'define':      'OnInsertDefine',
+        'time':        'OnInsertTime',
+        'tempo':       'OnInsertTempo',
+        'tempo_label': 'OnInsertTempoLabel',
+        'key':         'OnInsertKey',
+        'beats_time':  'OnInsertBeatsTime',
+    }
+
+    def FindEditableDirective(self, pos=None):
+        """Se la posizione `pos` (byte; None = cursore) e' dentro una direttiva
+        {nome:...} con finestra propria, restituisce (nome, posizione_cursore)
+        da usare per aprirla; altrimenti None. Non cambia selezione ne' cursore."""
+        import re
+        stc = self.text
+        try:
+            if pos is None or pos < 0:
+                pos = stc.GetCurrentPos()
+            line = stc.LineFromPosition(pos)
+            ls = stc.PositionFromLine(line)
+            txt = stc.GetLine(line).rstrip('\r\n')
+            col = len(stc.GetTextRange(ls, pos))
+            alt = '|'.join(sorted(self._EDITABLE_DIRECTIVES, key=len, reverse=True))
+            for m in re.finditer(r'\{\s*(' + alt + r')\s*:', txt, re.IGNORECASE):
+                close = txt.find('}', m.end())
+                end = close if close != -1 else len(txt)
+                if m.start() <= col <= end:
+                    after_brace = ls + len(txt[:m.start() + 1].encode('utf-8'))
+                    return m.group(1).lower(), max(pos, after_brace)
+        except Exception:
+            pass
+        # Direttive a piu' righe con opzioni: la finestra si apre solo dalla
+        # riga di apertura ({start_of_grid ...}), mai da {end_of_grid} o dalle
+        # righe interne.
+        try:
+            if pos is None or pos < 0:
+                pos = stc.GetCurrentPos()
+            line = stc.LineFromPosition(pos)
+            info = self._FindBlockOpener(line)
+            if info is not None:
+                return info['kind'], stc.PositionFromLine(line)
+        except Exception:
+            pass
+        return None
+
+    # Blocchi a piu' righe la cui riga di apertura si puo' modificare dal menu
+    # contestuale (grid e bridge non sono inclusi): tipo -> alias della direttiva di apertura.
+    _BLOCK_OPENERS = {
+        'chorus':        ('start_of_chorus', 'start_chorus', 'soc'),
+        'chord':         ('start_chord',),
+    }
+    _BLOCK_OPENER_RE = None
+
+    def _FindBlockOpener(self, line, kinds=None):
+        """Se la riga e' l'apertura di un blocco {start_of_grid[:etichetta]
+        [opzioni]}, {start_bridge:..}, {start_chorus:..}, {start_chord:..} (o
+        un alias), restituisce un dict con 'kind', 'kw' (alias scritto),
+        'ds'/'de' (inizio/fine in byte, graffe comprese) e 'rest' (testo dopo
+        il nome); altrimenti None. `kinds` limita i tipi cercati."""
+        import re
+        cls = SongpressFrame
+        if cls._BLOCK_OPENER_RE is None:
+            alt = '|'.join(sorted((a for v in cls._BLOCK_OPENERS.values() for a in v),
+                                  key=len, reverse=True))
+            cls._BLOCK_OPENER_RE = re.compile(
+                r'^(\s*)(\{\s*)(' + alt + r')\b\s*:?([^}]*)\}', re.IGNORECASE)
+        stc = self.text
+        txt = stc.GetLine(line).rstrip('\r\n')
+        m = cls._BLOCK_OPENER_RE.match(txt)
+        if not m:
+            return None
+        kw = m.group(3)
+        kind = next(k for k, v in cls._BLOCK_OPENERS.items() if kw.lower() in v)
+        if kinds is not None and kind not in kinds:
+            return None
+        ls = stc.PositionFromLine(line)
+        return {'kind': kind, 'kw': kw,
+                'ds': ls + len(txt[:m.end(1)].encode('utf-8')),
+                'de': ls + len(txt[:m.end()].encode('utf-8')),
+                'rest': m.group(4).strip()}
+
+    def _EditBlockLabel(self, info):
+        """Modifica l'etichetta della riga di apertura di un blocco bridge,
+        ritornello o intro; il contenuto e la riga di chiusura restano intatti."""
+        kind = info['kind']
+        if kind == 'chorus':
+            default = self.pref.decoratorFormat.GetChorusLabel()
+            title = _("Chorus")
+            prompt = _("Label (leave empty for the default label):")
+            omit_default = True
+        else:
+            default, title = _("Intro"), _("Intro chords label")
+            prompt = _("Enter a label for the intro chords, or press Cancel to use '%s'.") % default
+            omit_default = False
+        d = wx.TextEntryDialog(self.frame, prompt, title, info['rest'] or default)
+        if d.ShowModal() != wx.ID_OK:
+            d.Destroy()
+            return
+        new = d.GetValue().strip()
+        d.Destroy()
+        if omit_default and new == default:
+            new = u""
+        text = (u"{%s:%s}" % (info['kw'], new)) if new else u"{%s}" % info['kw']
+        self._ReplaceRange(info['ds'], info['de'], text)
+
+    def EditDirectiveAt(self, name, caret):
+        """Porta il cursore dentro la direttiva e apre la finestra che la crea."""
+        if name in self._BLOCK_OPENERS:
+            info = self._FindBlockOpener(self.text.LineFromPosition(caret))
+            if info is not None:
+                self._EditBlockLabel(info)
+            return
+        handler = getattr(self, self._EDITABLE_DIRECTIVES.get(name, ''), None)
+        if handler is None:
+            return
+        self.text.SetSelection(caret, caret)
+        handler(None)
+
     def _FindDirectiveAtCaret(self, name):
         """Come _FindDirectiveSpan ma restituisce (inizio, fine, valore) del
         testo dopo i ':' oppure None."""
@@ -3329,6 +3495,42 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         if ex is not None and ex[2].strip():
             ctrl.SetValue(ex[2].strip())
 
+    @staticmethod
+    def _MakePreviewField(parent, value):
+        """Campo "Anteprima direttiva" (scroll orizzontale solo se serve)."""
+        return DirectivePreviewField(parent, value)
+
+    def _ReadKeyboardDirectiveAtCaret(self, name):
+        """Se il cursore e' dentro una direttiva {taste:...} o {fingering:...},
+        ne legge il contenuto per precompilare i controlli della finestra.
+
+        Restituisce un dict con:
+          'chord'    : nome accordo (prima parola, con eventuale ^ / v)
+          'fingers'  : {semitono: numero_dito}
+          'hand'     : 'R', 'L' o None
+          'start'    : semitono della nota di partenza (None = DO / non indicata)
+          'oct_both' : True/False (None = non indicato -> entrambe le ottave)
+          'midc'     : True/False (None = non indicato -> nascosto)
+        oppure None se il cursore e' fuori da una direttiva o questa e' vuota.
+        """
+        ex = self._FindDirectiveAtCaret(name)
+        if ex is None:
+            return None
+        value = ex[2].strip()
+        if not value:
+            return None
+        chord, fingers, hand = KlavierRenderer.parse_fingering(value)
+        if not chord:
+            return None
+        return {
+            'chord': chord,
+            'fingers': fingers,
+            'hand': hand,
+            'start': KlavierRenderer.parse_start_note(value),
+            'oct_both': KlavierRenderer.parse_octave_both(value),
+            'midc': KlavierRenderer.parse_middle_c(value),
+        }
+
     def _InsertDirectiveValue(self, name, val):
         """Inserisce {name:val}. Se il cursore e' gia' dentro una direttiva
         {name:...} non la riscrive: cambia solo il valore dopo i ':' (con valore
@@ -3404,9 +3606,27 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         total_lines = stc.GetLineCount()
         n_sel       = stc.GetSelections()   # numero di cursori/selezioni attivi
 
+        class _Root(str):
+            """Nome accordo (str, SENZA freccia) che ricorda la direzione scritta
+            nel testo ('', 'up', 'down'). Si confronta e si usa come chiave
+            esattamente come una str normale; la freccia viaggia 'di nascosto'
+            fino alla costruzione della direttiva (vedi _fmt_root)."""
+            arrow = ''
+
+        def _mk_root(raw):
+            name, arrow = split_arrow(raw.strip())
+            r = _Root(name)
+            r.arrow = arrow
+            return r
+
         def _extract_roots(line_text):
             raw = re.findall(r'\[([^\]]+)\]', line_text)
-            return [split_arrow(c.strip())[0] for c in raw if c.strip()]
+            return [_mk_root(c) for c in raw if c.strip()]
+
+        def _sig(roots):
+            """Firma di una riga di accordi: nomi + frecce. Due righe con gli
+            stessi nomi ma frecce diverse non condividono la stessa griglia."""
+            return [(u"%s" % r, getattr(r, 'arrow', '')) for r in roots]
 
         # ── Rilevamento accordi dentro i blocchi ──────────────────────────
         # Nei blocchi {start_of_grid} gli accordi si scrivono normalmente SENZA
@@ -3499,7 +3719,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
             per_cursor_roots       = _per_line_roots if _per_line_roots else [[]]
             all_roots              = per_cursor_roots[0]
-            _all_same              = all(r == per_cursor_roots[0] for r in per_cursor_roots)
+            _all_same              = all(_sig(r) == _sig(per_cursor_roots[0]) for r in per_cursor_roots)
             cursor_positions       = []                    # non usato in modalità selezione
             per_cursor_chord_lines = list(_sel_chord_lines) # per l'evidenziazione nell'editor
 
@@ -3557,7 +3777,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                     cl = stc.LineFromPosition(pos)
                     per_cursor_roots.append(_find_chord_line(cl))
                     per_cursor_chord_lines.append(_find_chord_line_idx(cl))
-                _all_same = all(r == per_cursor_roots[0] for r in per_cursor_roots)
+                _all_same = all(_sig(r) == _sig(per_cursor_roots[0]) for r in per_cursor_roots)
             else:
                 per_cursor_roots = [all_roots]
                 per_cursor_chord_lines = [_find_chord_line_idx(main_line)]
@@ -3645,10 +3865,47 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             badge_panel.Fit()
             outer.Add(badge_panel, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
+        # ── {beats_time} gia' presente sopra la riga accordi: valori attuali ──
+        _BT_LINE_RE = re.compile(r'^\s*\{\s*beats_time\s*:([^}]*)\}', re.IGNORECASE)
+
+        def _existing_beats(chord_idx):
+            """Voci [(nome, battiti, freccia)] della {beats_time} sulla riga
+            precedente alla riga accordi `chord_idx`, oppure None."""
+            if chord_idx is None or chord_idx < 1:
+                return None
+            m = _BT_LINE_RE.match(stc.GetLine(chord_idx - 1))
+            if not m:
+                return None
+            out = []
+            for tok in m.group(1).split():
+                name, _sep, num = tok.rpartition('=')
+                if not _sep or not num.strip().isdigit():
+                    continue
+                n, a = split_arrow(name.strip())
+                out.append((n.upper(), int(num), a))
+            return out
+
+        def _prefill_values(roots, chord_idx):
+            """Battiti iniziali per ogni accordo, letti dalla direttiva esistente
+            (la direttiva e' posizionale: le voci seguono l'ordine degli accordi;
+            un accordo assente dalla direttiva vale 0)."""
+            ex = _existing_beats(chord_idx)
+            if ex is None:
+                return None
+            vals, k = [], 0
+            for r in roots:
+                if k < len(ex) and ex[k][0] == (u"%s" % r).upper():
+                    vals.append(ex[k][1])
+                    k += 1
+                else:
+                    vals.append(0)
+            return vals
+
         # ── Helper: costruisce una griglia SpinCtrl per una lista di roots ──
-        def _make_grid(parent, roots):
+        def _make_grid(parent, roots, chord_idx=None):
             """Ritorna (sizer_or_scroll, spin_list) per i roots dati."""
             _spin_list = []
+            _init_vals = _prefill_values(roots, chord_idx)
             use_scroll = len(roots) > 8
             if use_scroll:
                 sw = wx.ScrolledWindow(parent, style=wx.VSCROLL)
@@ -3661,10 +3918,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             # Colonna degli spin NON espandibile: le caselle restano compatte
             # (larghezza fissa) invece di allargarsi per tutta la larghezza del
             # dialogo, come nelle tab del multicursore.
-            for root in roots:
+            for _i, root in enumerate(roots):
                 g.Add(wx.StaticText(gp, label=root), 0, wx.ALIGN_CENTER_VERTICAL)
                 sp = wx.SpinCtrl(gp, min=0, max=32, size=_spin_size(70))
-                sp.SetValue(1)
+                sp.SetValue(max(0, min(32, _init_vals[_i])) if _init_vals else 1)
                 sp.SetToolTip(_(u"0 = omit this chord"))
                 g.Add(sp, 0, wx.ALIGN_CENTER_VERTICAL)
                 _spin_list.append((root, sp))
@@ -3689,7 +3946,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         if not _use_notebook:
             # Caso semplice: un'unica griglia
-            grid_widget, spin_list = _make_grid(dlg, all_roots)
+            grid_widget, spin_list = _make_grid(
+                dlg, all_roots,
+                per_cursor_chord_lines[0] if per_cursor_chord_lines else None)
             if isinstance(grid_widget, wx.ScrolledWindow):
                 outer.Add(grid_widget, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
             else:
@@ -3706,7 +3965,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 page = wx.Panel(nb)
                 page_sizer = wx.BoxSizer(wx.VERTICAL)
                 if roots:
-                    gw, sl = _make_grid(page, roots)
+                    gw, sl = _make_grid(
+                        page, roots,
+                        per_cursor_chord_lines[idx] if idx < len(per_cursor_chord_lines) else None)
                     if isinstance(gw, wx.ScrolledWindow):
                         page_sizer.Add(gw, 1, wx.EXPAND | wx.ALL, 6)
                     else:
@@ -3843,6 +4104,29 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         all_row.Add(btn_apply_all, 0, wx.ALIGN_CENTER_VERTICAL)
         outer.Add(all_row, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
+        # ── Casella: freccia di direzione dentro la direttiva ─────────────
+        # Con la casella attiva i nomi portano il suffisso dell'accordo nel testo:
+        #   {beats_time: MI-v=4 LA-=1 ...}   invece di   {beats_time: MI-=4 LA-=1 ...}
+        # E' attiva solo se nel brano c'e' almeno un accordo con freccia. Lo stato
+        # e' salvato (chiave beatsTimeIncludeArrow); predefinito: senza freccia.
+        _any_arrow = any(split_arrow(_c.strip())[1]
+                         for _c in re.findall(r'\[([^\]]+)\]', stc.GetText())
+                         if _c.strip())
+        cb_arrow = wx.CheckBox(
+            dlg, label=_(u"Include direction arrow (^ / v) in the directive"))
+        cb_arrow.SetValue(self.config.ReadBool('beatsTimeIncludeArrow', False))
+        # Se si modifica una {beats_time} che contiene gia' frecce, la casella
+        # parte attiva cosi' premendo OK le frecce non vengono perse.
+        if _any_arrow and any(
+                a for _ci in per_cursor_chord_lines
+                for (_n, _v, a) in (_existing_beats(_ci) or [])):
+            cb_arrow.SetValue(True)
+        cb_arrow.SetToolTip(
+            _(u"Checked: {beats_time: MI-v=4 ...}  |  Unchecked: {beats_time: MI-=4 ...}\n"
+              u"Available only if the song has chords with a direction arrow."))
+        cb_arrow.Enable(_any_arrow)
+        outer.Add(cb_arrow, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
         # ── Anteprima: una per tab (Notebook eterogeneo) o unica ────────────
         if _notebook_grids is not None:
             # Inserisce un'etichetta anteprima in ogni tab del notebook
@@ -3960,6 +4244,19 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         dlg.SetSizerAndFit(outer)
         dlg.CentreOnParent()
 
+        def _fmt_root(root):
+            """Nome accordo come va scritto nella direttiva: col suffisso di
+            direzione (^ / v) solo se la casella e' attiva e l'accordo ce l'ha."""
+            name = u"%s" % root
+            if cb_arrow.GetValue():
+                a = getattr(root, 'arrow', '')
+                if a:
+                    try:
+                        name += SUFFIX[a]
+                    except Exception:
+                        pass
+            return name
+
         def _build_parts(sl=None):
             """Costruisce la lista 'ROOT=N' dalla spin_list indicata (default: prima tab)."""
             if sl is None:
@@ -3968,7 +4265,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             for root, sp in sl:
                 v = sp.GetValue()
                 if v > 0:
-                    parts.append(u"%s=%d" % (root, v))
+                    parts.append(u"%s=%d" % (_fmt_root(root), v))
             return parts
 
         def _update_preview(_evt=None):
@@ -4028,9 +4325,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                         for root, sp in pairs:
                             v = sp.GetValue()
                             if v > 0:
-                                parts.append(u"%s=%d" % (root, v))
+                                parts.append(u"%s=%d" % (_fmt_root(root), v))
                     else:
-                        parts = [u"%s=1" % r for r in roots]
+                        parts = [u"%s=1" % _fmt_root(r) for r in roots]
                     return (u"{beats_time: %s}" % u" ".join(parts)
                             if parts else u"{beats_time: }")
 
@@ -4178,7 +4475,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 if in_grid:
                     row_roots = _extract_grid_roots(line)
                 else:
-                    row_roots = [c.strip() for c in chord_pat.findall(line) if c.strip()]
+                    row_roots = [_mk_root(c) for c in chord_pat.findall(line) if c.strip()]
                 if not row_roots:
                     new_lines.append(line)
                     continue
@@ -4195,7 +4492,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 for r in row_roots:
                     v = spin_val.get(r, _default_val)   # default 0 se tutto azzerato, altrimenti 1
                     if v > 0:
-                        row_parts.append(u"%s=%d" % (r, v))
+                        row_parts.append(u"%s=%d" % (_fmt_root(r), v))
                 directive = (u"{beats_time: %s}" % u" ".join(row_parts)
                              if row_parts else u"{beats_time: }")
 
@@ -4232,6 +4529,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         spin_all.Bind(wx.EVT_TEXT_ENTER,  _apply_all)   # Invio da tastiera
         btn_reopen.Bind(wx.EVT_BUTTON,    _on_ok_reopen)
 
+        def _on_arrow_toggle(_evt):
+            self.config.WriteBool('beatsTimeIncludeArrow', cb_arrow.GetValue())
+            _update_preview()
+        cb_arrow.Bind(wx.EVT_CHECKBOX, _on_arrow_toggle)
+
         for sl in spin_lists:
             for _root, sp in sl:
                 sp.Bind(wx.EVT_SPINCTRL, _update_preview)
@@ -4253,6 +4555,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self.config.Write('beatsTimeHighlightColour',
                               colour_picker.GetColour().GetAsString(wx.C2S_HTML_SYNTAX))
         self.config.Write('beatsTimeReopenDelay', str(spin_delay.GetValue()))
+        self.config.WriteBool('beatsTimeIncludeArrow', cb_arrow.GetValue())
         self.config.Flush()
         if result in (wx.ID_OK, ID_OK_REOPEN):
             _do_insert()
@@ -4512,6 +4815,60 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         cb_upper.SetValue(True)
         vbox.Add(cb_upper, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
+        # Cursore dentro un {taste:...} esistente: i controlli riflettono il
+        # testo attuale (accordo, nota di partenza, ottave, DO centrale).
+        _ex = self._ReadKeyboardDirectiveAtCaret('taste')
+        if _ex is not None:
+            txt_chord.SetValue(_ex['chord'])
+            ch_start.SetSelection(
+                _WHITE_SEMIS.index(_ex['start']) if _ex['start'] in _WHITE_SEMIS else 0)
+            # Senza 'octave=' il default è "entrambe le ottave"; senza
+            # 'middlec=' il DO centrale è nascosto.
+            cb_octave.SetValue(_ex['oct_both'] is not False)
+            cb_midc.SetValue(bool(_ex['midc']))
+            # Maiuscolo spuntato solo se l'accordo è già tutto maiuscolo,
+            # così premendo OK non si altera ciò che è scritto.
+            cb_upper.SetValue(_ex['chord'] == _ex['chord'].upper())
+            _sync_octave_cb()
+
+        # Anteprima direttiva (aggiornata a ogni modifica)
+        vbox.Add(wx.StaticLine(dlg), 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 8)
+        vbox.Add(wx.StaticText(dlg, -1, _(u"Directive preview:")),
+                 0, wx.LEFT | wx.TOP, 10)
+        txt_preview = self._MakePreviewField(dlg, u"{taste:}")
+        vbox.Add(txt_preview, 0, wx.EXPAND | wx.ALL, 10)
+
+        def _build_taste():
+            chord = txt_chord.GetValue().strip()
+            if not chord:
+                return u"{taste:}"
+            if cb_upper.GetValue():
+                chord = chord.upper()
+            start_sel = ch_start.GetSelection()
+            start_semi = _WHITE_SEMIS[start_sel]
+            if start_sel > 0:   # diverso da DO: aggiunge il token start=
+                chord = u"%s start=%s" % (chord, _semi_to_note(start_semi))
+            # octave=one solo se la casella è disattivata e il layout è a 8 tasti
+            if (KlavierRenderer.keyboard_has_octave_key(start_semi)
+                    and not cb_octave.GetValue()):
+                chord = u"%s octave=one" % chord
+            # middlec=show solo se la casella è attiva e la partenza non è DO
+            if (KlavierRenderer.keyboard_has_middle_c_option(start_semi)
+                    and cb_midc.GetValue()):
+                chord = u"%s middlec=show" % chord
+            return u"{taste:%s}" % chord
+
+        def _update_taste_preview(e=None):
+            txt_preview.SetValue(_build_taste())
+            if e is not None:
+                e.Skip()
+        for _c in (cb_octave, cb_midc, cb_upper):
+            _c.Bind(wx.EVT_CHECKBOX, _update_taste_preview)
+        ch_start.Bind(wx.EVT_CHOICE,
+                      lambda e: (_sync_octave_cb(), _update_taste_preview()))
+        txt_chord.Bind(wx.EVT_TEXT, _update_taste_preview)
+        _update_taste_preview()
+
         # Nota informativa: dove viene disegnata la tastiera.
         vbox.Add(self._MakeInfoNote(
             dlg, _(u"Note: the chord keyboard is always drawn at the bottom of the page, even if you can insert the command anywhere in the editor.")),
@@ -4524,25 +4881,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         dlg.CentreOnParent()
 
         if dlg.ShowModal() == wx.ID_OK:
-            chord = txt_chord.GetValue().strip()
-            if chord:
-                if cb_upper.GetValue():
-                    chord = chord.upper()
-                start_sel = ch_start.GetSelection()
-                start_semi = _WHITE_SEMIS[start_sel]
-                if start_sel > 0:   # diverso da DO: aggiunge il token start=
-                    chord = u"%s start=%s" % (chord, _semi_to_note(start_semi))
-                # octave=one solo se la casella è disattivata e il layout è a 8 tasti
-                if (KlavierRenderer.keyboard_has_octave_key(start_semi)
-                        and not cb_octave.GetValue()):
-                    chord = u"%s octave=one" % chord
-                # middlec=show solo se la casella è attiva e la partenza non è DO
-                if (KlavierRenderer.keyboard_has_middle_c_option(start_semi)
-                        and cb_midc.GetValue()):
-                    chord = u"%s middlec=show" % chord
-                self._InsertBuiltDirective('taste', u"{taste:%s}" % chord, u"{taste:|}")
-            else:
-                self._InsertBuiltDirective('taste', u"{taste:}", u"{taste:|}")
+            self._InsertBuiltDirective('taste', _build_taste(), u"{taste:|}")
         dlg.Destroy()
 
     def _MakeInfoNote(self, parent, text, wrap=260):
@@ -4773,10 +5112,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         vbox.Add(wx.StaticLine(dlg), 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 8)
         vbox.Add(wx.StaticText(dlg, -1, _(u"Directive preview:")),
                  0, wx.LEFT | wx.TOP, 10)
-        txt_preview = wx.TextCtrl(dlg, -1, u"{fingering: }",
-                                  style=wx.TE_READONLY)
-        txt_preview.SetBackgroundColour(
-            wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE))
+        txt_preview = self._MakePreviewField(dlg, u"{fingering: }")
         vbox.Add(txt_preview, 0, wx.EXPAND | wx.ALL, 10)
 
         # ── Checkbox anteprima tastiera ───────────────────────────────
@@ -5034,6 +5370,40 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         # Cambiare l'ordinamento ricostruisce la griglia mantenendo le dita già scelte
         cb_order.Bind(wx.EVT_CHECKBOX, _on_chord_change)
 
+        # Cursore dentro un {fingering:...} esistente: i controlli riflettono
+        # il testo attuale (accordo, mano, partenza, ottave, DO centrale, dita).
+        _ex = self._ReadKeyboardDirectiveAtCaret('fingering')
+        if _ex is not None:
+            _chord = _ex['chord']
+            _start_semi = _ex['start'] if _ex['start'] in _WHITE_SEMIS else 0
+            _fingers = _ex['fingers']
+
+            if _ex['hand'] == 'L':
+                rb_left.SetValue(True)
+            else:
+                rb_right.SetValue(True)
+            ch_start.SetSelection(_WHITE_SEMIS.index(_start_semi))
+            cb_octave.SetValue(_ex['oct_both'] is not False)
+            cb_midc.SetValue(bool(_ex['midc']))
+            # Maiuscolo spuntato solo se l'accordo è già tutto maiuscolo
+            cb_upper.SetValue(_chord == _chord.upper())
+            # "Ordina come sulla tastiera" spuntato solo se le dita nel testo
+            # sono già in quell'ordine (altrimenti OK le riordinerebbe).
+            _semis = list(_fingers.keys())   # ordine di comparsa nel testo
+            cb_order.SetValue(
+                _semis == sorted(_semis, key=lambda s: (s - _start_semi) % 12))
+            _on_start_change()   # aggiorna abilitazione caselle e griglia
+
+            # L'accordo ricostruisce la griglia note/dita (_on_chord_change)...
+            txt_chord.SetValue(_chord)
+            # ...e poi vi si rimettono i numeri delle dita scritti nel testo.
+            _name_to_semi = dict(chord_semitones(_chord))
+            for (_lbl, _ch), _note in zip(note_rows, current_notes):
+                _n = _fingers.get(_name_to_semi.get(_note))
+                if _n is not None and 0 <= _n <= 5:
+                    _ch.SetSelection(_n)
+            _update_preview()
+
         vbox.Fit(dlg)
         dlg.CentreOnParent()
 
@@ -5197,8 +5567,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         # --- Anteprima direttiva ---
         vbox.Add(wx.StaticLine(d), 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 8)
         vbox.Add(wx.StaticText(d, -1, _("Directive preview:")), 0, wx.LEFT | wx.TOP, 8)
-        txt_preview = wx.TextCtrl(d, -1, "{image: }", style=wx.TE_READONLY)
-        txt_preview.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE))
+        txt_preview = self._MakePreviewField(d, "{image: }")
         vbox.Add(txt_preview, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
         btn_sizer = d.CreateButtonSizer(wx.OK | wx.CANCEL)
@@ -6752,6 +7121,26 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         line_start = stc.PositionFromLine(line_num)
         # Testo dalla riga fino alla posizione cursore
         text_before = stc.GetTextRange(line_start, pos)
+        text_after = stc.GetTextRange(pos, stc.GetLineEndPosition(line_num))
+
+        # Cursore dentro una direttiva già scritta (es. "{taste:SOL start=SI |}"):
+        # si propongono le opzioni mancanti (middlec=, octave=, ...) o i valori
+        # di un'opzione (middlec=|). Se non c'è nulla da proporre, nessun popup.
+        ctx = ChordProDirectives.directive_context(text_before, text_after)
+        self._intellisenseMode = 'directive'
+        if ctx is not None:
+            if ctx['kind'] == 'none':
+                return
+            self._intellisenseMode = ctx['kind']          # 'option' | 'value'
+            self._intellisenseDirective = ctx['directive']
+            self._intellisenseOption = ctx['option']
+            stc.AutoCompSetSeparator(ord(' '))
+            stc.AutoCompSetIgnoreCase(True)
+            stc.AutoCompSetAutoHide(True)
+            stc.AutoCompSetDropRestOfWord(False)
+            stc.AutoCompShow(len(ctx['prefix']), ' '.join(ctx['items']))
+            self._StartDirectiveTips()
+            return
 
         # Cerchiamo l'ultima '{' non chiusa nel testo prima del cursore
         brace_pos = text_before.rfind('{')
@@ -6838,7 +7227,15 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             return
         self._dirTipLast = current
         from . import ChordProDirectiveHelp
-        text = ChordProDirectiveHelp.get_directive_help(current)
+        if getattr(self, '_intellisenseMode', 'directive') == 'directive':
+            text = ChordProDirectiveHelp.get_directive_help(current)
+        elif self._intellisenseMode == 'value':
+            text = ChordProDirectiveHelp.get_value_help(
+                getattr(self, '_intellisenseDirective', ''),
+                getattr(self, '_intellisenseOption', ''), current)
+        else:
+            text = ChordProDirectiveHelp.get_option_help(
+                getattr(self, '_intellisenseDirective', ''), current)
         if not text:
             self._HideDirectiveTip()
             return
@@ -6864,16 +7261,21 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         pt = stc.PointFromPosition(pos)
         line_h = stc.TextHeight(stc.LineFromPosition(pos))
         screen_pt = stc.ClientToScreen(pt)
-        # La lista si apre sotto la riga se c'è spazio, altrimenti sopra:
-        # il tooltip va dalla parte opposta per non coprirla.
+        # La lista si apre sotto la riga se c'è spazio, altrimenti sopra.
+        # Il tooltip va a SINISTRA della lista, alla stessa altezza, così non
+        # ne copre le voci. Se a sinistra non c'è spazio, passa sopra/sotto
+        # la riga dalla parte opposta alla lista.
         disp = wx.Display(wx.Display.GetFromWindow(stc) if wx.Display.GetFromWindow(stc) >= 0 else 0)
         area = disp.GetClientArea()
         room_below = area.GetBottom() - (screen_pt.y + line_h)
-        if room_below >= self.frame.FromDIP(170):
-            y = screen_pt.y - win.GetSize().height - 2     # lista sotto → tip sopra
+        list_below = room_below >= self.frame.FromDIP(170)
+        w, h = win.GetSize().width, win.GetSize().height
+        x = screen_pt.x - w - 4
+        if x >= area.x:
+            y = (screen_pt.y + line_h + 2) if list_below else (screen_pt.y - h - 2)
         else:
-            y = screen_pt.y + line_h + 2                   # lista sopra → tip sotto
-        x = min(screen_pt.x, area.GetRight() - win.GetSize().width)
+            x = min(screen_pt.x, area.GetRight() - w)
+            y = (screen_pt.y - h - 2) if list_below else (screen_pt.y + line_h + 2)
         win.SetPosition((max(area.x, x), max(area.y, y)))
         win.Show()
         stc.SetFocus()
@@ -6890,6 +7292,18 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         """
         directive = evt.GetText().lower()
         self._StopDirectiveTips()
+        mode = getattr(self, '_intellisenseMode', 'directive')
+        if mode != 'directive':
+            # Opzione o valore dentro una direttiva: nessun suffisso ':|}'.
+            # Scelta un'opzione con valori (es. "middlec=") si apre subito
+            # il popup dei valori.
+            chosen = directive.split('?')[0].strip()
+            if (mode == 'option' and chosen.endswith('=') and
+                    ChordProDirectives.option_values(
+                        getattr(self, '_intellisenseDirective', ''), chosen[:-1])):
+                wx.CallAfter(self._ShowDirectiveIntellisense)
+            evt.Skip()
+            return
         wx.CallAfter(self._ApplyDirectiveSuffix, directive)
         evt.Skip()   # lascia che Scintilla proceda con l'inserimento normale
 

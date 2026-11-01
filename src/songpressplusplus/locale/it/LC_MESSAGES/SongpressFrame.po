@@ -32,7 +32,8 @@ msgstr "Il testo immesso non è stato trovato"
 msgid "%d text occurrences have been replaced"
 msgstr "Sono state sostituite %d occorrenze del testo"
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:171 /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:181
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:171
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:181
 msgid "All supported files"
 msgstr "Tutti i file supportati"
 
@@ -58,7 +59,8 @@ msgstr "Visualizza come:"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Enter a label for the chorus, or press Cancel to omit the label."
-msgstr "Inserisci un'etichetta per il ritornello, o premi Annulla per ometterla."
+msgstr ""
+"Inserisci un'etichetta per il ritornello, o premi Annulla per ometterla."
 
 #: SongpressFrame.py — OnInsertGrid dialog title
 msgid "Grid label"
@@ -89,8 +91,12 @@ msgid "Quick guide - Songpress++"
 msgstr "Guida rapida - Songpress++"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:205
-msgid "Licensed under the terms and conditions of the GNU General Public License, version 2"
-msgstr "Concesso in licenza secondo i termini e le condizioni della GNU General Public License, versione 2"
+msgid ""
+"Licensed under the terms and conditions of the GNU General Public License, "
+"version 2"
+msgstr ""
+"Concesso in licenza secondo i termini e le condizioni della GNU General "
+"Public License, versione 2"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:207
 msgid ""
@@ -116,14 +122,21 @@ msgstr ""
 "\n"
 "Vuoi attivare questa funzionalità?"
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:326 /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:331
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:839 /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:997
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:326
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:331
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:839
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:997
 msgid "Songpress++"
 msgstr "Songpress++"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:330
-msgid "Please take a minute to set up your skill as a guitarist. For each group of chords, tell Songpress++ how much you like them."
-msgstr "Ora dedica un minuto ad impostare il tuo livello di abilità come chitarrista. Esprimi il tuo grado di preferenza per ciascuno dei gruppi di accordi che ti verranno presentati."
+msgid ""
+"Please take a minute to set up your skill as a guitarist. For each group of "
+"chords, tell Songpress++ how much you like them."
+msgstr ""
+"Ora dedica un minuto ad impostare il tuo livello di abilità come "
+"chitarrista. Esprimi il tuo grado di preferenza per ciascuno dei gruppi di "
+"accordi che ti verranno presentati."
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:548
 msgid "PNG image"
@@ -169,24 +182,38 @@ msgstr "Esporta come PowerPoint"
 msgid "PPTX presentation"
 msgstr "Presentazione PPTX"
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:887 /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1049
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:887
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1049
 msgid "Simplify chords"
 msgstr "Semplifica gli accordi"
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:889 /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1047
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:889
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1047
 #, python-format
-msgid "The key of your song, %s, is not the easiest to play (difficulty: %.1f/5.0).\n"
-msgstr "La canzone è in %s. Questa non è la tonalità più facile da suonare (difficoltà %.1f/5.0).\n"
+msgid ""
+"The key of your song, %s, is not the easiest to play (difficulty: "
+"%.1f/5.0).\n"
+msgstr ""
+"La canzone è in %s. Questa non è la tonalità più facile da suonare "
+"(difficoltà %.1f/5.0).\n"
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:890 /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1048
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:890
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1048
 #, python-format
-msgid "Do you want to transpose the key %s, which is the easiest one (difficulty: %.1f/5.0)?"
-msgstr "Vuoi trasporla in %s, che è la tonalità più semplice (difficoltà: %.1f/5.0)?"
+msgid ""
+"Do you want to transpose the key %s, which is the easiest one (difficulty: "
+"%.1f/5.0)?"
+msgstr ""
+"Vuoi trasporla in %s, che è la tonalità più semplice (difficoltà: %.1f/5.0)?"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:897
 #, python-format
-msgid "The key of your song, %s, is already the easiest to play (difficulty: %.1f/5.0).\n"
-msgstr "La canzone è già nella tonalità più facile da suonare, il %s (difficoltà %.1f/5.0).\n"
+msgid ""
+"The key of your song, %s, is already the easiest to play (difficulty: "
+"%.1f/5.0).\n"
+msgstr ""
+"La canzone è già nella tonalità più facile da suonare, il %s (difficoltà "
+"%.1f/5.0).\n"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:899
 msgid "Your song or current selection does not contain any chords."
@@ -194,7 +221,9 @@ msgstr "La canzone o la selezione corrente non contiene accordi."
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:967
 msgid "Insert a label for verse, or press Cancel if you want to omit label."
-msgstr "Inserisci un'etichetta per la strofa, o premi Annulla per omettere l'etichetta."
+msgstr ""
+"Inserisci un'etichetta per la strofa, o premi Annulla per omettere "
+"l'etichetta."
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:968
 msgid "Verse label"
@@ -202,7 +231,9 @@ msgstr "Etichetta della strofa"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:977
 msgid "Insert a label for chorus, or press Cancel if you want to omit label."
-msgstr "Inserisci un'etichetta per il ritornello, o premi Annulla per omettere l'etichetta."
+msgstr ""
+"Inserisci un'etichetta per il ritornello, o premi Annulla per omettere "
+"l'etichetta."
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:978
 msgid "Chorus label"
@@ -225,8 +256,12 @@ msgid "Remove spurious blank lines"
 msgstr "Rimuovi le linee vuote di troppo"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1035
-msgid "It looks like your song is in tab format (i.e., chords are above the text).\n"
-msgstr "A quanto pare la canzone è nel formato tab (cioè gli accordi si trovano sopra il testo).\n"
+msgid ""
+"It looks like your song is in tab format (i.e., chords are above the "
+"text).\n"
+msgstr ""
+"A quanto pare la canzone è nel formato tab (cioè gli accordi si trovano "
+"sopra il testo).\n"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1036
 msgid "Do you want to convert it to ChordPro automatically?"
@@ -246,7 +281,8 @@ msgstr "Interlinea"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Enter the line spacing value (e.g. 0 to remove extra space):"
-msgstr "Inserisci il valore dell'interlinea (es. 0 per rimuovere lo spazio extra):"
+msgstr ""
+"Inserisci il valore dell'interlinea (es. 0 per rimuovere lo spazio extra):"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Space above chords"
@@ -254,7 +290,9 @@ msgstr "Spazio sopra accordi"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Enter the space above chords value (e.g. 0 to remove extra space):"
-msgstr "Inserisci il valore dello spazio sopra gli accordi (es. 0 per rimuovere lo spazio extra):"
+msgstr ""
+"Inserisci il valore dello spazio sopra gli accordi (es. 0 per rimuovere lo "
+"spazio extra):"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Intro"
@@ -263,7 +301,9 @@ msgstr "Intro"
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 #, python-format
 msgid "Enter a label for the intro chords, or press Cancel to use '%s'."
-msgstr "Inserisci un'etichetta per gli accordi di introduzione, o premi Annulla per usare '%s'."
+msgstr ""
+"Inserisci un'etichetta per gli accordi di introduzione, o premi Annulla per "
+"usare '%s'."
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Intro chords label"
@@ -292,7 +332,8 @@ msgstr "Etichetta inciso"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py:1240
 msgid "Command 'Paste chords': Select 1st chord line, 2nd text line"
-msgstr "Comando 'Integra accordi': Seleziona 1° linea accordi,  2° linea testo"
+msgstr ""
+"Comando 'Integra accordi': Seleziona 1° linea accordi,  2° linea testo"
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Copied to the clipboard as a vector image."
@@ -353,8 +394,12 @@ msgstr "Rileva automaticamente dagli accordi"
 #. Tooltip shown when hovering the auto-detect checkbox in the Key dialog.
 #. "[ ]" refers to the square brackets used to mark chords in ChordPro format.
 #: SongpressFrame.py — OnInsertKey auto-detect checkbox tooltip
-msgid "Analyses the chords in the song (text between [ ]) and fills in the most likely key automatically."
-msgstr "Analizza gli accordi del brano (testo tra [ ]) e compila automaticamente la tonalità più probabile."
+msgid ""
+"Analyses the chords in the song (text between [ ]) and fills in the most "
+"likely key automatically."
+msgstr ""
+"Analizza gli accordi del brano (testo tra [ ]) e compila automaticamente la "
+"tonalità più probabile."
 
 #. Label shown when key detection succeeds.
 #. %s = detected key name (e.g. "Am"); %d = number of chords analysed.
@@ -404,7 +449,9 @@ msgstr "Mostra anteprima tastiera"
 
 #: SongpressFrame.py
 msgid "Enter chord definition (e.g. C base-fret 1 frets X 3 2 0 1 0):"
-msgstr "Inserisci la definizione dell'accordo (es. DO base-fret 1 frets X 3 2 0 1 0):"
+msgstr ""
+"Inserisci la definizione dell'accordo (es. DO base-fret 1 frets X 3 2 0 1 "
+"0):"
 
 #: SongpressFrame.py
 msgid "Songpress++ Page Text"
@@ -491,7 +538,8 @@ msgstr ""
 msgid "Propagate verse chords"
 msgstr "Propaga accordi strofa"
 
-#: SongpressFrame.py propagate verse chords — diagnostic hint (lines per verse)
+#: SongpressFrame.py propagate verse chords — diagnostic hint (lines per
+#: verse)
 #, python-format
 msgid ""
 "\n"
@@ -513,7 +561,8 @@ msgstr ""
 msgid "Propagate chorus chords"
 msgstr "Propaga accordi ritornello"
 
-#: SongpressFrame.py propagate chorus chords — diagnostic hint (lines per chorus)
+#: SongpressFrame.py propagate chorus chords — diagnostic hint (lines per
+#: chorus)
 #, python-format
 msgid ""
 "\n"
@@ -575,16 +624,25 @@ msgstr "Incorpora immagine nel file (base64, senza dipendenza esterna)"
 #. Tooltip shown when hovering the embed checkbox.
 #. The three sentences explain what happens when the option is on vs off.
 #: SongpressFrame.py insert image embed checkbox tooltip
-msgid "If checked, the image data is encoded in base64 and stored directly inside the .crd file. The song becomes self-contained but the file size grows. If unchecked, only the file path is stored (link)."
-msgstr "Se attivata, i dati dell'immagine vengono codificati in base64 e salvati direttamente nel file .crd. La canzone diventa autosufficiente ma le dimensioni del file aumentano. Se disattivata, viene salvato solo il percorso del file (collegamento)."
+msgid ""
+"If checked, the image data is encoded in base64 and stored directly inside "
+"the .crd file. The song becomes self-contained but the file size grows. If "
+"unchecked, only the file path is stored (link)."
+msgstr ""
+"Se attivata, i dati dell'immagine vengono codificati in base64 e salvati "
+"direttamente nel file .crd. La canzone diventa autosufficiente ma le "
+"dimensioni del file aumentano. Se disattivata, viene salvato solo il "
+"percorso del file (collegamento)."
 
-#. Warning label shown below the embed checkbox when the estimated size is < 1 MB.
+#. Warning label shown below the embed checkbox when the estimated size is < 1
+#. MB.
 #. %.0f is replaced at runtime with the estimated KB to be added.
 #: SongpressFrame.py insert image embed size warning KB
 msgid "⚠ Approx. %.0f KB will be added to the .crd file"
 msgstr "⚠ Circa %.0f KB verranno aggiunti al file .crd"
 
-#. Warning label shown below the embed checkbox when the estimated size is >= 1 MB.
+#. Warning label shown below the embed checkbox when the estimated size is >=
+#. 1 MB.
 #. %.1f is replaced at runtime with the estimated MB to be added.
 #: SongpressFrame.py insert image embed size warning MB
 msgid "⚠ Approx. %.1f MB will be added to the .crd file"
@@ -839,11 +897,13 @@ msgstr "Predefinito"
 msgid "Hand:"
 msgstr "Mano:"
 
-#: SongpressFrame.py fingering dialog — right hand radio button KlavierRenderer.py label drawn below keyboard
+#: SongpressFrame.py fingering dialog — right hand radio button
+#: KlavierRenderer.py label drawn below keyboard
 msgid "Right hand"
 msgstr "Mano destra"
 
-#: SongpressFrame.py fingering dialog — left hand radio button KlavierRenderer.py label drawn below keyboard
+#: SongpressFrame.py fingering dialog — left hand radio button
+#: KlavierRenderer.py label drawn below keyboard
 msgid "Left hand"
 msgstr "Mano sinistra"
 
@@ -956,16 +1016,28 @@ msgid "Remove leading whitespace from each line"
 msgstr "Elimina gli spazi iniziali da ogni riga"
 
 #: SongpressFrame.py OnNormalizeSpaces checkbox spaces tooltip
-msgid "Replaces every run of two or more consecutive spaces with a single space."
-msgstr "Sostituisce ogni sequenza di due o più spazi consecutivi con uno spazio solo."
+msgid ""
+"Replaces every run of two or more consecutive spaces with a single space."
+msgstr ""
+"Sostituisce ogni sequenza di due o più spazi consecutivi con uno spazio "
+"solo."
 
 #: SongpressFrame.py OnNormalizeSpaces checkbox underscore tooltip
-msgid "Deletes every '_' character from the text (the underscore used to join the parts of a word)."
-msgstr "Elimina tutti i caratteri '_' dal testo (il trattino basso usato per unire le parti di una parola)."
+msgid ""
+"Deletes every '_' character from the text (the underscore used to join the "
+"parts of a word)."
+msgstr ""
+"Elimina tutti i caratteri '_' dal testo (il trattino basso usato per unire "
+"le parti di una parola)."
 
 #: SongpressFrame.py OnNormalizeSpaces checkbox dash tooltip
-msgid "Deletes every '-' character from the text, such as syllable hyphens. Warning: it also removes the '-' in minor chords (e.g. MI-)."
-msgstr "Elimina tutti i caratteri '-' dal testo, ad esempio i trattini di sillabazione. Attenzione: rimuove anche il '-' degli accordi minori (es. MI-)."
+msgid ""
+"Deletes every '-' character from the text, such as syllable hyphens. "
+"Warning: it also removes the '-' in minor chords (e.g. MI-)."
+msgstr ""
+"Elimina tutti i caratteri '-' dal testo, ad esempio i trattini di "
+"sillabazione. Attenzione: rimuove anche il '-' degli accordi minori (es. "
+"MI-)."
 
 #: SongpressFrame.py OnNormalizeSpaces checkbox leading tooltip
 msgid "Removes the spaces and tabs at the beginning of every line."
@@ -976,8 +1048,12 @@ msgid "Join split words with '_' (only where needed)"
 msgstr "Unisci le parole spezzate con '_' (solo se necessario)"
 
 #: SongpressFrame.py OnNormalizeSpaces checkbox join split words tooltip
-msgid "Where a wide chord pushes apart the syllables of a word (e.g. d[LA-]i), insert '_' before the next chord so the parts stay visually joined."
-msgstr "Dove un accordo largo allontana le sillabe di una parola (es. d[LA-]i), inserisce '_' davanti all'accordo successivo così le parti restano unite."
+msgid ""
+"Where a wide chord pushes apart the syllables of a word (e.g. d[LA-]i), "
+"insert '_' before the next chord so the parts stay visually joined."
+msgstr ""
+"Dove un accordo largo allontana le sillabe di una parola (es. d[LA-]i), "
+"inserisce '_' davanti all'accordo successivo così le parti restano unite."
 
 #: SongpressFrame.py OnInsertBeatsTime multicursor notice
 msgid "Multi-cursor active: %d positions."
@@ -1001,7 +1077,8 @@ msgstr "Applica al brano"
 
 #: SongpressFrame.py OnInsertBeatsTime apply-to-song button tooltip
 msgid "Insert {beats_time} before every chord line in the whole song"
-msgstr "Inserisce {beats_time} prima di ogni riga con accordi nel brano intero"
+msgstr ""
+"Inserisce {beats_time} prima di ogni riga con accordi nel brano intero"
 
 #: SongpressFrame.py OnInsertBeatsTime apply-to-song no results message
 msgid "No chord lines found without {beats_time} already set."
@@ -1037,7 +1114,9 @@ msgstr "Assegna il numero di battiti a ciascun accordo.\n"
 
 #: SongpressFrame.py OnInsertBeatsTime batch mode label
 msgid "Batch mode: inserts the directive before every chord line in the file."
-msgstr "Modalità batch: inserisce la direttiva prima di ogni riga con accordi nel file."
+msgstr ""
+"Modalità batch: inserisce la direttiva prima di ogni riga con accordi nel "
+"file."
 
 #: SongpressFrame.py — light theme label (Italian string used as source)
 msgid "Chiaro"
@@ -1098,11 +1177,19 @@ msgstr ""
 
 #: SongpressFrame.py — insert image embed checkbox label
 msgid "If checked, the image data is encoded in base64 and stored directly "
-msgstr "Se selezionato, i dati dell'immagine sono codificati in base64 e memorizzati direttamente "
+msgstr ""
+"Se selezionato, i dati dell'immagine sono codificati in base64 e memorizzati"
+" direttamente "
 
 #: SongpressFrame.py — image file filter
-msgid "Image files (*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif)|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif|All files (*.*)|*.*"
-msgstr "File immagine (*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif)|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif|Tutti i file (*.*)|*.*"
+msgid ""
+"Image files "
+"(*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif)|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif|All"
+" files (*.*)|*.*"
+msgstr ""
+"File immagine "
+"(*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif)|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif|Tutti"
+" i file (*.*)|*.*"
 
 #: SongpressFrame.py OnInsertBeatsTime multicursor notice (no period)
 #, python-format
@@ -1127,7 +1214,8 @@ msgstr "Nessuna strofa compatibile trovata.\n"
 
 #: SongpressFrame.py OnInsertBeatsTime info label when cursor is on chord line
 msgid "Place the cursor on the line with chords to insert the directive."
-msgstr "Posiziona il cursore sulla riga con gli accordi per inserire la direttiva."
+msgstr ""
+"Posiziona il cursore sulla riga con gli accordi per inserire la direttiva."
 
 #: SongpressFrame.py OnInsertBeatsTime preview label for cursor 1
 msgid "Preview (cursor 1):"
@@ -1184,7 +1272,8 @@ msgstr "Applica solo alla selezione"
 msgid "Highlight chord rows in editor"
 msgstr "Evidenzia le righe degli accordi nell'editor"
 
-#: SongpressFrame.py — beats_time dialog highlight checkbox tooltip (multiline)
+#: SongpressFrame.py — beats_time dialog highlight checkbox tooltip
+#: (multiline)
 msgid ""
 "Highlight in the editor the chord line each cursor refers to.\n"
 "Active cursor: chosen colour  |  Other cursors: lighter tint"
@@ -1195,6 +1284,19 @@ msgstr ""
 #: SongpressFrame.py — beats_time dialog colour picker tooltip
 msgid "Choose the highlight colour for the active cursor"
 msgstr "Scegli il colore di evidenziazione per il cursore attivo"
+
+#: SongpressFrame.py — beats_time dialog, direction arrow checkbox label
+msgid "Include direction arrow (^ / v) in the directive"
+msgstr "Includi la freccia di direzione (^ / v) nella direttiva"
+
+#: SongpressFrame.py — beats_time dialog, direction arrow checkbox tooltip
+#: (multiline)
+msgid ""
+"Checked: {beats_time: MI-v=4 ...}  |  Unchecked: {beats_time: MI-=4 ...}\n"
+"Available only if the song has chords with a direction arrow."
+msgstr ""
+"Attiva: {beats_time: MI-v=4 ...}  |  Disattiva: {beats_time: MI-=4 ...}\n"
+"Disponibile solo se il brano contiene accordi con freccia di direzione."
 
 #: SongpressFrame.py — beats_time dialog reopen delay spinctrl tooltip
 msgid "Delay in seconds before the dialog reopens (1-60)"
@@ -1328,7 +1430,8 @@ msgid "Reached the beginning"
 msgstr "Raggiunto l'inizio"
 
 #  Include la preposizione articolata corretta per l'italiano:
-#  "dall'inizio" (davanti a vocale). Il template usa "%s" senza preposizione fissa.
+#  "dall'inizio" (davanti a vocale). Il template usa "%s" senza preposizione
+# fissa.
 #: SongpressFrame.py — wrap-around search: direction "beginning"
 msgid "beginning"
 msgstr "dall'inizio"
@@ -1341,7 +1444,8 @@ msgstr "dalla fine"
 #  Secondo %s contiene già la preposizione articolata:
 #    "Raggiunta la fine della canzone, riavvio la ricerca dalla fine"
 #    "Raggiunto l'inizio della canzone, riavvio la ricerca dall'inizio"
-#: SongpressFrame.py — wrap-around search: full message ("%s of the song, restarting search from %s")
+#: SongpressFrame.py — wrap-around search: full message ("%s of the song,
+#: restarting search from %s")
 msgid "%s of the song, restarting search from the %s?"
 msgstr "%s della canzone, riavvio la ricerca %s?"
 
@@ -1353,7 +1457,8 @@ msgstr "_Inserisci"
 msgid "Show/hide toolbar with insert commands"
 msgstr "Mostra/nascondi la barra degli strumenti di inserimento"
 
-# ── Verifica dipendenze (? → Verifica dipendenze…) ───────────────────────────
+# ── Verifica dipendenze (? → Verifica dipendenze…)
+# ───────────────────────────
 msgid "Check dependencies..."
 msgstr "Verifica dipendenze..."
 
@@ -1416,7 +1521,9 @@ msgid "Select or type a tempo marking:"
 msgstr "Seleziona o digita un'indicazione agogica:"
 
 msgid "You can also type a custom expression (e.g. \"Allegretto moderato\")."
-msgstr "Puoi anche digitare un'espressione personalizzata (es. \"Allegretto moderato\")."
+msgstr ""
+"Puoi anche digitare un'espressione personalizzata (es. \"Allegretto "
+"moderato\")."
 
 #: SongpressFrame.py — OnInsertKey dialog title
 msgid "Key"
@@ -1458,17 +1565,21 @@ msgstr "Evidenzia la nota su entrambe le ottave"
 msgid "Uppercase chord"
 msgstr "Accordo in maiuscolo"
 
-#: SongpressFrame.py — Chord keys / First chord fingering dialogs, middle C checkbox
+#: SongpressFrame.py — Chord keys / First chord fingering dialogs, middle C
+#: checkbox
 msgid "Show middle %s"
 msgstr "Mostra il %s centrale"
 
-#: SongpressFrame.py — Chord keys / First chord fingering dialogs, middle C checkbox tooltip
-msgid "Marks the middle %s key with a dot. Available when the start note is not %s."
+#: SongpressFrame.py — Chord keys / First chord fingering dialogs, middle C
+#: checkbox tooltip
+msgid ""
+"Marks the middle %s key with a dot. Available when the start note is not %s."
 msgstr ""
 "Segna il tasto %s centrale con un pallino. Disponibile quando la nota di "
 "partenza non è %s."
 
-#: SongpressFrame.py — Chord keys / First chord fingering dialogs, middle C colour swatch tooltip
+#: SongpressFrame.py — Chord keys / First chord fingering dialogs, middle C
+#: colour swatch tooltip
 msgid "Colour of the middle %s dot."
 msgstr "Colore del pallino del %s centrale."
 
@@ -1495,8 +1606,11 @@ msgstr "Verifiche font musicali"
 
 #: SongpressFrame.py OnRemoveChords - ask to remove beats_time too
 #, python-format
-msgid "Do you also want to remove the %d {beats_time} directives of the removed chords?"
-msgstr "Vuoi rimuovere anche le %d direttive {beats_time} degli accordi rimossi?"
+msgid ""
+"Do you also want to remove the %d {beats_time} directives of the removed "
+"chords?"
+msgstr ""
+"Vuoi rimuovere anche le %d direttive {beats_time} degli accordi rimossi?"
 
 #: SongpressFrame.py OnRemoveChords - status message
 #, python-format
@@ -1512,8 +1626,12 @@ msgid "Label (leave empty for the default label):"
 msgstr "Etichetta (lascia vuoto per l'etichetta predefinita):"
 
 #: SongpressFrame.py OnInsertChorusBlock label field tooltip
-msgid "Text shown as the chorus label. If left empty or unchanged, the default label is used."
-msgstr "Testo mostrato come etichetta del ritornello. Se lasciato vuoto o invariato, viene usata l'etichetta predefinita."
+msgid ""
+"Text shown as the chorus label. If left empty or unchanged, the default "
+"label is used."
+msgstr ""
+"Testo mostrato come etichetta del ritornello. Se lasciato vuoto o invariato,"
+" viene usata l'etichetta predefinita."
 
 #: SongpressFrame.py OnInsertChorusBlock radio box caption
 msgid "Form"
@@ -1528,8 +1646,12 @@ msgid "Short form: {soc} ... {eoc} (start_of_chorus / end_of_chorus)"
 msgstr "Forma abbreviata: {soc} ... {eoc} (start_of_chorus / end_of_chorus)"
 
 #: SongpressFrame.py — OnInsertTaste / OnInsertFingering info note
-msgid "Note: the chord keyboard is always drawn at the bottom of the page, even if you can insert the command anywhere in the editor."
-msgstr "Nota: la tastiera con l'accordo è sempre disegnata in fondo alla pagina, anche se nell'editor puoi inserire il comando dove vuoi."
+msgid ""
+"Note: the chord keyboard is always drawn at the bottom of the page, even if "
+"you can insert the command anywhere in the editor."
+msgstr ""
+"Nota: la tastiera con l'accordo è sempre disegnata in fondo alla pagina, "
+"anche se nell'editor puoi inserire il comando dove vuoi."
 
 #: SongpressFrame.py:143
 msgid "Find"
@@ -1622,8 +1744,12 @@ msgid "the option is disabled"
 msgstr "l'opzione è disattivata"
 
 #: SongpressFrame.py:5680
-msgid "no {title:} directive found in the song (check that it is not on a line starting with '#')"
-msgstr "nessuna direttiva {title:} trovata nella canzone (controlla che non sia su una riga che inizia con '#')"
+msgid ""
+"no {title:} directive found in the song (check that it is not on a line "
+"starting with '#')"
+msgstr ""
+"nessuna direttiva {title:} trovata nella canzone (controlla che non sia su "
+"una riga che inizia con '#')"
 
 #: SongpressFrame.py:5683
 msgid "the title contains no characters valid for a file name"
@@ -1676,11 +1802,13 @@ msgstr "Copia"
 
 #: SongpressFrame.py:8851
 msgid "Commands guide file not found in the program folder."
-msgstr "File della guida dei comandi non trovato nella cartella del programma."
+msgstr ""
+"File della guida dei comandi non trovato nella cartella del programma."
 
 #: SongpressFrame.py:9454
 msgid "No chord notation is available. Check Options > General."
-msgstr "Nessuna notazione degli accordi disponibile. Controlla Opzioni > Generale."
+msgstr ""
+"Nessuna notazione degli accordi disponibile. Controlla Opzioni > Generale."
 
 #: SongpressFrame.py:9455
 msgid "Convert glued chords"
@@ -1755,7 +1883,8 @@ msgstr "Freccia di direzione mostrata accanto all'accordo nell'anteprima."
 msgid "A page break is already here."
 msgstr "Qui c'è già un'interruzione di pagina."
 
-#: SongpressFrame.py — Insert column break, status message when already present
+#: SongpressFrame.py — Insert column break, status message when already
+#: present
 msgid "A column break is already here."
 msgstr "Qui c'è già un'interruzione di colonna."
 
@@ -1872,12 +2001,23 @@ msgid "Defines the fingering of a chord."
 msgstr "Definisce la diteggiatura di un accordo."
 
 #: ChordProDirectiveHelp.py — directive tooltip
-msgid "Draws a keyboard with finger numbers on the keys. Options: hand=L|R, start=, octave=, middlec=."
-msgstr "Disegna una tastiera con i numeri delle dita sui tasti. Opzioni: hand=L|R, start=, octave=, middlec=."
+msgid ""
+"Draws a keyboard with finger numbers on the keys. Options: hand=L|R, start=,"
+" octave=, middlec=."
+msgstr ""
+"Disegna una tastiera con i numeri delle dita sui tasti. Opzioni: hand=L|R, "
+"start=, octave=, middlec=."
 
 #: ChordProDirectiveHelp.py — directive tooltip
-msgid "Draws a piano keyboard with the chord notes highlighted. Options: start=, octave=, hand=, middlec=. Add ^ or v after the chord for an arrow. A blank line before the next directive starts a new row."
-msgstr "Disegna una tastiera di pianoforte con le note dell'accordo evidenziate. Opzioni: start=, octave=, hand=, middlec=. Aggiungi ^ o v dopo l'accordo per una freccia. Una riga vuota prima della direttiva successiva inizia una nuova riga."
+msgid ""
+"Draws a piano keyboard with the chord notes highlighted. Options: start=, "
+"octave=, hand=, middlec=. Add ^ or v after the chord for an arrow. A blank "
+"line before the next directive starts a new row."
+msgstr ""
+"Disegna una tastiera di pianoforte con le note dell'accordo evidenziate. "
+"Opzioni: start=, octave=, hand=, middlec=. Aggiungi ^ o v dopo l'accordo per"
+" una freccia. Una riga vuota prima della direttiva successiva inizia una "
+"nuova riga."
 
 #: ChordProDirectiveHelp.py — directive tooltip
 msgid "Duration of the song."
@@ -2022,3 +2162,135 @@ msgstr "Argomento del brano."
 #: ChordProDirectiveHelp.py — directive tooltip
 msgid "Year of publication."
 msgstr "Anno di pubblicazione."
+
+#. ChordProDirectiveHelp.py — option tooltip
+#: ChordProDirectiveHelp.py
+msgid "Note the keyboard starts from (e.g. start=SI)."
+msgstr "Nota da cui parte la tastiera (es. start=SI)."
+
+#. ChordProDirectiveHelp.py — option tooltip
+#: ChordProDirectiveHelp.py
+msgid ""
+"On 8-key keyboards: both = highlight the octave key at both ends; one, "
+"single or first = left end only."
+msgstr ""
+"Nelle tastiere a 8 tasti: both = evidenzia il tasto d'ottava a entrambe le "
+"estremità; one, single o first = solo a sinistra."
+
+#. ChordProDirectiveHelp.py — option tooltip
+#: ChordProDirectiveHelp.py
+msgid "R = right hand, L = left hand (label above the keyboard)."
+msgstr "R = mano destra, L = mano sinistra (etichetta sopra la tastiera)."
+
+#. ChordProDirectiveHelp.py — option tooltip
+#: ChordProDirectiveHelp.py
+msgid "Show or hide the middle C label (show, hide, on, off, yes, no, 1, 0)."
+msgstr ""
+"Mostra o nasconde l'etichetta del DO centrale (show, hide, on, off, yes, no,"
+" 1, 0)."
+
+#. ChordProDirectiveHelp.py — option tooltip
+#: ChordProDirectiveHelp.py
+msgid "Grid scale factor (e.g. size=1.5)."
+msgstr "Fattore di scala della griglia (es. size=1.5)."
+
+#. ChordProDirectiveHelp.py — option tooltip
+#: ChordProDirectiveHelp.py
+msgid "Space above the chords, inside this grid only."
+msgstr "Spazio sopra gli accordi, solo in questa griglia."
+
+#. ChordProDirectiveHelp.py — option tooltip
+#: ChordProDirectiveHelp.py
+msgid "Line spacing, inside this grid only."
+msgstr "Interlinea, solo in questa griglia."
+
+#. ChordProDirectiveHelp.py — option tooltip
+#: ChordProDirectiveHelp.py
+msgid "Direction the size applies to: horizontal, vertical or both."
+msgstr ""
+"Direzione a cui si applica la dimensione: horizontal, vertical o both."
+
+#. ChordProDirectiveHelp.py — option tooltip
+#: ChordProDirectiveHelp.py
+msgid "Image width."
+msgstr "Larghezza dell'immagine."
+
+#. ChordProDirectiveHelp.py — option tooltip
+#: ChordProDirectiveHelp.py
+msgid "Image height."
+msgstr "Altezza dell'immagine."
+
+#. ChordProDirectiveHelp.py — option tooltip
+#: ChordProDirectiveHelp.py
+msgid "Image scale (e.g. scale=50% or scale=0.5)."
+msgstr "Scala dell'immagine (es. scale=50% oppure scale=0.5)."
+
+#. ChordProDirectiveHelp.py — option tooltip
+#: ChordProDirectiveHelp.py
+msgid "Image alignment: left, center or right."
+msgstr "Allineamento dell'immagine: left, center o right."
+
+#. ChordProDirectiveHelp.py — option tooltip
+#: ChordProDirectiveHelp.py
+msgid "Draws a border around the image."
+msgstr "Disegna un bordo attorno all'immagine."
+
+#. ChordProDirectiveHelp.py — option tooltip
+#: ChordProDirectiveHelp.py
+msgid "Aligns the image to the left."
+msgstr "Allinea l'immagine a sinistra."
+
+#. ChordProDirectiveHelp.py — option tooltip
+#: ChordProDirectiveHelp.py
+msgid "Centres the image."
+msgstr "Centra l'immagine."
+
+#. ChordProDirectiveHelp.py — option tooltip
+#: ChordProDirectiveHelp.py
+msgid "Aligns the image to the right."
+msgstr "Allinea l'immagine a destra."
+
+#. ChordProDirectiveHelp.py — option tooltip
+#: ChordProDirectiveHelp.py
+msgid "Spacing relative to the chord-to-text distance."
+msgstr "Spaziatura relativa alla distanza accordo-testo."
+
+#. ChordProDirectiveHelp.py — option value tooltip
+#: ChordProDirectiveHelp.py
+msgid "Shows the middle C label."
+msgstr "Mostra l'etichetta del DO centrale."
+
+#. ChordProDirectiveHelp.py — option value tooltip
+#: ChordProDirectiveHelp.py
+msgid "Hides the middle C label."
+msgstr "Nasconde l'etichetta del DO centrale."
+
+#. ChordProDirectiveHelp.py — option value tooltip
+#: ChordProDirectiveHelp.py
+msgid "Highlights the octave key at both ends."
+msgstr "Evidenzia il tasto d'ottava a entrambe le estremità."
+
+#. ChordProDirectiveHelp.py — option value tooltip
+#: ChordProDirectiveHelp.py
+msgid "Highlights the octave key at the left end only."
+msgstr "Evidenzia il tasto d'ottava solo all'estremità sinistra."
+
+#. ChordProDirectiveHelp.py — option value tooltip
+#: ChordProDirectiveHelp.py
+msgid "Applies the size horizontally only."
+msgstr "Applica la dimensione solo in orizzontale."
+
+#. ChordProDirectiveHelp.py — option value tooltip
+#: ChordProDirectiveHelp.py
+msgid "Applies the size vertically only."
+msgstr "Applica la dimensione solo in verticale."
+
+#. ChordProDirectiveHelp.py — option value tooltip
+#: ChordProDirectiveHelp.py
+msgid "Applies the size in both directions."
+msgstr "Applica la dimensione in entrambe le direzioni."
+
+#. Editor.py — context menu
+#: Editor.py
+msgid "&Edit directive..."
+msgstr "&Modifica direttiva..."

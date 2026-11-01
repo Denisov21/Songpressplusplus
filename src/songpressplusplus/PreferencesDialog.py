@@ -565,6 +565,19 @@ class PreferencesDialog(wx.Dialog):
         bSizerArrowSize.Add(self.chordArrowSizeSpin, 0, wx.ALIGN_CENTER_VERTICAL)
         grpChords.Add(bSizerArrowSize, 0, wx.EXPAND | wx.ALL, 5)
 
+        # Posizione della freccia: accanto all'accordo oppure accanto al numero dei battiti
+        bSizerArrowPos = wx.BoxSizer(wx.HORIZONTAL)
+        self.labelChordArrowPos = wx.StaticText(_boxChords, wx.ID_ANY, _(u"Chord arrow position"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelChordArrowPos.Wrap(-1)
+        bSizerArrowPos.Add(self.labelChordArrowPos, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.chordArrowPosChord = wx.RadioButton(_boxChords, wx.ID_ANY, _(u"Next to the chord"), style=wx.RB_GROUP)
+        self.chordArrowPosChord.SetToolTip(_(u"Draw the direction arrow right after the chord name"))
+        self.chordArrowPosBeats = wx.RadioButton(_boxChords, wx.ID_ANY, _(u"Next to the beat count (if present)"))
+        self.chordArrowPosBeats.SetToolTip(_(u"Draw the direction arrow next to the {beats_time} number. Chords without a visible beat number keep the arrow next to the chord."))
+        bSizerArrowPos.Add(self.chordArrowPosChord, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        bSizerArrowPos.Add(self.chordArrowPosBeats, 0, wx.ALIGN_CENTER_VERTICAL)
+        grpChords.Add(bSizerArrowPos, 0, wx.EXPAND | wx.ALL, 5)
+
         for _dir, _lbl, _defcol in (
                 ('Up',   _(u"Custom colour for the up arrow"),   u"#2E7D32"),
                 ('Down', _(u"Custom colour for the down arrow"), u"#C03030")):
@@ -1188,6 +1201,9 @@ class PreferencesDialog(wx.Dialog):
         self.cmPropagateChorusChords.SetToolTip(_(u"Show the 'Propagate chorus chords' command in the right-click context menu."))
         self.cmCopyTextOnly          = wx.CheckBox(_boxSpecial, wx.ID_ANY, _(u"Copy text only"))
         self.cmCopyTextOnly.SetToolTip(_(u"Show the 'Copy text only' command in the right-click context menu (copies lyrics without chords)."))
+        self.cmEditDirective         = wx.CheckBox(_boxSpecial, wx.ID_ANY, _(u"Edit directive"))
+        self.cmEditDirective.SetToolTip(_(u"Show the 'Edit directive' command in the right-click context menu when you click on a directive that has its own dialog (e.g. {taste:}, {fingering:}, {key:}). It reopens the dialog that created it."))
+        grpSpecial.Add(self.cmEditDirective,         0, wx.ALL, 4)
         grpSpecial.Add(self.cmPasteChords,           0, wx.ALL, 4)
         grpSpecial.Add(self.cmPropagateVerseChords,  0, wx.ALL, 4)
         grpSpecial.Add(self.cmPropagateChorusChords, 0, wx.ALL, 4)

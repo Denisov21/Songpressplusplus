@@ -122,6 +122,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.cmPropagateVerseChords.SetValue(getattr(self.pref, 'cmPropagateVerseChords', True))
         self.cmPropagateChorusChords.SetValue(getattr(self.pref, 'cmPropagateChorusChords', True))
         self.cmCopyTextOnly.SetValue(self.pref.cmCopyTextOnly)
+        self.cmEditDirective.SetValue(getattr(self.pref, 'cmEditDirective', True))
         self.cmSelectAll.SetValue(self.pref.cmSelectAll)
         self.cmShowIcons.SetValue(getattr(self.pref, 'cmShowIcons', True))
 
@@ -144,6 +145,9 @@ class MyPreferencesDialog(PreferencesDialog):
         # Chord arrow (size + colour)
         if hasattr(self, 'chordArrowSizeSpin'):
             self.chordArrowSizeSpin.SetValue(getattr(self.pref, 'chordArrowSizePct', 90))
+            _cap = getattr(self.pref, 'chordArrowPos', 'chord')
+            self.chordArrowPosChord.SetValue(_cap != 'beats')
+            self.chordArrowPosBeats.SetValue(_cap == 'beats')
             for _d in ('Up', 'Down'):
                 _ca_hex = getattr(self.pref, 'chordArrow%sColourHex' % _d, '')
                 _cb = getattr(self, 'chordArrow%sColourCB' % _d)
@@ -1968,6 +1972,7 @@ class MyPreferencesDialog(PreferencesDialog):
             self.pref.fingerNumColourHex = self.fingerNumHexCtrl.GetValue().strip()
         if hasattr(self, 'chordArrowSizeSpin'):
             self.pref.chordArrowSizePct = max(30, min(int(self.chordArrowSizeSpin.GetValue()), 150))
+            self.pref.chordArrowPos = 'beats' if self.chordArrowPosBeats.GetValue() else 'chord'
             for _d in ('Up', 'Down'):
                 setattr(self.pref, 'chordArrow%sColourHex' % _d,
                         getattr(self, 'chordArrow%sHexCtrl' % _d).GetValue().strip()
@@ -2112,6 +2117,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.cmPropagateVerseChords  = self.cmPropagateVerseChords.GetValue()
         self.pref.cmPropagateChorusChords = self.cmPropagateChorusChords.GetValue()
         self.pref.cmCopyTextOnly          = self.cmCopyTextOnly.GetValue()
+        self.pref.cmEditDirective         = self.cmEditDirective.GetValue()
         self.pref.cmSelectAll    = self.cmSelectAll.GetValue()
         self.pref.cmShowIcons    = self.cmShowIcons.GetValue()
         # Visibilità icone toolbar Inserisci

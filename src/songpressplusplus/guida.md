@@ -191,6 +191,7 @@ A un accordo si può aggiungere una piccola **freccia** che indica se l'accordo 
 - Si possono scrivere anche i caratteri `↑` e `↓` al posto di `^` e `v`.
 - Le frecce non sono supportate dentro le celle di `{start_of_grid}`.
 - Nel numero di `{beats_time:}` l'allineamento tiene conto dell'ingombro della freccia.
+- La freccia può essere disegnata **accanto all'accordo** (predefinito) oppure **accanto al numero dei battiti** di `{beats_time:}`: si sceglie in *Opzioni → Formattazione → Accordi e tastiera → Posizione freccia accordo*. Con la seconda scelta, un accordo senza numero di battiti visibile (nessuna `{beats_time:}`, battiti nascosti o modalità *Puntini*) mantiene la freccia accanto al nome.
 
 **Inserimento dal menu.** Nel dialogo **Inserisci accordo** il riquadro **Direzione** offre tre scelte: *Nessuna*, *↑ Su*, *↓ Giù* (con suggerimenti al passaggio del mouse). Dopo ogni inserimento la scelta torna su *Nessuna*. La casella «Accordo maiuscolo» non altera il suffisso della freccia.
 
@@ -938,6 +939,7 @@ Il comando riconosce automaticamente la situazione:
 Il dialogo offre tre controlli aggiuntivi:
 
 - **Tutti: [N] [Applica a tutti]** — imposta in un solo clic lo stesso numero di battiti su tutti gli accordi presenti nel dialogo.
+- **Includi la freccia di direzione (^ / v) nella direttiva** — se un accordo ha la freccia (`[MI-v]`), con la casella attiva la direttiva la riporta: `{beats_time: MI-v=4 LA-=1 SI=1 MI-=2}`; con la casella disattivata resta senza: `{beats_time: MI-=4 LA-=1 SI=1 MI-=2}`. Nell'anteprima e in stampa i battiti vengono assegnati agli accordi nello stesso modo nei due casi. La casella è attiva solo se nel brano c'è almeno un accordo con freccia; la scelta viene ricordata (predefinito: disattivata).
 - **[Applica all'intero brano…]** — inserisce automaticamente una direttiva `{beats_time:}` prima di ogni riga con accordi nell'intero brano, usando i valori impostati nel dialogo. Le righe già precedute da una `{beats_time:}` vengono saltate. L'operazione è annullabile con un singolo `Ctrl+Z`. Per gli accordi che appaiono nel brano ma **non sono presenti nel dialogo** (perché la riga di riferimento del cursore era diversa), il numero di battiti predefinito è **1** — a meno che tutti gli spin del dialogo siano impostati a **0**, nel qual caso anche questi accordi vengono omessi dalla direttiva, producendo `{beats_time: }` vuota.
 - **[OK +] [↕N] [s]** — conferma e inserisce la direttiva esattamente come il pulsante **OK**, ma riapre automaticamente il dialogo dopo il ritardo scelto. Il ritardo si imposta con lo **SpinCtrl** (1–60 secondi, default 5) affiancato al pulsante: si modifica direttamente prima di cliccare, e il valore viene **salvato** nelle preferenze e ripristinato alla prossima apertura. Utile quando si lavora su un brano lungo e si vuole assegnare la durata accordo riga per riga: nel tempo di pausa configurato è possibile spostare il cursore sulla riga successiva nell'editor, dopodiché il dialogo si riapre già aggiornato con i nuovi accordi.
 
@@ -1731,6 +1733,17 @@ Premendo `Ctrl+Spazio` con il cursore posizionato all'interno di una coppia di p
 
 Mentre scorri l'elenco, accanto alla riga corrente compare un piccolo **tooltip** con una breve descrizione della direttiva evidenziata e, dove utile, un esempio d'uso (ad esempio per `taste` o `fingering` sono indicate le opzioni disponibili). Le direttive senza descrizione non mostrano alcun tooltip.
 
+**Opzioni dentro una direttiva già scritta.** Se il cursore si trova *dopo* il nome di una direttiva che ha delle opzioni, `Ctrl+Spazio` propone le opzioni ancora mancanti invece dell'elenco delle direttive. Esempio: con `{taste:SOL start=SI |}` compaiono `octave=`, `hand=` e `middlec=` (le opzioni già presenti, come `start=`, non vengono riproposte). Scegliendo un'opzione che ha valori prefissati, ad esempio `middlec=`, si apre subito un secondo elenco con i valori (`show`, `hide`, …). Le opzioni disponibili sono:
+
+| Direttiva | Opzioni |
+|---|---|
+| `taste`, `fingering` | `start=`, `octave=`, `hand=`, `middlec=` |
+| `start_of_grid` (`sog`) | `size=`, `chordtopspacing=`, `linespacing=`, `sizedir=` |
+| `image` | `width=`, `height=`, `scale=`, `align=`, `border=`, `left`, `center`, `right` |
+| `linespacing` | `rel` |
+
+Anche le opzioni e i loro valori (ad esempio `R`/`L`, `octave=`, `middlec=`) hanno un breve tooltip descrittivo.
+
 Questa funzionalità può essere abilitata o disabilitata in **Strumenti → Opzioni… → scheda Generale → Abilita intellisense direttive (Ctrl+Spazio)**.
 
 ---
@@ -2095,6 +2108,7 @@ Sotto, il pannello scorrevole **semplificazione accordi** contiene un cursore pe
 | **Colore diverso per il tasto dell'ottava superiore** | disattivato, `#3C78D2` | Nelle tastiere a 8 tasti colora con un secondo colore il tasto più a destra uguale al primo (es. Si alto in Si…Si). |
 | **Colore numeri diteggiatura** | `#1A1A1A` | Colore dei numeri di `{fingering:}`. |
 | **Dimensione freccia accordo (%)** | 90 | Dimensione della freccia di direzione `[DO^]` / `[DOv]`, in percentuale dell'altezza dell'accordo (30–150). |
+| **Posizione freccia accordo** | Accanto all'accordo | Dove disegnare la freccia di direzione: *Accanto all'accordo* (subito dopo il nome) oppure *Accanto al numero di battiti (se presente)* (di fianco al numero di `{beats_time:}`, con lo stesso allineamento del numero). Con il numero non visibile la freccia resta accanto all'accordo. La scelta viene salvata. |
 | **Colore personalizzato per la freccia su** | disattivato, `#2E7D32` | Se attivo, la freccia su usa questo colore; altrimenti usa il colore dell'accordo. |
 | **Colore personalizzato per la freccia giù** | disattivato, `#C03030` | Se attivo, la freccia giù usa questo colore; altrimenti usa il colore dell'accordo. |
 
@@ -2159,7 +2173,7 @@ Sceglie quali voci compaiono nel menu del tasto destro dell'editor.
 | ------ | ---- |
 | **Cronologia** | Annulla, Ripeti |
 | **Modifica** | Taglia, Copia, Incolla, Elimina + **Chiedi conferma prima di eliminare** (☐, sotto-opzione di *Elimina*) |
-| **Azioni speciali** | Incolla accordi, Propaga accordi strofa, Propaga accordi ritornello, Copia solo testo |
+| **Azioni speciali** | Modifica direttiva, Incolla accordi, Propaga accordi strofa, Propaga accordi ritornello, Copia solo testo |
 | **Selezione** | Seleziona tutto |
 | **Aspetto** | **Mostra le icone nel menu contestuale** (✓) |
 
@@ -2480,6 +2494,7 @@ Su Windows il rilevamento del colore usa tre fonti in cascata, ognuna attivata s
 | Canzonatore          | Unisce più file ChordPro in un unico file    |
 | Copia come immagine  | Copia negli appunti come immagine vettoriale |
 | Copia solo testo     | Copia il testo senza accordi                 |
+| Modifica direttiva   | Compare in cima al menu quando si fa clic destro su una direttiva con finestra propria (`{taste:}`, `{fingering:}`, `{define:}`, `{time:}`, `{tempo:}`, `{tempo_label:}`, `{key:}`, `{beats_time:}`, e le righe di apertura dei blocchi `{start_chorus}` / `{soc}` e `{start_chord}`: non le righe di chiusura né quelle interne; si modifica l'etichetta): riapre la finestra che l'ha creata, già compilata con i valori attuali, e alla conferma sostituisce solo il valore. Si può nascondere dalle Opzioni (scheda *Menu contestuale* → *Azioni speciali*). |
 
 > **Nota — Esporta PDF:** il flusso di esportazione apre prima il dialogo **Impostazione pagina** (formato carta, orientamento, margini in mm); solo dopo la conferma viene chiesto il nome del file di output. I margini impostati vengono memorizzati e riutilizzati nelle successive esportazioni.
 

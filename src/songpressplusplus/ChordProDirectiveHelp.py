@@ -110,6 +110,60 @@ _HELP = {
                    "{fingering: DO hand=R 1=DO 3=MI 5=SOL}"),
 }
 
+# option -> description (options offered inside an already written directive)
+_OPTION_HELP = {
+    'start':   "Note the keyboard starts from (e.g. start=SI).",
+    'octave':  "On 8-key keyboards: both = highlight the octave key at both ends; one, single or first = left end only.",
+    'hand':    "R = right hand, L = left hand (label above the keyboard).",
+    'middlec': "Show or hide the middle C label (show, hide, on, off, yes, no, 1, 0).",
+    'size':    "Grid scale factor (e.g. size=1.5).",
+    'chordtopspacing': "Space above the chords, inside this grid only.",
+    'linespacing':     "Line spacing, inside this grid only.",
+    'sizedir': "Direction the size applies to: horizontal, vertical or both.",
+    'width':   "Image width.",
+    'height':  "Image height.",
+    'scale':   "Image scale (e.g. scale=50% or scale=0.5).",
+    'align':   "Image alignment: left, center or right.",
+    'border':  "Draws a border around the image.",
+    'left':    "Aligns the image to the left.",
+    'center':  "Centres the image.",
+    'right':   "Aligns the image to the right.",
+    'rel':     "Spacing relative to the chord-to-text distance.",
+}
+
+# option -> value -> description (values offered after "option=")
+_SHOW = "Shows the middle C label."
+_HIDE = "Hides the middle C label."
+_OCT_BOTH = "Highlights the octave key at both ends."
+_OCT_ONE = "Highlights the octave key at the left end only."
+_VALUE_HELP = {
+    'hand': {'R': "Right hand", 'L': "Left hand"},
+    'octave': {'both': _OCT_BOTH, 'one': _OCT_ONE, 'single': _OCT_ONE, 'first': _OCT_ONE},
+    'middlec': {'show': _SHOW, 'on': _SHOW, 'yes': _SHOW, '1': _SHOW,
+                'hide': _HIDE, 'off': _HIDE, 'no': _HIDE, '0': _HIDE},
+    'align': {'left': "Aligns the image to the left.",
+              'center': "Centres the image.",
+              'right': "Aligns the image to the right."},
+    'sizedir': {'horizontal': "Applies the size horizontally only.",
+                'vertical': "Applies the size vertically only.",
+                'both': "Applies the size in both directions."},
+}
+
+
+def get_value_help(directive, option, value):
+    """Return the translated tooltip for an option value, or ''."""
+    vals = _VALUE_HELP.get((option or '').strip().lower(), {})
+    v = (value or '').strip()
+    desc = vals.get(v) or vals.get(v.lower()) or vals.get(v.upper())
+    return wx.GetTranslation(desc) if desc else ''
+
+
+def get_option_help(directive, option):
+    """Return the translated tooltip for a directive option, or ''."""
+    key = (option or '').strip().lower().rstrip('=')
+    desc = _OPTION_HELP.get(key)
+    return wx.GetTranslation(desc) if desc else ''
+
 
 def get_directive_help(name):
     """Return the translated tooltip text for a directive, or '' if none."""
