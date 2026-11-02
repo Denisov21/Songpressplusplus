@@ -418,6 +418,8 @@ I metadati vengono memorizzati nella canzone ma **non appaiono visivamente nell'
 
 Nome dell'artista o del gruppo che esegue la canzone.
 
+Si inserisce dal menu **Inserisci → Artista** (o dal pulsante nella toolbar Inserisci): la direttiva viene scritta con il cursore dopo i due punti, senza finestra di dialogo. Se il cursore è già dentro una direttiva `{artist:}`, ne seleziona il valore.
+
 ```chordpro
 {artist: The Beatles}
 ```
@@ -429,6 +431,8 @@ Nome dell'artista o del gruppo che esegue la canzone.
 **Sintassi:** `{composer: Nome compositore}`
 
 Nome del compositore della musica (può differire dall'artista esecutore).
+
+Si inserisce dal menu **Inserisci → Compositore** (o dal pulsante nella toolbar Inserisci), con lo stesso comportamento di `{artist:}`.
 
 ```chordpro
 {composer: John Lennon}
@@ -469,6 +473,8 @@ Nome dell'arrangiatore. Viene visualizzato nell'anteprima come sottotitolo con i
 **Sintassi:** `{album: Titolo album}`
 
 Titolo dell'album di provenienza della canzone.
+
+Si inserisce dal menu **Inserisci → Album** (o dal pulsante nella toolbar Inserisci), con lo stesso comportamento di `{artist:}`.
 
 ```chordpro
 {album: Abbey Road}

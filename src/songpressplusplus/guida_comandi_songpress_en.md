@@ -418,6 +418,8 @@ Metadata is stored in the song but **does not appear visually in the preview** a
 
 Name of the artist or group performing the song.
 
+Insert it from the **Insert → Artist** menu (or the button in the Insert toolbar): the directive is written with the cursor after the colon, with no dialog. If the cursor is already inside an `{artist:}` directive, its value is selected.
+
 ```chordpro
 {artist: The Beatles}
 ```
@@ -429,6 +431,8 @@ Name of the artist or group performing the song.
 **Syntax:** `{composer: Composer name}`
 
 Name of the music composer (may differ from the performing artist).
+
+Insert it from the **Insert → Composer** menu (or the button in the Insert toolbar), behaving like `{artist:}`.
 
 ```chordpro
 {composer: John Lennon}
@@ -469,6 +473,8 @@ Name of the arranger. Displayed in the preview as a subtitle with the prefix **`
 **Syntax:** `{album: Album title}`
 
 Title of the album the song comes from.
+
+Insert it from the **Insert → Album** menu (or the button in the Insert toolbar), behaving like `{artist:}`.
 
 ```chordpro
 {album: Abbey Road}
