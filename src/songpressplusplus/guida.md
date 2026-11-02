@@ -295,6 +295,7 @@ Imposta lo **spazio verticale sopra gli accordi**, ovvero la distanza tra il bor
 - Agisce in modo indipendente da `linespacing`: i due parametri si sommano nella spaziatura complessiva.
 - Utile quando gli accordi appaiono visivamente «schiacciati» contro il testo della riga precedente.
 - Come `linespacing`, può essere usato più volte nella stessa canzone in punti diversi per variare la spaziatura sezione per sezione.
+- **Modifica** — con il cursore dentro una `{chordtopspacing:...}` esistente (o da *Modifica direttiva...* nel menu contestuale) la finestra si apre precompilata con il valore attuale e, alla conferma, cambia solo il contenuto della direttiva: non ne viene mai annidata una seconda.
 
 ## Differenza tra chordtopspacing e linespacing
 
@@ -645,6 +646,8 @@ Senza etichetta (usa il default «Part»):
 | `{comment_italic:Testo}` | `{ci:Testo}` | ✅  | 🖊    | Come `{comment}`, ma con testo in corsivo                                                                |
 | `{comment_box:Testo}`    | `{cb:Testo}` | ✅  | 🖊    | Commento in riquadro                                                                                     |
 | `# Testo`                |              | ✅  | 🖊    | Riga di commento (preceduta da `#`): trattata come riga vuota, non appare nell'anteprima né in stampa    |
+
+**Modifica di un commento esistente** — con il cursore dentro `{comment:...}`, `{comment_box:...}` (o i loro alias `{c:...}` e `{cb:...}`) oppure su una riga `# ...` (dopo il `#`), la voce *Modifica direttiva...* del menu contestuale (o la finestra *Commento*) si apre già compilata con il tipo e il testo attuali. Se il tipo non cambia, viene sostituito solo il testo; se lo cambi, il commento viene riscritto nel nuovo tipo. Non viene mai annidata una seconda direttiva. `{comment_italic}` non è gestito dalla finestra.
 
 ---
 

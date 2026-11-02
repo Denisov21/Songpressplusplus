@@ -128,7 +128,7 @@ _OPTION_HELP = {
     'left':    "Aligns the image to the left.",
     'center':  "Centres the image.",
     'right':   "Aligns the image to the right.",
-    'rel':     "Spacing relative to the chord-to-text distance.",
+    'rel':     "Relative mode, to be used with {beats_time}: spacing is relative to the chord-to-text distance.",
 }
 
 # option -> value -> description (values offered after "option=")

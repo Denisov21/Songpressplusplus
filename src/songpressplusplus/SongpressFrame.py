@@ -2716,6 +2716,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         if d.ShowModal() == wx.ID_OK:
             val = d.GetValue()
             self._InsertDirectiveValue('chordtopspacing', str(val))
+        d.Destroy()
 
     def OnInsertVerse(self, evt):
         """Inserisce una strofa non numerata: {start_verse} ... {end_verse}"""
@@ -3303,6 +3304,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         'key':         'OnInsertKey',
         'beats_time':  'OnInsertBeatsTime',
         'linespacing': 'OnInsertLinespacing',
+        'chordtopspacing': 'OnInsertChordtopspacing',
+        'comment':     'OnComment',
+        'comment_box': 'OnComment',
+        'c':           'OnComment',
+        'cb':          'OnComment',
     }
 
     def FindEditableDirective(self, pos=None):
@@ -3325,6 +3331,20 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 if m.start() <= col <= end:
                     after_brace = ls + len(txt[:m.start() + 1].encode('utf-8'))
                     return m.group(1).lower(), max(pos, after_brace)
+        except Exception:
+            pass
+        # Riga di commento '# ...': la finestra Commento si apre con testo e
+        # tipo attuali (il cursore deve stare dopo il '#').
+        try:
+            if pos is None or pos < 0:
+                pos = stc.GetCurrentPos()
+            line = stc.LineFromPosition(pos)
+            ls = stc.PositionFromLine(line)
+            txt = stc.GetLine(line).rstrip('\r\n')
+            h = len(txt) - len(txt.lstrip())
+            if txt[h:h + 1] == '#':
+                after_hash = ls + len(txt[:h + 1].encode('utf-8'))
+                return 'hash_comment', max(pos, after_hash)
         except Exception:
             pass
         # Indicatore Transposer: {start_of_tab: TP} ... {end_of_tab}; solo dalla
@@ -3502,6 +3522,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                     self.OnInsertTransposerImage(None)
                 finally:
                     self._transposerEditInfo = None
+            return
+        if name == 'hash_comment':
+            self.text.SetSelection(caret, caret)
+            self.OnComment(None)
             return
         if name == 'musical_symbol':
             info = self._FindMusicalSymbolAt(caret)
@@ -11235,7 +11259,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         rb_comment.SetValue(True)
         rb_comment.SetToolTip(_(u"Comment shown in the preview, automatically enclosed in parentheses."))
         rb_box.SetToolTip(_(u"Comment shown in the preview inside a box."))
-        rb_hash.SetToolTip(_(u"Comment line starting with #: treated as an empty line, it does not appear in the preview or in print."))
+        rb_hash.SetToolTip(_(u"Line starting with #: ignored, not shown in the preview or in print."))
         for rb in (rb_comment, rb_box, rb_hash):
             vbox.Add(rb, 0, wx.LEFT | wx.BOTTOM, 8)
 

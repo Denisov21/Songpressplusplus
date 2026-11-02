@@ -402,12 +402,8 @@ msgstr ""
 msgid "Comment shown in the preview inside a box."
 msgstr "Commento visibile nell'anteprima, in un riquadro."
 
-msgid ""
-"Comment line starting with #: treated as an empty line, it does not appear in "
-"the preview or in print."
-msgstr ""
-"Riga di commento che inizia con #: trattata come riga vuota, non appare "
-"nell'anteprima né in stampa."
+msgid "Line starting with #: ignored, not shown in the preview or in print."
+msgstr "Riga che inizia con #: ignorata, non appare in anteprima né in stampa."
 
 #: SongpressFrame.py — OnInsertKey auto-detect checkbox
 msgid "Detect automatically from chords"
@@ -2274,8 +2270,12 @@ msgstr "Allinea l'immagine a destra."
 
 #. ChordProDirectiveHelp.py — option tooltip
 #: ChordProDirectiveHelp.py
-msgid "Spacing relative to the chord-to-text distance."
-msgstr "Spaziatura relativa alla distanza accordo-testo."
+msgid ""
+"Relative mode, to be used with {beats_time}: spacing is relative to the "
+"chord-to-text distance."
+msgstr ""
+"Modalità relativa, da usare con {beats_time}: spaziatura relativa alla "
+"distanza accordo-testo."
 
 #. ChordProDirectiveHelp.py — option value tooltip
 #: ChordProDirectiveHelp.py

@@ -288,6 +288,7 @@ Sets the **vertical space above chords**, i.e. the distance between the top edge
 - Acts independently from `linespacing`: the two parameters add up in the overall spacing.
 - Useful when chords appear visually "squashed" against the text of the previous line.
 - Like `linespacing`, it can be used multiple times in the same song at different points to vary spacing section by section.
+- **Editing** — with the caret inside an existing `{chordtopspacing:...}` (or via *Edit directive...* in the context menu) the dialog opens pre-filled with the current value and, on confirmation, changes only the directive's content: a second directive is never nested.
 
 ## Difference Between chordtopspacing and linespacing
 
@@ -638,6 +639,8 @@ Without a label (uses the default «Part»):
 | `{comment_italic:Text}`  | `{ci:Text}`  | ✅  | 🖊    | Like `{comment}`, but with italic text                                                               |
 | `{comment_box:Text}`     | `{cb:Text}`  | ✅  | 🖊    | Boxed comment                                                                                        |
 | `# Text`                 |              | ✅  | 🖊    | Comment line (preceded by `#`): treated as a blank line, does not appear in preview or print         |
+
+**Editing an existing comment** — with the caret inside `{comment:...}`, `{comment_box:...}` (or their aliases `{c:...}` and `{cb:...}`) or on a `# ...` line (after the `#`), the *Edit directive...* item in the context menu (or the *Comment* dialog) opens pre-filled with the current type and text. If the type is unchanged, only the text is replaced; if you change it, the comment is rewritten in the new type. A second directive is never nested. `{comment_italic}` is not handled by the dialog.
 
 ---
 
