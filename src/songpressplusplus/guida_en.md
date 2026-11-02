@@ -242,8 +242,8 @@ Sets the **line spacing** between text lines of the song from the point where th
 
 | Value           | Effect                                                                         |
 | --------------- | ------------------------------------------------------------------------------ |
-| `0`             | Removes extra space between lines (default value in the insertion dialog)      |
-| positive number | Adds vertical space between lines (in typographic points)                      |
+| `0`             | Removes extra space between lines                                              |
+| positive number | Adds vertical space between lines, in typographic points (dialog default: `13`) |
 | `N rel`         | Relative mode: the N px exclude the beat-number band (`{beats_time}`)          |
 
 ### Usage Notes — linespacing
@@ -252,6 +252,7 @@ Sets the **line spacing** between text lines of the song from the point where th
 - Typical values range between `10` and `20` depending on the font and size used.
 - Useful for adjusting text density in print, especially with two-column layout or two-pages-per-sheet format.
 - **`rel` mode** — with `{beats_time}` active, the row of beat numbers above the chords normally adds to the line pitch. Adding `rel` (`{linespacing: 13 rel}`), that band is not counted: the N px are measured from the chord row to the text row, excluding the beats, which are drawn inside the `linespacing` gap. See the *"`{beats_time}` and `{linespacing}` — How Spacing Interacts"* section for details.
+- **Insertion dialog** — *Line spacing* opens a dialog with the value (0–100) and a **rel** checkbox, which writes `{linespacing: N rel}`; the checkbox tooltip summarizes relative mode. With the caret inside an existing `{linespacing:...}` (or via *Edit directive...* in the context menu) the dialog opens pre-filled, with **rel** checked if present, and on confirmation changes only the directive's content: a second directive is never nested.
 - **Global scope** — `{linespacing}` propagates throughout the entire song from the point of insertion, even across page breaks (`{new_page}`). If the directive is used multiple times, each occurrence overwrites the previous value; the last `{linespacing}` in the file determines the line spacing for the rest of the song.
 - **Coexistence with `{new_page}` on the same line** — Placing both directives on the same line is allowed and works correctly, in either order:
 - **Coexistence with `{new_page}` on the same line** — Placing both directives on the same line is allowed and works correctly, in either order:
@@ -2521,7 +2522,7 @@ On Windows, color detection uses three sources in cascade, each activated only i
 | Canzonatore         | Merges multiple ChordPro files into one       |
 | Copy as image       | Copies to clipboard as vector image           |
 | Copy text only      | Copies text without chords                    |
-| Edit directive      | Shown at the top of the menu when you right-click a directive that has its own dialog (`{taste:}`, `{fingering:}`, `{define:}`, `{time:}`, `{tempo:}`, `{tempo_label:}`, `{key:}`, `{beats_time:}`, the Transposer indicator `{start_of_tab: TP}` (opening line only), a musical symbol with size `{textsize:12}𝅗{textsize}` (reopens the symbol map), and the opening lines of the blocks `{start_chorus}` / `{soc}` and `{start_chord}`: not the closing or inner lines; the label is edited): reopens the dialog that created it, pre-filled with the current values, and on confirmation replaces only the value. It can be hidden in Options (*Context menu* tab → *Special actions*). |
+| Edit directive      | Shown at the top of the menu when you right-click a directive that has its own dialog (`{taste:}`, `{fingering:}`, `{define:}`, `{time:}`, `{tempo:}`, `{tempo_label:}`, `{key:}`, `{beats_time:}`, `{linespacing:}`, the Transposer indicator `{start_of_tab: TP}` (opening line only), a musical symbol with size `{textsize:12}𝅗{textsize}` (reopens the symbol map), and the opening lines of the blocks `{start_chorus}` / `{soc}` and `{start_chord}`: not the closing or inner lines; the label is edited): reopens the dialog that created it, pre-filled with the current values, and on confirmation replaces only the value. It can be hidden in Options (*Context menu* tab → *Special actions*). |
 
 > **Note — Export PDF:** the export flow opens the **Page setup** dialog first (paper size, orientation, margins in mm); only after confirmation is the output filename requested. The margin settings are stored and reused in subsequent exports.
 

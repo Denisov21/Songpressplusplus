@@ -242,8 +242,8 @@ Imposta l'**interlinea** tra le righe di testo della canzone dal punto in cui vi
 
 | Valore           | Effetto                                                                              |
 | ---------------- | ------------------------------------------------------------------------------------ |
-| `0`              | Elimina lo spazio extra tra le righe (valore predefinito nella finestra di dialogo)  |
-| numero positivo  | Aggiunge spazio verticale tra le righe (in punti tipografici)                        |
+| `0`              | Elimina lo spazio extra tra le righe                                                 |
+| numero positivo  | Aggiunge spazio verticale tra le righe, in punti tipografici (predefinito nella finestra: `13`) |
 | `N rel`          | Modalità relativa: gli N px escludono la banda dei numeri di battito (`{beats_time}`) |
 
 ### Note d'uso — linespacing
@@ -252,6 +252,7 @@ Imposta l'**interlinea** tra le righe di testo della canzone dal punto in cui vi
 - I valori tipici sono compresi tra `10` e `20` a seconda del font e della dimensione utilizzati.
 - Utile per regolare la densità del testo in stampa, specialmente con layout a due colonne o formato due pagine per foglio.
 - **Modalità `rel`** — con `{beats_time}` attivo, la fila di numeri di battito sopra gli accordi normalmente si aggiunge al passo di riga. Aggiungendo `rel` (`{linespacing: 13 rel}`), quella banda non viene conteggiata: gli N px sono misurati dalla riga accordi alla riga di testo, escludendo i battiti, che vengono disegnati dentro lo spazio del `linespacing`. Vedi la sezione *«`{beats_time}` e `{linespacing}` — come interagiscono le distanze»* per i dettagli.
+- **Finestra di inserimento** — *Interlinea* apre una finestra con il valore (0–100) e la casella **rel**, che scrive `{linespacing: N rel}`; il tooltip della casella riassume la modalità relativa. Con il cursore dentro una `{linespacing:...}` esistente (o con *Modifica direttiva...* dal menu contestuale) la finestra si apre già compilata, con **rel** spuntato se presente, e alla conferma cambia solo il contenuto della direttiva: non viene mai annidata una seconda direttiva.
 - **Scope globale** — `{linespacing}` si propaga per tutta la canzone a partire dal punto di inserimento, attraversando anche le interruzioni di pagina (`{new_page}`). Se la direttiva viene usata più volte, ogni occorrenza sovrascrive il valore precedente; l'ultima `{linespacing}` presente nel file determina l'interlinea per il resto del brano.
 - **Coesistenza con `{new_page}` sulla stessa riga** — È consentito e funziona correttamente scrivere le due direttive sulla stessa riga, in entrambi gli ordini:
   ```chordpro
@@ -2528,7 +2529,7 @@ Su Windows il rilevamento del colore usa tre fonti in cascata, ognuna attivata s
 | Canzonatore          | Unisce più file ChordPro in un unico file    |
 | Copia come immagine  | Copia negli appunti come immagine vettoriale |
 | Copia solo testo     | Copia il testo senza accordi                 |
-| Modifica direttiva   | Compare in cima al menu quando si fa clic destro su una direttiva con finestra propria (`{taste:}`, `{fingering:}`, `{define:}`, `{time:}`, `{tempo:}`, `{tempo_label:}`, `{key:}`, `{beats_time:}`, l'indicatore Transposer `{start_of_tab: TP}` (solo dalla riga di apertura), il simbolo musicale con dimensione `{textsize:12}𝅗{textsize}` (riapre la mappa dei simboli), e le righe di apertura dei blocchi `{start_chorus}` / `{soc}` e `{start_chord}`: non le righe di chiusura né quelle interne; si modifica l'etichetta): riapre la finestra che l'ha creata, già compilata con i valori attuali, e alla conferma sostituisce solo il valore. Si può nascondere dalle Opzioni (scheda *Menu contestuale* → *Azioni speciali*). |
+| Modifica direttiva   | Compare in cima al menu quando si fa clic destro su una direttiva con finestra propria (`{taste:}`, `{fingering:}`, `{define:}`, `{time:}`, `{tempo:}`, `{tempo_label:}`, `{key:}`, `{beats_time:}`, `{linespacing:}`, l'indicatore Transposer `{start_of_tab: TP}` (solo dalla riga di apertura), il simbolo musicale con dimensione `{textsize:12}𝅗{textsize}` (riapre la mappa dei simboli), e le righe di apertura dei blocchi `{start_chorus}` / `{soc}` e `{start_chord}`: non le righe di chiusura né quelle interne; si modifica l'etichetta): riapre la finestra che l'ha creata, già compilata con i valori attuali, e alla conferma sostituisce solo il valore. Si può nascondere dalle Opzioni (scheda *Menu contestuale* → *Azioni speciali*). |
 
 > **Nota — Esporta PDF:** il flusso di esportazione apre prima il dialogo **Impostazione pagina** (formato carta, orientamento, margini in mm); solo dopo la conferma viene chiesto il nome del file di output. I margini impostati vengono memorizzati e riutilizzati nelle successive esportazioni.
 

@@ -284,6 +284,14 @@ msgid "Enter the line spacing value (e.g. 0 to remove extra space):"
 msgstr ""
 "Inserisci il valore dell'interlinea (es. 0 per rimuovere lo spazio extra):"
 
+#: SongpressFrame.py — Line spacing dialog, "rel" checkbox tooltip
+msgid ""
+"rel: relative mode. With {beats_time}, the beat numbers do not add height to "
+"the line spacing: they are drawn inside it."
+msgstr ""
+"rel: modalità relativa. Con {beats_time}, i numeri dei battiti non aggiungono "
+"altezza all'interlinea: vengono disegnati al suo interno."
+
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Space above chords"
 msgstr "Spazio sopra accordi"
@@ -386,6 +394,20 @@ msgstr "Testo del commento:"
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "# commento"
 msgstr "# commento"
+
+msgid "Comment shown in the preview, automatically enclosed in parentheses."
+msgstr ""
+"Commento visibile nell'anteprima, racchiuso automaticamente tra parentesi."
+
+msgid "Comment shown in the preview inside a box."
+msgstr "Commento visibile nell'anteprima, in un riquadro."
+
+msgid ""
+"Comment line starting with #: treated as an empty line, it does not appear in "
+"the preview or in print."
+msgstr ""
+"Riga di commento che inizia con #: trattata come riga vuota, non appare "
+"nell'anteprima né in stampa."
 
 #: SongpressFrame.py — OnInsertKey auto-detect checkbox
 msgid "Detect automatically from chords"
@@ -2299,3 +2321,21 @@ msgstr "&Modifica direttiva..."
 #: SongpressFrame.py
 msgid "Read only"
 msgstr "Sola lettura"
+
+msgid "The file is write-protected by the operating system."
+msgstr "Il file è protetto in scrittura dal sistema operativo."
+
+msgid "Do you want to remove the protection, so that you can save your changes?"
+msgstr "Vuoi rimuovere la protezione, in modo da poter salvare le modifiche?"
+
+msgid "Yes: remove the protection and unlock the song."
+msgstr "Sì: rimuove la protezione e sblocca il brano."
+
+msgid "No: unlock the song only (to save, use 'Save as...')."
+msgstr "No: sblocca solo il brano (per salvare usa «Salva come...»)."
+
+msgid "Cancel: keep the song read-only."
+msgstr "Annulla: il brano resta in sola lettura."
+
+msgid "Unable to remove the protection:"
+msgstr "Impossibile rimuovere la protezione:"

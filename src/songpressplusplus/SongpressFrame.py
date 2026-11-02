@@ -2655,18 +2655,67 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
     def OnInsertLinespacing(self, evt):
         """Inserisce la direttiva {linespacing: <valore>}."""
         msg = _("Enter the line spacing value (e.g. 0 to remove extra space):")
-        d = wx.NumberEntryDialog(self.frame, msg, _("Value:"), _("Line spacing"), 13, 0, 100)
+        # Cursore dentro un {linespacing:...} esistente: parte dal valore attuale
+        # e alla conferma cambia solo quello (niente direttiva annidata).
+        initial = 13
+        rel = False
+        ex = self._FindDirectiveAtCaret('linespacing')
+        if ex is not None:
+            # Il valore puo' essere "13" oppure "13 rel".
+            toks = ex[2].split()
+            if toks:
+                try:
+                    initial = max(0, min(100, int(toks[0])))
+                except ValueError:
+                    pass
+                # "rel" si legge solo dalla direttiva sotto il cursore; non
+                # viene memorizzato altrove (fuori dalla direttiva parte spenta).
+                rel = any(t.lower() == 'rel' for t in toks[1:])
+
+        d = wx.Dialog(self.frame, wx.ID_ANY, _("Line spacing"))
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(wx.StaticText(d, wx.ID_ANY, msg), 0, wx.ALL, 10)
+        row = wx.BoxSizer(wx.HORIZONTAL)
+        row.Add(wx.StaticText(d, wx.ID_ANY, _("Value:")), 0,
+                wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        spin = wx.SpinCtrl(d, wx.ID_ANY, str(initial), size=_spin_size(80),
+                           min=0, max=100, initial=initial)
+        row.Add(spin, 0, wx.ALIGN_CENTER_VERTICAL)
+        sizer.Add(row, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        chk = wx.CheckBox(d, wx.ID_ANY, "rel")
+        chk.SetValue(rel)
+        chk.SetToolTip(_("rel: relative mode. With {beats_time}, the beat numbers "
+                         "do not add height to the line spacing: they are drawn "
+                         "inside it."))
+        sizer.Add(chk, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+        btns = d.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL)
+        if btns is not None:
+            sizer.Add(btns, 0, wx.EXPAND | wx.ALL, 10)
+        d.SetSizerAndFit(sizer)
+        d.CentreOnParent()
+        spin.SetFocus()
         if d.ShowModal() == wx.ID_OK:
-            val = d.GetValue()
-            self.InsertWithCaret("{linespacing: %s}" % val) #modifica qui con x_linespacing
+            val = str(spin.GetValue())
+            if chk.GetValue():
+                val += u" rel"
+            self._InsertDirectiveValue('linespacing', val)
+        d.Destroy()
 
     def OnInsertChordtopspacing(self, evt):
         """Inserisce la direttiva {chordtopspacing: <valore>}."""
         msg = _("Enter the space above chords value (e.g. 0 to remove extra space):")
-        d = wx.NumberEntryDialog(self.frame, msg, _("Value:"), _("Space above chords"), 0, 0, 100)
+        # Cursore dentro un {chordtopspacing:...} esistente: come per linespacing
+        initial = 0
+        ex = self._FindDirectiveAtCaret('chordtopspacing')
+        if ex is not None:
+            try:
+                initial = max(0, min(100, int(ex[2].strip())))
+            except ValueError:
+                pass
+        d = wx.NumberEntryDialog(self.frame, msg, _("Value:"), _("Space above chords"), initial, 0, 100)
         if d.ShowModal() == wx.ID_OK:
             val = d.GetValue()
-            self.InsertWithCaret("{chordtopspacing: %s}" % val)
+            self._InsertDirectiveValue('chordtopspacing', str(val))
 
     def OnInsertVerse(self, evt):
         """Inserisce una strofa non numerata: {start_verse} ... {end_verse}"""
@@ -3253,6 +3302,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         'tempo_label': 'OnInsertTempoLabel',
         'key':         'OnInsertKey',
         'beats_time':  'OnInsertBeatsTime',
+        'linespacing': 'OnInsertLinespacing',
     }
 
     def FindEditableDirective(self, pos=None):
@@ -3557,17 +3607,32 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
     def _InsertDirectiveLineOnce(self, names, st, already_msg):
         """Per le direttive senza valore (interruzione di pagina/colonna): se la
         riga del cursore e' gia' quella direttiva (cursore sopra o dentro le
-        graffe) non ne inserisce una seconda e lo dice nella barra di stato."""
+        graffe) non ne inserisce una seconda e lo dice nella barra di stato.
+        Se il cursore e' dentro le graffe di un'ALTRA direttiva (es.
+        {linespacing: 13|}) inserisce dopo la sua '}' invece di annidare."""
         import re
         try:
             plain = (self.text.GetSelections() <= 1
                      and self.text.GetSelection()[0] == self.text.GetSelection()[1])
             if plain:
-                txt = self.text.GetLine(self.text.GetCurrentLine()).rstrip('\r\n')
+                pos = self.text.GetCurrentPos()
+                line = self.text.GetCurrentLine()
+                ls = self.text.PositionFromLine(line)
+                txt = self.text.GetLine(line).rstrip('\r\n')
+                col = len(self.text.GetTextRange(ls, pos))   # colonna in caratteri
                 alt = '|'.join(re.escape(n) for n in names)
                 if re.match(r'^\s*\{\s*(?:' + alt + r')\s*\}\s*$', txt, re.IGNORECASE):
                     self._setStatus(already_msg, 5000)
                     return
+                for m in re.finditer(r'\{[^{}]*\}', txt):
+                    if m.start() < col < m.end():
+                        if re.match(r'^\{\s*(?:' + alt + r')\s*\}$', m.group(0), re.IGNORECASE):
+                            self._setStatus(already_msg, 5000)
+                            return
+                        # Dentro un'altra direttiva: esce dalle graffe.
+                        p = ls + len(txt[:m.end()].encode('utf-8'))
+                        self.text.SetSelection(p, p)
+                        break
         except Exception:
             pass
         self.InsertWithCaret(st)
@@ -3657,15 +3722,46 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         p = vs + len((lead + val).encode('utf-8'))
         self.text.SetSelection(p, p)
 
+    def _StepOutOfBraces(self):
+        """Se il cursore (senza selezione) e' dentro le graffe {...} di una
+        direttiva, lo sposta subito dopo la '}' cosi' un nuovo inserimento non
+        finisce annidato. Fuori dalle graffe non fa nulla."""
+        import re
+        try:
+            if (self.text.GetSelections() > 1
+                    or self.text.GetSelection()[0] != self.text.GetSelection()[1]):
+                return
+            pos = self.text.GetCurrentPos()
+            line = self.text.GetCurrentLine()
+            ls = self.text.PositionFromLine(line)
+            txt = self.text.GetLine(line).rstrip('\r\n')
+            col = len(self.text.GetTextRange(ls, pos))
+            for m in re.finditer(r'\{[^{}]*\}', txt):
+                if m.start() < col < m.end():
+                    p = ls + len(txt[:m.end()].encode('utf-8'))
+                    self.text.SetSelection(p, p)
+                    return
+        except Exception:
+            pass
+
     def _InsertSimpleDirective(self, directive, label, example):
-        """Helper generico: chiede un testo e inserisce {directive:testo}."""
-        d = wx.TextEntryDialog(self.frame, label, directive, example)
+        """Helper generico: chiede un testo e inserisce {directive:testo}.
+        Cursore dentro un {directive:...} esistente: la finestra parte dal
+        valore attuale e alla conferma cambia solo quello. Dentro un'altra
+        direttiva: inserisce dopo la sua '}' (niente graffe annidate)."""
+        ex = self._FindDirectiveAtCaret(directive)
+        initial = ex[2].strip() if ex is not None else example
+        d = wx.TextEntryDialog(self.frame, label, directive, initial)
         if d.ShowModal() == wx.ID_OK:
             val = d.GetValue().strip()
-            if val:
-                self.InsertWithCaret(u"{%s:%s}" % (directive, val))
+            if ex is not None:
+                self._InsertDirectiveValue(directive, val)
             else:
-                self.InsertWithCaret(u"{%s:|}" % directive)
+                self._StepOutOfBraces()
+                if val:
+                    self.InsertWithCaret(u"{%s:%s}" % (directive, val))
+                else:
+                    self.InsertWithCaret(u"{%s:|}" % directive)
         d.Destroy()
 
     def OnInsertCapo(self, evt):
@@ -6872,7 +6968,43 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.UpdateEverything()
 
     def OnReadOnly(self, evt):
+        if self.IsReadOnly() and not self._UnlockSystemProtection():
+            # annullato (o errore): resta in sola lettura
+            self.UpdateEverything()
+            return
         self.SetReadOnlyMode(not self.IsReadOnly())
+
+    def _UnlockSystemProtection(self):
+        """Chiamata quando si toglie la sola lettura. Se il file e' protetto
+        in scrittura dal sistema, propone di rimuovere la protezione, cosi'
+        che il salvataggio funzioni. Ritorna False se l'utente annulla."""
+        doc = getattr(self, 'document', '')
+        try:
+            protected = bool(doc) and os.path.isfile(doc) and not os.access(doc, os.W_OK)
+        except Exception:
+            protected = False
+        if not protected:
+            return True
+        msg = (_("The file is write-protected by the operating system.") + "\n\n" +
+               _("Do you want to remove the protection, so that you can save your changes?") + "\n\n" +
+               _("Yes: remove the protection and unlock the song.") + "\n" +
+               _("No: unlock the song only (to save, use 'Save as...').") + "\n" +
+               _("Cancel: keep the song read-only."))
+        d = wx.MessageDialog(self.frame, msg, self.appLongName,
+                             wx.YES_NO | wx.CANCEL | wx.ICON_QUESTION)
+        res = d.ShowModal()
+        d.Destroy()
+        if res == wx.ID_CANCEL:
+            return False
+        if res == wx.ID_YES:
+            try:
+                import stat
+                os.chmod(doc, os.stat(doc).st_mode | stat.S_IWUSR | stat.S_IWRITE)
+            except Exception as e:
+                wx.MessageDialog(self.frame, _("Unable to remove the protection:") + "\n" + str(e),
+                                 self.appLongName, wx.OK | wx.ICON_ERROR).ShowModal()
+                return False
+        return True
 
     def _ShouldOpenReadOnly(self):
         """True se il file appena aperto va mostrato in sola lettura:
@@ -10926,6 +11058,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                     self.text.SetSelection(s2 + len(st), s2 + len(st))
         else:
             # --- Cursore singolo: comportamento originale ---
+            # Se si inserisce una direttiva/blocco ('{...') con il cursore dentro
+            # le graffe di un'altra direttiva, esce prima dalla sua '}' per non
+            # annidare ({start_verse} dentro {linespacing: 13}, ecc.).
+            if st.lstrip().startswith('{'):
+                self._StepOutOfBraces()
             self.StripSelection()
             s, e = self.text.GetSelection()
             c = st.find('|')
@@ -11096,6 +11233,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         rb_box     = wx.RadioButton(d, -1, u"{comment_box:}")
         rb_hash    = wx.RadioButton(d, -1, u"# commento")
         rb_comment.SetValue(True)
+        rb_comment.SetToolTip(_(u"Comment shown in the preview, automatically enclosed in parentheses."))
+        rb_box.SetToolTip(_(u"Comment shown in the preview inside a box."))
+        rb_hash.SetToolTip(_(u"Comment line starting with #: treated as an empty line, it does not appear in the preview or in print."))
         for rb in (rb_comment, rb_box, rb_hash):
             vbox.Add(rb, 0, wx.LEFT | wx.BOTTOM, 8)
 
@@ -11147,11 +11287,14 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                         self._ReplaceRange(sp['ds'], sp['de'], new,
                                            None if val.strip() else len(new.encode('utf-8')) - 1)
             elif rb_box.GetValue():
+                self._StepOutOfBraces()
                 directive = u"comment_box"
                 self.InsertWithCaret(u"{%s:%s|}" % (directive, val) if not val else u"{%s:%s}" % (directive, val))
             elif rb_hash.GetValue():
+                self._StepOutOfBraces()
                 self.InsertWithCaret(u"# %s" % val)
             else:
+                self._StepOutOfBraces()
                 directive = u"comment"
                 self.InsertWithCaret(u"{%s:%s|}" % (directive, val) if not val else u"{%s:%s}" % (directive, val))
         d.Destroy()
