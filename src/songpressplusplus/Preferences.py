@@ -981,6 +981,9 @@ class Preferences(object):
         # Insert toolbar
         self.tb_title               = _rb('tb_title')
         self.tb_subtitle            = _rb('tb_subtitle')
+        self.tb_artist              = _rb('tb_artist')
+        self.tb_composer            = _rb('tb_composer')
+        self.tb_album               = _rb('tb_album')
         self.tb_chord               = _rb('tb_chord')
         self.tb_chorus              = _rb('tb_chorus')
         self.tb_verse               = _rb('tb_verse')
@@ -1024,6 +1027,7 @@ class Preferences(object):
         _w('tbv_preview'); _w('tbv_labelVerses')
         # Insert toolbar
         _w('tb_title');             _w('tb_subtitle')
+        _w('tb_artist');            _w('tb_composer');          _w('tb_album')
         _w('tb_chord');             _w('tb_chorus')
         _w('tb_verse');             _w('tb_comment')
         _w('tb_pageBreak');         _w('tb_columnBreak')

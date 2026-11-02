@@ -371,3 +371,22 @@ msgid ""
 msgstr ""
 "Aggiungi in fondo all'indice una riga con il numero totale di brani che "
 "contiene."
+
+#: CreaIndice.py
+msgid "Requirements for the songs"
+msgstr "Requisiti per i brani"
+
+#: CreaIndice.py
+msgid ""
+"To be listed correctly, each song must contain these two directives:"
+msgstr ""
+"Per essere inserito correttamente, ogni brano deve contenere queste due "
+"direttive:"
+
+#: CreaIndice.py
+msgid ""
+"Songs without a number are placed at the end of the index; without a title "
+"the file name is used."
+msgstr ""
+"I brani senza numero vengono messi in fondo all'indice; senza titolo viene "
+"usato il nome del file."

@@ -42,11 +42,11 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | ------------------- | ------------ | --- | ---- | ---------------------------------------------------------------------------------------- |
 | `{title:Title}`     | `{t:Title}`  | ✅  | ⌨️   | Song title                                                                               |
 | `{subtitle:Text}`   | `{st:...}`   | ✅  | ⌨️   | Subtitle or secondary artist                                                             |
-| `{artist:Name}`     |              | ✅  | 🖊    | Artist / performer (rendered as subtitle)                                                |
-| `{composer:Name}`   |              | ✅  | 🖊    | Composer (rendered as subtitle)                                                          |
+| `{artist:Name}`     |              | ✅  | ⌨️   | Artist / performer (rendered as subtitle)                                                |
+| `{composer:Name}`   |              | ✅  | ⌨️   | Composer (rendered as subtitle)                                                          |
 | `{lyricist:Name}`   |              | ✅  | 🖊    | Lyricist / text author (rendered as «Lyrics: …»)                                         |
 | `{arranger:Name}`   |              | ✅  | 🖊    | Arranger (rendered as «Arrangement: …»)                                                  |
-| `{album:Title}`     |              | ✅  | 🖊    | Album title (rendered as «Album: …»)                                                     |
+| `{album:Title}`     |              | ✅  | ⌨️   | Album title (rendered as «Album: …»)                                                     |
 | `{year:Year}`       |              | ✅  | 🖊    | Publication year (rendered as subtitle)                                                  |
 | `{copyright:Text}`  |              | ✅  | 🖊    | Copyright notice (rendered as «© …»)                                                     |
 | `{key:Key}`         |              | ✅  | ⌨️   | Key (e.g. `Am`, `C`, `G`, `F#m`); rendered as «Key: …» if display is enabled             |
@@ -1293,11 +1293,15 @@ All main directives are accessible via the **Insert** menu, which opens support 
 
 The items are arranged in five groups separated by lines:
 
-1. **Header** — Title, Subtitle, Comment
+1. **Header** — Title, Subtitle, Artist, Composer, Album, Comment
 2. **Chords** — Chord, Intro chords, First chord fingering, Chord keyboard, Guitar chord diagram, Chord duration
 3. **Song structure** — Numbered verse, Unnumbered verse, Verse with custom label or without label, Chorus, Bridge, Grid
 4. **Tempo and key** — Tempo, Tempo marking, Time signature, Key
 5. **Images and symbols** — Image, Transposer image, Musical symbol (Unicode)
+
+#### Artist, Composer, Album
+
+**Insert → Artist**, **Composer** and **Album** insert `{artist:|}`, `{composer:|}` and `{album:|}` respectively, without opening any dialog, like Title and Subtitle: the cursor `|` is placed after the colon, ready for the value. If the cursor is already inside one of these directives, the command does not insert a second one but **selects the existing value**, so it can be retyped. Each of the three items also has an icon in the Insert toolbar, which can be hidden from *Options → Toolbars → Insert*.
 
 #### Numbered verse
 

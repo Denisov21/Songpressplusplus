@@ -377,6 +377,24 @@
           <help>Insert a command to display song subtitle</help>
           <bitmap>../img/subtitle.png</bitmap>
         </object>
+        <object class="wxMenuItem" name="insertArtist">
+          <label>_Artist</label>
+          <accel></accel>
+          <bitmap>../img/artist.png</bitmap>
+          <help>Insert a command to display the artist / performer of the song</help>
+        </object>
+        <object class="wxMenuItem" name="insertComposer">
+          <label>Compo_ser</label>
+          <accel></accel>
+          <bitmap>../img/composer.png</bitmap>
+          <help>Insert a command to display the composer of the song</help>
+        </object>
+        <object class="wxMenuItem" name="insertAlbum">
+          <label>Al_bum</label>
+          <accel></accel>
+          <bitmap>../img/album.png</bitmap>
+          <help>Insert a command to display the album of the song</help>
+        </object>
         <object class="wxMenuItem" name="comment">
           <label>Co_mment...</label>
           <accel>CTRL+M</accel>

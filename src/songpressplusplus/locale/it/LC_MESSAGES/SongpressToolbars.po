@@ -423,3 +423,27 @@ msgid ""
 msgstr ""
 "Inserisce un blocco ritornello (scegli la forma {start_chorus}/{end_chorus} "
 "oppure {soc}/{eoc})"
+
+#: SongpressToolbars.py — INSERT_TOOLBAR_ITEMS
+msgid "Artist"
+msgstr "Artista"
+
+#: SongpressToolbars.py — INSERT_TOOLBAR_ITEMS
+msgid "Album"
+msgstr "Album"
+
+#: SongpressToolbars.py — _BuildInsertToolBar
+msgid "Insert a command to display the song artist"
+msgstr "Inserisce un comando che mostra l'artista della canzone"
+
+#: SongpressToolbars.py — _BuildInsertToolBar
+msgid "Insert a command to display the song album"
+msgstr "Inserisce un comando che mostra l'album della canzone"
+
+#: SongpressToolbars.py — INSERT_TOOLBAR_ITEMS
+msgid "Composer"
+msgstr "Compositore"
+
+#: SongpressToolbars.py — _BuildInsertToolBar
+msgid "Insert a command to display the song composer"
+msgstr "Inserisce un comando che mostra il compositore della canzone"

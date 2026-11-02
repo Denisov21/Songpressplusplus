@@ -3793,16 +3793,17 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self._InsertSimpleDirective('capo', _(u"Enter the capo fret number (e.g. 2, 3):"), u"2")
 
     def OnInsertArtist(self, evt):
-        """Inserisce la direttiva {artist: <nome>}."""
-        self._InsertSimpleDirective('artist', _(u"Enter the artist / performer name:"), u"")
+        """Inserisce {artist:|} (come titolo e sottotitolo, senza finestra);
+        se il cursore e' gia' dentro {artist:...} ne seleziona il valore."""
+        self._InsertOrSelectDirective(('artist',), "{artist:|}")
 
     def OnInsertComposer(self, evt):
         """Inserisce la direttiva {composer: <nome>}."""
-        self._InsertSimpleDirective('composer', _(u"Enter the composer name:"), u"")
+        self._InsertOrSelectDirective(('composer',), "{composer:|}")
 
     def OnInsertAlbum(self, evt):
         """Inserisce la direttiva {album: <titolo>}."""
-        self._InsertSimpleDirective('album', _(u"Enter the album title:"), u"")
+        self._InsertOrSelectDirective(('album',), "{album:|}")
 
     def OnInsertYear(self, evt):
         """Inserisce la direttiva {year: <anno>}."""

@@ -42,11 +42,11 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 | ------------------- | ------------ | --- | ---- | ----------------------------------------------------------------------------------------- |
 | `{title:Titolo}`    | `{t:Titolo}` | ✅  | ⌨️   | Titolo della canzone                                                                      |
 | `{subtitle:Testo}`  | `{st:...}`   | ✅  | ⌨️   | Sottotitolo o artista secondario                                                          |
-| `{artist:Nome}`     |              | ✅  | 🖊    | Artista / interprete (visualizzato come sottotitolo)                                      |
-| `{composer:Nome}`   |              | ✅  | 🖊    | Compositore (visualizzato come sottotitolo)                                               |
+| `{artist:Nome}`     |              | ✅  | ⌨️   | Artista / interprete (visualizzato come sottotitolo)                                      |
+| `{composer:Nome}`   |              | ✅  | ⌨️   | Compositore (visualizzato come sottotitolo)                                               |
 | `{lyricist:Nome}`   |              | ✅  | 🖊    | Paroliere / autore del testo (visualizzato come «Testo: …»)                               |
 | `{arranger:Nome}`   |              | ✅  | 🖊    | Arrangiatore (visualizzato come «Arrangiamento: …»)                                       |
-| `{album:Titolo}`    |              | ✅  | 🖊    | Titolo dell'album (visualizzato come «Album: …»)                                          |
+| `{album:Titolo}`    |              | ✅  | ⌨️   | Titolo dell'album (visualizzato come «Album: …»)                                          |
 | `{year:Anno}`       |              | ✅  | 🖊    | Anno di pubblicazione (visualizzato come sottotitolo)                                     |
 | `{copyright:Testo}` |              | ✅  | 🖊    | Nota di copyright (visualizzata come «© …»)                                               |
 | `{key:Tonalità}`    |              | ✅  | ⌨️   | Tonalità (es. `Am`, `C`, `G`, `F#m`); visualizzata come «Key: …» se abilitata             |
@@ -1300,11 +1300,15 @@ Tutte le principali direttive sono accessibili tramite il menu **Inserisci**, ch
 
 Le voci sono raggruppate in cinque blocchi, separati da linee:
 
-1. **Intestazione** — Titolo, Sottotitolo, Commento
+1. **Intestazione** — Titolo, Sottotitolo, Artista, Compositore, Album, Commento
 2. **Accordi** — Accordo, Accordi di intro, Diteggiatura primo accordo, Tastiera accordo, Diagramma accordo chitarra, Durata accordo
 3. **Struttura della canzone** — Strofa numerata, Strofa non numerata, Strofa con etichetta personalizzata o senza, Ritornello, Bridge, Griglia
 4. **Tempo e tonalità** — Tempo, Indicazione agogica, Indicazione del tempo, Tonalità
 5. **Immagini e simboli** — Immagine, Immagine Transposer, Simbolo musicale (Unicode)
+
+#### Artista, Compositore, Album
+
+**Inserisci → Artista**, **Compositore** e **Album** inseriscono rispettivamente `{artist:|}`, `{composer:|}` e `{album:|}` senza aprire finestre, come Titolo e Sottotitolo: il cursore `|` si posiziona dopo i due punti, pronto per scrivere il valore. Se il cursore è già dentro una di queste direttive, il comando non ne inserisce una seconda ma **seleziona il valore esistente**, così lo si può riscrivere. Ognuna delle tre voci ha anche un'icona nella toolbar Inserisci, che si può nascondere da *Opzioni → Toolbar → Inserisci*.
 
 #### Strofa numerata
 

@@ -377,6 +377,24 @@
           <help>Inserisci un comando per visualizzare il sottotitolo della canzone</help>
           <bitmap>../img/subtitle.png</bitmap>
         </object>
+        <object class="wxMenuItem" name="insertArtist">
+          <label>_Artista</label>
+          <accel></accel>
+          <bitmap>../img/artist.png</bitmap>
+          <help>Inserisci un comando per visualizzare l'artista / interprete della canzone</help>
+        </object>
+        <object class="wxMenuItem" name="insertComposer">
+          <label>_Compositore</label>
+          <accel></accel>
+          <bitmap>../img/composer.png</bitmap>
+          <help>Inserisci un comando per visualizzare il compositore della canzone</help>
+        </object>
+        <object class="wxMenuItem" name="insertAlbum">
+          <label>Al_bum</label>
+          <accel></accel>
+          <bitmap>../img/album.png</bitmap>
+          <help>Inserisci un comando per visualizzare l'album della canzone</help>
+        </object>
         <object class="wxMenuItem" name="comment">
           <label>Co_mmento...</label>
           <accel>CTRL+M</accel>

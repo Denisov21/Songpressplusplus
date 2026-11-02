@@ -794,6 +794,31 @@ class IndexPanel(wx.Panel):
     def _build_ui(self, default_folder):
         outer = wx.BoxSizer(wx.VERTICAL)
 
+        # --- reminder: required directives in every song file ---
+        box_req = wx.StaticBoxSizer(wx.VERTICAL, self,
+                                    _(u"Requirements for the songs"))
+        sb_req = box_req.GetStaticBox()
+        req_row = wx.BoxSizer(wx.HORIZONTAL)
+        req_icon_path = _info_icon_path()
+        if req_icon_path:
+            req_bmp = wx.Bitmap(req_icon_path, wx.BITMAP_TYPE_PNG)
+            if req_bmp.IsOk():
+                req_img = req_bmp.ConvertToImage().Scale(
+                    16, 16, wx.IMAGE_QUALITY_HIGH)
+                req_row.Add(wx.StaticBitmap(sb_req, bitmap=wx.Bitmap(req_img)),
+                            0, wx.ALIGN_TOP | wx.ALL, 6)
+        req_txt = wx.StaticText(
+            sb_req,
+            label=_(u"To be listed correctly, each song must contain these "
+                    u"two directives:") + u"\n\n"
+                  u"    {title: Song title}\n"
+                  u"    {subtitle: Canto numero: 22}\n\n" +
+                  _(u"Songs without a number are placed at the end of the "
+                    u"index; without a title the file name is used."))
+        req_row.Add(req_txt, 1, wx.EXPAND | wx.TOP | wx.RIGHT | wx.BOTTOM, 6)
+        box_req.Add(req_row, 0, wx.EXPAND)
+        outer.Add(box_req, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 8)
+
         # --- main folder ---
         box_dir = wx.StaticBoxSizer(wx.VERTICAL, self, _(u"Main folder"))
         row = wx.BoxSizer(wx.HORIZONTAL)

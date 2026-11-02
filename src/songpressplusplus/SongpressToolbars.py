@@ -683,6 +683,9 @@ class SongpressToolbarsMixin:
     INSERT_TOOLBAR_ITEMS = [
         ('title',                             _(u'Title'),                                              'tb_title'),
         ('subtitle',                          _(u'Subtitle'),                                           'tb_subtitle'),
+        ('insertArtist',                      _(u'Artist'),                                             'tb_artist'),
+        ('insertComposer',                    _(u'Composer'),                                           'tb_composer'),
+        ('insertAlbum',                       _(u'Album'),                                              'tb_album'),
         ('chord',                             _(u'Chord...'),                                           'tb_chord'),
         ('verseWithCustomLabelOrWithoutLabel',_(u'Verse with custom label or without label...'),        'tb_verse'),
         ('comment',                           _(u'Comment...'),                                         'tb_comment'),
@@ -765,6 +768,9 @@ class SongpressToolbarsMixin:
         self._insert_toolbar_icons = {
             'title':                             'img/title.png',
             'subtitle':                          'img/subtitle.png',
+            'insertArtist':                      'img/artist.png',
+            'insertComposer':                    'img/composer.png',
+            'insertAlbum':                       'img/album.png',
             'chord':                             'img/chord.png',
             'verseWithCustomLabelOrWithoutLabel':'img/verse.png',
             'comment':                           'img/comment.png',
@@ -791,6 +797,9 @@ class SongpressToolbarsMixin:
         self._insert_toolbar_helps = {
             'title':                             _(u"Insert a command to display the song title"),
             'subtitle':                          _(u"Insert a command to display the song subtitle"),
+            'insertArtist':                      _(u"Insert a command to display the song artist"),
+            'insertComposer':                    _(u"Insert a command to display the song composer"),
+            'insertAlbum':                       _(u"Insert a command to display the song album"),
             'chord':                             _(u"Insert square brackets that will contain a chord"),
             'verseWithCustomLabelOrWithoutLabel':_(u"Insert a verse with a custom label or without label"),
             'comment':                           _(u"Insert a command to display a comment"),
