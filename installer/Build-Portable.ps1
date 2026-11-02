@@ -64,6 +64,9 @@ $Deps = @(
     'wxPython>=4.2.4,<5.0.0'
     'requests>=2.32.4,<3.0.0'
     'python-pptx>=1.0.2,<2.0.0'
+    # python-docx: modulo 'docx', elencato nei packages di cx_Freeze in
+    # pyproject; se manca nel venv la build fallisce con "No module named 'docx'".
+    'python-docx>=1.1.0,<2.0.0'
     'pyshortcuts>=1.9.5,<2.0.0'
     'reportlab>=4.0.0,<5.0.0'
     'pypdf>=6.0.0,<7.0.0'
