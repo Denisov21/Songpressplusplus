@@ -183,6 +183,13 @@ class MyPreferencesDialog(PreferencesDialog):
             self.selColourSwatch.SetBackgroundColour(self._hex_to_colour(sel_hex))
             self._applySelColour(sel_hex)
 
+        # Colori dei pallini nella barra di stato
+        for _a, _k, _d in (('statusDotOn', 'statusDotOnHex', '#00AA00'),
+                           ('statusDotOff', 'statusDotOffHex', '#E53935')):
+            _h = getattr(self.pref, _k, _d)
+            getattr(self, _a + 'HexCtrl').SetValue(_h)
+            getattr(self, _a + 'Swatch').SetBackgroundColour(self._hex_to_colour(_h))
+
         # Caret colour
         caret_hex = getattr(self.pref, 'caretColourHex', '#000000')
         if hasattr(self, 'caretColourHexCtrl'):
@@ -248,7 +255,9 @@ class MyPreferencesDialog(PreferencesDialog):
 
         # Dimensione icone toolbar
         _tbSz = getattr(self.pref, 'toolbarIconSize', 'small')
-        if _tbSz == 'large':
+        if _tbSz == 'xlarge':
+            self.tbIconSizeXLarge.SetValue(True)
+        elif _tbSz == 'large':
             self.tbIconSizeLarge.SetValue(True)
         elif _tbSz == 'medium':
             self.tbIconSizeMedium.SetValue(True)
@@ -704,6 +713,39 @@ class MyPreferencesDialog(PreferencesDialog):
             self._applySelColour(hex_val)
         dlg.Destroy()
 
+    def _StatusDotHexChanged(self, prefix, evt):
+        c = self._hex_to_colour(getattr(self, prefix + 'HexCtrl').GetValue())
+        sw = getattr(self, prefix + 'Swatch')
+        sw.SetBackgroundColour(c)
+        sw.Refresh()
+        evt.Skip()
+
+    def _StatusDotPick(self, prefix):
+        ctrl = getattr(self, prefix + 'HexCtrl')
+        data = wx.ColourData()
+        data.SetColour(self._hex_to_colour(ctrl.GetValue()))
+        data.SetChooseFull(True)
+        dlg = wx.ColourDialog(self, data)
+        if dlg.ShowModal() == wx.ID_OK:
+            chosen = dlg.GetColourData().GetColour()
+            ctrl.SetValue(self._colour_to_hex(chosen))
+            sw = getattr(self, prefix + 'Swatch')
+            sw.SetBackgroundColour(chosen)
+            sw.Refresh()
+        dlg.Destroy()
+
+    def OnStatusDotOnHexChanged(self, evt):
+        self._StatusDotHexChanged('statusDotOn', evt)
+
+    def OnStatusDotOnPickColour(self, evt):
+        self._StatusDotPick('statusDotOn')
+
+    def OnStatusDotOffHexChanged(self, evt):
+        self._StatusDotHexChanged('statusDotOff', evt)
+
+    def OnStatusDotOffPickColour(self, evt):
+        self._StatusDotPick('statusDotOff')
+
     def OnCaretColourHexChanged(self, evt):
         hex_val = self.caretColourHexCtrl.GetValue()
         c = self._hex_to_colour(hex_val)
@@ -929,11 +971,47 @@ class MyPreferencesDialog(PreferencesDialog):
                 return path
         return None
 
+    def _theme_is_dark(self, name):
+        """True se il tema e' scuro.
+
+        Legge la riga '# Type : dark|light' dall'intestazione del file; se
+        manca (temi vecchi) la deduce dalla luminosita' del colore di sfondo.
+        """
+        import re as _re
+        path = self._find_theme_path(name)
+        if path is None:
+            return False
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                text = f.read()
+        except (OSError, UnicodeError):
+            return False
+        m = _re.search(r'^#\s*Type\s*:\s*(dark|light)\b', text, _re.I | _re.M)
+        if m:
+            return m.group(1).lower() == 'dark'
+        m = _re.search(r'^\s*bg\s*=\s*#?([0-9A-Fa-f]{6})\b', text, _re.M)
+        if not m:
+            return False
+        h = m.group(1)
+        r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+        return (0.299 * r + 0.587 * g + 0.114 * b) < 128
+
+    def _theme_label(self, name):
+        """Testo mostrato nella tendina: simbolo chiaro/scuro + nome."""
+        return (u"\u263E " if self._theme_is_dark(name) else u"\u2600 ") + name
+
+    def _theme_name_at(self, idx):
+        """Nome reale (senza simbolo) del tema alla posizione idx."""
+        if idx == wx.NOT_FOUND or idx < 0 or idx >= len(self._theme_names):
+            return u''
+        return self._theme_names[idx]
+
     def _refreshThemeList(self, select_name=None):
         self.themeCh.Clear()
         names = self._theme_files()
+        self._theme_names = list(names)
         for n in names:
-            self.themeCh.Append(n)
+            self.themeCh.Append(self._theme_label(n))
         if select_name and select_name in names:
             self.themeCh.SetSelection(names.index(select_name))
         elif names:
@@ -945,7 +1023,7 @@ class MyPreferencesDialog(PreferencesDialog):
 
     def _theme_names_in_list(self):
         """Nomi attualmente mostrati nel controllo themeCh."""
-        return [self.themeCh.GetString(i) for i in range(self.themeCh.GetCount())]
+        return list(getattr(self, '_theme_names', []))
 
     def _syncThemeListFromDisk(self):
         """Riallinea la lista temi al contenuto reale della cartella.
@@ -966,7 +1044,7 @@ class MyPreferencesDialog(PreferencesDialog):
         disk = self._theme_files()
         if disk == self._theme_names_in_list():
             return False
-        prev = self.themeCh.GetStringSelection()
+        prev = self._theme_name_at(self.themeCh.GetSelection())
         self._refreshThemeList(select_name=prev if prev in disk else None)
         return True
 
@@ -1011,6 +1089,16 @@ class MyPreferencesDialog(PreferencesDialog):
             self.syntaxSwatches[key].Refresh()
             self._applySyntaxColour(key, val)
 
+    @staticmethod
+    def _dict_kind(d):
+        """'dark' o 'light' in base alla luminosita' del colore di sfondo."""
+        h = (d.get('bg') or '#FFFFFF').lstrip('#')
+        try:
+            r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+        except ValueError:
+            return 'light'
+        return 'dark' if (0.299 * r + 0.587 * g + 0.114 * b) < 128 else 'light'
+
     def _save_theme_file(self, name, d):
         import os as _os
         import configparser
@@ -1023,6 +1111,7 @@ class MyPreferencesDialog(PreferencesDialog):
             "# Name    : {name}\n"
             "# Saved   : {date}\n"
             "# Version : 1.0\n"
+            "# Type    : {kind}\n"
             "#\n"
             "# This file can be edited manually.\n"
             "# Place it in templates/themes/ to make it available in Songpress++.\n"
@@ -1030,6 +1119,7 @@ class MyPreferencesDialog(PreferencesDialog):
         ).format(
             name=name,
             date=datetime.datetime.now().strftime('%Y-%m-%d %H:%M'),
+            kind=self._dict_kind(d),
         )
         try:
             with open(path, 'w', encoding='utf-8') as f:
@@ -1063,7 +1153,7 @@ class MyPreferencesDialog(PreferencesDialog):
         idx = self.themeCh.GetSelection()
         if idx == wx.NOT_FOUND:
             return
-        name = self.themeCh.GetString(idx)
+        name = self._theme_name_at(idx)
         if self._find_theme_path(name) is None:
             self._syncThemeListFromDisk()
             wx.MessageBox(
@@ -1080,7 +1170,7 @@ class MyPreferencesDialog(PreferencesDialog):
         # fantasma di un tema già cancellato fuori dall'app.
         self._syncThemeListFromDisk()
         idx = self.themeCh.GetSelection()
-        current = self.themeCh.GetString(idx) if idx != wx.NOT_FOUND else u''
+        current = self._theme_name_at(idx)
         dlg = wx.TextEntryDialog(self, _(u"Theme name:"), _(u"Save theme"), current)
         result = dlg.ShowModal()
         name = dlg.GetValue().strip()
@@ -1115,7 +1205,7 @@ class MyPreferencesDialog(PreferencesDialog):
         idx = self.themeCh.GetSelection()
         if idx == wx.NOT_FOUND:
             return
-        name = self.themeCh.GetString(idx)
+        name = self._theme_name_at(idx)
         if self._find_theme_path(name) is None:
             # Sparito tra il sync e ora: riallinea e avvisa.
             self._syncThemeListFromDisk()
@@ -1989,6 +2079,11 @@ class MyPreferencesDialog(PreferencesDialog):
             self.pref.selColourHex = self.selColourHexCtrl.GetValue().strip()
         if hasattr(self, 'caretColourHexCtrl'):
             self.pref.caretColourHex = self.caretColourHexCtrl.GetValue().strip()
+        # Colori pallini barra di stato (valori non validi -> default)
+        self.pref.statusDotOnHex = self.pref._ValidHex(
+            self.statusDotOnHexCtrl.GetValue(), self.pref.STATUS_DOT_ON_DEFAULT)
+        self.pref.statusDotOffHex = self.pref._ValidHex(
+            self.statusDotOffHexCtrl.GetValue(), self.pref.STATUS_DOT_OFF_DEFAULT)
         # Caption bar colours
         self.pref.captionEditorActiveHex  = self.capEditorHexCtrl.GetValue().strip()
         self.pref.captionPreviewActiveHex = self.capPreviewHexCtrl.GetValue().strip()
@@ -2013,7 +2108,9 @@ class MyPreferencesDialog(PreferencesDialog):
         # Suggerisci {title:} come nome file in "Salva con nome"
         self.pref.suggestTitleAsFilename = self.suggestTitleAsFilenameCB.GetValue()
         # Dimensione icone toolbar
-        if self.tbIconSizeLarge.GetValue():
+        if self.tbIconSizeXLarge.GetValue():
+            self.pref.toolbarIconSize = 'xlarge'
+        elif self.tbIconSizeLarge.GetValue():
             self.pref.toolbarIconSize = 'large'
         elif self.tbIconSizeMedium.GetValue():
             self.pref.toolbarIconSize = 'medium'

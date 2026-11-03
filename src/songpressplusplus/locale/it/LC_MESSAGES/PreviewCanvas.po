@@ -28,6 +28,10 @@ msgstr "Copia la canzone formattata negli appunti"
 msgid "Refresh Preview Songpress++"
 msgstr "Aggiorna Anteprima Songpress++"
 
+#: PreviewCanvas.py
+msgid "Refresh Songpress++ Page"
+msgstr "Aggiorna Pagina Songpress++"
+
 #: PreviewCanvas.py:112
 msgid "Zoom out (Ctrl+-)"
 msgstr "Riduci zoom (Ctrl+-)"

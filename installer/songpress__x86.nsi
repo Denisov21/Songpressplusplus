@@ -32,6 +32,8 @@ Unicode true
 !include "nsDialogs.nsh"
 !include "LogicLib.nsh"
 !include "WinMessages.nsh"
+!include "FileFunc.nsh"
+!insertmacro GetParent
 
 ; ---------------------------------------------------------------
 ;  Font FreeSerif: individua in fase di build la cartella con i .ttf.
@@ -161,15 +163,14 @@ LangString STR_NET_ABORT           ${LANG_ITALIAN} "Installazione annullata: con
 LangString STR_WELCOME_TEXT        ${LANG_ITALIAN} "Il programma di installazione ti guiderà nell'installazione di $(^Name) $\r$\n$\r$\nATTENZIONE: è richiesta una connessione a Internet attiva durante l'installazione per scaricare i pacchetti necessari.$\r$\n$\r$\nChiudi tutte le altre applicazioni prima di continuare."
 LangString UninstallComplete       ${LANG_ITALIAN} "$(^Name) è stato rimosso con successo."
 LangString UninstallConfirm        ${LANG_ITALIAN} "Sei sicuro di voler rimuovere $(^Name)?"
-LangString STR_PREV_FOUND          ${LANG_ITALIAN} "E' stata trovata una versione precedente di ${PRODUCT_NAME} (versione $0).$\r$\nVuoi rimuoverla prima di procedere con l'installazione?"
+LangString STR_PREV_FOUND          ${LANG_ITALIAN} "È stata trovata una versione precedente di ${PRODUCT_NAME} (versione $0).$\r$\nVerrà rimossa prima di procedere con l'installazione.$\r$\n$\r$\nI tuoi template e font personalizzati verranno conservati."
 LangString STR_PREV_UNINSTALLING   ${LANG_ITALIAN} "Rimozione versione precedente in corso..."
-LangString STR_PREV_UNINSTALL_FAIL ${LANG_ITALIAN} "La rimozione della versione precedente non è riuscita.$\r$\nVuoi continuare comunque con l'installazione?"
-LangString STR_PREV_SKIP           ${LANG_ITALIAN} "Hai scelto di non rimuovere la versione precedente.$\r$\nVuoi continuare comunque con l'installazione?"
+LangString STR_PREV_UNINSTALL_FAIL ${LANG_ITALIAN} "La rimozione della versione precedente non è riuscita.$\r$\n$\r$\nL'installazione verrà annullata. Chiudi Songpress++ se è in esecuzione, rimuovi la versione precedente da Impostazioni > App e riprova."
 LangString STR_COPY_ASSETS         ${LANG_ITALIAN} "Copia template e font in cartella utente..."
 LangString STR_INSTALL_FONTS       ${LANG_ITALIAN} "Installazione font FreeSerif (per l'utente corrente)..."
 LangString STR_COPY_ASSETS_WARN    ${LANG_ITALIAN} "Attenzione: template o font non trovati nel pacchetto installato.$\r$\nPercorso atteso:$\r$\n$0"
 LangString STR_REBOOT_HINT         ${LANG_ITALIAN} "Per completare l'installazione e visualizzare Songpress++ nel menu Start, è consigliato riavviare il computer."
-LangString STR_UNINST_APPDATA      ${LANG_ITALIAN} "Rimuovere anche i template e font personalizzati in %APPDATA%\Songpress++?$\r$\n(Scegli No per conservare le tue personalizzazioni)"
+LangString STR_UNINST_APPDATA      ${LANG_ITALIAN} "⚠ Rimuovere anche i template e font personalizzati in %APPDATA%\Songpress++?$\r$\n$\r$\nQuesta operazione non può essere annullata.$\r$\n(Scegli No per conservare le tue personalizzazioni)"
 LangString STR_NO_PROGRAMFILES     ${LANG_ITALIAN} "⚠ ATTENZIONE: non installare Songpress++ nella cartella «Programmi» o «Programmi (x86)».$\r$\n$\r$\nSongpress++ è un'applicazione per singolo utente e va installata in una cartella personale (predefinita: $LOCALAPPDATA\Songpress++).$\r$\n$\r$\nScegli un'altra cartella di destinazione."
 LangString STR_DIR_TOP             ${LANG_ITALIAN} "Questa procedura installerà ${PRODUCT_NAME} nella cartella indicata sotto.$\r$\n$\r$\n⚠ ATTENZIONE: non installare in «Programmi» o «Programmi (x86)». Songpress++ è un'applicazione per singolo utente: mantieni la cartella personale predefinita."
 
@@ -198,15 +199,14 @@ LangString STR_NET_ABORT           ${LANG_ENGLISH} "Installation cancelled: inte
 LangString STR_WELCOME_TEXT        ${LANG_ENGLISH} "This wizard will guide you through the installation of $(^Name) version ${PRODUCT_VERSION}.$\r$\n$\r$\nNOTE: An active Internet connection is required during installation to download the necessary packages.$\r$\n$\r$\nPlease close all other applications before continuing."
 LangString UninstallComplete       ${LANG_ENGLISH} "$(^Name) has been successfully removed."
 LangString UninstallConfirm        ${LANG_ENGLISH} "Are you sure you want to remove $(^Name)?"
-LangString STR_PREV_FOUND          ${LANG_ENGLISH} "A previous version of ${PRODUCT_NAME} (version $0) was found.$\r$\nDo you want to remove it before proceeding with the installation?"
+LangString STR_PREV_FOUND          ${LANG_ENGLISH} "⚠ A previous version of ${PRODUCT_NAME} (version $0) was found.$\r$\nIt will be removed before proceeding with the installation.$\r$\n$\r$\nYour custom templates and fonts will be kept."
 LangString STR_PREV_UNINSTALLING   ${LANG_ENGLISH} "Removing previous version..."
-LangString STR_PREV_UNINSTALL_FAIL ${LANG_ENGLISH} "The previous version could not be removed.$\r$\nDo you want to continue with the installation anyway?"
-LangString STR_PREV_SKIP           ${LANG_ENGLISH} "You chose not to remove the previous version.$\r$\nDo you want to continue with the installation anyway?"
+LangString STR_PREV_UNINSTALL_FAIL ${LANG_ENGLISH} "The previous version could not be removed.$\r$\n$\r$\nThe installation will be cancelled. Close Songpress++ if it is running, remove the previous version from Settings > Apps and try again."
 LangString STR_COPY_ASSETS         ${LANG_ENGLISH} "Copying templates and fonts to user folder..."
 LangString STR_INSTALL_FONTS       ${LANG_ENGLISH} "Installing FreeSerif fonts (current user)..."
 LangString STR_COPY_ASSETS_WARN    ${LANG_ENGLISH} "Warning: templates or fonts not found in the installed package.$\r$\nExpected path:$\r$\n$0"
 LangString STR_REBOOT_HINT         ${LANG_ENGLISH} "To complete the installation and make Songpress++ appear in the Start menu, it is recommended to restart your computer."
-LangString STR_UNINST_APPDATA      ${LANG_ENGLISH} "Also remove custom templates and fonts in %APPDATA%\Songpress++?$\r$\n(Choose No to keep your customizations)"
+LangString STR_UNINST_APPDATA      ${LANG_ENGLISH} "⚠ Also remove custom templates and fonts in %APPDATA%\Songpress++?$\r$\n$\r$\nThis cannot be undone.$\r$\n(Choose No to keep your customizations)"
 LangString STR_NO_PROGRAMFILES     ${LANG_ENGLISH} "⚠ WARNING: do not install Songpress++ in the «Program Files» or «Program Files (x86)» folder.$\r$\n$\r$\nSongpress++ is a per-user application and must be installed in a personal folder (default: $LOCALAPPDATA\Songpress++).$\r$\n$\r$\nPlease choose a different destination folder."
 LangString STR_DIR_TOP             ${LANG_ENGLISH} "This wizard will install ${PRODUCT_NAME} in the folder shown below.$\r$\n$\r$\n⚠ WARNING: do not install in «Program Files» or «Program Files (x86)». Songpress++ is a per-user application: keep the default personal folder."
 
@@ -277,34 +277,38 @@ FunctionEnd
 ;  onInit: lingua + gestione versione precedente
 ;  Flusso:
 ;    trovata versione precedente
-;      -> Sì (disinstalla)
-;           -> OK: procede
-;           -> Fallita: Continua/Annulla
-;      -> No: Continua/Annulla
+;      -> avviso con OK / Annulla (rimozione obbligatoria)
+;           -> OK: disinstalla (cartella ricavata da UninstallString)
+;                -> riuscita: procede
+;                -> fallita: errore e installazione annullata
+;           -> Annulla: esce
+;      -> modalità /S: nessun avviso, disinstalla direttamente
 ; ---------------------------------------------------------------
 Function .onInit
   !insertmacro MUI_LANGDLL_DISPLAY
 
   ReadRegStr $0 ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion"
   ${If} $0 != ""
-    ; Chiede se vuole disinstallare la versione precedente
-    MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON1 "$(STR_PREV_FOUND)" IDYES prev_uninst IDNO prev_skip
-
-    prev_skip:
-      ; Utente non vuole disinstallare: continua o annulla
-      MessageBox MB_ICONEXCLAMATION|MB_YESNO|MB_DEFBUTTON2 "$(STR_PREV_SKIP)" IDYES prev_done IDNO prev_abort
+    ; Rimozione obbligatoria: OK = procedi, Annulla = esci.
+    ; In modalità silenziosa (/S) nessun messaggio: si rimuove direttamente.
+    ${IfNot} ${Silent}
+      MessageBox MB_ICONEXCLAMATION|MB_OKCANCEL "$(STR_PREV_FOUND)" IDOK prev_uninst
       Goto prev_abort
+    ${EndIf}
 
     prev_uninst:
       ReadRegStr $1 ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString"
       ${If} $1 != ""
+        ; Cartella della vecchia versione = cartella che contiene uninst.exe
+        ; (non $INSTDIR, che in .onInit può puntare altrove)
+        ${GetParent} "$1" $R0
         DetailPrint "$(STR_PREV_UNINSTALLING)"
-        ExecWait '"$1" /S _?=$INSTDIR'
+        ExecWait '"$1" /S _?=$R0'
         ; Verifica se la disinstallazione è riuscita
         ReadRegStr $2 ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion"
         ${If} $2 != ""
-          ; Disinstallazione fallita: continua o annulla
-          MessageBox MB_ICONEXCLAMATION|MB_YESNO|MB_DEFBUTTON2 "$(STR_PREV_UNINSTALL_FAIL)" IDYES prev_done IDNO prev_abort
+          ; Disinstallazione fallita: l'installazione viene annullata
+          MessageBox MB_ICONSTOP|MB_OK "$(STR_PREV_UNINSTALL_FAIL)" /SD IDOK
           Goto prev_abort
         ${EndIf}
       ${EndIf}
@@ -739,7 +743,7 @@ FunctionEnd
 
 Function un.onInit
   !insertmacro MUI_UNGETLANGUAGE
-  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "$(UninstallConfirm)" IDYES +2
+  MessageBox MB_ICONEXCLAMATION|MB_YESNO|MB_DEFBUTTON2 "$(UninstallConfirm)" /SD IDYES IDYES +2
   Abort
 FunctionEnd
 
@@ -798,8 +802,8 @@ Section Uninstall
   ; Rimuovi %APPDATA%\Songpress++ solo se confermato dall'utente
   SetShellVarContext current
   ${If} ${FileExists} "$APPDATA\Songpress++\*.*"
-    MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 \
-      "$(STR_UNINST_APPDATA)" IDYES uninst_appdata IDNO uninst_skip_appdata
+    MessageBox MB_ICONEXCLAMATION|MB_YESNO|MB_DEFBUTTON2 \
+      "$(STR_UNINST_APPDATA)" /SD IDNO IDYES uninst_appdata IDNO uninst_skip_appdata
     uninst_appdata:
       RMDir /r "$APPDATA\Songpress++"
     uninst_skip_appdata:

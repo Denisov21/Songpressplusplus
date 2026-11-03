@@ -1114,8 +1114,18 @@ A live preview area shows in real time how the text looks with the current font,
 |---|---|---|---|
 | **Clear recent files** | Button | — | Immediately clears the list of recently opened files from the File menu. |
 | **Show print preview before printing** | Checkbox | ✔ active | If active, opens the print preview before sending to the printer. |
-| **Enable multi-cursor (Alt+Click, Ctrl+D)** | Checkbox | ✗ inactive | Enables multi-cursor mode in the editor: Alt+Click adds a cursor, Ctrl+D selects the next occurrence of the selected word. |
+| **Enable directive intellisense (Ctrl+Space)** | Checkbox | ✔ active | Enables automatic suggestion of `{...}` directives while typing. It can also be turned on or off by clicking **Intellisense** in the status bar (see below). |
+| **Enable multi-cursor (Alt+Click, Ctrl+D)** | Checkbox | ✗ inactive | Enables multi-cursor mode in the editor: Alt+Click adds a cursor, Ctrl+D selects the next occurrence of the selected word. It can also be turned on or off by clicking **Multicursor** in the status bar (see below). |
 | **Save window size and position on exit** | Checkbox | ✔ active | If active, saves the size, position and maximised state of the main window on close and restores them on reopen. |
+
+#### Group: Status bar indicators
+
+The status bar at the bottom shows the **Intellisense** and **Multicursor** indicators, each preceded by a coloured dot: a **click** on the name turns the feature on or off immediately, without opening Options, and the state is saved. Hovering shows a tooltip.
+
+| Setting | Type | Default | Description |
+|---|---|---|---|
+| **Dot colour when on** | Colour (#HEX) | `#00AA00` | Dot colour when the feature is active. The **Pick…** button opens the colour picker. |
+| **Dot colour when off** | Colour (#HEX) | `#E53935` | Dot colour when the feature is turned off. |
 
 ---
 

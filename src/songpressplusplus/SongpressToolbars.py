@@ -145,14 +145,38 @@ class SongpressToolbarsMixin:
             wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT))
 
     def _scaledToolbarBitmap(self, image_path):
-        """Carica un'immagine e, se la dimensione toolbar è maggiore,
-        la centra su un canvas trasparente più grande senza riscalare,
-        così l'icona resta nitida pixel-per-pixel."""
-        img = wx.Image(glb.AddPath(image_path))
+        """Carica un'immagine per la toolbar: 16 px originale; 19/21 px centrata
+        su canvas trasparente (nitida); 32 px da img/32 o ingrandita ×2."""
         px = getattr(self.pref, 'toolbarIconPx', 16)
-        if px != 16 and img.IsOk():
-            img = self._padImageToSize(img, px)
+        if px == 32:
+            # Versione pre-renderizzata (img/32/<nome>.png), se presente
+            try:
+                import os
+                d, f = os.path.split(glb.AddPath(image_path))
+                p32 = os.path.join(d, '32', f)
+                if os.path.isfile(p32):
+                    img32 = wx.Image(p32)
+                    if img32.IsOk() and img32.GetWidth() == 32 and img32.GetHeight() == 32:
+                        return wx.Bitmap(img32)
+            except Exception:
+                pass
+        img = wx.Image(glb.AddPath(image_path))
+        if img.IsOk():
+            if px == 32:
+                # fattore intero ×2: nessuna sfocatura
+                img = self._scaleImageToSize(img, px)
+            elif px != 16:
+                # 19/21 px: icona centrata su canvas trasparente, nitida
+                img = self._padImageToSize(img, px)
         return wx.Bitmap(img)
+
+    @staticmethod
+    def _scaleImageToSize(img, px):
+        """Porta un'icona a px×px senza sfuocare: campionamento nearest
+        (nessuna interpolazione), i pixel restano netti."""
+        if img.GetWidth() == px and img.GetHeight() == px:
+            return img
+        return img.Scale(px, px, wx.IMAGE_QUALITY_NEAREST)
 
     @staticmethod
     def _padImageToSize(img, px):
@@ -168,6 +192,31 @@ class SongpressToolbarsMixin:
         canvas.Paste(img, ox, oy)
         return canvas
 
+    def _ResetToolbarPaneSize(self, toolbar):
+        """Azzera i vincoli di dimensione (Best/Min/Max) del pane della toolbar.
+
+        Senza questo reset, dopo un cambio di dimensione icone (es. Grandi ->
+        Piccole) il pane conserva le misure calcolate in precedenza: AUI
+        continua a riservare la larghezza vecchia e le barre restano
+        staccate l'una dall'altra invece di affiancarsi.
+        """
+        pane = self._mgr.GetPane(toolbar)
+        if pane.IsOk():
+            pane.BestSize(wx.Size(-1, -1))
+            pane.MinSize(wx.Size(-1, -1))
+            pane.MaxSize(wx.Size(-1, -1))
+        toolbar.SetMinSize(wx.Size(-1, -1))
+        toolbar.InvalidateBestSize()
+
+    def _ApplyToolbarPaneSize(self, toolbar):
+        """Dopo Realize(): fissa i vincoli del pane alla misura reale."""
+        sz = toolbar.GetMinSize()
+        pane = self._mgr.GetPane(toolbar)
+        if pane.IsOk():
+            pane.BestSize(sz)
+            pane.MaxSize(sz)
+            pane.MinSize(sz)
+
     def _RealizeToolbar(self, toolbar):
         """Realize della toolbar + vincoli di dimensione sul pane.
 
@@ -176,199 +225,112 @@ class SongpressToolbarsMixin:
         _FinalizeToolbarLayout() per evitare layout intermedi incoerenti.
         """
         toolbar.SetGripperVisible(False)
+        self._ResetToolbarPaneSize(toolbar)
         toolbar.Realize()
-        sz = toolbar.GetMinSize()
-        pane = self._mgr.GetPane(toolbar)
-        if pane.IsOk():
-            pane.BestSize(sz)
-            pane.MaxSize(sz)
-            pane.MinSize(sz)
+        self._ApplyToolbarPaneSize(toolbar)
+
+    def _WrapToolbarsToRows(self, bars):
+        """Distribuisce le toolbar agganciate in alto su più righe quando la
+        loro larghezza totale supera quella della finestra.
+
+        - Se non entrano: impacchetta in ordine (riga, posizione) riempiendo
+          ogni riga fino alla larghezza disponibile; le eccedenti vanno su una
+          nuova riga.
+        - Se in precedenza erano state spezzate in automatico e ora entrano
+          di nuovo in una riga sola, le riunisce.
+        - Se l'utente ha disposto le barre a mano e entrano, non tocca nulla.
+        """
+        try:
+            avail = self.frame.GetClientSize().GetWidth()
+        except Exception:
+            return
+        if avail <= 0:
+            return
+        items = []
+        for tb in bars:
+            pane = self._mgr.GetPane(tb)
+            if (pane.IsOk() and pane.IsDocked() and pane.IsShown()
+                    and pane.dock_direction == aui.AUI_DOCK_TOP):
+                items.append((pane.dock_layer, pane.dock_row, pane.dock_pos,
+                              tb.GetMinSize().GetWidth() + 2, pane))
+        if not items:
+            return
+        total = sum(it[3] for it in items)
+        was_wrapped = getattr(self, '_tb_autowrapped', False)
+        if total <= avail and not was_wrapped:
+            return
+        items.sort(key=lambda it: (it[0], it[1], it[2]))
+        layer = items[0][0]
+        base_row = items[0][1]
+        rows = [[]]
+        used = 0
+        for it in items:
+            if rows[-1] and used + it[3] > avail:
+                rows.append([])
+                used = 0
+            rows[-1].append(it)
+            used += it[3]
+        for r, row in enumerate(rows):
+            for i, it in enumerate(row):
+                it[4].Row(base_row + r).Position(i)
+        self._tb_autowrapped = len(rows) > 1
 
     def _FinalizeToolbarLayout(self):
         """Ricalcola il layout di tutte le toolbar con MaxSize = contenuto.
 
         MaxSize impedisce ad AUI di allargare il pane oltre la
         dimensione reale del contenuto → niente spazio bianco.
-        MinSize(1,1) resta basso per consentire l'overflow (»»)
-        quando la finestra è troppo stretta.
+        I vincoli vengono prima azzerati e poi ricalcolati, così dopo un
+        cambio di dimensione icone le barre tornano affiancate.
         """
         # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
         # toolbar non esistono piu', non c'e' layout da ricalcolare.
         if getattr(self, '_mgr', None) is None:
             return
-        if not all(getattr(self, name, None) is not None for name in
-                   ('mainToolBar', 'formatToolBar',
-                    'insertToolBar', 'viewToolBar')):
+        names = ('mainToolBar', 'formatToolBar', 'insertToolBar', 'viewToolBar')
+        if not all(getattr(self, n, None) is not None for n in names):
             return
-        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
-        # toolbar non esistono piu', non c'e' layout da ricalcolare.
-        if getattr(self, '_mgr', None) is None:
-            return
-        if not all(getattr(self, name, None) is not None for name in
-                   ('mainToolBar', 'formatToolBar',
-                    'insertToolBar', 'viewToolBar')):
-            return
-        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
-        # toolbar non esistono piu', non c'e' layout da ricalcolare.
-        if getattr(self, '_mgr', None) is None:
-            return
-        if not all(getattr(self, name, None) is not None for name in
-                   ('mainToolBar', 'formatToolBar',
-                    'insertToolBar', 'viewToolBar')):
-            return
-        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
-        # toolbar non esistono piu', non c'e' layout da ricalcolare.
-        if getattr(self, '_mgr', None) is None:
-            return
-        if not all(getattr(self, name, None) is not None for name in
-                   ('mainToolBar', 'formatToolBar',
-                    'insertToolBar', 'viewToolBar')):
-            return
-        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
-        # toolbar non esistono piu', non c'e' layout da ricalcolare.
-        if getattr(self, '_mgr', None) is None:
-            return
-        if not all(getattr(self, name, None) is not None for name in
-                   ('mainToolBar', 'formatToolBar',
-                    'insertToolBar', 'viewToolBar')):
-            return
-        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
-        # toolbar non esistono piu', non c'e' layout da ricalcolare.
-        if getattr(self, '_mgr', None) is None:
-            return
-        if not all(getattr(self, name, None) is not None for name in
-                   ('mainToolBar', 'formatToolBar',
-                    'insertToolBar', 'viewToolBar')):
-            return
-        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
-        # toolbar non esistono piu', non c'e' layout da ricalcolare.
-        if getattr(self, '_mgr', None) is None:
-            return
-        if not all(getattr(self, name, None) is not None for name in
-                   ('mainToolBar', 'formatToolBar',
-                    'insertToolBar', 'viewToolBar')):
-            return
-        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
-        # toolbar non esistono piu', non c'e' layout da ricalcolare.
-        if getattr(self, '_mgr', None) is None:
-            return
-        if not all(getattr(self, name, None) is not None for name in
-                   ('mainToolBar', 'formatToolBar',
-                    'insertToolBar', 'viewToolBar')):
-            return
-        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
-        # toolbar non esistono piu', non c'e' layout da ricalcolare.
-        if getattr(self, '_mgr', None) is None:
-            return
-        if not all(getattr(self, name, None) is not None for name in
-                   ('mainToolBar', 'formatToolBar',
-                    'insertToolBar', 'viewToolBar')):
-            return
-        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
-        # toolbar non esistono piu', non c'e' layout da ricalcolare.
-        if getattr(self, '_mgr', None) is None:
-            return
-        if not all(getattr(self, name, None) is not None for name in
-                   ('mainToolBar', 'formatToolBar',
-                    'insertToolBar', 'viewToolBar')):
-            return
-        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
-        # toolbar non esistono piu', non c'e' layout da ricalcolare.
-        if getattr(self, '_mgr', None) is None:
-            return
-        if not all(getattr(self, name, None) is not None for name in
-                   ('mainToolBar', 'formatToolBar',
-                    'insertToolBar', 'viewToolBar')):
-            return
-        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
-        # toolbar non esistono piu', non c'e' layout da ricalcolare.
-        if getattr(self, '_mgr', None) is None:
-            return
-        if not all(getattr(self, name, None) is not None for name in
-                   ('mainToolBar', 'formatToolBar',
-                    'insertToolBar', 'viewToolBar')):
-            return
-        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
-        # toolbar non esistono piu', non c'e' layout da ricalcolare.
-        if getattr(self, '_mgr', None) is None:
-            return
-        if not all(getattr(self, name, None) is not None for name in
-                   ('mainToolBar', 'formatToolBar',
-                    'insertToolBar', 'viewToolBar')):
-            return
-        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
-        # toolbar non esistono piu', non c'e' layout da ricalcolare.
-        if getattr(self, '_mgr', None) is None:
-            return
-        if not all(getattr(self, name, None) is not None for name in
-                   ('mainToolBar', 'formatToolBar',
-                    'insertToolBar', 'viewToolBar')):
-            return
-        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
-        # toolbar non esistono piu', non c'e' layout da ricalcolare.
-        if getattr(self, '_mgr', None) is None:
-            return
-        if not all(getattr(self, name, None) is not None for name in
-                   ('mainToolBar', 'formatToolBar',
-                    'insertToolBar', 'viewToolBar')):
-            return
-        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
-        # toolbar non esistono piu', non c'e' layout da ricalcolare.
-        if getattr(self, '_mgr', None) is None:
-            return
-        if not all(getattr(self, name, None) is not None for name in
-                   ('mainToolBar', 'formatToolBar',
-                    'insertToolBar', 'viewToolBar')):
-            return
-        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
-        # toolbar non esistono piu', non c'e' layout da ricalcolare.
-        if getattr(self, '_mgr', None) is None:
-            return
-        if not all(getattr(self, name, None) is not None for name in
-                   ('mainToolBar', 'formatToolBar',
-                    'insertToolBar', 'viewToolBar')):
-            return
-        # Se l'AUI manager e' gia' stato smontato (chiusura/riavvio) o le
-        # toolbar non esistono piu', non c'e' layout da ricalcolare.
-        if getattr(self, '_mgr', None) is None:
-            return
-        if not all(getattr(self, name, None) is not None for name in
-                   ('mainToolBar', 'formatToolBar',
-                    'insertToolBar', 'viewToolBar')):
-            return
+        bars = [getattr(self, n) for n in names]
         self._tb_finalizing = True
         try:
-            for tb in (self.mainToolBar, self.formatToolBar,
-                       self.insertToolBar, self.viewToolBar):
+            # 1) azzera i vincoli vecchi su tutti i pane
+            for tb in bars:
                 tb.SetGripperVisible(False)
-                tb.Realize()
-                sz = tb.GetMinSize()
+                self._ResetToolbarPaneSize(tb)
+            # 1b) rinumera dock_pos in modo consecutivo (stesso ordine):
+            #     offset in pixel residui dal layout precedente lasciano
+            #     spazi vuoti tra le barre sulla stessa riga.
+            rows = {}
+            for tb in bars:
                 pane = self._mgr.GetPane(tb)
-                if pane.IsOk():
-                    pane.BestSize(sz)
-                    pane.MaxSize(sz)
-                    pane.MinSize(sz)
+                if pane.IsOk() and pane.IsDocked():
+                    key = (pane.dock_direction, pane.dock_layer, pane.dock_row)
+                    rows.setdefault(key, []).append(pane)
+            for panes in rows.values():
+                panes.sort(key=lambda pn: pn.dock_pos)
+                for i, pn in enumerate(panes):
+                    pn.Position(i)
+            # 2) ricalcola la misura reale e reimposta i vincoli
+            for tb in bars:
+                tb.Realize()
+                self._ApplyToolbarPaneSize(tb)
+            # 3) se le barre non entrano in una riga (icone grandi) vanno
+            #    su più righe, altrimenti AUI ne nasconde alcune
+            self._WrapToolbarsToRows(bars)
             self._mgr.DoUpdate()
             # DoUpdate → SwitchToolBarOrientation forza
             # SetGripperVisible(True) sulle toolbar: resettiamo
             # subito perché il pane ha Gripper(False) e AUI non
             # riserva spazio per il gripper nel layout.
-            for tb in (self.mainToolBar, self.formatToolBar,
-                       self.insertToolBar, self.viewToolBar):
+            for tb in bars:
                 tb.SetGripperVisible(False)
             self.frame.SendSizeEvent()
 
             # Windows: dopo un rebuild i vecchi StaticBitmap (icone font,
-            # accordi) vengono distrutti e ricreati; la zona che occupavano
-            # non viene invalidata, così i pixel della vecchia icona restano
-            # come "fantasma" (icona doppia) finché un WM_PAINT — tipicamente
-            # il passaggio del mouse — non ridisegna quell'area. Forziamo qui
-            # un erase+repaint pulito di ogni toolbar e dei suoi controlli
-            # figli, eliminando il fantasma senza bisogno dell'hover.
-            # È un problema specifico di wxMSW: su GTK/macOS non serve.
+            # accordi) vengono distrutti e ricreati; forziamo un
+            # erase+repaint pulito per eliminare l'icona "fantasma".
             if wx.Platform == '__WXMSW__':
-                for tb in (self.mainToolBar, self.formatToolBar,
-                           self.insertToolBar, self.viewToolBar):
+                for tb in bars:
                     tb.Refresh(eraseBackground=True)
                     for child in tb.GetChildren():
                         child.Refresh()
@@ -686,6 +648,7 @@ class SongpressToolbarsMixin:
         ('insertArtist',                      _(u'Artist'),                                             'tb_artist'),
         ('insertComposer',                    _(u'Composer'),                                           'tb_composer'),
         ('insertAlbum',                       _(u'Album'),                                              'tb_album'),
+        ('insertCopyright',                   _(u'Copyright'),                                          'tb_copyright'),
         ('chord',                             _(u'Chord...'),                                           'tb_chord'),
         ('verseWithCustomLabelOrWithoutLabel',_(u'Verse with custom label or without label...'),        'tb_verse'),
         ('comment',                           _(u'Comment...'),                                         'tb_comment'),
@@ -771,6 +734,7 @@ class SongpressToolbarsMixin:
             'insertArtist':                      'img/artist.png',
             'insertComposer':                    'img/composer.png',
             'insertAlbum':                       'img/album.png',
+            'insertCopyright':                   'img/copyright.png',
             'chord':                             'img/chord.png',
             'verseWithCustomLabelOrWithoutLabel':'img/verse.png',
             'comment':                           'img/comment.png',
@@ -800,6 +764,7 @@ class SongpressToolbarsMixin:
             'insertArtist':                      _(u"Insert a command to display the song artist"),
             'insertComposer':                    _(u"Insert a command to display the song composer"),
             'insertAlbum':                       _(u"Insert a command to display the song album"),
+            'insertCopyright':                   _(u"Insert a command to display the song copyright"),
             'chord':                             _(u"Insert square brackets that will contain a chord"),
             'verseWithCustomLabelOrWithoutLabel':_(u"Insert a verse with a custom label or without label"),
             'comment':                           _(u"Insert a command to display a comment"),

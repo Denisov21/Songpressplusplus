@@ -171,7 +171,7 @@ class PreviewCanvas(object):
                 self._load_refresh_bitmap(16),
                 style=wx.BORDER_NONE,
             )
-            btn_refresh.SetToolTip(_("Refresh preview"))
+            btn_refresh.SetToolTip(_("Refresh Songpress++ Page"))
             tb_sizer.Add(btn_refresh, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 2)
 
             tb_sizer.Add(wx.StaticLine(toolbar, style=wx.LI_VERTICAL), 0,

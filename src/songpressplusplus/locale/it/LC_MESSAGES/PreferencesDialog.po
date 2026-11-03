@@ -207,9 +207,6 @@ msgstr "Colore cursore"
 msgid "Center"
 msgstr "Centro"
 
-msgid "Check for updates every"
-msgstr "Verifica disponibilità di aggiornamenti ogni"
-
 msgid "Chord arrow position"
 msgstr "Posizione freccia accordo"
 
@@ -825,6 +822,12 @@ msgstr "Usa le icone immagine caricate da img/checked_box.png e img/not_checked_
 msgid "Verse number box thickness"
 msgstr "Spessore bordo numero strofa"
 
+msgid "Very large (32×32)"
+msgstr "Molto grandi (32×32)"
+
+msgid "Very large toolbar icon size (32×32 pixels, 2× larger)."
+msgstr "Icone molto grandi nella barra degli strumenti (32×32 pixel, 2× più grandi)."
+
 msgid "When 'No chords' is selected, also hide:"
 msgstr "Quando è selezionato 'Nessun accordo', nascondi anche:"
 
@@ -943,3 +946,12 @@ msgstr "Apri sempre i file in sola lettura"
 
 msgid "When enabled, songs are opened read-only to prevent accidental edits; use Edit > Read only to unlock them. Files that are not writable are always opened read-only."
 msgstr "Se attivo, i brani vengono aperti in sola lettura per evitare modifiche accidentali; usa Modifica > Sola lettura per sbloccarli. I file non scrivibili vengono sempre aperti in sola lettura."
+
+msgid "Dot colour when on"
+msgstr "Colore del pallino se attivo"
+
+msgid "Dot colour when off"
+msgstr "Colore del pallino se disattivo"
+
+msgid "Status bar indicators"
+msgstr "Indicatori barra di stato"

@@ -15,6 +15,9 @@
 #   - Connessione a Internet (scarica le dipendenze pure-Python da PyPI e gli
 #     strumenti appimagetool/linuxdeploy/plugin-gtk da GitHub).
 #   - ImageMagick (facoltativo, per ridimensionare l'icona .ico → .png).
+#   - Il font Noto Color Emoji (Debian/Ubuntu: fonts-noto-color-emoji): viene
+#     copiato dentro l'AppImage così le emoji si vedono anche sugli host che
+#     non lo hanno. Se manca sul sistema di build l'AppImage si fa lo stesso.
 #
 # Cosa fa lo script:
 #   1. Legge nome e versione dal pyproject.toml
@@ -466,6 +469,28 @@ cat > "$APPDIR/usr/share/metainfo/${APP_ID}.metainfo.xml" <<METAINFO
 </component>
 METAINFO
 
+# ── 5a. Font Noto Color Emoji impacchettato (best-effort) ─────────
+# L'AppImage non puo' contare sui font dell'host: copiamo qui il font emoji a
+# colori. In AppRun un fonts.conf temporaneo lo aggiunge a quelli di sistema.
+bmsg "$OK Bundling Noto Color Emoji font (best-effort)..." \
+     "$OK Impacchettamento del font Noto Color Emoji (best-effort)..."
+EMOJI_TTF=""
+for _d in /usr/share/fonts /usr/local/share/fonts "$HOME/.local/share/fonts" "$HOME/.fonts"; do
+    [[ -d "$_d" ]] || continue
+    EMOJI_TTF="$(find "$_d" -type f \( -iname 'NotoColorEmoji*.ttf' -o -iname 'Noto-COLRv1.ttf' \) 2>/dev/null | head -n1 || true)"
+    [[ -n "$EMOJI_TTF" ]] && break
+done
+if [[ -n "$EMOJI_TTF" ]]; then
+    mkdir -p "$APPDIR/usr/share/fonts/truetype/noto"
+    cp "$EMOJI_TTF" "$APPDIR/usr/share/fonts/truetype/noto/"
+    echo "    Font: $EMOJI_TTF"
+else
+    bmsg "$WARN Noto Color Emoji not found on the build host: not bundled." \
+         "$WARN Noto Color Emoji non trovato sull'host di build: non incluso."
+    bmsg "    Install it with: sudo apt install fonts-noto-color-emoji" \
+         "    Installalo con: sudo apt install fonts-noto-color-emoji"
+fi
+
 # ── 5b. xdg-open impacchettato (best-effort) ──────────────────
 # L'app usa xdg-open per aprire file/cartelle con l'applicazione predefinita
 # del desktop (es. "Apri cartella template", apertura del PDF esportato).
@@ -524,6 +549,20 @@ export LD_LIBRARY_PATH="\$APPDIR/usr/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
 # dell'host (se presente) ha la precedenza e usa i suoi helper (gio, kde-open).
 if [ -d "\$APPDIR/usr/xdg-shim" ]; then
     export PATH="\$PATH:\$APPDIR/usr/xdg-shim"
+fi
+
+# Font impacchettati (Noto Color Emoji): fonts.conf temporaneo che include la
+# configurazione di sistema e aggiunge la cartella dei font dell'AppImage.
+if [ -d "\$APPDIR/usr/share/fonts" ]; then
+    SPP_FC="\${XDG_RUNTIME_DIR:-/tmp}/songpress-fonts-\$\$.conf"
+    {
+        echo '<?xml version="1.0"?>'
+        echo '<!DOCTYPE fontconfig SYSTEM "fonts.dtd">'
+        echo '<fontconfig>'
+        echo '  <include ignore_missing="yes">/etc/fonts/fonts.conf</include>'
+        echo "  <dir>\$APPDIR/usr/share/fonts</dir>"
+        echo '</fontconfig>'
+    } > "\$SPP_FC" 2>/dev/null && export FONTCONFIG_FILE="\$SPP_FC"
 fi
 
 # wxPython/Wayland: forza il backend X11 (XWayland). Dopo gli hook, così vince.

@@ -1113,8 +1113,18 @@ Un'area di anteprima live mostra in tempo reale come appare il testo con le impo
 |---|---|---|---|
 | **Cancella file recenti** | Bottone | — | Cancella immediatamente la lista dei file aperti di recente dal menu File. |
 | **Mostra anteprima di stampa prima di stampare** | Checkbox | ✔ attivo | Se attivo, apre l'anteprima di stampa prima di inviare alla stampante. |
-| **Abilita multi-cursore (Alt+Clic, Ctrl+D)** | Checkbox | ✗ disattivo | Abilita la modalità multi-cursore nell'editor: Alt+Click aggiunge un cursore, Ctrl+D seleziona la prossima occorrenza della parola selezionata. |
+| **Abilita intellisense direttive (Ctrl+Spazio)** | Checkbox | ✔ attivo | Abilita il suggerimento automatico delle direttive `{...}` durante la digitazione. Si può attivare o disattivare anche con un clic su **Intellisense** nella barra di stato (vedi sotto). |
+| **Abilita multi-cursore (Alt+Clic, Ctrl+D)** | Checkbox | ✗ disattivo | Abilita la modalità multi-cursore nell'editor: Alt+Click aggiunge un cursore, Ctrl+D seleziona la prossima occorrenza della parola selezionata. Si può attivare o disattivare anche con un clic su **Multicursore** nella barra di stato (vedi sotto). |
 | **Salva dimensione e posizione finestra all'uscita** | Checkbox | ✔ attivo | Se attivo, memorizza dimensione, posizione e stato massimizzato della finestra principale alla chiusura e le ripristina alla riapertura. |
+
+#### Gruppo: Indicatori barra di stato
+
+Nella barra di stato, in basso, compaiono gli indicatori **Intellisense** e **Multicursore**, ciascuno preceduto da un pallino colorato: un **clic** sul nome li attiva o disattiva subito, senza aprire le Opzioni, e lo stato viene salvato. Il passaggio del mouse mostra un suggerimento.
+
+| Impostazione | Tipo | Default | Descrizione |
+|---|---|---|---|
+| **Colore del pallino se attivo** | Colore (#HEX) | `#00AA00` | Colore del pallino quando la funzione è attiva. Il bottone **Pick…** apre il selettore colori. |
+| **Colore del pallino se disattivo** | Colore (#HEX) | `#E53935` | Colore del pallino quando la funzione è disattivata. |
 
 ---
 

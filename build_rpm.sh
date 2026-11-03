@@ -288,6 +288,7 @@ REQ
 Recommends:     wl-clipboard
 Recommends:     myspell-it_IT
 Recommends:     myspell-en_US
+Recommends:     noto-coloremoji-fonts
 REC
 )
     SUGGESTS=$(cat <<'SUG'
@@ -318,6 +319,7 @@ REQ
 Recommends:     wl-clipboard
 Recommends:     hunspell-it
 Recommends:     hunspell-en
+Recommends:     google-noto-color-emoji-fonts
 REC
 )
     # Righello a schermo (F9): cattura dello schermo su Wayland. Su GNOME e

@@ -365,7 +365,10 @@ class PreferencesDialog(wx.Dialog):
         self.tbIconSizeLarge.SetToolTip(_(u"Large toolbar icon size (21×21 pixels, 1.3× larger)."))
         bSizerTbIconSize.Add(self.tbIconSizeSmall, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         bSizerTbIconSize.Add(self.tbIconSizeMedium, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        bSizerTbIconSize.Add(self.tbIconSizeLarge, 0, wx.ALIGN_CENTER_VERTICAL)
+        self.tbIconSizeXLarge = wx.RadioButton(_boxGeneral, wx.ID_ANY, _(u"Very large (32×32)"))
+        self.tbIconSizeXLarge.SetToolTip(_(u"Very large toolbar icon size (32×32 pixels, 2× larger)."))
+        bSizerTbIconSize.Add(self.tbIconSizeLarge, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        bSizerTbIconSize.Add(self.tbIconSizeXLarge, 0, wx.ALIGN_CENTER_VERTICAL)
         grpGeneral.Add(bSizerTbIconSize, 0, wx.EXPAND | wx.ALL, 5)
 
         # ── Icona finestra "Verifica dipendenze" ─────────────────────
@@ -383,6 +386,31 @@ class PreferencesDialog(wx.Dialog):
 
 
         bSizer11b.Add(grpGeneral, 0, wx.EXPAND | wx.ALL, 8)
+
+        # ── Gruppo "Indicatori barra di stato" ────────────────────────
+        _boxStatus = wx.StaticBox(self.general2, wx.ID_ANY, _(u"Status bar indicators"))
+        grpStatus = wx.StaticBoxSizer(_boxStatus, wx.VERTICAL)
+
+        # Colori dei pallini degli indicatori Intellisense / Multicursore
+        for _attr, _label, _default in (
+                ('statusDotOn',  _(u"Dot colour when on"),  u"#00AA00"),
+                ('statusDotOff', _(u"Dot colour when off"), u"#E53935")):
+            _row = wx.BoxSizer(wx.HORIZONTAL)
+            _lbl = wx.StaticText(_boxStatus, wx.ID_ANY, _label, wx.DefaultPosition, wx.DefaultSize, 0)
+            _lbl.Wrap(-1)
+            _row.Add(_lbl, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+            _hex = wx.TextCtrl(_boxStatus, wx.ID_ANY, _default, wx.DefaultPosition, wx.Size(80, -1), 0)
+            _row.Add(_hex, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+            _btn = wx.Button(_boxStatus, wx.ID_ANY, _(u"Pick…"), wx.DefaultPosition, wx.Size(60, -1), 0)
+            _row.Add(_btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+            _sw = wx.Panel(_boxStatus, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
+            _row.Add(_sw, 0, wx.ALIGN_CENTER_VERTICAL)
+            grpStatus.Add(_row, 0, wx.EXPAND | wx.ALL, 5)
+            setattr(self, _attr + 'HexCtrl', _hex)
+            setattr(self, _attr + 'Btn', _btn)
+            setattr(self, _attr + 'Swatch', _sw)
+
+        bSizer11b.Add(grpStatus, 0, wx.EXPAND | wx.ALL, 8)
 
         # ── Gruppo "Righello a schermo" ───────────────────────────────
         _boxRuler = wx.StaticBox(self.general2, wx.ID_ANY, _(u"Screen ruler"))
@@ -1353,6 +1381,10 @@ class PreferencesDialog(wx.Dialog):
         self.selColourHexCtrl.Bind(wx.EVT_TEXT, self.OnSelColourHexChanged)
         self.caretColourBtn.Bind(wx.EVT_BUTTON, self.OnCaretColourPickColour)
         self.caretColourHexCtrl.Bind(wx.EVT_TEXT, self.OnCaretColourHexChanged)
+        self.statusDotOnBtn.Bind(wx.EVT_BUTTON, self.OnStatusDotOnPickColour)
+        self.statusDotOnHexCtrl.Bind(wx.EVT_TEXT, self.OnStatusDotOnHexChanged)
+        self.statusDotOffBtn.Bind(wx.EVT_BUTTON, self.OnStatusDotOffPickColour)
+        self.statusDotOffHexCtrl.Bind(wx.EVT_TEXT, self.OnStatusDotOffHexChanged)
 
         self.capEditorBtn.Bind(wx.EVT_BUTTON, self.OnCapEditorPickColour)
         self.capEditorHexCtrl.Bind(wx.EVT_TEXT, self.OnCapEditorHexChanged)
@@ -1729,6 +1761,18 @@ class PreferencesDialog(wx.Dialog):
         event.Skip()
 
     def OnSelColourPickColour(self, event):
+        event.Skip()
+
+    def OnStatusDotOnHexChanged(self, event):
+        event.Skip()
+
+    def OnStatusDotOnPickColour(self, event):
+        event.Skip()
+
+    def OnStatusDotOffHexChanged(self, event):
+        event.Skip()
+
+    def OnStatusDotOffPickColour(self, event):
         event.Skip()
 
     def OnCaretColourHexChanged(self, event):

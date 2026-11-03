@@ -225,7 +225,10 @@ python3-pypdf, python3-pil, python3-enchant, python3-docx, xdg-utils"
 #     Sono solo "consigliati": l'app può scaricare altri dizionari da sola
 #     (Opzioni ortografia → Installa dizionari...), ma averli di sistema dà
 #     subito italiano e inglese senza download.
-RECOMMENDS="wl-clipboard, hunspell-it, hunspell-en-us"
+#   - fonts-noto-color-emoji → font emoji a colori (Noto Color Emoji): serve a
+#     mostrare correttamente gli eventuali simboli/emoji nell'interfaccia e nei
+#     testi. Se manca, GTK mostra un quadratino vuoto al posto dell'emoji.
+RECOMMENDS="wl-clipboard, hunspell-it, hunspell-en-us, fonts-noto-color-emoji"
 
 # Dipendenze suggerite (NON installate automaticamente da apt):
 #   - gnome-screenshot | kde-spectacle | grim → usati dal Righello a schermo

@@ -4944,8 +4944,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         dlg.Destroy()
 
     def OnInsertCopyright(self, evt):
-        """Inserisce la direttiva {copyright: <testo>}."""
-        self._InsertSimpleDirective('copyright', _(u"Enter the copyright text:"), u"")
+        """Inserisce {copyright:|} (come artista/compositore/album, senza finestra);
+        se il cursore e' gia' dentro {copyright:...} ne seleziona il valore."""
+        self._InsertOrSelectDirective(('copyright',), "{copyright:|}")
 
     def OnInsertKlavierChord(self, evt):
         """Inserts the {taste:<chord>} directive for a chord keyboard display (klavier)."""
@@ -6553,14 +6554,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
     def AddTool(self, toolbar, resource_string, icon_path, label, help):
         tool = wx.xrc.XRCID(resource_string)
-        img = wx.Image(glb.AddPath(icon_path))
-        px = getattr(self.pref, 'toolbarIconPx', 16)
-        if px != 16 and img.IsOk():
-            img = self._padImageToSize(img, px)
+        bmp = self._scaledToolbarBitmap(icon_path)
         toolbar.AddTool(
             tool,
             label,
-            wx.Bitmap(img),
+            bmp,
             wx.NullBitmap,
             wx.ITEM_NORMAL,
             label,
@@ -8642,18 +8640,125 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         if self.statusBar:
             self.statusBar.SetStatusText("")
 
+    # Indicatori cliccabili nel campo 1 della status bar. Il testo e' della
+    # status bar; il pallino colorato (verde brillante = attivo, rosso =
+    # disattivo) e' una piccola immagine con trasparenza posta accanto.
+    _SB_LEAD = u"  "
+    _SB_SEP = u"   "
+    # default; l'utente li sceglie in Opzioni (pref.statusDotOnHex / statusDotOffHex)
+    _SB_DOT_ON = (0, 170, 0)        # verde
+    _SB_DOT_OFF = (229, 57, 53)     # rosso
+
+    def _SbDotSize(self):
+        return max(8, int(self.statusBar.GetCharHeight() * 0.6))
+
+    def _SbDotBitmap(self, on):
+        cache = getattr(self, '_sbDotBmps', None)
+        d = self._SbDotSize()
+        if cache is None or cache.get('d') != d:
+            cache = self._sbDotBmps = {'d': d}
+        default = self._SB_DOT_ON if on else self._SB_DOT_OFF
+        hx = (getattr(self.pref, 'statusDotOnHex' if on else 'statusDotOffHex', '') or '').strip().lstrip('#')
+        try:
+            rgb = (int(hx[0:2], 16), int(hx[2:4], 16), int(hx[4:6], 16)) if len(hx) == 6 else default
+        except ValueError:
+            rgb = default
+        key = (on, rgb)
+        if key not in cache:
+            r, g, b = rgb
+            c = (d - 1) / 2.0
+            rad = d / 2.0 - 0.5
+            buf = bytearray(d * d * 4)
+            for y in range(d):
+                for x in range(d):
+                    dist = ((x - c) ** 2 + (y - c) ** 2) ** 0.5
+                    al = max(0.0, min(1.0, rad + 0.5 - dist))
+                    i = (y * d + x) * 4
+                    buf[i:i + 4] = bytes((r, g, b, int(al * 255)))
+            cache[key] = wx.Bitmap.FromBufferRGBA(d, d, bytes(buf))
+        return cache[key]
+
+    def _SbLayout(self):
+        """Ritorna (testo del campo 1, [x dei due pallini], x del confine tra
+        le due voci), con x relative al testo. Lo spazio per il pallino e'
+        riservato con spazi davanti a ogni voce."""
+        sb = self.statusBar
+        dc = wx.ClientDC(sb)
+        dc.SetFont(sb.GetFont())
+        ext = lambda t: dc.GetTextExtent(t)[0]
+        sp = max(1, ext(u" "))
+        pad = u" " * (-(-(self._SbDotSize() + 4) // sp))
+        first = self._SB_LEAD + pad + _(u"Intellisense")
+        text = first + self._SB_SEP + pad + _(u"Multicursor")
+        dots = [ext(self._SB_LEAD), ext(first + self._SB_SEP)]
+        boundary = ext(first) + ext(self._SB_SEP) // 2
+        return text, dots, boundary
+
     def _UpdateStatusIndicators(self):
-        """Aggiorna il campo 1 della status bar con gli indicatori Intellisense/Multicursore."""
-        if not self.statusBar:
+        """Aggiorna il campo 1 della status bar con gli indicatori Intellisense/Multicursore.
+        Sono sempre visibili e un clic li attiva/disattiva."""
+        sb = self.statusBar
+        if not sb:
             return
-        parts = []
-        if getattr(self.pref, 'intellisense', True):
-            parts.append(_(u"Intellisense"))
-        if getattr(self.pref, 'multiCursor', False):
-            parts.append(_(u"Multicursor"))
-        text = (u"  ● " + u"  ● ".join(parts)) if parts else u""
+        if getattr(self, '_sbDots', None) is None:
+            self._sbDots = []
+            tip = _("Click Intellisense or Multicursor to turn it on or off")
+            for i in range(2):
+                ctrl = wx.StaticBitmap(sb, wx.ID_ANY, self._SbDotBitmap(True))
+                ctrl.SetToolTip(tip)
+                ctrl.Bind(wx.EVT_LEFT_DOWN, lambda e, i=i: self._ToggleStatusOption(i))
+                self._sbDots.append(ctrl)
+            sb.Bind(wx.EVT_LEFT_DOWN, self._OnStatusBarClick)
+            sb.Bind(wx.EVT_SIZE, self._OnStatusDotsSize)
+            sb.SetToolTip(tip)
+        states = (bool(getattr(self.pref, 'intellisense', True)),
+                  bool(getattr(self.pref, 'multiCursor', False)))
+        for ctrl, on in zip(self._sbDots, states):
+            ctrl.SetBitmap(self._SbDotBitmap(on))
+        text = self._SbLayout()[0]
         self._ResizeStatusFields(text)
-        self.statusBar.SetStatusText(text, 1)
+        sb.SetStatusText(text, 1)
+        self._PlaceStatusDots()
+
+    def _PlaceStatusDots(self):
+        dots = getattr(self, '_sbDots', None)
+        sb = self.statusBar
+        if not dots or not sb or sb.GetFieldsCount() < 2:
+            return
+        r = sb.GetFieldRect(1)
+        if r.width <= 0:
+            for ctrl in dots:
+                ctrl.Hide()
+            return
+        d = self._SbDotSize()
+        for ctrl, x in zip(dots, self._SbLayout()[1]):
+            ctrl.SetPosition((r.x + 3 + x, r.y + (r.height - d) // 2))
+            ctrl.Show()
+
+    def _OnStatusDotsSize(self, evt):
+        evt.Skip()
+        wx.CallAfter(self._PlaceStatusDots)
+
+    def _OnStatusBarClick(self, evt):
+        evt.Skip()
+        sb = self.statusBar
+        if not sb or sb.GetFieldsCount() < 2:
+            return
+        r = sb.GetFieldRect(1)
+        pos = evt.GetPosition()
+        if not r.Contains(pos):
+            return
+        self._ToggleStatusOption(0 if pos.x < r.x + 3 + self._SbLayout()[2] else 1)
+
+    def _ToggleStatusOption(self, which):
+        """Inverte Intellisense (0) o Multicursore (1) e salva subito la scelta."""
+        if which == 0:
+            self.pref.intellisense = not getattr(self.pref, 'intellisense', True)
+        else:
+            self.pref.multiCursor = not getattr(self.pref, 'multiCursor', False)
+            self.text.ApplyMultiCursor(self.pref.multiCursor)
+        self.pref.SaveEditorToggles()
+        self._UpdateStatusIndicators()
 
     def _ResizeStatusFields(self, text=None):
         """Adatta le larghezze dei campi fissi della status bar al testo
@@ -8672,6 +8777,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         w3 = 28 if (txt is not None and txt.GetReadOnly()) else 0   # lucchetto
         self.statusBar.SetStatusWidths([-1, w1, w2, w3])
         self._PlaceLockIcon()
+        self._PlaceStatusDots()
 
     def _UpdateStatusLock(self, ro):
         """Mostra/nasconde il lucchetto nel 4o campo della status bar."""

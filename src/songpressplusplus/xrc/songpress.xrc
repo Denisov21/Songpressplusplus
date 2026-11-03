@@ -395,6 +395,12 @@
           <bitmap>../img/album.png</bitmap>
           <help>Insert a command to display the album of the song</help>
         </object>
+        <object class="wxMenuItem" name="insertCopyright">
+          <label>Cop_yright</label>
+          <accel></accel>
+          <bitmap>../img/copyright.png</bitmap>
+          <help>Insert a command to display the copyright of the song</help>
+        </object>
         <object class="wxMenuItem" name="comment">
           <label>Co_mment...</label>
           <accel>CTRL+M</accel>

@@ -215,6 +215,7 @@ class Preferences(object):
         self._LoadChordUppercase()
         self._LoadDepIconMode()
         self._LoadRulerModeButtons()
+        self._LoadStatusDotColours()
 
     def _LoadKlavierColour(self):
         self.config.SetPath('/KlavierColour')
@@ -473,6 +474,7 @@ class Preferences(object):
         self._SaveChordUppercase()
         self._SaveDepIconMode()
         self._SaveRulerModeButtons()
+        self._SaveStatusDotColours()
         self.config.Flush()
 
     def _SaveKlavierColour(self):
@@ -614,6 +616,44 @@ class Preferences(object):
         self.config.SetPath('/App')
         self.config.Write('depIconMode', getattr(self, 'depIconMode', 'native'))
         self.config.SetPath('/')
+
+    STATUS_DOT_ON_DEFAULT = '#00AA00'     # verde
+    STATUS_DOT_OFF_DEFAULT = '#E53935'    # rosso
+
+    @staticmethod
+    def _ValidHex(v, default):
+        v = (v or '').strip()
+        if len(v) == 7 and v[0] == '#':
+            try:
+                int(v[1:], 16)
+                return v.upper()
+            except ValueError:
+                pass
+        return default
+
+    def _LoadStatusDotColours(self):
+        """Colori dei pallini Intellisense/Multicursore nella barra di stato."""
+        self.config.SetPath('/Editor')
+        self.statusDotOnHex = self._ValidHex(self.config.Read('statusDotOnHex'),
+                                             self.STATUS_DOT_ON_DEFAULT)
+        self.statusDotOffHex = self._ValidHex(self.config.Read('statusDotOffHex'),
+                                              self.STATUS_DOT_OFF_DEFAULT)
+        self.config.SetPath('/')
+
+    def _SaveStatusDotColours(self):
+        self.config.SetPath('/Editor')
+        self.config.Write('statusDotOnHex', self._ValidHex(
+            getattr(self, 'statusDotOnHex', ''), self.STATUS_DOT_ON_DEFAULT))
+        self.config.Write('statusDotOffHex', self._ValidHex(
+            getattr(self, 'statusDotOffHex', ''), self.STATUS_DOT_OFF_DEFAULT))
+        self.config.SetPath('/')
+
+    def SaveEditorToggles(self):
+        """Salva subito Intellisense e Multicursore (cambiati dalla status bar,
+        fuori dal dialogo Opzioni). Stesse chiavi di _SaveIntellisense/_SaveMultiCursor."""
+        self._SaveIntellisense()
+        self._SaveMultiCursor()
+        self.config.Flush()
 
     def _LoadRulerModeButtons(self):
         """Pulsanti delle modalita' del Righello a schermo (Riquadro,
@@ -984,6 +1024,7 @@ class Preferences(object):
         self.tb_artist              = _rb('tb_artist')
         self.tb_composer            = _rb('tb_composer')
         self.tb_album               = _rb('tb_album')
+        self.tb_copyright           = _rb('tb_copyright')
         self.tb_chord               = _rb('tb_chord')
         self.tb_chorus              = _rb('tb_chorus')
         self.tb_verse               = _rb('tb_verse')
@@ -1027,7 +1068,7 @@ class Preferences(object):
         _w('tbv_preview'); _w('tbv_labelVerses')
         # Insert toolbar
         _w('tb_title');             _w('tb_subtitle')
-        _w('tb_artist');            _w('tb_composer');          _w('tb_album')
+        _w('tb_artist');            _w('tb_composer');          _w('tb_album');             _w('tb_copyright')
         _w('tb_chord');             _w('tb_chorus')
         _w('tb_verse');             _w('tb_comment')
         _w('tb_pageBreak');         _w('tb_columnBreak')
@@ -1044,10 +1085,10 @@ class Preferences(object):
         self.config.SetPath('/')
 
     def _LoadToolbarIconSize(self):
-        """Carica la dimensione delle icone toolbar: 'small' (16px), 'medium' (19px) o 'large' (21px)."""
+        """Carica la dimensione delle icone toolbar: 'small' (16px), 'medium' (19px), 'large' (21px) o 'xlarge' (32px)."""
         self.config.SetPath('/ToolbarVis')
         v = self.config.Read('toolbarIconSize')
-        self.toolbarIconSize = v if v in ('small', 'medium', 'large') else 'small'
+        self.toolbarIconSize = v if v in ('small', 'medium', 'large', 'xlarge') else 'small'
         self.config.SetPath('/')
 
     def _SaveToolbarIconSize(self):
@@ -1063,6 +1104,8 @@ class Preferences(object):
             return 19
         if sz == 'large':
             return 21
+        if sz == 'xlarge':
+            return 32
         return 16
 
     def SanitizeFilename(self, path):
