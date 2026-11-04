@@ -144,10 +144,33 @@ class SongpressToolbarsMixin:
         slider.SetForegroundColour(
             wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT))
 
+    def _vectorToolbarBitmap(self, image_path, px):
+        """Rasterizza a px×px l'icona vettoriale img/vector/<nome>.svg, se
+        esiste (stesso nome del PNG). Restituisce None se manca o non e'
+        utilizzabile: il chiamante ripiega sul PNG."""
+        try:
+            import os
+            stem = os.path.splitext(os.path.basename(image_path))[0]
+            svg = glb.AddPath(os.path.join('img', 'vector', stem + '.svg'))
+            if not os.path.isfile(svg):
+                return None
+            bundle = wx.BitmapBundle.FromSVGFile(svg, wx.Size(px, px))
+            if not bundle.IsOk():
+                return None
+            bmp = bundle.GetBitmap(wx.Size(px, px))
+            return bmp if bmp.IsOk() else None
+        except Exception:
+            return None
+
     def _scaledToolbarBitmap(self, image_path):
-        """Carica un'immagine per la toolbar: 16 px originale; 19/21 px centrata
-        su canvas trasparente (nitida); 32 px da img/32 o ingrandita ×2."""
+        """Carica un'immagine per la toolbar: 16 px originale; 19/21 px da SVG
+        in img/vector (se presente), altrimenti PNG centrato su canvas
+        trasparente; 32 px da img/32 o ingrandita ×2."""
         px = getattr(self.pref, 'toolbarIconPx', 16)
+        if px in (19, 21):
+            bmp = self._vectorToolbarBitmap(image_path, px)
+            if bmp is not None:
+                return bmp
         if px == 32:
             # Versione pre-renderizzata (img/32/<nome>.png), se presente
             try:
@@ -166,7 +189,7 @@ class SongpressToolbarsMixin:
                 # fattore intero ×2: nessuna sfocatura
                 img = self._scaleImageToSize(img, px)
             elif px != 16:
-                # 19/21 px: icona centrata su canvas trasparente, nitida
+                # 19/21 px senza SVG: icona centrata su canvas trasparente, nitida
                 img = self._padImageToSize(img, px)
         return wx.Bitmap(img)
 
@@ -271,8 +294,12 @@ class SongpressToolbarsMixin:
             rows[-1].append(it)
             used += it[3]
         for r, row in enumerate(rows):
-            for i, it in enumerate(row):
-                it[4].Row(base_row + r).Position(i)
+            x = 0
+            for it in row:
+                # dock_pos = offset in pixel dal bordo sinistro della riga:
+                # le barre risultano affiancate, allineate a sinistra, senza buchi
+                it[4].Layer(layer).Row(base_row + r).Position(x)
+                x += it[3]
         self._tb_autowrapped = len(rows) > 1
 
     def _FinalizeToolbarLayout(self):

@@ -48,6 +48,30 @@ import wx.stc
 _PORTABLE_CACHE = []   # memorizza il risultato (puo' essere None)
 
 
+def _installed_exe_dir():
+    """Cartella dell'eseguibile installato, o None se si gira da sorgenti.
+
+    Riconosce le build PyInstaller/cx_Freeze (sys.frozen) e Nuitka
+    (__compiled__, che NON imposta sys.frozen), cosi' il percorso segue
+    l'unita' di installazione e non ricade su C:\\...\\AppData.
+    """
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(os.path.abspath(sys.executable))
+    if '__compiled__' in globals():
+        return os.path.dirname(os.path.abspath(sys.argv[0] or sys.executable))
+    # Installazione con l'installer NSIS + "uv tool install": l'app NON e'
+    # frozen. Il venv sta in <INSTDIR>\tools\songpressplusplus (= sys.prefix),
+    # quindi la cartella di installazione e' due livelli sopra sys.prefix.
+    try:
+        prefix = os.path.abspath(sys.prefix)
+        parent = os.path.dirname(prefix)
+        if os.path.basename(parent).lower() == 'tools':
+            return os.path.dirname(parent)
+    except Exception:
+        pass
+    return None
+
+
 def _windows_portable_dir():
     """Cartella dati 'Songpress' accanto all'eseguibile, se scrivibile.
 
@@ -63,18 +87,26 @@ def _windows_portable_dir():
         return _PORTABLE_CACHE[0]
 
     result = None
-    if getattr(sys, 'frozen', False):
-        cand = os.path.join(os.path.dirname(os.path.abspath(sys.executable)),
-                            'Songpress')
-        try:
-            os.makedirs(cand, exist_ok=True)
-            probe = os.path.join(cand, '.write_test')
-            with open(probe, 'w') as f:
-                f.write('x')
-            os.remove(probe)
-            result = cand
-        except OSError:
-            result = None
+    exe_dir = _installed_exe_dir()
+    if exe_dir:
+        # 1) accanto all'eseguibile; 2) se non scrivibile (es. Program Files),
+        # radice della STESSA unita' (es. D:\Songpress): la lettera resta
+        # quella di installazione.
+        drive, _tail = os.path.splitdrive(exe_dir)
+        candidates = [os.path.join(exe_dir, 'Songpress')]
+        if drive:
+            candidates.append(os.path.join(drive + os.sep, 'Songpress'))
+        for cand in candidates:
+            try:
+                os.makedirs(cand, exist_ok=True)
+                probe = os.path.join(cand, '.write_test')
+                with open(probe, 'w') as f:
+                    f.write('x')
+                os.remove(probe)
+                result = cand
+                break
+            except OSError:
+                result = None
 
         if result:
             # migrazione una tantum dalla vecchia posizione in %APPDATA%
