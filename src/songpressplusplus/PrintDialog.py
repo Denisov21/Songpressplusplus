@@ -340,6 +340,28 @@ def _make_orientation_bitmap(landscape: bool, field_h: int) -> wx.Bitmap:
     return bmp
 
 
+def _load_svg_bitmap(svg_path, size=24):
+    """
+    Carica un file SVG come bitmap vettoriale rasterizzata esattamente a
+    size × size pixel (nitida a qualsiasi scala, nessun ridimensionamento
+    di un PNG). Usa wx.BitmapBundle.FromSVGFile (wxPython >= 4.1.1 / 4.2).
+
+    Restituisce un wx.Bitmap valido oppure None se l'SVG non esiste o la
+    versione di wxPython non supporta gli SVG (il chiamante può ripiegare
+    sul PNG).
+    """
+    try:
+        if not os.path.isfile(svg_path):
+            return None
+        bundle = wx.BitmapBundle.FromSVGFile(svg_path, wx.Size(size, size))
+        if not bundle.IsOk():
+            return None
+        bmp = bundle.GetBitmap(wx.Size(size, size))
+        return bmp if bmp.IsOk() else None
+    except Exception:
+        return None
+
+
 def _open_driver_settings(print_data, parent_hwnd=None):
     """
     Apre il pannello impostazioni del driver di stampa (DocumentProperties).
@@ -2340,7 +2362,17 @@ class PrintManager:
             _custom_icon_paths = {}
 
             # Icona per il bottone «Stampa» nativo della preview bar
+            # Grafica VETTORIALE (img/print_icon.svg) rasterizzata a 24x24 fissi,
+            # esclusa dal ridimensionamento uniforme. Ripiega sul PNG se l'SVG
+            # manca o wxPython è troppo vecchio.
+            _print_svg_bmp = None
             if btn_print is not None:
+                _print_svg_bmp = _load_svg_bitmap(
+                    glb.AddPath('img/print_icon.svg'), 24)
+            if btn_print is not None and _print_svg_bmp is not None:
+                btn_print.SetBitmap(_print_svg_bmp)
+                btn_print.SetBitmapPosition(wx.LEFT)
+            elif btn_print is not None:
                 _print_icon_path = glb.AddPath('img/print_icon.png')
                 if os.path.isfile(_print_icon_path):
                     _custom_icon_paths[btn_print] = _print_icon_path
@@ -2353,8 +2385,13 @@ class PrintManager:
             # Prima/Ultima pagina. Sono tutti wx.BitmapButton SENZA
             # etichetta testuale: vanno identificati tramite gli ID nativi
             # assegnati da wxWidgets alla control bar, non per label.
+            # Zoom − / +: grafica VETTORIALE (SVG) rasterizzata a 24x24.
+            # Se l'SVG manca o wxPython è troppo vecchio, ripiega sui PNG.
+            _ZOOM_ICON_SIZE       = 24
             _minus_icon_path      = glb.AddPath('img/minus.png')
             _plus_icon_path       = glb.AddPath('img/plus.png')
+            _minus_svg_path       = glb.AddPath('img/minus.svg')
+            _plus_svg_path        = glb.AddPath('img/plus.svg')
             _prev_icon_path       = glb.AddPath('img/left.png')
             _next_icon_path       = glb.AddPath('img/right.png')
             _first_icon_path      = glb.AddPath('img/first_page.png')
@@ -2384,6 +2421,21 @@ class PrintManager:
             for child in _iter_descendants(ctrl_bar):
                 if not isinstance(child, wx.AnyButton):
                     continue
+                # Zoom − / +, frecce di navigazione pagine: SVG a 24x24 fissi, esclusi dal ridimensionamento
+                # uniforme (_custom_icon_paths) così restano sempre 24x24.
+                _svg_for = {_zoom_out_id: _minus_svg_path,
+                            _zoom_in_id:  _plus_svg_path,
+                            _next_id:     glb.AddPath('img/right.svg'),
+                            _last_id:     glb.AddPath('img/last_page.svg'),
+                            _prev_id:     glb.AddPath('img/left.svg'),
+                            _first_id:    glb.AddPath('img/first_page.svg')
+                            }.get(child.GetId())
+                if _svg_for:
+                    _svg_bmp = _load_svg_bitmap(_svg_for, _ZOOM_ICON_SIZE)
+                    if _svg_bmp is not None:
+                        child.SetBitmap(_svg_bmp)
+                        child.SetBitmapPosition(wx.LEFT)
+                        continue
                 _icon_path = _nav_icon_by_id.get(child.GetId())
                 if _icon_path and os.path.isfile(_icon_path):
                     _custom_icon_paths[child] = _icon_path

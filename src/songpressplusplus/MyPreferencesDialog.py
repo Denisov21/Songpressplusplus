@@ -222,9 +222,10 @@ class MyPreferencesDialog(PreferencesDialog):
             self._applySyntaxColour(key, hex_val)
 
         # Themes
-        self._theme_applied = None   # tema attualmente applicato ai colori
-        self._refreshThemeList()
-        self._theme_applied = self._theme_name_at(self.themeCh.GetSelection()) or None
+        saved_theme = getattr(self.pref, 'syntaxThemeName', '') or ''
+        self._refreshThemeList(select_name=saved_theme or None)
+        # tema applicato = quello salvato (se esiste ancora), altrimenti nessuno
+        self._theme_applied = saved_theme if saved_theme in self._theme_names else None
         # Riallinea la lista al contenuto reale della cartella quando l'utente
         # sta per aprire la tendina: così i temi cancellati (o aggiunti) fuori
         # dall'app — da file manager o terminale — non restano voci fantasma.
@@ -2254,6 +2255,8 @@ class MyPreferencesDialog(PreferencesDialog):
         # Visibilità icone toolbar Inserisci
         for pref_key, cb in self._tb_checkboxes.items():
             setattr(self.pref, pref_key, cb.GetValue())
+        # Ricorda l'ultimo tema applicato, per riselezionarlo alla riapertura
+        self.pref.syntaxThemeName = self._theme_applied or ''
         self.pref.Save()
         lang = i18n.getLang()
         l = self.GetLanguage()

@@ -216,6 +216,7 @@ class Preferences(object):
         self._LoadDepIconMode()
         self._LoadRulerModeButtons()
         self._LoadStatusDotColours()
+        self._LoadThemeName()
 
     def _LoadKlavierColour(self):
         self.config.SetPath('/KlavierColour')
@@ -475,6 +476,7 @@ class Preferences(object):
         self._SaveDepIconMode()
         self._SaveRulerModeButtons()
         self._SaveStatusDotColours()
+        self._SaveThemeName()
         self.config.Flush()
 
     def _SaveKlavierColour(self):
@@ -646,6 +648,17 @@ class Preferences(object):
             getattr(self, 'statusDotOnHex', ''), self.STATUS_DOT_ON_DEFAULT))
         self.config.Write('statusDotOffHex', self._ValidHex(
             getattr(self, 'statusDotOffHex', ''), self.STATUS_DOT_OFF_DEFAULT))
+        self.config.SetPath('/')
+
+    def _LoadThemeName(self):
+        """Nome dell'ultimo tema colori caricato/salvato nella scheda Editor."""
+        self.config.SetPath('/Editor')
+        self.syntaxThemeName = self.config.Read('syntaxThemeName') or ''
+        self.config.SetPath('/')
+
+    def _SaveThemeName(self):
+        self.config.SetPath('/Editor')
+        self.config.Write('syntaxThemeName', getattr(self, 'syntaxThemeName', '') or '')
         self.config.SetPath('/')
 
     def SaveEditorToggles(self):
