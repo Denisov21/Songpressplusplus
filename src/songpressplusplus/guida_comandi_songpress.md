@@ -81,6 +81,8 @@ Songpress++ utilizza il formato **ChordPro** esteso. I comandi sono racchiusi tr
     - [Scheda Associazioni file (File associations)](#scheda-associazioni-file-file-associations)
     - [Impostazioni dal menu Formato](#impostazioni-dal-menu-formato)
 13. [Sommario finale](#13-sommario-finale)
+14. [Sviluppo](#14-sviluppo)
+   - [Icone della toolbar](#icone-della-toolbar-cartelle-img-img32-e-imgvector)
 
 ---
 
@@ -1377,3 +1379,27 @@ Accessibile da **Formato → Indicazione di tempo** (o clic sull'indicazione nel
 | `[Accordo]` | — | Accordi inline | Accordo posizionato nel testo |
 | Integra accordi | — | Accordi inline | Fonde riga accordi separati + riga testo nella notazione `[Accordo]parola` |
 | `# testo` | — | Commenti | Riga di commento (ignorata) |
+
+---
+
+## 14. Sviluppo
+
+### Icone della toolbar: cartelle `img`, `img/32` e `img/vector`
+
+Le icone della toolbar esistono in tre forme, in tre cartelle. La dimensione scelta in *Strumenti → Opzioni... → Generale* decide quale viene usata:
+
+| Dimensione toolbar | Sorgente usata | Se manca |
+|---|---|---|
+| 16 px | `img/<nome>.png` | – |
+| 19 e 21 px | `img/vector/<nome>.svg` | si usa `img/<nome>.png` centrato su un canvas trasparente 19×19 o 21×21 |
+| 32 px | `img/32/<nome>.png` | si usa `img/<nome>.png` ingrandito ×2 senza interpolazione |
+
+- **`img/`** contiene i PNG originali a 16×16. Sono la base e il ripiego per tutte le dimensioni, quindi ogni icona deve avere qui il suo PNG. Le immagini di questa guida stanno in `img/GUIDE`.
+- **`img/32/`** contiene i PNG già disegnati a 32×32, usati solo per la dimensione "extra large". Un file viene usato solo se misura esattamente 32×32; altrimenti si ripiega sull'ingrandimento ×2, nitido ma meno curato.
+- **`img/vector/`** contiene gli SVG, che si adattano a qualsiasi dimensione e restano nitidi a 19 e 21 px. Vengono rasterizzati alla misura esatta con `wx.BitmapBundle.FromSVGFile` (richiede wxPython 4.1.1 o successivo).
+
+Per tutte e tre vale la stessa regola: il nome del file è quello del PNG in `img/`, cambia solo l'estensione. Per esempio `img/save.png`, `img/32/save.png` e `img/vector/save.svg`.
+
+I percorsi partono da `glb.path`: in sviluppo è la cartella dei sorgenti, nella build congelata è la cartella accanto all'eseguibile (come per `guida_*.md` e `img/GUIDE`). Le cartelle `32` e `vector` vanno quindi incluse come dati nel pacchetto o nello script di build, altrimenti nell'app installata le icone ripiegano sempre sui PNG, senza alcun errore.
+
+**Per aggiungere una nuova icona** servono il PNG 16×16 in `img/`, il PNG 32×32 in `img/32/` e lo SVG in `img/vector/`.

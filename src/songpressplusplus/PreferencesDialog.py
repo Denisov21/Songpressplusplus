@@ -168,7 +168,32 @@ class PreferencesDialog(wx.Dialog):
         bSizerTheme.Add(self.themeDeleteBtn, 0, wx.ALIGN_CENTER_VERTICAL)
         grpSyntax.Add(bSizerTheme, 0, wx.EXPAND | wx.ALL, 5)
 
+        # Messaggio informativo: compare quando nella tendina si sceglie un
+        # tema diverso da quello attuale, e spiega che serve premere "Carica".
+        # Icona img/info.png a 16x16 (con ripiego sull'icona di sistema).
+        self._themeHintSizer = wx.BoxSizer(wx.HORIZONTAL)
+        _hint_bmp = wx.NullBitmap
+        _hint_path = _os.path.join(_icons_dir, 'info.png')
+        if _os.path.isfile(_hint_path):
+            _img = wx.Image(_hint_path, wx.BITMAP_TYPE_PNG)
+            if _img.IsOk():
+                if _img.GetWidth() != 16 or _img.GetHeight() != 16:
+                    _img.Rescale(16, 16, wx.IMAGE_QUALITY_HIGH)
+                _hint_bmp = wx.Bitmap(_img)
+        if not _hint_bmp.IsOk():
+            _hint_bmp = wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, wx.Size(16, 16))
+        self.themeHintIcon = wx.StaticBitmap(_boxSyntax, wx.ID_ANY, _hint_bmp)
+        self.themeHintText = wx.StaticText(
+            _boxSyntax, wx.ID_ANY,
+            _(u'Theme changed: press "Load" to apply it.'))
+        self._themeHintSizer.Add(self.themeHintIcon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        self._themeHintSizer.Add(self.themeHintText, 1, wx.ALIGN_CENTER_VERTICAL)
+        grpSyntax.Add(self._themeHintSizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        grpSyntax.Show(self._themeHintSizer, False, True)
+        self._grpSyntax = grpSyntax
+
         # Bind eventi temi
+        self.themeCh.Bind(wx.EVT_CHOICE, self.OnThemeChoice)
         self.themeLoadBtn.Bind(wx.EVT_BUTTON,  self.OnThemeLoad)
         self.themeSaveBtn.Bind(wx.EVT_BUTTON,  self.OnThemeSave)
         self.themeDeleteBtn.Bind(wx.EVT_BUTTON, self.OnThemeDelete)
@@ -1812,6 +1837,9 @@ class PreferencesDialog(wx.Dialog):
         event.Skip()
 
     def OnSyntaxPickColour(self, event):
+        event.Skip()
+
+    def OnThemeChoice(self, event):
         event.Skip()
 
     def OnThemeLoad(self, event):

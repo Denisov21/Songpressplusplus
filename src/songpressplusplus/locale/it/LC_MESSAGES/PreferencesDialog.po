@@ -783,6 +783,9 @@ msgstr "Scritte"
 msgid "The file contains no preferences."
 msgstr "Il file non contiene opzioni."
 
+msgid "Theme changed: press \"Load\" to apply it."
+msgstr "Tema cambiato: premi \"Carica\" per applicarlo."
+
 msgid "Theme:"
 msgstr "Tema:"
 

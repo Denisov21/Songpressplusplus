@@ -81,6 +81,8 @@ Songpress++ uses the extended **ChordPro** format. Commands are enclosed in curl
     - [File associations tab](#file-associations-tab)
     - [Format menu settings](#format-menu-settings)
 13. [Final summary](#13-final-summary)
+14. [Development](#14-development)
+   - [Toolbar icons](#toolbar-icons-the-img-img32-and-imgvector-folders)
 
 ---
 
@@ -1378,3 +1380,27 @@ Accessible from **Format → Tempo indication** (or by clicking the indication i
 | `[Chord]` | — | Inline chords | Chord positioned in the text |
 | Integrate chords | — | Inline chords | Merges a chord-only line with the following text line into `[Chord]word` notation |
 | `# text` | — | Comments | Comment line (ignored) |
+
+---
+
+## 14. Development
+
+### Toolbar icons: the `img`, `img/32` and `img/vector` folders
+
+Toolbar icons exist in three forms, in three folders. The size chosen in *Tools → Options... → General* decides which one is used:
+
+| Toolbar size | Source used | If missing |
+|---|---|---|
+| 16 px | `img/<name>.png` | – |
+| 19 and 21 px | `img/vector/<name>.svg` | `img/<name>.png` is used, centred on a transparent 19×19 or 21×21 canvas |
+| 32 px | `img/32/<name>.png` | `img/<name>.png` is used, enlarged ×2 without interpolation |
+
+- **`img/`** holds the original 16×16 PNGs. They are the base and the fallback for every size, so each icon must have its PNG here. The images of this guide live in `img/GUIDE`.
+- **`img/32/`** holds PNGs already drawn at 32×32, used only for the "extra large" size. A file is used only if it is exactly 32×32; otherwise the ×2 enlargement is used, which is sharp but less refined.
+- **`img/vector/`** holds the SVGs, which scale to any size and stay sharp at 19 and 21 px. They are rasterised at the exact size with `wx.BitmapBundle.FromSVGFile` (requires wxPython 4.1.1 or later).
+
+The same rule applies to all three: the file name is the name of the PNG in `img/`, only the extension changes. For example `img/save.png`, `img/32/save.png` and `img/vector/save.svg`.
+
+Paths start from `glb.path`: in development it is the source folder, in the frozen build it is the folder next to the executable (as for `guida_*.md` and `img/GUIDE`). The `32` and `vector` folders must therefore be included as data in the package or build script, otherwise the installed app always falls back to the PNGs, with no error.
+
+**To add a new icon** you need the 16×16 PNG in `img/`, the 32×32 PNG in `img/32/` and the SVG in `img/vector/`.

@@ -222,7 +222,9 @@ class MyPreferencesDialog(PreferencesDialog):
             self._applySyntaxColour(key, hex_val)
 
         # Themes
+        self._theme_applied = None   # tema attualmente applicato ai colori
         self._refreshThemeList()
+        self._theme_applied = self._theme_name_at(self.themeCh.GetSelection()) or None
         # Riallinea la lista al contenuto reale della cartella quando l'utente
         # sta per aprire la tendina: così i temi cancellati (o aggiunti) fuori
         # dall'app — da file manager o terminale — non restano voci fantasma.
@@ -1146,6 +1148,23 @@ class MyPreferencesDialog(PreferencesDialog):
             return {}
         return dict(cfg['colours']) if 'colours' in cfg else {}
 
+    def _ShowThemeHint(self, show):
+        """Mostra/nasconde il messaggio 'premi Carica per applicare'."""
+        sizer = getattr(self, '_themeHintSizer', None)
+        if sizer is None:
+            return
+        self._grpSyntax.Show(sizer, show, True)
+        self.general.Layout()
+        self.general.FitInside()
+        self._ScheduleRefit(100)
+
+    def OnThemeChoice(self, evt):
+        # Tema scelto nella tendina diverso da quello attuale: avvisa che per
+        # applicarlo bisogna premere Carica.
+        name = self._theme_name_at(self.themeCh.GetSelection())
+        self._ShowThemeHint(bool(name) and name != self._theme_applied)
+        evt.Skip()
+
     def OnThemeLoad(self, evt):
         # Riallinea al disco: un tema cancellato fuori dall'app non deve essere
         # caricabile e non deve restare selezionato.
@@ -1164,6 +1183,8 @@ class MyPreferencesDialog(PreferencesDialog):
         d = self._load_theme_file(name)
         if d:
             self._apply_theme_dict(d)
+            self._theme_applied = name
+            self._ShowThemeHint(False)
 
     def OnThemeSave(self, evt):
         # Riallinea al disco: il nome suggerito non deve venire da una voce
@@ -1192,6 +1213,8 @@ class MyPreferencesDialog(PreferencesDialog):
         d = self._theme_to_dict()
         if self._save_theme_file(name, d):
             self._refreshThemeList(select_name=name)
+            self._theme_applied = name
+            self._ShowThemeHint(False)
             if self._on_theme_change is not None:
                 self._on_theme_change()
 
@@ -1234,6 +1257,9 @@ class MyPreferencesDialog(PreferencesDialog):
                 )
                 return
             self._refreshThemeList()
+            # i colori mostrati non corrispondono più a un tema esistente
+            self._theme_applied = None
+            self._ShowThemeHint(False)
             if self._on_theme_change is not None:
                 self._on_theme_change()
 
