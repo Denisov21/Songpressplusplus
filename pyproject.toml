@@ -27,6 +27,10 @@ dependencies = [
     # python-docx: lettura/scrittura di documenti Word (.docx). Il pacchetto
     # PyPI è "python-docx", ma il modulo da importare è "docx".
     "python-docx>=1.1.0,<2.0.0",
+    # svglib: rende le icone vettoriali SVG (img/vector/*.svg) nei PDF generati
+    # da CreaIndice (ReportLab). È facoltativa a runtime: senza, si ripiega su
+    # un PNG rasterizzato. Il pacchetto PyPI è "svglib", il modulo è "svglib".
+    "svglib>=1.5.1,<2.0.0",
     # Pillow: rasterizzazione dei glifi musicali SMP in stampa (font FreeSerif
     # via FreeType). reportlab la tira comunque, ma qui è esplicita perché è una
     # dipendenza diretta del codice di stampa.
@@ -67,7 +71,7 @@ artifacts = [
 #
 #   python -m venv .venv
 #   .venv\Scripts\activate
-#   pip install cx_Freeze wxPython requests python-pptx pyshortcuts reportlab pypdf markdown mistune pillow
+#   pip install cx_Freeze wxPython requests python-pptx pyshortcuts reportlab pypdf markdown mistune pillow svglib
 #   python -m cx_Freeze build_exe
 
 [[tool.cxfreeze.executables]]
@@ -98,6 +102,12 @@ packages = [
     # python-docx: lettura/scrittura .docx. Nome del modulo da congelare è
     # "docx" (il pacchetto PyPI è "python-docx").
     "docx",
+    # svglib (+ le sue dipendenze pure-Python/lxml): icone SVG nei PDF di
+    # CreaIndice. Il nome del modulo è "svglib".
+    "svglib",
+    "tinycss2",
+    "cssselect2",
+    "lxml",
     # PIL (Pillow): rasterizzazione dei glifi musicali SMP in stampa. Il nome
     # del modulo da congelare è PIL (il pacchetto PyPI è "pillow").
     "PIL",

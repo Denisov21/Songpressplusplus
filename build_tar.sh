@@ -160,7 +160,7 @@ extract_pip_deps() {
 }
 PIP_DEPS="$(extract_pip_deps)"
 # Fallback: se per qualche motivo non trovati, valori noti del progetto.
-[[ -z "$PIP_DEPS" ]] && PIP_DEPS=$'python-pptx:pptx\npyshortcuts:pyshortcuts'
+[[ -z "$PIP_DEPS" ]] && PIP_DEPS=$'python-pptx:pptx\npyshortcuts:pyshortcuts\nsvglib:svglib'
 
 bmsg "$OK Dependencies read from the .deb metadata." \
      "$OK Dipendenze lette dai metadati del .deb."

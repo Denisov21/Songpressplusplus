@@ -468,6 +468,46 @@ def _symbol_info(label: str, char: str) -> str:
     return f"{_(label)}  (U+{cp:04X})  [{_plane_tag(char)}]"
 
 
+_INFO_ICON_PX = 16   # dimensione (px) dell'icona informativa
+
+
+def _info_icon_bitmap(window, size: int = _INFO_ICON_PX):
+    """Bitmap dell'icona 'i' a size x size px, o None se non disponibile.
+
+    Prima scelta: img/vector/info.svg (vettoriale, nitida a ogni DPI);
+    ripiego: img/info.png ridimensionata; ultima risorsa: icona di sistema.
+    Ritorna None solo se manca tutto (il chiamante usa allora il carattere
+    testuale)."""
+    try:
+        bb = wx.BitmapBundle.FromSVGFile(
+            glb.AddPath('img/vector/info.svg'), wx.Size(size, size))
+        if bb.IsOk():
+            bmp = bb.GetBitmapFor(window)
+            if bmp.IsOk():
+                return bmp
+    except Exception:
+        pass
+    try:
+        img = wx.Image(glb.AddPath('img/info.png'))
+        if img.IsOk():
+            if img.GetWidth() != size or img.GetHeight() != size:
+                img = img.Scale(size, size, wx.IMAGE_QUALITY_HIGH)
+            bmp = wx.Bitmap(img)
+            if bmp.IsOk():
+                return bmp
+    except Exception:
+        pass
+    # 3) icona di sistema
+    try:
+        bmp = wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_MESSAGE_BOX,
+                                       wx.Size(size, size))
+        if bmp.IsOk():
+            return bmp
+    except Exception:
+        pass
+    return None
+
+
 def _make_symbol_font(point_size: int) -> wx.Font:
     """Restituisce un wx.Font adatto a visualizzare simboli musicali SMP.
     Usa la lista dinamica _SMP_FACES (popolata da _load_fonts_dir);
@@ -657,12 +697,18 @@ class MusicalSymbolDialog(wx.Dialog):
 
         # ── Nota informativa dimensione ────────────────────────────────────
         note_row = wx.BoxSizer(wx.HORIZONTAL)
-        _info_icon = wx.StaticText(self, label=u"\u2139")   # ℹ
-        _icon_font = _info_icon.GetFont()
-        _icon_font.SetPointSize(_icon_font.GetPointSize() + 1)
-        _icon_font.SetWeight(wx.FONTWEIGHT_BOLD)
-        _info_icon.SetFont(_icon_font)
-        _info_icon.SetForegroundColour(wx.Colour(0, 100, 180))
+        # Icona 16x16: img/vector/info.svg, ripiego img/info.png, poi icona di
+        # sistema; solo se manca tutto, carattere testuale ℹ.
+        _info_bmp = _info_icon_bitmap(self)
+        if _info_bmp is not None:
+            _info_icon = wx.StaticBitmap(self, bitmap=_info_bmp)
+        else:
+            _info_icon = wx.StaticText(self, label=u"\u2139")   # ℹ
+            _icon_font = _info_icon.GetFont()
+            _icon_font.SetPointSize(_icon_font.GetPointSize() + 1)
+            _icon_font.SetWeight(wx.FONTWEIGHT_BOLD)
+            _info_icon.SetFont(_icon_font)
+            _info_icon.SetForegroundColour(wx.Colour(0, 100, 180))
         note_row.Add(_info_icon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         _note_lbl = wx.StaticText(
             self,

@@ -1639,11 +1639,17 @@ class PrintOptionsDialog:
         self.btn_load_from_editor.SetToolTip(_(
             "Read the print settings saved in the first line of the song "
             "and show them here. Press OK to apply them."))
-        # Icone 16x16 (stesso metodo degli altri pulsanti con icona)
-        for _btn, _name in ((self.btn_save_to_editor,   'img/save_to_editor.png'),
-                            (self.btn_load_from_editor, 'img/load_from_editor.png')):
+        # Icone vettoriali (SVG) rasterizzate a 16x16; ripiego sul PNG
+        for _btn, _name in ((self.btn_save_to_editor,   'save_to_editor'),
+                            (self.btn_load_from_editor, 'load_from_editor')):
             try:
-                _p = glb.AddPath(_name)
+                _svg_bmp = _load_svg_bitmap(glb.AddPath('img/vector/' + _name + '.svg'), 16)
+                if _svg_bmp is not None:
+                    _btn.SetBitmap(_svg_bmp)
+                    _btn.SetBitmapPosition(wx.LEFT)
+                    _btn.SetBitmapMargins(4, 0)
+                    continue
+                _p = glb.AddPath('img/' + _name + '.png')
                 if os.path.isfile(_p):
                     _img = wx.Image(_p, wx.BITMAP_TYPE_PNG)
                     if _img.GetWidth() != 16 or _img.GetHeight() != 16:
@@ -1674,10 +1680,15 @@ class PrintOptionsDialog:
         row_dbg.Add(self.cb_debug, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         self.btn_open_log = wx.Button(dlg, wx.ID_ANY, _("Open folder"), style=wx.BU_EXACTFIT)
         self.btn_open_log.SetToolTip(_("Open the folder that contains the log file"))
-        # Icona 16x16 sul pulsante «Apri cartella»
+        # Icona vettoriale (SVG) 16x16 sul pulsante «Apri cartella»; ripiego sul PNG
         try:
+            _svg_bmp = _load_svg_bitmap(glb.AddPath('img/vector/open_log_folder.svg'), 16)
             _p = glb.AddPath('img/open_log_folder.png')
-            if os.path.isfile(_p):
+            if _svg_bmp is not None:
+                self.btn_open_log.SetBitmap(_svg_bmp)
+                self.btn_open_log.SetBitmapPosition(wx.LEFT)
+                self.btn_open_log.SetBitmapMargins(4, 0)
+            elif os.path.isfile(_p):
                 _img = wx.Image(_p, wx.BITMAP_TYPE_PNG)
                 if _img.GetWidth() != 16 or _img.GetHeight() != 16:
                     _img = _img.Scale(16, 16, wx.IMAGE_QUALITY_HIGH)
@@ -2368,7 +2379,7 @@ class PrintManager:
             _print_svg_bmp = None
             if btn_print is not None:
                 _print_svg_bmp = _load_svg_bitmap(
-                    glb.AddPath('img/print_icon.svg'), 24)
+                    glb.AddPath('img/vector/print_icon.svg'), 24)
             if btn_print is not None and _print_svg_bmp is not None:
                 btn_print.SetBitmap(_print_svg_bmp)
                 btn_print.SetBitmapPosition(wx.LEFT)
@@ -2388,10 +2399,10 @@ class PrintManager:
             # Zoom − / +: grafica VETTORIALE (SVG) rasterizzata a 24x24.
             # Se l'SVG manca o wxPython è troppo vecchio, ripiega sui PNG.
             _ZOOM_ICON_SIZE       = 24
-            _minus_icon_path      = glb.AddPath('img/minus.png')
-            _plus_icon_path       = glb.AddPath('img/plus.png')
-            _minus_svg_path       = glb.AddPath('img/minus.svg')
-            _plus_svg_path        = glb.AddPath('img/plus.svg')
+            _minus_icon_path      = glb.AddPath('img/minus_printer.png')
+            _plus_icon_path       = glb.AddPath('img/plus_printer.png')
+            _minus_svg_path       = glb.AddPath('img/vector/minus_printer.svg')
+            _plus_svg_path        = glb.AddPath('img/vector/plus_printer.svg')
             _prev_icon_path       = glb.AddPath('img/left.png')
             _next_icon_path       = glb.AddPath('img/right.png')
             _first_icon_path      = glb.AddPath('img/first_page.png')
@@ -2425,10 +2436,10 @@ class PrintManager:
                 # uniforme (_custom_icon_paths) così restano sempre 24x24.
                 _svg_for = {_zoom_out_id: _minus_svg_path,
                             _zoom_in_id:  _plus_svg_path,
-                            _next_id:     glb.AddPath('img/right.svg'),
-                            _last_id:     glb.AddPath('img/last_page.svg'),
-                            _prev_id:     glb.AddPath('img/left.svg'),
-                            _first_id:    glb.AddPath('img/first_page.svg')
+                            _next_id:     glb.AddPath('img/vector/right.svg'),
+                            _last_id:     glb.AddPath('img/vector/last_page.svg'),
+                            _prev_id:     glb.AddPath('img/vector/left.svg'),
+                            _first_id:    glb.AddPath('img/vector/first_page.svg')
                             }.get(child.GetId())
                 if _svg_for:
                     _svg_bmp = _load_svg_bitmap(_svg_for, _ZOOM_ICON_SIZE)
@@ -2446,7 +2457,13 @@ class PrintManager:
             # Bottone «Impostazioni driver»
             btn_driver = wx.Button(ctrl_bar, wx.ID_ANY, _("Driver settings..."))
             _driver_icon_path = glb.AddPath('img/option_printer.png')
-            if os.path.isfile(_driver_icon_path):
+            _driver_svg_bmp = _load_svg_bitmap(
+                glb.AddPath('img/vector/option_printer.svg'), _ZOOM_ICON_SIZE)
+            if _driver_svg_bmp is not None:
+                # Vettoriale 24x24 fisso, escluso dal ridimensionamento uniforme
+                btn_driver.SetBitmap(_driver_svg_bmp)
+                btn_driver.SetBitmapPosition(wx.LEFT)
+            elif os.path.isfile(_driver_icon_path):
                 _custom_icon_paths[btn_driver] = _driver_icon_path
                 img = wx.Image(_driver_icon_path, wx.BITMAP_TYPE_PNG)
                 btn_driver.SetBitmap(wx.Bitmap(img))
@@ -2491,7 +2508,12 @@ class PrintManager:
             # Bottone «Opzioni di stampa»
             btn_options = wx.Button(ctrl_bar, wx.ID_ANY, _("Print options..."))
             _icon_path  = glb.AddPath('img/print_icon2.png')
-            if os.path.isfile(_icon_path):
+            _options_svg_bmp = _load_svg_bitmap(
+                glb.AddPath('img/vector/print_icon2.svg'), _ZOOM_ICON_SIZE)
+            if _options_svg_bmp is not None:
+                btn_options.SetBitmap(_options_svg_bmp)
+                btn_options.SetBitmapPosition(wx.LEFT)
+            elif os.path.isfile(_icon_path):
                 _custom_icon_paths[btn_options] = _icon_path
                 img = wx.Image(_icon_path, wx.BITMAP_TYPE_PNG)
                 btn_options.SetBitmap(wx.Bitmap(img))
@@ -2527,7 +2549,12 @@ class PrintManager:
             # Bottone «Impostazione pagina»
             btn_page_setup  = wx.Button(ctrl_bar, wx.ID_ANY, _("Page setup..."))
             _page_icon_path = glb.AddPath('img/file-black-icon.png')
-            if os.path.isfile(_page_icon_path):
+            _page_svg_bmp = _load_svg_bitmap(
+                glb.AddPath('img/vector/file-black-icon.svg'), _ZOOM_ICON_SIZE)
+            if _page_svg_bmp is not None:
+                btn_page_setup.SetBitmap(_page_svg_bmp)
+                btn_page_setup.SetBitmapPosition(wx.LEFT)
+            elif os.path.isfile(_page_icon_path):
                 _custom_icon_paths[btn_page_setup] = _page_icon_path
                 img = wx.Image(_page_icon_path, wx.BITMAP_TYPE_PNG)
                 btn_page_setup.SetBitmap(wx.Bitmap(img))
@@ -2558,7 +2585,12 @@ class PrintManager:
             # Bottone «Chiudi»
             btn_close = wx.Button(ctrl_bar, wx.ID_ANY, _("Close"))
             _close_icon_path = glb.AddPath('img/close_print_dialog.png')
-            if os.path.isfile(_close_icon_path):
+            _close_svg_bmp = _load_svg_bitmap(
+                glb.AddPath('img/vector/close_print_dialog.svg'), _ZOOM_ICON_SIZE)
+            if _close_svg_bmp is not None:
+                btn_close.SetBitmap(_close_svg_bmp)
+                btn_close.SetBitmapPosition(wx.LEFT)
+            elif os.path.isfile(_close_icon_path):
                 _custom_icon_paths[btn_close] = _close_icon_path
                 img = wx.Image(_close_icon_path, wx.BITMAP_TYPE_PNG)
                 btn_close.SetBitmap(wx.Bitmap(img))

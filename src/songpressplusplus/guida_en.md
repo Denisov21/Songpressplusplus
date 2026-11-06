@@ -675,6 +675,7 @@ The `{fingering:}` directive is a variant of the klavier keyboard designed to sh
 {fingering: Am hand=R 3=La 1=Mi 2=Do}
 {fingering: Am hand=L}
 {fingering: B hand=R start=B 1=B 2=D# 3=F#}
+{fingering: - hand=R 1=C 3=E 5=G}
 ```
 
 The `finger=note` part is optional. The `hand=` token is also optional and can appear anywhere after the chord name. Numbers correspond to the fingers of the hand:
@@ -746,10 +747,13 @@ Notes can be written in Italian notation (`Do`, `Re`, `Mi`, `Fa`, `Sol`, `La`, `
 
 > **Note on notation** — The insertion dialog and the finger grid follow the **default notation** set in Songpress++ preferences (*Options → Default notation*). Note names shown in the grid and written into the generated directive change automatically according to the selected notation: with American notation you will see `A, C#, E`; with Italian `La, Do#, Mi`; with German `A, Cis, E`, and so on. Chord recognition in the *Chord* field also respects the current notation. Nashville and Roman notations are not supported for fingering.
 
+**Notes only, no chord (`-`):** to remember how to position the hand without going through a chord, write the placeholder `-` instead of the name and list the notes to show, e.g. `{fingering: - hand=R 1=C 3=E 5=G}`. The keyboard **writes no name** above it: keys with a finger (1–5) are coloured and each shows its number. With `0=NOTE` (e.g. `0=D`) the key is **not coloured** and shows only a **dot** (●): use it to mark a note without assigning a finger. Any note is allowed in this mode, since there is no chord it must belong to. It also works in preview, print and export.
+
 **Inserting from the menu:** *Insert → Other → First chord fingering {fingering:}*
 A dialog opens that automatically shows the notes of the chord and lets you:
 
 - assign a finger to each note using a drop-down menu;
+- tick **Notes only (no chord)**: the chord field is disabled and all 12 notes appear; for each one choose "—" (unused), "●" (just a dot on the key, without colouring it and without a finger) or a finger from 1 to 5;
 - select the hand (Right / Left / None);
 - choose the keyboard **Start note** from the drop-down of the same name;
 - enable **Highlight note on both octaves** (only enabled when the start note produces 8 keys);
@@ -824,6 +828,7 @@ The built-in syntax checker (*Tools → Check Syntax*) validates the `hand=` tok
 | ----- | ------- | ------- |
 | Invalid value | `{fingering: Am hand=X}` | `hand` must be R or L |
 | Duplicate `hand=` token | `{fingering: Am hand=R hand=L}` | `hand` specified more than once |
+| Finger out of range | `{fingering: Am 6=A}` | With a chord the finger must be 1–5; with `-` `0` is also allowed (0–5) |
 
 ### Tempo — `{tempo:}` and variants
 
@@ -2270,6 +2275,20 @@ When adding a new command to a toolbar, it is sufficient to:
 2. Add the icon path to `_*_toolbar_icons` and the help text to `_*_toolbar_helps` inside the respective `_Build*ToolBar()` method.
 
 **`MyPreferencesDialog` and `SongpressFrame` require no changes**: both read the `*_TOOLBAR_ITEMS` constants dynamically — the preferences dialog automatically generates checkboxes for every new entry, and the config save/load iterates over the full list.
+
+### Icon format (vector and raster)
+
+The icons of the **Standard**, **Format**, **Insert** and **View** toolbars are **always vector** at every size chosen in **Tools → Options… → General → Toolbar icon size** (16, 19, 21 or 32 px): they are loaded from the SVGs in `img/vector/` and rasterised at the real screen scale (DPI), so they stay sharp on high-resolution displays.
+
+Raster images are only a **fallback**, used when an icon's SVG is missing:
+
+| Size | Raster fallback |
+|---|---|
+| 16×16 | original PNG in `img/` |
+| 19×19 and 21×21 | 16×16 PNG centred on a transparent canvas of the requested size |
+| 32×32 | PNG in `img/32/` if present, otherwise the 16×16 PNG doubled |
+
+All images in the **other bars** (editor bar, Songpress++ Page bar, screen ruler) are also **always vector**, falling back to the PNG if the SVG is missing. **Print preview** icons are vector as first choice.
 
 ---
 

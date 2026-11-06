@@ -1514,6 +1514,10 @@ msgstr "non installato"
 msgid "Musical glyph rendering"
 msgstr "Rendering glifi musicali"
 
+# Verifica dipendenze — svglib (facoltativa)
+msgid "Vector icons in the PDF"
+msgstr "Icone vettoriali nel PDF"
+
 msgid "Pillow required"
 msgstr "Pillow richiesto"
 
@@ -2021,10 +2025,12 @@ msgstr "Definisce la diteggiatura di un accordo."
 #: ChordProDirectiveHelp.py — directive tooltip
 msgid ""
 "Draws a keyboard with finger numbers on the keys. Options: hand=L|R, start=,"
-" octave=, middlec=."
+" octave=, middlec=. Use - instead of the chord to pick only some notes "
+"(0=NOTE = dot only, key not coloured)."
 msgstr ""
 "Disegna una tastiera con i numeri delle dita sui tasti. Opzioni: hand=L|R, "
-"start=, octave=, middlec=."
+"start=, octave=, middlec=. Usa - al posto dell'accordo per scegliere solo "
+"alcune note (0=NOTA = solo puntino, tasto non colorato)."
 
 #: ChordProDirectiveHelp.py — directive tooltip
 msgid ""
@@ -2339,3 +2345,15 @@ msgstr "Annulla: il brano resta in sola lettura."
 
 msgid "Unable to remove the protection:"
 msgstr "Impossibile rimuovere la protezione:"
+
+#: SongpressFrame.py — fingering dialog, notes-only mode
+msgid "Notes only (no chord)"
+msgstr "Solo note (senza accordo)"
+
+#: SongpressFrame.py — fingering dialog, notes-only mode tooltip
+msgid ""
+"Pick the notes directly instead of typing a chord. ● = dot only, key "
+"not coloured."
+msgstr ""
+"Scegli direttamente le note invece di digitare un accordo. ● = solo puntino, "
+"tasto non colorato."

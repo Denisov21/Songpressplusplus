@@ -106,7 +106,9 @@ _HELP = {
                    "A blank line before the next directive starts a new row.",
                    "{taste: DO start=DO}"),
     'fingering':  ("Draws a keyboard with finger numbers on the keys. "
-                   "Options: hand=L|R, start=, octave=, middlec=.",
+                   "Options: hand=L|R, start=, octave=, middlec=. "
+                   "Use - instead of the chord to pick only some notes "
+                   "(0=NOTE = dot only, key not coloured).",
                    "{fingering: DO hand=R 1=DO 3=MI 5=SOL}"),
 }
 

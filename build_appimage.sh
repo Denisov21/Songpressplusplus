@@ -196,6 +196,10 @@ PIP_BUNDLE=(
     # (lxml, typing-extensions) arrivano dalle wheel manylinux di PyPI, quindi
     # vengono tirate automaticamente da pip (qui NON usiamo --no-deps).
     python-docx
+    # svglib: icone vettoriali SVG (img/vector/*.svg) nei PDF di CreaIndice.
+    # Pure-Python; le sue dipendenze (lxml, tinycss2, cssselect2) arrivano da
+    # wheel manylinux di PyPI tramite pip.
+    svglib
 )
 
 # ── Cartelle di lavoro ────────────────────────────────────────

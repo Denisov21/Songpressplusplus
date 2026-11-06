@@ -180,7 +180,7 @@ class PreviewCanvas(object):
             # Zoom out (pulsante piccolo a sinistra dello slider)
             btn_zoom_out = wx.BitmapButton(
                 toolbar, wx.ID_ANY,
-                self._make_sign_bitmap(self._ZOOM_RED, plus=False, px=16),
+                self._load_zoom_bitmap(plus=False, px=16),
                 style=wx.BORDER_NONE,
             )
             btn_zoom_out.SetToolTip(_("Zoom out (Ctrl+-)"))
@@ -200,7 +200,7 @@ class PreviewCanvas(object):
             # Zoom in (pulsante piccolo a destra dello slider)
             btn_zoom_in = wx.BitmapButton(
                 toolbar, wx.ID_ANY,
-                self._make_sign_bitmap(self._ZOOM_RED, plus=True, px=16),
+                self._load_zoom_bitmap(plus=True, px=16),
                 style=wx.BORDER_NONE,
             )
             btn_zoom_in.SetToolTip(_("Zoom in (Ctrl++)"))
@@ -212,8 +212,11 @@ class PreviewCanvas(object):
             tb_sizer.Add(self._zoom_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 3)
 
             # Reset zoom 1:1
-            btn_zoom_reset = wx.Button(toolbar, wx.ID_ANY, "1:1",
-                                       size=(30, -1), style=wx.BORDER_SIMPLE)
+            btn_zoom_reset = wx.BitmapButton(
+                toolbar, wx.ID_ANY,
+                self._load_zoom_reset_bitmap(16),
+                style=wx.BORDER_NONE,
+            )
             btn_zoom_reset.SetToolTip(_("Reset zoom to 100% (Ctrl+0)"))
             tb_sizer.Add(btn_zoom_reset, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 4)
 
@@ -221,20 +224,26 @@ class PreviewCanvas(object):
                          wx.EXPAND | wx.LEFT | wx.RIGHT, 4)
 
             # Pulsante tutto schermo
-            btn_fullscreen = wx.Button(toolbar, wx.ID_ANY, u"⛶",
-                                       size=(28, -1), style=wx.BORDER_SIMPLE)
+            btn_fullscreen = wx.BitmapButton(
+                toolbar, wx.ID_ANY,
+                self._load_maximize_bitmap(16),
+                style=wx.BORDER_NONE,
+            )
             btn_fullscreen.SetToolTip(_("Full screen preview (F11)"))
             tb_sizer.Add(btn_fullscreen, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 2)
 
             tb_sizer.Add(wx.StaticLine(toolbar, style=wx.LI_VERTICAL), 0,
                          wx.EXPAND | wx.LEFT | wx.RIGHT, 4)
 
-            # Fit-to-width — nessuna size fissa: wx calcola la larghezza dal testo
-            # tradotto (es. "Adatta" e' piu' largo di "Fit")
-            btn_fit = wx.Button(toolbar, wx.ID_ANY, _("Fit"),
-                                style=wx.BORDER_SIMPLE)
+            # Fit-to-width — pulsante a icona (img/vector/adatta.svg)
+            btn_fit = wx.BitmapButton(
+                toolbar, wx.ID_ANY,
+                self._load_fit_bitmap(16),
+                style=wx.BORDER_NONE,
+            )
             btn_fit.SetToolTip(_("Fit preview width to panel (Ctrl+Shift+G)"))
             tb_sizer.Add(btn_fit, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, 2)
+            self._btn_fit = btn_fit
 
             # Spacer + label pagina (allineata a destra)
             # La label viene pre-dimensionata sul testo piu' lungo possibile
@@ -248,7 +257,10 @@ class PreviewCanvas(object):
             self._page_label.SetForegroundColour(wx.Colour(100, 100, 100))
             tb_sizer.Add(self._page_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
 
-            toolbar.SetSizer(tb_sizer)
+            # 2 px di margine sopra e sotto, cosi' le icone non toccano i bordi
+            _tb_pad = wx.BoxSizer(wx.VERTICAL)
+            _tb_pad.Add(tb_sizer, 1, wx.EXPAND | wx.TOP | wx.BOTTOM, 2)
+            toolbar.SetSizer(_tb_pad)
             toolbar.Layout()
             outer.Add(toolbar, 0, wx.EXPAND)
 
@@ -263,6 +275,15 @@ class PreviewCanvas(object):
             # (SongpressFrame fa: self.previewCanvas.main_panel.Bind(EVT_HYPERLINK, ..., self.previewCanvas.link))
             # Creiamo un attributo link fittizio che espone lo stesso id del btn_copy
             self.link = btn_copy
+
+            # Riferimenti per SetZoomIconSize (cambio dimensione icone a caldo)
+            self._btn_copy = btn_copy
+            self._btn_refresh = btn_refresh
+            self._btn_zoom_reset = btn_zoom_reset
+            self._btn_zoom_out = btn_zoom_out
+            self._btn_zoom_in = btn_zoom_in
+            self._btn_fullscreen = btn_fullscreen
+            self._tb_panel = toolbar
 
             # Bind toolbar
             btn_copy.Bind(wx.EVT_BUTTON,       self._OnCopyButton)
@@ -333,6 +354,22 @@ class PreviewCanvas(object):
     # Icona "copia" disegnata a mano (per controllarne il colore)
     # -----------------------------------------------------------------------
 
+    # Dimensione corrente (px) delle icone della barra anteprima (da preferenze)
+    _ICON_PX = 16
+
+    @staticmethod
+    def _load_svg_bitmap(name, px):
+        """Carica img/vector/<name> come bitmap px x px; None se non riesce."""
+        try:
+            bb = wx.BitmapBundle.FromSVGFile(glb.AddPath('img/vector/' + name), wx.Size(px, px))
+            if bb.IsOk():
+                bmp = bb.GetBitmap(wx.Size(px, px))
+                if bmp.IsOk():
+                    return bmp
+        except Exception:
+            pass
+        return None
+
     @staticmethod
     def _load_copy_bitmap(px=16):
         """Carica l'icona 'copia' dal PNG del progetto (img/copyAsImage.png).
@@ -341,6 +378,9 @@ class PreviewCanvas(object):
         caricabile per qualunque motivo, ripiega sull'icona disegnata a mano
         nel colore-testo dei pulsanti, così il pulsante resta comunque usabile.
         """
+        bmp = PreviewCanvas._load_svg_bitmap('copyAsImage.svg', px)
+        if bmp is not None:
+            return bmp
         try:
             img = wx.Image(glb.AddPath('img/copyAsImage.png'))
             if img.IsOk():
@@ -361,6 +401,9 @@ class PreviewCanvas(object):
         Se il file non è caricabile per qualunque motivo, ripiega sull'icona
         di sistema ART_REDO, così il pulsante resta comunque usabile.
         """
+        bmp = PreviewCanvas._load_svg_bitmap('update_previewer.svg', px)
+        if bmp is not None:
+            return bmp
         try:
             img = wx.Image(glb.AddPath('img/update_previewer.png'))
             if img.IsOk():
@@ -398,6 +441,61 @@ class PreviewCanvas(object):
 
     # Rosso usato per le icone zoom (allineato al rosso "negativo" di Breeze)
     _ZOOM_RED = wx.Colour(218, 68, 83)   # #DA4453
+
+    @staticmethod
+    def _load_maximize_bitmap(px=16):
+        """Icona 'schermo intero' dall'SVG img/vector/maximize_page.svg
+        (ripiego: simbolo unicode disegnato a mano)."""
+        try:
+            bb = wx.BitmapBundle.FromSVGFile(glb.AddPath('img/vector/maximize_page.svg'),
+                                             wx.Size(px, px))
+            if bb.IsOk():
+                bmp = bb.GetBitmap(wx.Size(px, px))
+                if bmp.IsOk():
+                    return bmp
+        except Exception:
+            pass
+        try:
+            return wx.ArtProvider.GetBitmap(wx.ART_FULL_SCREEN, wx.ART_TOOLBAR, (px, px))
+        except Exception:
+            return wx.ArtProvider.GetBitmap(wx.ART_FIND, wx.ART_TOOLBAR, (px, px))
+
+    @staticmethod
+    def _load_fit_bitmap(px=16):
+        """Icona 'adatta alla larghezza' da img/vector/adatta.svg
+        (ripiego: icona di sistema 'schermo intero')."""
+        bmp = PreviewCanvas._load_svg_bitmap('adatta.svg', px)
+        if bmp is not None:
+            return bmp
+        try:
+            return wx.ArtProvider.GetBitmap(wx.ART_FULL_SCREEN, wx.ART_TOOLBAR, (px, px))
+        except Exception:
+            return wx.ArtProvider.GetBitmap(wx.ART_FIND, wx.ART_TOOLBAR, (px, px))
+
+    @staticmethod
+    def _load_zoom_reset_bitmap(px=16):
+        """Icona 'ripristina zoom 100%' da img/vector/zoom_rip.svg
+        (ripiego: icona di sistema 'torna indietro')."""
+        bmp = PreviewCanvas._load_svg_bitmap('zoom_rip.svg', px)
+        if bmp is not None:
+            return bmp
+        return wx.ArtProvider.GetBitmap(wx.ART_UNDO, wx.ART_TOOLBAR, (px, px))
+
+    @staticmethod
+    def _load_zoom_bitmap(plus=False, px=16):
+        """Carica l'icona zoom + / - dagli SVG in img/vector
+        (zoom_plus_page.svg / zoom_minus_page.svg), scalata a px x px.
+        Se l'SVG non e' caricabile, ripiega sul segno rosso disegnato a mano."""
+        name = 'zoom_plus_page.svg' if plus else 'zoom_minus_page.svg'
+        try:
+            bb = wx.BitmapBundle.FromSVGFile(glb.AddPath('img/vector/' + name), wx.Size(px, px))
+            if bb.IsOk():
+                bmp = bb.GetBitmap(wx.Size(px, px))
+                if bmp.IsOk():
+                    return bmp
+        except Exception:
+            pass
+        return PreviewCanvas._make_sign_bitmap(PreviewCanvas._ZOOM_RED, plus=plus, px=px)
 
     @staticmethod
     def _make_sign_bitmap(colour, plus=False, px=16):
@@ -492,7 +590,7 @@ class PreviewCanvas(object):
         if copy_btn is not None and hasattr(copy_btn, 'SetBitmap'):
             # L'icona copia ora è un PNG fisso (img/copy_2.png): la ricarichiamo
             # tale e quale, senza ricolorarla col fg del tema.
-            copy_btn.SetBitmap(PreviewCanvas._load_copy_bitmap(16))
+            copy_btn.SetBitmap(PreviewCanvas._load_copy_bitmap(PreviewCanvas._ICON_PX))
         toolbar.Refresh(True)
         toolbar.Update()
 
@@ -1114,6 +1212,38 @@ class PreviewCanvas(object):
     def SetTempoDisplay(self, tempoDisplay):
         self.renderer.tempoDisplay = tempoDisplay
 
+    def SetZoomIconSize(self, px):
+        """Imposta la dimensione (px) delle icone zoom -/+ e schermo intero
+        della barra dell'anteprima, e ridisegna la barra."""
+        if getattr(self, '_btn_zoom_out', None) is None:
+            return
+        try:
+            px = int(px)
+        except Exception:
+            px = 16
+        self._btn_zoom_out.SetBitmap(self._load_zoom_bitmap(plus=False, px=px))
+        self._btn_zoom_in.SetBitmap(self._load_zoom_bitmap(plus=True, px=px))
+        self._btn_fullscreen.SetBitmap(self._load_maximize_bitmap(px))
+        PreviewCanvas._ICON_PX = px
+        self._btn_zoom_reset.SetBitmap(self._load_zoom_reset_bitmap(px))
+        self._btn_copy.SetBitmap(self._load_copy_bitmap(px))
+        self._btn_refresh.SetBitmap(self._load_refresh_bitmap(px))
+        self._btn_fit.SetBitmap(self._load_fit_bitmap(px))
+        # Dimensione esplicita (non GetBestSize, che puo' restare "congelato"
+        # al valore delle icone grandi): icona + 6 px, cosi' la barra si
+        # restringe davvero quando si passa a icone piccole.
+        for b in (self._btn_zoom_out, self._btn_zoom_in, self._btn_fullscreen,
+                  self._btn_copy, self._btn_refresh, self._btn_zoom_reset,
+                  self._btn_fit):
+            b.SetMinSize(wx.Size(px + 6, px + 6))
+            b.SetMaxSize(wx.Size(px + 6, px + 6))
+            b.SetSize(wx.Size(px + 6, px + 6))
+        tb = self._tb_panel
+        tb.SetMinSize(wx.Size(-1, -1))
+        tb.InvalidateBestSize()
+        tb.Layout()
+        self.main_panel.Layout()
+
     def SetTempoIconSize(self, size):
         """Imposta la dimensione in pixel delle icone {tempo_*} (16, 24 o 32)."""
         self.renderer.tempoIconSize = size
@@ -1418,7 +1548,8 @@ class _FullscreenPreviewFrame(wx.Frame):
             label="%d%%" % int(round(owner._zoom_factor * 100)),
             size=(40, -1), style=wx.ALIGN_CENTRE_HORIZONTAL)
 
-        btn_fit = wx.Button(toolbar, wx.ID_ANY, _("Fit"), style=wx.BORDER_SIMPLE)
+        btn_fit = wx.BitmapButton(toolbar, wx.ID_ANY,
+            PreviewCanvas._load_fit_bitmap(16), style=wx.BORDER_NONE)
         btn_fit.SetToolTip(_("Fit preview width to panel (Ctrl+Shift+G)"))
 
         tb_sz.AddSpacer(8)

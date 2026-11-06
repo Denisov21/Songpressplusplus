@@ -92,6 +92,11 @@ _USE_GLOBAL = object()
 # parse_fingering / parse_start_note / parse_octave_both lo ignorano.
 NEW_ROW_TOKEN = '<newrow>'
 
+# Segnaposto al posto del nome accordo nella modalità "solo note":
+# {fingering: - hand=R 0=Do 2=Mi}. Nessun accordo: si evidenziano solo i tasti
+# elencati (dito 0 = solo puntino, tasto non colorato) e non si scrive il nome.
+NOTES_ONLY_TOKEN = '-'
+
 
 def has_new_row(entry):
     """True se la voce (stringa direttiva) è marcata come 'inizia nuova riga'."""
@@ -691,6 +696,29 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
             else:
                 continue  # nota fuori dalla finestra di 7 bianchi: non disegnabile
 
+            if finger_num == 0:
+                # 0 = tasto selezionato senza numero di dito (modalità "solo
+                # note"): al posto del numero si disegna un puntino pieno. Il
+                # tasto non e' colorato, quindi il puntino e' sempre a contrasto
+                # con il tasto (nero sul bianco, bianco sul nero), senza usare il
+                # colore dei numeri (che puo' essere chiaro e sparirebbe).
+                d_r = max(3, white_w // 5)
+                if semi in black_map:
+                    gap_idx = black_map[semi]
+                    dcx = x + gap_idx * white_w + white_w
+                    dcy = y + black_h - d_r - 4
+                    d_col = wx.WHITE   # tasto nero non colorato: puntino bianco
+                else:
+                    white_idx = white_order.index(semi)
+                    dcx = x + white_idx * white_w + white_w // 2
+                    dcy = y + h - d_r - 4
+                    if mc_idx is not None and white_idx == mc_idx:
+                        dcy -= mc_h + 3
+                    d_col = wx.BLACK   # tasto bianco non colorato: puntino nero
+                dc.SetBrush(wx.Brush(d_col))
+                dc.SetPen(wx.Pen(d_col, 1))
+                dc.DrawCircle(dcx, dcy, d_r)
+                continue
             label = str(finger_num)
             lw, lh = dc.GetTextExtent(label)
 
@@ -722,7 +750,9 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
     # 1) Misura nome accordo con label_font
     if label_font:
         dc.SetFont(label_font)
-    chord_lw, chord_lh = dc.GetTextExtent(chord_name)
+    chord_lw, chord_lh = dc.GetTextExtent(chord_name or u"A")
+    if not chord_name:
+        chord_lw = 0   # modalità "solo note": nessun nome da scrivere
 
     # Freccia accanto al nome: stesse proporzioni di quella degli accordi nel testo
     arrow_w = arrow_h = 0
@@ -770,6 +800,21 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
                     label_x + chord_lw + arrow_gap,
                     chord_ty + (chord_lh - arrow_h) // 2,
                     arrow_w, arrow_h, arrow_bitmap)
+
+
+def _entry_keys(chord_name, finger_map, notations):
+    """Tasti da evidenziare per una voce. Con nome vuoto (modalità "solo note")
+    sono quelli elencati nella diteggiatura; altrimenti quelli dell'accordo."""
+    if not chord_name:
+        # "Solo note": si colorano solo i tasti con un dito (1-5); quelli con
+        # il puntino (0) restano del colore normale, con il solo puntino.
+        if not finger_map:
+            return None
+        return [k for k, f in finger_map.items() if f != 0]
+    keys = get_chord_keys(_normalize_chord(chord_name, notations))
+    if keys is None:
+        keys = get_chord_keys(chord_name)
+    return keys
 
 
 def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
@@ -852,7 +897,10 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
         if chord_name is None:
             continue
         # Suffisso di direzione: "Am^" (su) / "Amv" (giù) -> freccia
-        chord_name, arrow = _split_chord_arrow(chord_name)
+        if chord_name == NOTES_ONLY_TOKEN:
+            chord_name, arrow = u"", ''
+        else:
+            chord_name, arrow = _split_chord_arrow(chord_name)
 
         # Nota di partenza: token 'start=' della direttiva se presente,
         # altrimenti il default passato dal chiamante (impostazione globale).
@@ -867,10 +915,7 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
         entry_mc = parse_middle_c(entry)
         eff_mc = entry_mc if entry_mc is not None else show_middle_c
 
-        normalized = _normalize_chord(chord_name, notations)
-        keys = get_chord_keys(normalized)
-        if keys is None:
-            keys = get_chord_keys(chord_name)   # fallback
+        keys = _entry_keys(chord_name, finger_map, notations)
         if keys is None:
             continue
 
@@ -966,7 +1011,10 @@ def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
         if chord_name is None:
             continue
         # Suffisso di direzione: "Am^" (su) / "Amv" (giù) -> freccia
-        chord_name, arrow = _split_chord_arrow(chord_name)
+        if chord_name == NOTES_ONLY_TOKEN:
+            chord_name, arrow = u"", ''
+        else:
+            chord_name, arrow = _split_chord_arrow(chord_name)
 
         # Nota di partenza: token 'start=' della direttiva se presente,
         # altrimenti il default passato dal chiamante (impostazione globale).
@@ -981,10 +1029,7 @@ def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
         entry_mc = parse_middle_c(entry)
         eff_mc = entry_mc if entry_mc is not None else show_middle_c
 
-        normalized = _normalize_chord(chord_name, notations)
-        keys = get_chord_keys(normalized)
-        if keys is None:
-            keys = get_chord_keys(chord_name)
+        keys = _entry_keys(chord_name, finger_map, notations)
         if keys is None:
             continue
 

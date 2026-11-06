@@ -242,7 +242,6 @@ class MyPreferencesDialog(PreferencesDialog):
 
         # Enable Save only when modified
         self.enableSaveOnModifiedCB.SetValue(getattr(self.pref, 'enableSaveOnModified', True))
-        self.openReadOnlyCB.SetValue(getattr(self.pref, 'openReadOnly', False))
 
         # Integra accordi: attivo solo quando serve
         self.integrateChordsOnlyWhenNeededCB.SetValue(getattr(self.pref, 'integrateChordsOnlyWhenNeeded', True))
@@ -278,7 +277,6 @@ class MyPreferencesDialog(PreferencesDialog):
             self.rulerBtnText.SetValue(True)
         else:
             self.rulerBtnIcons.SetValue(True)
-        self.rulerIconsNoDpiScaleCB.SetValue(getattr(self.pref, 'rulerIconsNoDpiScale', True))
         if getattr(self.pref, 'rulerOptionsLayout', 'inline') == 'list':
             self.rulerOptList.SetValue(True)
         else:
@@ -292,6 +290,10 @@ class MyPreferencesDialog(PreferencesDialog):
 
         # Intellisense direttive
         self.intellisenseCB.SetValue(getattr(self.pref, 'intellisense', True))
+        # Guida direttive: sotto-opzione, attiva solo con intellisense abilitato
+        self.intellisenseHelpCB.SetValue(getattr(self.pref, 'intellisenseHelp', True))
+        self.intellisenseHelpCB.Enable(self.intellisenseCB.GetValue())
+        self.intellisenseCB.Bind(wx.EVT_CHECKBOX, self._OnIntellisenseToggled)
 
         # Single instance
         self.singleInstanceCB.SetValue(getattr(self.pref, 'singleInstance', True))
@@ -499,6 +501,12 @@ class MyPreferencesDialog(PreferencesDialog):
 
     # Alias per compatibilità con il codice esistente che chiama _BuildInsertToolBarTab
     _BuildInsertToolBarTab = _BuildToolbarsTab
+
+    def _OnIntellisenseToggled(self, evt):
+        # La guida delle direttive ha senso solo con l'intellisense attivo:
+        # la casella rientrata si disabilita (grigia) quando e' spento.
+        self.intellisenseHelpCB.Enable(self.intellisenseCB.GetValue())
+        evt.Skip()
 
     def _hex_to_colour(self, hex_str):
         try:
@@ -2126,7 +2134,6 @@ class MyPreferencesDialog(PreferencesDialog):
         # Anteprima colore al passaggio del mouse
         self.pref.colourPreview = self.colourPreviewCB.GetValue()
         self.pref.enableSaveOnModified = self.enableSaveOnModifiedCB.GetValue()
-        self.pref.openReadOnly = self.openReadOnlyCB.GetValue()
         self.pref.integrateChordsOnlyWhenNeeded = self.integrateChordsOnlyWhenNeededCB.GetValue()
         # Salvataggio geometria finestra
         self.pref.saveWindowGeometry = self.saveWindowGeometryCB.GetValue()
@@ -2150,13 +2157,13 @@ class MyPreferencesDialog(PreferencesDialog):
             self.pref.depIconMode = 'native'
         # Pulsanti modalita' del Righello a schermo (vale dalla prossima apertura)
         self.pref.rulerModeButtons = 'text' if self.rulerBtnText.GetValue() else 'icons'
-        self.pref.rulerIconsNoDpiScale = self.rulerIconsNoDpiScaleCB.GetValue()
         self.pref.rulerOptionsLayout = 'list' if self.rulerOptList.GetValue() else 'inline'
         self.pref.rulerTolerance = max(0, min(255, self.rulerToleranceSpin.GetValue()))
         self.pref.rulerShowTolerance = self.rulerShowToleranceCB.GetValue()
         self.pref.showDebugMsg = self.showDebugMsgCB.GetValue()
         # Intellisense direttive
         self.pref.intellisense = self.intellisenseCB.GetValue()
+        self.pref.intellisenseHelp = self.intellisenseHelpCB.GetValue()
         # Single instance
         self.pref.singleInstance = self.singleInstanceCB.GetValue()
         self.pref.showRestartMenuItem = self.showRestartMenuItemCB.GetValue()

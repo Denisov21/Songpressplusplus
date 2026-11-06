@@ -378,10 +378,13 @@ def _validate_fingering(cmd_value: str, line_num: int, col: int,
     Valida il valore di {fingering: ...}.
 
     Controlli:
-    1. Il primo token deve essere un accordo riconosciuto.
-    2. I token successivi devono avere il formato  N=NomeNota  (N intero 1-5)
+    1. Il primo token deve essere un accordo riconosciuto, oppure il segnaposto
+       '-' (modalita' "solo note": nessun accordo, si scelgono le note).
+    2. I token successivi devono avere il formato  N=NomeNota  (N intero 1-5,
+       oppure 0 = solo puntino sul tasto, solo con '-')
        oppure  hand=R  /  hand=L  (indicazione di mano, opzionale).
-    3. Ogni nota indicata deve appartenere all'accordo specificato.
+    3. Ogni nota indicata deve appartenere all'accordo specificato
+       (con '-' qualunque nota e' ammessa).
     4. Lo stesso dito non può essere assegnato due volte.
     5. La stessa nota non può ricevere due dita diverse.
     6. Il token hand= accetta solo i valori R e L (case-insensitive).
@@ -392,9 +395,10 @@ def _validate_fingering(cmd_value: str, line_num: int, col: int,
         return
 
     chord_name = parts[0]
-    chord_semitones = _parse_chord_semitones(chord_name)
+    notes_only = (chord_name == '-')   # modalita' "solo note"
+    chord_semitones = None if notes_only else _parse_chord_semitones(chord_name)
 
-    if chord_semitones is None:
+    if chord_semitones is None and not notes_only:
         result.errors.append(SyntaxError(
             line=line_num, column=col,
             message=_("{fingering}: unrecognized chord '%s'") % chord_name,
@@ -446,14 +450,14 @@ def _validate_fingering(cmd_value: str, line_num: int, col: int,
         finger_num = int(m.group(1))
         note_str   = m.group(2)
 
-        # Dito fuori range 1-5
-        if finger_num < 1 or finger_num > 5:
+        # Dito fuori range: 1-5 (0 ammesso solo in modalita' "solo note")
+        if finger_num > 5 or (finger_num < 1 and not (notes_only and finger_num == 0)):
+            if notes_only:
+                msg = _("{fingering}: finger number %d is out of range (0–5)") % finger_num
+            else:
+                msg = _("{fingering}: finger number %d is out of range (1–5)") % finger_num
             result.errors.append(SyntaxError(
-                line=line_num, column=col,
-                message=_(
-                    "{fingering}: finger number %d is out of range (1–5)"
-                ) % finger_num
-            ))
+                line=line_num, column=col, message=msg))
             continue
 
         # Nota non riconosciuta
@@ -467,8 +471,8 @@ def _validate_fingering(cmd_value: str, line_num: int, col: int,
             ))
             continue
 
-        # Nota non appartiene all'accordo
-        if semi not in chord_semitones:
+        # Nota non appartiene all'accordo (con '-' non c'e' accordo)
+        if not notes_only and semi not in chord_semitones:
             expected = ', '.join(
                 _SEMI_TO_IT[s] for s in sorted(chord_semitones))
             result.errors.append(SyntaxError(
@@ -479,8 +483,8 @@ def _validate_fingering(cmd_value: str, line_num: int, col: int,
             ))
             continue
 
-        # Dito già usato
-        if finger_num in used_fingers:
+        # Dito già usato (0 = senza dito: puo' ripetersi)
+        if finger_num != 0 and finger_num in used_fingers:
             result.errors.append(SyntaxError(
                 line=line_num, column=col,
                 message=_(
@@ -499,7 +503,8 @@ def _validate_fingering(cmd_value: str, line_num: int, col: int,
             ))
             continue
 
-        used_fingers[finger_num]  = note_str
+        if finger_num != 0:
+            used_fingers[finger_num] = note_str
         used_semitones[semi]      = finger_num
 
 

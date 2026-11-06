@@ -333,9 +333,6 @@ class PreferencesDialog(wx.Dialog):
         self.enableSaveOnModifiedCB.SetToolTip(_(u"When enabled, the 'Save' button and menu item are greyed out until the song has unsaved changes."))
         grpGeneral.Add(self.enableSaveOnModifiedCB, 0, wx.ALL, 5)
 
-        self.openReadOnlyCB = wx.CheckBox(_boxGeneral, wx.ID_ANY, _(u"Always open files in read-only mode"), wx.DefaultPosition, wx.DefaultSize, 0)
-        self.openReadOnlyCB.SetToolTip(_(u"When enabled, songs are opened read-only to prevent accidental edits; use Edit > Read only to unlock them. Files that are not writable are always opened read-only."))
-        grpGeneral.Add(self.openReadOnlyCB, 0, wx.ALL, 5)
 
         self.integrateChordsOnlyWhenNeededCB = wx.CheckBox(_boxGeneral, wx.ID_ANY, _(u"Enable the chord conversion commands only when needed"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.integrateChordsOnlyWhenNeededCB.SetToolTip(_(u"When enabled, 'Integrate chords' is available only when the cursor is on a chord line (tab format) followed by a text line, 'Convert Tab to ChordPro' only when the song (or the selection) is in tab format, and 'Convert inline chords to ChordPro' only when there are chords attached to the text to convert. When disabled, all three are always available."))
@@ -344,6 +341,16 @@ class PreferencesDialog(wx.Dialog):
         self.intellisenseCB = wx.CheckBox(_boxGeneral, wx.ID_ANY, _(u"Enable directive intellisense (Ctrl+Space)"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.intellisenseCB.SetToolTip(_(u"When enabled, pressing Ctrl+Space inside the editor shows a list of available ChordPro directives for auto-completion."))
         grpGeneral.Add(self.intellisenseCB, 0, wx.ALL, 5)
+
+        # Sotto-opzione (rientrata): guida a comparsa accanto al popup intellisense.
+        # Attiva solo se l'intellisense e' abilitato (vedi MyPreferencesDialog).
+        self.intellisenseHelpCB = wx.CheckBox(_boxGeneral, wx.ID_ANY, _(u"Show the directive help next to the list"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.intellisenseHelpCB.SetToolTip(_(u"When enabled, a short description of the selected directive (with an example) is shown in a tooltip next to the intellisense list. Available only when directive intellisense is enabled."))
+        # Rientro sotto la casella "Abilita intellisense"
+        _helpRow = wx.BoxSizer(wx.HORIZONTAL)
+        _helpRow.AddSpacer(24)
+        _helpRow.Add(self.intellisenseHelpCB, 0)
+        grpGeneral.Add(_helpRow, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 5)
 
         self.multiCursorCB = wx.CheckBox(_boxGeneral, wx.ID_ANY, _(u"Enable multi-cursor (Alt+Click, Ctrl+D)"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.multiCursorCB.SetToolTip(_(u"When enabled, Alt+Click adds a new cursor and Ctrl+D selects the next occurrence of the current word."))
@@ -463,11 +470,6 @@ class PreferencesDialog(wx.Dialog):
         gRuler.Add(self.rulerOptInline, 0, wx.ALIGN_CENTER_VERTICAL)
         gRuler.Add(self.rulerOptList, 0, wx.ALIGN_CENTER_VERTICAL)
         grpRuler.Add(gRuler, 0, wx.ALL, 5)
-
-        # Icone a 16x16 pixel reali anche con ridimensionamento > 100%
-        self.rulerIconsNoDpiScaleCB = wx.CheckBox(_boxRuler, wx.ID_ANY, _(u"Keep icons at 16×16 real pixels"))
-        self.rulerIconsNoDpiScaleCB.SetToolTip(_(u"With display scaling above 100% (e.g. 150%), the icons of the screen ruler toolbar are not enlarged: they stay sharp at 16×16 real pixels but look smaller than the text. When disabled, they are enlarged like the other icons and may look slightly blurred. No effect at 100% scaling."))
-        grpRuler.Add(self.rulerIconsNoDpiScaleCB, 0, wx.ALL, 5)
 
         # Tolleranza (stesso valore della barra del righello)
         bSizerRulerTol = wx.BoxSizer(wx.HORIZONTAL)

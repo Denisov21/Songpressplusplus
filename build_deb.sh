@@ -244,9 +244,12 @@ SUGGESTS="gnome-screenshot | kde-spectacle | grim"
 # Formato: "nome_pip:nome_modulo_import" (uno per riga).
 #   - python-pptx  → modulo "pptx"       (necessario su Linux)
 #   - pyshortcuts  → modulo "pyshortcuts"
+#   - svglib       → modulo "svglib"       (icone SVG nei PDF di CreaIndice;
+#                    facoltativa: senza, si ripiega su un PNG rasterizzato)
 # NB: pywin32 è escluso di proposito, è solo per Windows.
 PIP_DEPS="python-pptx:pptx
-pyshortcuts:pyshortcuts"
+pyshortcuts:pyshortcuts
+svglib:svglib"
 
 # Cartelle di lavoro
 BUILD_DIR="$SCRIPT_DIR/build_deb"
@@ -1182,7 +1185,7 @@ if [ -n "$PY" ]; then
                 echo "Songpress++ — È RICHIESTA UNA CONNESSIONE A INTERNET $SPP_NET"
                 echo ""
                 echo "  Alcune dipendenze Python non esistono nei repository Debian"
-                echo "  (python-pptx, pyshortcuts) e verranno scaricate ORA via pip."
+                echo "  (python-pptx, pyshortcuts, svglib) e verranno scaricate ORA via pip."
                 echo ""
                 echo "  Se rispondi No il pacchetto viene installato lo stesso, ma"
                 echo "  dovrai installare le dipendenze a mano in un secondo momento"
@@ -1191,7 +1194,7 @@ if [ -n "$PY" ]; then
                 echo "Songpress++ — AN INTERNET CONNECTION IS REQUIRED $SPP_NET"
                 echo ""
                 echo "  Some Python dependencies are not available in the Debian"
-                echo "  repositories (python-pptx, pyshortcuts) and will be"
+                echo "  repositories (python-pptx, pyshortcuts, svglib) and will be"
                 echo "  downloaded NOW via pip."
                 echo ""
                 echo "  If you answer No the package is still installed, but you"
@@ -1218,7 +1221,7 @@ if [ -n "$PY" ]; then
             sppmsg \
 "Songpress++: to install them later, run:" \
 "Songpress++: per installarle più tardi esegui:"
-            echo "    sudo pip3 install --break-system-packages python-pptx pyshortcuts"
+            echo "    sudo pip3 install --break-system-packages python-pptx pyshortcuts svglib"
             ;;
     esac
 fi
@@ -1488,7 +1491,7 @@ bmsg "$NET  NOTE: installation requires an Internet connection." \
      "$NET  NOTA: l'installazione richiede una connessione a Internet."
 bmsg "    During postinst, pip downloads the dependencies not" \
      "    Durante il postinst vengono scaricate via pip le dipendenze non"
-bmsg "    present in the Debian repositories (python-pptx, pyshortcuts), and via apt" \
-     "    presenti nei repository Debian (python-pptx, pyshortcuts) e via apt"
+bmsg "    present in the Debian repositories (python-pptx, pyshortcuts, svglib), and via apt" \
+     "    presenti nei repository Debian (python-pptx, pyshortcuts, svglib) e via apt"
 bmsg "    the missing system ones. Without a network the app may not start." \
      "    quelle di sistema mancanti. Senza rete l'app potrebbe non partire."

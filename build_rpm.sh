@@ -115,7 +115,7 @@ fi
 
 # ── Conferma: serve una connessione a Internet ────────────────────────────────
 # Il pacchetto prodotto, durante l'installazione (%post), scarica via pip le
-# dipendenze non presenti nei repository (python-pptx, pyshortcuts). Avvisiamo
+# dipendenze non presenti nei repository (python-pptx, pyshortcuts, svglib). Avvisiamo
 # l'utente PRIMA di iniziare, così può annullare senza aver toccato nulla.
 #   - Con -y / --yes (o SPP_ASSUME_YES=1) la domanda viene saltata: utile in CI.
 #   - Se stdin non è un terminale e manca -y, meglio fermarsi che proseguire alla cieca.
@@ -390,9 +390,12 @@ fi
 # Formato: "nome_pip:nome_modulo_import" (uno per riga).
 #   - python-pptx  → modulo "pptx"
 #   - pyshortcuts  → modulo "pyshortcuts"
+#   - svglib       → modulo "svglib"       (icone SVG nei PDF di CreaIndice;
+#                    facoltativa: senza, si ripiega su un PNG rasterizzato)
 # NB: pywin32 è escluso di proposito, è solo per Windows.
 PIP_DEPS="python-pptx:pptx
-pyshortcuts:pyshortcuts"
+pyshortcuts:pyshortcuts
+svglib:svglib"
 
 # ── Cartelle di lavoro ────────────────────────────────────────────────────────
 BUILD_DIR="$SCRIPT_DIR/build_rpm"
@@ -1306,7 +1309,7 @@ if command -v appstreamcli >/dev/null 2>&1; then
     appstreamcli refresh-cache --force >/dev/null 2>&1 || true
 fi
 
-# ── Dipendenze Python presenti solo su PyPI (python-pptx, pyshortcuts) ────────
+# ── Dipendenze Python presenti solo su PyPI (python-pptx, pyshortcuts, svglib) ────────
 PY=$(command -v python3 || true)
 
 # Avviso interattivo: chiede conferma prima di scaricare da PyPI. Se non c'è un
@@ -1324,7 +1327,7 @@ if [ -n "$PY" ]; then
                 echo "Songpress++ — È RICHIESTA UNA CONNESSIONE A INTERNET $SPP_NET"
                 echo ""
                 echo "  Alcune dipendenze Python non esistono nei repository"
-                echo "  (python-pptx, pyshortcuts) e verranno scaricate ORA via pip."
+                echo "  (python-pptx, pyshortcuts, svglib) e verranno scaricate ORA via pip."
                 echo ""
                 echo "  Se rispondi No il pacchetto viene installato lo stesso, ma"
                 echo "  dovrai installare le dipendenze a mano in un secondo momento"
@@ -1333,7 +1336,7 @@ if [ -n "$PY" ]; then
                 echo "Songpress++ — AN INTERNET CONNECTION IS REQUIRED $SPP_NET"
                 echo ""
                 echo "  Some Python dependencies are not available in the distro"
-                echo "  repositories (python-pptx, pyshortcuts) and will be"
+                echo "  repositories (python-pptx, pyshortcuts, svglib) and will be"
                 echo "  downloaded NOW via pip."
                 echo ""
                 echo "  If you answer No the package is still installed, but you"
@@ -1360,7 +1363,7 @@ if [ -n "$PY" ]; then
             sppmsg \
 "Songpress++: to install them later, run:" \
 "Songpress++: per installarle più tardi esegui:"
-            echo "    sudo pip3 install --break-system-packages python-pptx pyshortcuts"
+            echo "    sudo pip3 install --break-system-packages python-pptx pyshortcuts svglib"
             ;;
     esac
 fi
@@ -1468,5 +1471,5 @@ bmsg "$NET  NOTE: installation requires an Internet connection." \
      "$NET  NOTA: l'installazione richiede una connessione a Internet."
 bmsg "    During %post, pip downloads the dependencies not present in the" \
      "    Durante il %post vengono scaricate via pip le dipendenze non presenti"
-bmsg "    distro repositories (python-pptx, pyshortcuts)." \
-     "    nei repository della distro (python-pptx, pyshortcuts)."
+bmsg "    distro repositories (python-pptx, pyshortcuts, svglib)." \
+     "    nei repository della distro (python-pptx, pyshortcuts, svglib)."

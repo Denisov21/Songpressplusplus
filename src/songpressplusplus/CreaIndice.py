@@ -146,13 +146,115 @@ def _load_default_extension():
     return ext or u"crd"
 
 
+def _img_dir():
+    """Folder `img` next to this module."""
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), u"img")
+
+
+def _info_icon_svg_path():
+    """Return the path of img/vector/info.svg (the vector icon, preferred),
+    or None if it is missing."""
+    path = os.path.join(_img_dir(), u"vector", u"info.svg")
+    return path if os.path.isfile(path) else None
+
+
 def _info_icon_path():
     """Return the path of img/info.png (next to this module), or None if it
-    is missing. Used for the note printed at the end of the index and for the
-    small icon beside its checkbox; callers degrade gracefully without it."""
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                        u"img", u"info.png")
+    is missing. This is only the FALLBACK used when the vector icon
+    (img/vector/info.svg) cannot be used."""
+    path = os.path.join(_img_dir(), u"info.png")
     return path if os.path.isfile(path) else None
+
+
+def _info_icon_bitmap(size, window=None, system_fallback=True):
+    """Return a wx.Bitmap of the info icon at `size` x `size` px, or None.
+
+    First choice: the vector icon img/vector/info.svg (sharp at any size and
+    DPI-aware when `window` is given). Fallback: img/info.png, scaled. Last
+    resort (if `system_fallback`): the system information icon."""
+    svg = _info_icon_svg_path()
+    if svg and hasattr(wx, u"BitmapBundle"):
+        try:
+            bundle = wx.BitmapBundle.FromSVGFile(svg, wx.Size(size, size))
+            if bundle.IsOk():
+                bmp = (bundle.GetBitmapFor(window) if window is not None
+                       else bundle.GetBitmap(wx.Size(size, size)))
+                if bmp.IsOk():
+                    return bmp
+        except Exception:  # noqa: BLE001
+            pass
+    png = _info_icon_path()
+    if png:
+        bmp = wx.Bitmap(png, wx.BITMAP_TYPE_PNG)
+        if bmp.IsOk():
+            img = bmp.ConvertToImage().Scale(size, size, wx.IMAGE_QUALITY_HIGH)
+            return wx.Bitmap(img)
+    if system_fallback:
+        try:
+            bmp = wx.ArtProvider.GetBitmap(wx.ART_INFORMATION,
+                                           wx.ART_MESSAGE_BOX,
+                                           wx.Size(size, size))
+            if bmp.IsOk():
+                return bmp
+        except Exception:  # noqa: BLE001
+            pass
+    return None
+
+
+_ICON_RASTER = []   # cache: [path] of the PNG rendered from the SVG
+
+
+def _info_icon_raster_path():
+    """Path of a raster image of the info icon, for formats that cannot embed
+    an SVG (DOCX, and PDF when svglib is not installed).
+
+    The vector icon is rendered once at high resolution (256 px) to a
+    temporary PNG; if that is not possible, img/info.png is used."""
+    if _ICON_RASTER:
+        return _ICON_RASTER[0]
+    if _info_icon_svg_path():
+        try:
+            import atexit
+            import tempfile
+            bmp = _info_icon_bitmap(256, system_fallback=False)
+            if bmp is not None:
+                tmp = tempfile.NamedTemporaryFile(suffix=u".png", delete=False)
+                tmp.close()
+                if bmp.SaveFile(tmp.name, wx.BITMAP_TYPE_PNG):
+                    atexit.register(
+                        lambda f=tmp.name: os.path.isfile(f) and os.remove(f))
+                    _ICON_RASTER.append(tmp.name)
+                    return tmp.name
+                os.remove(tmp.name)
+        except Exception:  # noqa: BLE001
+            pass
+    path = _info_icon_path()
+    if path:
+        _ICON_RASTER.append(path)
+    return path
+
+
+def _info_icon_flowable(size):
+    """ReportLab flowable of the info icon (`size` in points), or None.
+    Vector (via svglib, if installed) first; then the raster image."""
+    svg = _info_icon_svg_path()
+    if svg:
+        try:
+            from svglib.svglib import svg2rlg
+            d = svg2rlg(svg)
+            if d is not None and d.width and d.height:
+                k = size / float(max(d.width, d.height))
+                d.scale(k, k)
+                d.width *= k
+                d.height *= k
+                return d
+        except Exception:  # noqa: BLE001
+            pass
+    raster = _info_icon_raster_path()
+    if raster:
+        from reportlab.platypus import Image as RLImage
+        return RLImage(raster, width=size, height=size)
+    return None
 
 
 def _exclusion_note():
@@ -457,7 +559,7 @@ def build_index_pdf(songs, out_path, heading=None, watermark=None, note=None,
 
     `watermark`, if given, is a dict {'path', 'opacity', 'angle', 'size'}; the
     image is drawn behind the text on every page. `note`, if given, is a text
-    added at the end of the index, preceded by the img/info.png icon.
+    added at the end of the index, preceded by the info icon (img/vector/info.svg, else img/info.png).
     If `show_count` is True, a line with the number of songs in the index is
     written right after the table.
     Returns (total, with_number).
@@ -561,12 +663,11 @@ def build_index_pdf(songs, out_path, heading=None, watermark=None, note=None,
         note_style = ParagraphStyle('IdxNote', parent=styles['Normal'],
                                     fontName='Helvetica-Oblique', fontSize=9,
                                     leading=12, textColor=colors.HexColor('#404040'))
-        icon = _info_icon_path()
+        icon = _info_icon_flowable(5 * mm)
         cells = []
         widths = []
-        if icon:
-            from reportlab.platypus import Image as RLImage
-            cells.append(RLImage(icon, width=5 * mm, height=5 * mm))
+        if icon is not None:
+            cells.append(icon)
             widths.append(8 * mm)
         cells.append(Paragraph(_escape(note), note_style))
         widths.append((170 - sum(w / mm for w in widths)) * mm)
@@ -681,7 +782,7 @@ def build_index_docx(songs, out_path, heading=None, watermark=None, note=None,
 
     `watermark`, if given, is a dict {'path', 'opacity', 'angle', 'size'}; the
     image is placed behind the text on every page. `note`, if given, is a text
-    added at the end of the document, preceded by the img/info.png icon.
+    added at the end of the document, preceded by the info icon (img/vector/info.svg, else img/info.png).
     If `show_count` is True, a line with the number of songs in the index is
     written right after the table.
     Returns (total, with_number).
@@ -749,7 +850,7 @@ def build_index_docx(songs, out_path, heading=None, watermark=None, note=None,
     if note:
         np_ = doc.add_paragraph()
         np_.paragraph_format.space_before = Pt(10)
-        icon = _info_icon_path()
+        icon = _info_icon_raster_path()
         if icon:
             np_.add_run().add_picture(icon, width=Mm(5), height=Mm(5))
             np_.add_run(u"  ")
@@ -799,14 +900,10 @@ class IndexPanel(wx.Panel):
                                     _(u"Requirements for the songs"))
         sb_req = box_req.GetStaticBox()
         req_row = wx.BoxSizer(wx.HORIZONTAL)
-        req_icon_path = _info_icon_path()
-        if req_icon_path:
-            req_bmp = wx.Bitmap(req_icon_path, wx.BITMAP_TYPE_PNG)
-            if req_bmp.IsOk():
-                req_img = req_bmp.ConvertToImage().Scale(
-                    16, 16, wx.IMAGE_QUALITY_HIGH)
-                req_row.Add(wx.StaticBitmap(sb_req, bitmap=wx.Bitmap(req_img)),
-                            0, wx.ALIGN_TOP | wx.ALL, 6)
+        req_bmp = _info_icon_bitmap(16, sb_req)
+        if req_bmp is not None:
+            req_row.Add(wx.StaticBitmap(sb_req, bitmap=req_bmp),
+                        0, wx.ALIGN_TOP | wx.ALL, 6)
         req_txt = wx.StaticText(
             sb_req,
             label=_(u"To be listed correctly, each song must contain these "
@@ -853,18 +950,14 @@ class IndexPanel(wx.Panel):
             label=_(u"Add a note at the end of the index about excluded songs"))
         self.noteWmCb.SetValue(_config().ReadBool(u"wm_note", False))
         noteRow.Add(self.noteWmCb, 0, wx.ALIGN_CENTER_VERTICAL)
-        icon_path = _info_icon_path()
-        if icon_path:
-            bmp = wx.Bitmap(icon_path, wx.BITMAP_TYPE_PNG)
-            if bmp.IsOk():
-                # scale to a small, consistent size next to the checkbox
-                img = bmp.ConvertToImage().Scale(12, 12, wx.IMAGE_QUALITY_HIGH)
-                self.noteIcon = wx.StaticBitmap(box_dir.GetStaticBox(),
-                                                bitmap=wx.Bitmap(img))
-                noteRow.Add(self.noteIcon, 0,
-                            wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
-                _set_tip(self.noteIcon, _(u"Prints \u201c%s\u201d at the end of "
-                                          u"the index.") % _exclusion_note())
+        note_bmp = _info_icon_bitmap(12, box_dir.GetStaticBox())
+        if note_bmp is not None:
+            self.noteIcon = wx.StaticBitmap(box_dir.GetStaticBox(),
+                                            bitmap=note_bmp)
+            noteRow.Add(self.noteIcon, 0,
+                        wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
+            _set_tip(self.noteIcon, _(u"Prints \u201c%s\u201d at the end of "
+                                      u"the index.") % _exclusion_note())
         box_dir.Add(noteRow, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 4)
         _set_tip(self.noteWmCb,
                  _(u"Print a note with an info icon at the end of the index, "

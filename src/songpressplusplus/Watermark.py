@@ -21,6 +21,7 @@
 ###############################################################
 
 import math
+import os
 import wx
 
 _ = wx.GetTranslation
@@ -47,6 +48,55 @@ def _set_tip(win, text):
             child = None
         if child:
             child.SetToolTip(text)
+
+
+_INFO_ICON_PX = 16   # dimensione (px) dell'icona informativa
+
+
+def _img_path(rel):
+    """Percorso di una risorsa in img/: glb.AddPath se disponibile, altrimenti
+    la cartella img accanto a questo modulo."""
+    try:
+        from .Globals import glb
+        return glb.AddPath(rel)
+    except Exception:
+        return os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            *rel.split('/'))
+
+
+def _info_icon_bitmap(window, size=_INFO_ICON_PX):
+    """Bitmap dell'icona 'i' a size x size px, o None se non disponibile.
+
+    Prima scelta: img/vector/info.svg (vettoriale, nitida a ogni DPI);
+    ripiego: img/info.png ridimensionata; ultima risorsa: icona di sistema."""
+    try:
+        bb = wx.BitmapBundle.FromSVGFile(
+            _img_path('img/vector/info.svg'), wx.Size(size, size))
+        if bb.IsOk():
+            bmp = bb.GetBitmapFor(window)
+            if bmp.IsOk():
+                return bmp
+    except Exception:
+        pass
+    try:
+        img = wx.Image(_img_path('img/info.png'))
+        if img.IsOk():
+            if img.GetWidth() != size or img.GetHeight() != size:
+                img = img.Scale(size, size, wx.IMAGE_QUALITY_HIGH)
+            bmp = wx.Bitmap(img)
+            if bmp.IsOk():
+                return bmp
+    except Exception:
+        pass
+    # 3) icona di sistema
+    try:
+        bmp = wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_MESSAGE_BOX,
+                                       wx.Size(size, size))
+        if bmp.IsOk():
+            return bmp
+    except Exception:
+        pass
+    return None
 
 
 # Valori di default (usati anche da SongpressFrame per inizializzare le pref)
@@ -290,7 +340,15 @@ class WatermarkDialog(wx.Dialog):
                     "preview++\" to see it in the editor too. It is drawn behind\n"
                     "the song, so it never covers the text."))
         note.SetForegroundColour(wx.Colour(110, 110, 110))
-        main.Add(note, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, pad)
+        # Icona 'i' (img/vector/info.svg, ripiego img/info.png) allineata in
+        # alto, accanto alla prima riga del testo a piu' righe.
+        note_row = wx.BoxSizer(wx.HORIZONTAL)
+        info_bmp = _info_icon_bitmap(self)
+        if info_bmp is not None:
+            note_row.Add(wx.StaticBitmap(self, bitmap=info_bmp), 0,
+                         wx.ALIGN_TOP | wx.RIGHT, 8)
+        note_row.Add(note, 1, wx.ALIGN_CENTER_VERTICAL)
+        main.Add(note_row, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, pad)
 
         # Pulsanti
         btns = self.CreateButtonSizer(wx.OK | wx.CANCEL)

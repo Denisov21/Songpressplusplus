@@ -114,10 +114,39 @@ _UNITS = [
 _ACCEL_CANDIDATES = ["Ctrl+Shift+M", "Ctrl+Alt+M", "Ctrl+Shift+U", "Ctrl+Alt+R"]
 
 
-def _load_image_bitmap(relpath, size=None):
+def _load_image_bitmap(relpath, size=None, vector=True, window=None):
     """Carica un'immagine delle risorse di Songpress++ (es. 'img/close.png',
     la stessa usata dall'XRC come ../img/close.png). Ritorna None se manca."""
     candidates = []
+    # Versione vettoriale (solo se 'vector' e' attivo e il file esiste):
+    # img/vector/<nome>.svg, nitida a qualunque dimensione. Altrimenti si usa
+    # il PNG in img/.
+    if size and vector:
+        svgrel = 'img/vector/' + os.path.splitext(os.path.basename(relpath))[0] + '.svg'
+        svgpaths = []
+        try:
+            from .Globals import glb
+            svgpaths.append(glb.AddPath(svgrel))
+        except Exception:
+            pass
+        svgpaths.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), svgrel))
+        for sp in svgpaths:
+            if sp and os.path.isfile(sp):
+                try:
+                    bb = wx.BitmapBundle.FromSVGFile(sp, wx.Size(size[0], size[1]))
+                    if bb.IsOk():
+                        bmp = None
+                        if window is not None:
+                            try:
+                                bmp = bb.GetBitmapFor(window)   # nitida alla scala dello schermo
+                            except Exception:
+                                bmp = None
+                        if bmp is None or not bmp.IsOk():
+                            bmp = bb.GetBitmap(wx.Size(size[0], size[1]))
+                        if bmp.IsOk():
+                            return bmp
+                except Exception:
+                    pass
     try:
         from .Globals import glb
         candidates.append(glb.AddPath(relpath))
@@ -161,12 +190,14 @@ def _no_dpi_scaling(window, bmp):
     return bmp
 
 
-def _icon_button(parent, relpath, fallbackText, noDpiScale=True):
+def _icon_button(parent, relpath, fallbackText, vector=True, px=None):
     """Pulsante con l'icona delle risorse di Songpress++; se l'immagine
     manca, pulsante di testo con fallbackText."""
-    bmp = _load_image_bitmap(relpath, _ICON_SIZE)
+    size = (px, px) if px else _ICON_SIZE
+    bmp = _load_image_bitmap(relpath, size, vector, parent)
     if bmp is not None:
-        if noDpiScale:
+        if not vector:
+            # icone bitmap: pixel reali alla dimensione scelta, senza ingrandimento
             bmp = _no_dpi_scaling(parent, bmp)
         return wx.BitmapButton(parent, -1, bmp)
     return wx.Button(parent, -1, fallbackText, size=(28, -1), style=wx.BU_EXACTFIT)
@@ -182,9 +213,9 @@ _MODE_ICONS = {
 }
 
 
-def _mode_bitmap(mode, size=16):
+def _mode_bitmap(mode, size=16, vector=True, window=None):
     """Icona della modalita': prima il file in img/, poi quella disegnata."""
-    bmp = _load_image_bitmap(_MODE_ICONS.get(mode, ''), (size, size))
+    bmp = _load_image_bitmap(_MODE_ICONS.get(mode, ''), (size, size), vector, window)
     if bmp is not None:
         return bmp
     return _make_mode_bitmap(mode, size)
@@ -613,7 +644,7 @@ class _RulerToolbar(wx.Panel):
         # resta nel suggerimento.
         # Icone o scritte secondo Opzioni › Generale › "Pulsanti modalita'
         # del Righello a schermo" (pref.rulerModeButtons).
-        iconPx = _ICON_SIZE[0]
+        iconPx = getattr(overlay, 'iconPx', _ICON_SIZE[0])
         for key, label, tip in _modes():
             if not overlay.modeIcons:
                 b = wx.ToggleButton(self, -1, label, style=wx.BU_EXACTFIT)
@@ -624,8 +655,8 @@ class _RulerToolbar(wx.Panel):
                 continue
             b = wx.ToggleButton(self, -1, "", style=wx.BU_EXACTFIT)
             try:
-                bmp = _mode_bitmap(key, iconPx)
-                if overlay.iconsNoDpiScale:
+                bmp = _mode_bitmap(key, iconPx, overlay.vectorIcons, self)
+                if not overlay.vectorIcons:
                     bmp = _no_dpi_scaling(self, bmp)
                 b.SetBitmap(bmp)
             except Exception as exc:
@@ -648,7 +679,7 @@ class _RulerToolbar(wx.Panel):
         self.listBtn = None
         if overlay.optionsList:
             self.listBtn = _icon_button(self, 'img/ruler_list.png', "\u2630",
-                                        overlay.iconsNoDpiScale)
+                                        overlay.vectorIcons, iconPx)
             self.listBtn.SetToolTip(_("Options: fit to content (F), show cross (C), "
                                       "smooth zoom (S), high resolution (H)"))
             self.listBtn.Bind(wx.EVT_BUTTON, self.OnOptionsList)
@@ -682,7 +713,7 @@ class _RulerToolbar(wx.Panel):
 
         sizer.Add(wx.StaticText(self, -1, _("Zoom:")), 0,
                   wx.LEFT | wx.ALIGN_CENTER_VERTICAL, 8)
-        zout = _icon_button(self, 'img/minus.png', "\u2212", overlay.iconsNoDpiScale)
+        zout = _icon_button(self, 'img/minus.png', "\u2212", overlay.vectorIcons, iconPx)
         zout.SetToolTip(_("Zoom out (-)"))
         zout.Bind(wx.EVT_BUTTON, lambda e: overlay.ZoomStep(-1))
         sizer.Add(zout, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 1)
@@ -697,12 +728,12 @@ class _RulerToolbar(wx.Panel):
         self.zoomLabel.SetMaxSize((lw, lh))
         self.zoomLabel.SetToolTip(_("Zoom only enlarges the view: measurements are always in real screen pixels (0 = 1:1)"))
         sizer.Add(self.zoomLabel, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 2)
-        zin = _icon_button(self, 'img/plus.png', "+", overlay.iconsNoDpiScale)
+        zin = _icon_button(self, 'img/plus.png', "+", overlay.vectorIcons, iconPx)
         zin.SetToolTip(_("Zoom in (+, Ctrl+mouse wheel)"))
         zin.Bind(wx.EVT_BUTTON, lambda e: overlay.ZoomStep(+1))
         sizer.Add(zin, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 1)
 
-        close = _icon_button(self, 'img/close.png', "\u2715", overlay.iconsNoDpiScale)
+        close = _icon_button(self, 'img/close.png', "\u2715", overlay.vectorIcons, iconPx)
         close.SetToolTip(_("Close (Esc)"))
         close.Bind(wx.EVT_BUTTON, lambda e: overlay.Close())
         sizer.Add(close, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 3)
@@ -842,9 +873,9 @@ class _OptionsPopup(wx.PopupTransientWindow):
 class ScreenRulerOverlay(wx.Frame):
 
     def __init__(self, parent, image, screenRect, onClose=None, fullImage=None,
-                 modeIcons=True, iconsNoDpiScale=True, optionsList=False,
+                 modeIcons=True, vectorIcons=True, optionsList=False,
                  tolerance=_DEFAULT_TOLERANCE, showTolerance=True,
-                 onToleranceChanged=None):
+                 onToleranceChanged=None, iconPx=16):
         style = wx.FRAME_NO_TASKBAR | wx.STAY_ON_TOP | wx.BORDER_NONE
         if parent is not None:
             style |= wx.FRAME_FLOAT_ON_PARENT
@@ -871,8 +902,13 @@ class ScreenRulerOverlay(wx.Frame):
         self.fit = True
         self.showCross = _session['showCross']
         self.modeIcons = bool(modeIcons)   # pulsanti modalita': icone o scritte
-        # icone a 16x16 pixel reali anche con ridimensionamento > 100%
-        self.iconsNoDpiScale = bool(iconsNoDpiScale)
+        # True: icone vettoriali (SVG); False: icone bitmap alla dimensione scelta (iconPx)
+        self.vectorIcons = bool(vectorIcons)
+        # dimensione icone della barra: segue Opzioni > Toolbar icon size
+        try:
+            self.iconPx = max(8, int(iconPx))
+        except Exception:
+            self.iconPx = 16
         # opzioni: caselle affiancate nella barra oppure lista a comparsa
         self.optionsList = bool(optionsList)
         # Tolleranza: valore iniziale dalle Opzioni; ogni modifica fatta nella
@@ -1258,6 +1294,34 @@ class ScreenRulerOverlay(wx.Frame):
         self.Refresh(False)
 
     def _view_bitmap(self):
+        """Bitmap da disegnare: come _view_bitmap_raw(), ma con scaling dello
+        schermo oltre il 100% viene portata a pixel fisici (nearest) e marcata
+        con il fattore di scala, cosi' wx la disegna 1:1 invece di
+        ingrandirla con interpolazione (che sfocava la vista ingrandita)."""
+        bmp = self._view_bitmap_raw()
+        if self.smooth:
+            return bmp
+        try:
+            scale = float(self.GetDPIScaleFactor())
+        except Exception:
+            scale = 1.0
+        if scale <= 1.0 or bmp is None or not bmp.IsOk():
+            return bmp
+        cache = getattr(self, '_dpiBmpCache', None)
+        if cache is not None and cache[0] is bmp and cache[1] == scale:
+            return cache[2]
+        try:
+            img = bmp.ConvertToImage()
+            pw = max(1, int(round(img.GetWidth() * scale)))
+            ph = max(1, int(round(img.GetHeight() * scale)))
+            out = wx.Bitmap(img.Scale(pw, ph, wx.IMAGE_QUALITY_NEAREST))
+            out.SetScaleFactor(scale)
+        except Exception:
+            return bmp
+        self._dpiBmpCache = (bmp, scale, out)
+        return out
+
+    def _view_bitmap_raw(self):
         """Porzione visibile dell'immagine, ingrandita senza interpolazione.
         Il ridimensionamento e' fatto qui (e non con wx.Image.Scale) perche'
         usi ESATTAMENTE la stessa corrispondenza pixel di _X/_to_image:
@@ -1751,15 +1815,16 @@ class ScreenRulerMixin(object):
 
         pref = getattr(self, 'pref', None)
         modeIcons = getattr(pref, 'rulerModeButtons', 'icons') != 'text'
-        noDpi = getattr(pref, 'rulerIconsNoDpiScale', True)
+        vec = True   # icone sempre vettoriali (SVG; ripiego sul PNG se manca)
         optList = getattr(pref, 'rulerOptionsLayout', 'inline') == 'list'
         self._screenRuler = ScreenRulerOverlay(self.frame, img, rect, onClose=_closed,
                                                fullImage=full, modeIcons=modeIcons,
-                                               iconsNoDpiScale=noDpi,
+                                               vectorIcons=vec,
                                                optionsList=optList,
                                                tolerance=getattr(pref, 'rulerTolerance', _DEFAULT_TOLERANCE),
                                                showTolerance=getattr(pref, 'rulerShowTolerance', True),
-                                               onToleranceChanged=_toleranceChanged)
+                                               onToleranceChanged=_toleranceChanged,
+                                               iconPx=getattr(pref, 'toolbarIconPx', 16))
         self._screenRuler.Start()
 
 

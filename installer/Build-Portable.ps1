@@ -1,4 +1,4 @@
-﻿###############################################################
+###############################################################
 # Build-Portable.ps1
 # Crea una distribuzione portabile ZIP di Songpress++
 # usando cx_Freeze in un venv dedicato.
@@ -78,6 +78,11 @@ $Deps = @(
     # via FreeType). Necessaria: pyproject congela il modulo PIL con cx_Freeze,
     # quindi deve essere installata nel venv o la build fallisce.
     'pillow>=10.0.0,<12.0.0'
+    # svglib: icone vettoriali SVG (img\vector\*.svg) nei PDF di CreaIndice.
+    # pyproject congela il modulo svglib (e tinycss2, cssselect2, lxml) con
+    # cx_Freeze: deve essere nel venv o la build fallisce. pip tira da solo le
+    # sue dipendenze.
+    'svglib>=1.5.1,<2.0.0'
 
 )
 

@@ -87,3 +87,19 @@ msgstr "Il file \"%s\" esiste già. Vuoi sovrascriverlo?"
 #: SDIMainFrame.py
 msgid "File already open"
 msgstr "Già aperto"
+
+#: SongpressFrame.py (zoom editor)
+msgid "Editor zoom"
+msgstr "Zoom editor"
+
+#: SongpressFrame.py (zoom editor)
+msgid "Zoom in editor text"
+msgstr "Aumenta zoom del testo dell'editor"
+
+#: SongpressFrame.py (zoom editor)
+msgid "Zoom out editor text"
+msgstr "Riduci zoom del testo dell'editor"
+
+#: SongpressFrame.py (zoom editor)
+msgid "Reset editor zoom to 100%"
+msgstr "Ripristina zoom dell'editor al 100%"

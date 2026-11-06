@@ -682,6 +682,7 @@ La direttiva `{fingering:}` è una variante della tastiera klavier pensata per i
 {fingering: Am hand=R 3=Do 1=Mi 2=La}
 {fingering: Am hand=L}
 {fingering: Si hand=R start=Si 1=Si 2=Re# 3=Fa#}
+{fingering: - hand=R 1=Do 3=Mi 5=Sol}
 ```
 
 La parte `dito=nota` è opzionale. Il token `hand=` è anch'esso opzionale e può comparire in qualsiasi posizione dopo il nome dell'accordo. I numeri corrispondono alle dita:
@@ -753,10 +754,13 @@ Le note si scrivono in notazione italiana (`Do`, `Re`, `Mi`, `Fa`, `Sol`, `La`, 
 
 > **Nota sulla notazione** — Il dialogo di inserimento e la griglia delle dita rispettano la **notazione predefinita** impostata nelle preferenze di Songpress++ (*Opzioni → Notazione predefinita*). I nomi delle note mostrati nella griglia e scritti nella direttiva generata cambiano automaticamente in base alla notazione scelta: con notazione Americana si vedrà `A, C#, E`; con Italiana `La, Do#, Mi`; con Tedesca `A, Cis, E`, e così via. Anche il riconoscimento degli accordi digitati nel campo *Accordo* segue la notazione corrente. Le notazioni Nashville e Romana non sono supportate per la diteggiatura.
 
+**Solo note, senza accordo (`-`):** per ricordare come impostare la mano senza passare da un accordo, al posto del nome si scrive il segnaposto `-` e si elencano le note da indicare, es. `{fingering: - hand=R 1=Do 3=Mi 5=Sol}`. La tastiera **non scrive nessun nome** sopra: si colorano i tasti con un dito (1–5) e ognuno mostra il suo numero. Con `0=NOTA` (es. `0=Re`) il tasto **non viene colorato** e mostra soltanto un **puntino** (●): serve per segnalare una nota senza assegnarle un dito. In questa modalità qualunque nota è ammessa, perché non c'è un accordo a cui debba appartenere. Funziona anche in anteprima, stampa ed esportazione.
+
 **Inserimento dal menu:** *Inserisci → Altro → Diteggiatura primo accordo {fingering:}*
 Si apre una finestra che mostra automaticamente le note dell'accordo e permette di:
 
 - assegnare un dito a ciascuna nota con un menu a tendina;
+- spuntare **Solo note (senza accordo)**: il campo accordo si disattiva e compaiono tutte e 12 le note; per ognuna si sceglie «—» (non usata), «●» (solo un puntino sul tasto, senza colorarlo e senza dito) oppure un dito da 1 a 5;
 - selezionare la mano (Destra / Sinistra / Nessuna indicazione);
 - scegliere la **Nota di partenza** della tastiera dal menu a tendina omonimo;
 - attivare **Evidenzia la nota su entrambe le ottave** (abilitata solo quando la partenza genera 8 tasti);
@@ -831,6 +835,7 @@ Il controllo sintassi integrato (`Strumenti → Controlla sintassi`) valida il t
 | ------ | ------- | ------------ |
 | Valore non valido | `{fingering: Am hand=X}` | `hand` deve essere R o L |
 | Token `hand=` duplicato | `{fingering: Am hand=R hand=L}` | `hand` specificato più di una volta |
+| Dito fuori intervallo | `{fingering: Am 6=La}` | Con un accordo il dito deve essere 1–5; con `-` è ammesso anche `0` (0–5) |
 
 ### Tempo — `{tempo:}` e varianti
 
@@ -2277,6 +2282,20 @@ Quando si aggiunge un nuovo comando a una toolbar, è sufficiente:
 2. Aggiungere il percorso icona in `_*_toolbar_icons` e il testo di aiuto in `_*_toolbar_helps` dentro il rispettivo metodo `_Build*ToolBar()`.
 
 **`MyPreferencesDialog` e `SongpressFrame` non richiedono alcuna modifica**: entrambi leggono le costanti `*_TOOLBAR_ITEMS` in modo dinamico — il dialogo preferenze genera automaticamente i checkbox per ogni nuova voce, e il save/load del config itera sull'intera lista.
+
+### Formato delle icone (vettoriali e raster)
+
+Le icone delle toolbar **Standard**, **Formato**, **Inserisci** e **Visualizza** sono **sempre vettoriali** a qualunque dimensione scelta in **Strumenti → Opzioni… → Generale → Dimensione icone della barra degli strumenti** (16, 19, 21 o 32 px): vengono caricate dagli SVG in `img/vector/` e rasterizzate alla scala reale dello schermo (DPI), quindi restano nitide anche su display ad alta risoluzione.
+
+Le immagini raster sono solo un **ripiego** usato quando manca l'SVG dell'icona:
+
+| Dimensione | Ripiego raster |
+|---|---|
+| 16×16 | PNG originale in `img/` |
+| 19×19 e 21×21 | PNG 16×16 centrato su una tela trasparente della dimensione richiesta |
+| 32×32 | PNG in `img/32/` se presente, altrimenti il PNG 16×16 raddoppiato |
+
+Anche tutte le immagini delle **altre barre** (barra dell'editor, barra della pagina Songpress++, righello a schermo) sono **sempre vettoriali**, con ripiego sul PNG se manca l'SVG. Le icone dell'**anteprima di stampa** sono vettoriali come prima scelta.
 
 ---
 

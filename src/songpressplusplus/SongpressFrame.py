@@ -868,7 +868,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.SetDefaultExtension(self.pref.defaultExtension)
         self.statusBar = self.frame.GetStatusBar()
         if self.statusBar:
-            self.statusBar.SetFieldsCount(4)   # 4o campo: lucchetto sola lettura
+            self.statusBar.SetFieldsCount(3)
             self._ResizeStatusFields(u"")
         self._statusTimer = wx.Timer(self.frame)
         self.frame.Bind(wx.EVT_TIMER, self._OnStatusTimerExpired, self._statusTimer)
@@ -928,8 +928,20 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.previewCanvas.SetRefreshCallback(lambda: self._get_display_text())
         # Filigrana iniziale in anteprima (se abilitata nelle preferenze)
         self.previewCanvas.SetWatermark(self._GetWatermarkConfig())
+        # Pannello contenitore: Editor + barra zoom sotto l'editor (solo per l'editor).
+        self._editorPanel = wx.Panel(self.frame)
+        self.text.Reparent(self._editorPanel)
+        self._editorZoomToolbar = self._BuildEditorZoomToolbar(self._editorPanel)
+        _ed_sizer = wx.BoxSizer(wx.VERTICAL)
+        # Barra zoom subito sotto la caption "Editor", sulla stessa riga
+        # della barra dell'anteprima (stessa altezza).
+        _ed_sizer.Add(self._editorZoomToolbar, 0, wx.EXPAND)
+        _ed_sizer.Add(self.text, 1, wx.EXPAND)
+        self._editorPanel.SetSizer(_ed_sizer)
+        self._UpdateEditorZoomToolbar()
+        self._AlignEditorZoomToolbarHeight()
         self._mgr.AddPane(
-            self.text,
+            self._editorPanel,
             aui.AuiPaneInfo()
                 .Center()
                 .Name('_main')
@@ -958,6 +970,27 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             def __init__(self, pref):
                 super().__init__()
                 self._pref = pref
+                self._ApplyMenuFont()
+
+            def Init(self, *a, **k):
+                r = super().Init(*a, **k)
+                self._ApplyMenuFont()
+                return r
+
+            def _ApplyMenuFont(self):
+                """Scritte delle caption (Editor / Pagina Songpress++) con lo
+                stesso font, e quindi la stessa altezza, delle voci di menu."""
+                try:
+                    font = wx.Font(wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT))
+                    font.SetWeight(wx.FONTWEIGHT_NORMAL)
+                    self._caption_font = font
+                    self.SetFont(aui.AUI_DOCKART_CAPTION_FONT, font)
+                    dc = wx.ScreenDC()
+                    dc.SetFont(font)
+                    h = dc.GetTextExtent(u"Ag")[1]
+                    self.SetMetric(aui.AUI_DOCKART_CAPTION_SIZE, h + 8)
+                except Exception:
+                    pass
 
             @staticmethod
             def _hex_to_colour(h, fallback):
@@ -1060,7 +1093,6 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.chordsAboveMenuId = xrc.XRCID('chordsAbove')
         self.chordsBelowMenuId = xrc.XRCID('chordsBelow')
         self.spellLiveMenuId = xrc.XRCID('spellLive')
-        self.readOnlyMenuId = xrc.XRCID('readOnly')
         if platform.system() != 'Windows':
             self.menuBar.GetMenu(0).FindItemById(self.exportMenuId).GetSubMenu().Delete(self.exportAsEmfMenuId)
         self._LocalizeClipboardMenuLabel()
@@ -1115,6 +1147,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         # _FinalizeToolbarLayout per ricalcolare i BestSize reali dal
         # contenuto delle toolbar ed evitare spazio bianco a destra.
         self._FinalizeToolbarLayout()
+        self._ApplyZoomIconSize()
         self._UpdateBreakLinesMenuState()
         wx.CallAfter(self._SyncPreviewToggleButton)
         self.RestoreWindowGeometry()
@@ -1141,6 +1174,158 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 if f.ShowModal() == wx.ID_OK:
                     self.text.SetFont(self.pref.editorFace, int(self.pref.editorSize))
                     self.SetDefaultExtension(self.pref.defaultExtension)
+
+    # ── Barra zoom dell'editor (sotto l'editor, agisce solo su di esso) ──
+    _EDITOR_ZOOM_ICON_SIZE = 16   # px: stessa dimensione delle icone +/- della pagina Songpress++
+
+    def _EditorZoomIcon(self, name, size=None):
+        """Carica l'icona SVG da img/vector (con fallback su bitmap vuota)."""
+        if size is None:
+            size = self._EDITOR_ZOOM_ICON_SIZE
+        path = glb.AddPath('img/vector/' + name)
+        try:
+            bb = wx.BitmapBundle.FromSVGFile(path, wx.Size(size, size))
+            if bb.IsOk():
+                return bb
+        except Exception:
+            pass
+        try:
+            return wx.BitmapBundle(wx.ArtProvider.GetBitmap(
+                wx.ART_UNDO if 'rip' in name else (wx.ART_PLUS if name == 'zoom_in.svg' else wx.ART_MINUS), wx.ART_TOOLBAR, wx.Size(size, size)))
+        except Exception:
+            return wx.BitmapBundle(wx.Bitmap(size, size))
+
+    def _ApplyZoomIconSize(self):
+        """Applica la dimensione icone delle preferenze (toolbarIconSize) alle
+        barre zoom di editor e anteprima, riallineandone l'altezza."""
+        try:
+            px = int(self.pref.toolbarIconPx)
+        except Exception:
+            px = 16
+        self._EDITOR_ZOOM_ICON_SIZE = px
+        try:
+            self._edZoomOutBtn.SetBitmap(self._EditorZoomIcon('zoom_out.svg', px))
+            self._edZoomInBtn.SetBitmap(self._EditorZoomIcon('zoom_in.svg', px))
+            self._edZoomResetBtn.SetBitmap(self._EditorZoomIcon('zoom_rip.svg', px))
+            for b in (self._edZoomOutBtn, self._edZoomInBtn, self._edZoomResetBtn):
+                b.SetMinSize(wx.Size(px + 6, px + 6))
+                b.SetMaxSize(wx.Size(px + 6, px + 6))
+                b.SetSize(wx.Size(px + 6, px + 6))
+        except Exception:
+            pass
+        try:
+            self.previewCanvas.SetZoomIconSize(px)
+        except Exception:
+            pass
+        # L'altezza della barra anteprima cambia dopo il layout: riallinea dopo
+        def _realign():
+            self._AlignEditorZoomToolbarHeight()
+            try:
+                if not getattr(self, '_closing', False):
+                    self._mgr.Update()
+            except Exception:
+                pass
+        wx.CallAfter(_realign)
+
+    def _BuildEditorZoomToolbar(self, parent):
+        """Barra zoom: pannello con sizer orizzontale, controlli centrati in verticale."""
+        bar = wx.Panel(parent)
+        row = wx.BoxSizer(wx.HORIZONTAL)
+
+        def _icon_btn(name, tip):
+            b = wx.BitmapButton(bar, wx.ID_ANY, self._EditorZoomIcon(name),
+                                style=wx.BU_EXACTFIT | wx.BORDER_NONE)
+            b.SetToolTip(tip)
+            return b
+
+        self._edZoomOutBtn = _icon_btn('zoom_out.svg', _('Zoom out editor text'))
+        self._edZoomInBtn = _icon_btn('zoom_in.svg', _('Zoom in editor text'))
+        # Cursore dello zoom (punti Scintilla: da -10 a +20), come nell'anteprima
+        self._edZoomSlider = wx.Slider(bar, wx.ID_ANY, 0, -10, 20, size=wx.Size(120, -1),
+                                       style=wx.SL_HORIZONTAL)
+        self._edZoomSlider.SetToolTip(_('Editor zoom'))
+        self._edZoomLabel = wx.StaticText(bar, wx.ID_ANY, '100%', size=wx.Size(48, -1),
+                                          style=wx.ALIGN_CENTRE_HORIZONTAL)
+        self._edZoomResetBtn = _icon_btn('zoom_rip.svg', _('Reset editor zoom to 100%'))
+        self._edZoomResetBtn.SetToolTip(_('Reset editor zoom to 100%'))
+
+        row.AddSpacer(6)
+        row.Add(self._edZoomOutBtn, 0, wx.ALIGN_CENTER_VERTICAL)
+        row.Add(self._edZoomSlider, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, 4)
+        row.Add(self._edZoomInBtn, 0, wx.ALIGN_CENTER_VERTICAL)
+        row.Add(self._edZoomLabel, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
+        row.Add(self._edZoomResetBtn, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 4)
+        bar.SetSizer(row)
+
+        self._edZoomOutBtn.Bind(wx.EVT_BUTTON, self._OnEditorZoomOut)
+        self._edZoomInBtn.Bind(wx.EVT_BUTTON, self._OnEditorZoomIn)
+        self._edZoomResetBtn.Bind(wx.EVT_BUTTON, self._OnEditorZoomReset)
+        self._edZoomSlider.Bind(wx.EVT_SLIDER, self._OnEditorZoomSlider)
+        # Sincronizza anche con lo zoom fatto con Ctrl+rotellina
+        self.text.Bind(wx.stc.EVT_STC_ZOOM, lambda e: (self._UpdateEditorZoomToolbar(), e.Skip()))
+        return bar
+
+    def _OnEditorZoomReset(self, evt):
+        self.text.SetZoom(0)
+        self._UpdateEditorZoomToolbar()
+
+    def _OnEditorZoomSlider(self, evt):
+        self.text.SetZoom(self._edZoomSlider.GetValue())
+        self._UpdateEditorZoomToolbar()
+
+    def _AlignEditorZoomToolbarHeight(self):
+        """Porta la barra zoom dell'editor alla stessa altezza di quella dell'anteprima."""
+        tb = getattr(self, '_editorZoomToolbar', None)
+        if tb is None:
+            return
+        # Altezza = quella (calcolata dal contenuto) della barra dell'anteprima,
+        # che ha 2 px di margine sopra e sotto: le due barre restano uguali
+        # al variare della dimensione delle icone.
+        h = -1
+        try:
+            pt = self.previewCanvas._tb_panel
+            pt.InvalidateBestSize()
+            pt.Layout()
+            h = pt.GetSizer().CalcMin().GetHeight()
+        except Exception:
+            h = -1
+        if h <= 0:
+            tb.SetMinSize(wx.Size(-1, -1))
+            tb.SetMaxSize(wx.Size(-1, -1))
+            tb.InvalidateBestSize()
+            h = tb.GetBestSize().GetHeight() + 4
+        tb.SetMinSize(wx.Size(-1, -1))
+        tb.SetMaxSize(wx.Size(-1, -1))
+        tb.SetMinSize(wx.Size(-1, h))
+        tb.SetMaxSize(wx.Size(-1, h))
+        tb.SetSize(wx.Size(-1, h))
+        try:
+            self._editorPanel.Layout()
+        except Exception:
+            pass
+
+    def _UpdateEditorZoomToolbar(self):
+        tb = getattr(self, '_editorZoomToolbar', None)
+        if tb is None:
+            return
+        z = self.text.GetZoom()
+        self._edZoomOutBtn.Enable(z > -10)
+        self._edZoomInBtn.Enable(z < 20)
+        if self._edZoomSlider.GetValue() != z:
+            self._edZoomSlider.SetValue(max(-10, min(20, z)))
+        try:
+            base = max(1, int(self.pref.editorSize))
+        except Exception:
+            base = 10
+        self._edZoomLabel.SetLabel('%d%%' % round(max(1, base + z) * 100.0 / base))
+
+    def _OnEditorZoomIn(self, evt):
+        self.text.ZoomIn()
+        self._UpdateEditorZoomToolbar()
+
+    def _OnEditorZoomOut(self, evt):
+        self.text.ZoomOut()
+        self._UpdateEditorZoomToolbar()
 
     def OnClose(self, evt):
         self._closing = True
@@ -1755,8 +1940,6 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         # --- Controllo ortografico ---
         Bind(self.OnSpellCheck, 'spellCheck')
         Bind(self.OnSpellLive, 'spellLive')
-        # --- Sola lettura ---
-        Bind(self.OnReadOnly, 'readOnly')
         Bind(self.OnSpellOptions, 'spellOptions')
         self.frame.Bind(EVT_SYNTAX_GOTO, self.OnSyntaxGoto)
         # --- Riavvia applicazione ---
@@ -5115,22 +5298,35 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         dlg.Destroy()
 
     def _MakeInfoNote(self, parent, text, wrap=260):
-        """Riga informativa: icona 'i' (img/info.png) + testo a capo.
+        """Riga informativa: icona 'i' + testo a capo.
 
-        Restituisce un wx.BoxSizer da aggiungere al dialogo. Se l'icona non
-        esiste usa quella di sistema, cosi' funziona uguale su Windows e Linux.
+        Icona: prima scelta img/vector/info.svg (vettoriale, nitida a ogni DPI);
+        ripiego img/info.png; ultima risorsa l'icona di sistema. Sempre 16x16.
+
+        Restituisce un wx.BoxSizer da aggiungere al dialogo. Cosi' funziona
+        uguale su Windows e Linux.
         """
         row = wx.BoxSizer(wx.HORIZONTAL)
         bmp = wx.NullBitmap
+        # 1) vettoriale
         try:
-            img = wx.Image(glb.AddPath('img/info.png'))
-            if img.IsOk():
-                # Icona sempre a 16x16 pixel, qualunque sia la dimensione del file.
-                if img.GetWidth() != 16 or img.GetHeight() != 16:
-                    img = img.Scale(16, 16, wx.IMAGE_QUALITY_HIGH)
-                bmp = wx.Bitmap(img)
+            bb = wx.BitmapBundle.FromSVGFile(
+                glb.AddPath('img/vector/info.svg'), wx.Size(16, 16))
+            if bb.IsOk():
+                bmp = bb.GetBitmapFor(parent)
         except Exception:
             pass
+        # 2) ripiego PNG
+        if not bmp.IsOk():
+            try:
+                img = wx.Image(glb.AddPath('img/info.png'))
+                if img.IsOk():
+                    # Icona sempre a 16x16 pixel, qualunque sia la dimensione del file.
+                    if img.GetWidth() != 16 or img.GetHeight() != 16:
+                        img = img.Scale(16, 16, wx.IMAGE_QUALITY_HIGH)
+                    bmp = wx.Bitmap(img)
+            except Exception:
+                pass
         if not bmp.IsOk():
             bmp = wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_MESSAGE_BOX, (16, 16))
         if bmp.IsOk():
@@ -5260,6 +5456,14 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         cb_upper.SetValue(True)
         vbox.Add(cb_upper, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
+        # Modalita' "solo note": nessun accordo da digitare; si scelgono
+        # direttamente le note (e, se si vuole, il dito) fra le 12 dell'ottava.
+        # Serve per ricordarsi come impostare la mano senza passare da un accordo.
+        cb_notes = wx.CheckBox(dlg, -1, _(u"Notes only (no chord)"))
+        cb_notes.SetToolTip(_(u"Pick the notes directly instead of typing a chord. "
+                              u"\u25cf = dot only, key not coloured."))
+        vbox.Add(cb_notes, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
         # Mano destra / sinistra
         hbox_hand = wx.BoxSizer(wx.HORIZONTAL)
         hbox_hand.Add(wx.StaticText(dlg, -1, _(u"Hand:")),
@@ -5368,7 +5572,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             dc.Clear()
 
             chord = txt_chord.GetValue().strip()
-            if not chord:
+            if not chord and not _notes_mode():
                 return
 
             # Ricava semitoni accordo e finger_map dalla direttiva corrente
@@ -5395,7 +5599,12 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             # DO centrale dalla direttiva (None -> nascosto)
             show_midc = bool(KlavierRenderer.parse_middle_c(inner))
 
-            keys = KlavierRenderer.get_chord_keys(chord_name)
+            if chord_name == KlavierRenderer.NOTES_ONLY_TOKEN:
+                chord_name = u""
+                # i tasti con il puntino (0) non si colorano
+                keys = [k for k, f in finger_map.items() if f != 0]
+            else:
+                keys = KlavierRenderer.get_chord_keys(chord_name)
             if keys is None:
                 return
 
@@ -5424,7 +5633,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 8, wx.FONTFAMILY_DEFAULT,
                 wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
             dc.SetFont(label_font)
-            cw, ch = dc.GetTextExtent(chord_name)
+            cw, ch = dc.GetTextExtent(chord_name or u"A")
+            if not chord_name:
+                cw = 0
             dc.SetTextForeground(wx.BLACK)
             dc.DrawText(chord_name, ox + (_kbd_w_real - cw) // 2, 2 + hh + 2)
 
@@ -5475,15 +5686,39 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         # ── Stato dinamico ────────────────────────────────────────────
         finger_choices = [u"\u2014", u"1", u"2", u"3", u"4", u"5"]
+        # In modalita' "solo note" c'e' in piu' \u25cf = solo puntino, tasto non colorato
+        notes_choices  = [u"\u2014", u"\u25cf", u"1", u"2", u"3", u"4", u"5"]
         current_notes  = []   # note attuali
         note_rows      = []   # (StaticText, Choice) correnti
 
+        def _notes_mode():
+            return cb_notes.GetValue()
+
+        def _sel_to_finger(sel):
+            """Indice del Choice -> numero dito (0 = senza dito, None = non usata)."""
+            if _notes_mode():
+                if sel <= 0:
+                    return None
+                return 0 if sel == 1 else sel - 1
+            return sel if sel > 0 else None
+
+        def _finger_to_sel(n):
+            """Numero dito -> indice del Choice."""
+            if _notes_mode():
+                return 1 if n == 0 else n + 1
+            return n
+
         def _build():
-            chord = txt_chord.GetValue().strip()
-            if not chord:
-                return u"{fingering: }"
-            if cb_upper.GetValue():
-                chord = chord.upper()
+            if _notes_mode():
+                chord = KlavierRenderer.NOTES_ONLY_TOKEN
+                if not any(c.GetSelection() > 0 for _l, c in note_rows):
+                    return u"{fingering: }"
+            else:
+                chord = txt_chord.GetValue().strip()
+                if not chord:
+                    return u"{fingering: }"
+                if cb_upper.GetValue():
+                    chord = chord.upper()
             hand = u"R" if rb_right.GetValue() else u"L"
             parts = [chord, u"hand=%s" % hand]
             # Nota di partenza: aggiunta solo se diversa da DO
@@ -5500,9 +5735,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                     and cb_midc.GetValue()):
                 parts.append(u"middlec=show")
             for i, (lbl, ch) in enumerate(note_rows):
-                sel = ch.GetSelection()
-                if sel > 0:
-                    parts.append(u"%d=%s" % (sel, current_notes[i]))
+                f = _sel_to_finger(ch.GetSelection())
+                if f is not None:
+                    parts.append(u"%d=%s" % (f, current_notes[i]))
             inner = u" ".join(parts)
             # Se la casella "Ordina come sulla tastiera" è attiva, ordina i
             # token dito=nota per posizione sulla tastiera (da sinistra a
@@ -5537,19 +5772,43 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 return
 
             # FlexGridSizer: 2 colonne, righe variabili
-            fgs = wx.FlexGridSizer(cols=2, vgap=6, hgap=12)
-            fgs.Add(wx.StaticText(grid_panel, -1, _(u"Note")),
-                    0, wx.ALIGN_CENTER)
-            fgs.Add(wx.StaticText(grid_panel, -1, _(u"Finger")),
-                    0, wx.ALIGN_CENTER)
+            # In modalita' "solo note" le 12 note stanno su due coppie di colonne
+            _pairs = 2 if _notes_mode() else 1
+            fgs = wx.FlexGridSizer(cols=2 * _pairs, vgap=6, hgap=12)
+            for _k in range(_pairs):
+                fgs.Add(wx.StaticText(grid_panel, -1, _(u"Note")),
+                        0, wx.ALIGN_CENTER)
+                fgs.Add(wx.StaticText(grid_panel, -1, _(u"Finger")),
+                        0, wx.ALIGN_CENTER)
+            _choices = notes_choices if _notes_mode() else finger_choices
             for note in notes:
                 lbl = wx.StaticText(grid_panel, -1, note)
-                ch  = wx.Choice(grid_panel, -1, choices=finger_choices)
+                ch  = wx.Choice(grid_panel, -1, choices=_choices)
                 ch.SetSelection(prev_sel.get(note, 0))
                 ch.Bind(wx.EVT_CHOICE, _update_preview)
-                fgs.Add(lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 4)
-                fgs.Add(ch,  0, wx.ALIGN_CENTER_VERTICAL)
                 note_rows.append((lbl, ch))
+
+            # Il FlexGridSizer riempie per righe. Con due coppie di colonne le
+            # note vanno disposte per COLONNE (DO..FA a sinistra, FA#..SI a
+            # destra), altrimenti si leggono a zig-zag (DO, DO#, RE, RE#...).
+            # note_rows resta nell'ordine delle note: cambia solo il posto
+            # in cui i controlli vengono aggiunti al sizer.
+            if _pairs == 2:
+                _half = (len(note_rows) + 1) // 2
+                _order = []
+                for _r in range(_half):
+                    _order.append(note_rows[_r])
+                    _order.append(note_rows[_r + _half]
+                                  if _r + _half < len(note_rows) else None)
+            else:
+                _order = list(note_rows)
+            for _item in _order:
+                if _item is None:
+                    fgs.AddSpacer(0)
+                    fgs.AddSpacer(0)
+                    continue
+                fgs.Add(_item[0], 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 4)
+                fgs.Add(_item[1], 0, wx.ALIGN_CENTER_VERTICAL)
 
             # Sostituisce il sizer del panel
             grid_panel.SetSizer(fgs)
@@ -5557,12 +5816,15 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         def _on_chord_change(e=None):
             chord = txt_chord.GetValue().strip()
-            pairs = chord_semitones(chord) if chord else []  # [(nome, semitono)]
+            if _notes_mode():
+                pairs = [(_semi_to_note(s), s) for s in range(12)]
+            else:
+                pairs = chord_semitones(chord) if chord else []  # [(nome, semitono)]
             # Se la casella è attiva, ordina come sulla tastiera da sinistra a
             # destra. L'ordine visivo dipende dalla nota di partenza: la prima
             # a sinistra è quella iniziale, quindi si ordina per distanza da
             # essa, cioè (semitono - partenza) mod 12.
-            if cb_order.GetValue():
+            if cb_order.GetValue() or _notes_mode():
                 start_semi = _WHITE_SEMIS[ch_start.GetSelection()]
                 pairs = sorted(pairs, key=lambda p: (p[1] - start_semi) % 12)
             notes = [name for name, _semi in pairs]
@@ -5600,6 +5862,14 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         # Cambiare l'ordinamento ricostruisce la griglia mantenendo le dita già scelte
         cb_order.Bind(wx.EVT_CHECKBOX, _on_chord_change)
 
+        def _on_notes_toggle(e=None):
+            notes = _notes_mode()
+            txt_chord.Enable(not notes)
+            cb_upper.Enable(not notes)
+            note_rows.clear()   # le selezioni dei due modi non sono compatibili
+            _on_chord_change()
+        cb_notes.Bind(wx.EVT_CHECKBOX, _on_notes_toggle)
+
         # Cursore dentro un {fingering:...} esistente: i controlli riflettono
         # il testo attuale (accordo, mano, partenza, ottave, DO centrale, dita).
         _ex = self._ReadKeyboardDirectiveAtCaret('fingering')
@@ -5625,13 +5895,18 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             _on_start_change()   # aggiorna abilitazione caselle e griglia
 
             # L'accordo ricostruisce la griglia note/dita (_on_chord_change)...
-            txt_chord.SetValue(_chord)
+            if _chord == KlavierRenderer.NOTES_ONLY_TOKEN:
+                cb_notes.SetValue(True)
+                _on_notes_toggle()
+                _name_to_semi = {_semi_to_note(_s): _s for _s in range(12)}
+            else:
+                txt_chord.SetValue(_chord)
+                _name_to_semi = dict(chord_semitones(_chord))
             # ...e poi vi si rimettono i numeri delle dita scritti nel testo.
-            _name_to_semi = dict(chord_semitones(_chord))
             for (_lbl, _ch), _note in zip(note_rows, current_notes):
                 _n = _fingers.get(_name_to_semi.get(_note))
                 if _n is not None and 0 <= _n <= 5:
-                    _ch.SetSelection(_n)
+                    _ch.SetSelection(_finger_to_sel(_n))
             _update_preview()
 
         vbox.Fit(dlg)
@@ -6651,8 +6926,6 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         return target
 
     def New(self):
-        # Un documento nuovo e' sempre modificabile
-        self.text.SetReadOnly(False)
         self.text.AutoChangeMode(True)
         self.text.New()
         self.text.AutoChangeMode(False)
@@ -6668,20 +6941,13 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         user_doc = self._user_template_target(self.document, must_exist=True)
         if user_doc:
             self.document = user_doc
-        # Sblocca l'editor per poter caricare il nuovo testo; la sola lettura
-        # viene poi riapplicata se serve (file non scrivibile / preferenza).
-        self.text.SetReadOnly(False)
         self.text.AutoChangeMode(True)
         self.text.Open()
         self.text.AutoChangeMode(False)
         # Ripristina la filigrana salvata nel documento (direttiva {watermark:}).
         self._load_watermark_from_document()
-        read_only = self._ShouldOpenReadOnly()
-        if read_only:
-            self.text.SetReadOnly(True)
         self.UpdateEverything()
-        if not read_only:
-            self.AutoAdjust(0, self.text.GetLength())
+        self.AutoAdjust(0, self.text.GetLength())
 
     def Save(self):
         # Reindirizza il salvataggio dei template dalla copia del PACCHETTO
@@ -6966,136 +7232,6 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.UpdateUndoRedo()
         self.UpdateCutCopyPaste()
         self.UpdateSave()
-        self.UpdateReadOnly()
-
-    # ── Modalita' sola lettura ──────────────────────────────────────────
-    # Voci di menu i cui stati sono gestiti da altre Update*(): in sola
-    # lettura vengono solo disattivate (alla fine di UpdateEverything).
-    _RO_MANAGED_MENU_NAMES = (
-        'cut', 'paste', 'pasteChords', 'undo', 'redo', 'removeChords',
-        'integrateChords', 'convertTabToChordpro', 'chordProImport',
-    )
-    # Voci non gestite altrove: attive solo quando il testo e' modificabile.
-    _RO_STATIC_MENU_NAMES = (
-        'propagateVerseChords', 'propagateChorusChords', 'replace',
-        'moveChordRight', 'moveChordLeft', 'transpose', 'simplifyChords',
-        'changeChordNotation', 'cleanupChords', 'removeSpuriousBlankLines',
-        'normalizeSpaces', 'spellCheck',
-    )
-
-    def IsReadOnly(self):
-        return bool(self.text.GetReadOnly())
-
-    def SetReadOnlyMode(self, read_only):
-        self.text.SetReadOnly(bool(read_only))
-        self.UpdateEverything()
-
-    def OnReadOnly(self, evt):
-        if self.IsReadOnly() and not self._UnlockSystemProtection():
-            # annullato (o errore): resta in sola lettura
-            self.UpdateEverything()
-            return
-        self.SetReadOnlyMode(not self.IsReadOnly())
-
-    def _UnlockSystemProtection(self):
-        """Chiamata quando si toglie la sola lettura. Se il file e' protetto
-        in scrittura dal sistema, propone di rimuovere la protezione, cosi'
-        che il salvataggio funzioni. Ritorna False se l'utente annulla."""
-        doc = getattr(self, 'document', '')
-        try:
-            protected = bool(doc) and os.path.isfile(doc) and not os.access(doc, os.W_OK)
-        except Exception:
-            protected = False
-        if not protected:
-            return True
-        msg = (_("The file is write-protected by the operating system.") + "\n\n" +
-               _("Do you want to remove the protection, so that you can save your changes?") + "\n\n" +
-               _("Yes: remove the protection and unlock the song.") + "\n" +
-               _("No: unlock the song only (to save, use 'Save as...').") + "\n" +
-               _("Cancel: keep the song read-only."))
-        d = wx.MessageDialog(self.frame, msg, self.appLongName,
-                             wx.YES_NO | wx.CANCEL | wx.ICON_QUESTION)
-        res = d.ShowModal()
-        d.Destroy()
-        if res == wx.ID_CANCEL:
-            return False
-        if res == wx.ID_YES:
-            try:
-                import stat
-                os.chmod(doc, os.stat(doc).st_mode | stat.S_IWUSR | stat.S_IWRITE)
-            except Exception as e:
-                wx.MessageDialog(self.frame, _("Unable to remove the protection:") + "\n" + str(e),
-                                 self.appLongName, wx.OK | wx.ICON_ERROR).ShowModal()
-                return False
-        return True
-
-    def _ShouldOpenReadOnly(self):
-        """True se il file appena aperto va mostrato in sola lettura:
-        file non scrivibile oppure preferenza "apri sempre in sola lettura"."""
-        if getattr(self.pref, 'openReadOnly', False):
-            return True
-        doc = getattr(self, 'document', None)
-        try:
-            return bool(doc) and os.path.isfile(doc) and not os.access(doc, os.W_OK)
-        except Exception:
-            return False
-
-    def UpdateReadOnly(self):
-        """Allinea menu, barre strumenti e titolo allo stato di sola lettura."""
-        try:
-            ro = self.IsReadOnly()
-            mb = self.menuBar
-            mb.Check(self.readOnlyMenuId, ro)
-            for name in self._RO_STATIC_MENU_NAMES:
-                self._RoEnableMenu(name, not ro)
-            if ro:
-                for name in self._RO_MANAGED_MENU_NAMES:
-                    self._RoEnableMenu(name, False)
-                for tool in ('cutTool', 'pasteTool', 'pasteChordsTool',
-                             'undoTool', 'redoTool'):
-                    tid = getattr(self, tool, None)
-                    if tid is not None:
-                        self.mainToolBar.EnableTool(tid, False)
-            # Menu "Inserisci" (4o menu della barra): ridisegnato solo quando
-            # lo stato cambia, per evitare sfarfallii.
-            if getattr(self, '_roUiState', None) != ro:
-                self._roUiState = ro
-                if mb.GetMenuCount() > 3:
-                    mb.EnableTop(3, not ro)
-                self.UpdateTitle()
-                self._UpdateStatusLock(ro)
-            # Strumenti di modifica delle AuiToolBar (le toolbar vengono
-            # ricostruite quando cambiano le preferenze: si riallinea sempre).
-            self._UpdateReadOnlyTools(ro)
-        except Exception:
-            pass
-
-    def _RoEnableMenu(self, name, enable):
-        try:
-            mid = xrc.XRCID(name)
-            if self.menuBar.FindItemById(mid) is not None:
-                self.menuBar.Enable(mid, enable)
-        except Exception:
-            pass
-
-    def _UpdateReadOnlyTools(self, ro):
-        tools = [(self.insertToolBar, [xrc.XRCID(x[0]) for x in self.INSERT_TOOLBAR_ITEMS]),
-                 (self.formatToolBar, [xrc.XRCID('insertLinespacing')])]
-        for tb, ids in tools:
-            changed = False
-            for tid in ids:
-                if tb.FindTool(tid) is not None and tb.GetToolEnabled(tid) == ro:
-                    tb.EnableTool(tid, not ro)
-                    changed = True
-            if changed:
-                tb.Refresh()
-
-    def UpdateTitle(self):
-        """Titolo della finestra, con l'indicatore [Sola lettura] se serve."""
-        SDIMainFrame.UpdateTitle(self)
-        text = getattr(self, 'text', None)
-        if text is not None and text.GetReadOnly():
-            self.frame.SetTitle(self.frame.GetTitle() + " [%s]" % _("Read only"))
 
     def TextUpdated(self):
         # Rileva una direttiva {watermark:} digitata o modificata a mano
@@ -7438,12 +7574,6 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 evt.Skip(False)
                 return
 
-        if self.text.GetReadOnly() and (tp in map and tp[3] is False
-                                        or tp in ((314, True, True, False), (316, True, True, False))):
-            # sola lettura: niente spostamento di accordi / celle grid
-            evt.Skip(False)
-            return
-
         if (method := map.get(tp)) is not None:
             method()
             evt.Skip(False)
@@ -7536,6 +7666,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             stc.AutoCompSetAutoHide(True)
             stc.AutoCompSetDropRestOfWord(False)
             stc.AutoCompShow(len(ctx['prefix']), ' '.join(ctx['items']))
+            self._dirListItems = list(ctx['items'])
+            self._dirListHasImages = False
             self._StartDirectiveTips()
             return
 
@@ -7582,6 +7714,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         stc.AutoCompSetAutoHide(True)
         stc.AutoCompSetDropRestOfWord(False)
         stc.AutoCompShow(typed_len, ' '.join(_tagged(d) for d in matches))
+        self._dirListItems = list(matches)
+        self._dirListHasImages = True
         self._StartDirectiveTips()
 
     # ── Tooltip descrittivo per le voci del popup intellisense ──────────────
@@ -7589,24 +7723,40 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
     # quando compare un calltip. Si usa invece un wx.PopupWindow, aggiornato
     # da un timer che segue la voce evidenziata.
     def _StartDirectiveTips(self):
+        # Guida disattivata nelle Opzioni (o intellisense spento): la lista di
+        # completamento resta, ma non compare il tooltip descrittivo.
+        if not getattr(self.pref, 'showIntellisenseHelp', True):
+            self._StopDirectiveTips()
+            return
         if getattr(self, '_dirTipTimer', None) is None:
             self._dirTipTimer = wx.Timer()
             self._dirTipTimer.Bind(wx.EVT_TIMER, self._OnDirectiveTipTimer)
         self._dirTipLast = None
+        self._dirTipFirst = 0     # indice della prima voce visibile nella lista
         if not self._dirTipTimer.IsRunning():
             self._dirTipTimer.Start(150)
 
     def _StopDirectiveTips(self):
         t = getattr(self, '_dirTipTimer', None)
-        if t is not None and t.IsRunning():
-            t.Stop()
+        try:
+            if t is not None and t.IsRunning():
+                t.Stop()
+        except RuntimeError:
+            pass
         self._dirTipLast = None
         self._HideDirectiveTip()
 
     def _HideDirectiveTip(self):
         win = getattr(self, '_dirTipWin', None)
-        if win is not None and win.IsShown():
-            win.Hide()
+        if win is None:
+            return
+        try:
+            if win.IsShown():
+                win.Hide()
+        except RuntimeError:
+            # La finestra e' gia' stata distrutta (chiusura del programma):
+            # il timer puo' scattare un'ultima volta dopo la distruzione.
+            self._dirTipWin = None
 
     def _OnDirectiveTipTimer(self, evt):
         stc = self.text
@@ -7620,6 +7770,21 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             return
         # il testo può contenere il suffisso immagine '?N'
         current = current.split('?')[0].strip()
+        # Segue lo scorrimento della lista: serve a sapere a quale riga
+        # (visibile) corrisponde la voce evidenziata.
+        try:
+            idx = stc.AutoCompGetCurrent()
+            rows = max(1, min(len(getattr(self, '_dirListItems', [])) or 1,
+                              stc.AutoCompGetMaxHeight()))
+            first = getattr(self, '_dirTipFirst', 0)
+            if idx < first:
+                first = idx
+            elif idx >= first + rows:
+                first = idx - rows + 1
+            self._dirTipFirst = max(0, first)
+            self._dirTipIdx = idx
+        except Exception:
+            self._dirTipIdx = 0
         if current == self._dirTipLast:
             return
         self._dirTipLast = current
@@ -7638,42 +7803,134 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             return
         self._ShowDirectiveTip(text)
 
+    def _GetAutoCompListRect(self):
+        """Rettangolo (in coordinate schermo) della lista di completamento di
+        Scintilla, o None se non lo si puo' ricavare. Solo Windows: la lista e'
+        una finestra nativa di classe 'ListBoxX'."""
+        if wx.Platform != '__WXMSW__':
+            return None
+        try:
+            import ctypes
+            from ctypes import wintypes
+            user32 = ctypes.WinDLL('user32', use_last_error=True)
+            proto = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+            # argtypes espliciti: senza, gli HWND a 64 bit vengono troncati
+            user32.EnumWindows.argtypes = [proto, wintypes.LPARAM]
+            user32.IsWindowVisible.argtypes = [wintypes.HWND]
+            user32.GetClassNameW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+            user32.GetWindowRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
+            found = []
+
+            def _cb(hwnd, _lp):
+                if user32.IsWindowVisible(hwnd):
+                    buf = ctypes.create_unicode_buffer(64)
+                    user32.GetClassNameW(hwnd, buf, 64)
+                    # Scintilla: 'ListBoxX' (a volte con suffisso)
+                    if buf.value.startswith('ListBoxX'):
+                        r = wintypes.RECT()
+                        if user32.GetWindowRect(hwnd, ctypes.byref(r)):
+                            found.append(wx.Rect(r.left, r.top,
+                                                 r.right - r.left, r.bottom - r.top))
+                return True
+
+            user32.EnumWindows(proto(_cb), 0)
+            return found[0] if found else None
+        except Exception:
+            return None
+
     def _ShowDirectiveTip(self, text):
+        """Mostra la descrizione della voce evidenziata A DESTRA della lista,
+        alla stessa altezza della voce, in corsivo e con un colore diverso
+        (non e' un tooltip giallo: sembra una nota a fianco al comando).
+
+        Scintilla non permette font/colori diversi dentro la lista, quindi si
+        usa una piccola finestra senza bordi posizionata accanto alla lista.
+        Larghezza e altezza della lista sono stimate dalle voci mostrate."""
         stc = self.text
+        # Colori in base al tema (sfondo dell'editor chiaro o scuro)
+        bg_ed = stc.StyleGetBackground(wx.stc.STC_STYLE_DEFAULT)
+        dark = (bg_ed.Red() * 299 + bg_ed.Green() * 587 + bg_ed.Blue() * 114) / 1000.0 < 128
+        if dark:
+            bg, fg, border = wx.Colour(37, 42, 52), wx.Colour(140, 185, 235), wx.Colour(80, 90, 110)
+        else:
+            bg, fg, border = wx.Colour(244, 248, 255), wx.Colour(30, 95, 170), wx.Colour(190, 205, 225)
+
         win = getattr(self, '_dirTipWin', None)
         if win is None:
-            win = wx.PopupWindow(self.frame, wx.SIMPLE_BORDER)
-            win.SetBackgroundColour(wx.Colour(255, 255, 225))
-            lbl = wx.StaticText(win, label='', pos=(6, 4))
-            lbl.SetForegroundColour(wx.Colour(30, 30, 30))
+            win = wx.PopupWindow(self.frame, wx.BORDER_NONE)
+            lbl = wx.StaticText(win, label='', pos=(8, 3))
+            font = lbl.GetFont()
+            font.SetStyle(wx.FONTSTYLE_ITALIC)
+            font.SetPixelSize(wx.Size(0, 14))     # altezza carattere 14 px
+            lbl.SetFont(font)
             win._lbl = lbl
             self._dirTipWin = win
+        win.SetBackgroundColour(border)          # 1 px di cornice sottile
+        win._lbl.SetBackgroundColour(bg)
+        win._lbl.SetForegroundColour(fg)
         lbl = win._lbl
+        # Il testo puo' avere un esempio dopo '\n': resta sulla seconda riga.
         lbl.SetLabel(text)
         lbl.Wrap(self.frame.FromDIP(300))
         sz = lbl.GetBestSize()
-        win.SetSize((sz.width + 12, sz.height + 8))
+        pad_x, pad_y = 8, 3
+        lbl.SetSize((sz.width + 2 * pad_x, sz.height + 2 * pad_y))
+        lbl.SetPosition((1, 1))
+        win.SetSize((sz.width + 2 * pad_x + 2, sz.height + 2 * pad_y + 2))
 
-        pos = stc.AutoCompPosStart()
-        pt = stc.PointFromPosition(pos)
-        line_h = stc.TextHeight(stc.LineFromPosition(pos))
-        screen_pt = stc.ClientToScreen(pt)
-        # La lista si apre sotto la riga se c'è spazio, altrimenti sopra.
-        # Il tooltip va a SINISTRA della lista, alla stessa altezza, così non
-        # ne copre le voci. Se a sinistra non c'è spazio, passa sopra/sotto
-        # la riga dalla parte opposta alla lista.
-        disp = wx.Display(wx.Display.GetFromWindow(stc) if wx.Display.GetFromWindow(stc) >= 0 else 0)
-        area = disp.GetClientArea()
-        room_below = area.GetBottom() - (screen_pt.y + line_h)
-        list_below = room_below >= self.frame.FromDIP(170)
+        # ── Geometria della lista di Scintilla ───────────────────────────
+        items = getattr(self, '_dirListItems', []) or []
+        has_img = getattr(self, '_dirListHasImages', False)
+        n = len(items)
+        max_rows = max(1, stc.AutoCompGetMaxHeight())
+        rows = max(1, min(n, max_rows))
         w, h = win.GetSize().width, win.GetSize().height
-        x = screen_pt.x - w - 4
-        if x >= area.x:
-            y = (screen_pt.y + line_h + 2) if list_below else (screen_pt.y - h - 2)
+        disp_i = wx.Display.GetFromWindow(stc)
+        area = wx.Display(disp_i if disp_i >= 0 else 0).GetClientArea()
+
+        real = self._GetAutoCompListRect()
+        if real is not None:
+            # Rettangolo vero della lista (Windows): il bordo destro e' esatto
+            list_left, list_top = real.x, real.y
+            list_right = real.x + real.width
+            row_h = max(1.0, real.height / float(rows))
         else:
-            x = min(screen_pt.x, area.GetRight() - w)
-            y = (screen_pt.y - h - 2) if list_below else (screen_pt.y + line_h + 2)
-        win.SetPosition((max(area.x, x), max(area.y, y)))
+            # Stima dalle voci mostrate (altre piattaforme)
+            row_h = max(stc.TextHeight(0), 16 if has_img else 0) + 4
+            longest = max((stc.TextWidth(wx.stc.STC_STYLE_DEFAULT, i) for i in items), default=60)
+            scroll_w = wx.SystemSettings.GetMetric(wx.SYS_VSCROLL_X) if n > max_rows else 0
+            list_w = longest + (22 if has_img else 4) + max(scroll_w, 0) + 14
+            list_h = rows * row_h + 4
+            pos = stc.AutoCompPosStart()
+            pt = stc.PointFromPosition(pos)
+            line_h = stc.TextHeight(stc.LineFromPosition(pos))
+            screen_pt = stc.ClientToScreen(pt)
+            # Scintilla apre la lista sotto la riga se ci sta tutta, altrimenti sopra
+            # (tolleranza di una riga: la stima dell'altezza tende a eccedere)
+            below = (area.GetBottom() - (screen_pt.y + line_h)) >= (list_h - row_h)
+            list_left = screen_pt.x
+            list_right = screen_pt.x + list_w
+            list_top = (screen_pt.y + line_h) if below else (screen_pt.y - list_h)
+
+        # Riga della voce evidenziata (dentro la parte visibile della lista)
+        vis_row = max(0, min(rows - 1,
+                             getattr(self, '_dirTipIdx', 0) - getattr(self, '_dirTipFirst', 0)))
+        row_top = int(list_top + vis_row * row_h)
+        # Una sola riga di testo: la nota ha l'altezza della riga e il testo
+        # resta centrato, cosi' sta "attaccata" alla voce.
+        if h < row_h:
+            h = int(row_h)
+            win.SetSize((w, h))
+            lbl.SetPosition((1, max(1, (h - lbl.GetSize().height) // 2)))
+        y = row_top + max(0, (int(row_h) - h) // 2) if h <= row_h else row_top
+        # Attaccata al bordo destro della lista; se non c'e' spazio, a sinistra.
+        x = list_right
+        if x + w > area.GetRight():
+            x = list_left - w
+        if x < area.x:
+            x = max(area.x, area.GetRight() - w)
+        y = min(max(area.y, y), area.GetBottom() - h)
+        win.SetPosition((x, y))
         win.Show()
         stc.SetFocus()
 
@@ -8773,42 +9030,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         pad = dc.GetTextExtent(u"MM")[0]            # margine laterale
         w1 = (dc.GetTextExtent(text)[0] + pad) if text else 0
         w2 = dc.GetTextExtent(u"CAPS  NUM  SCR")[0] + pad
-        txt = getattr(self, 'text', None)
-        w3 = 28 if (txt is not None and txt.GetReadOnly()) else 0   # lucchetto
-        self.statusBar.SetStatusWidths([-1, w1, w2, w3])
-        self._PlaceLockIcon()
+        self.statusBar.SetStatusWidths([-1, w1, w2])
         self._PlaceStatusDots()
-
-    def _UpdateStatusLock(self, ro):
-        """Mostra/nasconde il lucchetto nel 4o campo della status bar."""
-        sb = self.statusBar
-        if not sb or sb.GetFieldsCount() < 4:
-            return
-        if getattr(self, '_roLockIcon', None) is None:
-            try:
-                bmp = wx.Bitmap(wx.Image(glb.AddPath('img/lock.png')))
-            except Exception:
-                return
-            if not bmp.IsOk():
-                return
-            self._roLockIcon = wx.StaticBitmap(sb, wx.ID_ANY, bmp)
-            self._roLockIcon.SetToolTip(_("Read only"))
-            sb.Bind(wx.EVT_SIZE, self._OnStatusBarSize)
-        self._roLockIcon.Show(bool(ro))
-        self._ResizeStatusFields()
-
-    def _PlaceLockIcon(self):
-        icon = getattr(self, '_roLockIcon', None)
-        sb = self.statusBar
-        if icon is None or not sb or sb.GetFieldsCount() < 4:
-            return
-        r = sb.GetFieldRect(3)
-        w, h = icon.GetSize()
-        icon.SetPosition((r.x + (r.width - w) // 2, r.y + (r.height - h) // 2))
-
-    def _OnStatusBarSize(self, evt):
-        evt.Skip()
-        wx.CallAfter(self._PlaceLockIcon)
 
     def _UpdateLockKeys(self):
         """Aggiorna il campo 2 della status bar con lo stato di CAPS / NUM / SCR."""
@@ -8881,6 +9104,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             ("python-pptx",     "pptx",         ""),
             ("pyshortcuts",     "pyshortcuts",  ""),
             ("reportlab",       "reportlab",    ""),
+            # svglib e' facoltativa (con la nota, se manca non invalida il
+            # riepilogo): senza, CreaIndice ripiega su un'icona PNG.
+            ("svglib",          "svglib",       _("Vector icons in the PDF")),
             ("pypdf",           "pypdf",        ""),
             ("markdown",        "markdown",     ""),
             ("mistune",         "mistune",      ""),
@@ -10963,6 +11189,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self._ApplyInsertToolBarVisibility()
             self._ApplyViewToolBarVisibility()
             self._FinalizeToolbarLayout()
+            self._ApplyZoomIconSize()
 
         f = MyPreferencesDialog(self.frame, self.pref, easyChords, on_apply=_apply_prefs,
                                 previewCanvas=self.previewCanvas)

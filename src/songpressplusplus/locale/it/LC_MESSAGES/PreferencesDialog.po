@@ -444,9 +444,6 @@ msgstr "In una lista"
 msgid "Intro chords  {start_chord}\\{end_chord}"
 msgstr "Accordi di intro  {start_chord}\\{end_chord}"
 
-msgid "Keep icons at 16×16 real pixels"
-msgstr "Mantieni le icone a 16×16 pixel reali"
-
 msgid "Keep print preview window always on top"
 msgstr "Mantieni sempre in primo piano la finestra di anteprima di stampa"
 
@@ -705,6 +702,9 @@ msgstr "Mostra i pulsanti Riquadro, Spaziatura, Orizzontale e Verticale del righ
 msgid "Show the Fit to content, Show cross, Smooth zoom and High resolution checkboxes side by side in the screen ruler toolbar."
 msgstr "Mostra le caselle Adatta al contenuto, Mostra croce, Ingrandimento morbido e Alta risoluzione affiancate nella barra del righello a schermo."
 
+msgid "Show the directive help next to the list"
+msgstr "Mostra la guida delle direttive accanto all'elenco"
+
 msgid "Show the full file path in the title bar"
 msgstr "Mostra il percorso completo del file nella barra del titolo"
 
@@ -804,6 +804,9 @@ msgstr "Spessore sottolineatura titolo"
 msgid "Tolerance"
 msgstr "Tolleranza"
 
+msgid "Toolbar"
+msgstr "Barra degli strumenti"
+
 msgid "Toolbar icon size"
 msgstr "Dimensione icone barra degli strumenti"
 
@@ -857,6 +860,9 @@ msgstr "Se attivo, viene mostrata una finestra di conferma prima di qualsiasi op
 
 msgid "When enabled, a print preview window is shown before sending the document to the printer, allowing you to check the layout and page settings."
 msgstr "Se attivo, viene mostrata una finestra di anteprima prima di inviare il documento alla stampante, permettendo di verificare il layout e le impostazioni di pagina."
+
+msgid "When enabled, a short description of the selected directive (with an example) is shown in a tooltip next to the intellisense list. Available only when directive intellisense is enabled."
+msgstr "Se attivo, accanto all'elenco di intellisense viene mostrata, in un suggerimento, una breve descrizione della direttiva selezionata (con un esempio). Disponibile solo quando l'intellisense delle direttive è abilitato."
 
 msgid "When enabled, any whitespace in the file name (not the folder path) is replaced with an underscore '_' whenever a file is saved or exported. Works the same way on Windows and Linux."
 msgstr "Se attivo, ogni spazio presente nel nome del file (non nel percorso della cartella) viene sostituito con un trattino basso '_' ogni volta che un file viene salvato o esportato. Funziona allo stesso modo su Windows e Linux."
@@ -920,9 +926,6 @@ msgstr "Larghezza e altezza"
 msgid "Width only"
 msgstr "Solo larghezza"
 
-msgid "With display scaling above 100% (e.g. 150%), the icons of the screen ruler toolbar are not enlarged: they stay sharp at 16×16 real pixels but look smaller than the text. When disabled, they are enlarged like the other icons and may look slightly blurred. No effect at 100% scaling."
-msgstr "Con il ridimensionamento dello schermo oltre il 100% (es. 150%), le icone della barra del righello a schermo non vengono ingrandite: restano nitide a 16×16 pixel reali ma appaiono più piccole del testo. Se disattivata, vengono ingrandite come le altre icone e possono apparire leggermente sfocate. Nessun effetto con ridimensionamento al 100%."
-
 msgid "Wrap symbol in a verse block (not counted)"
 msgstr "Incorpora il simbolo in una strofa (non conteggiata)"
 
@@ -943,12 +946,6 @@ msgstr "size=N moltiplica solo il margine orizzontale delle celle; il margine ve
 
 msgid "size=N multiplies only vertical cell padding; horizontal padding stays at its base value."
 msgstr "size=N moltiplica solo il margine verticale delle celle; il margine orizzontale rimane al suo valore base."
-
-msgid "Always open files in read-only mode"
-msgstr "Apri sempre i file in sola lettura"
-
-msgid "When enabled, songs are opened read-only to prevent accidental edits; use Edit > Read only to unlock them. Files that are not writable are always opened read-only."
-msgstr "Se attivo, i brani vengono aperti in sola lettura per evitare modifiche accidentali; usa Modifica > Sola lettura per sbloccarli. I file non scrivibili vengono sempre aperti in sola lettura."
 
 msgid "Dot colour when on"
 msgstr "Colore del pallino se attivo"

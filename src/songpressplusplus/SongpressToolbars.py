@@ -157,20 +157,36 @@ class SongpressToolbarsMixin:
             bundle = wx.BitmapBundle.FromSVGFile(svg, wx.Size(px, px))
             if not bundle.IsOk():
                 return None
+            # Rasterizza alla scala reale dello schermo (es. 150%) e lo
+            # dichiara alla bitmap: l'icona resta nitida, senza ingrandimenti.
+            try:
+                scale = float(self.frame.GetDPIScaleFactor())
+            except Exception:
+                scale = 1.0
+            if scale > 1.0:
+                rpx = int(round(px * scale))
+                bmp = bundle.GetBitmap(wx.Size(rpx, rpx))
+                if bmp.IsOk():
+                    try:
+                        bmp.SetScaleFactor(scale)
+                    except Exception:
+                        pass
+                    return bmp
             bmp = bundle.GetBitmap(wx.Size(px, px))
             return bmp if bmp.IsOk() else None
         except Exception:
             return None
 
     def _scaledToolbarBitmap(self, image_path):
-        """Carica un'immagine per la toolbar: 16 px originale; 19/21 px da SVG
-        in img/vector (se presente), altrimenti PNG centrato su canvas
+        """Carica un'immagine per la toolbar. Usa l'SVG in img/vector (se presente) alla dimensione
+        scelta; altrimenti PNG: 16 px originale; 19/21 px centrato su canvas
         trasparente; 32 px da img/32 o ingrandita ×2."""
         px = getattr(self.pref, 'toolbarIconPx', 16)
-        if px in (19, 21):
-            bmp = self._vectorToolbarBitmap(image_path, px)
-            if bmp is not None:
-                return bmp
+        # Icone sempre vettoriali: SVG a qualunque dimensione (16, 19, 21, 32);
+        # se l'SVG manca si ripiega sul PNG.
+        bmp = self._vectorToolbarBitmap(image_path, px)
+        if bmp is not None:
+            return bmp
         if px == 32:
             # Versione pre-renderizzata (img/32/<nome>.png), se presente
             try:
@@ -590,7 +606,7 @@ class SongpressToolbarsMixin:
 
         self.mainToolBarPane = self.AddPane(
             self.mainToolBar,
-            aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(1).PaneBorder(False).Gripper(False),
+            aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(1).PaneBorder(False).Gripper(False).LeftDockable(False).RightDockable(False),
             _('Standard'), 'standard'
         )
 
@@ -659,7 +675,7 @@ class SongpressToolbarsMixin:
         # la dimensione reale. Dopo Realize() il MinSize è già quello giusto.
         self.formatToolBarPane = self.AddPane(
             self.formatToolBar,
-            aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(2).PaneBorder(False).Gripper(False),
+            aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(2).PaneBorder(False).Gripper(False).LeftDockable(False).RightDockable(False),
             _('Format'), 'format'
         )
 
@@ -821,7 +837,7 @@ class SongpressToolbarsMixin:
 
         self.insertToolBarPane = self.AddPane(
             self.insertToolBar,
-            aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(3).PaneBorder(False).Gripper(False),
+            aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(3).PaneBorder(False).Gripper(False).LeftDockable(False).RightDockable(False),
             _('Insert'), 'insert'
         )
 
@@ -922,6 +938,6 @@ class SongpressToolbarsMixin:
         self.viewToolBar.Realize()
         self.viewToolBarPane = self.AddPane(
             self.viewToolBar,
-            aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(4).PaneBorder(False).Gripper(False),
+            aui.AuiPaneInfo().ToolbarPane().Top().Row(1).Position(4).PaneBorder(False).Gripper(False).LeftDockable(False).RightDockable(False),
             _('View'), 'view'
         )

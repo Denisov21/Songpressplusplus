@@ -201,6 +201,7 @@ class Preferences(object):
         self._LoadColourPreview()
         self._LoadDebugOptions()
         self._LoadIntellisense()
+        self._LoadIntellisenseHelp()
         self._LoadDecoSliderColour()
         self._LoadNoChordHide()
         self._LoadSingleInstance()
@@ -461,6 +462,7 @@ class Preferences(object):
         self._SaveColourPreview()
         self._SaveDebugOptions()
         self._SaveIntellisense()
+        self._SaveIntellisenseHelp()
         self._SaveDecoSliderColour()
         self._SaveNoChordHide()
         self._SaveSingleInstance()
@@ -593,6 +595,24 @@ class Preferences(object):
         self.config.Write('intellisense', '1' if getattr(self, 'intellisense', True) else '0')
         self.config.SetPath('/')
 
+    def _LoadIntellisenseHelp(self):
+        """Guida a comparsa accanto al popup intellisense (default True).
+        Ha effetto solo se anche 'intellisense' e' attivo."""
+        self.config.SetPath('/Editor')
+        v = self.config.Read('intellisenseHelp')
+        self.intellisenseHelp = bool(int(v)) if v != '' else True
+        self.config.SetPath('/')
+
+    def _SaveIntellisenseHelp(self):
+        self.config.SetPath('/Editor')
+        self.config.Write('intellisenseHelp', '1' if getattr(self, 'intellisenseHelp', True) else '0')
+        self.config.SetPath('/')
+
+    @property
+    def showIntellisenseHelp(self):
+        """True solo se intellisense E guida sono entrambi abilitati."""
+        return bool(getattr(self, 'intellisense', True)) and bool(getattr(self, 'intellisenseHelp', True))
+
     def _LoadChordUppercase(self):
         """Stato della casella 'Accordo in maiuscolo' del dialogo Inserisci accordo."""
         self.config.SetPath('/Editor')
@@ -675,10 +695,6 @@ class Preferences(object):
         self.config.SetPath('/App')
         v = self.config.Read('rulerModeButtons')
         self.rulerModeButtons = v if v in ('icons', 'text') else 'icons'
-        # Icone del righello a 16x16 pixel reali anche con ridimensionamento
-        # dello schermo oltre il 100% (nessun ingrandimento HiDPI).
-        v = self.config.Read('rulerIconsNoDpiScale')
-        self.rulerIconsNoDpiScale = bool(int(v)) if v != '' else True
         # Caselle delle opzioni del righello: 'inline' = affiancate nella
         # barra, 'list' = in una lista aperta dal pulsante ruler_list.png
         v = self.config.Read('rulerOptionsLayout')
@@ -697,8 +713,6 @@ class Preferences(object):
     def _SaveRulerModeButtons(self):
         self.config.SetPath('/App')
         self.config.Write('rulerModeButtons', getattr(self, 'rulerModeButtons', 'icons'))
-        self.config.Write('rulerIconsNoDpiScale',
-                          '1' if getattr(self, 'rulerIconsNoDpiScale', True) else '0')
         self.config.Write('rulerOptionsLayout', getattr(self, 'rulerOptionsLayout', 'inline'))
         self.config.Write('rulerTolerance', str(getattr(self, 'rulerTolerance', 30)))
         self.config.Write('rulerShowTolerance',
@@ -949,14 +963,11 @@ class Preferences(object):
         self.config.SetPath('/App')
         v = self.config.Read('enableSaveOnModified')
         self.enableSaveOnModified = bool(int(v)) if v != '' else True
-        v = self.config.Read('openReadOnly')
-        self.openReadOnly = bool(int(v)) if v != '' else False
         self.config.SetPath('/')
 
     def _SaveSaveOnModified(self):
         self.config.SetPath('/App')
         self.config.Write('enableSaveOnModified', '1' if getattr(self, 'enableSaveOnModified', True) else '0')
-        self.config.Write('openReadOnly', '1' if getattr(self, 'openReadOnly', False) else '0')
         self.config.SetPath('/')
 
     def _LoadIntegrateChordsOnlyWhenNeeded(self):
