@@ -955,3 +955,17 @@ msgstr "Colore del pallino se disattivo"
 
 msgid "Status bar indicators"
 msgstr "Indicatori barra di stato"
+msgid "Toolbars"
+msgstr "Barre degli strumenti"
+
+msgid "Deselect all"
+msgstr "Deseleziona tutto"
+
+msgid "Standard"
+msgstr "Standard"
+
+msgid "Insert"
+msgstr "Inserisci"
+
+msgid "View"
+msgstr "Visualizza"

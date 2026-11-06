@@ -2357,3 +2357,27 @@ msgid ""
 msgstr ""
 "Scegli direttamente le note invece di digitare un accordo. ● = solo puntino, "
 "tasto non colorato."
+
+#. Modalità sola lettura (salvataggio con lo stesso nome)
+#: SongpressFrame.py
+msgid ""
+"Read-only mode is on: this file cannot be overwritten.\n"
+"Choose a different file name."
+msgstr ""
+"Modalità sola lettura attiva: questo file non può essere sovrascritto.\n"
+"Scegli un nome file diverso."
+
+#. Modalità sola lettura (tooltip icona barra di stato)
+#: SongpressFrame.py
+msgid "Read only: ON - the song can be edited but only saved with a different name"
+msgstr "Sola lettura: ATTIVA - il brano si può modificare ma salvare solo con un nome diverso"
+
+#. Modalità sola lettura (tooltip icona barra di stato)
+#: SongpressFrame.py
+msgid "Read only: OFF - click to protect this file from being overwritten"
+msgstr "Sola lettura: DISATTIVA - clicca per proteggere questo file dalla sovrascrittura"
+
+#. Modalità sola lettura (suggerimento pulsante barra Standard)
+#: SongpressToolbars.py
+msgid "Read only: edit the song but save it only with a different name"
+msgstr "Sola lettura: modifica il brano ma salvalo solo con un nome diverso"

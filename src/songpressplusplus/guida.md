@@ -1909,36 +1909,34 @@ Per ogni carattere SMP, Songpress++ percorre questa lista e usa il primo font ch
 
 ## Sola lettura
 
-La **modalità sola lettura** impedisce di modificare per sbaglio il brano: il testo si può leggere, cercare, copiare, vedere in anteprima, stampare ed esportare, ma non cambiare. È utile, per esempio, quando suoni da un brano già pronto e non vuoi rischiare di cancellare qualcosa con un tasto premuto per errore.
+La **modalità sola lettura** protegge un brano dalla sovrascrittura: il testo resta **modificabile** (puoi provare una trasposizione, cambiare accordi, riscrivere una strofa), ma non puoi salvarlo con lo stesso nome del file aperto. Per conservare le modifiche devi scegliere un **nome diverso**, e il file originale resta intatto. È utile, per esempio, quando parti da un brano già pronto o da un modello e vuoi adattarlo senza rischiare di rovinare l'originale con un salvataggio distratto.
 
 ### Come attivarla
 
-- **Modifica → Sola lettura** (voce con spunta, con l'icona del lucchetto): attiva o disattiva la modalità sul brano aperto. La spunta indica che è attiva.
-- **Apertura automatica** — un file si apre già in sola lettura quando è protetto in scrittura (ad esempio con `chmod -w` su Linux o con l'attributo «Sola lettura» di Windows). In questo caso Songpress++ non propone nemmeno le correzioni automatiche all'apertura.
-- **Sempre in sola lettura** — attiva *Opzioni → Generale → Apri sempre i file in sola lettura* per aprire ogni brano bloccato; per modificarlo togli la spunta da *Modifica → Sola lettura*.
+- **File → Sola lettura**: attiva o disattiva la modalità. L'icona della voce mostra lo stato: lucchetto **aperto** = modalità spenta, lucchetto **chiuso** = modalità attiva.
+- **Pulsante nella barra Standard** (lucchetto, subito prima di *Opzioni*): un clic attiva o disattiva la modalità; a modalità attiva il pulsante appare premuto. Si può nascondere da **Strumenti → Opzioni → Toolbar → Standard**.
+- **Icona nella barra di stato** (in basso a destra): un clic attiva o disattiva la modalità.
+- **Apertura automatica** — a ogni apertura di un file, Songpress++ controlla se il file è protetto in scrittura (attributo «Sola lettura» di Windows, oppure permessi senza scrittura su Linux, ad esempio dopo `chmod -w`). Se lo è, la modalità si attiva da sola; se il file è scrivibile, la modalità viene disattivata. I modelli forniti con il programma sono esclusi da questo controllo, perché i loro salvataggi vengono già indirizzati alla copia dell'utente.
 
-Un brano **nuovo** (*File → Nuovo*) è sempre modificabile. La modalità vale per il brano aperto: aprendo un altro file, lo stato viene ricalcolato.
+> **Nota** — Per un brano **nuovo**, non ancora salvato, non c'è nessun file da proteggere: se attivi la modalità, si spegne da sola al primo salvataggio.
 
 ### Come si riconosce
 
 - Il titolo della finestra termina con **[Sola lettura]**.
-- Nella barra di stato, in basso a destra, compare un **lucchetto** (passandoci sopra con il mouse si legge «Sola lettura»).
-- Nel menu **Modifica** la voce *Sola lettura* ha la spunta.
+- Il pulsante della barra Standard è premuto e mostra il lucchetto chiuso.
+- Nella barra di stato compare il lucchetto chiuso; passandoci sopra con il mouse si legge se la modalità è attiva o no.
+- Nel menu **File** la voce *Sola lettura* mostra il lucchetto chiuso.
 
-### Cosa resta attivo e cosa no
+### Cosa succede quando salvi
 
-| Resta attivo | Disattivato |
-| ------------ | ----------- |
-| Copia, Copia solo il testo, Copia come immagine | Taglia, Incolla, Incolla accordi, Elimina |
-| Trova, Trova successivo/precedente | Annulla e Ripeti |
-| Seleziona tutto, Seleziona accordo successivo/precedente | Sostituisci |
-| Anteprima, stampa, esportazione, Songbook | Menu **Inserisci** e relativa barra degli strumenti, interlinea |
-| Controllo sintassi, statistiche | Sposta accordo, Rimuovi/Integra accordi, Propaga accordi |
-| Cambio dei font e delle opzioni di visualizzazione | Trasponi, Semplifica accordi, Cambia notazione, Pulizia accordi, Rimuovi righe vuote, Normalizza spazi, Converti Tab/ChordPro, Controllo ortografico |
+Con la modalità attiva, **Salva**, **Salva con nome** e la richiesta «Vuoi salvarla?» che compare chiudendo il programma o aprendo/creando un altro brano passano tutti dalla stessa procedura:
 
-Anche il menu del tasto destro nell'editor mostra grigie le voci che modificano il testo, e le scorciatoie da tastiera di modifica (digitazione, spazio come cella nella griglia, Alt+Maiusc+frecce) non hanno effetto.
+1. Si apre la finestra **Salva con nome**, perché il nome del file aperto non può essere usato.
+2. Se scegli **lo stesso nome** del file aperto, compare l'avviso *«Modalità sola lettura attiva: questo file non può essere sovrascritto. Scegli un nome file diverso.»* e la finestra si riapre.
+3. Se scegli un **nome diverso**, il brano viene salvato con quel nome. Da quel momento il brano aperto è il **nuovo file**, la modalità si spegne e i salvataggi successivi sono normali. L'originale non viene toccato.
+4. Se **annulli**, non viene salvato nulla: il brano resta modificato e in sola lettura. Se l'annullamento avviene alla chiusura del programma, la chiusura viene interrotta.
 
-> **Nota** — La sola lettura è una protezione del programma: non cambia i permessi del file sul disco. Se togli la spunta a un file davvero protetto dal sistema, il salvataggio può comunque fallire. Su Linux, avviando Songpress++ come utente *root* ogni file risulta scrivibile e l'apertura automatica in sola lettura non scatta; resta valida la voce di menu.
+> **Nota** — La sola lettura è una protezione del programma: non cambia i permessi del file sul disco, e non impedisce di salvare lo stesso testo con un altro programma. Su Linux, avviando Songpress++ come utente *root* ogni file risulta scrivibile e l'apertura automatica in sola lettura non scatta; la voce di menu, il pulsante e l'icona nella barra di stato funzionano comunque.
 
 ## Modalità istanza singola
 
@@ -2055,7 +2053,6 @@ Si apre da **Strumenti → Opzioni…** (titolo della finestra: *Opzioni Songpre
 | **Cancella file recenti** (pulsante) | — | Svuota l'elenco dei file recenti. La cancellazione avviene alla conferma con OK. |
 | **Apri cartella modelli** (pulsante) | — | Apre nel file manager di sistema la cartella modelli **utente** (`templates/`, usata anche per i temi dei colori) — la stessa che l'app rilegge. I file `.crd` messi in `songs/` compaiono in *File → Nuovo da template* (vedi il capitolo *Nuovo da template*). |
 | **Abilita il pulsante «Salva» solo quando la canzone è modificata** | ✓ | Il comando Salva (menu e toolbar) resta disabilitato finché non ci sono modifiche non salvate. |
-| **Apri sempre i file in sola lettura** | ☐ | Ogni brano si apre bloccato (vedi *Sola lettura*). I file protetti in scrittura si aprono comunque in sola lettura. |
 | **Attiva i comandi di conversione degli accordi solo quando servono** | ✓ | **Integra accordi**, **Converti Tab in ChordPro** e **Converti accordi in linea in ChordPro** restano grigi quando non hanno nulla da fare (vedi *Gestione degli accordi*). Se disattivata, sono sempre attivi. Il valore viene salvato alla chiusura e ripristinato all'avvio. |
 | **Abilita intellisense direttive (Ctrl+Spazio)** | ✓ | Attiva il completamento automatico delle direttive ChordPro nell'editor. |
 | **Abilita multicursore (Alt+Clic, Ctrl+D)** | ☐ | Alt+Clic aggiunge un cursore; Ctrl+D seleziona l'occorrenza successiva della parola corrente. |
@@ -2255,7 +2252,7 @@ Aprire **Strumenti → Opzioni…** e selezionare la scheda **Toolbar**. La sche
 
 | Sotto-scheda    | Barra corrispondente | Icone configurabili |
 |-----------------|----------------------|---------------------|
-| Standard        | Barra standard       | Nuovo, Apri, Salva, Anteprima di stampa, Stampa, Annulla, Ripeti, Taglia, Copia, Copia come immagine, Incolla, Incolla accordi, Verifica sintassi, Opzioni… |
+| Standard        | Barra standard       | Nuovo, Apri, Salva, Anteprima di stampa, Stampa, Annulla, Ripeti, Taglia, Copia, Copia come immagine, Incolla, Incolla accordi, Verifica sintassi, Sola lettura, Opzioni… |
 | Formattazione   | Barra di formattazione | Font, Mostra/nascondi accordi, Interlinea |
 | Inserisci       | Barra di inserimento | Tutte le icone di inserimento (titolo, accordi, strofe, metadati musicali, immagini, simboli, ecc.). Il ritornello ha un'unica icona, *Ritornello…*, che apre la stessa finestra della voce di menu |
 | Visualizza      | Barra di visualizzazione | Mostra Pagina Songpress++, Mostra etichette strofe e ritornelli |
@@ -2859,6 +2856,8 @@ Il meccanismo funziona in tre passi:
 
 Questa funzione può essere disabilitata nelle preferenze.
 
+**Doppio clic su una tastiera.** Se il doppio clic cade su una tastiera (klavier) disegnata dalle direttive `{taste:}` o `{fingering:}`, l'editor **seleziona la direttiva corrispondente**, per modificarla subito. Le tastiere sono associate alle direttive in ordine: la prima tastiera alla prima direttiva del testo, la seconda alla seconda, e così via (le direttive vuote e le righe di commento `#` non contano). Funziona anche nella finestra a schermo intero.
+
 ---
 
 ## Layout e sfondo
@@ -3219,7 +3218,7 @@ Gli indicatori appaiono solo quando la modalità corrispondente è abilitata nel
 
 ### Campo destro — Tasti di blocco
 
-Il terzo campo, all'estrema destra, visualizza in modo permanente lo stato dei **tasti di blocco della tastiera**, in stile Debian/GNOME:
+Il terzo campo, a destra, visualizza in modo permanente lo stato dei **tasti di blocco della tastiera**, in stile Debian/GNOME:
 
 | Badge | Tasto | Comportamento |
 | ----- | ----- | ------------- |
@@ -3240,6 +3239,10 @@ Il comportamento dei tre badge **non è identico sulle due piattaforme**, perch�
 | **SCR** | Riflette lo stato del *lock*: resta acceso finché Scroll Lock è inserito. | ⚠️ **Appare solo mentre il tasto è fisicamente premuto e scompare non appena viene rilasciato.** |
 
 > **Nota — SCR su Linux** — Nei layout di tastiera moderni (XKB) `Scroll_Lock` non è più mappato a un modificatore né a un LED di sistema: non esiste quindi uno stato «inserito/disinserito» che l'applicazione possa interrogare. La funzione di libreria usata da Songpress++ restituisce in questo caso soltanto lo stato *istantaneo* del tasto (premuto/rilasciato). Il risultato è che su Linux il badge **SCR** lampeggia — compare mentre si tiene premuto <kbd>Scroll Lock</kbd> e sparisce al rilascio — invece di restare acceso. **Non è un difetto di Songpress++**: è una limitazione dell'ambiente grafico. Gli indicatori **CAPS** e **NUM** funzionano invece in modo identico su Windows e su Linux.
+
+### Campo del lucchetto — Sola lettura
+
+Il quarto campo, all'estrema destra, contiene l'icona della **modalità sola lettura**: lucchetto **aperto** (verde) quando la modalità è spenta, lucchetto **chiuso** (rosso) quando è attiva. Passando il mouse sull'icona un tooltip descrive lo stato; un clic sull'icona attiva o disattiva la modalità. Vedi il capitolo *Sola lettura*.
 
 ---
 

@@ -39,6 +39,12 @@
           <accel></accel>
           <help>Chiedi un nome file per la canzone e salvala</help>
         </object>
+        <object class="wxMenuItem" name="readOnly">
+          <label>Sola _lettura</label>
+          <accel></accel>
+          <help>Modifica la canzone ma salvala solo con un nome diverso (protegge il file originale)</help>
+          <bitmap>../img/readonly_unlock.png</bitmap>
+        </object>
         <object class="wxMenu" name="export">
           <label>E_sporta</label>
           <bitmap>../img/export.png</bitmap>

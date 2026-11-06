@@ -39,6 +39,12 @@
           <accel></accel>
           <help>Ask a filename for the song and save it</help>
         </object>
+        <object class="wxMenuItem" name="readOnly">
+          <label>Rea_d only</label>
+          <accel></accel>
+          <help>Edit the song but save it only with a different name (protects the original file)</help>
+          <bitmap>../img/readonly_unlock.png</bitmap>
+        </object>
         <object class="wxMenu" name="export">
           <label>E_xport</label>
           <bitmap>../img/export.png</bitmap>

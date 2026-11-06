@@ -1034,6 +1034,7 @@ class Preferences(object):
         self.tbm_paste         = _rb('tbm_paste')
         self.tbm_pasteChords   = _rb('tbm_pasteChords')
         self.tbm_syntaxCheck   = _rb('tbm_syntaxCheck')
+        self.tbm_readOnly      = _rb('tbm_readOnly')
         self.tbm_options       = _rb('tbm_options')
         # Format toolbar
         self.tbf_fontChooser      = _rb('tbf_fontChooser')
@@ -1085,7 +1086,7 @@ class Preferences(object):
         _w('tbm_undo');         _w('tbm_redo')
         _w('tbm_cut');          _w('tbm_copy');         _w('tbm_copyAsImage')
         _w('tbm_paste');        _w('tbm_pasteChords')
-        _w('tbm_syntaxCheck');  _w('tbm_options')
+        _w('tbm_syntaxCheck');  _w('tbm_readOnly');  _w('tbm_options')
         # Format toolbar
         _w('tbf_fontChooser'); _w('tbf_showChords'); _w('tbf_insertLinespacing')
         # View toolbar

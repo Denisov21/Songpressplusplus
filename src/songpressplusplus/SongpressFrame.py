@@ -868,7 +868,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.SetDefaultExtension(self.pref.defaultExtension)
         self.statusBar = self.frame.GetStatusBar()
         if self.statusBar:
-            self.statusBar.SetFieldsCount(3)
+            self.statusBar.SetFieldsCount(4)
             self._ResizeStatusFields(u"")
         self._statusTimer = wx.Timer(self.frame)
         self.frame.Bind(wx.EVT_TIMER, self._OnStatusTimerExpired, self._statusTimer)
@@ -920,6 +920,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.previewCanvas = PreviewCanvas(self.frame, self.pref.format, self.pref.notations, self.pref.decorator)
         # Registra la callback doppio-click: naviga alla riga sorgente nell'editor
         self.previewCanvas.SetClickCallback(self._OnPreviewClick)
+        self.previewCanvas.SetKeyboardClickCallback(self._OnPreviewKeyboardClick)
         # Callback diretta per il pulsante "copia" della toolbar anteprima:
         # chiama CopyAsImage senza passare per gli eventi wx (più affidabile).
         self.previewCanvas.SetCopyCallback(self.CopyAsImage)
@@ -1071,6 +1072,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.frame.Bind(wx.EVT_CHAR_HOOK, self._OnGlobalCharHook)
         self.exportMenuId = xrc.XRCID('export')
         self.saveMenuId = xrc.XRCID('save')
+        self.readOnlyMenuId = xrc.XRCID('readOnly')
         self.exportToClipboardAsAVectorImage = xrc.XRCID('exportToClipboardAsAVectorImage')
         self.exportAsEmfMenuId = xrc.XRCID('exportAsEmf')
         self.cutMenuId = xrc.XRCID('cut')
@@ -1127,6 +1129,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self._applyKlavierHighlightColor()
         self._applyFingerNumColor()
         self._UpdateStatusIndicators()
+        self._UpdateReadOnlyStatus()
+        self._UpdateReadOnlyMenuIcon()
         # Se la perspective è stata salvata prima dell'introduzione della barra
         # "Editor" sul pannello centrale, va resettata una volta sola.
         self.config.SetPath('/SDIMainFrame')
@@ -1832,6 +1836,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         def Bind(handler, xrcname):
             self.Bind(wx.EVT_MENU, handler, xrcname)
 
+        Bind(self.OnToggleReadOnly, 'readOnly')
         Bind(self.OnCopyAsImage, 'exportToClipboardAsAVectorImage')
         Bind(self.OnExportAsSvg, 'exportAsSvg')
         Bind(self.OnExportAsEmf, 'exportAsEmf')
@@ -6854,6 +6859,165 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         canvas.Paste(img, ox, oy)
         return canvas
 
+    # ------------------------------------------------------------------
+    # Modalita' "Sola lettura": il brano resta modificabile ma non si puo'
+    # salvare con lo stesso nome (Salva diventa "Salva con nome...").
+    # ------------------------------------------------------------------
+
+    _readOnly = False
+
+    def _SbLockSize(self):
+        sb = getattr(self, 'statusBar', None)
+        return max(16, sb.GetCharHeight()) if sb else 16
+
+    def _ReadOnlyBitmap(self, on, px):
+        """Icona lucchetto (chiuso = sola lettura attiva): SVG se presente,
+        altrimenti PNG."""
+        path = 'img/readonly_lock.png' if on else 'img/readonly_unlock.png'
+        bmp = self._vectorToolbarBitmap(path, px)
+        if bmp is not None:
+            return bmp
+        img = wx.Image(glb.AddPath(path))
+        if img.IsOk() and (img.GetWidth() != px or img.GetHeight() != px):
+            img = img.Scale(px, px, wx.IMAGE_QUALITY_HIGH)
+        return wx.Bitmap(img)
+
+    def _AddReadOnlyTool(self, label, help):
+        """Aggiunge alla main toolbar il pulsante (toggle) Sola lettura."""
+        tool = wx.xrc.XRCID('readOnly')
+        self.mainToolBar.AddToggleTool(
+            tool,
+            self._scaledToolbarBitmap(
+                'img/readonly_lock.png' if self._readOnly else 'img/readonly_unlock.png'),
+            wx.NullBitmap,
+            self._readOnly,
+            None,
+            label,
+            help,
+        )
+        return tool
+
+    def _ReadOnlyText(self):
+        return (_(u"Read only: ON - the song can be edited but only saved with a different name")
+                if self._readOnly else
+                _(u"Read only: OFF - click to protect this file from being overwritten"))
+
+    def _SetReadOnly(self, on):
+        self._readOnly = bool(on)
+        tid = self.readOnlyMenuId
+        self._UpdateReadOnlyMenuIcon()
+        try:
+            tb = self.mainToolBar
+            if tb.FindTool(tid) is not None:
+                tb.ToggleTool(tid, self._readOnly)
+                tb.SetToolBitmap(tid, self._scaledToolbarBitmap(
+                    'img/readonly_lock.png' if self._readOnly else 'img/readonly_unlock.png'))
+                tb.Refresh()
+        except Exception:
+            pass
+        self._UpdateReadOnlyStatus()
+        self.UpdateTitle()
+
+    def _UpdateReadOnlyMenuIcon(self):
+        """Voce di menu File -> Sola lettura: icona PNG lucchetto chiuso (attiva)
+        o aperto (spenta)."""
+        try:
+            item = self.menuBar.FindItemById(self.readOnlyMenuId)
+            if item is None:
+                return
+            name = 'img/readonly_lock.png' if self._readOnly else 'img/readonly_unlock.png'
+            bmp = wx.Bitmap(wx.Image(glb.AddPath(name)))
+            if bmp.IsOk():
+                item.SetBitmap(bmp)
+        except Exception:
+            pass
+
+    def OnToggleReadOnly(self, evt):
+        self._SetReadOnly(not self._readOnly)
+
+    def _UpdateReadOnlyStatus(self):
+        """Crea/aggiorna l'icona lucchetto nel quarto campo della status bar."""
+        sb = getattr(self, 'statusBar', None)
+        if not sb or sb.GetFieldsCount() < 4:
+            return
+        px = self._SbLockSize()
+        bmp = self._ReadOnlyBitmap(self._readOnly, px)
+        if getattr(self, '_sbLock', None) is None:
+            self._sbLock = wx.StaticBitmap(sb, wx.ID_ANY, bmp)
+            self._sbLock.Bind(wx.EVT_LEFT_DOWN, self._OnStatusLockClick)
+            self._sbLock.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        else:
+            self._sbLock.SetBitmap(bmp)
+        self._sbLock.SetToolTip(self._ReadOnlyText())
+        self._PlaceStatusLock()
+
+    def _PlaceStatusLock(self):
+        ctrl = getattr(self, '_sbLock', None)
+        sb = getattr(self, 'statusBar', None)
+        if ctrl is None or not sb or sb.GetFieldsCount() < 4:
+            return
+        r = sb.GetFieldRect(3)
+        if r.width <= 0:
+            ctrl.Hide()
+            return
+        s = ctrl.GetBestSize()
+        ctrl.SetPosition((r.x + (r.width - s.width) // 2,
+                          r.y + (r.height - s.height) // 2))
+        ctrl.Show()
+
+    def _OnStatusLockClick(self, evt):
+        self._SetReadOnly(not self._readOnly)
+
+    def _AutoReadOnlyOnOpen(self):
+        """Dopo ogni apertura: modalita' sola lettura attiva se il file non e'
+        scrivibile (attributo di sola lettura su Windows, permessi su Linux),
+        altrimenti disattiva quella del brano precedente. I template del
+        pacchetto sono esclusi: i loro salvataggi vengono gia' rimappati sulla
+        copia utente (vedi _user_template_target)."""
+        doc = self.document
+        ro = False
+        try:
+            if (doc and os.path.isfile(doc) and not os.access(doc, os.W_OK)
+                    and not self._user_template_target(doc, must_exist=False)):
+                ro = True
+        except Exception:
+            ro = False
+        self._SetReadOnly(ro)
+
+    def UpdateTitle(self):
+        SDIMainFrame.UpdateTitle(self)
+        if self._readOnly:
+            self.frame.SetTitle(u"%s [%s]" % (self.frame.GetTitle(), _(u"Read only")))
+
+    def SaveFile(self):
+        """In modalita' sola lettura 'Salva' chiede sempre un nome diverso da
+        quello del file aperto. Coprono questo percorso anche la chiusura e
+        Nuovo/Apri con modifiche non salvate (AskSaveModified)."""
+        if not (self._readOnly and self.document):
+            ok = SDIMainFrame.SaveFile(self)
+            if ok and self._readOnly:
+                self._SetReadOnly(False)   # brano mai salvato: ora ha un nome
+            return ok
+        original = self.document
+        same = lambda a, b: (os.path.normcase(os.path.realpath(a))
+                             == os.path.normcase(os.path.realpath(b)))
+        while True:
+            if not self.AskSaveFilename():
+                self.document = original
+                self.UpdateTitle()
+                return False
+            if not same(self.document, original):
+                break
+            wx.MessageBox(
+                _(u"Read-only mode is on: this file cannot be overwritten.\n"
+                  u"Choose a different file name."),
+                self.appLongName, wx.OK | wx.ICON_INFORMATION, self.frame)
+            self.document = original
+        ok = SDIMainFrame.SaveFile(self)
+        if ok:
+            self._SetReadOnly(False)       # il nuovo file e' un file normale
+        return ok
+
     def GetSuggestedFilename(self):
         """Nome file proposto in 'Salva con nome'.
 
@@ -6948,6 +7112,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self._load_watermark_from_document()
         self.UpdateEverything()
         self.AutoAdjust(0, self.text.GetLength())
+        self._AutoReadOnlyOnOpen()
 
     def Save(self):
         # Reindirizza il salvataggio dei template dalla copia del PACCHETTO
@@ -8995,6 +9160,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
     def _OnStatusDotsSize(self, evt):
         evt.Skip()
         wx.CallAfter(self._PlaceStatusDots)
+        wx.CallAfter(self._PlaceStatusLock)
 
     def _OnStatusBarClick(self, evt):
         evt.Skip()
@@ -9030,8 +9196,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         pad = dc.GetTextExtent(u"MM")[0]            # margine laterale
         w1 = (dc.GetTextExtent(text)[0] + pad) if text else 0
         w2 = dc.GetTextExtent(u"CAPS  NUM  SCR")[0] + pad
-        self.statusBar.SetStatusWidths([-1, w1, w2])
+        w3 = self._SbLockSize() + 12                # campo lucchetto sola lettura
+        self.statusBar.SetStatusWidths([-1, w1, w2, w3])
         self._PlaceStatusDots()
+        self._PlaceStatusLock()
 
     def _UpdateLockKeys(self):
         """Aggiorna il campo 2 della status bar con lo stato di CAPS / NUM / SCR."""
@@ -11921,6 +12089,40 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self.text.SetFocus()
         except Exception:
             pass
+
+    def _OnPreviewKeyboardClick(self, index, count):
+        """Doppio-click su una tastiera (klavier) dell'anteprima: seleziona
+        nell'editor la direttiva {taste:...} / {fingering:...} corrispondente.
+
+        `index` e' l'ordine di disegno della tastiera cliccata, `count` il
+        numero di tastiere disegnate. Le direttive vengono cercate nell'editor
+        in ordine di documento (righe di commento '#' e direttive vuote escluse,
+        come fa Renderer: klavier_list contiene solo le voci non vuote). Ritorna True se
+        ha selezionato qualcosa.
+        """
+        import re
+        try:
+            text = self.text.GetText()
+            rx = re.compile(r'\{\s*(?:taste|fingering)\s*:\s*[^}\s][^}\n]*\}', re.IGNORECASE)
+            found = []          # (inizio_byte, fine_byte)
+            off = 0             # offset in caratteri dell'inizio riga
+            for line in text.splitlines(True):
+                if not line.lstrip().startswith('#'):
+                    for m in rx.finditer(line):
+                        a = off + m.start()
+                        b = off + m.end()
+                        found.append((len(text[:a].encode('utf-8')),
+                                      len(text[:b].encode('utf-8'))))
+                off += len(line)
+            if not found:
+                return False
+            start, end = found[min(index, len(found) - 1)]
+            self.text.SetSelection(start, end)
+            self.text.EnsureCaretVisible()
+            self.text.SetFocus()
+            return True
+        except Exception:
+            return False
 
     def OnTogglePageBreakLines(self, evt):
 

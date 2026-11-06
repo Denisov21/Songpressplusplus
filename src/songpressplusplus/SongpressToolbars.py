@@ -411,6 +411,7 @@ class SongpressToolbarsMixin:
         ('paste',        _(u'Paste'),          'tbm_paste'),
         ('pasteChords',  _(u'Paste chords'),   'tbm_pasteChords'),
         ('syntaxCheck',  _(u'Check syntax'),   'tbm_syntaxCheck'),
+        ('readOnly',     _(u'Read only'),      'tbm_readOnly'),
         ('options',      _(u'Options...'),     'tbm_options'),
     ]
 
@@ -432,10 +433,15 @@ class SongpressToolbarsMixin:
             if last_added in self._MAIN_TOOLBAR_SEPARATORS_AFTER and not prev_was_sep:
                 self.mainToolBar.AddSeparator()
                 prev_was_sep = True
-            tool = self.AddTool(self.mainToolBar, xrc_name,
-                                self._main_toolbar_icons[xrc_name],
-                                label,
-                                self._main_toolbar_helps[xrc_name])
+            if xrc_name == 'readOnly':
+                # Pulsante a due stati (toggle): lucchetto chiuso/aperto.
+                tool = self._AddReadOnlyTool(label,
+                                             self._main_toolbar_helps[xrc_name])
+            else:
+                tool = self.AddTool(self.mainToolBar, xrc_name,
+                                    self._main_toolbar_icons[xrc_name],
+                                    label,
+                                    self._main_toolbar_helps[xrc_name])
             # Aggiorna i riferimenti agli strumenti usati da OnIdle / UpdateUI
             if xrc_name == 'save':
                 self.saveTool = tool
@@ -580,6 +586,7 @@ class SongpressToolbarsMixin:
             'paste':        'img/paste.png',
             'pasteChords':  'img/pasteChords.png',
             'syntaxCheck':  'img/syntaxCheck.png',
+            'readOnly':     'img/readonly_unlock.png',
             'options':      'img/setting.png',
         }
         self._main_toolbar_helps = {
@@ -596,6 +603,7 @@ class SongpressToolbarsMixin:
             'paste':        _("Read text from the clipboard and insert it at the cursor position"),
             'pasteChords':  _("Merge chords from the copied text into the current selection"),
             'syntaxCheck':  _("Check ChordPro syntax of the document"),
+            'readOnly':     _("Read only: edit the song but save it only with a different name"),
             'options':      _(u"Set program options"),
         }
 

@@ -73,6 +73,68 @@ import wx.adv
 from .Renderer import *
 from .Globals import glb   # per glb.AddPath('img/...')
 
+try:
+    from . import KlavierRenderer as _KlavierRenderer
+except Exception:                      # pragma: no cover
+    _KlavierRenderer = None
+
+
+class _KeyboardRecorder(object):
+    """Context manager che, durante Renderer.Render(), registra il rettangolo
+    di ogni tastiera (klavier) disegnata con KlavierRenderer.draw_keyboard.
+
+    I rettangoli sono salvati in pixel "non scrollati" del pannello (stesse
+    coordinate di CalcUnscrolledPosition), quindi includono gia' margine, zoom
+    e scroll: il hit-test del click non deve rifare alcuna conversione.
+    L'ordine in `rects` e' l'ordine di disegno.
+    """
+
+    def __init__(self, base_origin):
+        self.rects = []
+        self._bx, self._by = base_origin
+        self._orig = None
+
+    def _add(self, dc, x, y, w, h):
+        x0 = dc.LogicalToDeviceX(x) - self._bx
+        x1 = dc.LogicalToDeviceX(x + w) - self._bx
+        y0 = dc.LogicalToDeviceY(y) - self._by
+        y1 = dc.LogicalToDeviceY(y + h) - self._by
+        self.rects.append((min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)))
+
+    def __enter__(self):
+        mod = _KlavierRenderer
+        if mod is None or not hasattr(mod, 'draw_keyboard'):
+            return self
+        orig = mod.draw_keyboard
+        rec = self
+
+        def _wrapped(dc, x, y, w, h, *args, **kwargs):
+            try:
+                rec._add(dc, x, y, w, h)
+            except Exception:
+                pass
+            return orig(dc, x, y, w, h, *args, **kwargs)
+
+        self._orig = orig
+        mod.draw_keyboard = _wrapped
+        return self
+
+    def __exit__(self, *exc):
+        if self._orig is not None:
+            _KlavierRenderer.draw_keyboard = self._orig
+            self._orig = None
+        return False
+
+
+def _hit_keyboard(rects, ux, uy, pad=6, pad_top=22):
+    """Indice della tastiera sotto il punto (ux, uy) in pixel non scrollati,
+    o None. pad_top include l'etichetta (nome accordo) sopra i tasti."""
+    for i, (x0, y0, x1, y1) in enumerate(rects):
+        if x0 - pad <= ux <= x1 + pad and y0 - pad_top <= uy <= y1 + pad:
+            return i
+    return None
+
+
 _ = wx.GetTranslation
 
 # ---------------------------------------------------------------------------
@@ -124,6 +186,13 @@ class PreviewCanvas(object):
         # signature: callback(line_number: int) dove line_number e' 0-based
         # Impostata da SongpressFrame con SetClickCallback()
         self._on_click_callback = None
+        # Callback chiamata al doppio-click su una tastiera (klavier):
+        # signature: callback(index, count) -> bool. index = ordine di disegno
+        # della tastiera cliccata (0-based), count = tastiere disegnate.
+        # Ritorna True se ha selezionato la direttiva nell'editor.
+        self._on_keyboard_callback = None
+        # Rettangoli delle tastiere dell'ultimo paint (pixel non scrollati).
+        self._kbd_rects = []
         # Callback chiamata al clic sul pulsante "copia" della toolbar.
         # signature: callback() senza argomenti (di norma SongpressFrame.CopyAsImage).
         self._on_copy_callback = None
@@ -669,7 +738,9 @@ class PreviewCanvas(object):
                 pass
 
         # Render nella zona virtuale scalata
-        w, h = self.renderer.Render(self.text, dc)
+        with _KeyboardRecorder((ox, oy)) as _rec:
+            w, h = self.renderer.Render(self.text, dc)
+        self._kbd_rects = _rec.rects
         self._last_w = w
         self._last_h = h
 
@@ -964,6 +1035,27 @@ class PreviewCanvas(object):
         """
         self._on_click_callback = callback
 
+    def SetKeyboardClickCallback(self, callback):
+        """Registra la callback del doppio-click su una tastiera (klavier).
+
+        callback(index, count) -> bool; di norma
+        SongpressFrame._OnPreviewKeyboardClick.
+        """
+        self._on_keyboard_callback = callback
+
+    def _TryKeyboardClick(self, ux, uy, rects):
+        """Se (ux, uy) cade su una tastiera, chiede al frame di selezionare la
+        direttiva corrispondente. True se gestito."""
+        if self._on_keyboard_callback is None:
+            return False
+        idx = _hit_keyboard(rects, ux, uy)
+        if idx is None:
+            return False
+        try:
+            return bool(self._on_keyboard_callback(idx, len(rects)))
+        except Exception:
+            return False
+
     def SetCopyCallback(self, callback):
         """Registra la callback eseguita al clic sul pulsante "copia" della toolbar.
 
@@ -1108,6 +1200,12 @@ class PreviewCanvas(object):
 
         # 1. Coordinate del click in pixel virtuali (scroll-corrected)
         click_x_sc, click_y_sc = self.panel.CalcUnscrolledPosition(evt.GetPosition())
+
+        # 1b. Doppio-click su una tastiera (klavier): seleziona nell'editor la
+        #     direttiva {taste:...} / {fingering:...} che l'ha generata.
+        if self._TryKeyboardClick(click_x_sc, click_y_sc, self._kbd_rects):
+            evt.Skip()
+            return
 
         # Rimuovi il margine orizzontale dinamico applicato in OnPaint.
         # Usa GetSize() (larghezza lorda) per coerenza con il calcolo in OnPaint.
@@ -1658,7 +1756,10 @@ class _FullscreenPreviewFrame(wx.Frame):
                 Watermark.draw_watermark(dc, self.owner._last_w, self.owner._last_h, cfg)
             except Exception:
                 pass
-        w, h = self.owner.renderer.Render(text, dc)
+        _ox, _oy = dc.GetDeviceOrigin()
+        with _KeyboardRecorder((_ox, _oy)) as _rec:
+            w, h = self.owner.renderer.Render(text, dc)
+        self._kbd_rects = _rec.rects
         self.owner._last_w = w    # aggiorna così Fit funziona correttamente
         self.owner._last_h = h
         dc.SetUserScale(1.0, 1.0)
@@ -1697,6 +1798,10 @@ class _FullscreenPreviewFrame(wx.Frame):
 
         # Coordinate del click corrette per scroll e zoom della finestra fullscreen
         click_x_sc, click_y_sc = self._panel.CalcUnscrolledPosition(evt.GetPosition())
+        if self.owner._TryKeyboardClick(click_x_sc, click_y_sc,
+                                        getattr(self, '_kbd_rects', [])):
+            evt.Skip()
+            return
         pw, _ = self._panel.GetClientSize()
         margin_h = max(8, int(pw * 0.03))
         rx = (click_x_sc - margin_h) / self._zoom

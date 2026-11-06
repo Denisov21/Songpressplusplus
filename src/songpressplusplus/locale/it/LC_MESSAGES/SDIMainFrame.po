@@ -79,11 +79,6 @@ msgstr "Scegli un nome per il file"
 msgid "%s files (*.%s)|*.%s|All files (*.*)|*.*"
 msgstr "File %s (*.%s)|*.%s|Tutti i file (*.*)|*.*"
 
-#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SDIMainFrame.py:277
-#, python-format
-msgid "File \"%s\" already exists. Do you want to overwrite it?"
-msgstr "Il file \"%s\" esiste già. Vuoi sovrascriverlo?"
-
 #: SDIMainFrame.py
 msgid "File already open"
 msgstr "Già aperto"
@@ -103,3 +98,11 @@ msgstr "Riduci zoom del testo dell'editor"
 #: SongpressFrame.py (zoom editor)
 msgid "Reset editor zoom to 100%"
 msgstr "Ripristina zoom dell'editor al 100%"
+
+#: songpress.xrc (modalità sola lettura)
+msgid "Rea_d only"
+msgstr "Sola _lettura"
+
+#: songpress.xrc (modalità sola lettura)
+msgid "Edit the song but save it only with a different name (protects the original file)"
+msgstr "Modifica la canzone ma salvala solo con un nome diverso (protegge il file originale)"

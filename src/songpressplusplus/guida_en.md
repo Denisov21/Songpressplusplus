@@ -1902,36 +1902,34 @@ For each SMP character, Songpress++ walks this list and uses the first font that
 
 ## Read-only mode
 
-**Read-only mode** prevents accidental changes to the song: you can read, search, copy, preview, print and export the text, but not change it. It is useful, for example, when you play from a finished song and do not want to risk deleting something with a stray key press.
+**Read-only mode** protects a song from being overwritten: the text stays **editable** (you can try a transposition, change chords, rewrite a verse), but you cannot save it under the same name as the open file. To keep your changes you must choose a **different name**, and the original file stays untouched. It is useful, for example, when you start from a finished song or from a template and want to adapt it without risking the original with a careless save.
 
 ### How to turn it on
 
-- **Edit → Read only** (checkable item, with a padlock icon): turns the mode on or off for the open song. The check mark shows it is active.
-- **Automatic on opening** — a file opens in read-only mode when it is write-protected (for example with `chmod -w` on Linux or the Windows "Read-only" attribute). In this case Songpress++ does not even offer the automatic corrections on opening.
-- **Always read-only** — turn on *Options → General → Always open files in read-only mode* to open every song locked; to edit it, untick *Edit → Read only*.
+- **File → Read only**: turns the mode on or off. The icon of the item shows the state: **open** padlock = mode off, **closed** padlock = mode on.
+- **Button in the Standard toolbar** (padlock, just before *Options*): one click turns the mode on or off; while the mode is on the button looks pressed. You can hide it from **Tools → Options → Toolbars → Standard**.
+- **Icon in the status bar** (bottom right): one click turns the mode on or off.
+- **Automatic on opening** — every time a file is opened, Songpress++ checks whether it is write-protected (the Windows "Read-only" attribute, or permissions without write access on Linux, for example after `chmod -w`). If it is, the mode turns on by itself; if the file is writable, the mode is turned off. The templates shipped with the program are excluded from this check, because their saves are already redirected to the user's copy.
 
-A **new** song (*File → New*) is always editable. The mode applies to the open song: when you open another file, the state is evaluated again.
+> **Note** — For a **new** song that has not been saved yet there is no file to protect: if you turn the mode on, it turns itself off on the first save.
 
 ### How to tell it is on
 
 - The window title ends with **[Read only]**.
-- In the status bar, bottom right, a **padlock** appears (hover it to read "Read only").
-- In the **Edit** menu the *Read only* item is checked.
+- The Standard toolbar button looks pressed and shows the closed padlock.
+- The status bar shows the closed padlock; hover it to read whether the mode is on or off.
+- In the **File** menu the *Read only* item shows the closed padlock.
 
-### What stays enabled and what does not
+### What happens when you save
 
-| Stays enabled | Disabled |
-| ------------- | -------- |
-| Copy, Copy only text, Copy as image | Cut, Paste, Paste chords, Delete |
-| Find, Find next/previous | Undo and Redo |
-| Select all, Select next/previous chord | Replace |
-| Preview, print, export, Songbook | **Insert** menu and its toolbar, line spacing |
-| Syntax check, statistics | Move chord, Remove/Integrate chords, Propagate chords |
-| Changing fonts and display options | Transpose, Simplify chords, Change notation, Clean up chords, Remove blank lines, Normalize spaces, Convert Tab/ChordPro, Spell check |
+With the mode on, **Save**, **Save as** and the "Do you want to save it?" prompt that appears when you close the program or open/create another song all go through the same procedure:
 
-The right-click menu in the editor also greys out the items that change the text, and the editing keyboard shortcuts (typing, space as a cell in the grid, Alt+Shift+arrows) have no effect.
+1. The **Save as** dialog opens, because the name of the open file cannot be used.
+2. If you choose **the same name** as the open file, the message *"Read-only mode is on: this file cannot be overwritten. Choose a different file name."* appears and the dialog opens again.
+3. If you choose a **different name**, the song is saved under that name. From then on the open song is the **new file**, the mode turns off and later saves are normal. The original is not touched.
+4. If you **cancel**, nothing is saved: the song stays modified and read-only. If you cancel while closing the program, the closing is interrupted.
 
-> **Note** — Read-only is a protection inside the program: it does not change the file permissions on disk. If you untick it on a file that is really protected by the system, saving may still fail. On Linux, running Songpress++ as *root* makes every file writable, so automatic read-only opening does not trigger; the menu item still works.
+> **Note** — Read-only is a protection inside the program: it does not change the file permissions on disk, and it does not prevent saving the same text with another program. On Linux, running Songpress++ as *root* makes every file writable, so automatic read-only opening does not trigger; the menu item, the button and the status bar icon still work.
 
 ## Single Instance Mode
 
@@ -2048,7 +2046,6 @@ Opened from **Tools → Options…** (window title: *Songpress++ options*). It i
 | **Clear recent files** (button) | — | Empties the recent-files list. The removal happens when you confirm with OK. |
 | **Open templates folder** (button) | — | Opens the **user** templates folder (`templates/`, also used for colour themes) in the system file manager — the same one the app reads from. `.crd` files placed in `songs/` appear under *File → New from template* (see the *New from template* chapter). |
 | **Enable 'Save' button only when the song is modified** | ✓ | Save (menu and toolbar) stays greyed out until there are unsaved changes. |
-| **Always open files in read-only mode** | ☐ | Every song opens locked (see *Read-only mode*). Write-protected files open read-only anyway. |
 | **Enable the chord conversion commands only when needed** | ✓ | **Integrate chords**, **Convert Tab to ChordPro** and **Convert inline chords to ChordPro** stay greyed out when they have nothing to do (see *Chord Management*). When unchecked, they are always enabled. The value is saved on exit and restored at startup. |
 | **Enable directive intellisense (Ctrl+Space)** | ✓ | Auto-completion of ChordPro directives in the editor. |
 | **Enable multi-cursor (Alt+Click, Ctrl+D)** | ☐ | Alt+Click adds a cursor; Ctrl+D selects the next occurrence of the current word. |
@@ -2248,7 +2245,7 @@ Open **Tools → Options…** and select the **Toolbars** tab. The tab contains 
 
 | Sub-tab   | Toolbar              | Configurable icons |
 |-----------|----------------------|--------------------|
-| Standard  | Standard toolbar     | New, Open, Save, Print preview, Print, Undo, Redo, Cut, Copy, Copy as image, Paste, Paste chords, Check syntax, Options… |
+| Standard  | Standard toolbar     | New, Open, Save, Print preview, Print, Undo, Redo, Cut, Copy, Copy as image, Paste, Paste chords, Check syntax, Read only, Options… |
 | Format    | Format toolbar       | Font, Show/hide chords, Linespacing |
 | Insert    | Insert toolbar       | All insert icons (title, chords, verses, musical metadata, images, symbols, etc.). The chorus has a single icon, *Chorus…*, which opens the same dialog as the menu item |
 | View      | View toolbar         | Show Songpress++ Page, Show verse and chorus labels |
@@ -2852,6 +2849,8 @@ The mechanism works in three steps:
 
 This function can be disabled in preferences.
 
+**Double-click on a keyboard.** If the double-click lands on a keyboard (klavier) drawn by a `{taste:}` or `{fingering:}` directive, the editor **selects the matching directive**, so you can edit it straight away. Keyboards are matched to directives in order: the first keyboard to the first directive in the text, the second to the second, and so on (empty directives and `#` comment lines are not counted). It also works in the fullscreen window.
+
 ---
 
 ## Layout and Background
@@ -3212,7 +3211,7 @@ Indicators appear only when the corresponding mode is enabled in Preferences. Bo
 
 ### Right Field — Lock Keys
 
-The third field, at the far right, permanently shows the state of the **keyboard lock keys**, in Debian/GNOME style:
+The third field, on the right, permanently shows the state of the **keyboard lock keys**, in Debian/GNOME style:
 
 | Badge | Key | Behaviour |
 | ----- | --- | --------- |
@@ -3233,6 +3232,10 @@ The three badges **do not behave identically on both platforms**, because their 
 | **SCR** | Reflects the *lock* state: stays lit while Scroll Lock is engaged. | ⚠️ **Appears only while the key is physically held down and disappears as soon as it is released.** |
 
 > **Note — SCR on Linux** — In modern keyboard layouts (XKB), `Scroll_Lock` is no longer mapped to a modifier or to a system LED, so there is no "engaged/disengaged" state the application can query. In that case the library function used by Songpress++ returns only the *instantaneous* key state (pressed/released). As a result, on Linux the **SCR** badge flickers — it shows up while <kbd>Scroll Lock</kbd> is held down and vanishes on release — instead of staying lit. **This is not a Songpress++ defect**: it is a limitation of the desktop environment. The **CAPS** and **NUM** indicators, by contrast, behave identically on Windows and Linux.
+
+### Padlock Field — Read-only mode
+
+The fourth field, at the far right, holds the icon of **read-only mode**: **open** padlock (green) when the mode is off, **closed** padlock (red) when it is on. Hovering the icon shows a tooltip describing the state; one click on the icon turns the mode on or off. See the chapter *Read-only mode*.
 
 ---
 
