@@ -764,6 +764,8 @@ When enabled, the *Show keyboard preview* box at the bottom of the dialog reflec
 
 > **Note — keyboard position.** In both dialogs a note with the ℹ icon reminds you that the chord keyboard is always drawn at the bottom of the page, even though the directive (`{taste:}` or `{fingering:}`) can be inserted anywhere in the editor.
 
+> **Note — info icons.** All the info ('i') icons in Songpress++ (dialogs and informational notes) follow the same rule: SVG at 16×16 adapted to the DPI, then `img/info.png` as a fallback, then the system icon.
+
 **Direction arrow (`^` / `v`):**
 
 As with chords in the text (`[Am^]`, `[Amv]`), in the `{taste:}` and `{fingering:}` directives you can also append `^` (up) or `v` (down) to the chord name. The symbol itself is not shown: an arrow ↑ or ↓ appears next to the name, above the keyboard. Colour and size are the same as for the chord arrows in the text.
@@ -2687,10 +2689,10 @@ Sorting is by **ascending number**; songs without a number are listed **after** 
 - **Watermark opacity warning.** When an image is selected and **Opacity** is above **50%**, a red warning appears under the control (“with opacity above 50% the text may be hard to read”). It is only a warning: the value is not clamped.
 - Every control in the window has an explanatory **tooltip**.
 - The **note about excluded songs** is printed only if **both** checkboxes are on (“Exclude files with “watermark”” and “Add a note at the end of the index…”). If you turn the exclusion off, the note checkbox is disabled and the note is not printed, but your choice stays stored and comes back together with the exclusion.
-- The note's icon is read from `img/info.png`, in the folder that contains `CreaIndice.py`; if the file is missing, the note is still printed, without the icon. The note text follows Songpress++'s interface language.
+- The note's icon is a vector image (`img/vector/info.svg`, in the `img` folder next to `CreaIndice.py`); if it is missing, `img/info.png` is used. In the windows the order is: SVG at 16×16 adapted to the DPI, then `img/info.png` as a fallback, then the system icon. In the **PDF** the icon stays vector if `svglib` is installed; otherwise (and in the **DOCX**, which does not support SVG) a high-resolution image derived from the SVG is used. If no icon is available, the note is still printed, without the icon. The note text follows Songpress++'s interface language.
 - **“watermark” scan speed.** The search for the `{watermark}` directive is now much faster: files are read directly as bytes (without trying several text encodings), checked **in parallel** when there are more than 16, and each file's result is **remembered** until the file changes (date or size). So turning the checkbox back on, changing the extension or generating the index does not reread the files: only the **first** scan of a folder takes longer, later ones are almost instant.
 - The song number is searched in **all** the file's subtitles: it is enough for one of them to contain `numero: N`.
-- **PDF** generation requires the `reportlab` library, **DOCX** requires `python-docx`; the **watermark** requires `Pillow`. If a library is missing, the program shows a notice with the `pip` command to install it.
+- **PDF** generation requires the `reportlab` library, **DOCX** requires `python-docx`; the **watermark** requires `Pillow`; the vector icon in the PDF uses `svglib` (optional). If a library is missing, the program shows a notice with the `pip` command to install it.
 - *Create Index* can also be used as a stand-alone program (`python3 CreaIndice.py [folder]`), handy for quickly producing a table of contents without opening Songpress++.
 
 ---
@@ -3247,6 +3249,7 @@ The three badges **do not behave identically on both platforms**, because their 
 | **python-pptx** | PowerPoint export                       | Required                   |
 | **pyshortcuts** | Desktop shortcut creation               | Required                   |
 | **reportlab**   | PDF generation                          | Required                   |
+| **svglib**      | Vector icons in the PDF                 | Optional                   |
 | **pypdf**       | PDF manipulation                        | Required                   |
 | **markdown**    | Markdown rendering                      | Required                   |
 | **mistune**     | Markdown rendering                      | Required                   |

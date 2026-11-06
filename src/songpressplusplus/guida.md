@@ -771,6 +771,8 @@ Se attiva, la casella *Mostra anteprima tastiera* in fondo alla finestra riflett
 
 > **Nota — posizione della tastiera.** In entrambe le finestre una nota con l'icona ℹ ricorda che la tastiera con l'accordo viene sempre disegnata in fondo alla pagina, anche se nell'editor la direttiva (`{taste:}` o `{fingering:}`) può essere inserita in qualunque punto.
 
+> **Nota — icone info.** Tutte le icone info ('i') di Songpress++ (dialoghi e note informative) usano lo stesso criterio: SVG a 16×16 adattato al DPI, poi `img/info.png` come ripiego, poi l'icona di sistema.
+
 **Freccia di direzione (`^` / `v`):**
 
 Come per gli accordi nel testo (`[Am^]`, `[Amv]`), anche nelle direttive `{taste:}` e `{fingering:}` si può aggiungere in coda al nome dell'accordo il simbolo `^` (su) oppure `v` (giù). Il simbolo non viene mostrato: al suo posto compare una freccia ↑ o ↓ accanto al nome, sopra la tastiera. Colore e dimensione sono gli stessi delle frecce degli accordi nel testo.
@@ -2694,10 +2696,10 @@ L'ordinamento è per **numero crescente**; i brani senza numero sono elencati **
 - La **nota sui brani esclusi** viene stampata solo se **entrambe** le caselle sono attive («Escludi i file con la direttiva «watermark»» e «Aggiungi in fondo all'indice una nota…»). Se si disattiva l'esclusione, la casella della nota si disabilita e la nota non viene stampata, ma la scelta fatta resta memorizzata e si riattiva insieme all'esclusione.
 - **Avviso opacità filigrana.** Quando è selezionata un'immagine e l'**Opacità** supera il **50%**, sotto il controllo compare un avviso in rosso («Attenzione: con un'opacità superiore al 50% il testo potrebbe essere difficile da leggere.»). È solo un avviso: il valore non viene limitato.
 - Tutti i controlli della finestra hanno un **tooltip** esplicativo.
-- L'icona della nota viene letta da `img/info.png`, nella cartella che contiene `CreaIndice.py`; se il file manca, la nota viene stampata ugualmente, senza icona. Il testo della nota segue la lingua dell'interfaccia di Songpress++.
+- L'icona della nota è vettoriale (`img/vector/info.svg`, nella cartella `img` accanto a `CreaIndice.py`); se manca, si usa `img/info.png`. Nelle finestre l'ordine è: SVG a 16×16 adattato al DPI, poi `img/info.png` come ripiego, poi l'icona di sistema. Nel **PDF** l'icona resta vettoriale se è installato `svglib`; altrimenti (e nel **DOCX**, che non supporta l'SVG) viene usata un'immagine ad alta risoluzione ricavata dall'SVG. Se non è disponibile nessuna icona, la nota viene stampata ugualmente, senza icona. Il testo della nota segue la lingua dell'interfaccia di Songpress++.
 - **Velocità della scansione «watermark».** La ricerca della direttiva `{watermark}` è stata resa molto più rapida: i file vengono letti direttamente come byte (senza provare più codifiche di testo), controllati **in parallelo** quando sono più di 16 e l'esito di ciascun file viene **ricordato** finché il file non cambia (data o dimensione). Per questo riattivare la casella, cambiare estensione o generare l'indice non rileggono i file: solo la **prima** scansione di una cartella richiede più tempo, le successive sono quasi immediate.
 - Il numero del canto viene cercato in **tutti** i sottotitoli del file: è sufficiente che uno di essi contenga `numero: N`.
-- La generazione **PDF** richiede la libreria `reportlab`, quella **DOCX** richiede `python-docx`; la **filigrana** richiede `Pillow`. Se una libreria manca, il programma mostra un avviso con il comando `pip` per installarla.
+- La generazione **PDF** richiede la libreria `reportlab`, quella **DOCX** richiede `python-docx`; la **filigrana** richiede `Pillow`; l'icona vettoriale nel PDF usa `svglib` (facoltativa). Se una libreria manca, il programma mostra un avviso con il comando `pip` per installarla.
 - *Crea Indice* può essere usato anche come programma autonomo (`python3 CreaIndice.py [cartella]`), utile per generare rapidamente un sommario senza aprire Songpress++.
 
 ---
@@ -3254,6 +3256,7 @@ Il comportamento dei tre badge **non è identico sulle due piattaforme**, perch�
 | **python-pptx** | Esportazione PowerPoint                 | Obbligatoria               |
 | **pyshortcuts** | Creazione dei collegamenti sul desktop  | Obbligatoria               |
 | **reportlab**   | Generazione dei PDF                     | Obbligatoria               |
+| **svglib**      | Icone vettoriali nel PDF                | Opzionale                  |
 | **pypdf**       | Manipolazione dei PDF                    | Obbligatoria               |
 | **markdown**    | Rendering del Markdown                  | Obbligatoria               |
 | **mistune**     | Rendering del Markdown                  | Obbligatoria               |
