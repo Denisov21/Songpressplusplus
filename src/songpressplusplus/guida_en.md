@@ -2111,6 +2111,10 @@ Controls ChordPro syntax highlighting in the editor. The preview at the bottom o
 - **Save** — asks for a name and stores the current combination as a theme.
 - **Delete** — removes the selected theme after confirmation.
 
+The three buttons show a small 16×16 icon next to their label.
+
+> **Note — choosing a theme.** Picking a theme from the list **does not apply it**: the colours change only when you press **Load**. As long as the selected theme differs from the applied one, an ℹ message appears below the bar: *"Theme changed: press "Load" to apply it."* It disappears after **Load**, **Save** or **Delete**. The ℹ icon follows the common info-icon rule: vector SVG `img/vector/info.svg` at 16×16 adapted to the DPI, then `img/info.png` as a fallback, then the system icon.
+
 > With *Show debug messages* enabled, saving a theme also displays the full path of the file that was created.
 
 ---

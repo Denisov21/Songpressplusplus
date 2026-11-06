@@ -612,8 +612,8 @@ msgstr "Colore selezione"
 msgid "Selection"
 msgstr "Selezione"
 
-msgid "Set minimum size for the Page panel at startup (370×530)"
-msgstr "Imposta la dimensione minima del pannello Pagina all'avvio (370×530)"
+msgid "Set minimum size for the Page panel (370×530, wider with very large 32×32 icons)"
+msgstr "Imposta la dimensione minima del pannello Pagina (370×530, più larga con icone molto grandi 32x32)"
 
 msgid "Show 'Restart Songpress++' in the File menu"
 msgstr "Mostra 'Riavvia Songpress++' nel menu File"
@@ -891,8 +891,8 @@ msgstr "Se attivo, la finestra 'Salva con nome' propone il valore della direttiv
 msgid "When enabled, the 'Save' button and menu item are greyed out until the song has unsaved changes."
 msgstr "Se attivo, il pulsante 'Salva' e la voce di menu corrispondente sono disabilitati finché il brano non presenta modifiche non salvate."
 
-msgid "When enabled, the Page panel cannot be resized below 370×530 pixels. This prevents the panel from appearing too small when the application starts."
-msgstr "Se abilitato, il pannello Pagina non può essere ridimensionato al di sotto di 370×530 pixel. In questo modo il pannello non appare troppo piccolo all'avvio."
+msgid "When enabled, the Page panel cannot be resized below 370×530 pixels. With larger toolbar icons the minimum width increases automatically, so the icons are never cut off. When disabled, only the width needed by the icons is kept."
+msgstr "Se abilitato, il pannello Pagina non può essere ridimensionato al di sotto di 370×530 pixel. Con icone grandi nella barra degli strumenti la larghezza minima aumenta automaticamente, così le icone non vengono mai tagliate. Se disabilitato, viene mantenuta solo la larghezza necessaria alle icone."
 
 msgid "When enabled, the Tolerance field is also shown in the screen ruler toolbar. When disabled, the tolerance can be changed only here and the toolbar becomes shorter."
 msgstr "Se attivo, il campo Tolleranza compare anche nella barra del righello a schermo. Se disattivo, la tolleranza si può cambiare solo qui e la barra diventa più corta."

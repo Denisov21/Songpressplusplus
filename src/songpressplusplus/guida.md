@@ -2083,17 +2083,17 @@ Opzioni della barra del *Righello a schermo* (<kbd>F9</kbd>). Valgono dalla succ
 
 ### Scheda *Editor*
 
-#### Gruppo **Font editor**
+#### Gruppo **Carattere editor**
 
 | Campo | Predefinito | Descrizione |
 | ----- | ----------- | ----------- |
-| **Font** | font a spaziatura fissa di sistema | Carattere dell'editor (elenco con anteprima). |
+| **Carattere** | font a spaziatura fissa di sistema | Carattere dell'editor (elenco con anteprima). |
 | **Dimensione** | 12 | Corpo del font (7–20). |
 | **Colore di sfondo editor** | `#FFFFFF` | Sfondo dell'area di scrittura. |
 | **Colore selezione** | `#C0C0C0` | Sfondo del testo selezionato. |
 | **Colore cursore (caret)** | `#000000` | Colore della barra di inserimento. |
-| **Colore didascalia Editor** | `#4682C8` | Colore della barra titolo del riquadro AUI *Editor*. |
-| **Colore didascalia Pagina** | `#329B82` | Colore della barra titolo del riquadro AUI *Pagina*. |
+| **Colore barra Editor** | `#4682C8` | Colore della barra titolo del riquadro AUI *Editor*. |
+| **Colore barra Pagina** | `#329B82` | Colore della barra titolo del riquadro AUI *Pagina*. |
 
 Ogni colore ha tre controlli: il campo **esadecimale** (`#RRGGBB`, modificabile a mano), il pulsante **Scegli…** (apre il selettore colore di sistema) e il **quadratino di anteprima**.
 
@@ -2117,6 +2117,10 @@ Colora l'evidenziazione della sintassi ChordPro nell'editor. L'anteprima in fond
 - **Carica** — applica il tema selezionato ai campi colore.
 - **Salva** — chiede un nome e salva la combinazione corrente come tema.
 - **Elimina** — rimuove il tema selezionato previa conferma.
+
+I tre pulsanti mostrano una piccola icona a 16×16 accanto al testo.
+
+> **Nota — scelta del tema.** Scegliere un tema dall'elenco **non lo applica**: i colori cambiano solo premendo **Carica**. Finché il tema selezionato è diverso da quello applicato, sotto la barra compare il messaggio ℹ *«Tema cambiato: premi "Carica" per applicarlo.»*, che scompare dopo **Carica**, **Salva** o **Elimina**. L'icona ℹ segue il criterio comune delle icone info: SVG vettoriale `img/vector/info.svg` a 16×16 adattato al DPI, poi `img/info.png` come ripiego, poi l'icona di sistema.
 
 > Con *Mostra messaggi di debug* attivo, al salvataggio di un tema viene mostrato il percorso completo del file creato.
 

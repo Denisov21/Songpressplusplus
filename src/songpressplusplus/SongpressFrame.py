@@ -1223,10 +1223,19 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             pass
         # L'altezza della barra anteprima cambia dopo il layout: riallinea dopo
         def _realign():
-            self._AlignEditorZoomToolbarHeight()
+            try:
+                self._AlignEditorZoomToolbarHeight()
+            except Exception:
+                pass
             try:
                 if not getattr(self, '_closing', False):
+                    # La larghezza minima del pannello dipende dalle icone
+                    self._ApplyPreviewMinSize()
                     self._mgr.Update()
+                    wx.CallAfter(self._AfterIconSizeLayout, px)
+                    # Ripasso a layout/geometria finestra ormai definitivi
+                    # (avvio e riavvio: la perspective salvata puo' essere stretta)
+                    wx.CallLater(300, self._EnsurePreviewWidth)
             except Exception:
                 pass
         wx.CallAfter(_realign)
@@ -12081,6 +12090,13 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         al punto cliccato (risolto con hit-test preciso sui SongBox).
         """
         try:
+            # Una riga fatta solo di direttive {taste:}/{fingering:} si
+            # seleziona soltanto cliccando sul disegno della tastiera
+            # (_OnPreviewKeyboardClick), mai da un punto qualunque dell'anteprima.
+            import re as _re
+            _ln = self.text.GetLine(line_number)
+            if _re.fullmatch(r'\s*(?:\{\s*(?:taste|fingering)\s*:[^}]*\}\s*)+', _ln):
+                return
             pos_start = self.text.PositionFromLine(line_number)
             pos_end   = self.text.GetLineEndPosition(line_number)
             # Seleziona la riga trovata cosi' e' immediatamente visibile
@@ -12090,34 +12106,60 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         except Exception:
             pass
 
-    def _OnPreviewKeyboardClick(self, index, count):
+    def _OnPreviewKeyboardClick(self, index, names):
         """Doppio-click su una tastiera (klavier) dell'anteprima: seleziona
         nell'editor la direttiva {taste:...} / {fingering:...} corrispondente.
 
-        `index` e' l'ordine di disegno della tastiera cliccata, `count` il
-        numero di tastiere disegnate. Le direttive vengono cercate nell'editor
-        in ordine di documento (righe di commento '#' e direttive vuote escluse,
-        come fa Renderer: klavier_list contiene solo le voci non vuote). Ritorna True se
-        ha selezionato qualcosa.
+        `index` e' l'ordine di disegno della tastiera cliccata; `names` i nomi
+        accordo di tutte le tastiere disegnate, in ordine. Una direttiva con
+        accordo non riconosciuto non disegna nessuna tastiera, quindi l'ordine
+        da solo non basta: si abbinano tastiere e direttive in sequenza
+        confrontando il nome accordo (come lo vede KlavierRenderer). Righe di
+        commento '#' e direttive vuote sono escluse. Ritorna True se ha
+        selezionato qualcosa.
         """
         import re
         try:
             text = self.text.GetText()
-            rx = re.compile(r'\{\s*(?:taste|fingering)\s*:\s*[^}\s][^}\n]*\}', re.IGNORECASE)
-            found = []          # (inizio_byte, fine_byte)
+            rx = re.compile(r'\{\s*(?:taste|fingering)\s*:\s*([^}\s][^}\n]*)\}',
+                            re.IGNORECASE)
+            found = []          # (nome_accordo, inizio_byte, fine_byte)
             off = 0             # offset in caratteri dell'inizio riga
             for line in text.splitlines(True):
                 if not line.lstrip().startswith('#'):
                     for m in rx.finditer(line):
+                        name, _f, _h = KlavierRenderer.parse_fingering(m.group(1))
+                        if name is None:
+                            continue
+                        if name == KlavierRenderer.NOTES_ONLY_TOKEN:
+                            name = u""
+                        else:
+                            name, _arrow = KlavierRenderer._split_chord_arrow(name)
                         a = off + m.start()
                         b = off + m.end()
-                        found.append((len(text[:a].encode('utf-8')),
+                        found.append((name,
+                                      len(text[:a].encode('utf-8')),
                                       len(text[:b].encode('utf-8'))))
                 off += len(line)
             if not found:
                 return False
-            start, end = found[min(index, len(found) - 1)]
-            self.text.SetSelection(start, end)
+            # Abbinamento in sequenza: ogni tastiera disegnata prende la prima
+            # direttiva successiva con lo stesso nome (le non riconosciute,
+            # che non disegnano nulla, vengono saltate).
+            pos = 0
+            target = None
+            for k, nm in enumerate(names):
+                while pos < len(found) and found[pos][0] != nm:
+                    pos += 1
+                if pos >= len(found):
+                    break
+                if k == index:
+                    target = found[pos]
+                    break
+                pos += 1
+            if target is None:        # fallback: stesso ordine
+                target = found[min(index, len(found) - 1)]
+            self.text.SetSelection(target[1], target[2])
             self.text.EnsureCaretVisible()
             self.text.SetFocus()
             return True
@@ -12163,15 +12205,122 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         che possono essere arbitrariamente piccoli.
         """
         enabled = getattr(self.pref, 'previewMinSize', True)
+        # Larghezza necessaria alle icone della barra anteprima: con icone
+        # grandi (19/21/32 px) supera 370 px e le icone verrebbero tagliate,
+        # quindi il pannello si allarga di conseguenza (anche se l'opzione
+        # "dimensione minima" e' disattivata, per non tagliare mai le icone).
+        try:
+            tb_w = int(self.previewCanvas.GetToolbarIconsWidth())
+        except Exception:
+            tb_w = 0
+        if tb_w <= 0:
+            # Misura non disponibile: stima dalla dimensione icone
+            # (7 pulsanti da icona+6 px, slider, percentuale, separatori).
+            try:
+                _px = int(getattr(type(self.previewCanvas), '_ICON_PX', 16))
+            except Exception:
+                _px = 16
+            tb_w = 7 * (_px + 6) + 175
+        tb_w += 4   # piccolo margine
         if enabled:
-            min_sz = wx.Size(370, 530)
+            min_sz = wx.Size(max(370, tb_w), 530)
+        elif tb_w > 0:
+            min_sz = wx.Size(tb_w, -1)
         else:
             min_sz = wx.Size(-1, -1)
         # Aggiorna il pane AUI
         pane = self._mgr.GetPane('preview')
-        pane.BestSize(370, 530).MinSize(min_sz)
+        pane.BestSize(max(370, tb_w), 530).MinSize(min_sz)
         # Aggiorna anche il wx.Window sottostante (doppio vincolo)
         self.previewCanvas.main_panel.SetMinSize(min_sz)
+        # Blocco larghezza: se l'utente (o AUI) restringe il pannello sotto il
+        # minimo, lo riportiamo subito alla larghezza minima (bind una sola volta).
+        if not getattr(self, '_previewSizeGuardBound', False):
+            self._previewSizeGuardBound = True
+            self.previewCanvas.main_panel.Bind(wx.EVT_SIZE, self._OnPreviewPanelSize)
+
+    def _OnPreviewPanelSize(self, evt):
+        evt.Skip()
+        if getattr(self, '_closing', False):
+            return
+        try:
+            need = self._mgr.GetPane('preview').min_size.x
+        except Exception:
+            return
+        if need > 0 and evt.GetSize().GetWidth() < need:
+            wx.CallAfter(self._EnsurePreviewWidth)
+
+    def _EnsurePreviewWidth(self):
+        """Se il pannello anteprima e' piu' stretto della sua larghezza minima
+        (icone della barra tagliate), allarga la dock che lo contiene.
+
+        AUI di norma lo fa da solo in DoUpdate, ma con una dock gia' esistente
+        (dimensione ripristinata dalla perspective o dal drag dell'utente)
+        puo' lasciarla piu' stretta: la forziamo qui.
+        """
+        if getattr(self, '_closing', False) or getattr(self, '_mgr', None) is None:
+            return
+        try:
+            pane = self._mgr.GetPane('preview')
+            if not pane.IsOk() or not pane.IsShown() or not pane.IsDocked():
+                return
+            need = pane.min_size.x
+            if need <= 0:
+                return
+            cur = self.previewCanvas.main_panel.GetSize().GetWidth()
+            if cur <= 0:
+                return
+            if cur >= need:
+                self._previewEnsureLast = None
+                return
+            # Anti-loop: se l'ultimo tentativo e' identico (finestra troppo
+            # stretta per ospitare il minimo) non ripetiamo.
+            key = (cur, need, self.frame.GetClientSize().GetWidth())
+            if getattr(self, '_previewEnsureLast', None) == key:
+                return
+            self._previewEnsureLast = key
+            for dock in self._mgr._docks:
+                if any(p.name == 'preview' for p in dock.panes):
+                    dock.size += (need - cur)
+            self._mgr.DoUpdate()
+            if self.previewCanvas.main_panel.GetSize().GetWidth() >= need:
+                self._previewEnsureLast = None
+        except Exception:
+            pass
+
+    def _FitPreviewWidthToIcons(self):
+        """Porta il pannello anteprima esattamente alla larghezza necessaria
+        alle icone (max(370, icone)): lo allarga con icone piu' grandi e lo
+        restringe di nuovo con icone piu' piccole. Va chiamata solo quando la
+        dimensione icone cambia davvero."""
+        if getattr(self, '_closing', False) or getattr(self, '_mgr', None) is None:
+            return
+        try:
+            pane = self._mgr.GetPane('preview')
+            if not pane.IsOk() or not pane.IsShown() or not pane.IsDocked():
+                return
+            target = pane.best_size.x
+            cur = self.previewCanvas.main_panel.GetSize().GetWidth()
+            if target <= 0 or cur <= 0 or cur == target:
+                return
+            self._previewEnsureLast = None
+            for dock in self._mgr._docks:
+                if any(p.name == 'preview' for p in dock.panes):
+                    dock.size += (target - cur)
+            self._mgr.DoUpdate()
+        except Exception:
+            pass
+
+    def _AfterIconSizeLayout(self, px):
+        """Dopo il layout AUI: se la dimensione icone e' cambiata adatta la
+        larghezza del pannello, altrimenti garantisce solo il minimo."""
+        if getattr(self, '_closing', False):
+            return
+        last = getattr(self, '_previewIconPxApplied', None)
+        self._previewIconPxApplied = px
+        if last is not None and last != px:
+            self._FitPreviewWidthToIcons()
+        self._EnsurePreviewWidth()
 
     def OnTogglePaneView(self, evt):
         super().OnTogglePaneView(evt)
@@ -12181,6 +12330,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         if pane.IsShown():
             self._ApplyPreviewMinSize()
             self._mgr.Update()
+            wx.CallAfter(self._EnsurePreviewWidth)
         self._UpdateBreakLinesMenuState()
         self._SyncPreviewToggleButton()
 

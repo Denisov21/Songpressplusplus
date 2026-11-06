@@ -94,12 +94,20 @@ class _KeyboardRecorder(object):
         self._bx, self._by = base_origin
         self._orig = None
 
-    def _add(self, dc, x, y, w, h):
+    def _add(self, dc, x, y, w, h, name=''):
+        # Area cliccabile in px LOGICI: tastiera + etichette sopra (nome
+        # accordo ed eventuale mano: KlavierRenderer riserva label_h=34) +
+        # un piccolo margine. Poi convertita in pixel non scrollati.
+        x -= 6
+        w += 12
+        y -= 34
+        h += 34 + 6
         x0 = dc.LogicalToDeviceX(x) - self._bx
         x1 = dc.LogicalToDeviceX(x + w) - self._bx
         y0 = dc.LogicalToDeviceY(y) - self._by
         y1 = dc.LogicalToDeviceY(y + h) - self._by
-        self.rects.append((min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)))
+        self.rects.append((min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1),
+                           name or ''))
 
     def __enter__(self):
         mod = _KlavierRenderer
@@ -110,7 +118,8 @@ class _KeyboardRecorder(object):
 
         def _wrapped(dc, x, y, w, h, *args, **kwargs):
             try:
-                rec._add(dc, x, y, w, h)
+                nm = args[0] if args else kwargs.get('chord_name', '')
+                rec._add(dc, x, y, w, h, nm)
             except Exception:
                 pass
             return orig(dc, x, y, w, h, *args, **kwargs)
@@ -126,11 +135,11 @@ class _KeyboardRecorder(object):
         return False
 
 
-def _hit_keyboard(rects, ux, uy, pad=6, pad_top=22):
+def _hit_keyboard(rects, ux, uy):
     """Indice della tastiera sotto il punto (ux, uy) in pixel non scrollati,
-    o None. pad_top include l'etichetta (nome accordo) sopra i tasti."""
-    for i, (x0, y0, x1, y1) in enumerate(rects):
-        if x0 - pad <= ux <= x1 + pad and y0 - pad_top <= uy <= y1 + pad:
+    o None. I rettangoli includono gia' etichette e margine."""
+    for i, r in enumerate(rects):
+        if r[0] <= ux <= r[2] and r[1] <= uy <= r[3]:
             return i
     return None
 
@@ -187,8 +196,9 @@ class PreviewCanvas(object):
         # Impostata da SongpressFrame con SetClickCallback()
         self._on_click_callback = None
         # Callback chiamata al doppio-click su una tastiera (klavier):
-        # signature: callback(index, count) -> bool. index = ordine di disegno
-        # della tastiera cliccata (0-based), count = tastiere disegnate.
+        # signature: callback(index, names) -> bool. index = ordine di disegno
+        # della tastiera cliccata (0-based), names = nomi accordo di tutte le
+        # tastiere disegnate, in ordine (serve ad abbinarle alle direttive).
         # Ritorna True se ha selezionato la direttiva nell'editor.
         self._on_keyboard_callback = None
         # Rettangoli delle tastiere dell'ultimo paint (pixel non scrollati).
@@ -325,6 +335,7 @@ class PreviewCanvas(object):
             self._page_label.SetLabel("")
             self._page_label.SetForegroundColour(wx.Colour(100, 100, 100))
             tb_sizer.Add(self._page_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+            self._tb_sizer = tb_sizer
 
             # 2 px di margine sopra e sotto, cosi' le icone non toccano i bordi
             _tb_pad = wx.BoxSizer(wx.VERTICAL)
@@ -1038,7 +1049,7 @@ class PreviewCanvas(object):
     def SetKeyboardClickCallback(self, callback):
         """Registra la callback del doppio-click su una tastiera (klavier).
 
-        callback(index, count) -> bool; di norma
+        callback(index, names) -> bool; di norma
         SongpressFrame._OnPreviewKeyboardClick.
         """
         self._on_keyboard_callback = callback
@@ -1052,7 +1063,7 @@ class PreviewCanvas(object):
         if idx is None:
             return False
         try:
-            return bool(self._on_keyboard_callback(idx, len(rects)))
+            return bool(self._on_keyboard_callback(idx, [r[4] for r in rects]))
         except Exception:
             return False
 
@@ -1342,6 +1353,39 @@ class PreviewCanvas(object):
         tb.Layout()
         self.main_panel.Layout()
 
+    def GetToolbarIconsWidth(self):
+        """Larghezza minima (px) necessaria perche' tutte le icone della barra
+        anteprima siano visibili per intero. Esclude la label "Pagina X di Y"
+        (a destra, elastica), cosi' il pannello non si allarga per quella.
+        Restituisce 0 se la barra non e' ancora pronta."""
+        sz = getattr(self, '_tb_sizer', None)
+        if sz is None:
+            return 0
+        try:
+            lbl = getattr(self, '_page_label', None)
+            total = 0
+            for item in sz.GetChildren():
+                win = item.GetWindow() if item.IsWindow() else None
+                if win is not None and win is lbl:
+                    continue                      # label pagina: esclusa
+                if item.IsSpacer():
+                    continue                      # spaziatore elastico
+                ms = item.GetMinSize().GetWidth()
+                w = ms
+                if win is not None:
+                    # Misura conservativa: il maggiore tra dimensione reale,
+                    # minima effettiva e minima calcolata dal sizer.
+                    ws = max(win.GetSize().GetWidth(),
+                             win.GetEffectiveMinSize().GetWidth())
+                    b = item.GetBorder()
+                    fl = item.GetFlag()
+                    ws += (b if fl & wx.LEFT else 0) + (b if fl & wx.RIGHT else 0)
+                    w = max(ms, ws)
+                total += w
+            return max(0, int(total))
+        except Exception:
+            return 0
+
     def SetTempoIconSize(self, size):
         """Imposta la dimensione in pixel delle icone {tempo_*} (16, 24 o 32)."""
         self.renderer.tempoIconSize = size
@@ -1605,6 +1649,8 @@ class _FullscreenPreviewFrame(wx.Frame):
             style=wx.DEFAULT_FRAME_STYLE,
         )
         self.owner = owner
+        # Dimensione icone dalle preferenze (impostata da SetZoomIconSize)
+        px = int(getattr(PreviewCanvas, '_ICON_PX', 16))
 
         # ── Toolbar minimale ──────────────────────────────────────────────
         toolbar = wx.Panel(self, style=wx.BORDER_NONE)
@@ -1613,16 +1659,38 @@ class _FullscreenPreviewFrame(wx.Frame):
         self._fs_toolbar = toolbar
         tb_sz = wx.BoxSizer(wx.HORIZONTAL)
 
-        btn_close = wx.Button(toolbar, wx.ID_ANY, _("Exit full screen (Esc / F11)"),
-                              style=wx.BORDER_SIMPLE)
+        # Pulsante "Esci dal tutto schermo": icona vettoriale img/vector/reduce.svg
+        # (ripiego: img/reduce.png, poi pulsante testuale).
+        _tt_exit = _("Exit full screen (Esc / F11)")
+        _bmp_exit = PreviewCanvas._load_svg_bitmap('reduce.svg', px)
+        if _bmp_exit is None:
+            # Ripiego 1: PNG img/reduce.png, scalato a px x px se serve.
+            try:
+                _img = wx.Image(glb.AddPath('img/reduce.png'))
+                if _img.IsOk():
+                    if _img.GetWidth() != px or _img.GetHeight() != px:
+                        _img = _img.Scale(px, px, wx.IMAGE_QUALITY_HIGH)
+                    _bmp_exit = wx.Bitmap(_img)
+                    if not _bmp_exit.IsOk():
+                        _bmp_exit = None
+            except Exception:
+                _bmp_exit = None
+        if _bmp_exit is not None:
+            btn_close = wx.BitmapButton(toolbar, wx.ID_ANY, _bmp_exit,
+                                        style=wx.BORDER_NONE)
+            btn_close.SetMinSize(wx.Size(px + 6, px + 6))
+        else:
+            btn_close = wx.Button(toolbar, wx.ID_ANY, _tt_exit,
+                                  style=wx.BORDER_SIMPLE)
+        btn_close.SetToolTip(_tt_exit)
         tb_sz.Add(btn_close, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 4)
 
         # Copia + Aggiorna anteprima (riusano le icone del canvas principale)
         btn_copy_fs = wx.BitmapButton(toolbar, wx.ID_ANY,
-            PreviewCanvas._load_copy_bitmap(16), style=wx.BORDER_NONE)
+            PreviewCanvas._load_copy_bitmap(px), style=wx.BORDER_NONE)
         btn_copy_fs.SetToolTip(_("Copy formatted song to clipboard"))
         btn_refresh_fs = wx.BitmapButton(toolbar, wx.ID_ANY,
-            PreviewCanvas._load_refresh_bitmap(16), style=wx.BORDER_NONE)
+            PreviewCanvas._load_refresh_bitmap(px), style=wx.BORDER_NONE)
         btn_refresh_fs.SetToolTip(_("Refresh Preview Songpress++"))
         tb_sz.Add(btn_copy_fs,    0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 4)
         tb_sz.Add(btn_refresh_fs, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 2)
@@ -1631,7 +1699,7 @@ class _FullscreenPreviewFrame(wx.Frame):
 
         # Zoom out/slider/in nella finestra fullscreen
         btn_zm = wx.BitmapButton(toolbar, wx.ID_ANY,
-            wx.ArtProvider.GetBitmap(wx.ART_MINUS, wx.ART_TOOLBAR, (16, 16)),
+            PreviewCanvas._load_zoom_bitmap(plus=False, px=px),
             style=wx.BORDER_NONE)
         self._fs_slider = wx.Slider(
             toolbar, wx.ID_ANY,
@@ -1640,14 +1708,14 @@ class _FullscreenPreviewFrame(wx.Frame):
             size=(120, -1), style=wx.SL_HORIZONTAL,
         )
         btn_zp = wx.BitmapButton(toolbar, wx.ID_ANY,
-            wx.ArtProvider.GetBitmap(wx.ART_PLUS, wx.ART_TOOLBAR, (16, 16)),
+            PreviewCanvas._load_zoom_bitmap(plus=True, px=px),
             style=wx.BORDER_NONE)
         self._fs_zoom_label = wx.StaticText(toolbar,
             label="%d%%" % int(round(owner._zoom_factor * 100)),
             size=(40, -1), style=wx.ALIGN_CENTRE_HORIZONTAL)
 
         btn_fit = wx.BitmapButton(toolbar, wx.ID_ANY,
-            PreviewCanvas._load_fit_bitmap(16), style=wx.BORDER_NONE)
+            PreviewCanvas._load_fit_bitmap(px), style=wx.BORDER_NONE)
         btn_fit.SetToolTip(_("Fit preview width to panel (Ctrl+Shift+G)"))
 
         tb_sz.AddSpacer(8)
@@ -1657,6 +1725,10 @@ class _FullscreenPreviewFrame(wx.Frame):
         tb_sz.Add(self._fs_zoom_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 4)
         tb_sz.AddSpacer(8)
         tb_sz.Add(btn_fit,             0, wx.ALIGN_CENTER_VERTICAL)
+
+        # Dimensione esplicita: icona + 6 px (come nella barra principale)
+        for _b in (btn_copy_fs, btn_refresh_fs, btn_zm, btn_zp, btn_fit):
+            _b.SetMinSize(wx.Size(px + 6, px + 6))
 
         toolbar.SetSizer(tb_sz)
         toolbar.Layout()

@@ -170,18 +170,28 @@ class PreferencesDialog(wx.Dialog):
 
         # Messaggio informativo: compare quando nella tendina si sceglie un
         # tema diverso da quello attuale, e spiega che serve premere "Carica".
-        # Icona img/info.png a 16x16 (con ripiego sull'icona di sistema).
+        # Ordine delle icone: 1) SVG vettoriale img/vector/info.svg a 16x16
+        # adattato al DPI (BitmapBundle), 2) img/info.png come ripiego,
+        # 3) icona di sistema.
         self._themeHintSizer = wx.BoxSizer(wx.HORIZONTAL)
-        _hint_bmp = wx.NullBitmap
-        _hint_path = _os.path.join(_icons_dir, 'info.png')
-        if _os.path.isfile(_hint_path):
-            _img = wx.Image(_hint_path, wx.BITMAP_TYPE_PNG)
-            if _img.IsOk():
-                if _img.GetWidth() != 16 or _img.GetHeight() != 16:
-                    _img.Rescale(16, 16, wx.IMAGE_QUALITY_HIGH)
-                _hint_bmp = wx.Bitmap(_img)
+        _hint_bmp = wx.BitmapBundle()
+        _svg_path = _os.path.join(_icons_dir, 'vector', 'info.svg')
+        if _os.path.isfile(_svg_path):
+            try:
+                _hint_bmp = wx.BitmapBundle.FromSVGFile(_svg_path, wx.Size(16, 16))
+            except Exception:
+                _hint_bmp = wx.BitmapBundle()
         if not _hint_bmp.IsOk():
-            _hint_bmp = wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_OTHER, wx.Size(16, 16))
+            _hint_path = _os.path.join(_icons_dir, 'info.png')
+            if _os.path.isfile(_hint_path):
+                _img = wx.Image(_hint_path, wx.BITMAP_TYPE_PNG)
+                if _img.IsOk():
+                    if _img.GetWidth() != 16 or _img.GetHeight() != 16:
+                        _img.Rescale(16, 16, wx.IMAGE_QUALITY_HIGH)
+                    _hint_bmp = wx.BitmapBundle.FromBitmap(wx.Bitmap(_img))
+        if not _hint_bmp.IsOk():
+            _hint_bmp = wx.ArtProvider.GetBitmapBundle(
+                wx.ART_INFORMATION, wx.ART_OTHER, wx.Size(16, 16))
         self.themeHintIcon = wx.StaticBitmap(_boxSyntax, wx.ID_ANY, _hint_bmp)
         self.themeHintText = wx.StaticText(
             _boxSyntax, wx.ID_ANY,
@@ -1004,11 +1014,13 @@ class PreferencesDialog(wx.Dialog):
 
         self.previewMinSizeCB = wx.CheckBox(
             _boxPreview, wx.ID_ANY,
-            _(u"Set minimum size for the Page panel at startup (370×530)")
+            _(u"Set minimum size for the Page panel (370×530, wider with very large 32×32 icons)")
         )
         self.previewMinSizeCB.SetToolTip(
             _(u"When enabled, the Page panel cannot be resized below 370×530 pixels. "
-              u"This prevents the panel from appearing too small when the application starts.")
+              u"With larger toolbar icons the minimum width increases automatically, "
+              u"so the icons are never cut off. When disabled, only the width needed "
+              u"by the icons is kept.")
         )
         grpPreview.Add(self.previewMinSizeCB, 0, wx.ALL, 5)
 
