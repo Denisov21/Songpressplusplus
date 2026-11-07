@@ -160,7 +160,7 @@ extract_pip_deps() {
 }
 PIP_DEPS="$(extract_pip_deps)"
 # Fallback: se per qualche motivo non trovati, valori noti del progetto.
-[[ -z "$PIP_DEPS" ]] && PIP_DEPS=$'python-pptx:pptx\npyshortcuts:pyshortcuts\nsvglib:svglib'
+[[ -z "$PIP_DEPS" ]] && PIP_DEPS=$'python-pptx>=1.0.2,<2.0.0:pptx\npyshortcuts>=1.9.5,<2.0.0:pyshortcuts\nsvglib>=1.5.1,<2.0.0:svglib'
 
 bmsg "$OK Dependencies read from the .deb metadata." \
      "$OK Dipendenze lette dai metadati del .deb."
@@ -422,14 +422,14 @@ if [ "$DO_DEPS" -eq 1 ]; then
                              --no-warn-script-location "$pip_name"; then
                         m "$C_OK '$pip_name' installed." "$C_OK '$pip_name' installato."
                     else
-                        m "$C_ERR could not install '$pip_name'. Do it with: sudo pip3 install $BSP $pip_name" \
-                          "$C_ERR impossibile installare '$pip_name'. Fallo con: sudo pip3 install $BSP $pip_name"
+                        m "$C_ERR could not install '$pip_name'. Do it with: sudo pip3 install $BSP '$pip_name'" \
+                          "$C_ERR impossibile installare '$pip_name'. Fallo con: sudo pip3 install $BSP '$pip_name'"
                     fi
                 fi
             done
         else
-            m "$C_WARN Skipped. Later:  sudo pip3 install --break-system-packages $(printf '%s' "$SPP_PIP_DEPS" | cut -d: -f1 | tr '\n' ' ')" \
-              "$C_WARN Saltate. Più tardi:  sudo pip3 install --break-system-packages $(printf '%s' "$SPP_PIP_DEPS" | cut -d: -f1 | tr '\n' ' ')"
+            m "$C_WARN Skipped. Later:  sudo pip3 install --break-system-packages $(printf '%s' "$SPP_PIP_DEPS" | cut -d: -f1 | sed "s/.*/'&'/" | tr '\n' ' ')" \
+              "$C_WARN Saltate. Più tardi:  sudo pip3 install --break-system-packages $(printf '%s' "$SPP_PIP_DEPS" | cut -d: -f1 | sed "s/.*/'&'/" | tr '\n' ' ')"
         fi
     fi
 fi

@@ -393,9 +393,13 @@ fi
 #   - svglib       → modulo "svglib"       (icone SVG nei PDF di CreaIndice;
 #                    facoltativa: senza, si ripiega su un PNG rasterizzato)
 # NB: pywin32 è escluso di proposito, è solo per Windows.
-PIP_DEPS="python-pptx:pptx
-pyshortcuts:pyshortcuts
-svglib:svglib"
+# I limiti di versione DEVONO restare allineati a pyproject.toml. Senza limiti pip
+# prende l'ultima versione (es. svglib 2.x, che forza reportlab 5.x e sostituisce
+# reportlab/lxml di sistema), in conflitto con i vincoli dell'app (svglib<2,
+# reportlab<5). I due punti separano il requisito pip dal nome del modulo.
+PIP_DEPS="python-pptx>=1.0.2,<2.0.0:pptx
+pyshortcuts>=1.9.5,<2.0.0:pyshortcuts
+svglib>=1.5.1,<2.0.0:svglib"
 
 # ── Cartelle di lavoro ────────────────────────────────────────────────────────
 BUILD_DIR="$SCRIPT_DIR/build_rpm"
@@ -1363,7 +1367,7 @@ if [ -n "$PY" ]; then
             sppmsg \
 "Songpress++: to install them later, run:" \
 "Songpress++: per installarle più tardi esegui:"
-            echo "    sudo pip3 install --break-system-packages python-pptx pyshortcuts svglib"
+            echo "    sudo pip3 install --break-system-packages 'python-pptx>=1.0.2,<2.0.0' 'pyshortcuts>=1.9.5,<2.0.0' 'svglib>=1.5.1,<2.0.0'"
             ;;
     esac
 fi
@@ -1378,22 +1382,24 @@ if [ -n "$PY" ] && [ "$SP_SKIP" -eq 0 ]; then
     fi
     echo "$PIP_DEPS" | while IFS=: read PIP_NAME MOD_NAME; do
         [ -z "$PIP_NAME" ] && continue
+        # nome senza vincolo di versione, per i messaggi (svglib>=1.5.1,<2.0.0 -> svglib)
+        PIP_SHORT="${PIP_NAME%%[<>=!~]*}"
         if "$PY" -c "import $MOD_NAME" >/dev/null 2>&1; then
             sppmsg \
-"$SPP_OK Songpress++: dependency '$PIP_NAME' already present." \
-"$SPP_OK Songpress++: dipendenza '$PIP_NAME' già presente."
+"$SPP_OK Songpress++: dependency '$PIP_SHORT' already present." \
+"$SPP_OK Songpress++: dipendenza '$PIP_SHORT' già presente."
         else
             sppmsg \
 "$SPP_NET Songpress++: installing '$PIP_NAME' via pip..." \
 "$SPP_NET Songpress++: installo '$PIP_NAME' via pip..."
             if "$PY" -m pip install $BSP --root-user-action=ignore --no-warn-script-location "$PIP_NAME"; then
                 sppmsg \
-"$SPP_OK Songpress++: '$PIP_NAME' installed." \
-"$SPP_OK Songpress++: '$PIP_NAME' installato."
+"$SPP_OK Songpress++: '$PIP_SHORT' installed." \
+"$SPP_OK Songpress++: '$PIP_SHORT' installato."
             else
                 sppmsg \
-"$SPP_ERR Songpress++: could not install '$PIP_NAME'. Do it manually with:  sudo pip3 install $BSP $PIP_NAME" \
-"$SPP_ERR Songpress++: non sono riuscito a installare '$PIP_NAME'. Fallo a mano con:  sudo pip3 install $BSP $PIP_NAME"
+"$SPP_ERR Songpress++: could not install '$PIP_SHORT'. Do it manually with:  sudo pip3 install $BSP '$PIP_NAME'" \
+"$SPP_ERR Songpress++: non sono riuscito a installare '$PIP_SHORT'. Fallo a mano con:  sudo pip3 install $BSP '$PIP_NAME'"
             fi
         fi
     done

@@ -73,6 +73,13 @@ from urllib.parse import unquote, urlparse
 import wx
 from wx import xrc
 
+try:                                # opzionale: serve solo per il metodo Lanczos
+    from PIL import Image as _PILImage
+    _LANCZOS = getattr(getattr(_PILImage, 'Resampling', _PILImage), 'LANCZOS')
+except Exception:
+    _PILImage = None
+    _LANCZOS = None
+
 _ = wx.GetTranslation
 
 
@@ -99,7 +106,34 @@ def _zoom_text(z):
 
 # Impostazioni ricordate tra un'apertura e l'altra del righello
 # (per tutta la sessione di Songpress++).
-_session = {'showCross': True, 'smooth': False, 'hires': True}
+_session = {'showCross': True, 'smooth': False, 'hires': True,
+            'method': 'lanczos'}
+
+# Metodi dell'ingrandimento morbido: (chiave, nome). Lanczos richiede Pillow;
+# senza Pillow resta solo il bicubico di wxPython.
+_SMOOTH_METHODS = [('bicubic', 'Bicubic')]
+if _PILImage is not None:
+    _SMOOTH_METHODS.insert(0, ('lanczos', 'Lanczos'))
+
+
+def _smooth_method(key):
+    """Chiave valida tra quelle disponibili (altrimenti la prima)."""
+    keys = [k for k, _n in _SMOOTH_METHODS]
+    return key if key in keys else keys[0]
+
+
+def _scale_smooth(img, w, h, method):
+    """Ridimensiona una wx.Image con interpolazione: Lanczos (Pillow) oppure
+    bicubico (wx). Se Lanczos fallisce si ripiega sul bicubico."""
+    if method == 'lanczos' and _PILImage is not None:
+        try:
+            src = _PILImage.frombytes('RGB', (img.GetWidth(), img.GetHeight()),
+                                      bytes(img.GetData()))
+            out = src.resize((w, h), _LANCZOS)
+            return wx.Image(w, h, out.tobytes())
+        except Exception:
+            pass
+    return img.Scale(w, h, wx.IMAGE_QUALITY_BICUBIC)
 
 # (chiave, fattore da pollici)
 _UNITS = [
@@ -674,7 +708,7 @@ class _RulerToolbar(wx.Panel):
         # Caselle delle opzioni: affiancate nella barra oppure raggruppate in
         # una lista verticale aperta dal pulsante img/ruler_list.png
         # (Opzioni › Generale › "Opzioni 'Righello a schermo...'").
-        self.fit = self.cross = self.smooth = self.hires = None
+        self.fit = self.cross = self.smooth = self.method = self.hires = None
         self.optionsPopup = None
         self.listBtn = None
         if overlay.optionsList:
@@ -782,7 +816,30 @@ class _RulerToolbar(wx.Panel):
                                 "for sharper details. Measurements stay in logical "
                                 "pixels. Not available at 100% scaling (H)"))
         self.hires.Bind(wx.EVT_CHECKBOX, lambda e: o.SetHires(e.IsChecked()))
-        return [self.fit, self.cross, self.smooth, self.hires]
+
+        # Metodo di interpolazione dell'ingrandimento morbido (attivo solo
+        # con "Ingrandimento morbido" spuntato). Nome e menu su una riga.
+        self.methodRow = wx.Panel(parent)
+        self.methodRow.SetBackgroundColour(parent.GetBackgroundColour())
+        self.methodRow.SetForegroundColour(parent.GetForegroundColour())
+        rs = wx.BoxSizer(wx.HORIZONTAL)
+        rs.Add(wx.StaticText(self.methodRow, -1, _("Method")), 0,
+               wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 6)
+        # Pulsanti radio e non un wx.Choice: la tendina si apre fuori dalla
+        # lista a comparsa, che si chiuderebbe al primo clic.
+        self.method = []
+        for i, (key, name) in enumerate(_SMOOTH_METHODS):
+            rb = wx.RadioButton(self.methodRow, -1, name,
+                                style=wx.RB_GROUP if i == 0 else 0)
+            rb.SetToolTip(_("Interpolation used by the smooth zoom. "
+                            "Lanczos gives the sharpest edges; Bicubic is "
+                            "a little softer and has no halos"))
+            rb.Bind(wx.EVT_RADIOBUTTON, lambda e, k=key: o.SetMethod(k))
+            rs.Add(rb, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 8)
+            self.method.append(rb)
+        self.methodRow.SetSizer(rs)
+        rs.Fit(self.methodRow)
+        return [self.fit, self.cross, self.smooth, self.methodRow, self.hires]
 
     def OnOptionsList(self, evt):
         if self.optionsPopup:
@@ -802,7 +859,7 @@ class _RulerToolbar(wx.Panel):
 
     def _OptionsPopupClosed(self):
         self.optionsPopup = None
-        self.fit = self.cross = self.smooth = self.hires = None
+        self.fit = self.cross = self.smooth = self.method = self.hires = None
         self.overlay._FocusCanvas()
 
     def Sync(self):
@@ -814,6 +871,9 @@ class _RulerToolbar(wx.Panel):
             self.fit.SetValue(o.fit)
             self.cross.SetValue(o.showCross)
             self.smooth.SetValue(o.smooth)
+            for (k, _n), rb in zip(_SMOOTH_METHODS, self.method):
+                rb.SetValue(k == o.method)
+                rb.Enable(o.smooth and len(_SMOOTH_METHODS) > 1)
             self.hires.Enable(o.HasHires())
             self.hires.SetValue(o.hires and o.HasHires())
         self.unit.SetSelection(o.unitIdx)
@@ -916,6 +976,7 @@ class ScreenRulerOverlay(wx.Frame):
         self.showTolerance = bool(showTolerance)
         self._onToleranceChanged = onToleranceChanged
         self.smooth = _session['smooth']
+        self.method = _smooth_method(_session.get('method'))
         self.hires = _session['hires']
         try:
             self.tolerance = max(0, min(255, int(tolerance)))
@@ -1053,6 +1114,14 @@ class ScreenRulerOverlay(wx.Frame):
     def SetSmooth(self, smooth):
         self.smooth = bool(smooth)
         _session['smooth'] = self.smooth
+        self._viewBmp = None
+        self.toolbar.Sync()
+        self._FocusCanvas()
+        self.Refresh(False)
+
+    def SetMethod(self, method):
+        self.method = _smooth_method(method)
+        _session['method'] = self.method
         self._viewBmp = None
         self.toolbar.Sync()
         self._FocusCanvas()
@@ -1336,7 +1405,7 @@ class ScreenRulerOverlay(wx.Frame):
             z2 = self._z2()
             dw = (vw * z2 + 1) // 2
             dh = (vh * z2 + 1) // 2
-            quality = wx.IMAGE_QUALITY_BICUBIC if self.smooth else wx.IMAGE_QUALITY_NEAREST
+            quality = wx.IMAGE_QUALITY_NEAREST
             if self.hires and self._full is not None:
                 # Stessa porzione, presa dalla cattura in pixel fisici
                 fW, fH = self._full.GetWidth(), self._full.GetHeight()
@@ -1347,12 +1416,15 @@ class ScreenRulerOverlay(wx.Frame):
                 fh = max(1, min(fH - fy, int(round(vh * sy))))
                 sub = self._full.GetSubImage(wx.Rect(fx, fy, fw, fh))
                 if (fw, fh) != (dw, dh):
-                    sub = sub.Scale(dw, dh, quality)
+                    if self.smooth:
+                        sub = _scale_smooth(sub, dw, dh, self.method)
+                    else:
+                        sub = sub.Scale(dw, dh, quality)
                 self._viewBmp = wx.Bitmap(sub)
                 return self._viewBmp
             if self.smooth:
                 sub = self._image.GetSubImage(wx.Rect(self.viewX, self.viewY, vw, vh))
-                self._viewBmp = wx.Bitmap(sub.Scale(dw, dh, quality))
+                self._viewBmp = wx.Bitmap(_scale_smooth(sub, dw, dh, self.method))
                 return self._viewBmp
             x0, y0 = self.viewX, self.viewY
             idx = []

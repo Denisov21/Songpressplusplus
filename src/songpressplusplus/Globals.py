@@ -83,6 +83,81 @@ def _read_name():
     return "Songpress++"
 
 
+def _windows_install_data_dir():
+    """Cartella dati utente sull'unità dove Songpress++ è installato (Windows).
+
+    Così template, configurazione e dizionari seguono la lettera dell'unità di
+    installazione (es. D:\\Songpress++\\Songpress) invece di finire sempre in
+    C:\\Users\\...\\AppData\\Roaming\\Songpress++.
+
+    Riconosce l'installazione fatta dall'installer NSIS con "uv tool install"
+    (venv in <INSTDIR>\\tools\\songpressplusplus = sys.prefix) e la build
+    congelata. Ritorna None se non applicabile o se nessuna cartella è
+    scrivibile: in quel caso si usa il percorso standard di wx.StandardPaths.
+    """
+    if os.name != 'nt':
+        return None
+    inst_dir = None
+    try:
+        if getattr(sys, 'frozen', False):
+            inst_dir = os.path.dirname(os.path.abspath(sys.executable))
+        else:
+            parent = os.path.dirname(os.path.abspath(sys.prefix))
+            if os.path.basename(parent).lower() == 'tools':
+                inst_dir = os.path.dirname(parent)
+    except Exception:      # pylint: disable=broad-except
+        return None
+    if not inst_dir:
+        return None
+    candidates = [os.path.join(inst_dir, 'Songpress')]
+    drive = os.path.splitdrive(inst_dir)[0]
+    if drive:
+        candidates.append(os.path.join(drive + os.sep, 'Songpress'))
+    for cand in candidates:
+        try:
+            os.makedirs(cand, exist_ok=True)
+            probe = os.path.join(cand, '.write_test')
+            with open(probe, 'w') as f:
+                f.write('x')
+            os.remove(probe)
+            return cand
+        except OSError:
+            continue
+    return None
+
+
+def _move_tree(src, dst):
+    """Sposta il contenuto di src dentro dst, unendo le cartelle.
+
+    I file già presenti in dst vengono sovrascritti. Ogni file è copiato e poi
+    cancellato dall'origine solo se la copia è riuscita; la cartella src viene
+    rimossa soltanto se non resta nulla al suo interno, così un errore non fa
+    perdere dati. Ritorna True se src è stata spostata per intero.
+    """
+    ok = True
+    for root, _dirs, files in os.walk(src):
+        rel = os.path.relpath(root, src)
+        target = dst if rel == '.' else os.path.join(dst, rel)
+        try:
+            os.makedirs(target, exist_ok=True)
+        except OSError:
+            ok = False
+            continue
+        for name in files:
+            s = os.path.join(root, name)
+            try:
+                shutil.copy2(s, os.path.join(target, name))
+                os.remove(s)
+            except OSError:
+                ok = False
+    if ok:
+        try:
+            shutil.rmtree(src)
+        except OSError:
+            ok = False
+    return ok
+
+
 class Globals(object):
     # Subfolders of templates/ that must always exist, both in the package
     # (global root) and in the user data dir (local root). Kept in sync with
@@ -124,6 +199,30 @@ class Globals(object):
             def my_get(*args, **kwargs):
                 return self.path
             sp.GetUserDataDir = my_get
+        else:
+            # Windows: dati sull'unità di installazione (non sempre C:).
+            inst_data = _windows_install_data_dir()
+            if inst_data:
+                legacy = sp.GetUserDataDir()      # %APPDATA%\Songpress++
+                marker = os.path.join(inst_data, '.migrated_from_appdata')
+                if not os.path.isfile(marker):
+                    # Migrazione una tantum: i file vengono SPOSTATI (non
+                    # copiati) e i file personalizzati dell'utente prevalgono
+                    # su quelli copiati dall'installer.
+                    try:
+                        if (legacy and os.path.isdir(legacy) and
+                                os.path.realpath(legacy) != os.path.realpath(inst_data)):
+                            _move_tree(legacy, inst_data)
+                    except Exception:      # pylint: disable=broad-except
+                        pass
+                    try:
+                        open(marker, 'w').close()
+                    except OSError:
+                        pass
+
+                def inst_get(*args, **kwargs):
+                    return inst_data
+                sp.GetUserDataDir = inst_get
 
         self.data_path = sp.GetUserDataDir()
         old_config = None

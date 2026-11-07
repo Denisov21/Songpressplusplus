@@ -169,15 +169,43 @@ requires no elevated privileges.
 | What | Path |
 |------|------|
 | Application | `%LOCALAPPDATA%\Songpress++\bin\SongPressPlusPlus.exe` |
-| Song templates | `%APPDATA%\Songpress++\templates\songs\` |
-| Slides templates | `%APPDATA%\Songpress++\templates\slides\` |
-| Fonts | `%APPDATA%\Songpress++\templates\fonts\` |
+| Song templates | `<install folder>\Songpress\templates\songs\` |
+| Slides templates | `<install folder>\Songpress\templates\slides\` |
+| Fonts | `<install folder>\Songpress\templates\fonts\` |
+| Personal dictionary | `<install folder>\Songpress\user_dict.txt` |
+
+`<install folder>` is the folder chosen in the installer (default:
+`%LOCALAPPDATA%\Songpress++`). User data therefore lives **on the drive where Songpress++ is
+installed**, not always on `C:`: if you install to `D:\Songpress++` the data is in
+`D:\Songpress++\Songpress\`.
 
 The entire `templates\` folder (including all subfolders: `songs`, `slides`, `fonts`
 and any future additions) is copied recursively from the uv package tree
-into `%APPDATA%\Songpress++\templates\` at install time.
+into `<install folder>\Songpress\templates\` at install time.
 
-On uninstall the user is asked whether to delete the data folder (default: No).
+If the install folder is not writable, the program tries `X:\Songpress` on the same drive
+and only as a last resort falls back to `%APPDATA%\Songpress++` (the location used by
+earlier versions).
+
+### Migration from earlier versions
+
+On first launch, if `%APPDATA%\Songpress++` exists, the program **moves** its contents
+(custom templates, configuration) into `<install folder>\Songpress\`: the user's files win
+over those copied by the installer, and the old folder is removed only if it was emptied
+completely. A marker file (`.migrated_from_appdata`) prevents the operation from being
+repeated.
+
+### Uninstall and upgrade
+
+- **Normal uninstall**: since the `Songpress` folder (templates, fonts, personal dictionary,
+  downloaded dictionaries) may contain personal files, the uninstaller **asks for
+  confirmation** before removing it along with the program (default: **No**, i.e. keep it).
+  If a leftover still exists in `%APPDATA%\Songpress++` (earlier versions) the user is asked
+  separately whether to delete it (default: No). If the `Songpress` folder is kept, the
+  install folder itself is not removed.
+- **Upgrade** (the previous version is removed silently with `/S`): no question is shown and
+  the `Songpress` folder is **always kept**, so templates and words added to the dictionary
+  are not lost.
 
 ## Fonts in the `templates\fonts\` folder — mandatory and optional
 

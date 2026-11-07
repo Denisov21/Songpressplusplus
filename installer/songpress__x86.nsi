@@ -171,6 +171,7 @@ LangString STR_INSTALL_FONTS       ${LANG_ITALIAN} "Installazione font FreeSerif
 LangString STR_COPY_ASSETS_WARN    ${LANG_ITALIAN} "Attenzione: template o font non trovati nel pacchetto installato.$\r$\nPercorso atteso:$\r$\n$0"
 LangString STR_REBOOT_HINT         ${LANG_ITALIAN} "Per completare l'installazione e visualizzare Songpress++ nel menu Start, è consigliato riavviare il computer."
 LangString STR_UNINST_APPDATA      ${LANG_ITALIAN} "⚠ Rimuovere anche i template e font personalizzati in %APPDATA%\Songpress++?$\r$\n$\r$\nQuesta operazione non può essere annullata.$\r$\n(Scegli No per conservare le tue personalizzazioni)"
+LangString STR_UNINST_DATA         ${LANG_ITALIAN} "⚠ Rimuovere anche le impostazioni personali (template, font, dizionario personale) in:$\r$\n$INSTDIR\Songpress?$\r$\n$\r$\nQuesta operazione non può essere annullata.$\r$\n(Scegli No per conservare le tue personalizzazioni)"
 LangString STR_NO_PROGRAMFILES     ${LANG_ITALIAN} "⚠ ATTENZIONE: non installare Songpress++ nella cartella «Programmi» o «Programmi (x86)».$\r$\n$\r$\nSongpress++ è un'applicazione per singolo utente e va installata in una cartella personale (predefinita: $LOCALAPPDATA\Songpress++).$\r$\n$\r$\nScegli un'altra cartella di destinazione."
 LangString STR_DIR_TOP             ${LANG_ITALIAN} "Questa procedura installerà ${PRODUCT_NAME} nella cartella indicata sotto.$\r$\n$\r$\n⚠ ATTENZIONE: non installare in «Programmi» o «Programmi (x86)». Songpress++ è un'applicazione per singolo utente: mantieni la cartella personale predefinita."
 
@@ -207,6 +208,7 @@ LangString STR_INSTALL_FONTS       ${LANG_ENGLISH} "Installing FreeSerif fonts (
 LangString STR_COPY_ASSETS_WARN    ${LANG_ENGLISH} "Warning: templates or fonts not found in the installed package.$\r$\nExpected path:$\r$\n$0"
 LangString STR_REBOOT_HINT         ${LANG_ENGLISH} "To complete the installation and make Songpress++ appear in the Start menu, it is recommended to restart your computer."
 LangString STR_UNINST_APPDATA      ${LANG_ENGLISH} "⚠ Also remove custom templates and fonts in %APPDATA%\Songpress++?$\r$\n$\r$\nThis cannot be undone.$\r$\n(Choose No to keep your customizations)"
+LangString STR_UNINST_DATA         ${LANG_ENGLISH} "⚠ Also remove your personal settings (templates, fonts, personal dictionary) in:$\r$\n$INSTDIR\Songpress?$\r$\n$\r$\nThis cannot be undone.$\r$\n(Choose No to keep your customizations)"
 LangString STR_NO_PROGRAMFILES     ${LANG_ENGLISH} "⚠ WARNING: do not install Songpress++ in the «Program Files» or «Program Files (x86)» folder.$\r$\n$\r$\nSongpress++ is a per-user application and must be installed in a personal folder (default: $LOCALAPPDATA\Songpress++).$\r$\n$\r$\nPlease choose a different destination folder."
 LangString STR_DIR_TOP             ${LANG_ENGLISH} "This wizard will install ${PRODUCT_NAME} in the folder shown below.$\r$\n$\r$\n⚠ WARNING: do not install in «Program Files» or «Program Files (x86)». Songpress++ is a per-user application: keep the default personal folder."
 
@@ -348,9 +350,11 @@ FunctionEnd
 
 ; ---------------------------------------------------------------
 ;  CopyAssetsToAppData
-;  Copia la cartella templates dal pacchetto uv nella destinazione corretta:
-;    - Installazione standard:  %APPDATA%\Songpress++\templates
-;    - Installazione portabile: $INSTDIR\templates  (accanto all'exe)
+;  Copia la cartella templates dal pacchetto uv in:
+;    $INSTDIR\Songpress\templates
+;  cioe' sull'unita' di installazione (non sempre C:). E' la stessa cartella
+;  dati usata da Globals.py (_windows_install_data_dir) e dal controllo
+;  ortografico (SpellChecker.py).
 ;  Sorgente: $INSTDIR\tools\songpressplusplus\Lib\site-packages\songpressplusplus\
 ; ---------------------------------------------------------------
 Function CopyAssetsToAppData
@@ -366,9 +370,9 @@ Function CopyAssetsToAppData
     Return
   ${EndUnless}
 
-  ; Scegli la cartella di destinazione in base alla modalità
+  ; Destinazione: cartella dati sull'unita' di installazione
   SetShellVarContext current
-  StrCpy $R1 "$APPDATA\Songpress++\templates"
+  StrCpy $R1 "$INSTDIR\Songpress\templates"
   CreateDirectory "$R1"
 
   ; Copia tutta la cartella templates (ricorsiva: include songs, slides, fonts
@@ -796,6 +800,18 @@ Section Uninstall
   RMDir /r "$INSTDIR\python"
   RMDir /r "$INSTDIR\cache"
   RMDir /r "$INSTDIR\logs"   ; log di impaginazione (PrintDialog.py)
+  ; Dati utente (template, font, dizionario personale, dizionari scaricati):
+  ; vivono in $INSTDIR\Songpress e possono contenere file personali, quindi si
+  ; chiede conferma (default: No = conserva). In modalita' silenziosa (/S, usata
+  ; dall'aggiornamento: la vecchia versione viene rimossa da .onInit) /SD IDNO
+  ; li conserva sempre, cosi' un aggiornamento non perde le personalizzazioni.
+  ${If} ${FileExists} "$INSTDIR\Songpress\*.*"
+    MessageBox MB_ICONEXCLAMATION|MB_YESNO|MB_DEFBUTTON2 \
+      "$(STR_UNINST_DATA)" /SD IDNO IDYES uninst_data IDNO uninst_skip_data
+    uninst_data:
+      RMDir /r "$INSTDIR\Songpress"
+    uninst_skip_data:
+  ${EndIf}
   Delete "$INSTDIR\songpressplusplus.ico"
   Delete "$INSTDIR\uninst.exe"
   RMDir  "$INSTDIR"

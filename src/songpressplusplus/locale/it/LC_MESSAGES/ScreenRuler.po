@@ -159,3 +159,15 @@ msgstr ""
 #: ScreenRuler.py
 msgid "Options: fit to content (F), show cross (C), smooth zoom (S), high resolution (H)"
 msgstr "Opzioni: adatta al contenuto (F), mostra croce (C), ingrandimento morbido (S), alta risoluzione (H)"
+
+#: ScreenRuler.py
+msgid "Method"
+msgstr "Metodo"
+
+#: ScreenRuler.py
+msgid ""
+"Interpolation used by the smooth zoom. Lanczos gives the sharpest edges; "
+"Bicubic is a little softer and has no halos"
+msgstr ""
+"Interpolazione usata dall'ingrandimento morbido. Lanczos dà i bordi più "
+"nitidi; Bicubic è un po' più morbido e non crea aloni"

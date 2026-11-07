@@ -183,23 +183,26 @@ APP_BIN="SongpressPlusPlus"
 # quindi pip la scarica pronta all'uso senza compilazione. Serve al rendering
 # dei glifi musicali SMP in stampa (rasterizzazione FreeType via Pillow).
 PIP_BUNDLE=(
-    requests
-    reportlab
-    markdown
-    mistune
-    pypdf
-    python-pptx
-    pyshortcuts
-    pyenchant
-    pillow
+    # Limiti di versione allineati a pyproject.toml: senza, pip prenderebbe
+    # l'ultima versione (es. svglib 2.x + reportlab 5.x), in conflitto con i
+    # vincoli dell'app.
+    "requests>=2.32.4,<3.0.0"
+    "reportlab>=4.0.0,<5.0.0"
+    "markdown>=3.4,<4.0.0"
+    "mistune>=3.0.0,<4.0.0"
+    "pypdf>=6.0.0,<7.0.0"
+    "python-pptx>=1.0.2,<2.0.0"
+    "pyshortcuts>=1.9.5,<2.0.0"
+    "pyenchant>=3.2.0,<4.0.0"
+    "pillow>=10.0.0,<12.0.0"
     # python-docx: lettura/scrittura .docx. È pure-Python; le sue dipendenze
     # (lxml, typing-extensions) arrivano dalle wheel manylinux di PyPI, quindi
     # vengono tirate automaticamente da pip (qui NON usiamo --no-deps).
-    python-docx
+    "python-docx>=1.1.0,<2.0.0"
     # svglib: icone vettoriali SVG (img/vector/*.svg) nei PDF di CreaIndice.
     # Pure-Python; le sue dipendenze (lxml, tinycss2, cssselect2) arrivano da
     # wheel manylinux di PyPI tramite pip.
-    svglib
+    "svglib>=1.5.1,<2.0.0"
 )
 
 # ── Cartelle di lavoro ────────────────────────────────────────

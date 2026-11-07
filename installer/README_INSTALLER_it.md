@@ -170,15 +170,43 @@ che non richiede privilegi elevati.
 | Cosa | Percorso |
 |------|----------|
 | Applicazione | `%LOCALAPPDATA%\Songpress++\bin\SongPressPlusPlus.exe` |
-| Template canzoni | `%APPDATA%\Songpress++\templates\songs\` |
-| Template slide | `%APPDATA%\Songpress++\templates\slides\` |
-| Font | `%APPDATA%\Songpress++\templates\fonts\` |
+| Template canzoni | `<cartella di installazione>\Songpress\templates\songs\` |
+| Template slide | `<cartella di installazione>\Songpress\templates\slides\` |
+| Font | `<cartella di installazione>\Songpress\templates\fonts\` |
+| Dizionario personale | `<cartella di installazione>\Songpress\user_dict.txt` |
+
+`<cartella di installazione>` è la cartella scelta nell'installer (predefinita:
+`%LOCALAPPDATA%\Songpress++`). I dati utente stanno quindi **sull'unità dove Songpress++ è
+installato**, non sempre su `C:`: se si installa in `D:\Songpress++` i dati sono in
+`D:\Songpress++\Songpress\`.
 
 L'intera cartella `templates\` (incluse tutte le sottocartelle: `songs`, `slides`, `fonts`
 e qualsiasi aggiunta futura) viene copiata ricorsivamente dall'albero del pacchetto uv
-in `%APPDATA%\Songpress++\templates\` durante l'installazione.
+in `<cartella di installazione>\Songpress\templates\` durante l'installazione.
 
-In fase di disinstallazione viene chiesto se eliminare la cartella dati (default: No).
+Se la cartella di installazione non è scrivibile, il programma prova `X:\Songpress` sulla stessa
+unità e solo in ultima istanza ripiega su `%APPDATA%\Songpress++` (percorso usato dalle
+versioni precedenti).
+
+### Migrazione dalle versioni precedenti
+
+Al primo avvio, se esiste `%APPDATA%\Songpress++`, il programma **sposta** il suo contenuto
+(template personalizzati, configurazione) in `<cartella di installazione>\Songpress\`:
+i file dell'utente prevalgono su quelli copiati dall'installer e la vecchia cartella viene
+rimossa solo se è stata svuotata del tutto. Un file marcatore (`.migrated_from_appdata`)
+impedisce di ripetere l'operazione.
+
+### Disinstallazione e aggiornamento
+
+- **Disinstallazione normale**: poiché la cartella `Songpress` (template, font, dizionario
+  personale, dizionari scaricati) può contenere file personali, l'uninstaller **chiede
+  conferma** se rimuoverla insieme al programma (default: **No**, cioè conserva). Se esiste
+  ancora un residuo in `%APPDATA%\Songpress++` (versioni precedenti) viene chiesto
+  separatamente se eliminarlo (default: No). Scegliendo di conservare la cartella `Songpress`,
+  la cartella di installazione non viene rimossa.
+- **Aggiornamento** (la versione precedente viene rimossa in modalità silenziosa `/S`): non
+  viene mostrata alcuna domanda e la cartella `Songpress` **viene sempre conservata**, così non
+  si perdono template e parole aggiunte al dizionario.
 
 ## Font nella cartella `templates\fonts\` — obbligatori e facoltativi
 
