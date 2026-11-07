@@ -800,6 +800,7 @@ Section Uninstall
   RMDir /r "$INSTDIR\tools"
   RMDir /r "$INSTDIR\python"
   RMDir /r "$INSTDIR\cache"
+  RMDir /r "$INSTDIR\logs"   ; log di impaginazione (PrintDialog.py)
   Delete "$INSTDIR\songpressplusplus.ico"
   Delete "$INSTDIR\uninst.exe"
   RMDir  "$INSTDIR"
