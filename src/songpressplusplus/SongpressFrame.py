@@ -46,7 +46,7 @@ from .MyListDialog import MyListDialog
 from .Globals import glb
 from .Preferences import Preferences
 from . import i18n
-from .utils import temp_dir, undo_action, set_pin_state
+from .utils import temp_dir, undo_action, set_pin_state, setup_maximize_button
 from . import chordpro_import
 from .chordpro_import import get_roots, convert as chordpro_convert
 from .SyntaxChecker import check as syntax_check
@@ -10163,30 +10163,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         # Pulsante Schermo intero
         btn_max = wx.Button(dlg, wx.ID_ANY, _("Full screen"))
-        btn_max.SetToolTip(_("Toggle full screen"))
-
-        def _on_toggle_max(e):
-            if dlg.IsMaximized():
-                dlg.Restore()
-                btn_max.SetLabel(_("Full screen"))
-            else:
-                dlg.Maximize()
-                btn_max.SetLabel(_("Restore"))
-
-        btn_max.Bind(wx.EVT_BUTTON, _on_toggle_max)
-
-        def _fix_btn_max_size():
-            dc = wx.ClientDC(btn_max)
-            dc.SetFont(btn_max.GetFont())
-            w1 = dc.GetTextExtent(_("Full screen"))[0]
-            w2 = dc.GetTextExtent(_("Restore"))[0]
-            best = btn_max.GetBestSize()
-            cur_tw = dc.GetTextExtent(btn_max.GetLabel())[0]
-            padding = best.width - cur_tw
-            min_w = max(w1, w2) + max(padding, 20)
-            btn_max.SetMinSize(wx.Size(min_w, best.height))
-            btn_max.GetContainingSizer().Layout()
-        wx.CallAfter(_fix_btn_max_size)
+        # Icone maximize_page / reduce (img/vector/*.svg, poi img/*.png 16x16);
+        # se mancano, il testo di prima. Il testo è il tooltip.
+        setup_maximize_button(dlg, btn_max, _("Full screen"), _("Restore"))
 
         # ── Zoom: pulsante −, slider, pulsante +, etichetta % ────────
         btn_zoom_out = wx.Button(dlg, wx.ID_ANY, u"−", size=(28, -1))
@@ -10984,30 +10963,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         btn_row = wx.BoxSizer(wx.HORIZONTAL)
 
         btn_max = wx.Button(dlg, wx.ID_ANY, _("Full screen"))
-        btn_max.SetToolTip(_("Toggle full screen"))
-
-        def _on_toggle_max(e):
-            if dlg.IsMaximized():
-                dlg.Restore()
-                btn_max.SetLabel(_("Full screen"))
-            else:
-                dlg.Maximize()
-                btn_max.SetLabel(_("Restore"))
-
-        btn_max.Bind(wx.EVT_BUTTON, _on_toggle_max)
-
-        def _fix_btn_max_size():
-            dc = wx.ClientDC(btn_max)
-            dc.SetFont(btn_max.GetFont())
-            w1 = dc.GetTextExtent(_("Full screen"))[0]
-            w2 = dc.GetTextExtent(_("Restore"))[0]
-            best = btn_max.GetBestSize()
-            cur_tw = dc.GetTextExtent(btn_max.GetLabel())[0]
-            padding = best.width - cur_tw
-            min_w = max(w1, w2) + max(padding, 20)
-            btn_max.SetMinSize(wx.Size(min_w, best.height))
-            btn_max.GetContainingSizer().Layout()
-        wx.CallAfter(_fix_btn_max_size)
+        # Icone maximize_page / reduce (img/vector/*.svg, poi img/*.png 16x16);
+        # se mancano, il testo di prima. Il testo è il tooltip.
+        setup_maximize_button(dlg, btn_max, _("Full screen"), _("Restore"))
 
         btn_zoom_out = wx.Button(dlg, wx.ID_ANY, u"−", size=(28, -1))
         btn_zoom_out.SetToolTip(_("Zoom out"))

@@ -703,8 +703,14 @@
           <accel>F1</accel>
           <help>Open the official ChordPro directives page (chordpro.org) in the browser (requires an Internet connection)</help>
         </object>
+        <object class="wxMenuItem" name="guideManual">
+          <label>_Songpress Manual - Skeed (online)</label>
+          <accel></accel>
+          <help>Open the Songpress manual on the Skeed website in the browser (requires an Internet connection)</help>
+          <bitmap>../img/support.png</bitmap>
+        </object>
         <object class="wxMenuItem" name="guideMarkdown">
-          <label>_Songpress++ Guide...</label>
+          <label>_Quick guide - Songpress++...</label>
           <accel></accel>
           <help>Open ChordPro and Songpress command reference</help>
           <bitmap>../img/help.png</bitmap>
