@@ -323,6 +323,9 @@ class MyPreferencesDialog(PreferencesDialog):
         self.hideRestSymbolCB.SetValue(getattr(self.pref, 'hideRestSymbol', False))
         self.hideImageCB.SetValue(getattr(self.pref, 'hideImage', False))
         self.hideTransposerImageCB.SetValue(getattr(self.pref, 'hideTransposerImage', False))
+        self.hideFingeringCB.SetValue(getattr(self.pref, 'hideFingering', False))
+        self.hideTasteCB.SetValue(getattr(self.pref, 'hideTaste', False))
+        self.hideDefineCB.SetValue(getattr(self.pref, 'hideDefine', False))
 
         # Viewer guida rapida
         viewer = getattr(self.pref, 'guideViewer', 'auto')
@@ -2197,6 +2200,9 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.hideRestSymbol  = self.hideRestSymbolCB.GetValue()
         self.pref.hideImage       = self.hideImageCB.GetValue()
         self.pref.hideTransposerImage = self.hideTransposerImageCB.GetValue()
+        self.pref.hideFingering   = self.hideFingeringCB.GetValue()
+        self.pref.hideTaste       = self.hideTasteCB.GetValue()
+        self.pref.hideDefine      = self.hideDefineCB.GetValue()
         # Applica subito sul previewCanvas se disponibile
         if self._previewCanvas is not None:
             self._previewCanvas.SetShowPageIndicator(self.pref.showPageIndicator)

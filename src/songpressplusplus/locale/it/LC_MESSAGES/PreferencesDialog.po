@@ -981,3 +981,21 @@ msgstr "Dimensione tastiere (%)"
 
 msgid "Size of the chord keyboards drawn at the bottom of the page (50-200%). Smaller keyboards let more of them fit on each row."
 msgstr "Dimensione delle tastiere degli accordi disegnate in fondo alla pagina (50-200%). Con tastiere più piccole ne entrano di più su ogni riga."
+
+msgid "First chord fingering  {fingering:}"
+msgstr "Diteggiatura primo accordo  {fingering:}"
+
+msgid "Chord keyboard  {taste:}"
+msgstr "Tastiera accordo  {taste:}"
+
+msgid "Guitar chord diagram  {define:}"
+msgstr "Diagramma accordo chitarra  {define:}"
+
+msgid "Hide {fingering:...} directives when no chords are shown."
+msgstr "Nasconde le direttive {fingering:...} quando gli accordi sono disabilitati."
+
+msgid "Hide {taste:...} directives when no chords are shown."
+msgstr "Nasconde le direttive {taste:...} quando gli accordi sono disabilitati."
+
+msgid "Hide {define:...} directives when no chords are shown."
+msgstr "Nasconde le direttive {define:...} quando gli accordi sono disabilitati."

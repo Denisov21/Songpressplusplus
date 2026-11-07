@@ -828,27 +828,103 @@ class SongDecorator(object):
             self.dc.DrawRectangle(bx + prefix_w - 1, by, match_w + 2, bh)
             start = idx + nd_len
 
+    _TEMPO_SVG_CACHE = {}
+
+    def _tempo_svg_bitmap(self, svg_name, new_h, tint, bgr):
+        """Rasterizza img/vector/<svg_name>.svg alla risoluzione del dispositivo.
+
+        new_h: altezza logica dell'icona. La bitmap ha dimensioni logiche x
+        scala utente del DC, cosi' resta nitida con zoom, stampa e PDF.
+        tint: (r, g, b) o None (colore originale); bgr: sfondo su cui
+        precomporre l'alpha (il PrinterDC di Windows non gestisce la
+        trasparenza). Restituisce (wx.Bitmap, larghezza_logica) oppure None
+        se l'SVG manca o non e' caricabile (si usera' il PNG)."""
+        try:
+            import os, re
+            path = _glb.AddPath('img/vector/%s.svg' % svg_name)
+            if not os.path.isfile(path):
+                return None
+            sx, sy = self.dc.GetUserScale()
+            sx = sx if sx > 0 else 1.0
+            sy = sy if sy > 0 else 1.0
+            with open(path, 'r', encoding='utf-8') as f:
+                svg = f.read()
+            m = re.search(r'viewBox\s*=\s*"\s*[-\d.eE]+[\s,]+[-\d.eE]+[\s,]+'
+                          r'([-\d.eE]+)[\s,]+([-\d.eE]+)\s*"', svg)
+            aspect = 1.0
+            if m and float(m.group(2)) > 0:
+                aspect = float(m.group(1)) / float(m.group(2))
+            new_w = max(1, int(new_h * aspect))
+            dw = max(1, int(round(new_w * sx)))
+            dh = max(1, int(round(new_h * sy)))
+            key = (path, dw, dh, tint, bgr)
+            bmp = self._TEMPO_SVG_CACHE.get(key)
+            if bmp is None:
+                if tint:
+                    svg = re.sub(r'fill\s*=\s*"(?!none)[^"]*"',
+                                 'fill="#%02x%02x%02x"' % tuple(tint), svg,
+                                 flags=re.IGNORECASE)
+                try:
+                    bb = wx.BitmapBundle.FromSVG(svg.encode('utf-8'), wx.Size(dw, dh))
+                except Exception:
+                    bb = wx.BitmapBundle.FromSVG(svg, wx.Size(dw, dh))
+                if not bb.IsOk():
+                    return None
+                src = bb.GetBitmap(wx.Size(dw, dh))
+                if not src.IsOk():
+                    return None
+                bmp = wx.Bitmap(dw, dh, 24)
+                mdc = wx.MemoryDC(bmp)
+                mdc.SetBackground(wx.Brush(wx.Colour(*bgr)))
+                mdc.Clear()
+                mdc.DrawBitmap(src, 0, 0, True)
+                mdc.SelectObject(wx.NullBitmap)
+                if len(self._TEMPO_SVG_CACHE) > 64:
+                    self._TEMPO_SVG_CACHE.clear()
+                self._TEMPO_SVG_CACHE[key] = bmp
+            return bmp, new_w
+        except Exception:
+            return None
+
     def DrawText(self, text, tx, ty):
         # tx, ty: coordinates of top-left corner of drawable area
         self.dc.SetFont(text.font)
         self.dc.SetTextForeground(text.color)
-        if getattr(text, 'is_tempo_note', False):
+        # --- Helper interno: icone del tempo. Prima scelta img/vector/<nome>.svg
+        # rasterizzato alla risoluzione REALE del dispositivo (zoom anteprima,
+        # stampa, PDF: nitido a ogni scala); ripiego sul PNG attuale. ---
+        def _draw_tempo_icon(svg_name, png_name):
             try:
-                img = wx.Image(_glb.AddPath('img/tempo_note.png'))
-                orig_h = img.GetHeight()
-                orig_w = img.GetWidth()
                 _icon_size = getattr(self, 'tempoIconSize', None)
                 new_h = int(_icon_size) if _icon_size else int(text.h)
+                by = int(ty + text.marginTop)
+                bx = int(tx + text.marginLeft)
+                _bg = getattr(self, 'bgColour', None)
+                _bgr = (_bg.Red(), _bg.Green(), _bg.Blue()) if _bg else (255, 255, 255)
+                _tc = getattr(self, 'tempoIconColour', None)
+                _tint = (_tc.Red(), _tc.Green(), _tc.Blue()) if _tc else None
+                # 1) vettoriale
+                vec = self._tempo_svg_bitmap(svg_name, new_h, _tint, _bgr)
+                if vec is not None:
+                    vbmp, vw = vec
+                    sx, sy = self.dc.GetUserScale()
+                    self.dc.SetUserScale(1.0, 1.0)
+                    try:
+                        self.dc.DrawBitmap(vbmp, int(round(bx * sx)), int(round(by * sy)), True)
+                    finally:
+                        self.dc.SetUserScale(sx, sy)
+                    self.dc.DrawText(text.text, bx + vw + 2, by)
+                    return True
+                # 2) ripiego: PNG attuale
+                img = wx.Image(_glb.AddPath(png_name))
+                orig_h = img.GetHeight()
+                orig_w = img.GetWidth()
                 new_w = int(orig_w * new_h / orig_h)
                 img = img.Scale(new_w, new_h, wx.IMAGE_QUALITY_HIGH)
                 # Precomponi l'alpha su sfondo bianco: il PrinterDC su Windows
                 # non gestisce la trasparenza nativa della PNG (appare come nero).
                 if img.HasAlpha():
                     import array
-                    _bg = getattr(self, "bgColour", None)
-                    _bgr = (_bg.Red(), _bg.Green(), _bg.Blue()) if _bg else (255, 255, 255)
-                    _tc = getattr(self, 'tempoIconColour', None)
-                    _tint = (_tc.Red(), _tc.Green(), _tc.Blue()) if _tc else None
                     a = array.array('B', img.GetAlphaBuffer())
                     rs = array.array('B', img.GetDataBuffer())
                     rb = bytearray(new_w * new_h * 3)
@@ -862,72 +938,37 @@ class SongDecorator(object):
                     bmp = wx.Bitmap(bg_img)
                 else:
                     bmp = wx.Bitmap(img)
-                by = int(ty + text.marginTop)
-                bx = int(tx + text.marginLeft)
                 self.dc.DrawBitmap(bmp, bx, by, True)
-                self.dc.DrawText(text.text, bx + new_w + 2, int(ty + text.marginTop))
-                return
-            except Exception:
-                pass
-        # --- Helper interno per disegnare icone nota con precomposizione alpha ---
-        def _draw_tempo_icon(img_name):
-            try:
-                img = wx.Image(_glb.AddPath(img_name))
-                orig_h = img.GetHeight()
-                orig_w = img.GetWidth()
-                _icon_size = getattr(self, 'tempoIconSize', None)
-                new_h = int(_icon_size) if _icon_size else int(text.h)
-                new_w = int(orig_w * new_h / orig_h)
-                img = img.Scale(new_w, new_h, wx.IMAGE_QUALITY_HIGH)
-                if img.HasAlpha():
-                    import array
-                    _bg = getattr(self, 'bgColour', None)
-                    _bgr = (_bg.Red(), _bg.Green(), _bg.Blue()) if _bg else (255, 255, 255)
-                    _tc = getattr(self, 'tempoIconColour', None)
-                    _tint = (_tc.Red(), _tc.Green(), _tc.Blue()) if _tc else None
-                    a = array.array('B', img.GetAlphaBuffer())
-                    rs = array.array('B', img.GetDataBuffer())
-                    rb = bytearray(new_w * new_h * 3)
-                    for i in range(new_w * new_h):
-                        av = a[i] / 255.0
-                        for c in range(3):
-                            _src = _tint[c] if _tint else rs[i * 3 + c]
-                            rb[i * 3 + c] = int(_src * av + _bgr[c] * (1 - av))
-                    bg_img = wx.Image(new_w, new_h)
-                    bg_img.SetData(bytes(rb))
-                    bmp = wx.Bitmap(bg_img)
-                else:
-                    bmp = wx.Bitmap(img)
-                by = int(ty + text.marginTop)
-                bx = int(tx + text.marginLeft)
-                self.dc.DrawBitmap(bmp, bx, by, True)
-                self.dc.DrawText(text.text, bx + new_w + 2, int(ty + text.marginTop))
+                self.dc.DrawText(text.text, bx + new_w + 2, by)
                 return True
             except Exception:
                 return False
+        if getattr(text, 'is_tempo_note', False):
+            if _draw_tempo_icon('tempo_note', 'img/tempo_note.png'):
+                return
         if getattr(text, 'is_tempo_half_note', False):
-            # {tempo_m:} — minima
-            if _draw_tempo_icon('img/minima_32x32.png'):
+            # {tempo_m:} - minima
+            if _draw_tempo_icon('minima', 'img/minima_32x32.png'):
                 return
         if getattr(text, 'is_tempo_quarter_note', False):
-            # {tempo_s:} — semiminima
-            if _draw_tempo_icon('img/semiminima_32x32.png'):
+            # {tempo_s:} - semiminima
+            if _draw_tempo_icon('semiminima', 'img/semiminima_32x32.png'):
                 return
         if getattr(text, 'is_tempo_eighth_note', False):
-            # {tempo_c:} — croma
-            if _draw_tempo_icon('img/croma_32x32.png'):
+            # {tempo_c:} - croma
+            if _draw_tempo_icon('croma', 'img/croma_32x32.png'):
                 return
         if getattr(text, 'is_tempo_dotted_quarter', False):
-            # {tempo_sp:} — semiminima puntata
-            if _draw_tempo_icon('img/semiminima_punto_32x32.png'):
+            # {tempo_sp:} - semiminima puntata
+            if _draw_tempo_icon('semiminima_punto', 'img/semiminima_punto_32x32.png'):
                 return
         if getattr(text, 'is_tempo_dotted_eighth', False):
-            # {tempo_cp:} — croma puntata
-            if _draw_tempo_icon('img/croma_punto_32x32.png'):
+            # {tempo_cp:} - croma puntata
+            if _draw_tempo_icon('croma_punto', 'img/croma_punto_32x32.png'):
                 return
         if getattr(text, 'is_tempo_metro', False):
-            # metronome display
-            if _draw_tempo_icon('img/metronomeWindows.png'):
+            # metronomo
+            if _draw_tempo_icon('metronomeWindows', 'img/metronomeWindows.png'):
                 return
         if getattr(text, 'is_time_sig', False):
             try:

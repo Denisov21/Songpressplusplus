@@ -947,6 +947,9 @@ class Preferences(object):
         self.hideRestSymbol = _rb('hideRestSymbol',  False)
         self.hideImage      = _rb('hideImage',       False)
         self.hideTransposerImage = _rb('hideTransposerImage', False)
+        self.hideFingering  = _rb('hideFingering',  False)
+        self.hideTaste      = _rb('hideTaste',      False)
+        self.hideDefine     = _rb('hideDefine',     False)
         self.config.SetPath('/')
 
     def _SaveNoChordHide(self):
@@ -959,6 +962,9 @@ class Preferences(object):
         self.config.Write('hideRestSymbol',  '1' if getattr(self, 'hideRestSymbol',  False) else '0')
         self.config.Write('hideImage',       '1' if getattr(self, 'hideImage',       False) else '0')
         self.config.Write('hideTransposerImage', '1' if getattr(self, 'hideTransposerImage', False) else '0')
+        self.config.Write('hideFingering',  '1' if getattr(self, 'hideFingering',  False) else '0')
+        self.config.Write('hideTaste',      '1' if getattr(self, 'hideTaste',      False) else '0')
+        self.config.Write('hideDefine',     '1' if getattr(self, 'hideDefine',     False) else '0')
         self.config.SetPath('/')
 
     def _LoadSaveOnModified(self):

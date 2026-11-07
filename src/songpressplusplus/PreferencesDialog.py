@@ -1188,6 +1188,15 @@ class PreferencesDialog(wx.Dialog):
         self.hideRestSymbolCB.SetToolTip(
             _(u"Hide the {textsize:N}\U0001D13D{textsize} quarter rest symbol when no chords are shown.")
         )
+        # Il simbolo U+1D13D (pausa di semiminima) e' fuori dal piano BMP:
+        # il carattere di sistema dei controlli (Segoe UI) su Windows non lo
+        # contiene e la checkbox mostra un quadratino. Si usa quindi un
+        # carattere che lo contiene (Segoe UI Symbol), mantenendo la
+        # stessa dimensione del carattere predefinito.
+        if 'wxMSW' in wx.PlatformInfo:
+            _restFont = self.hideRestSymbolCB.GetFont()
+            if _restFont.SetFaceName(u"Segoe UI Symbol"):
+                self.hideRestSymbolCB.SetFont(_restFont)
         grpNoChords.Add(self.hideRestSymbolCB, 0, wx.ALL, 5)
 
         self.hideImageCB = wx.CheckBox(
@@ -1207,6 +1216,33 @@ class PreferencesDialog(wx.Dialog):
             _(u"Hide {start_of_tab:TP}…{end_of_tab} blocks when no chords are shown.")
         )
         grpNoChords.Add(self.hideTransposerImageCB, 0, wx.ALL, 5)
+
+        self.hideFingeringCB = wx.CheckBox(
+            _boxNoChords, wx.ID_ANY,
+            _(u"First chord fingering  {fingering:}")
+        )
+        self.hideFingeringCB.SetToolTip(
+            _(u"Hide {fingering:...} directives when no chords are shown.")
+        )
+        grpNoChords.Add(self.hideFingeringCB, 0, wx.ALL, 5)
+
+        self.hideTasteCB = wx.CheckBox(
+            _boxNoChords, wx.ID_ANY,
+            _(u"Chord keyboard  {taste:}")
+        )
+        self.hideTasteCB.SetToolTip(
+            _(u"Hide {taste:...} directives when no chords are shown.")
+        )
+        grpNoChords.Add(self.hideTasteCB, 0, wx.ALL, 5)
+
+        self.hideDefineCB = wx.CheckBox(
+            _boxNoChords, wx.ID_ANY,
+            _(u"Guitar chord diagram  {define:}")
+        )
+        self.hideDefineCB.SetToolTip(
+            _(u"Hide {define:...} directives when no chords are shown.")
+        )
+        grpNoChords.Add(self.hideDefineCB, 0, wx.ALL, 5)
 
         bSizerSongpress.Add(grpNoChords, 0, wx.EXPAND | wx.ALL, 8)
 

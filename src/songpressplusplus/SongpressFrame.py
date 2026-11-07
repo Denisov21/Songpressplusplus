@@ -3175,15 +3175,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         vbox.Add(wx.StaticText(d, -1, _("Display as:")), 0, wx.LEFT | wx.TOP, 8)
 
+        # Icone: prima scelta img/vector/<nome>.svg, ripiego img/<nome>.png
         _icon_sz = getattr(self.pref, 'tempoIconSize', 24)
-        _note_img = wx.Image(glb.AddPath("img/tempo_note.png"))
-        _note_img = _note_img.Scale(_icon_sz, _icon_sz, wx.IMAGE_QUALITY_HIGH)
-        _note_img = self._tintImageToColour(_note_img, self._getTempoIconColour())
-        note_bmp = wx.Bitmap(_note_img)
-        _metro_img = wx.Image(glb.AddPath("img/metronomeWindows.png"))
-        _metro_img = _metro_img.Scale(_icon_sz, _icon_sz, wx.IMAGE_QUALITY_HIGH)
-        _metro_img = self._tintImageToColour(_metro_img, self._getTempoIconColour())
-        metro_bmp = wx.Bitmap(_metro_img)
+        _icon_col = self._getTempoIconColour()
+        note_bmp = self._tempoIconBitmap('tempo_note', _icon_sz, _icon_col)
+        metro_bmp = self._tempoIconBitmap('metronomeWindows', _icon_sz, _icon_col)
 
         # ── Griglia 2×2 dentro un StaticBox ────────────────────────────
         rb_box = wx.StaticBoxSizer(wx.StaticBox(d), wx.VERTICAL)
@@ -11566,6 +11562,49 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             return wx.Colour(r, g, b)
         except Exception:
             return wx.Colour(0, 0, 0)
+
+    def _tempoIconBitmap(self, name, size, colour):
+        """Bitmap size x size di un'icona del tempo, tinta col colore dato.
+
+        Prima scelta: img/vector/<name>.svg (vettoriale, nitido a ogni DPI);
+        ripiego: img/<name>.png (immagine attuale). Se nessuno dei due e'
+        utilizzabile restituisce una bitmap trasparente, cosi' il dialogo
+        si apre comunque."""
+        import re
+        size = max(8, int(size))
+        # 1) vettoriale: si sostituisce il riempimento con il colore scelto
+        try:
+            path = glb.AddPath('img/vector/%s.svg' % name)
+            if os.path.isfile(path):
+                with open(path, 'r', encoding='utf-8') as f:
+                    svg = f.read()
+                hex_col = '#%02x%02x%02x' % (colour.Red(), colour.Green(), colour.Blue())
+                svg = re.sub(r'fill\s*=\s*"(?!none)[^"]*"',
+                             'fill="%s"' % hex_col, svg, flags=re.IGNORECASE)
+                try:
+                    bb = wx.BitmapBundle.FromSVG(svg.encode('utf-8'), wx.Size(size, size))
+                except Exception:
+                    bb = wx.BitmapBundle.FromSVG(svg, wx.Size(size, size))
+                if bb.IsOk():
+                    bmp = bb.GetBitmap(wx.Size(size, size))
+                    if bmp.IsOk():
+                        return bmp
+        except Exception:
+            pass
+        # 2) ripiego: PNG attuale (glifo nero con alpha, ritinto)
+        try:
+            img = wx.Image(glb.AddPath('img/%s.png' % name))
+            if img.IsOk():
+                img = img.Scale(size, size, wx.IMAGE_QUALITY_HIGH)
+                img = self._tintImageToColour(img, colour)
+                return wx.Bitmap(img)
+        except Exception:
+            pass
+        # 3) ultima risorsa: bitmap trasparente
+        img = wx.Image(size, size)
+        img.InitAlpha()
+        img.SetAlpha(bytes(size * size))
+        return wx.Bitmap(img)
 
     def _tintImageToColour(self, img, colour):
         """Ritinge un glifo RGBA col colore dato preservando il canale alpha.
