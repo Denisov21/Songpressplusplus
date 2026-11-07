@@ -750,6 +750,8 @@ Quando la tastiera parte da una nota **diversa da DO** può essere utile avere u
 
 **Colore del tasto d'ottava:** con `octave=both` le due note uguali hanno per impostazione predefinita lo stesso colore. Per distinguere quella più a destra (es. il **Si alto** in una tastiera Si…Si) attiva *Opzioni → Formattazione → Accordi e tastiera → Colore diverso per il tasto dell'ottava superiore* e scegli il colore (predefinito `#3C78D2`, blu). L'impostazione vale per anteprima, stampa, esportazione e anteprima del dialogo.
 
+**Dimensione delle tastiere:** in *Opzioni → Formattazione → Accordi e tastiera → Dimensione tastiere (%)* si regola la grandezza dei diagrammi in fondo alla pagina (50–200%, predefinito 100%). Con valori più bassi ne entrano di più su ogni riga; le tastiere che non stanno nella colonna vanno a capo e non vengono tagliate. Solo per la stampa di un singolo brano si può usare un valore diverso dalle Preferenze (vedi *Opzioni di stampa → Impostazioni di stampa nel brano*, chiave `kbd`).
+
 Le note si scrivono in notazione italiana (`Do`, `Re`, `Mi`, `Fa`, `Sol`, `La`, `Si`, con `#` per i diesis) o inglese (`C`, `D`, `E`, `F`, `G`, `A`, `B`).
 
 > **Nota sulla notazione** — Il dialogo di inserimento e la griglia delle dita rispettano la **notazione predefinita** impostata nelle preferenze di Songpress++ (*Opzioni → Notazione predefinita*). I nomi delle note mostrati nella griglia e scritti nella direttiva generata cambiano automaticamente in base alla notazione scelta: con notazione Americana si vedrà `A, C#, E`; con Italiana `La, Do#, Mi`; con Tedesca `A, Cis, E`, e così via. Anche il riconoscimento degli accordi digitati nel campo *Accordo* segue la notazione corrente. Le notazioni Nashville e Romana non sono supportate per la diteggiatura.
@@ -2156,6 +2158,7 @@ Sotto, il pannello scorrevole **semplificazione accordi** contiene un cursore pe
 | ----- | ----------- | ----------- |
 | **Colore tasti Klavier** | `#D23C3C` | Evidenziazione dei tasti nel diagramma di tastiera. |
 | **Colore diverso per il tasto dell'ottava superiore** | disattivato, `#3C78D2` | Nelle tastiere a 8 tasti colora con un secondo colore il tasto più a destra uguale al primo (es. Si alto in Si…Si). |
+| **Dimensione tastiere (%)** | 100 | Dimensione delle tastiere in fondo alla pagina (50–200). Con valori più bassi ne entrano di più su ogni riga. Vale per anteprima e stampa; per un singolo brano si può cambiare solo in stampa (vedi *Opzioni di stampa*). |
 | **Colore numeri diteggiatura** | `#1A1A1A` | Colore dei numeri di `{fingering:}`. |
 | **Dimensione freccia accordo (%)** | 90 | Dimensione della freccia di direzione `[DO^]` / `[DOv]`, in percentuale dell'altezza dell'accordo (30–150). |
 | **Posizione freccia accordo** | Accanto all'accordo | Dove disegnare la freccia di direzione: *Accanto all'accordo* (subito dopo il nome) oppure *Accanto al numero di battiti (se presente)* (di fianco al numero di `{beats_time:}`, con lo stesso allineamento del numero). Con il numero non visibile la freccia resta accanto all'accordo. La scelta viene salvata. |
@@ -2386,6 +2389,7 @@ I seguenti controlli si trovano nella scheda **Formattazione** delle preferenze 
 | Rimuovi pagine vuote                                 | Rimuove le pagine logiche quasi vuote dall'output di stampa              |
 | Soglia pagina vuota (%)                              | Percentuale massima di pagina occupata sotto cui la pagina viene rimossa |
 | Scala (%)                                            | Ingrandisce o riduce l'intero contenuto stampato (50–200%, predefinito 100%) |
+| Dimensione tastiere (%)                              | Dimensione delle tastiere degli accordi **solo in stampa** (50–200%); parte dal valore delle Preferenze. Il pulsante *Predefinito* ci riporta la casella |
 | Scrivi log del layout di pagina (Diagnostica)        | Scrive un file di log con i parametri di impaginazione (vedi *Diagnostica di stampa*); predefinito disattivo |
 | Apri cartella (Diagnostica)                          | Apre la cartella che contiene il file di log; accanto è mostrato il percorso completo |
 | 📌 Pin                                                | Mantiene aperto il dialogo dopo OK, applicando subito le modifiche all'anteprima |
@@ -2401,6 +2405,38 @@ In fondo al dialogo **Opzioni di stampa** c'è la sezione **Diagnostica**, utile
 Il log serve solo per la diagnostica: lasciarlo disattivato non influisce sulla stampa.
 
 La direttiva `{new_page}` nel testo forza una nuova pagina logica durante la stampa. Con il layout a 2 colonne, `{column_break}` forza il salto alla colonna successiva.
+
+#### Impostazioni di stampa nel brano
+
+Le impostazioni del dialogo possono essere salvate **dentro il brano**, in una riga di commento come **prima riga** dell'editor:
+
+```
+# {print_options: pages=2; cols=1; fit=0; shrink=0; minmargin=0; nomirror=0; blank=1; blankthr=5; scale=100; kbd=70; paper=3; orient=1; margins=5,5,5,5}
+```
+
+La riga comincia con `#`, quindi non compare né in anteprima né in stampa. Nella sezione **Impostazioni nel brano** del dialogo, **Salva nell'editor** scrive (o aggiorna) la riga e **Carica dall'editor** rilegge i valori nel dialogo; si applicano premendo **OK**. La riga viene letta **solo se è la prima** del brano.
+
+| Chiave      | Valori  | Significato                                                |
+| ----------- | ------- | ---------------------------------------------------------- |
+| `pages`     | 1–2     | Pagine per foglio                                          |
+| `cols`      | 1–2     | Colonne per pagina                                         |
+| `fit`       | 0–1     | Riduci se eccede la pagina                                 |
+| `shrink`    | 0–1     | Comprimi per adattare alla pagina corrente                 |
+| `minmargin` | 0–50    | Margine minimo (mm) usato da *Comprimi*                    |
+| `nomirror`  | 0–1     | Non replicare (lascia vuota la metà destra)                |
+| `blank`     | 0–1     | Rimuovi pagine vuote                                       |
+| `blankthr`  | 1–95    | Soglia pagina vuota (%)                                    |
+| `scale`     | 50–200  | Scala (%)                                                  |
+| `kbd`       | 50–200  | Dimensione tastiere (%) — **facoltativa**                  |
+| `paper`     | 0–200   | Formato carta                                              |
+| `orient`    | 1–2     | Orientamento (1 = verticale, 2 = orizzontale)              |
+| `margins`   | 4 numeri 0–100 | Margini in mm: alto, basso, sinistra, destra        |
+
+**Dimensione tastiere (`kbd`).** Fa entrare più tastiere su ogni riga della sezione *Accordi* in fondo alla pagina (con un valore basso) oppure le ingrandisce. Vale **solo per la stampa e per l'anteprima di stampa**: l'anteprima nell'editor usa sempre la dimensione impostata nelle Preferenze. La chiave è facoltativa: se manca, la stampa usa il valore delle Preferenze, e i brani già esistenti restano come prima. Se nel dialogo la casella coincide con le Preferenze, la stampa continua a seguirle anche se in seguito le cambi.
+
+**Salvarla nel brano o no.** Nella sezione **Impostazioni nel brano** la casella **Salva anche la dimensione delle tastiere nel brano** decide se *Salva nell'editor* scrive anche `kbd=`. È attiva **solo se il brano contiene tastiere** (`{taste:}` o `{fingering:}`; le righe di commento non contano): senza tastiere la dimensione non serve, e la casella e il campo restano disattivati. Si spunta da sola quando porti la dimensione a un valore diverso dalle Preferenze; il pulsante *Predefinito* la toglie. Con la casella vuota la riga salvata non contiene `kbd` (e un `kbd` già presente viene eliminato).
+
+Il controllo della sintassi segnala le chiavi sconosciute, i valori fuori intervallo (es. `kbd=20`) e le chiavi mancanti, ad eccezione di `kbd`.
 
 ### Persistenza delle opzioni di stampa
 
@@ -2433,6 +2469,8 @@ I valori sono memorizzati nella sezione `/PageSetup` della configurazione utente
 | Scrivi log del layout    | `print_debug`            | disattivo          |
 
 > **Eccezione — Scala (%)** — Il valore del campo **Scala** non viene **mai** salvato. Resta attivo per tutta la sessione di lavoro (utile per regolarlo con il dialogo «pinnato» osservando l'anteprima in tempo reale), ma a ogni riavvio di Songpress++ torna sempre a **100%**. Questo evita di ritrovarsi con stampe ingrandite o ridotte senza accorgersene, dopo aver usato la scala per un singolo brano. Anche eventuali valori residui salvati da versioni precedenti vengono rimossi dalla configurazione.
+
+> **Dimensione tastiere (stampa)** — Come la Scala, anche il valore **Dimensione tastiere** del dialogo non viene salvato nella configurazione: a ogni avvio la stampa usa la dimensione delle Preferenze. Per ricordarla per un brano, usa **Salva nell'editor** (chiave `kbd`).
 
 > **Nota** — I valori letti dalla configurazione vengono validati: se una chiave è assente, illeggibile o fuori intervallo (ad esempio colonne diverse da 1 o 2, o soglia pagina vuota fuori dall'intervallo 1–95), viene usato il valore predefinito senza segnalazioni di errore.
 

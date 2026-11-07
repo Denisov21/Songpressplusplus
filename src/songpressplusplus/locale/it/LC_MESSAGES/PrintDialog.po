@@ -265,3 +265,27 @@ msgstr "Impostazioni caricate dall'editor. Premi OK per applicarle."
 
 msgid "No print settings found in the first line of the editor.\nUse 'Save in editor' first."
 msgstr "Nessuna impostazione di stampa trovata nella prima riga dell'editor.\nUsa prima «Salva nell'editor»."
+
+# ── Dimensione tastiere (riquadro «Scala» e riga `kbd=` nel brano) ────────────
+
+msgid "Keyboard size (%):"
+msgstr "Dimensione tastiere (%):"
+
+msgid "Size of the chord keyboards at the bottom of the page, for printing only (50-200%). Smaller keyboards let more of them fit on each row."
+msgstr "Dimensione delle tastiere degli accordi in fondo alla pagina, solo per la stampa (50-200%). Con tastiere più piccole ne entrano di più su ogni riga."
+
+#. Button next to the keyboard size field: back to the value set in the preferences
+msgid "Default"
+msgstr "Predefinito"
+
+msgid "Use the keyboard size set in the preferences"
+msgstr "Usa la dimensione delle tastiere impostata nelle opzioni"
+
+msgid "Also save the keyboard size in the song"
+msgstr "Salva anche la dimensione delle tastiere nel brano"
+
+msgid "Write the keyboard size ('kbd=') in the saved line. Without it, printing uses the size set in the preferences."
+msgstr "Scrive la dimensione delle tastiere ('kbd=') nella riga salvata. Senza, la stampa usa la dimensione impostata nelle opzioni."
+
+msgid "No keyboards found in the song."
+msgstr "Nel brano non ci sono tastiere."

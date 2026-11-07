@@ -36,14 +36,18 @@
 #
 ##############################################################
 
+import functools
 import math
 import os
 import re
+import sys
 
 import wx
 
 from .Globals import glb
 from .Renderer import Renderer, SongDecorator
+from . import KlavierRenderer
+from .utils import set_pin_state
 # Controllo della riga «# {print_options: ...}»: la logica vive in
 # SyntaxChecker.py (usata anche dal controllo di sintassi dell'editor).
 from .SyntaxChecker import (
@@ -54,23 +58,56 @@ _ = wx.GetTranslation
 # ── Diagnostica layout di stampa ──────────────────────────────────────────────
 # Attivabile dalla casella «Scrivi log impaginazione» in «Opzioni di stampa»
 # (salvata in configurazione). Scrive come viene impaginato il brano in
-# <cartella temporanea>/songpress_print_debug.log: %TEMP% su Windows, /tmp
-# (o $TMPDIR) su Linux e macOS. Utile se un'interruzione di pagina non cade
+# songpress_print_debug.log. Su Windows, se Songpress++ è stato installato con
+# l'installer (uv tool), il log sta in <cartella di installazione>\logs, cioè
+# sulla STESSA unità dell'installazione (non più su C:\...\Temp). Negli altri
+# casi (Linux, macOS, avvio da sorgente) si usa la cartella temporanea di
+# sistema: /tmp (o $TMPDIR). Utile se un'interruzione di pagina non cade
 # dove ci si aspetta.
 PRINT_DEBUG = False
 
 
+def _install_dir():
+    """Cartella di installazione dell'installer Windows, oppure None.
+
+    L'installer crea `uv tool install` con UV_TOOL_DIR=<INSTDIR>\\tools, quindi
+    l'ambiente Python è <INSTDIR>\\tools\\songpressplusplus e sys.prefix punta lì:
+    la cartella di installazione è due livelli sopra. Se la struttura non
+    corrisponde (avvio da sorgente, altre installazioni) restituisce None."""
+    try:
+        prefix = os.path.abspath(sys.prefix)
+        tools  = os.path.dirname(prefix)
+        if os.path.basename(tools).lower() == 'tools':
+            return os.path.dirname(tools)
+    except Exception:
+        pass
+    return None
+
+
 def _debug_log_path():
-    """Percorso del log di impaginazione (cartella temporanea del sistema)."""
+    """Percorso del log di impaginazione.
+
+    Windows (installazione da installer): <cartella di installazione>\\logs.
+    Altrimenti: cartella temporanea del sistema."""
     import tempfile
-    return os.path.join(tempfile.gettempdir(), 'songpress_print_debug.log')
+    name = 'songpress_print_debug.log'
+    if wx.Platform == '__WXMSW__':
+        base = _install_dir()
+        if base:
+            return os.path.join(base, 'logs', name)
+    return os.path.join(tempfile.gettempdir(), name)
 
 
 def _dbg(msg):
     if not PRINT_DEBUG:
         return
     try:
-        with open(_debug_log_path(), 'a', encoding='utf-8') as f:
+        path = _debug_log_path()
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+        except Exception:
+            pass
+        with open(path, 'a', encoding='utf-8') as f:
             f.write(msg + '\n')
     except Exception:
         pass
@@ -591,6 +628,25 @@ _PAPER_SIZE_MM = {
 # SongpressPrintout
 # ══════════════════════════════════════════════════════════════════════════════
 
+def _with_kbd_scale(fn):
+    """Esegue il metodo con la dimensione tastiere scelta per la stampa
+    (opzione `kbd=` / casella «Dimensione tastiere»). Se il printout non ha un
+    valore proprio (None) resta quello delle preferenze. Il valore precedente
+    viene sempre ripristinato, così l'anteprima nell'editor non cambia."""
+    @functools.wraps(fn)
+    def wrapper(self, *args, **kwargs):
+        pct = getattr(self, '_kbd_scale', None)
+        if pct is None:
+            return fn(self, *args, **kwargs)
+        prev = KlavierRenderer.get_keyboard_scale_pct()
+        KlavierRenderer.set_keyboard_scale_pct(pct)
+        try:
+            return fn(self, *args, **kwargs)
+        finally:
+            KlavierRenderer.set_keyboard_scale_pct(prev)
+    return wrapper
+
+
 class SongpressPrintout(wx.Printout):
     """
     Printout per Songpress++.
@@ -604,8 +660,10 @@ class SongpressPrintout(wx.Printout):
     _SCREEN_PPI = 96
 
     def __init__(self, frame_obj, title="Song", two_pages_per_sheet=False,
-                 font_scale=100, force_full=False):
+                 font_scale=100, force_full=False, kbd_scale=None):
         wx.Printout.__init__(self, title)
+        # Dimensione tastiere (%) solo per questa stampa; None = preferenze
+        self._kbd_scale         = kbd_scale
         self.frame_obj          = frame_obj
         self.two_pages_per_sheet = two_pages_per_sheet
         self._font_scale        = font_scale / 100.0
@@ -785,6 +843,7 @@ class SongpressPrintout(wx.Printout):
         pages.append((start, None))
         return pages
 
+    @_with_kbd_scale
     def _ensure_layout(self, dc):
         if self._page_offsets is not None:
             return
@@ -1132,6 +1191,7 @@ class SongpressPrintout(wx.Printout):
         except Exception:
             return 1.0, 1.0
 
+    @_with_kbd_scale
     def _render_logical_page(self, dc, logical_page_idx, origin_x, origin_y):
         if logical_page_idx >= len(self._page_offsets):
             return
@@ -1246,6 +1306,19 @@ class SongpressPrintout(wx.Printout):
         _is_preview = self.IsPreview()
         _is_gtk     = wx.Platform == '__WXGTK__'
 
+        # FIX — tastiera degli accordi (es. SIb) tagliata sul bordo destro.
+        # Il layout delle tastiere va a capo in base a una larghezza utile; se
+        # il Renderer non gliela passa si usa un default (560 px) più largo
+        # della colonna stampata, e l'ultima tastiera della riga esce dal clip.
+        # Qui comunichiamo il bordo destro REALE della colonna (coordinate
+        # logiche, stessa origine del testo), così le tastiere vanno a capo.
+        _kbd_limit_set = False
+        try:
+            KlavierRenderer.set_content_right_limit(clip_w - BOX_LEFT_PAD)
+            _kbd_limit_set = True
+        except Exception:
+            pass
+
         r.sd.smp_via_bitmap = True
         # Su carta/PDF (IsPreview False) usa la bitmap a risoluzione device →
         # nitida. In anteprima di stampa (IsPreview True) usa il blit a coordinate
@@ -1279,6 +1352,8 @@ class SongpressPrintout(wx.Printout):
         finally:
             r.sd.smp_via_bitmap = _prev_smp_bmp
             r.sd.smp_device_res = _prev_smp_res
+            if _kbd_limit_set:
+                KlavierRenderer.set_content_right_limit(None)
 
         dc.DestroyClippingRegion()
         dc.SetUserScale(1.0, 1.0)
@@ -1609,18 +1684,38 @@ class PrintOptionsDialog:
 
         # ── Sezione Scala ──────────────────────────────────────────────
         box_scale = wx.StaticBoxSizer(
-            wx.StaticBox(dlg, label=_("Scale")), wx.HORIZONTAL
+            wx.StaticBox(dlg, label=_("Scale")), wx.VERTICAL
         )
+        row_scale = wx.BoxSizer(wx.HORIZONTAL)
         lbl_scale = wx.StaticText(dlg, label=_("Scale (%):"))
         self.spin_font_scale = self._make_spin(
             dlg, 50, 200, getattr(owner, '_print_font_scale', 100),
         )
-        box_scale.Add(lbl_scale, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
-        box_scale.Add(self.spin_font_scale, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
+        row_scale.Add(lbl_scale, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
+        row_scale.Add(self.spin_font_scale, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
         # Pulsante che riporta la scala a 100% (aggiorna anche la casella).
         self.btn_scale_reset = wx.Button(dlg, wx.ID_ANY, _("100%"), style=wx.BU_EXACTFIT)
         self.btn_scale_reset.SetToolTip(_("Reset scale to 100%"))
-        box_scale.Add(self.btn_scale_reset, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
+        row_scale.Add(self.btn_scale_reset, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
+        box_scale.Add(row_scale, 0, wx.EXPAND)
+
+        # Dimensione delle tastiere (%): vale solo per la stampa. Parte dal
+        # valore delle preferenze; il pulsante «Pref.» ci riporta la casella.
+        row_kbd = wx.BoxSizer(wx.HORIZONTAL)
+        self.lbl_kbd = lbl_kbd = wx.StaticText(dlg, label=_("Keyboard size (%):"))
+        lbl_kbd.SetToolTip(_(
+            "Size of the chord keyboards at the bottom of the page, for printing only "
+            "(50-200%). Smaller keyboards let more of them fit on each row."))
+        self.spin_kbd_scale = self._make_spin(
+            dlg, 50, 200,
+            getattr(owner, '_print_kbd_scale', None) or self._pref_kbd_scale(),
+        )
+        row_kbd.Add(lbl_kbd, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
+        row_kbd.Add(self.spin_kbd_scale, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
+        self.btn_kbd_reset = wx.Button(dlg, wx.ID_ANY, _("Default"), style=wx.BU_EXACTFIT)
+        self.btn_kbd_reset.SetToolTip(_("Use the keyboard size set in the preferences"))
+        row_kbd.Add(self.btn_kbd_reset, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
+        box_scale.Add(row_kbd, 0, wx.EXPAND)
         outer.Add(box_scale, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
 
         # ── Sezione Impostazioni nel brano ─────────────────────────────
@@ -1662,11 +1757,17 @@ class PrintOptionsDialog:
         row_song.Add(self.btn_save_to_editor, 1, wx.RIGHT, 4)
         row_song.Add(self.btn_load_from_editor, 1)
         box_song.Add(row_song, 0, wx.EXPAND | wx.ALL, _GAP)
+        # Chiede se scrivere anche la dimensione delle tastiere (`kbd=`) nella
+        # riga salvata. Attiva solo se il brano contiene tastiere.
+        self.cb_save_kbd = wx.CheckBox(dlg, wx.ID_ANY, _("Also save the keyboard size in the song"))
+        self.cb_save_kbd.SetValue(getattr(owner, '_print_kbd_scale', None) is not None)
+        box_song.Add(self.cb_save_kbd, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
         self.lbl_song_status = wx.StaticText(dlg, label=u"")
         self.lbl_song_status.SetForegroundColour(
             wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT))
         box_song.Add(self.lbl_song_status, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
         outer.Add(box_song, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
+        self._refresh_kbd_controls()
 
         # ── Sezione Diagnostica ────────────────────────────────────────
         box_diag = wx.StaticBoxSizer(
@@ -1708,16 +1809,11 @@ class PrintOptionsDialog:
         outer.Add(box_diag, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
 
         # ── Bottoni ────────────────────────────────────────────────────
-        PIN_OFF = u"📌"
-        PIN_ON  = u"📍"
         self._pinned = [getattr(owner, '_print_options_pinned', False)]
 
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.btn_pin = wx.Button(
-            dlg, wx.ID_ANY,
-            PIN_ON if self._pinned[0] else PIN_OFF,
-            size=(32, -1),
-        )
+        self.btn_pin = wx.Button(dlg, wx.ID_ANY, u"", size=(32, -1))
+        set_pin_state(self.btn_pin, self._pinned[0])
         self.btn_pin.SetToolTip(_("Keep this dialog open after applying"))
         self.btn_ok     = wx.Button(dlg, wx.ID_OK,     _("OK"))
         self.btn_cancel = wx.Button(dlg, wx.ID_CANCEL, _("Cancel"))
@@ -1740,6 +1836,8 @@ class PrintOptionsDialog:
         self.cb_remove_blank.Bind(wx.EVT_CHECKBOX, self._on_remove_blank_changed)
         self.btn_pin.Bind(wx.EVT_BUTTON, self._on_pin)
         self.btn_scale_reset.Bind(wx.EVT_BUTTON, self._on_scale_reset)
+        self.btn_kbd_reset.Bind(wx.EVT_BUTTON, self._on_kbd_reset)
+        self.spin_kbd_scale.Bind(wx.EVT_SPINCTRL, self._on_kbd_spin)
         self.btn_open_log.Bind(wx.EVT_BUTTON, self._on_open_log_folder)
         self.btn_ok.Bind(wx.EVT_BUTTON, self._on_ok)
         self.btn_save_to_editor.Bind(wx.EVT_BUTTON, self._on_save_to_editor)
@@ -1807,6 +1905,61 @@ class PrintOptionsDialog:
         # Riporta la scala a 100% aggiornando anche la casella (SpinCtrl).
         self.spin_font_scale.SetValue(100)
 
+    @staticmethod
+    def _pref_kbd_scale():
+        """Dimensione tastiere delle preferenze (valore globale, mai quello
+        temporaneo di una stampa, che viene ripristinato dopo ogni render)."""
+        try:
+            return KlavierRenderer.get_keyboard_scale_pct()
+        except Exception:
+            return 100
+
+    # Direttive che disegnano una tastiera: {taste: ...} e {fingering: ...}
+    # con un argomento; le righe di commento («#») non contano.
+    _KBD_DIRECTIVE_RE = re.compile(r'\{\s*(?:taste|fingering)\s*:\s*[^}\s]', re.IGNORECASE)
+
+    def _song_has_keyboards(self):
+        """True se il brano nell'editor contiene almeno una tastiera."""
+        stc = getattr(self.owner, 'text', None)
+        if stc is None:
+            return False
+        try:
+            text = stc.GetText()
+        except Exception:
+            return False
+        for line in text.splitlines():
+            if line.lstrip().startswith(u'#'):
+                continue
+            if self._KBD_DIRECTIVE_RE.search(line):
+                return True
+        return False
+
+    def _refresh_kbd_controls(self):
+        """Abilita le impostazioni delle tastiere (dimensione e casella «salva
+        nel brano») solo se il brano contiene tastiere."""
+        has = self._song_has_keyboards()
+        for w in (self.lbl_kbd, self.spin_kbd_scale, self.btn_kbd_reset,
+                  self.cb_save_kbd):
+            w.Enable(has)
+        self.cb_save_kbd.SetToolTip(
+            _("Write the keyboard size ('kbd=') in the saved line. "
+              "Without it, printing uses the size set in the preferences.")
+            if has else
+            _("No keyboards found in the song."))
+
+    def _on_kbd_spin(self, evt):
+        # Un valore diverso dalle preferenze è quasi certamente voluto: la
+        # casella «salva nel brano» si spunta da sola (si può togliere).
+        if self.cb_save_kbd.IsEnabled() and \
+                self.spin_kbd_scale.GetValue() != self._pref_kbd_scale():
+            self.cb_save_kbd.SetValue(True)
+        evt.Skip()
+
+    def _on_kbd_reset(self, evt):
+        # Riporta la casella al valore delle preferenze (e non lo salva).
+        self.spin_kbd_scale.SetValue(self._pref_kbd_scale())
+        self.cb_save_kbd.SetValue(False)
+
     def _on_shrink_changed(self, evt):
         enabled = self.cb_shrink.GetValue()
         self.lbl_min_margin.Enable(enabled)
@@ -1820,11 +1973,9 @@ class PrintOptionsDialog:
         evt.Skip()
 
     def _on_pin(self, evt):
-        PIN_OFF = u"📌"
-        PIN_ON  = u"📍"
         self._pinned[0] = not self._pinned[0]
         self.owner._print_options_pinned = self._pinned[0]
-        self.btn_pin.SetLabel(PIN_ON if self._pinned[0] else PIN_OFF)
+        set_pin_state(self.btn_pin, self._pinned[0])
 
     def _on_ok(self, evt):
         self._apply_options()
@@ -1843,7 +1994,7 @@ class PrintOptionsDialog:
         pd = o._print_data
         margins = pend.get('margins') or (
             o._margin_top, o._margin_bottom, o._margin_left, o._margin_right)
-        return [
+        settings = [
             ('pages',    2 if self.rb_page2.GetValue() else 1),
             ('cols',     2 if self.rb_col2.GetValue() else 1),
             ('fit',      int(self.cb_fit.GetValue())),
@@ -1857,6 +2008,12 @@ class PrintOptionsDialog:
             ('orient',   pend.get('orient', pd.GetOrientation())),
             ('margins',  ','.join(str(int(m)) for m in margins)),
         ]
+        # 'kbd' è facoltativa: si scrive solo se il brano ha tastiere e la
+        # casella «salva la dimensione» è spuntata. Va prima di 'paper'.
+        if self.cb_save_kbd.IsEnabled() and self.cb_save_kbd.GetValue():
+            _i = [k for k, _v in settings].index('paper')
+            settings.insert(_i, ('kbd', self.spin_kbd_scale.GetValue()))
+        return settings
 
     def _first_line(self, stc):
         if stc is None or not stc.GetLineCount():
@@ -1867,6 +2024,7 @@ class PrintOptionsDialog:
         stc = getattr(self.owner, 'text', None)
         if stc is None:
             return
+        self._refresh_kbd_controls()
         line = u"# {print_options: " + u"; ".join(
             u"%s=%s" % kv for kv in self._collect_settings()) + u"}"
         eol = {0: u"\r\n", 1: u"\r"}.get(stc.GetEOLMode(), u"\n")
@@ -1946,6 +2104,11 @@ class PrintOptionsDialog:
         v = _int('scale', 50, 200)
         if v is not None:
             self.spin_font_scale.SetValue(v)
+        # 'kbd' è facoltativa: se manca (o non è valida) si torna al valore
+        # delle preferenze, per non portarsi dietro quello di un altro brano.
+        v = _int('kbd', 50, 200)
+        self.spin_kbd_scale.SetValue(v if v is not None else self._pref_kbd_scale())
+        self.cb_save_kbd.SetValue(v is not None)
         # Formato carta, orientamento e margini non hanno controlli in questo
         # dialogo: vengono applicati con OK insieme al resto.
         pend = {}
@@ -2005,6 +2168,10 @@ class PrintOptionsDialog:
         o._remove_blank_pages   = self.cb_remove_blank.GetValue()
         o._blank_page_threshold = self.spin_blank_threshold.GetValue()
         o._print_font_scale     = self.spin_font_scale.GetValue()
+        # Uguale alle preferenze -> None: così, cambiando la preferenza,
+        # la stampa la segue; un valore diverso vale solo per la stampa.
+        _kbd = self.spin_kbd_scale.GetValue()
+        o._print_kbd_scale      = None if _kbd == self._pref_kbd_scale() else _kbd
         global PRINT_DEBUG
         o._print_debug          = self.cb_debug.GetValue()
         PRINT_DEBUG             = o._print_debug
@@ -2062,6 +2229,7 @@ class PrintManager:
         self._shrink_to_fit        = False
         self._min_margin_shrink    = 5
         self._print_font_scale     = 100
+        self._print_kbd_scale      = None   # None = dimensione tastiere delle preferenze
         self._print_options_pinned = False
         self._print_debug          = False
 
@@ -2157,6 +2325,8 @@ class PrintManager:
 
             # La scala non è persistente: sempre 100% all'avvio.
             self._print_font_scale = 100
+            # Nemmeno la dimensione tastiere di stampa: vale quella delle preferenze.
+            self._print_kbd_scale = None
         except Exception:
             pass
 
@@ -2182,6 +2352,7 @@ class PrintManager:
             self, title,
             two_pages_per_sheet=self._two_pages_per_sheet,
             font_scale=getattr(self, '_print_font_scale', 100),
+            kbd_scale=getattr(self, '_print_kbd_scale', None),
         )
 
     # ── Azioni ────────────────────────────────────────────────────────────────

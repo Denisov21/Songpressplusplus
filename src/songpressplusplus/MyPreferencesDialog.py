@@ -17,6 +17,7 @@ from .PreferencesDialog import PreferencesDialog
 from .MyDecoSlider import MyDecoSlider
 from .Transpose import *
 from .Globals import glb
+from .utils import set_pin_state
 
 
 _ = wx.GetTranslation
@@ -130,6 +131,9 @@ class MyPreferencesDialog(PreferencesDialog):
         default_hex = getattr(self.pref, 'klavierHighlightHex', '#D23C3C')
         self.klavierHexCtrl.SetValue(default_hex)
         self.klavierColourSwatch.SetBackgroundColour(self._hex_to_colour(default_hex))
+        # Klavier size (%)
+        if hasattr(self, 'klavierScaleSpin'):
+            self.klavierScaleSpin.SetValue(max(50, min(int(getattr(self.pref, 'klavierScalePct', 100)), 200)))
 
         # DecoSlider bar colour
         deco_hex = getattr(self.pref, 'decoSliderBarColourHex', '#2980B9')
@@ -2090,6 +2094,8 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.titleLineWidth = self.titleLineWidthSpin.GetValue()
         self.pref.verseBoxWidth = self.verseBoxWidthSpin.GetValue()
         self.pref.klavierHighlightHex = self.klavierHexCtrl.GetValue().strip()
+        if hasattr(self, 'klavierScaleSpin'):
+            self.pref.klavierScalePct = max(50, min(int(self.klavierScaleSpin.GetValue()), 200))
         # Secondo colore per il tasto d'ottava (tastiere a 8 tasti)
         if hasattr(self, 'klavierOctaveCB'):
             _oct_on, _oct_hex = self.GetKlavierOctaveColourValues()
@@ -2405,4 +2411,4 @@ class MyPreferencesDialog(PreferencesDialog):
     def OnPin(self, evt):
         """Toggling del pin button: mantiene il dialogo aperto dopo OK."""
         self._pinned = not self._pinned
-        self.btnPin.SetLabel(u"📍" if self._pinned else u"📌")
+        set_pin_state(self.btnPin, self._pinned)

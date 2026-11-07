@@ -545,7 +545,10 @@ PRINT_OPTIONS_SPEC = {
     'scale':     (50, 200),
     'paper':     (0, 200),
     'orient':    (1, 2),
+    'kbd':       (50, 200),   # dimensione tastiere (%), facoltativa
 }
+# Opzioni facoltative: la loro assenza non genera l'avviso «Missing option(s)».
+PRINT_OPTIONS_OPTIONAL = ('kbd',)
 PRINT_OPTIONS_MARGINS_RANGE = (0, 100)
 _PRINT_HEAD_RE = re.compile(r'^\s*#\s*\{\s*print_options\b', re.IGNORECASE)
 
@@ -619,7 +622,8 @@ def check_print_options_line(line):
             out.append((col, 'error', _(
                 "Invalid value for '{key}': expected a number {lo}-{hi}.").format(
                     key=key, lo=lo, hi=hi)))
-    missing = [k for k in list(PRINT_OPTIONS_SPEC) + ['margins'] if k not in seen]
+    missing = [k for k in list(PRINT_OPTIONS_SPEC) + ['margins']
+               if k not in seen and k not in PRINT_OPTIONS_OPTIONAL]
     if missing and close >= 0:
         out.append((body_start + 1, 'warning',
                     _("Missing option(s): {names}.").format(names=u", ".join(missing))))

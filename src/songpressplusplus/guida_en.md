@@ -743,6 +743,8 @@ When the keyboard starts from a note **other than C** a visual reference can be 
 
 **Upper octave key colour:** with `octave=both` the two identical notes share the same colour by default. To tell the rightmost one apart (e.g. the **high B** on a B…B keyboard) enable *Options → Format → Chords and keyboard → Different colour for the upper octave key* and pick the colour (default `#3C78D2`, blue). The setting applies to preview, print, export and the dialog preview.
 
+**Keyboard size:** in *Options → Format → Chords and keyboard → Keyboard size (%)* you set the size of the diagrams at the bottom of the page (50–200%, default 100%). Lower values fit more of them on each row; keyboards that do not fit in the column wrap to the next row instead of being cut off. For printing a single song only, a value different from the Preferences can be used (see *Print Options → Print settings stored in the song*, key `kbd`).
+
 Notes can be written in Italian notation (`Do`, `Re`, `Mi`, `Fa`, `Sol`, `La`, `Si`, with `#` for sharps) or English notation (`C`, `D`, `E`, `F`, `G`, `A`, `B`).
 
 > **Note on notation** — The insertion dialog and the finger grid follow the **default notation** set in Songpress++ preferences (*Options → Default notation*). Note names shown in the grid and written into the generated directive change automatically according to the selected notation: with American notation you will see `A, C#, E`; with Italian `La, Do#, Mi`; with German `A, Cis, E`, and so on. Chord recognition in the *Chord* field also respects the current notation. Nashville and Roman notations are not supported for fingering.
@@ -2149,6 +2151,7 @@ Below, the scrollable **chord simplification** panel has one slider per chord gr
 | ----- | ------- | ----------- |
 | **Klavier key colour** | `#D23C3C` | Key highlight in the keyboard diagram. |
 | **Different colour for the upper octave key** | off, `#3C78D2` | On 8-key keyboards, draws the rightmost key matching the first one in a second colour (e.g. high B on B…B). |
+| **Keyboard size (%)** | 100 | Size of the keyboards at the bottom of the page (50–200). Lower values fit more of them on each row. Applies to preview and print; for a single song it can be changed for printing only (see *Print Options*). |
 | **Finger number colour** | `#1A1A1A` | Colour of `{fingering:}` numbers. |
 | **Chord arrow size (%)** | 90 | Size of the `[C^]` / `[Cv]` direction arrow, as a percentage of the chord height (30–150). |
 | **Chord arrow position** | Next to the chord | Where to draw the direction arrow: *Next to the chord* (right after the name) or *Next to the beat count (if present)* (beside the `{beats_time:}` number, with the same alignment as the number). When the number is not visible the arrow stays next to the chord. The choice is saved. |
@@ -2379,6 +2382,7 @@ The following controls are found in the **Formatting** tab of preferences and af
 | Remove blank pages                             | Removes nearly-empty logical pages from the print output            |
 | Blank page threshold (%)                       | Maximum page fill percentage below which a page is considered blank |
 | Scale (%)                                      | Enlarges or reduces the whole printed content (50–200%, default 100%) |
+| Keyboard size (%)                              | Size of the chord keyboards **for printing only** (50–200%); starts from the Preferences value. The *Default* button resets the box to it |
 | Write page layout log (Diagnostics)            | Writes a log file with the layout parameters (see *Print diagnostics*); default off |
 | Open folder (Diagnostics)                      | Opens the folder containing the log file; the full path is shown next to it |
 | 📌 Pin                                          | Keeps the dialog open after OK, applying changes to the preview immediately |
@@ -2394,6 +2398,38 @@ At the bottom of the **Print Options** dialog is the **Diagnostics** section, us
 The log is for diagnostics only: leaving it off does not affect printing.
 
 The `{new_page}` directive in the text forces a new logical page during printing. With the 2-column layout, `{column_break}` forces a jump to the next column.
+
+#### Print settings stored in the song
+
+The dialog settings can be saved **inside the song**, as a comment line at the **first line** of the editor:
+
+```
+# {print_options: pages=2; cols=1; fit=0; shrink=0; minmargin=0; nomirror=0; blank=1; blankthr=5; scale=100; kbd=70; paper=3; orient=1; margins=5,5,5,5}
+```
+
+The line starts with `#`, so it does not appear in the preview or in print. In the **Settings in the song** section of the dialog, **Save in editor** writes (or updates) the line and **Load from editor** reads the values back into the dialog; they are applied by pressing **OK**. The line is read **only if it is the first line** of the song.
+
+| Key         | Values  | Meaning                                                    |
+| ----------- | ------- | ---------------------------------------------------------- |
+| `pages`     | 1–2     | Pages per sheet                                            |
+| `cols`      | 1–2     | Columns per page                                           |
+| `fit`       | 0–1     | Shrink if exceeds page                                     |
+| `shrink`    | 0–1     | Shrink to fit current page                                 |
+| `minmargin` | 0–50    | Minimum margin (mm) used by *Shrink*                       |
+| `nomirror`  | 0–1     | Don't replicate (leave right half blank)                   |
+| `blank`     | 0–1     | Remove blank pages                                         |
+| `blankthr`  | 1–95    | Blank page threshold (%)                                   |
+| `scale`     | 50–200  | Scale (%)                                                  |
+| `kbd`       | 50–200  | Keyboard size (%) — **optional**                           |
+| `paper`     | 0–200   | Paper size                                                 |
+| `orient`    | 1–2     | Orientation (1 = portrait, 2 = landscape)                  |
+| `margins`   | 4 numbers 0–100 | Margins in mm: top, bottom, left, right            |
+
+**Keyboard size (`kbd`).** Fits more keyboards on each row of the *Chords* section at the bottom of the page (low value) or enlarges them. It applies **only to print and print preview**: the preview in the editor always uses the size set in the Preferences. The key is optional: if it is missing, print uses the Preferences value, and existing songs stay as they were. If the box in the dialog matches the Preferences, print keeps following them even if you change them later.
+
+**Saving it in the song or not.** In the **Settings in the song** section, the **Also save the keyboard size in the song** checkbox decides whether *Save in editor* also writes `kbd=`. It is enabled **only if the song contains keyboards** (`{taste:}` or `{fingering:}`; comment lines do not count): without keyboards the size is irrelevant, and the checkbox and the field stay disabled. It ticks itself when you set the size to a value different from the Preferences; the *Default* button clears it. With the checkbox empty, the saved line has no `kbd` (and an existing `kbd` is removed).
+
+The syntax check reports unknown keys, out-of-range values (e.g. `kbd=20`) and missing keys, except for `kbd`.
 
 ### Persistence of Print Options
 
@@ -2426,6 +2462,8 @@ Values are stored in the `/PageSetup` section of the user configuration (`~/.Son
 | Write page layout log      | `print_debug`          | off        |
 
 > **Exception — Scale (%)** — The **Scale** value is **never** saved. It stays active for the whole working session (handy when adjusting it with the dialog pinned while watching the preview), but it always returns to **100%** each time Songpress++ restarts. This prevents unnoticed enlarged or reduced printouts after the scale was used for a single song. Any leftover value stored by earlier versions is removed from the configuration as well.
+
+> **Keyboard size (print)** — Like Scale, the **Keyboard size** value in the dialog is not saved in the configuration: at every start, print uses the Preferences size. To keep it for a song, use **Save in editor** (key `kbd`).
 
 > **Note** — Values read from the configuration are validated: if a key is missing, unreadable, or out of range (for example a column count other than 1 or 2, or a blank page threshold outside the 1–95 range), the default value is used silently.
 

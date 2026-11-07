@@ -46,7 +46,7 @@ from .MyListDialog import MyListDialog
 from .Globals import glb
 from .Preferences import Preferences
 from . import i18n
-from .utils import temp_dir, undo_action
+from .utils import temp_dir, undo_action, set_pin_state
 from . import chordpro_import
 from .chordpro_import import get_roots, convert as chordpro_convert
 from .SyntaxChecker import check as syntax_check
@@ -11393,6 +11393,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             KlavierRenderer.set_middle_c_color(self._getKlavierMiddleCColour())
         except Exception:
             pass
+        try:
+            KlavierRenderer.set_keyboard_scale_pct(
+                getattr(self.pref, 'klavierScalePct', 100))
+        except Exception:
+            pass
 
     def _MakeColourSwatch(self, parent, colour, on_change, tooltip=u""):
         """Quadratino colorato cliccabile (stile del colore di evidenziazione
@@ -11625,9 +11630,6 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             except Exception:
                 self._chord_dlg = None
 
-        PIN_OFF = u"📌"
-        PIN_ON  = u"📍"
-
         # Dialogo non modale: il cursore dell'editor rimane raggiungibile con le frecce
         dlg = wx.Dialog(
             self.frame,
@@ -11677,10 +11679,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             arrow_box.Add(rb, 0, wx.ALL, 4)
         vbox.Add(arrow_box, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
-        # Bottoni: [📌] [OK] [Annulla]
-        btn_pin    = wx.Button(dlg, wx.ID_ANY,
-                               PIN_ON if self._chord_dialog_pinned else PIN_OFF,
-                               size=(32, -1))
+        # Bottoni: [pin] [OK] [Annulla]
+        btn_pin    = wx.Button(dlg, wx.ID_ANY, u"", size=(32, -1))
+        set_pin_state(btn_pin, self._chord_dialog_pinned)
         btn_pin.SetToolTip(_(u"Keep this dialog open after inserting"))
         btn_ok     = wx.Button(dlg, wx.ID_OK,     _(u"OK"))
         btn_cancel = wx.Button(dlg, wx.ID_CANCEL, _(u"Cancel"))
@@ -11717,7 +11718,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         def on_pin(e):
             self._chord_dialog_pinned = not self._chord_dialog_pinned
-            btn_pin.SetLabel(PIN_ON if self._chord_dialog_pinned else PIN_OFF)
+            set_pin_state(btn_pin, self._chord_dialog_pinned)
 
         def on_ok(e):
             _insert()

@@ -3,6 +3,7 @@
 import wx
 
 from .FontComboBox import FontComboBox
+from .utils import set_pin_state
 from . import Editor
 
 _ = wx.GetTranslation
@@ -612,6 +613,17 @@ class PreferencesDialog(wx.Dialog):
         self.klavierOctaveColourSwatch = wx.Panel(_boxChords, wx.ID_ANY, wx.DefaultPosition, wx.Size(24, 24), wx.BORDER_SIMPLE)
         bSizerKlavierOct.Add(self.klavierOctaveColourSwatch, 0, wx.ALIGN_CENTER_VERTICAL)
         grpChords.Add(bSizerKlavierOct, 0, wx.EXPAND | wx.ALL, 5)
+
+        # Dimensione delle tastiere in fondo alla pagina (in %): più piccole =
+        # più tastiere per riga. Intervallo 50-200, 100 = misure originali.
+        bSizerKlavierSize = wx.BoxSizer(wx.HORIZONTAL)
+        self.labelKlavierSize = wx.StaticText(_boxChords, wx.ID_ANY, _(u"Keyboard size (%)"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.labelKlavierSize.Wrap(-1)
+        self.labelKlavierSize.SetToolTip(_(u"Size of the chord keyboards drawn at the bottom of the page (50-200%). Smaller keyboards let more of them fit on each row."))
+        bSizerKlavierSize.Add(self.labelKlavierSize, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.klavierScaleSpin = wx.SpinCtrl(_boxChords, wx.ID_ANY, "100", wx.DefaultPosition, wx.Size(70 + _SPIN_EXTRA_WIDTH, -1), wx.SP_ARROW_KEYS, 50, 200, 100)
+        bSizerKlavierSize.Add(self.klavierScaleSpin, 0, wx.ALIGN_CENTER_VERTICAL)
+        grpChords.Add(bSizerKlavierSize, 0, wx.EXPAND | wx.ALL, 5)
 
         bSizerFingerNum = wx.BoxSizer(wx.HORIZONTAL)
         self.labelFingerNumColour = wx.StaticText(_boxChords, wx.ID_ANY, _(u"Finger number colour"), wx.DefaultPosition, wx.DefaultSize, 0)
@@ -1434,7 +1446,8 @@ class PreferencesDialog(wx.Dialog):
 
         # --- Barra bottoni con pin button ---
         btnBarSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.btnPin = wx.Button(self, wx.ID_ANY, u"📌", size=(32, -1))
+        self.btnPin = wx.Button(self, wx.ID_ANY, u"", size=(32, -1))
+        set_pin_state(self.btnPin, False)
         self.btnPin.SetToolTip(_(u"Keep this dialog open after applying"))
         self.m_sdbSizer3OK = wx.Button(self, wx.ID_OK)
         self.m_sdbSizer3Cancel = wx.Button(self, wx.ID_CANCEL)

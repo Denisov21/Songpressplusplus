@@ -194,6 +194,72 @@ def get_middle_c_color():
 
 
 
+# Limite destro (in px logici, stessa origine di start_x) oltre il quale le
+# tastiere non devono essere disegnate. Lo imposta chi stampa (PrintDialog) col
+# bordo destro reale della colonna: serve quando il Renderer non passa
+# `content_w` e si ricadrebbe sui 560 px di default, più larghi della colonna
+# (la terza tastiera di una riga, es. il SIb, finiva tagliata dal clip).
+# None = nessun limite (comportamento di prima).
+_content_right_limit = None
+
+
+def set_content_right_limit(limit):
+    """Imposta (o con None rimuove) il limite destro di impaginazione."""
+    global _content_right_limit
+    _content_right_limit = limit
+
+
+def get_content_right_limit():
+    """Restituisce il limite destro di impaginazione corrente (o None)."""
+    return _content_right_limit
+
+
+def _effective_row_w(content_w, start_x, kbd_w):
+    """Larghezza utile della riga: content_w (o 560) ridotta, se impostato, al
+    limite destro della colonna. Mai sotto una tastiera."""
+    row_w = int(content_w) if content_w and content_w > kbd_w else 560
+    lim = _content_right_limit
+    if lim is not None:
+        row_w = min(row_w, int(lim) - start_x)
+    return max(row_w, kbd_w)
+
+
+# Dimensione delle tastiere in fondo alla pagina, in percentuale (100 = misure
+# originali). Impostata dall'applicazione dalle preferenze; vale per anteprima,
+# stampa ed esportazione che usano draw_klavier_section / draw_fingering_section.
+KBD_SCALE_MIN = 50
+KBD_SCALE_MAX = 200
+_keyboard_scale_pct = 100
+
+
+def set_keyboard_scale_pct(pct):
+    """Imposta la dimensione delle tastiere (%), limitata a KBD_SCALE_MIN..MAX."""
+    global _keyboard_scale_pct
+    try:
+        pct = int(pct)
+    except (TypeError, ValueError):
+        pct = 100
+    _keyboard_scale_pct = max(KBD_SCALE_MIN, min(pct, KBD_SCALE_MAX))
+
+
+def get_keyboard_scale_pct():
+    """Restituisce la dimensione corrente delle tastiere (%)."""
+    return _keyboard_scale_pct
+
+
+def _section_metrics():
+    """Misure delle tastiere della sezione, scalate con la preferenza.
+    Restituisce (white_w, kbd_w, kbd_h, padding_x, padding_y). Con 100% sono
+    esattamente le misure di prima (16, 112, 44, 22, 14)."""
+    f = _keyboard_scale_pct / 100.0
+    white_w = max(8, int(round(16 * f)))
+    kbd_w = white_w * 7
+    kbd_h = max(22, int(round(44 * f)))
+    padding_x = max(8, int(round(22 * f)))
+    padding_y = max(8, int(round(14 * f)))
+    return white_w, kbd_w, kbd_h, padding_x, padding_y
+
+
 def _keyboard_layout(start_semi):
     """
     Costruisce il layout dei tasti di una tastiera che parte dal semitono
@@ -837,17 +903,13 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
     if not klavier_list:
         return 0, 0
 
-    white_w  = 16
-    kbd_w    = white_w * 7
-    kbd_h    = 44
-    padding_x = 22
-    padding_y = 14
+    white_w, kbd_w, kbd_h, padding_x, padding_y = _section_metrics()
     # label_h aumentato per ospitare sia il nome accordo sia l'etichetta mano sopra
     label_h   = 34
     row_h     = label_h + kbd_h + padding_y
 
     # Larghezza massima della riga: usa content_w se fornito, altrimenti 560px
-    row_max_w = int(content_w) if content_w and content_w > kbd_w else 560
+    row_max_w = _effective_row_w(content_w, start_x, kbd_w)
     max_x = start_x + row_max_w
 
     label_font = wx.Font(
@@ -970,16 +1032,12 @@ def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
     if not fingering_list:
         return 0, 0
 
-    white_w   = 16
-    kbd_w     = white_w * 7
-    kbd_h     = 44
-    padding_x = 22
-    padding_y = 14
+    white_w, kbd_w, kbd_h, padding_x, padding_y = _section_metrics()
     # label_h aumentato per ospitare sia il nome accordo sia l'etichetta mano sopra
     label_h   = 34
     row_h     = label_h + kbd_h + padding_y
 
-    row_max_w = int(content_w) if content_w and content_w > kbd_w else 560
+    row_max_w = _effective_row_w(content_w, start_x, kbd_w)
     max_x = start_x + row_max_w
 
     label_font = wx.Font(
