@@ -48,6 +48,7 @@ from .Preferences import Preferences
 from . import i18n
 from .utils import temp_dir, undo_action, set_pin_state, setup_maximize_button
 from . import chordpro_import
+from . import UpdateChecker
 from .chordpro_import import get_roots, convert as chordpro_convert
 from .SyntaxChecker import check as syntax_check
 from .SyntaxCheckerDialog import SyntaxCheckerDialog, EVT_SYNTAX_GOTO
@@ -1913,6 +1914,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         Bind(self.OnGuideMarkdown, 'guideMarkdown')
         Bind(self.OnGuideCommandsMarkdown, 'guideCommandsMarkdown')
         Bind(self.OnCheckDependencies, 'checkDependencies')
+        Bind(self.OnCheckUpdates, 'checkUpdates')
         # --- NUOVO: Normalizza spazi multipli ---
         Bind(self.OnNormalizeSpaces, 'normalizeSpaces')
         # --- NUOVO: Formato => Altro ---
@@ -5085,7 +5087,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             icon_bmp = wx.StaticBitmap(panel, bitmap=wx.Bitmap(icon_path, wx.BITMAP_TYPE_ICO))
             hbox_title = wx.BoxSizer(wx.HORIZONTAL)
             hbox_title.Add(icon_bmp, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
-            title_lbl = wx.StaticText(panel, label=u"Songpress++ - The Song Editor {}".format(glb.VERSION))
+            title_lbl = wx.StaticText(panel, label=u"Songpress++ - The Song Editor {}".format(UpdateChecker.version_with_architecture(glb.VERSION)))
             font_title = title_lbl.GetFont()
             font_title.SetWeight(wx.FONTWEIGHT_BOLD)
             font_title.SetPointSize(font_title.GetPointSize() + 2)
@@ -5094,7 +5096,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             hbox_title.Add(title_lbl, 0, wx.ALIGN_CENTER_VERTICAL)
             vbox.Add(hbox_title, 0, wx.ALIGN_CENTER | wx.ALL, 10)
         except Exception:
-            title_lbl = wx.StaticText(panel, label=u"Songpress++ - The Song Editor {}".format(glb.VERSION))
+            title_lbl = wx.StaticText(panel, label=u"Songpress++ - The Song Editor {}".format(UpdateChecker.version_with_architecture(glb.VERSION)))
             title_lbl.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT))
             vbox.Add(title_lbl, 0, wx.ALIGN_CENTER | wx.ALL, 10)
 
@@ -9425,6 +9427,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             return True, str(ver)
         except Exception:
             return False, _("not installed")
+
+    def OnCheckUpdates(self, evt):
+        """Controlla se su GitHub c'e' una versione piu' recente (solo avviso)."""
+        UpdateChecker.check_for_updates(self.frame, glb.VERSION, self.statusBar)
 
     def OnCheckDependencies(self, evt):
         """Mostra una finestra con le dipendenze richieste e il loro stato."""

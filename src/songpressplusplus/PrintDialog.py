@@ -47,7 +47,7 @@ import wx
 from .Globals import glb
 from .Renderer import Renderer, SongDecorator
 from . import KlavierRenderer
-from .utils import set_pin_state
+from .utils import set_pin_state, safe_set_bitmap
 # Controllo della riga «# {print_options: ...}»: la logica vive in
 # SyntaxChecker.py (usata anche dal controllo di sintassi dell'editor).
 from .SyntaxChecker import (
@@ -1779,7 +1779,13 @@ class PrintOptionsDialog:
             _("Save how the song is split into pages to this file:") + "\n" + _debug_log_path())
         row_dbg = wx.BoxSizer(wx.HORIZONTAL)
         row_dbg.Add(self.cb_debug, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
-        self.btn_open_log = wx.Button(dlg, wx.ID_ANY, _("Open folder"), style=wx.BU_EXACTFIT)
+        self.btn_open_log = wx.Button(dlg, wx.ID_ANY, _("Open folder"))
+        # Stessa altezza dei pulsanti «Salva nell'editor» / «Carica dall'editor»
+        # (senza BU_EXACTFIT, che toglie il margine interno e lo rende piu' basso).
+        self.btn_open_log.SetMinSize(wx.Size(-1, max(
+            self.btn_save_to_editor.GetBestSize().height,
+            self.btn_load_from_editor.GetBestSize().height,
+            self.btn_open_log.GetBestSize().height)))
         self.btn_open_log.SetToolTip(_("Open the folder that contains the log file"))
         # Icona vettoriale (SVG) 16x16 sul pulsante «Apri cartella»; ripiego sul PNG
         try:
@@ -2552,15 +2558,13 @@ class PrintManager:
                 _print_svg_bmp = _load_svg_bitmap(
                     glb.AddPath('img/vector/print_icon.svg'), 24)
             if btn_print is not None and _print_svg_bmp is not None:
-                btn_print.SetBitmap(_print_svg_bmp)
-                btn_print.SetBitmapPosition(wx.LEFT)
+                safe_set_bitmap(btn_print, _print_svg_bmp, wx.LEFT)
             elif btn_print is not None:
                 _print_icon_path = glb.AddPath('img/print_icon.png')
                 if os.path.isfile(_print_icon_path):
                     _custom_icon_paths[btn_print] = _print_icon_path
                     img = wx.Image(_print_icon_path, wx.BITMAP_TYPE_PNG)
-                    btn_print.SetBitmap(wx.Bitmap(img))
-                    btn_print.SetBitmapPosition(wx.LEFT)
+                    safe_set_bitmap(btn_print, wx.Bitmap(img), wx.LEFT)
 
             # Icone per i bottoni nativi di zoom (- e +) della preview bar,
             # e per le frecce verdi native Precedente/Successiva/
@@ -2615,15 +2619,13 @@ class PrintManager:
                 if _svg_for:
                     _svg_bmp = _load_svg_bitmap(_svg_for, _ZOOM_ICON_SIZE)
                     if _svg_bmp is not None:
-                        child.SetBitmap(_svg_bmp)
-                        child.SetBitmapPosition(wx.LEFT)
+                        safe_set_bitmap(child, _svg_bmp, wx.LEFT)
                         continue
                 _icon_path = _nav_icon_by_id.get(child.GetId())
                 if _icon_path and os.path.isfile(_icon_path):
                     _custom_icon_paths[child] = _icon_path
                     img = wx.Image(_icon_path, wx.BITMAP_TYPE_PNG)
-                    child.SetBitmap(wx.Bitmap(img))
-                    child.SetBitmapPosition(wx.LEFT)
+                    safe_set_bitmap(child, wx.Bitmap(img), wx.LEFT)
 
             # Bottone «Impostazioni driver»
             btn_driver = wx.Button(ctrl_bar, wx.ID_ANY, _("Driver settings..."))
@@ -2632,19 +2634,16 @@ class PrintManager:
                 glb.AddPath('img/vector/option_printer.svg'), _ZOOM_ICON_SIZE)
             if _driver_svg_bmp is not None:
                 # Vettoriale 24x24 fisso, escluso dal ridimensionamento uniforme
-                btn_driver.SetBitmap(_driver_svg_bmp)
-                btn_driver.SetBitmapPosition(wx.LEFT)
+                safe_set_bitmap(btn_driver, _driver_svg_bmp, wx.LEFT)
             elif os.path.isfile(_driver_icon_path):
                 _custom_icon_paths[btn_driver] = _driver_icon_path
                 img = wx.Image(_driver_icon_path, wx.BITMAP_TYPE_PNG)
-                btn_driver.SetBitmap(wx.Bitmap(img))
-                btn_driver.SetBitmapPosition(wx.LEFT)
+                safe_set_bitmap(btn_driver, wx.Bitmap(img), wx.LEFT)
             else:
                 # Icona di fallback: stampante dal catalogo wxArtProvider
                 bmp = wx.ArtProvider.GetBitmap(wx.ART_PRINT, wx.ART_BUTTON, wx.Size(16, 16))
                 if bmp.IsOk():
-                    btn_driver.SetBitmap(bmp)
-                    btn_driver.SetBitmapPosition(wx.LEFT)
+                    safe_set_bitmap(btn_driver, bmp, wx.LEFT)
 
             def on_driver_settings(e):
                 hwnd = None
@@ -2682,13 +2681,11 @@ class PrintManager:
             _options_svg_bmp = _load_svg_bitmap(
                 glb.AddPath('img/vector/print_icon2.svg'), _ZOOM_ICON_SIZE)
             if _options_svg_bmp is not None:
-                btn_options.SetBitmap(_options_svg_bmp)
-                btn_options.SetBitmapPosition(wx.LEFT)
+                safe_set_bitmap(btn_options, _options_svg_bmp, wx.LEFT)
             elif os.path.isfile(_icon_path):
                 _custom_icon_paths[btn_options] = _icon_path
                 img = wx.Image(_icon_path, wx.BITMAP_TYPE_PNG)
-                btn_options.SetBitmap(wx.Bitmap(img))
-                btn_options.SetBitmapPosition(wx.LEFT)
+                safe_set_bitmap(btn_options, wx.Bitmap(img), wx.LEFT)
 
             def on_print_options(e):
                 _dlg_ref = [None]
@@ -2723,13 +2720,11 @@ class PrintManager:
             _page_svg_bmp = _load_svg_bitmap(
                 glb.AddPath('img/vector/file-black-icon.svg'), _ZOOM_ICON_SIZE)
             if _page_svg_bmp is not None:
-                btn_page_setup.SetBitmap(_page_svg_bmp)
-                btn_page_setup.SetBitmapPosition(wx.LEFT)
+                safe_set_bitmap(btn_page_setup, _page_svg_bmp, wx.LEFT)
             elif os.path.isfile(_page_icon_path):
                 _custom_icon_paths[btn_page_setup] = _page_icon_path
                 img = wx.Image(_page_icon_path, wx.BITMAP_TYPE_PNG)
-                btn_page_setup.SetBitmap(wx.Bitmap(img))
-                btn_page_setup.SetBitmapPosition(wx.LEFT)
+                safe_set_bitmap(btn_page_setup, wx.Bitmap(img), wx.LEFT)
 
             def on_page_setup_preview(e):
                 data = wx.PageSetupDialogData(self._print_data)
@@ -2759,13 +2754,11 @@ class PrintManager:
             _close_svg_bmp = _load_svg_bitmap(
                 glb.AddPath('img/vector/close_print_dialog.svg'), _ZOOM_ICON_SIZE)
             if _close_svg_bmp is not None:
-                btn_close.SetBitmap(_close_svg_bmp)
-                btn_close.SetBitmapPosition(wx.LEFT)
+                safe_set_bitmap(btn_close, _close_svg_bmp, wx.LEFT)
             elif os.path.isfile(_close_icon_path):
                 _custom_icon_paths[btn_close] = _close_icon_path
                 img = wx.Image(_close_icon_path, wx.BITMAP_TYPE_PNG)
-                btn_close.SetBitmap(wx.Bitmap(img))
-                btn_close.SetBitmapPosition(wx.LEFT)
+                safe_set_bitmap(btn_close, wx.Bitmap(img), wx.LEFT)
             btn_close.Bind(wx.EVT_BUTTON, lambda e: pf.Close())
 
             # Rimuove il bottone «Chiudi» nativo della preview control bar

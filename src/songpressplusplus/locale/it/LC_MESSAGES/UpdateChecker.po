@@ -1,0 +1,93 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: songpress\n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: 2026-11-07 12:00+0100\n"
+"Last-Translator: Denisov21\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: UpdateChecker.py
+msgid "Check for updates"
+msgstr "Controlla aggiornamenti"
+
+#: UpdateChecker.py
+msgid "Checking for updates..."
+msgstr "Controllo aggiornamenti in corso..."
+
+#: UpdateChecker.py
+msgid ""
+"Could not check for updates.\n"
+"Check your Internet connection and try again."
+msgstr ""
+"Impossibile controllare gli aggiornamenti.\n"
+"Verifica la connessione a Internet e riprova."
+
+#: UpdateChecker.py
+#, python-brace-format
+msgid ""
+"A new version of Songpress++ is available!\n"
+"\n"
+"Installed version: {cur}\n"
+"Latest version: {new}\n"
+"\n"
+"Download it from:\n"
+"{url}"
+msgstr ""
+"È disponibile una nuova versione di Songpress++!\n"
+"\n"
+"Versione installata: {cur}\n"
+"Ultima versione: {new}\n"
+"\n"
+"Puoi scaricarla da:\n"
+"{url}"
+
+#: UpdateChecker.py
+#, python-brace-format
+msgid ""
+"Songpress++ is up to date.\n"
+"\n"
+"Installed version: {cur}"
+msgstr ""
+"Songpress++ è aggiornato.\n"
+"\n"
+"Versione installata: {cur}"
+
+#: UpdateChecker.py
+#, python-brace-format
+msgid ""
+"Your version is newer than the latest published release.\n"
+"\n"
+"Installed version: {cur}\n"
+"Latest published version: {new}"
+msgstr ""
+"La tua versione è più recente dell'ultima release pubblicata.\n"
+"\n"
+"Versione installata: {cur}\n"
+"Ultima versione pubblicata: {new}"
+
+#: UpdateChecker.py
+#, python-brace-format
+msgid ""
+"Installed version: {cur}\n"
+"Latest version: {new}\n"
+"\n"
+"{url}"
+msgstr ""
+"Versione installata: {cur}\n"
+"Ultima versione: {new}\n"
+"\n"
+"{url}"
+
+#: UpdateChecker.py
+#, python-brace-format
+msgid ""
+"File to download for your system:\n"
+"{file}"
+msgstr ""
+"File da scaricare per il tuo sistema:\n"
+"{file}"

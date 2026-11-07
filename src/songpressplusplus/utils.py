@@ -113,16 +113,56 @@ def pin_bitmap(on, size=_PIN_DEFAULT_SIZE):
     return icon_bitmap('pin_on' if on else 'pin_off', size)
 
 
-def set_pin_state(btn, on, size=_PIN_DEFAULT_SIZE):
-    """Imposta l'aspetto del pulsante pin: icona se disponibile, altrimenti
-    l'emoji. Da chiamare alla creazione e a ogni cambio di stato."""
-    bmp = pin_bitmap(on, size)
-    if bmp is not None:
+def _set_button_icon(btn, bmp):
+    """Mostra `bmp` come unica icona del pulsante (senza testo).
+
+    Ritorna True se ci riesce, False altrimenti. Su alcune versioni di wxGTK
+    (Linux) SetBitmap() su un pulsante senza testo fa scattare l'asserzione
+    «must have image widget» (wxAssertionError) e, non gestita, fa chiudere la
+    finestra Opzioni: in quel caso il chiamante ripiega sul testo.
+    """
+    try:
         btn.SetLabel(u"")
         btn.SetBitmap(bmp)
-    else:
+        return True
+    except Exception:
+        return False
+
+
+def safe_set_bitmap(btn, bmp, position=None):
+    """btn.SetBitmap(bmp) (+ SetBitmapPosition) che non solleva eccezioni.
+
+    Ritorna True se l'icona e' stata impostata. Su wxGTK alcuni pulsanti
+    (quelli standard dell'anteprima di stampa, quelli senza testo) rifiutano
+    SetBitmap con l'asserzione «must have image widget»: in quel caso il
+    pulsante resta com'e' (senza icona) invece di far crashare la finestra.
+    """
+    try:
+        btn.SetBitmap(bmp)
+        if position is not None:
+            btn.SetBitmapPosition(position)
+        return True
+    except Exception:
+        return False
+
+
+def _clear_button_icon(btn):
+    """Toglie l'icona dal pulsante, senza mai sollevare eccezioni."""
+    try:
         btn.SetBitmap(wx.NullBitmap)
-        btn.SetLabel(PIN_EMOJI_ON if on else PIN_EMOJI_OFF)
+    except Exception:
+        pass
+
+
+def set_pin_state(btn, on, size=_PIN_DEFAULT_SIZE):
+    """Imposta l'aspetto del pulsante pin: icona se disponibile (e se il
+    sistema la accetta), altrimenti l'emoji. Da chiamare alla creazione e a
+    ogni cambio di stato."""
+    bmp = pin_bitmap(on, size)
+    if bmp is not None and _set_button_icon(btn, bmp):
+        return
+    _clear_button_icon(btn)
+    btn.SetLabel(PIN_EMOJI_ON if on else PIN_EMOJI_OFF)
 
 
 # ── Pulsante «Schermo intero / Ripristina» delle finestre guida ──────────────
@@ -141,14 +181,16 @@ def setup_maximize_button(dlg, btn, label_full, label_restore,
     use_icons = bmp_full is not None and bmp_rest is not None
 
     def _show(maximized):
+        nonlocal use_icons
         text = label_restore if maximized else label_full
         btn.SetToolTip(text)
-        if use_icons:
-            btn.SetLabel(u"")
-            btn.SetBitmap(bmp_rest if maximized else bmp_full)
-        else:
-            btn.SetBitmap(wx.NullBitmap)
-            btn.SetLabel(text)
+        if use_icons and _set_button_icon(btn, bmp_rest if maximized else bmp_full):
+            return
+        # Niente icone (file mancanti o rifiutate da wxGTK): si usa il testo,
+        # e _fix_size() dimensiona il pulsante di conseguenza.
+        use_icons = False
+        _clear_button_icon(btn)
+        btn.SetLabel(text)
 
     def _on_toggle(e):
         if dlg.IsMaximized():

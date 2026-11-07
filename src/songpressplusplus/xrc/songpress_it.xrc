@@ -727,6 +727,11 @@
           <help>Mostra le dipendenze richieste e se sono installate correttamente</help>
           <bitmap>../img/checked_dipendence.png</bitmap>
         </object>
+        <object class="wxMenuItem" name="checkUpdates">
+          <label>_Controlla aggiornamenti...</label>
+          <accel></accel>
+          <help>Controlla se è disponibile una nuova versione di Songpress++</help>
+        </object>
         <object class="wxMenuItem" name="about">
           <label>_Informazioni...</label>
           <accel></accel>
