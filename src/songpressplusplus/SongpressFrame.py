@@ -11593,7 +11593,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             pass
         # 2) ripiego: PNG attuale (glifo nero con alpha, ritinto)
         try:
-            img = wx.Image(glb.AddPath('img/%s.png' % name))
+            _png = glb.AddPath('img/32/%s.png' % name)
+            if not os.path.isfile(_png):
+                _png = glb.AddPath('img/%s.png' % name)
+            img = wx.Image(_png)
             if img.IsOk():
                 img = img.Scale(size, size, wx.IMAGE_QUALITY_HIGH)
                 img = self._tintImageToColour(img, colour)

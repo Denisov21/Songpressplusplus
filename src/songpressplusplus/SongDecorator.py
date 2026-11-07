@@ -915,8 +915,12 @@ class SongDecorator(object):
                         self.dc.SetUserScale(sx, sy)
                     self.dc.DrawText(text.text, bx + vw + 2, by)
                     return True
-                # 2) ripiego: PNG attuale
-                img = wx.Image(_glb.AddPath(png_name))
+                # 2) ripiego: PNG in img/32/ (se manca, in img/ come prima)
+                import os
+                _png = _glb.AddPath(png_name.replace('img/', 'img/32/', 1))
+                if not os.path.isfile(_png):
+                    _png = _glb.AddPath(png_name)
+                img = wx.Image(_png)
                 orig_h = img.GetHeight()
                 orig_w = img.GetWidth()
                 new_w = int(orig_w * new_h / orig_h)
