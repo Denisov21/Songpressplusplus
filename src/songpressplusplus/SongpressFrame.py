@@ -7165,8 +7165,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             cp = True
         self.mainToolBar.EnableTool(self.pasteTool, cp)
         self.menuBar.Enable(self.pasteMenuId, cp)
-        self.mainToolBar.EnableTool(self.pasteChordsTool, cp)
-        self.menuBar.Enable(self.pasteChordsMenuId, cp)
+        pc = cp and self._PasteChordsWanted()
+        self.mainToolBar.EnableTool(self.pasteChordsTool, pc)
+        self.menuBar.Enable(self.pasteChordsMenuId, pc)
         # "Rimuovi accordi": attivo solo se la selezione contiene almeno un accordo [..]
         import re
         has_chords = False
@@ -7198,6 +7199,79 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             return False
         tokens = line.split()
         return all(cls._CHORD_TOKEN_RE.match(t) for t in tokens)
+
+    @staticmethod
+    def _GetClipboardText():
+        """Testo negli appunti, '' se non c'e' testo, None se non leggibile."""
+        try:
+            clip = wx.TheClipboard
+            if clip.IsOpened() or not clip.Open():
+                return None
+            try:
+                if not clip.IsSupported(wx.DataFormat(wx.DF_UNICODETEXT)):
+                    return ''
+                d = wx.TextDataObject()
+                if clip.GetData(d):
+                    return d.GetText()
+                return ''
+            finally:
+                clip.Close()
+        except Exception:
+            return None
+
+    def _ClipboardHasChords(self, t):
+        """True se il testo contiene accordi: formato tab, accordi attaccati al
+        testo nella notazione corrente, oppure gia' tra parentesi [..]."""
+        import re
+        if not t or not t.strip():
+            return False
+        if re.search(r'\[[^\]\r\n]+\]', t):
+            return True
+        try:
+            if testTabFormat(t, self.pref.notations) is not None:
+                return True
+        except Exception:
+            return True
+        try:
+            if self.pref.notations:
+                roots = get_roots(self.pref.notations[0], self.pref.notations)
+                res = chordpro_convert(t, roots)
+                if res.status not in (chordpro_import.EMPTY,
+                                      chordpro_import.ALREADY_CHORDPRO,
+                                      chordpro_import.NO_CHORDS):
+                    return True
+        except Exception:
+            return True
+        return False
+
+    def _PasteChordsWanted(self):
+        """"Incolla accordi" e' attivo solo se negli appunti ci sono accordi.
+        Con l'opzione "solo quando serve" disattivata resta sempre attivo.
+        OnIdle gira di continuo: la lettura degli appunti e' limitata a un
+        controllo ogni 0,4 s e il risultato e' in cache per testo."""
+        try:
+            if not getattr(self.pref, 'pasteChordsOnlyWhenNeeded', True):
+                return True
+            import time
+            now = time.monotonic()
+            if now - getattr(self, '_pasteChordsLastCheck', 0.0) < 0.4:
+                return getattr(self, '_pasteChordsLastResult', True)
+            self._pasteChordsLastCheck = now
+            t = self._GetClipboardText()
+            if t is None:
+                res = True      # appunti non leggibili: meglio lasciarlo attivo
+            else:
+                key = (len(t), hash(t), self.pref.notations[0].id if self.pref.notations else None)
+                cache = getattr(self, '_pasteChordsCache', None)
+                if cache is not None and cache[0] == key:
+                    res = cache[1]
+                else:
+                    res = self._ClipboardHasChords(t)
+                    self._pasteChordsCache = (key, res)
+            self._pasteChordsLastResult = res
+            return res
+        except Exception:
+            return True
 
     def _UpdateIntegrateChords(self):
         """"Integra accordi" ha senso solo se la riga corrente e' una riga di
@@ -11074,8 +11148,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             cp = self.text.CanPaste()
             self.mainToolBar.EnableTool(self.pasteTool, cp)
             self.menuBar.Enable(self.pasteMenuId, cp)
-            self.mainToolBar.EnableTool(self.pasteChordsTool, cp)
-            self.menuBar.Enable(self.pasteChordsMenuId, cp)
+            pc = cp and self._PasteChordsWanted()
+            self.mainToolBar.EnableTool(self.pasteChordsTool, pc)
+            self.menuBar.Enable(self.pasteChordsMenuId, pc)
         except Exception:
             # When frame is closed, this method may still be executed, generating an exception
             # because UI elements have been destroyed. Simply ignore it.

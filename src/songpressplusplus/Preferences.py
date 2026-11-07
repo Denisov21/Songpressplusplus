@@ -209,6 +209,7 @@ class Preferences(object):
         self._LoadShowFullPathInTitle()
         self._LoadSaveOnModified()
         self._LoadIntegrateChordsOnlyWhenNeeded()
+        self._LoadPasteChordsOnlyWhenNeeded()
         self._LoadReplaceSpacesInFilenames()
         self._LoadSuggestTitleAsFilename()
         self._LoadToolbarVis()
@@ -470,6 +471,7 @@ class Preferences(object):
         self._SaveShowFullPathInTitle()
         self._SaveSaveOnModified()
         self._SaveIntegrateChordsOnlyWhenNeeded()
+        self._SavePasteChordsOnlyWhenNeeded()
         self._SaveReplaceSpacesInFilenames()
         self._SaveSuggestTitleAsFilename()
         self._SaveToolbarVis()
@@ -982,6 +984,19 @@ class Preferences(object):
     def _SaveIntegrateChordsOnlyWhenNeeded(self):
         self.config.SetPath('/Editor')
         self.config.Write('integrateChordsOnlyWhenNeeded', '1' if getattr(self, 'integrateChordsOnlyWhenNeeded', True) else '0')
+        self.config.SetPath('/')
+
+    def _LoadPasteChordsOnlyWhenNeeded(self):
+        """Se True (default) il comando 'Incolla accordi' e' attivo solo quando
+        negli appunti ci sono accordi; se False e' sempre attivo."""
+        self.config.SetPath('/Editor')
+        v = self.config.Read('pasteChordsOnlyWhenNeeded')
+        self.pasteChordsOnlyWhenNeeded = bool(int(v)) if v != '' else True
+        self.config.SetPath('/')
+
+    def _SavePasteChordsOnlyWhenNeeded(self):
+        self.config.SetPath('/Editor')
+        self.config.Write('pasteChordsOnlyWhenNeeded', '1' if getattr(self, 'pasteChordsOnlyWhenNeeded', True) else '0')
         self.config.SetPath('/')
 
     def _LoadReplaceSpacesInFilenames(self):

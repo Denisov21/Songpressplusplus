@@ -249,6 +249,7 @@ class MyPreferencesDialog(PreferencesDialog):
 
         # Integra accordi: attivo solo quando serve
         self.integrateChordsOnlyWhenNeededCB.SetValue(getattr(self.pref, 'integrateChordsOnlyWhenNeeded', True))
+        self.pasteChordsOnlyWhenNeededCB.SetValue(getattr(self.pref, 'pasteChordsOnlyWhenNeeded', True))
 
         # Salvataggio geometria finestra
         self.saveWindowGeometryCB.SetValue(getattr(self.pref, 'saveWindowGeometry', True))
@@ -2141,6 +2142,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.colourPreview = self.colourPreviewCB.GetValue()
         self.pref.enableSaveOnModified = self.enableSaveOnModifiedCB.GetValue()
         self.pref.integrateChordsOnlyWhenNeeded = self.integrateChordsOnlyWhenNeededCB.GetValue()
+        self.pref.pasteChordsOnlyWhenNeeded = self.pasteChordsOnlyWhenNeededCB.GetValue()
         # Salvataggio geometria finestra
         self.pref.saveWindowGeometry = self.saveWindowGeometryCB.GetValue()
         # Sostituzione spazi con '_' nei nomi file salvati

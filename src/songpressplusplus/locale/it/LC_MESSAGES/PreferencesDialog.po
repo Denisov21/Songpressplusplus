@@ -345,6 +345,9 @@ msgstr "Abilita multicursore (Alt+Clic, Ctrl+D)"
 msgid "Enable the chord conversion commands only when needed"
 msgstr "Attiva i comandi di conversione degli accordi solo quando servono"
 
+msgid "Enable the 'Paste chords' command only when needed"
+msgstr "Attiva il comando 'Incolla accordi' solo quando serve"
+
 msgid "Export preferences"
 msgstr "Esporta opzioni"
 
@@ -839,6 +842,9 @@ msgstr "Quando è selezionato 'Nessun accordo', nascondi anche:"
 
 msgid "When enabled, 'Integrate chords' is available only when the cursor is on a chord line (tab format) followed by a text line, 'Convert Tab to ChordPro' only when the song (or the selection) is in tab format, and 'Convert inline chords to ChordPro' only when there are chords attached to the text to convert. When disabled, all three are always available."
 msgstr "Se attivo, 'Integra accordi' è disponibile solo quando il cursore è su una riga di accordi (formato tab) seguita da una riga di testo, 'Converti Tab in ChordPro' solo quando il brano (o la selezione) è in formato tab, e 'Converti accordi in linea in ChordPro' solo quando ci sono accordi attaccati al testo da convertire. Se disattivo, tutti e tre sono sempre disponibili."
+
+msgid "When enabled, 'Paste chords' is available only when the clipboard contains chords. When disabled, it is always available."
+msgstr "Se attivo, 'Incolla accordi' è disponibile solo quando negli appunti ci sono accordi. Se disattivo, è sempre disponibile."
 
 msgid "When enabled, Alt+Click adds a new cursor and Ctrl+D selects the next occurrence of the current word."
 msgstr "Se attivo, Alt+Clic aggiunge un nuovo cursore e Ctrl+D seleziona l'occorrenza successiva della parola corrente."

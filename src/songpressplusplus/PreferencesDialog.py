@@ -349,6 +349,10 @@ class PreferencesDialog(wx.Dialog):
         self.integrateChordsOnlyWhenNeededCB.SetToolTip(_(u"When enabled, 'Integrate chords' is available only when the cursor is on a chord line (tab format) followed by a text line, 'Convert Tab to ChordPro' only when the song (or the selection) is in tab format, and 'Convert inline chords to ChordPro' only when there are chords attached to the text to convert. When disabled, all three are always available."))
         grpGeneral.Add(self.integrateChordsOnlyWhenNeededCB, 0, wx.ALL, 5)
 
+        self.pasteChordsOnlyWhenNeededCB = wx.CheckBox(_boxGeneral, wx.ID_ANY, _(u"Enable the 'Paste chords' command only when needed"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.pasteChordsOnlyWhenNeededCB.SetToolTip(_(u"When enabled, 'Paste chords' is available only when the clipboard contains chords. When disabled, it is always available."))
+        grpGeneral.Add(self.pasteChordsOnlyWhenNeededCB, 0, wx.ALL, 5)
+
         self.intellisenseCB = wx.CheckBox(_boxGeneral, wx.ID_ANY, _(u"Enable directive intellisense (Ctrl+Space)"), wx.DefaultPosition, wx.DefaultSize, 0)
         self.intellisenseCB.SetToolTip(_(u"When enabled, pressing Ctrl+Space inside the editor shows a list of available ChordPro directives for auto-completion."))
         grpGeneral.Add(self.intellisenseCB, 0, wx.ALL, 5)
