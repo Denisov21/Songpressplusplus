@@ -419,6 +419,16 @@ msgstr ""
 "Analizza gli accordi del brano (testo tra [ ]) e compila automaticamente la "
 "tonalità più probabile."
 
+#. Tooltip shown when hovering the "Metadata" checkbox in the Time signature,
+#. Tempo and Key dialogs.
+#: SongpressFrame.py — OnInsertTime / OnInsertTempo / OnInsertKey metadata checkbox tooltip
+msgid ""
+"Keeps the directive in the song text as metadata only: its value is not "
+"shown in 'Songpress++ Page' or in print."
+msgstr ""
+"Mantiene la direttiva nel testo del brano solo come metadato: il valore non "
+"viene mostrato né in 'Pagina Songpress++' né in stampa."
+
 #. Label shown when key detection succeeds.
 #. %s = detected key name (e.g. "Am"); %d = number of chords analysed.
 #: SongpressFrame.py — OnInsertKey auto-detect success label

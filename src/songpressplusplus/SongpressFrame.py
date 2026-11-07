@@ -3140,6 +3140,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self._PrefillFromDirective(txt, 'time')
 
         cb_meta = wx.CheckBox(d, -1, _("Metadata"))
+        cb_meta.SetToolTip(_(
+            "Keeps the directive in the song text as metadata only: "
+            "its value is not shown in 'Songpress++ Page' or in print."))
         vbox.Add(cb_meta, 0, wx.LEFT | wx.TOP | wx.BOTTOM, 8)
 
         is_meta = not getattr(self.pref, 'timeDisplay', True)
@@ -3221,6 +3224,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         vbox.Add(rb_box, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 8)
 
         cb_meta = wx.CheckBox(d, -1, _("Metadata"))
+        cb_meta.SetToolTip(_(
+            "Keeps the directive in the song text as metadata only: "
+            "its value is not shown in 'Songpress++ Page' or in print."))
         vbox.Add(cb_meta, 0, wx.LEFT | wx.TOP | wx.BOTTOM, 8)
 
         td = getattr(self.pref, 'tempoDisplay', 0)
@@ -3342,6 +3348,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         vbox.Add(lbl_detect, 0, wx.LEFT | wx.BOTTOM, 8)
 
         cb_meta = wx.CheckBox(d, -1, _("Metadata"))
+        cb_meta.SetToolTip(_(
+            "Keeps the directive in the song text as metadata only: "
+            "its value is not shown in 'Songpress++ Page' or in print."))
         vbox.Add(cb_meta, 0, wx.LEFT | wx.TOP | wx.BOTTOM, 8)
 
         is_meta = not getattr(self.pref, 'keyDisplay', True)
