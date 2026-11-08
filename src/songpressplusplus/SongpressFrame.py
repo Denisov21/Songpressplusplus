@@ -12223,7 +12223,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 self.SetModified()
         dlg.Destroy()
 
-    def _OnPreviewClick(self, line_number):
+    def _OnPreviewClick(self, line_number, line_text=None):
         """Callback dal doppio-click sull'anteprima.
 
         Porta il cursore alla riga sorgente trovata tramite hit-test,
@@ -12234,6 +12234,32 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         al punto cliccato (risolto con hit-test preciso sui SongBox).
         """
         try:
+            # Se il canvas indica anche il testo della riga (es. {image: ...}),
+            # verifica che l'editor abbia davvero quel testo in quella riga:
+            # il testo dell'anteprima puo' avere righe in meno (es. '# {np}'
+            # rimosse). Altrimenti cerca la riga identica piu' vicina.
+            import re as _re0
+            _hp = _re0.compile(r'^\s*#\s*\{[^}]*\}\s*$')
+            _cnt = -1
+            for _i in range(self.text.GetLineCount()):
+                if not _hp.match(self.text.GetLine(_i).rstrip('\r\n')):
+                    _cnt += 1
+                    if _cnt == line_number:
+                        line_number = _i
+                        break
+            if line_text:
+                _n = self.text.GetLineCount()
+
+                def _same(i):
+                    return 0 <= i < _n and self.text.GetLine(i).strip() == line_text
+                if not _same(line_number):
+                    for _d in range(1, _n):
+                        if _same(line_number + _d):
+                            line_number += _d
+                            break
+                        if _same(line_number - _d):
+                            line_number -= _d
+                            break
             # Una riga fatta solo di direttive {taste:}/{fingering:} si
             # seleziona soltanto cliccando sul disegno della tastiera
             # (_OnPreviewKeyboardClick), mai da un punto qualunque dell'anteprima.

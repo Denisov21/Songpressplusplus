@@ -1970,6 +1970,9 @@ class SongDecorator(object):
                 bx = int(self.s.marginLeft + max(0, (available_w - final_w) // 2))
 
             by = int(self.s.marginTop + imgbox.y)
+            # Rettangolo realmente disegnato (coordinate renderer): usato
+            # dall'hit-test del doppio-click nell'anteprima.
+            imgbox._draw_rect = (bx, by, final_w, final_h)
             self.dc.DrawBitmap(bmp, bx, by, False)
 
             # Bordo opzionale

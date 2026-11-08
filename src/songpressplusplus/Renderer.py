@@ -467,6 +467,13 @@ class Renderer(object):
             if self.song.drawWholeSong or self.fromLine <= self.lineCount <= self.toLine:
                 self.currentBlock.drawBlock = True
             self.currentLine = SongLine()
+            # Riga sorgente di questa SongLine: usata dal doppio-click
+            # dell'anteprima per selezionare la riga giusta nell'editor.
+            try:
+                self.currentLine.src_line = self.lineCount
+                self.currentLine.src_text = getattr(self, '_src_text', '').strip()
+            except Exception:
+                pass
 
     def EndLine(self):
         if self.currentLine is not None:
@@ -577,6 +584,7 @@ class Renderer(object):
 
         for l in self.text.splitlines():
             self.lineCount += 1
+            self._src_text = l
             state = self.GetState()
 
             # ── Blocco grid: raccoglie le righe in _grid_rows ─────────
@@ -1130,6 +1138,10 @@ class Renderer(object):
                             box = self._ParseImageDirective(a.strip())
                             if box is not None:
                                 self.EndBlock()
+                                # Riga sorgente (0-based) della direttiva: serve al
+                                # doppio-click dell'anteprima per selezionarla.
+                                box.src_line = self.lineCount
+                                box.src_text = l.strip()
                                 self.song.AddBox(box)
                     elif cmd == 'beats_time':
                         # Direttiva custom: {beats_time: DO=4 SOL=2 LA-=2 ...}

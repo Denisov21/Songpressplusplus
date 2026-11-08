@@ -1111,6 +1111,8 @@ class PreviewCanvas(object):
         best_dist  = float('inf')
 
         for block in song.boxes:
+            if not hasattr(block, 'boxes'):
+                continue   # SongImageBox / SongGridBox: nessun SongLine/SongText
             bx = song_margin_left + block.x
             by = song_margin_top  + block.y
             # Distanza verticale dal blocco (0 se siamo dentro)
@@ -1136,6 +1138,28 @@ class PreviewCanvas(object):
                         best_line  = line
                         best_token = token
         return best_block, best_line, best_token
+
+    def _HitTestImage(self, click_x, click_y):
+        """(riga 0-based, testo direttiva) della {image: ...} sotto il punto
+        (click_x, click_y) in coordinate renderer, oppure None.
+
+        Usa il rettangolo salvato da SongDecorator._DrawImageBox durante
+        l'ultimo disegno, cosi' coincide esattamente con quello visibile.
+        """
+        song = getattr(self.renderer, 'song', None)
+        if song is None:
+            return None
+        for box in song.boxes:
+            if not isinstance(box, SongImageBox):
+                continue
+            src_line = getattr(box, 'src_line', None)
+            rect = getattr(box, '_draw_rect', None)
+            if src_line is None or rect is None:
+                continue
+            ix, iy, iw, ih = rect
+            if ix <= click_x <= ix + iw and iy <= click_y <= iy + ih:
+                return src_line, getattr(box, 'src_text', None)
+        return None
 
     def _FindSourceLine(self, token_text, block_index):
         """Trova la riga sorgente (0-based) corrispondente a un token renderizzato.
@@ -1227,8 +1251,21 @@ class PreviewCanvas(object):
         rx = (click_x_sc - margin_h) / self._zoom_factor
         ry = click_y_sc / self._zoom_factor
 
+        # 1c. Doppio-click su un'immagine: seleziona la sua riga {image: ...}
+        img_hit = self._HitTestImage(rx, ry)
+        if img_hit is not None:
+            self._on_click_callback(img_hit[0], img_hit[1])
+            evt.Skip()
+            return
+
         # 2. Hit-test sull'albero dei box
         block, line, token = self._HitTestBox(rx, ry)
+
+        if line is not None and getattr(line, 'src_line', None) is not None:
+            # 3a. Riga sorgente esatta registrata dal Renderer
+            self._on_click_callback(line.src_line, getattr(line, 'src_text', None))
+            evt.Skip()
+            return
 
         if token is not None:
             # 3. Trova la riga sorgente
@@ -1879,8 +1916,19 @@ class _FullscreenPreviewFrame(wx.Frame):
         rx = (click_x_sc - margin_h) / self._zoom
         ry = click_y_sc / self._zoom
 
+        # Immagine: seleziona la riga {image: ...}
+        img_hit = self.owner._HitTestImage(rx, ry)
+        if img_hit is not None:
+            self.owner._on_click_callback(img_hit[0], img_hit[1])
+            evt.Skip()
+            return
+
         # Riusa il hit-test del canvas principale (stesso renderer)
         block, line, token = self.owner._HitTestBox(rx, ry)
+        if line is not None and getattr(line, 'src_line', None) is not None:
+            self.owner._on_click_callback(line.src_line, getattr(line, 'src_text', None))
+            evt.Skip()
+            return
         if token is not None:
             token_text = getattr(token, 'text', '')
             block_idx  = self.owner.renderer.song.boxes.index(block) if block is not None else 0
