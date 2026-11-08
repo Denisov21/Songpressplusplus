@@ -328,6 +328,7 @@
           <checked>1</checked>
           <bitmap>../img/preview.png</bitmap>
         </object>
+        <object class="separator"/>
         <object class="wxMenuItem" name="showPageBreakLines">
           <label>Linee di interruzione pagina</label>
           <accel></accel>
@@ -351,6 +352,14 @@
           <checkable>1</checkable>
           <checked>1</checked>
           <bitmap>../img/beats.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="showArrows">
+          <label>Mostra: frecce ↑ ↓ (^ e v)</label>
+          <accel></accel>
+          <help>Mostra o nascondi le frecce su (^) e giù (v) accanto ad accordi e battiti</help>
+          <checkable>1</checkable>
+          <checked>1</checked>
+		  <bitmap>../img/arrows_updown.png</bitmap>
         </object>
         <object class="wxMenuItem" name="labelVerses">
           <label>_Etichetta strofe e ritornelli</label>

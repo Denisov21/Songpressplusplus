@@ -328,6 +328,7 @@
           <checked>1</checked>
           <bitmap>../img/preview.png</bitmap>
         </object>
+        <object class="separator"/>
         <object class="wxMenuItem" name="showPageBreakLines">
           <label>Show: "Page break lines"</label>
           <accel></accel>
@@ -351,6 +352,14 @@
           <checkable>1</checkable>
           <checked>1</checked>
           <bitmap>../img/beats.png</bitmap>
+        </object>
+        <object class="wxMenuItem" name="showArrows">
+          <label>Show: "↑ ↓ arrows (^ and v)"</label>
+          <accel></accel>
+          <help>Show or hide the up (^) and down (v) arrows next to chords and beat counts</help>
+          <checkable>1</checkable>
+          <checked>1</checked>
+          <bitmap>../img/arrows_updown.png</bitmap>
         </object>
         <object class="wxMenuItem" name="labelVerses">
           <label>_Label verses and chord</label>

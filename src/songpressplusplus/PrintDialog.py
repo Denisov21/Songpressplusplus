@@ -1762,10 +1762,32 @@ class PrintOptionsDialog:
         self.cb_save_kbd = wx.CheckBox(dlg, wx.ID_ANY, _("Also save the keyboard size in the song"))
         self.cb_save_kbd.SetValue(getattr(owner, '_print_kbd_scale', None) is not None)
         box_song.Add(self.cb_save_kbd, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
+        # Riga di stato con icona «info» all'inizio della frase. Icona SVG
+        # (img/vector/info.svg) 16x16; ripiego sul PNG (img/info.png). L'icona
+        # compare solo quando c'è un messaggio da mostrare.
+        row_status = wx.BoxSizer(wx.HORIZONTAL)
+        self.bmp_song_status = None
+        _info_bmp = _load_svg_bitmap(glb.AddPath('img/vector/info.svg'), 16)
+        if _info_bmp is None:
+            try:
+                _p = glb.AddPath('img/info.png')
+                if os.path.isfile(_p):
+                    _img = wx.Image(_p, wx.BITMAP_TYPE_PNG)
+                    if _img.GetWidth() != 16 or _img.GetHeight() != 16:
+                        _img = _img.Scale(16, 16, wx.IMAGE_QUALITY_HIGH)
+                    _info_bmp = wx.Bitmap(_img)
+            except Exception:
+                _info_bmp = None
+        if _info_bmp is not None and _info_bmp.IsOk():
+            self.bmp_song_status = wx.StaticBitmap(dlg, wx.ID_ANY, _info_bmp)
+            self.bmp_song_status.Hide()
+            row_status.Add(self.bmp_song_status, 0,
+                           wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         self.lbl_song_status = wx.StaticText(dlg, label=u"")
         self.lbl_song_status.SetForegroundColour(
             wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT))
-        box_song.Add(self.lbl_song_status, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
+        row_status.Add(self.lbl_song_status, 1, wx.ALIGN_CENTER_VERTICAL)
+        box_song.Add(row_status, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
         outer.Add(box_song, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
         self._refresh_kbd_controls()
 
@@ -2044,8 +2066,14 @@ class PrintOptionsDialog:
                 stc.InsertText(0, line + eol)
         finally:
             stc.EndUndoAction()
-        self.lbl_song_status.SetLabel(_("Settings saved in the first line of the editor."))
+        self._set_song_status(_("Settings saved in the first line of the editor."))
         self.dlg.Layout()
+
+    def _set_song_status(self, text):
+        """Mostra il messaggio di stato (con l'icona info, se disponibile)."""
+        self.lbl_song_status.SetLabel(text)
+        if getattr(self, 'bmp_song_status', None) is not None:
+            self.bmp_song_status.Show(bool(text))
 
     def _on_load_from_editor(self, evt):
         stc = getattr(self.owner, 'text', None)
@@ -2132,11 +2160,11 @@ class PrintOptionsDialog:
             pass
         self._pending_page = pend
         if problems:
-            self.lbl_song_status.SetLabel(_("Settings loaded with warnings. Press OK to apply."))
+            self._set_song_status(_("Settings loaded with warnings. Press OK to apply."))
             self.dlg.Layout()
             self._show_print_problems(problems)
         else:
-            self.lbl_song_status.SetLabel(_("Settings loaded from the editor. Press OK to apply."))
+            self._set_song_status(_("Settings loaded from the editor. Press OK to apply."))
             self.dlg.Layout()
 
     def _show_print_problems(self, problems):

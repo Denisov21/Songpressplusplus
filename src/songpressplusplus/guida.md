@@ -879,6 +879,8 @@ Per forzare una modalità diversa su un singolo comando senza cambiare la prefer
 
 Se `,M` è omesso, viene usata la modalità impostata nelle preferenze globali.
 
+**Icone del tempo (♩ e 🎼).** Le icone sono caricate **prima in vettoriale** da `img/vector/` (`tempo_note`, `minima`, `semiminima`, `semiminima_punto`, `croma`, `croma_punto`, `metronomeWindows`), tinte col colore scelto e rasterizzate alla risoluzione reale del dispositivo, quindi restano nitide con lo zoom, in stampa e in PDF. Solo se l'SVG manca si ripiega sul PNG: prima `img/32/<nome>.png`, poi `img/<nome>.png`.
+
 > **Nota:** non tutti i simboli si possono dimensionare. Le modalità `1` e `3` usano icone ridimensionabili (16×16 / 24×24 / 32×32); le modalità `0` e `2` mostrano solo testo e non sono influenzate dall'impostazione della dimensione icona.
 
 **Dimensione dell'icona:**
@@ -2301,7 +2303,23 @@ Le immagini raster sono solo un **ripiego** usato quando manca l'SVG dell'icona:
 | 19×19 e 21×21 | PNG 16×16 centrato su una tela trasparente della dimensione richiesta |
 | 32×32 | PNG in `img/32/` se presente, altrimenti il PNG 16×16 raddoppiato |
 
-Anche tutte le immagini delle **altre barre** (barra dell'editor, barra della pagina Songpress++, righello a schermo) sono **sempre vettoriali**, con ripiego sul PNG se manca l'SVG. Le icone dell'**anteprima di stampa** sono vettoriali come prima scelta.
+Anche tutte le immagini delle **altre barre** (barra dell'editor, barra della pagina Songpress++, righello a schermo) sono **sempre vettoriali**, con ripiego sul PNG se manca l'SVG (per i pulsanti zoom della barra dell'editor, se manca anche il PNG, si usa l'icona di sistema). Le icone dell'**anteprima di stampa** sono vettoriali come prima scelta.
+
+#### Ordine di ricerca delle immagini: prima vettoriale, poi PNG
+
+In tutto il programma le immagini dell'interfaccia e dei simboli seguono la **stessa regola**: si prova **prima l'SVG** in `img/vector/`, rasterizzato alla risoluzione reale del dispositivo (DPI, zoom, stampa); **solo se l'SVG manca o non è caricabile** si ripiega sul PNG in `img/`; come ultima risorsa si usa l'icona di sistema (o nessuna immagine).
+
+| Elemento | 1ª scelta (vettoriale) | 2ª scelta (PNG) | Ultimo ripiego |
+|---|---|---|---|
+| Icone delle toolbar | `img/vector/<nome>.svg` | `img/<nome>.png` (a 32 px: `img/32/<nome>.png`) | vedi tabella sopra |
+| Icone info ('i') | `img/vector/info.svg` a 16×16, adattato al DPI | `img/info.png` | icona di sistema |
+| Icone del tempo (dialogo, anteprima, stampa, PDF) | `img/vector/<nome>.svg`, tinto col colore scelto | `img/32/<nome>.png`, poi `img/<nome>.png` | dialogo: bitmap trasparente |
+| Pulsanti *Salva nell'editor* / *Carica dall'editor* (anteprima di stampa) | `img/vector/<nome>.svg` a 16×16 | `img/<nome>.png` ridimensionato a 16×16 | nessuna icona |
+| Righello a schermo (modalità, lista, zoom −/+, chiudi) | `img/vector/<nome>.svg` | `img/<nome>.png` ridimensionato | pulsante di testo (`−`, `+`, `✕`, `☰`) |
+| Pulsanti zoom dell'editor | `img/vector/zoom_*.svg` | `img/zoom_*.png` | icona di sistema |
+| Immagini della canzone `{image:}` | — | solo raster: il file indicato nella direttiva (PNG, JPG, GIF, BMP, TIFF) | — |
+
+> **Nota.** La direttiva `{image:}` **non segue** questo percorso: inserisce sempre e solo l'immagine raster indicata dall'utente (vedi *Direttiva immagine*); gli SVG di `img/vector/` servono solo per le icone del programma.
 
 ---
 

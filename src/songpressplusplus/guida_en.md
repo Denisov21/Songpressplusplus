@@ -872,6 +872,8 @@ To force a different mode on a single command without changing the global prefer
 
 If `,M` is omitted, the mode set in the global preferences is used.
 
+**Tempo icons (♩ and 🎼).** The icons are loaded **vector first** from `img/vector/` (`tempo_note`, `minima`, `semiminima`, `semiminima_punto`, `croma`, `croma_punto`, `metronomeWindows`), tinted with the chosen colour and rasterised at the real device resolution, so they stay sharp with zoom, in print and in PDF. Only if the SVG is missing does it fall back to the PNG: first `img/32/<name>.png`, then `img/<name>.png`.
+
 > **Note:** not all symbols can be resized. Modes `1` and `3` use scalable icons (16×16 / 24×24 / 32×32); modes `0` and `2` render as plain text and are not affected by the icon size setting.
 
 **Icon size:**
@@ -2294,7 +2296,23 @@ Raster images are only a **fallback**, used when an icon's SVG is missing:
 | 19×19 and 21×21 | 16×16 PNG centred on a transparent canvas of the requested size |
 | 32×32 | PNG in `img/32/` if present, otherwise the 16×16 PNG doubled |
 
-All images in the **other bars** (editor bar, Songpress++ Page bar, screen ruler) are also **always vector**, falling back to the PNG if the SVG is missing. **Print preview** icons are vector as first choice.
+All images in the **other bars** (editor bar, Songpress++ Page bar, screen ruler) are also **always vector**, falling back to the PNG if the SVG is missing (for the editor bar's zoom buttons, if the PNG is missing too, the system icon is used). **Print preview** icons are vector as first choice.
+
+#### Image lookup order: vector first, then PNG
+
+Throughout the program, interface images and symbols follow the **same rule**: the **SVG is tried first** in `img/vector/`, rasterised at the real device resolution (DPI, zoom, print); **only if the SVG is missing or cannot be loaded** does it fall back to the PNG in `img/`; as a last resort the system icon (or no image) is used.
+
+| Element | 1st choice (vector) | 2nd choice (PNG) | Last fallback |
+|---|---|---|---|
+| Toolbar icons | `img/vector/<name>.svg` | `img/<name>.png` (at 32 px: `img/32/<name>.png`) | see table above |
+| Info ('i') icons | `img/vector/info.svg` at 16×16, adapted to the DPI | `img/info.png` | system icon |
+| Tempo icons (dialog, preview, print, PDF) | `img/vector/<name>.svg`, tinted with the chosen colour | `img/32/<name>.png`, then `img/<name>.png` | dialog: transparent bitmap |
+| *Save to editor* / *Load from editor* buttons (print preview) | `img/vector/<name>.svg` at 16×16 | `img/<name>.png` resized to 16×16 | no icon |
+| Screen ruler (modes, list, zoom −/+, close) | `img/vector/<name>.svg` | `img/<name>.png` resized | text button (`−`, `+`, `✕`, `☰`) |
+| Editor zoom buttons | `img/vector/zoom_*.svg` | `img/zoom_*.png` | system icon |
+| Song images `{image:}` | — | raster only: the file named in the directive (PNG, JPG, GIF, BMP, TIFF) | — |
+
+> **Note.** The `{image:}` directive does **not follow** this path: it always inserts only the raster image indicated by the user (see *Image Directive*); the SVGs in `img/vector/` are used only for the program's icons.
 
 ---
 

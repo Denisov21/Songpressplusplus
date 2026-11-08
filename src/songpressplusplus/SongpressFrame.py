@@ -1107,6 +1107,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self._showPageBreakLinesMenuId = xrc.XRCID('showPageBreakLines')
         self._showColumnBreakLinesMenuId = xrc.XRCID('showColumnBreakLines')
         self._showDurationBeatsMenuId = xrc.XRCID('showDurationBeats')
+        self._showArrowsMenuId = xrc.XRCID('showArrows')
+        self._SyncArrowMenuChecks()
         self._restartMenuId = xrc.XRCID('restart')
         self._ApplyRestartMenuVisibility()
         self.findReplaceDialog = None
@@ -1184,7 +1186,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
     _EDITOR_ZOOM_ICON_SIZE = 16   # px: stessa dimensione delle icone +/- della pagina Songpress++
 
     def _EditorZoomIcon(self, name, size=None):
-        """Carica l'icona SVG da img/vector (con fallback su bitmap vuota)."""
+        """Carica l'icona: 1) SVG da img/vector, 2) PNG omonimo da img/,
+        3) icona di sistema, 4) bitmap vuota."""
         if size is None:
             size = self._EDITOR_ZOOM_ICON_SIZE
         path = glb.AddPath('img/vector/' + name)
@@ -1194,6 +1197,18 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 return bb
         except Exception:
             pass
+        # 2) ripiego PNG: img/<stesso nome>.png (es. zoom_out.png)
+        try:
+            _png = glb.AddPath('img/' + os.path.splitext(name)[0] + '.png')
+            if os.path.isfile(_png):
+                _img = wx.Image(_png, wx.BITMAP_TYPE_PNG)
+                if _img.IsOk():
+                    if _img.GetWidth() != size or _img.GetHeight() != size:
+                        _img = _img.Scale(size, size, wx.IMAGE_QUALITY_HIGH)
+                    return wx.BitmapBundle(wx.Bitmap(_img))
+        except Exception:
+            pass
+        # 3) ultimo ripiego: icona di sistema
         try:
             return wx.BitmapBundle(wx.ArtProvider.GetBitmap(
                 wx.ART_UNDO if 'rip' in name else (wx.ART_PLUS if name == 'zoom_in.svg' else wx.ART_MINUS), wx.ART_TOOLBAR, wx.Size(size, size)))
@@ -1902,6 +1917,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         Bind(self.OnTogglePageBreakLines, 'showPageBreakLines')
         Bind(self.OnToggleColumnBreakLines, 'showColumnBreakLines')
         Bind(self.OnToggleDurationBeats, 'showDurationBeats')
+        Bind(self.OnToggleArrows, 'showArrows')
         Bind(self.OnTranspose, 'transpose')
         Bind(self.OnSimplifyChords, 'simplifyChords')
         Bind(self.OnChangeChordNotation, 'changeChordNotation')
@@ -11710,6 +11726,40 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
     def OnSubtitle(self, evt):
         self._InsertOrSelectDirective(('subtitle', 'st'), "{subtitle:|}")
 
+    # Accordo minore d'esempio per ogni notazione (chiave = id normalizzato).
+    _CHORD_EXAMPLE_BY_NOTATION = {
+        'en': 'Cm', 'it': 'Dom', 'ituc': 'DOm', 'de': 'Cm', 'tradde': 'Cm',
+        'fr': 'Dom', 'pt': 'Dom', 'nashville': '1m', 'roman': 'Im',
+    }
+
+    def _ChordExampleForNotation(self):
+        """Esempio di accordo (Do minore) nella notazione predefinita corrente
+        (Opzioni > Generale > Notazione predefinita).
+
+        L'esempio e' ottenuto traducendo "Cm" dalla notazione inglese a quella
+        predefinita, cosi' non dipende dagli id delle notazioni (es. "Italiana
+        maiuscola" -> DOm, "Italiana" -> Dom, Nashville -> 1m).
+        """
+        try:
+            cur = self.pref.notations[0]
+        except Exception:
+            return 'Cm'
+        en = globals().get('enNotation')
+        if en is None:
+            for n in self.pref.notations:
+                if str(getattr(n, 'id', '')).lower() in ('en', 'english'):
+                    en = n
+                    break
+        if en is not None:
+            try:
+                res = translateChord('Cm', en, cur)
+                if res:
+                    return res
+            except Exception:
+                pass
+        key = str(getattr(cur, 'id', '')).lower().replace('-', '').replace('_', '').replace(' ', '')
+        return self._CHORD_EXAMPLE_BY_NOTATION.get(key, 'Cm')
+
     def OnChord(self, evt):
         # Se il dialogo è già aperto (modalità pinnata), riportalo in primo piano
         if getattr(self, '_chord_dlg', None) is not None:
@@ -11762,8 +11812,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         rb_down = wx.RadioButton(_sb, label=u"\u2193 " + _(u"Down"))
         rb_none.SetValue(True)
         rb_none.SetToolTip(_(u"Insert the chord without a direction arrow."))
-        rb_up.SetToolTip(_(u"Insert the chord with an up arrow: the chord is played upwards (written as [Cm^])."))
-        rb_down.SetToolTip(_(u"Insert the chord with a down arrow: the chord is played downwards (written as [Cmv])."))
+        # L'accordo d'esempio nei tooltip segue la notazione predefinita
+        # scelta in Opzioni > Generale (es. Cm / DOm / 1m).
+        _ex_chord = self._ChordExampleForNotation()
+        rb_up.SetToolTip(_(u"Insert the chord with an up arrow: the chord is played upwards (written as [%(chord)s^]).") % {'chord': _ex_chord})
+        rb_down.SetToolTip(_(u"Insert the chord with a down arrow: the chord is played downwards (written as [%(chord)sv]).") % {'chord': _ex_chord})
         _sb.SetToolTip(_(u"Direction arrow shown next to the chord in the preview."))
         for rb in (rb_none, rb_up, rb_down):
             arrow_box.Add(rb, 0, wx.ALL, 4)
@@ -12280,6 +12333,41 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         )
         self.previewCanvas.Refresh(self._get_display_text())
 
+    _ARROW_CFG_PATH = '/Rendering'
+
+    def _ReadArrowVisible(self, key):
+        try:
+            cfg = wx.Config.Get()
+            old = cfg.GetPath()
+            try:
+                cfg.SetPath(self._ARROW_CFG_PATH)
+                return cfg.ReadBool(key, True)
+            finally:
+                cfg.SetPath(old)
+        except Exception:
+            return True
+
+    def _WriteArrowVisible(self, key, value):
+        try:
+            cfg = wx.Config.Get()
+            old = cfg.GetPath()
+            try:
+                cfg.SetPath(self._ARROW_CFG_PATH)
+                cfg.WriteBool(key, bool(value))
+                cfg.Flush()
+            finally:
+                cfg.SetPath(old)
+        except Exception:
+            pass
+
+    def _SyncArrowMenuChecks(self):
+        """Allinea le spunte del menu Visualizza alle frecce salvate in config."""
+        self.menuBar.Check(self._showArrowsMenuId, self._ReadArrowVisible('show_arrows'))
+
+    def OnToggleArrows(self, evt):
+        self._WriteArrowVisible('show_arrows', evt.IsChecked())
+        self.previewCanvas.Refresh(self._get_display_text())
+
     def _UpdateBreakLinesMenuState(self):
         """Abilita o disabilita le voci di menu delle linee di interruzione
         in base alla visibilità del pannello anteprima."""
@@ -12287,6 +12375,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.menuBar.Enable(self._showPageBreakLinesMenuId, preview_visible)
         self.menuBar.Enable(self._showColumnBreakLinesMenuId, preview_visible)
         self.menuBar.Enable(self._showDurationBeatsMenuId, preview_visible)
+        self.menuBar.Enable(self._showArrowsMenuId, preview_visible)
 
     def _ApplyPreviewMinSize(self):
         """Reimposta BestSize e MinSize sul pane 'preview' e sul main_panel.
@@ -12442,6 +12531,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self.menuBar.Enable(self._showPageBreakLinesMenuId, False)
             self.menuBar.Enable(self._showColumnBreakLinesMenuId, False)
             self.menuBar.Enable(self._showDurationBeatsMenuId, False)
+            self.menuBar.Enable(self._showArrowsMenuId, False)
             wx.CallAfter(self._SyncPreviewToggleButton)
         else:
             self._UpdateBreakLinesMenuState()

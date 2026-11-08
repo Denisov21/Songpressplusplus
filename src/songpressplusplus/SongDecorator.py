@@ -91,6 +91,8 @@ class SongDecorator(object):
         self.klavierStartNote = 0
         # Whether to show beat count above chords ({beats_time} directive)
         self.showDurationBeats = True
+        # Frecce di direzione ^ (su) / v (giù): visibilità, riletta a ogni render
+        self.chord_arrow_show = {'up': True, 'down': True}
         # Modalità visualizzazione battiti: 'number' | 'dots' | 'both'
         self.durationBeatsMode = 'number'
         # Parola da evidenziare nel preview (stringa cerca/trova, '' = nessuna)
@@ -162,6 +164,13 @@ class SongDecorator(object):
             return dot_r * 2 + 2
         return 0
 
+    def _ArrowShown(self, arrow):
+        """True se la freccia 'up'/'down' va mostrata (menu Visualizza).
+        '' (nessuna freccia) ritorna sempre False."""
+        if not arrow:
+            return False
+        return bool((getattr(self, 'chord_arrow_show', None) or {}).get(arrow, True))
+
     def _ArrowOnBeats(self, t):
         """True se la freccia di direzione di questo accordo va disegnata accanto
         al NUMERO dei battiti invece che accanto al nome dell'accordo.
@@ -175,7 +184,7 @@ class SongDecorator(object):
         """
         return bool(
             getattr(self, 'chord_arrow_pos', 'chord') == 'beats'
-            and getattr(t, 'arrow', '')
+            and self._ArrowShown(getattr(t, 'arrow', ''))
             and getattr(t, 'duration_beats', 0) >= 1
             and getattr(self, 'showDurationBeats', True)
             and getattr(self, 'durationBeatsMode', 'number') in ('number', 'both')
@@ -320,21 +329,25 @@ class SongDecorator(object):
             else:
                 t.w, t.h = self.dc.GetTextExtent(text)
             if getattr(t, 'is_time_sig', False):
-                # Per la frazione musicale: larghezza = max(num, den),
-                # altezza = cifra_sopra + gap + 1px linea + gap + cifra_sotto
-                parts = text.split('/')
-                if len(parts) == 2:
-                    nw, nh = self.dc.GetTextExtent(parts[0].strip())
-                    dw, dh = self.dc.GetTextExtent(parts[1].strip())
-                    gap = max(2, nh // 4)
-                    t.w = max(nw, dw)
-                    t.h = nh + gap + 1 + gap + dh
+                # Frazione musicale: dimensioni calcolate da _TimeSigMetrics
+                # (cifre dritte e in grassetto, barra piu' larga delle cifre).
+                m = self._TimeSigMetrics(text, t.font)
+                t._ts_m = m
+                if m:
+                    t.w, t.h = m['w'], m['h']
+            # Direttive di tempo con icona ({tempo_sp:}, {tempo_c:}, ...): DrawText
+            # disegna l'icona e poi il testo, quindi la larghezza riservata deve
+            # comprendere anche l'icona (+2px di distanza) e un piccolo respiro a
+            # destra; altrimenti l'elemento successivo la sovrascrive.
+            iw = self._TempoIconWidth(t)
+            if iw:
+                t.w += iw + 2 + self.dc.GetTextExtent(" ")[0]
             if t.type == SongText.chord:
                 hasChords = True
                 self.SetMarginChord(t)
                 chordMaxH = max(chordMaxH, t.h)
                 chordMaxTH = max(chordMaxTH, t.GetTotalHeight())
-                if getattr(t, 'arrow', '') and not self._ArrowOnBeats(t):
+                if self._ArrowShown(getattr(t, 'arrow', '')) and not self._ArrowOnBeats(t):
                     ah = max(8, int(t.h * getattr(self, 'chord_arrow_pct', 90) / 100))
                     t.arrow_w = max(6, int(ah * 0.8))
                     t.arrow_h = max(4, int(t.arrow_w / ARROW_ASPECT))
@@ -348,6 +361,23 @@ class SongDecorator(object):
                 textMaxH = max(textMaxH, t.h)
                 textMaxTH = max(textMaxTH, t.GetTotalHeight())
 
+        # ── Frazione di tempo: barra all'altezza del centro del testo vicino ──
+        # La frazione e' allineata in basso come ogni testo, quindi la barra
+        # risulterebbe troppo in alto. La abbassiamo (ts_drop) in modo che la
+        # barra cada a meta' altezza del testo; la riga viene allungata di
+        # altrettanto sotto, cosi' non tocca la riga seguente.
+        refH = max([b.h for b in line.boxes
+                    if b.type != SongText.chord
+                    and not getattr(b, 'is_time_sig', False)
+                    and b.text.strip() != ''] or [0])
+        tsDrop = 0
+        for t in line.boxes:
+            t.ts_drop = 0
+            m = getattr(t, '_ts_m', None)
+            if getattr(t, 'is_time_sig', False) and m and refH:
+                bar_c = m['nh'] + m['gap'] + m['bar_th'] / 2.0
+                t.ts_drop = max(0, int(round((m['h'] - bar_c) - refH / 2.0)))
+                tsDrop = max(tsDrop, t.ts_drop)
         # ── Spazio extra per i numeri/puntini beats sopra gli accordi ──────────
         # PostDrawLine disegna i battiti a (chord_top - apex_h - 1), cioè sopra
         # l'area già allocata per gli accordi. Se showDurationBeats è attivo e la
@@ -416,6 +446,8 @@ class SongDecorator(object):
             )
         else:
             line.h = line.textBaseline + textMaxH * (line.parent.format.textSpacing - 1) + line.parent.format.lineSpacing
+
+        line.h += tsDrop
 
         # Pass 2: set layout
         x = 0
@@ -777,24 +809,56 @@ class SongDecorator(object):
         self._DrawStackedTimeSig(ts, x, y, block.format.color)
         self.dc.SetTextForeground(wx.BLACK)
 
-    def _DrawStackedTimeSig(self, txt, bx, by, color):
-        """Disegna 'N/M' come frazione (numeratore, linea, denominatore) con
-        angolo in alto a sinistra in (bx, by). Se non e' nel formato N/M
-        disegna il testo semplice."""
+    def _TimeSigFont(self, font):
+        """Font per le cifre della frazione: dritto (mai corsivo, anche se il
+        testo vicino lo e'), grassetto e leggermente piu' piccolo."""
+        pt = max(1, int(round(font.GetPointSize() * 0.9)))
+        return wx.Font(pt, font.GetFamily(), wx.FONTSTYLE_NORMAL,
+                       wx.FONTWEIGHT_BOLD, False, font.GetFaceName())
+
+    def _TimeSigMetrics(self, txt, font):
+        """Misure della frazione 'N/M' (None se il testo non e' nel formato
+        N/M). La barra sporge ai lati delle cifre, che sono centrate; a destra
+        resta un margine in modo che il testo seguente non si appiccichi."""
         parts = txt.split('/')
         if len(parts) != 2:
-            self.dc.DrawText(txt, bx, by)
-            return
+            return None
         num, den = parts[0].strip(), parts[1].strip()
+        old = self.dc.GetFont()
+        nfont = self._TimeSigFont(font)
+        self.dc.SetFont(nfont)
         nw, nh = self.dc.GetTextExtent(num)
         dw, dh = self.dc.GetTextExtent(den)
-        max_w = max(nw, dw)
-        gap = max(2, nh // 4)
-        line_y = by + nh + gap
-        self.dc.DrawText(num, bx + (max_w - nw) // 2, by)
-        self.dc.SetPen(wx.Pen(color, max(1, int(1 / self.pen_scale))))
-        self.dc.DrawLine(bx, line_y, bx + max_w, line_y)
-        self.dc.DrawText(den, bx + (max_w - dw) // 2, line_y + gap)
+        self.dc.SetFont(old)
+        pad = max(2, nh // 5)               # sporgenza della barra
+        gap = max(2, nh // 6)               # cifra <-> barra
+        bar_th = max(1, nh // 14)           # spessore barra (px logici)
+        bar_w = max(nw, dw) + 2 * pad
+        right = max(4, nh // 3)             # respiro a destra
+        return {'num': num, 'den': den, 'font': nfont,
+                'nw': nw, 'nh': nh, 'dw': dw, 'dh': dh,
+                'gap': gap, 'bar_th': bar_th, 'bar_w': bar_w,
+                'w': bar_w + right, 'h': nh + gap + bar_th + gap + dh}
+
+    def _DrawStackedTimeSig(self, txt, bx, by, color):
+        """Disegna 'N/M' come frazione (numeratore, barra, denominatore) con
+        angolo in alto a sinistra in (bx, by). Se non e' nel formato N/M
+        disegna il testo semplice. Ritorna True se ha disegnato la frazione."""
+        old = self.dc.GetFont()
+        m = self._TimeSigMetrics(txt, old)
+        if not m:
+            self.dc.DrawText(txt, bx, by)
+            return False
+        bar_w, gap, th = m['bar_w'], m['gap'], m['bar_th']
+        line_y = by + m['nh'] + gap
+        self.dc.SetFont(m['font'])
+        self.dc.DrawText(m['num'], bx + (bar_w - m['nw']) // 2, by)
+        self.dc.DrawText(m['den'], bx + (bar_w - m['dw']) // 2, line_y + th + gap)
+        self.dc.SetFont(old)
+        self.dc.SetPen(wx.Pen(color, max(1, int(th / self.pen_scale))))
+        self.dc.DrawLine(bx, line_y, bx + bar_w, line_y)
+        return True
+
 
     def PreDrawLine(self, line, lx, ly):
         # lx, ly: coordinates of top-left corner of drawable area
@@ -886,6 +950,42 @@ class SongDecorator(object):
         except Exception:
             return None
 
+    _TEMPO_ICONS = (
+        ('is_tempo_note', 'tempo_note', 'img/tempo_note.png'),
+        ('is_tempo_half_note', 'minima', 'img/minima_32x32.png'),
+        ('is_tempo_quarter_note', 'semiminima', 'img/semiminima_32x32.png'),
+        ('is_tempo_eighth_note', 'croma', 'img/croma_32x32.png'),
+        ('is_tempo_dotted_quarter', 'semiminima_punto', 'img/semiminima_punto_32x32.png'),
+        ('is_tempo_dotted_eighth', 'croma_punto', 'img/croma_punto_32x32.png'),
+        ('is_tempo_metro', 'metronomeWindows', 'img/metronomeWindows.png'),
+    )
+
+    def _TempoIconWidth(self, text):
+        """Larghezza logica dell'icona di tempo del box (0 se non ne ha una).
+        Usa le stesse regole di altezza e lo stesso ripiego PNG di DrawText."""
+        for flag, svg_name, png_name in self._TEMPO_ICONS:
+            if not getattr(text, flag, False):
+                continue
+            try:
+                _icon_size = getattr(self, 'tempoIconSize', None)
+                new_h = int(_icon_size) if _icon_size else int(text.h)
+                _bg = getattr(self, 'bgColour', None)
+                _bgr = (_bg.Red(), _bg.Green(), _bg.Blue()) if _bg else (255, 255, 255)
+                _tc = getattr(self, 'tempoIconColour', None)
+                _tint = (_tc.Red(), _tc.Green(), _tc.Blue()) if _tc else None
+                vec = self._tempo_svg_bitmap(svg_name, new_h, _tint, _bgr)
+                if vec is not None:
+                    return vec[1]
+                import os
+                _png = _glb.AddPath(png_name.replace('img/', 'img/32/', 1))
+                if not os.path.isfile(_png):
+                    _png = _glb.AddPath(png_name)
+                img = wx.Image(_png)
+                return int(img.GetWidth() * new_h / img.GetHeight())
+            except Exception:
+                return 0
+        return 0
+
     def DrawText(self, text, tx, ty):
         # tx, ty: coordinates of top-left corner of drawable area
         self.dc.SetFont(text.font)
@@ -976,26 +1076,9 @@ class SongDecorator(object):
                 return
         if getattr(text, 'is_time_sig', False):
             try:
-                parts = text.text.split('/')
-                if len(parts) == 2:
-                    num, den = parts[0].strip(), parts[1].strip()
-                    bx = int(tx + text.marginLeft)
-                    by = int(ty + text.marginTop)
-                    # Misura larghezza e altezza di numeratore e denominatore
-                    nw, nh = self.dc.GetTextExtent(num)
-                    dw, dh = self.dc.GetTextExtent(den)
-                    max_w = max(nw, dw)
-                    # Gap verticale tra testo e linea di separazione (in px)
-                    gap = max(2, nh // 4)
-                    line_y = by + nh + gap
-                    # Disegna numeratore centrato in alto
-                    self.dc.DrawText(num, bx + (max_w - nw) // 2, by)
-                    # Linea orizzontale di separazione
-                    pen = wx.Pen(text.color, max(1, int(1 / self.pen_scale)))
-                    self.dc.SetPen(pen)
-                    self.dc.DrawLine(bx, line_y, bx + max_w, line_y)
-                    # Disegna denominatore centrato in basso, dopo il gap
-                    self.dc.DrawText(den, bx + (max_w - dw) // 2, line_y + gap)
+                if self._DrawStackedTimeSig(text.text, int(tx + text.marginLeft),
+                                            int(ty + text.marginTop) + getattr(text, 'ts_drop', 0),
+                                            text.color):
                     return
             except Exception:
                 pass
@@ -1424,6 +1507,23 @@ class SongDecorator(object):
             pass
         return pct, cols
 
+    def _read_chord_arrow_show(self):
+        """{'up': bool, 'down': bool}: visibilita' delle frecce ^ e v (unica voce), scelta
+        dal menu Visualizza (wx.Config /Rendering). Default: entrambe visibili."""
+        show = {'up': True, 'down': True}
+        try:
+            cfg = wx.Config.Get()
+            old = cfg.GetPath()
+            try:
+                cfg.SetPath('/Rendering')
+                v = cfg.ReadBool('show_arrows', True)
+                show['up'] = show['down'] = v
+            finally:
+                cfg.SetPath(old)
+        except Exception:
+            pass
+        return show
+
     def _read_chord_arrow_pos(self):
         """Posizione della freccia di direzione: 'chord' (accanto al nome
         dell'accordo, come sempre) oppure 'beats' (accanto al numero dei
@@ -1628,7 +1728,7 @@ class SongDecorator(object):
             self.dc.SetBrush(wx.TRANSPARENT_BRUSH)
             self.dc.DrawRectangle(x, y, w, h)
         arrow = getattr(text, 'arrow', '')
-        if arrow and hasattr(text, 'arrow_w'):
+        if self._ArrowShown(arrow) and hasattr(text, 'arrow_w'):
             col = (getattr(self, 'chord_arrow_colours', None) or {}).get(arrow) or text.color
             aw, ah = text.arrow_w, text.arrow_h
             x0 = int(tx + text.marginLeft + text.arrow_off)
@@ -2046,6 +2146,7 @@ class SongDecorator(object):
         self.smp_oversample = self._read_smp_oversample()
         self.chord_arrow_pct, self.chord_arrow_colours = self._read_chord_arrow_prefs()
         self.chord_arrow_pos = self._read_chord_arrow_pos()
+        self.chord_arrow_show = self._read_chord_arrow_show()
         self.InitDraw()
         self.LayoutCompose()
         self.LayoutMove()

@@ -1894,18 +1894,18 @@ msgstr "Inserisce l'accordo senza freccia di direzione."
 #: SongpressFrame.py — Insert chord dialog, direction: up tooltip
 msgid ""
 "Insert the chord with an up arrow: the chord is played upwards (written as "
-"[Cm^])."
+"[%(chord)s^])."
 msgstr ""
 "Inserisce l'accordo con la freccia su: l'accordo si suona verso l'alto "
-"(scritto come [Cm^])."
+"(scritto come [%(chord)s^])."
 
 #: SongpressFrame.py — Insert chord dialog, direction: down tooltip
 msgid ""
 "Insert the chord with a down arrow: the chord is played downwards (written "
-"as [Cmv])."
+"as [%(chord)sv])."
 msgstr ""
 "Inserisce l'accordo con la freccia giù: l'accordo si suona verso il basso "
-"(scritto come [Cmv])."
+"(scritto come [%(chord)sv])."
 
 #: SongpressFrame.py — Insert chord dialog, direction group tooltip
 msgid "Direction arrow shown next to the chord in the preview."

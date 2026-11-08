@@ -34,21 +34,60 @@ def _c(rgb):
 # Alias pubblici per compatibilità con codice esterno che modifica BAR_COLOUR_FULL
 # (es. MyPreferencesDialog._apply_deco_bar_colour). Vengono letti come wx.Colour
 # tramite _c() internamente, ma possono essere sovrascritti con wx.Colour direttamente.
-BAR_COLOUR_FULL  = None   # inizializzato a runtime da _get_bar_colour_full()
+BAR_COLOUR_FULL  = None   # inizializzato a runtime da _ensure_colours()
 BAR_COLOUR_EMPTY = None
 BAR_COLOUR_BG    = None
 TICK_COLOUR      = None
 LABEL_COLOUR     = None
+THUMB_BORDER     = None
+
+
+def _blend(c1, c2, t):
+    """Miscela due wx.Colour: t=0 -> c1, t=1 -> c2."""
+    return wx.Colour(
+        int(round(c1.Red()   + (c2.Red()   - c1.Red())   * t)),
+        int(round(c1.Green() + (c2.Green() - c1.Green()) * t)),
+        int(round(c1.Blue()  + (c2.Blue()  - c1.Blue())  * t)))
+
+
+def _system_is_dark():
+    """True se il tema di sistema ha lo sfondo delle finestre scuro.
+
+    Su Linux (wxGTK) con un tema GTK scuro wx.SYS_COLOUR_WINDOW e'
+    scuro: la luminosita' e' l'indicatore piu' affidabile, valido anche con
+    versioni di wxPython senza SystemSettings.GetAppearance().
+    """
+    bg = wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW)
+    return (0.299 * bg.Red() + 0.587 * bg.Green() + 0.114 * bg.Blue()) < 128
+
 
 def _ensure_colours():
-    """Inizializza i wx.Colour globali la prima volta che servono (dopo wx.App)."""
-    global BAR_COLOUR_FULL, BAR_COLOUR_EMPTY, BAR_COLOUR_BG, TICK_COLOUR, LABEL_COLOUR
+    """Inizializza i wx.Colour globali la prima volta che servono (dopo wx.App).
+
+    Tema chiaro: palette fissa originale.
+    Tema scuro: sfondo, binario, tacche, etichette e bordo del cursore derivano
+    dai colori di sistema (finestra / testo), cosi' le barre si fondono con il
+    resto del dialogo invece di restare un riquadro chiaro.
+    Il colore pieno della barra (BAR_COLOUR_FULL) e' lo stesso in entrambi i casi
+    ed e' personalizzabile dalle Opzioni.
+    """
+    global BAR_COLOUR_FULL, BAR_COLOUR_EMPTY, BAR_COLOUR_BG, TICK_COLOUR, LABEL_COLOUR, THUMB_BORDER
     if BAR_COLOUR_FULL is None:
-        BAR_COLOUR_FULL  = _c(_BAR_COLOUR_FULL_RGB)
-        BAR_COLOUR_EMPTY = _c(_BAR_COLOUR_EMPTY_RGB)
-        BAR_COLOUR_BG    = _c(_BAR_COLOUR_BG_RGB)
-        TICK_COLOUR      = _c(_TICK_COLOUR_RGB)
-        LABEL_COLOUR     = _c(_LABEL_COLOUR_RGB)
+        BAR_COLOUR_FULL = _c(_BAR_COLOUR_FULL_RGB)
+        if _system_is_dark():
+            bg  = wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW)
+            fg  = wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWTEXT)
+            BAR_COLOUR_BG    = bg
+            BAR_COLOUR_EMPTY = _blend(bg, fg, 0.20)
+            TICK_COLOUR      = _blend(bg, fg, 0.40)
+            LABEL_COLOUR     = _blend(bg, fg, 0.60)
+            THUMB_BORDER     = bg
+        else:
+            BAR_COLOUR_EMPTY = _c(_BAR_COLOUR_EMPTY_RGB)
+            BAR_COLOUR_BG    = _c(_BAR_COLOUR_BG_RGB)
+            TICK_COLOUR      = _c(_TICK_COLOUR_RGB)
+            LABEL_COLOUR     = _c(_LABEL_COLOUR_RGB)
+            THUMB_BORDER     = _c(_THUMB_BORDER_RGB)
 
 BAR_HEIGHT       = 8    # px – altezza della barra
 BAR_RADIUS       = 4    # px – arrotondamento angoli
@@ -220,7 +259,7 @@ class MyDecoSlider(DecoSlider):
 
         # --- cursore (thumb) alla posizione corrente ---
         gc.SetBrush(gc.CreateBrush(wx.Brush(BAR_COLOUR_FULL, wx.SOLID)))
-        gc.SetPen(wx.Pen(_c(_THUMB_BORDER_RGB), 2))
+        gc.SetPen(wx.Pen(THUMB_BORDER, 2))
         gc.DrawEllipse(thumb_x - THUMB_RADIUS, thumb_cy - THUMB_RADIUS,
                        2 * THUMB_RADIUS, 2 * THUMB_RADIUS)
 
@@ -239,7 +278,7 @@ class MyDecoSlider(DecoSlider):
             dc.DrawRectangle(margin, bar_y, filled_w, BAR_HEIGHT)
         # cursore
         dc.SetBrush(wx.Brush(BAR_COLOUR_FULL, wx.SOLID))
-        dc.SetPen(wx.Pen(_c(_THUMB_BORDER_RGB), 2))
+        dc.SetPen(wx.Pen(THUMB_BORDER, 2))
         dc.DrawCircle(int(thumb_x), int(thumb_cy), THUMB_RADIUS)
 
     def OnSize(self, event):
