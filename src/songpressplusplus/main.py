@@ -54,17 +54,8 @@ class SongpressApp(wx.App):
 
 def _log(msg):
     """Scrive un log su file per diagnosticare problemi di avvio da doppio click."""
-    import datetime
-    try:
-        import os as _os
-        log_path = _os.path.join(
-            _os.path.expanduser('~'), 'AppData', 'Local', 'Songpress++', 'startup.log'
-        )
-        _os.makedirs(_os.path.dirname(log_path), exist_ok=True)
-        with open(log_path, 'a', encoding='utf-8') as f:
-            f.write(f"[{datetime.datetime.now():%Y-%m-%d %H:%M:%S}] {msg}\n")
-    except Exception:
-        pass
+    from .Globals import startup_log
+    startup_log(msg)
 
 
 def _get_config_path():
@@ -79,10 +70,21 @@ def _get_config_path():
     # 2. Standard user-data dir — replica wx.StandardPaths.GetUserDataDir()
     #    senza istanza wx.App
     if platform.system() == 'Windows':
-        # %APPDATA%\<AppName>  oppure  %LOCALAPPDATA%\<AppName>
-        # wx usa APPDATA su Windows per GetUserDataDir
+        # wx usa %APPDATA%\<AppName> per GetUserDataDir, ma glb.InitDataPath()
+        # lo sostituisce con <INSTDIR>\Songpress (unita' di installazione) e
+        # vi migra la configurazione. Si cerca quindi prima li'; il vecchio
+        # percorso APPDATA resta come ripiego (primo avvio, prima della
+        # migrazione, o installazione non riconosciuta).
+        from .Globals import _windows_install_data_dir
         base = os.environ.get('APPDATA') or os.path.expanduser('~')
-        data_dir = os.path.join(base, glb.PROG_NAME)
+        legacy_dir = os.path.join(base, glb.PROG_NAME)
+        inst_data = _windows_install_data_dir()
+        if inst_data:
+            inst_cfg = os.path.join(inst_data, 'config.ini')
+            legacy_cfg = os.path.join(legacy_dir, 'config.ini')
+            if os.path.isfile(inst_cfg) or not os.path.isfile(legacy_cfg):
+                return inst_cfg
+        data_dir = legacy_dir
     elif platform.system() == 'Darwin':
         data_dir = os.path.join(
             os.path.expanduser('~'), 'Library', 'Application Support', glb.PROG_NAME

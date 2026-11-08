@@ -636,7 +636,7 @@ FunctionEnd
 
 Section "Songpress++" SongpressSection
   SectionIn RO
-  AddSize 255000   ; spazio stimato: ~250 MB (uv + Python + pacchetti)
+  AddSize 272349   ; spazio stimato: ~266 MB (uv + Python + pacchetti)
   SetOutPath "$INSTDIR"
 
   !if /FileExists "${SRCDIR}\src\songpress\songpressplusplus.ico"
@@ -805,6 +805,7 @@ Section Uninstall
   RMDir /r "$INSTDIR\python"
   RMDir /r "$INSTDIR\cache"
   RMDir /r "$INSTDIR\logs"   ; log di impaginazione (PrintDialog.py)
+  Delete "$INSTDIR\startup.log"   ; log di avvio (nella cartella di installazione)
   ; Dati utente (template, font, dizionario personale, dizionari scaricati):
   ; vivono in $INSTDIR\Songpress e possono contenere file personali, quindi si
   ; chiede conferma (default: No = conserva). In modalita' silenziosa (/S, usata
@@ -820,6 +821,9 @@ Section Uninstall
   Delete "$INSTDIR\songpressplusplus.ico"
   Delete "$INSTDIR\uninst.exe"
   RMDir  "$INSTDIR"
+  ; Log di avvio delle versioni precedenti (era in %LOCALAPPDATA%\Songpress++)
+  Delete "$LOCALAPPDATA\Songpress++\startup.log"
+  RMDir  "$LOCALAPPDATA\Songpress++"
 
   ; Rimuovi %APPDATA%\Songpress++ solo se confermato dall'utente
   SetShellVarContext current

@@ -83,6 +83,27 @@ def _read_name():
     return "Songpress++"
 
 
+def _windows_install_dir():
+    """Cartella di installazione di Songpress++ (Windows), o None.
+
+    Riconosce l'installazione fatta dall'installer NSIS con "uv tool install"
+    (venv in <INSTDIR>\\tools\\songpressplusplus = sys.prefix) e la build
+    congelata. Non dipende da wx: si può usare anche prima dell'avvio
+    dell'applicazione (es. per startup.log).
+    """
+    if os.name != 'nt':
+        return None
+    try:
+        if getattr(sys, 'frozen', False):
+            return os.path.dirname(os.path.abspath(sys.executable))
+        parent = os.path.dirname(os.path.abspath(sys.prefix))
+        if os.path.basename(parent).lower() == 'tools':
+            return os.path.dirname(parent)
+    except Exception:      # pylint: disable=broad-except
+        return None
+    return None
+
+
 def _windows_install_data_dir():
     """Cartella dati utente sull'unità dove Songpress++ è installato (Windows).
 
@@ -90,23 +111,10 @@ def _windows_install_data_dir():
     installazione (es. D:\\Songpress++\\Songpress) invece di finire sempre in
     C:\\Users\\...\\AppData\\Roaming\\Songpress++.
 
-    Riconosce l'installazione fatta dall'installer NSIS con "uv tool install"
-    (venv in <INSTDIR>\\tools\\songpressplusplus = sys.prefix) e la build
-    congelata. Ritorna None se non applicabile o se nessuna cartella è
-    scrivibile: in quel caso si usa il percorso standard di wx.StandardPaths.
+    Ritorna None se non applicabile o se nessuna cartella è scrivibile: in quel
+    caso si usa il percorso standard di wx.StandardPaths.
     """
-    if os.name != 'nt':
-        return None
-    inst_dir = None
-    try:
-        if getattr(sys, 'frozen', False):
-            inst_dir = os.path.dirname(os.path.abspath(sys.executable))
-        else:
-            parent = os.path.dirname(os.path.abspath(sys.prefix))
-            if os.path.basename(parent).lower() == 'tools':
-                inst_dir = os.path.dirname(parent)
-    except Exception:      # pylint: disable=broad-except
-        return None
+    inst_dir = _windows_install_dir()
     if not inst_dir:
         return None
     candidates = [os.path.join(inst_dir, 'Songpress')]
@@ -124,6 +132,30 @@ def _windows_install_data_dir():
         except OSError:
             continue
     return None
+
+
+def startup_log(msg):
+    """Scrive una riga in startup.log (diagnostica di avvio). Non solleva mai.
+
+    Il file sta nella cartella di installazione, cioe' sull'unita' dove e'
+    installato Songpress++ (non sempre C:). Se l'installazione non e'
+    riconosciuta (esecuzione da sorgente) ripiega sul vecchio percorso
+    ~\\AppData\\Local\\Songpress++. Punto unico per tutti i moduli.
+    """
+    import datetime
+    try:
+        inst_dir = _windows_install_dir()
+        if inst_dir and os.path.isdir(inst_dir):
+            log_path = os.path.join(inst_dir, 'startup.log')
+        else:
+            log_path = os.path.join(
+                os.path.expanduser('~'), 'AppData', 'Local', 'Songpress++',
+                'startup.log')
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        with open(log_path, 'a', encoding='utf-8') as f:
+            f.write(f"[{datetime.datetime.now():%Y-%m-%d %H:%M:%S}] {msg}\n")
+    except Exception:      # pylint: disable=broad-except
+        pass
 
 
 def _move_tree(src, dst):

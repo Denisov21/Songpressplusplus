@@ -173,6 +173,7 @@ requires no elevated privileges.
 | Slides templates | `<install folder>\Songpress\templates\slides\` |
 | Fonts | `<install folder>\Songpress\templates\fonts\` |
 | Personal dictionary | `<install folder>\Songpress\user_dict.txt` |
+| Startup log | `<install folder>\startup.log` |
 
 `<install folder>` is the folder chosen in the installer (default:
 `%LOCALAPPDATA%\Songpress++`). User data therefore lives **on the drive where Songpress++ is
@@ -186,6 +187,11 @@ into `<install folder>\Songpress\templates\` at install time.
 If the install folder is not writable, the program tries `X:\Songpress` on the same drive
 and only as a last resort falls back to `%APPDATA%\Songpress++` (the location used by
 earlier versions).
+
+The startup log `startup.log` (start-up and double-click diagnostics) is written to the
+`<install folder>`, so it too lives **on the drive where Songpress++ is installed**. A single
+place in the code writes it, `startup_log()` in `Globals.py`; if the installation is not
+recognised (running from source) it falls back to the old `%LOCALAPPDATA%\Songpress++\startup.log`.
 
 ### Migration from earlier versions
 
@@ -203,6 +209,9 @@ repeated.
   If a leftover still exists in `%APPDATA%\Songpress++` (earlier versions) the user is asked
   separately whether to delete it (default: No). If the `Songpress` folder is kept, the
   install folder itself is not removed.
+- **`startup.log`**: always removed by the uninstaller, without asking (it is only a diagnostic
+  log). Any `%LOCALAPPDATA%\Songpress++\startup.log` left by earlier versions is removed too, so
+  the install folder can be deleted completely.
 - **Upgrade** (the previous version is removed silently with `/S`): no question is shown and
   the `Songpress` folder is **always kept**, so templates and words added to the dictionary
   are not lost.
@@ -285,6 +294,47 @@ Section "Songpress++" SongpressSection
 The value `255000` is expressed in KB and equals about 250 MB (255000 ÷ 1024 ≈ 249 MB). If the real installation size changes
 in the future, update this value by measuring the `$INSTDIR\bin`, `$INSTDIR\tools` and
 `$INSTDIR\python` folders after a complete installation.
+
+### How to measure the installation size
+
+The `AddSize` value is measured by hand after a complete installation:
+
+1. **Install on a clean machine**: remove any earlier version (choosing not to keep the
+   `Songpress` folder), then install normally. At the end of the installation the installer
+   already deletes `$INSTDIR\cache`, so the measurement does not include it.
+2. **Measure the install folder** in PowerShell. Change the path if you installed elsewhere
+   (for example on `E:`: `E:\Users\Utente\AppData\Local\Songpress++`):
+
+   ```powershell
+   $d = "$env:LOCALAPPDATA\Songpress++"
+   $b = (Get-ChildItem $d -Recurse -File -Force | Measure-Object Length -Sum).Sum
+   "{0:N0} KB  ({1:N1} MB)" -f ($b/1KB), ($b/1MB)
+   ```
+
+   The number in **KB** is the one to write in `AddSize` (for example `255000` ≈ 249 MB). To see
+   which part weighs the most:
+
+   ```powershell
+   Get-ChildItem $d -Directory | ForEach-Object {
+     $s = (Get-ChildItem $_.FullName -Recurse -File -Force | Measure-Object Length -Sum).Sum
+     "{0,-12} {1,8:N1} MB" -f $_.Name, ($s/1MB)
+   }
+   ```
+
+   Expected folders are `bin`, `tools`, `python` and `Songpress` (templates and fonts).
+3. **Update `AddSize` in both `.nsi` files** (x64 and x86). The sizes may differ: measure both
+   installations, do not copy the number from one to the other. Rounding up by a few percent is
+   advisable, so the wizard does not underestimate the space.
+
+Use the **sum of bytes** as above: File Explorer's "Size on disk" is higher, because it counts
+whole clusters for every file.
+
+Alternatively, the graphical script `misura_installazione.py` (Python, standard library only) does
+the same: it asks for the installation drive (for example `E:`), finds the Songpress++ folder,
+shows the weight of each subfolder, the total and the suggested `AddSize` (+5 %), and can update
+the `AddSize` line in the chosen `.nsi` files keeping the UTF-8 BOM and line endings. Run it with
+`python misura_installazione.py`. Pick the `.nsi` of the same architecture as the installation
+you measured.
 
 ## Change program name and version
 

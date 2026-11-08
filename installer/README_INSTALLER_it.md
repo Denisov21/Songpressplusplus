@@ -174,6 +174,7 @@ che non richiede privilegi elevati.
 | Template slide | `<cartella di installazione>\Songpress\templates\slides\` |
 | Font | `<cartella di installazione>\Songpress\templates\fonts\` |
 | Dizionario personale | `<cartella di installazione>\Songpress\user_dict.txt` |
+| Log di avvio | `<cartella di installazione>\startup.log` |
 
 `<cartella di installazione>` è la cartella scelta nell'installer (predefinita:
 `%LOCALAPPDATA%\Songpress++`). I dati utente stanno quindi **sull'unità dove Songpress++ è
@@ -187,6 +188,11 @@ in `<cartella di installazione>\Songpress\templates\` durante l'installazione.
 Se la cartella di installazione non è scrivibile, il programma prova `X:\Songpress` sulla stessa
 unità e solo in ultima istanza ripiega su `%APPDATA%\Songpress++` (percorso usato dalle
 versioni precedenti).
+
+Il log di avvio `startup.log` (diagnostica di avvio e doppio clic sui file) viene scritto nella
+`<cartella di installazione>`, quindi anch'esso **sull'unità dove Songpress++ è installato**. Lo scrive
+un solo punto del codice, `startup_log()` in `Globals.py`; se l'installazione non viene riconosciuta
+(esecuzione da sorgente) si ripiega sul vecchio percorso `%LOCALAPPDATA%\Songpress++\startup.log`.
 
 ### Migrazione dalle versioni precedenti
 
@@ -204,6 +210,9 @@ impedisce di ripetere l'operazione.
   ancora un residuo in `%APPDATA%\Songpress++` (versioni precedenti) viene chiesto
   separatamente se eliminarlo (default: No). Scegliendo di conservare la cartella `Songpress`,
   la cartella di installazione non viene rimossa.
+- **`startup.log`**: viene sempre rimosso dall'uninstaller, senza chiedere conferma (è solo un log
+  diagnostico). Viene rimosso anche l'eventuale `%LOCALAPPDATA%\Songpress++\startup.log` lasciato
+  dalle versioni precedenti, così la cartella di installazione può essere eliminata del tutto.
 - **Aggiornamento** (la versione precedente viene rimossa in modalità silenziosa `/S`): non
   viene mostrata alcuna domanda e la cartella `Songpress` **viene sempre conservata**, così non
   si perdono template e parole aggiunte al dizionario.
@@ -288,6 +297,47 @@ Section "Songpress++" SongpressSection
 Il valore `255000` è espresso in KB e corrisponde a circa 250 MB (255000 ÷ 1024 ≈ 249 MB). Se l'installazione reale
 cambia dimensione in futuro, aggiorna questo valore misurando le cartelle
 `$INSTDIR\bin`, `$INSTDIR\tools` e `$INSTDIR\python` dopo un'installazione completa.
+
+### Come ricavare la dimensione dell'installazione
+
+Il valore per `AddSize` si misura a mano dopo un'installazione completa:
+
+1. **Installa su una macchina pulita**: disinstalla ogni versione precedente (scegliendo di non
+   conservare la cartella `Songpress`), poi installa normalmente. A fine installazione l'installer
+   cancella già `$INSTDIR\cache`, quindi la misura non la include.
+2. **Misura la cartella di installazione** in PowerShell. Cambia il percorso se hai installato altrove
+   (ad esempio su `E:`: `E:\Users\Utente\AppData\Local\Songpress++`):
+
+   ```powershell
+   $d = "$env:LOCALAPPDATA\Songpress++"
+   $b = (Get-ChildItem $d -Recurse -File -Force | Measure-Object Length -Sum).Sum
+   "{0:N0} KB  ({1:N1} MB)" -f ($b/1KB), ($b/1MB)
+   ```
+
+   Il numero in **KB** è quello da scrivere in `AddSize` (ad esempio `255000` ≈ 249 MB). Per vedere
+   quale parte pesa di più:
+
+   ```powershell
+   Get-ChildItem $d -Directory | ForEach-Object {
+     $s = (Get-ChildItem $_.FullName -Recurse -File -Force | Measure-Object Length -Sum).Sum
+     "{0,-12} {1,8:N1} MB" -f $_.Name, ($s/1MB)
+   }
+   ```
+
+   Le cartelle da aspettarsi sono `bin`, `tools`, `python` e `Songpress` (template e font).
+3. **Aggiorna `AddSize` in entrambi i `.nsi`** (x64 e x86). Le dimensioni possono essere diverse:
+   misura entrambe le installazioni, non copiare il numero dall'una all'altra. Conviene
+   arrotondare per eccesso di qualche percento, così il wizard non sottostima lo spazio.
+
+Usa la **somma dei byte** come sopra: la "Dimensione su disco" di Esplora file è più alta, perché
+conta i cluster interi per ogni file.
+
+In alternativa, lo script grafico `misura_installazione.py` (Python, solo libreria standard) fa lo
+stesso: chiede l'unità di installazione (ad esempio `E:`), trova la cartella di Songpress++, mostra
+il peso di ogni sottocartella, il totale e l'`AddSize` suggerito (+5 %), e può aggiornare la riga
+`AddSize` nei file `.nsi` scelti mantenendo BOM UTF-8 e fine riga. Avvio:
+`python misura_installazione.py`. Scegli il `.nsi` della stessa architettura dell'installazione
+misurata.
 
 ## Modifica nome e versione programma
 

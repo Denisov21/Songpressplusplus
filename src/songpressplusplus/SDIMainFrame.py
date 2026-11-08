@@ -218,17 +218,8 @@ class SDIMainFrame(object):
 
     def OnDropFiles(self, arr):
         """Handler for drop action: opens the dropped file, if it is exactly one"""
-        import datetime, os as _os
-        def _log(msg):
-            try:
-                log_path = _os.path.join(
-                    _os.path.expanduser('~'), 'AppData', 'Local', 'Songpress++', 'startup.log'
-                )
-                _os.makedirs(_os.path.dirname(log_path), exist_ok=True)
-                with open(log_path, 'a', encoding='utf-8') as f:
-                    f.write(f"[{datetime.datetime.now():%Y-%m-%d %H:%M:%S}] {msg}\n")
-            except Exception:
-                pass
+        import os as _os
+        from .Globals import startup_log as _log
         _log(f"OnDropFiles arr={arr}")
         if len(arr) == 1:
             fn = arr[0]
@@ -521,17 +512,8 @@ class SDIMainFrame(object):
             self.UpdateTitle()
 
     def FinalizePaneInitialization(self):
-        import datetime, os as _os
-        def _log(msg):
-            try:
-                log_path = _os.path.join(
-                    _os.path.expanduser('~'), 'AppData', 'Local', 'Songpress++', 'startup.log'
-                )
-                _os.makedirs(_os.path.dirname(log_path), exist_ok=True)
-                with open(log_path, 'a', encoding='utf-8') as f:
-                    f.write(f"[{datetime.datetime.now():%Y-%m-%d %H:%M:%S}] {msg}\n")
-            except Exception:
-                pass
+        import os as _os
+        from .Globals import startup_log as _log
         _log(f"FinalizePaneInitialization  argv={sys.argv}")
         self.config.SetPath('/SDIMainFrame')
         v = self.config.Read("Version", "0.0")
