@@ -74,6 +74,31 @@ msgstr "Colore usato per evidenziare nell'editor la riga dell'errore selezionato
 msgid "Close"
 msgstr "Chiudi"
 
+#. Button: automatically fix the selected error
+#: SyntaxCheckerDialog.py
+msgid "Fix"
+msgstr "Correggi"
+
+#. Tooltip of the Fix button when no specific description is available
+#: SyntaxCheckerDialog.py
+msgid "Fix the selected error automatically"
+msgstr "Correggi automaticamente l'errore selezionato"
+
+#. Tooltip of the Fix button when no error is selected
+#: SyntaxCheckerDialog.py
+msgid "Select an error to fix it automatically"
+msgstr "Seleziona un errore per correggerlo automaticamente"
+
+#. Tooltip of the Fix button when the selected error has no automatic fix
+#: SyntaxCheckerDialog.py
+msgid "This error cannot be fixed automatically"
+msgstr "Questo errore non si può correggere automaticamente"
+
+#. Status bar: the line in the editor no longer matches the checked text
+#: SyntaxCheckerDialog.py
+msgid "The line has changed: run the syntax check again"
+msgstr "La riga è cambiata: ripeti il controllo sintassi"
+
 #. Error list header — only errors, singular
 #: SyntaxCheckerDialog.py
 msgid "Found 1 error:"
@@ -392,6 +417,18 @@ msgstr "{beats_time}: la sequenza di accordi non corrisponde alla riga %d — {b
 #: SyntaxChecker.py
 msgid "{beats_time}: chord %d does not match line %d — {beats_time} has '%s', the text has '%s'  ([%s] vs [%s])"
 msgstr "{beats_time}: l'accordo %d non corrisponde alla riga %d — {beats_time} ha '%s', il testo ha '%s'  ([%s] vs [%s])"
+
+#. Tooltip of the Fix button for a misspelled command (e.g. beats_dtime)
+#. First %s = the misspelled command, second %s = the suggested command
+#: SyntaxChecker.py
+msgid "Rename '{%s}' to '{%s}'"
+msgstr "Rinomina '{%s}' in '{%s}'"
+
+#. Tooltip of the Fix button for a {beats_time} coherence error
+#. First %d = line of the {beats_time} directive, second %d = chord line
+#: SyntaxChecker.py
+msgid "Rewrite {beats_time} on line %d to match the chords of line %d"
+msgstr "Riscrive {beats_time} alla riga %d in base agli accordi della riga %d"
 
 # -----------------------------------------------------------------------
 # SyntaxChecker.py — {duration} validation

@@ -8,9 +8,14 @@
 ##############################################################
 
 import wx
+from .Globals import glb
 from .SyntaxChecker import SyntaxCheckResult, SEVERITY_WARNING
 
 _ = wx.GetTranslation
+
+# Return code of ShowModal() when the user fixed an error: the caller must
+# re-run the syntax check and show the dialog again (see OnSyntaxCheck).
+RESULT_FIXED = wx.ID_APPLY
 
 
 class SyntaxCheckerDialog(wx.Dialog):
@@ -21,14 +26,25 @@ class SyntaxCheckerDialog(wx.Dialog):
     If there are errors, they are listed with line, column and description.
     Double-clicking an error moves the editor
     to the corresponding line (requires the caller to bind OnGoToError).
+
+    Automatic fix: when `on_fix` is given, a "Fix" button is shown. It is
+    enabled when the selected error carries a `fix` (SyntaxFix). Pressing it
+    calls `on_fix(error)`, which must apply the correction to the document and
+    return True on success; the dialog then closes with RESULT_FIXED and
+    `fixed_index` holds the row that was fixed, so the caller can re-check the
+    text and reopen the dialog at the same position (`position`) with the
+    following error preselected (`select_index`).
     """
 
-    def __init__(self, parent, result: SyntaxCheckResult, config=None):
+    def __init__(self, parent, result: SyntaxCheckResult, config=None,
+                 on_fix=None, select_index=None, position=None):
         title = _("Syntax check")
         super().__init__(parent, title=title,
                          style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
         self._result = result
         self._config = config
+        self._on_fix = on_fix
+        self.fixed_index = None
         self._build_ui()
         # Resize grip in the bottom-right corner
         self._status_bar = wx.StatusBar(self, style=wx.STB_SIZEGRIP)
@@ -40,7 +56,19 @@ class SyntaxCheckerDialog(wx.Dialog):
         # If "Fit width" is checked (default), apply it right away
         if hasattr(self, "_fit_chk") and self._fit_chk.GetValue():
             self._on_fit_width(None)
-        self.CentreOnParent()
+        if position is not None:
+            self.Move(position)          # reopened after a fix: stay in place
+        else:
+            self.CentreOnParent()
+        self._update_fix_button()
+        if select_index is not None and hasattr(self, "_list"):
+            count = self._list.GetItemCount()
+            if count > 0:
+                idx = max(0, min(select_index, count - 1))
+                self._list.Select(idx)
+                self._list.Focus(idx)
+                self._list.EnsureVisible(idx)
+                self._on_goto(None)      # highlight the line in the editor
 
     # ------------------------------------------------------------------
     # Auto-fit height
@@ -110,6 +138,16 @@ class SyntaxCheckerDialog(wx.Dialog):
             btn_sizer.Add(self._colour_picker, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
 
         btn_sizer.AddStretchSpacer()
+        if not self._result.is_valid and self._on_fix is not None:
+            # Fixes only the selected error; enabled when a fix is available.
+            self._fix_btn = wx.Button(panel, wx.ID_ANY, _("Fix"))
+            icon = self._load_fix_icon(panel)
+            if icon.IsOk():
+                self._fix_btn.SetBitmap(icon)
+                self._fix_btn.SetBitmapPosition(wx.LEFT)   # icon on the left
+                self._fix_btn.SetBitmapMargins(6, 0)       # gap icon <-> label
+            self._fix_btn.Bind(wx.EVT_BUTTON, self._on_fix_clicked)
+            btn_sizer.Add(self._fix_btn, 0, wx.RIGHT, 8)
         close_btn = wx.Button(panel, wx.ID_CLOSE, _("Close"))
         close_btn.SetDefault()
         close_btn.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_CLOSE))
@@ -122,6 +160,30 @@ class SyntaxCheckerDialog(wx.Dialog):
         dlg_sizer = wx.BoxSizer(wx.VERTICAL)
         dlg_sizer.Add(panel, 1, wx.EXPAND)
         self.SetSizer(dlg_sizer)
+
+    @staticmethod
+    def _load_fix_icon(parent, size=16):
+        """Icon of the Fix button: first choice img/vector/fix_tool.svg (sharp
+        at any DPI), fallback img/fix_tool.png. Returns wx.NullBitmap when
+        neither is available (the button then shows only the label)."""
+        bmp = wx.NullBitmap
+        try:
+            bb = wx.BitmapBundle.FromSVGFile(
+                glb.AddPath('img/vector/fix_tool.svg'), wx.Size(size, size))
+            if bb.IsOk():
+                bmp = bb.GetBitmapFor(parent)
+        except Exception:
+            pass
+        if not bmp.IsOk():
+            try:
+                img = wx.Image(glb.AddPath('img/fix_tool.png'))
+                if img.IsOk():
+                    if img.GetWidth() != size or img.GetHeight() != size:
+                        img = img.Scale(size, size, wx.IMAGE_QUALITY_HIGH)
+                    bmp = wx.Bitmap(img)
+            except Exception:
+                pass
+        return bmp
 
     @staticmethod
     def _make_check_bitmap(size=32, colour=wx.Colour(46, 160, 67),
@@ -263,6 +325,7 @@ class SyntaxCheckerDialog(wx.Dialog):
             self._list.SetItemTextColour(idx, row_text)
 
         self._list.Bind(wx.EVT_LIST_ITEM_SELECTED,  self._on_item_selected)
+        self._list.Bind(wx.EVT_LIST_ITEM_DESELECTED, self._on_item_deselected)
         self._list.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self._on_goto)
         self._list.Bind(wx.EVT_SIZE, self._on_list_resize)
 
@@ -324,7 +387,51 @@ class SyntaxCheckerDialog(wx.Dialog):
     def _on_item_selected(self, event):
         # Evidenzia subito la riga dell'errore nell'editor
         self._on_goto(None)
+        self._update_fix_button()
         event.Skip()
+
+    def _on_item_deselected(self, event):
+        self._update_fix_button()
+        event.Skip()
+
+    # ------------------------------------------------------------------
+    # Automatic fix of the selected error
+    # ------------------------------------------------------------------
+
+    def _update_fix_button(self):
+        """Enables "Fix" only if the selected error can be fixed automatically,
+        and updates its tooltip to say what the fix will do."""
+        btn = getattr(self, "_fix_btn", None)
+        if btn is None:
+            return
+        try:
+            err = self.get_selected_error()
+            fix = getattr(err, "fix", None) if err is not None else None
+            btn.Enable(fix is not None)
+            if fix is not None:
+                tip = fix.description or _("Fix the selected error automatically")
+            elif err is None:
+                tip = _("Select an error to fix it automatically")
+            else:
+                tip = _("This error cannot be fixed automatically")
+            btn.SetToolTip(tip)
+        except RuntimeError:
+            pass     # widgets already destroyed while the dialog is closing
+
+    def _on_fix_clicked(self, _event):
+        """Fixes ONLY the selected error: asks the caller to apply the fix to
+        the document, then closes so the check is re-run on the new text."""
+        idx = self._list.GetFirstSelected() if hasattr(self, "_list") else -1
+        err = self.get_selected_error()
+        if (self._on_fix is None or err is None
+                or getattr(err, "fix", None) is None):
+            return
+        if self._on_fix(err):
+            self.fixed_index = idx
+            self.EndModal(RESULT_FIXED)
+        else:
+            self._status_bar.SetStatusText(
+                _("The line has changed: run the syntax check again"))
 
     _FIT_KEY = 'syntaxCheckerFitWidth'
 

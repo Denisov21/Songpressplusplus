@@ -51,7 +51,7 @@ from . import chordpro_import
 from . import UpdateChecker
 from .chordpro_import import get_roots, convert as chordpro_convert
 from .SyntaxChecker import check as syntax_check
-from .SyntaxCheckerDialog import SyntaxCheckerDialog, EVT_SYNTAX_GOTO
+from .SyntaxCheckerDialog import SyntaxCheckerDialog, EVT_SYNTAX_GOTO, RESULT_FIXED
 from .MusicalSymbolDialog import MusicalSymbolDialog
 from . import KlavierRenderer
 from .PrintDialog import SongpressPrintout, PrintManager
@@ -2258,13 +2258,52 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
     def OnSyntaxCheck(self, evt):
         """Esegue la verifica sintattica ChordPro e mostra il dialogo con i risultati."""
-        text = self.text.GetText()
-        result = syntax_check(text)
-        self._ClearSyntaxHighlight()
-        dlg = SyntaxCheckerDialog(self.frame, result, self.config)
-        dlg.ShowModal()
-        dlg.Destroy()
+        position = None      # dove riaprire il dialogo dopo una correzione
+        select_index = None  # riga della lista da riselezionare
+        while True:
+            result = syntax_check(self.text.GetText())
+            self._ClearSyntaxHighlight()
+            dlg = SyntaxCheckerDialog(self.frame, result, self.config,
+                                      on_fix=self._ApplySyntaxFix,
+                                      select_index=select_index,
+                                      position=position)
+            code = dlg.ShowModal()
+            position = dlg.GetPosition()
+            select_index = dlg.fixed_index
+            dlg.Destroy()
+            if code != RESULT_FIXED:
+                break
+            # Errore corretto: si riesegue il controllo sul testo aggiornato e
+            # si riapre il dialogo nello stesso punto, con selezionato l'errore
+            # che ha preso il posto di quello corretto.
         self.text.SetFocus()
+
+    def _ApplySyntaxFix(self, error):
+        """Applica nell'editor la correzione automatica di UN errore.
+
+        Riscrive la sola riga indicata da error.fix, in un'unica azione di
+        annullamento (Ctrl+Z la ripristina). Restituisce False, senza toccare
+        nulla, se la riga nell'editor non è più quella controllata.
+        """
+        fix = getattr(error, 'fix', None)
+        if fix is None:
+            return False
+        stc = self.text
+        line = fix.line - 1
+        if line < 0 or line >= stc.GetLineCount():
+            return False
+        start = stc.PositionFromLine(line)
+        end = stc.GetLineEndPosition(line)
+        if stc.GetTextRange(start, end) != fix.old_text:
+            return False
+        stc.BeginUndoAction()
+        try:
+            stc.SetTargetStart(start)
+            stc.SetTargetEnd(end)
+            stc.ReplaceTarget(fix.new_text)
+        finally:
+            stc.EndUndoAction()
+        return True
 
     # ------------------------------------------------------------------
     # Controllo ortografico
@@ -3523,6 +3562,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         'tempo_label': 'OnInsertTempoLabel',
         'key':         'OnInsertKey',
         'beats_time':  'OnInsertBeatsTime',
+        'image':       'OnInsertImage',
         'linespacing': 'OnInsertLinespacing',
         'chordtopspacing': 'OnInsertChordtopspacing',
         'comment':     'OnComment',
@@ -5334,6 +5374,51 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self._InsertBuiltDirective('taste', _build_taste(), u"{taste:|}")
         dlg.Destroy()
 
+    def _IconBitmap(self, parent, svg_rel, png_rel, size=16):
+        """Icona size x size: prima scelta SVG (nitida a ogni DPI), ripiego PNG.
+        Restituisce wx.NullBitmap se nessuno dei due e' disponibile."""
+        bmp = wx.NullBitmap
+        try:
+            bb = wx.BitmapBundle.FromSVGFile(glb.AddPath(svg_rel), wx.Size(size, size))
+            if bb.IsOk():
+                bmp = bb.GetBitmapFor(parent)
+        except Exception:
+            pass
+        if not bmp.IsOk():
+            try:
+                img = wx.Image(glb.AddPath(png_rel))
+                if img.IsOk():
+                    if img.GetWidth() != size or img.GetHeight() != size:
+                        img = img.Scale(size, size, wx.IMAGE_QUALITY_HIGH)
+                    bmp = wx.Bitmap(img)
+            except Exception:
+                pass
+        return bmp
+
+    def _InfoIconBitmap(self, parent):
+        """Icona 'i' 16x16: img/vector/info.svg, ripiego img/info.png, ultima
+        risorsa l'icona di sistema. Stessa logica di _MakeInfoNote."""
+        bmp = wx.NullBitmap
+        try:
+            bb = wx.BitmapBundle.FromSVGFile(
+                glb.AddPath('img/vector/info.svg'), wx.Size(16, 16))
+            if bb.IsOk():
+                bmp = bb.GetBitmapFor(parent)
+        except Exception:
+            pass
+        if not bmp.IsOk():
+            try:
+                img = wx.Image(glb.AddPath('img/info.png'))
+                if img.IsOk():
+                    if img.GetWidth() != 16 or img.GetHeight() != 16:
+                        img = img.Scale(16, 16, wx.IMAGE_QUALITY_HIGH)
+                    bmp = wx.Bitmap(img)
+            except Exception:
+                pass
+        if not bmp.IsOk():
+            bmp = wx.ArtProvider.GetBitmap(wx.ART_INFORMATION, wx.ART_MESSAGE_BOX, (16, 16))
+        return bmp
+
     def _MakeInfoNote(self, parent, text, wrap=260):
         """Riga informativa: icona 'i' + testo a capo.
 
@@ -6027,6 +6112,33 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         hbox_file.Add(btn_browse, 0)
         vbox.Add(hbox_file, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
 
+        # Riga informativa: tipo di immagine caricata (raster / vettoriale).
+        # Visibile solo quando il percorso indica un file immagine valido.
+        hbox_kind = wx.BoxSizer(wx.HORIZONTAL)
+        ico_kind = wx.StaticBitmap(d, -1, self._InfoIconBitmap(d))
+        lbl_kind = wx.StaticText(d, -1, "")
+        hbox_kind.Add(ico_kind, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+        hbox_kind.Add(lbl_kind, 1, wx.ALIGN_CENTER_VERTICAL)
+        # Apre la cartella dell'immagine caricata (disabilitato senza immagine)
+        btn_open_dir = wx.Button(d, -1, _("Open folder"))
+        btn_open_dir.SetToolTip(_("Open the folder containing the image"))
+        _fbmp = self._IconBitmap(d, 'img/vector/folder_photo.svg', 'img/folder_photo.png')
+        if _fbmp.IsOk():
+            btn_open_dir.SetBitmap(_fbmp)
+            btn_open_dir.SetBitmapPosition(wx.LEFT)   # icona a sinistra del testo
+            btn_open_dir.SetBitmapMargins(4, 0)
+        btn_open_dir.Enable(False)
+        hbox_kind.Add(btn_open_dir, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
+        cur_img = {'path': None}
+        hbox_kind.SetMinSize((-1, 20))     # altezza fissa: il dialogo non "salta"
+        ico_kind.Hide()
+        vbox.Add(hbox_kind, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+        # Percorso assoluto dell'immagine caricata (accorciato al centro se
+        # lungo; il suggerimento al passaggio del mouse mostra quello intero).
+        lbl_abs = wx.StaticText(d, -1, "", style=wx.ST_ELLIPSIZE_MIDDLE)
+        lbl_abs.SetMinSize((-1, lbl_abs.GetCharHeight() + 4))
+        vbox.Add(lbl_abs, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 8)
+
         # --- Dimensioni ---
         gb = wx.GridBagSizer(4, 8)
 
@@ -6147,6 +6259,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 opts.append("border=%g" % bv if bv != 1.0 else "border")
             return opts
 
+        emb = {'data': None}   # data: URI originale se si modifica un'immagine incorporata
+
         def _build_directive(for_insert=False):
             """Costruisce la stringa della direttiva {image: ...}.
 
@@ -6156,6 +6270,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             """
             path = txt_path.GetValue().strip()
             if not path:
+                if emb['data']:
+                    # Modifica di un'immagine gia' incorporata: si conserva il
+                    # dato base64 originale, cambiano solo le opzioni.
+                    _tok = emb['data'] if for_insert else "data:<embedded>"
+                    return "{image: %s}" % " ".join([_tok] + _build_options())
                 return "{image: }"
 
             embed = cb_embed.GetValue()
@@ -6214,12 +6333,53 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 lbl_embed_warn.SetLabel("")
             lbl_embed_warn.GetParent().Layout()
 
+        def _update_kind_info(abs_path):
+            """Mostra 'Raster/Vector image loaded!' se il file e' un'immagine."""
+            kind = None
+            try:
+                if abs_path and os.path.isfile(abs_path):
+                    from .SongDecorator import _read_svg_text
+                    if _read_svg_text(abs_path) is not None:
+                        kind = 'vector'
+                    else:
+                        _nolog = wx.LogNull()
+                        try:
+                            ok = wx.Image.CanRead(abs_path)
+                        finally:
+                            del _nolog
+                        if ok:
+                            kind = 'raster'
+            except Exception:
+                kind = None
+            if kind == 'vector':
+                lbl_kind.SetLabel(_("Vector image loaded!"))
+            elif kind == 'raster':
+                lbl_kind.SetLabel(_("Raster image loaded!"))
+            else:
+                lbl_kind.SetLabel("")
+            ico_kind.Show(kind is not None)
+            btn_open_dir.Enable(kind is not None)
+            cur_img['path'] = os.path.abspath(abs_path) if kind is not None else None
+            if kind is not None:
+                _full = os.path.abspath(abs_path)
+                lbl_abs.SetLabel(_("Absolute path: %s") % _full)
+                lbl_abs.SetToolTip(_full)
+            else:
+                lbl_abs.SetLabel("")
+                lbl_abs.SetToolTip("")
+            hbox_kind.Layout()
+            d.Layout()
+
         def _update_preview(e=None):
             embed = cb_embed.GetValue()
             path  = txt_path.GetValue().strip()
             abs_path = (path if os.path.isabs(path)
                         else os.path.join(default_dir, path) if default_dir
                         else path)
+            if path and emb['data']:
+                emb['data'] = None
+                cb_embed.Enable(True)
+            _update_kind_info(abs_path)
             if embed and path and os.path.isfile(abs_path):
                 # Il dato base64 è illeggibile nell'anteprima: mostra
                 # "<embedded>" al posto del token, ma include tutte le
@@ -6238,7 +6398,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 _("Select image"),
                 default_dir,
                 "",
-                _("Image files (*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif)|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif|All files (*.*)|*.*"),
+                _("Image files (*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif;*.svg)|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif;*.svg|"
+                  "Vector images (*.svg)|*.svg|"
+                  "Raster images (*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif)|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif|"
+                  "All files (*.*)|*.*"),
                 wx.FD_OPEN | wx.FD_FILE_MUST_EXIST,
             )
             if fd.ShowModal() == wx.ID_OK:
@@ -6267,6 +6430,93 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         cb_embed.Bind(wx.EVT_CHECKBOX, _update_preview)
 
         btn_browse.Bind(wx.EVT_BUTTON, _on_browse)
+
+        def _on_open_dir(e):
+            """Apre la cartella dell'immagine (su Windows/macOS la seleziona)."""
+            p = cur_img['path']
+            if not p or not os.path.exists(p):
+                return
+            try:
+                if sys.platform == 'win32':
+                    # Riga di comando come STRINGA: con una lista Python metterebbe
+                    # fra virgolette l'intero "/select,percorso" (se il percorso ha
+                    # spazi o parentesi) e Explorer aprirebbe una cartella a caso.
+                    # Le virgolette devono stare solo attorno al percorso.
+                    try:
+                        subprocess.Popen('explorer /select,"%s"' % os.path.normpath(p))
+                    except Exception:
+                        os.startfile(os.path.dirname(os.path.normpath(p)))
+                elif sys.platform == 'darwin':
+                    subprocess.Popen(['open', '-R', p])
+                else:
+                    subprocess.Popen(['xdg-open', os.path.dirname(p)])
+            except Exception as ex:
+                wx.MessageBox(str(ex), _("Open folder"), wx.OK | wx.ICON_ERROR, d)
+        btn_open_dir.Bind(wx.EVT_BUTTON, _on_open_dir)
+
+        def _prefill_from_directive(value):
+            """Cursore dentro {image: ...}: precompila la finestra con i valori
+            attuali (percorso, larghezza, altezza, scala, allineamento, bordo)."""
+            import shlex
+            try:
+                lex = shlex.shlex(value.strip(), posix=False)
+                lex.whitespace_split = True
+                lex.whitespace = ' \t'
+                parts = list(lex)
+            except ValueError:
+                parts = value.split()
+
+            def _unq(s):
+                return s[1:-1] if len(s) >= 2 and s[0] == s[-1] and s[0] in ('"', "'") else s
+            parts = [_unq(p) for p in parts]
+            if not parts:
+                return
+            first = parts[0]
+            if first.startswith('data:'):
+                emb['data'] = first
+                cb_embed.SetValue(True)
+                cb_embed.Enable(False)
+                txt_path.SetHint(_("(embedded image)"))
+            else:
+                txt_path.SetValue(first.replace('\\"', '"'))
+            for p in parts[1:]:
+                if '=' in p:
+                    key, _s, val = p.partition('=')
+                    key = key.strip().lower()
+                    pct = '%' in val
+                    val = val.strip().rstrip('%')
+                    try:
+                        num = float(val)
+                    except ValueError:
+                        num = None
+                    if key in ('width', 'height') and num is not None:
+                        sp, ch = ((txt_w, ch_w_unit) if key == 'width'
+                                  else (txt_h, ch_h_unit))
+                        sp.SetValue(int(round(num)))
+                        ch.SetSelection(1 if pct else 0)
+                    elif key == 'scale' and num is not None:
+                        txt_scale.SetValue(max(1.0, min(500.0, num if pct else num * 100.0)))
+                    elif key == 'align' and val.strip() in ('left', 'center', 'right'):
+                        {'left': rb_left, 'center': rb_center,
+                         'right': rb_right}[val.strip()].SetValue(True)
+                    elif key == 'border':
+                        cb_border.SetValue(True)
+                        txt_border.Enable(True)
+                        if num is not None:
+                            txt_border.SetValue(num)
+                else:
+                    pl = p.lower()
+                    if pl in ('left', 'center', 'right'):
+                        {'left': rb_left, 'center': rb_center,
+                         'right': rb_right}[pl].SetValue(True)
+                    elif pl == 'border':
+                        cb_border.SetValue(True)
+                        txt_border.Enable(True)
+
+        _ex_img = self._FindDirectiveAtCaret('image')
+        if _ex_img is not None:
+            _prefill_from_directive(_ex_img[2])
+        _update_preview()
 
         if d.ShowModal() == wx.ID_OK:
             self._InsertBuiltDirective('image', _build_directive(for_insert=True))

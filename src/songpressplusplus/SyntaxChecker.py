@@ -7,9 +7,10 @@
 # License:     GNU GPL v2
 ##############################################################
 
+import difflib
 import re
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional
 
 import wx
 
@@ -31,12 +32,28 @@ SEVERITY_WARNING = "warning"   # avvertimento (probabile, ma non necessariamente
 
 
 @dataclass
+class SyntaxFix:
+    """Automatic correction attached to a SyntaxError.
+
+    Describes the rewrite of ONE line of the document: the caller (the frame)
+    replaces `old_text` with `new_text` on line `line`. `old_text` lets the
+    caller verify that the line has not changed since the check was run.
+    """
+    line: int           # line number to rewrite (1-based)
+    old_text: str       # expected current content of the line (no EOL)
+    new_text: str       # content that replaces it (no EOL)
+    description: str = ""   # human-readable summary (button tooltip)
+
+
+@dataclass
 class SyntaxError:
     """Represents a single detected syntax error or warning."""
     line: int          # line number (1-based)
     column: int        # column position in the line (1-based)
     message: str       # error description
     severity: str = SEVERITY_ERROR   # SEVERITY_ERROR oppure SEVERITY_WARNING
+    # Correzione automatica, se disponibile (None = non correggibile).
+    fix: Optional[SyntaxFix] = None
 
 
 @dataclass
@@ -665,9 +682,21 @@ def check(text: str) -> SyntaxCheckResult:
         line_num = line_idx + 1
         if line.lstrip().startswith("#"):
             continue
+        raw_line = line
         line = _strip_inline_comment(line)
+        first_new = len(result.errors)
         _check_square_brackets(line, line_num, result)
         _check_curly_braces(line, line_num, result)
+        # Le correzioni nate qui coprono la riga senza commento inline:
+        # le estende alla riga intera (la coda si conserva così com'è).
+        for err in result.errors[first_new:]:
+            fx = err.fix
+            if fx is not None and fx.old_text != raw_line:
+                if raw_line.startswith(fx.old_text):
+                    fx.new_text += raw_line[len(fx.old_text):]
+                    fx.old_text = raw_line
+                else:
+                    err.fix = None
 
     # Passata multi-riga: coerenza {beats_time:} ↔ riga di accordi.
     _check_beats_time_coherence(lines, result)
@@ -721,7 +750,7 @@ def _check_curly_braces(line: str, line_num: int, result: SyntaxCheckResult):
                 break
             else:
                 content = line[i + 1:close].strip()
-                _validate_command(content, line_num, i + 1, result)
+                _validate_command(content, line_num, i + 1, result, line)
                 i = close + 1
         elif ch == '}':
             result.errors.append(SyntaxError(
@@ -990,8 +1019,89 @@ def _beats_time_chords(value: str):
     return names
 
 
+# Battiti assegnati a un accordo presente nel testo ma assente da {beats_time:}
+# quando la correzione automatica deve aggiungerlo.
+_BEATS_TIME_DEFAULT_BEATS = 1
+
+
+def _fix_beats_time_value(value: str, text_chords):
+    """Calcola il nuovo valore di {beats_time:} allineato agli accordi del testo.
+
+    Il testo è la fonte di verità: la direttiva ne è un'annotazione derivata.
+    - Stesso numero di accordi: ogni accordo diverso viene rinominato come nel
+      testo; battiti e spaziatura originali restano intatti.
+    - Numero diverso: i due elenchi vengono allineati (difflib); gli accordi
+      comuni mantengono i battiti, quelli rinominati mantengono i battiti
+      dell'accordo sostituito, quelli nuovi ricevono _BEATS_TIME_DEFAULT_BEATS
+      e quelli che nel testo non ci sono più vengono tolti.
+
+    Restituisce None se la correzione non è sicura (valore malformato, accordo
+    con spazi interni che non si può scrivere in un token).
+    """
+    tokens = value.split()
+    if not tokens or not text_chords:
+        return None
+    bt_names = [t.partition('=')[0] for t in tokens]
+    if any(not n.strip() for n in bt_names):      # token tipo '=2': malformato
+        return None
+    if any(re.search(r'\s', c) for c in text_chords):
+        return None
+
+    bt_norm = [_normalize_chord_token(n) for n in bt_names]
+    txt_norm = [_normalize_chord_token(c) for c in text_chords]
+
+    def renamed(k_bt, k_txt):
+        """Token k_bt di {beats_time:} con il nome accordo del testo k_txt."""
+        return text_chords[k_txt] + tokens[k_bt][len(bt_names[k_bt]):]
+
+    if len(tokens) == len(text_chords):
+        counter = [0]
+
+        def repl(m):
+            k = counter[0]
+            counter[0] += 1
+            return m.group(0) if bt_norm[k] == txt_norm[k] else renamed(k, k)
+
+        return re.sub(r'\S+', repl, value)
+
+    new_tokens = []
+    matcher = difflib.SequenceMatcher(None, bt_norm, txt_norm, autojunk=False)
+    for op, i1, i2, j1, j2 in matcher.get_opcodes():
+        if op == 'equal':
+            new_tokens.extend(tokens[i1:i2])
+            continue
+        for k in range(j2 - j1):
+            if k < i2 - i1:
+                new_tokens.append(renamed(i1 + k, j1 + k))
+            else:
+                new_tokens.append('%s=%d' % (text_chords[j1 + k],
+                                             _BEATS_TIME_DEFAULT_BEATS))
+    lead = value[:len(value) - len(value.lstrip())]
+    trail = value[len(value.rstrip()):]
+    return lead + ' '.join(new_tokens) + trail
+
+
+def _make_beats_time_fix(raw_line: str, m, text_chords,
+                         line_num: int, text_line_no: int):
+    """Costruisce il SyntaxFix che riscrive la riga di {beats_time:}.
+    `m` è il match di _BEATS_TIME_RE sulla riga senza commento inline, che è
+    un prefisso di `raw_line`: gli indici valgono anche sulla riga originale."""
+    new_value = _fix_beats_time_value(m.group(1), text_chords)
+    if new_value is None:
+        return None
+    new_line = raw_line[:m.start(1)] + new_value + raw_line[m.end(1):]
+    if new_line == raw_line:
+        return None
+    return SyntaxFix(
+        line=line_num, old_text=raw_line, new_text=new_line,
+        description=_(
+            "Rewrite {beats_time} on line %d to match the chords of line %d"
+        ) % (line_num, text_line_no))
+
+
 def _report_beats_time_mismatch(result, line_num, col,
-                                bt_chords, text_chords, text_line_no):
+                                bt_chords, text_chords, text_line_no,
+                                fix=None):
     """Compone e registra il messaggio di discordanza più informativo:
     se cambia il numero di accordi lo segnala; se il numero coincide,
     indica la prima posizione che differisce."""
@@ -1020,7 +1130,7 @@ def _report_beats_time_mismatch(result, line_num, col,
 
     result.errors.append(SyntaxError(
         line=line_num, column=col, message=msg,
-        severity=_BEATS_TIME_COHERENCE_SEVERITY))
+        severity=_BEATS_TIME_COHERENCE_SEVERITY, fix=fix))
 
 
 def _check_beats_time_coherence(lines, result: SyntaxCheckResult):
@@ -1079,13 +1189,38 @@ def _check_beats_time_coherence(lines, result: SyntaxCheckResult):
         if bt_norm == txt_norm:
             continue   # coerenti
 
+        fix = _make_beats_time_fix(
+            lines[idx], m, text_chords, idx + 1, text_idx + 1)
         _report_beats_time_mismatch(
             result, idx + 1, m.start() + 1,
-            bt_chords, text_chords, text_idx + 1)
+            bt_chords, text_chords, text_idx + 1, fix=fix)
+
+
+def _make_rename_command_fix(cmd_name: str, line, line_num: int, col: int):
+    """Correzione per un comando sconosciuto scritto male (es. 'beats_dtime'):
+    lo rinomina nel comando noto più simile, solo se il candidato è uno solo.
+    `line` è la riga senza commento inline, `col` la posizione (1-based) della
+    '{'. Il testo della correzione copre quella riga: check() lo completa con
+    l'eventuale commento finale."""
+    if line is None or len(cmd_name) < 4:
+        return None
+    matches = difflib.get_close_matches(
+        cmd_name, sorted(_KNOWN_COMMANDS), n=2, cutoff=0.8)
+    if len(matches) != 1:
+        return None                      # nessun candidato, o ambiguo
+    brace = col - 1
+    m = re.match(r'\{(\s*)([^:}]*?)\s*[:}]', line[brace:])
+    if not m or m.group(2).lower() != cmd_name:
+        return None
+    start, end = brace + m.start(2), brace + m.end(2)
+    return SyntaxFix(
+        line=line_num, old_text=line,
+        new_text=line[:start] + matches[0] + line[end:],
+        description=_("Rename '{%s}' to '{%s}'") % (cmd_name, matches[0]))
 
 
 def _validate_command(content: str, line_num: int, col: int,
-                      result: SyntaxCheckResult):
+                      result: SyntaxCheckResult, line: str = None):
     if not content:
         result.errors.append(SyntaxError(
             line=line_num, column=col,
@@ -1164,7 +1299,8 @@ def _validate_command(content: str, line_num: int, col: int,
     if cmd_name not in _KNOWN_COMMANDS:
         result.errors.append(SyntaxError(
             line=line_num, column=col,
-            message=_("Unknown command: '{%s}'") % cmd_name
+            message=_("Unknown command: '{%s}'") % cmd_name,
+            fix=_make_rename_command_fix(cmd_name, line, line_num, col)
         ))
         return
 

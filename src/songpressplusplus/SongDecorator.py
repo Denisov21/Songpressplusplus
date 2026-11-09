@@ -50,7 +50,123 @@ def _smp_runs(s: str):
     yield ''.join(cur), cur_smp
 
 
+
+# ---------------------------------------------------------------------------
+# Supporto immagini vettoriali SVG per {image: ...}
+# ---------------------------------------------------------------------------
+def _read_svg_text(path):
+    """Testo dell'SVG se *path* e' un file SVG (per estensione o contenuto),
+    altrimenti None. Riconosce anche i file temporanei creati da una
+    {image: data:...} incorporata, che possono non avere estensione .svg."""
+    try:
+        import os
+        if not path or not os.path.isfile(path):
+            return None
+        with open(path, 'rb') as f:
+            raw = f.read()
+        if raw[:2] == b'\x1f\x8b':            # .svgz
+            import gzip
+            raw = gzip.decompress(raw)
+        head = raw[:4096].lower()
+        if not (path.lower().endswith(('.svg', '.svgz')) or b'<svg' in head):
+            return None
+        if b'<svg' not in raw[:65536].lower() and b'<svg' not in raw.lower():
+            return None
+        return raw.decode('utf-8', 'replace')
+    except Exception:
+        return None
+
+
+def _svg_natural_size(svg):
+    """(larghezza, altezza) in pixel dell'SVG: attributi width/height del tag
+    <svg> se assoluti, altrimenti viewBox, altrimenti 300x150."""
+    import re
+    m = re.search(r'<svg\b[^>]*>', svg, re.IGNORECASE | re.DOTALL)
+    tag = m.group(0) if m else ''
+
+    def _len(name):
+        mm = re.search(r'\b%s\s*=\s*["\']\s*([-\d.eE]+)\s*([a-z%%]*)\s*["\']'
+                       % name, tag, re.IGNORECASE)
+        if not mm or mm.group(2) == '%':
+            return None
+        try:
+            v = float(mm.group(1))
+        except ValueError:
+            return None
+        k = {'': 1.0, 'px': 1.0, 'pt': 96.0 / 72, 'pc': 16.0, 'mm': 96.0 / 25.4,
+             'cm': 96.0 / 2.54, 'in': 96.0}.get(mm.group(2).lower(), 1.0)
+        return v * k if v > 0 else None
+
+    w, h = _len('width'), _len('height')
+    vb = re.search(r'viewBox\s*=\s*["\']\s*[-\d.eE]+[\s,]+[-\d.eE]+[\s,]+'
+                   r'([-\d.eE]+)[\s,]+([-\d.eE]+)\s*["\']', tag, re.IGNORECASE)
+    vw = vh = None
+    if vb:
+        try:
+            vw, vh = float(vb.group(1)), float(vb.group(2))
+        except ValueError:
+            vw = vh = None
+    if vw and vh and vw > 0 and vh > 0:
+        if w and not h:
+            h = w * vh / vw
+        elif h and not w:
+            w = h * vw / vh
+        elif not w and not h:
+            w, h = vw, vh
+    return (w or 300.0), (h or 150.0)
+
+
+_SVG_LAST_ERROR = ['']
+
+
+def _svg_to_wximage(svg, w, h):
+    """Rasterizza il testo SVG alla dimensione w x h e restituisce un wx.Image
+    (con alpha) oppure None. In caso di errore, il motivo e' in
+    _SVG_LAST_ERROR[0]."""
+    w, h = max(1, int(w)), max(1, int(h))
+    errs = []
+    data = svg.encode('utf-8')
+    # 1) wx.BitmapBundle.FromSVG (bytes, poi str)
+    for payload in (data, svg):
+        try:
+            bb = wx.BitmapBundle.FromSVG(payload, wx.Size(w, h))
+            if bb.IsOk():
+                bmp = bb.GetBitmap(wx.Size(w, h))
+                if bmp.IsOk():
+                    return bmp.ConvertToImage()
+                errs.append('GetBitmap non valido')
+            else:
+                errs.append('FromSVG: SVG not recognized')
+        except Exception as e:
+            errs.append('FromSVG: %s' % e)
+    # 2) fallback: wx.svg (nanosvg)
+    try:
+        import wx.svg as _wxsvg   # 'as': non rende 'wx' una variabile locale
+        s = _wxsvg.SVGimage.CreateFromBuffer(svg)
+        if s.width > 0:
+            bmp = s.ConvertToBitmap(scale=w / s.width)
+            if bmp.IsOk():
+                img = bmp.ConvertToImage()
+                if img.GetWidth() != w or img.GetHeight() != h:
+                    img = img.Scale(w, h, wx.IMAGE_QUALITY_HIGH)
+                return img
+            errs.append('wx.svg: bitmap non valida')
+        else:
+            errs.append('wx.svg: dimensioni SVG nulle')
+    except Exception as e:
+        errs.append('wx.svg: %s' % e)
+    _SVG_LAST_ERROR[0] = '; '.join(errs)
+    return None
+
+
+def _looks_like_svg_ref(path):
+    """True se il riferimento {image: ...} punta (per nome) a un SVG."""
+    p = (path or '').lower()
+    return p.startswith('data:image/svg') or p.endswith(('.svg', '.svgz'))
+
+
 class SongDecorator(object):
+    _IMG_SVG_CACHE = {}   # (hash svg, w, h, sfondo) -> wx.Bitmap
     def __init__(self):
         object.__init__(self)
         self.dc = None
@@ -550,17 +666,36 @@ class SongDecorator(object):
             imgbox.w = 0
             imgbox.h = 0
             return
+        imgbox._error = None
+
+        def _fail(msg):
+            # Segnaposto discreto (riquadro rosso tratteggiato con il motivo)
+            # al posto di un messaggio d'errore a comparsa: l'anteprima si
+            # ridisegna di continuo e i popup si accumulerebbero.
+            imgbox._error = msg
+            imgbox.w = imgbox._final_w = 420
+            imgbox.h = imgbox._final_h = 44
+
         try:
-            img = wx.Image(imgbox.resolve_path())
-            if not img.IsOk():
-                imgbox.w = 0
-                imgbox.h = 0
+            import os
+            _p = imgbox.resolve_path()
+            if not _p or not os.path.isfile(_p):
+                _fail(wx.GetTranslation(u"Image not found: %s") % os.path.basename(imgbox.path)[:60])
                 return
-            orig_w = img.GetWidth()
-            orig_h = img.GetHeight()
-        except Exception:
-            imgbox.w = 0
-            imgbox.h = 0
+            _svg = _read_svg_text(_p)
+            if _svg is not None:
+                orig_w, orig_h = _svg_natural_size(_svg)
+            else:
+                _nolog = wx.LogNull()      # niente popup di wx se non leggibile
+                img = wx.Image(_p)
+                del _nolog
+                if not img.IsOk():
+                    _fail(wx.GetTranslation(u"Image not readable: %s") % os.path.basename(_p)[:60])
+                    return
+                orig_w = img.GetWidth()
+                orig_h = img.GetHeight()
+        except Exception as e:
+            _fail(wx.GetTranslation(u"SVG error: %s") % e)
             return
 
         # Calcola dimensioni finali rispettando width/height/scale
@@ -1930,35 +2065,97 @@ class SongDecorator(object):
         if self.s.drawWholeSong:
             self.PostDrawSong(self.s)
         
+    def _DrawImageError(self, imgbox, msg):
+        """Riquadro tratteggiato con il motivo, al posto di un'immagine
+        che non si e' potuta caricare/disegnare."""
+        try:
+            fw, fh = imgbox._final_w, imgbox._final_h
+            avail = self.s.GetTotalWidth() - self.s.marginLeft - self.s.marginRight
+            if imgbox.align == 'left':
+                bx = int(self.s.marginLeft)
+            elif imgbox.align == 'right':
+                bx = int(self.s.marginLeft + max(0, avail - fw))
+            else:
+                bx = int(self.s.marginLeft + max(0, (avail - fw) // 2))
+            by = int(self.s.marginTop + imgbox.y)
+            imgbox._draw_rect = (bx, by, fw, fh)
+            self.dc.SetPen(wx.Pen(wx.Colour(200, 0, 0), 1, wx.PENSTYLE_SHORT_DASH))
+            self.dc.SetBrush(wx.TRANSPARENT_BRUSH)
+            self.dc.DrawRectangle(bx, by, fw, fh)
+            self.dc.SetFont(wx.Font(8, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+                                    wx.FONTWEIGHT_NORMAL))
+            self.dc.SetTextForeground(wx.Colour(200, 0, 0))
+            self.dc.DrawText(msg[:70], bx + 4, by + 4)
+            if len(msg) > 70:
+                self.dc.DrawText(msg[70:140], bx + 4, by + 20)
+            self.dc.SetTextForeground(wx.BLACK)
+        except Exception:
+            pass
+
     def _DrawImageBox(self, imgbox):
         """Disegna una SongImageBox sul DC corrente."""
         if not imgbox.path or not getattr(imgbox, '_final_w', 0) or not getattr(imgbox, '_final_h', 0):
             return
         try:
-            img = wx.Image(imgbox.resolve_path())
-            if not img.IsOk():
-                return
             final_w = imgbox._final_w
             final_h = imgbox._final_h
-            img = img.Scale(final_w, final_h, wx.IMAGE_QUALITY_HIGH)
+            if getattr(imgbox, '_error', None):
+                self._DrawImageError(imgbox, imgbox._error)
+                return
+            _p = imgbox.resolve_path()
+            _svg = _read_svg_text(_p)
+            _sx = _sy = 1.0
+            if _svg is not None:
+                # SVG: rasterizzato alla risoluzione REALE del dispositivo
+                # (dimensione logica x scala utente del DC, come le icone del
+                # tempo): nitido a ogni zoom, in stampa e in PDF.
+                _sx, _sy = self.dc.GetUserScale()
+                _sx = _sx if _sx > 0 else 1.0
+                _sy = _sy if _sy > 0 else 1.0
+                dw = max(1, int(round(final_w * _sx)))
+                dh = max(1, int(round(final_h * _sy)))
+                _bg0 = getattr(self, 'bgColour', None)
+                _ckey = (hash(_svg), dw, dh,
+                         (_bg0.Red(), _bg0.Green(), _bg0.Blue()) if _bg0 else None)
+                _cached = SongDecorator._IMG_SVG_CACHE.get(_ckey)
+                if _cached is None:
+                    img = _svg_to_wximage(_svg, dw, dh)
+                    if img is None or not img.IsOk():
+                        self._DrawImageError(
+                            imgbox, wx.GetTranslation(u"SVG cannot be drawn: %s") % _SVG_LAST_ERROR[0])
+                        return
+            else:
+                _nolog = wx.LogNull()
+                img = wx.Image(_p)
+                del _nolog
+                if not img.IsOk():
+                    return
+                img = img.Scale(final_w, final_h, wx.IMAGE_QUALITY_HIGH)
+                dw, dh = final_w, final_h
 
             # Precomponi alpha su sfondo bianco (compatibilita' PrinterDC su Windows)
-            if img.HasAlpha():
+            if _svg is not None and _cached is not None:
+                bmp = _cached          # SVG gia' rasterizzato a questa scala
+            elif img.HasAlpha():
                 import array
                 _bg = getattr(self, 'bgColour', None)
                 _bgr = (_bg.Red(), _bg.Green(), _bg.Blue()) if _bg else (255, 255, 255)
                 a = array.array('B', img.GetAlphaBuffer())
                 rs = array.array('B', img.GetDataBuffer())
-                rb = bytearray(final_w * final_h * 3)
-                for i in range(final_w * final_h):
+                rb = bytearray(dw * dh * 3)
+                for i in range(dw * dh):
                     av = a[i] / 255.0
                     for c in range(3):
                         rb[i * 3 + c] = int(rs[i * 3 + c] * av + _bgr[c] * (1 - av))
-                bg_img = wx.Image(final_w, final_h)
+                bg_img = wx.Image(dw, dh)
                 bg_img.SetData(bytes(rb))
                 bmp = wx.Bitmap(bg_img)
             else:
                 bmp = wx.Bitmap(img)
+            if _svg is not None and _cached is None:
+                if len(SongDecorator._IMG_SVG_CACHE) > 8:
+                    SongDecorator._IMG_SVG_CACHE.clear()
+                SongDecorator._IMG_SVG_CACHE[_ckey] = bmp
 
             # Calcola x in base ad align e larghezza disponibile
             available_w = self.s.GetTotalWidth() - self.s.marginLeft - self.s.marginRight
@@ -1973,7 +2170,17 @@ class SongDecorator(object):
             # Rettangolo realmente disegnato (coordinate renderer): usato
             # dall'hit-test del doppio-click nell'anteprima.
             imgbox._draw_rect = (bx, by, final_w, final_h)
-            self.dc.DrawBitmap(bmp, bx, by, False)
+            if _svg is not None:
+                # bitmap gia' a risoluzione dispositivo: si disegna con scala
+                # utente 1 alla posizione scalata, poi si ripristina la scala.
+                self.dc.SetUserScale(1.0, 1.0)
+                try:
+                    self.dc.DrawBitmap(bmp, int(round(bx * _sx)),
+                                       int(round(by * _sy)), False)
+                finally:
+                    self.dc.SetUserScale(_sx, _sy)
+            else:
+                self.dc.DrawBitmap(bmp, bx, by, False)
 
             # Bordo opzionale
             if imgbox.border > 0:
@@ -1981,8 +2188,9 @@ class SongDecorator(object):
                 self.dc.SetPen(pen)
                 self.dc.SetBrush(wx.TRANSPARENT_BRUSH)
                 self.dc.DrawRectangle(bx, by, final_w, final_h)
-        except Exception:
-            pass
+        except Exception as _e:
+            if getattr(imgbox, '_svg_dbg', True) and _looks_like_svg_ref(imgbox.path):
+                self._DrawImageError(imgbox, wx.GetTranslation(u"SVG drawing error: %s") % _e)
 
     def _DrawGridBox(self, gridbox):
         """Disegna un SongGridBox sul DC corrente.

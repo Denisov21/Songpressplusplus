@@ -1573,43 +1573,74 @@ class PrintOptionsDialog:
     # ── Costruzione UI ────────────────────────────────────────────────────────
 
     def _build_ui(self):
+        """Costruisce il dialogo su DUE colonne.
+
+        Schema (le due colonne hanno la stessa larghezza in tutte le righe):
+
+            ┌─ Pagine per foglio ─────┬─ Colonne per pagina ────┐
+            ├─ Ridimensionamento ─────┼─ Scala ─────────────────┤
+            │  Riduci se eccede …     │  Scala (%)       [100%] │
+            │  Riduci per adattare …  │  Tastiere (%)    [Pred.]│
+            │    └ Margine minimo     ├─ Impostazioni nel brano ┤
+            ├─ Opzioni avanzate ──────┤  [Salva] [Carica]       │
+            │  Non replicare …        │  ☐ Salva anche tastiere │
+            │  Rimuovi pagine bianche │  ℹ messaggio di stato   │
+            │    └ Soglia (%)         │                         │
+            ├─ Diagnostica ───────────┴─────────────────────────┤
+            │  ☐ Scrivi log   percorso del log…   [Apri cartella]│
+            └────────────────────────────────────────────────────┘
+            [📌]                                     [OK] [Annulla]
+
+        Rispetto alla versione a colonna unica l'altezza passa da ~785 px a
+        ~480 px (entra anche negli schermi 1366×768) e le impostazioni che
+        dipendono da un'altra (margine minimo, soglia pagina vuota) sono
+        rientrate sotto la casella che le abilita, con le caselle numeriche
+        incolonnate sul bordo destro.
+        """
         owner = self.owner
         dlg   = self.dlg
+        PAD   = 6          # spazio interno ai riquadri
+        INDENT = 22        # rientro delle impostazioni dipendenti
         self._outer = outer = wx.BoxSizer(wx.VERTICAL)
 
-        # ── Sezione Pagine ────────────────────────────────────────────
-        box_pages = wx.StaticBoxSizer(
-            wx.StaticBox(dlg, label=_("Pages per sheet")), wx.HORIZONTAL
-        )
+        def _box(label, orient=wx.VERTICAL):
+            return wx.StaticBoxSizer(wx.StaticBox(dlg, label=label), orient)
+
+        def _spin_row(label_ctrl, spin_ctrl, indent=0):
+            """Riga «etichetta ........ [spin]» con rientro opzionale."""
+            row = wx.BoxSizer(wx.HORIZONTAL)
+            if indent:
+                row.AddSpacer(indent)
+            row.Add(label_ctrl, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, PAD)
+            row.Add(spin_ctrl, 0, wx.ALIGN_CENTER_VERTICAL)
+            return row
+
+        # ══ Riga 1 · Pagine per foglio | Colonne per pagina ═══════════════
+        box_pages = _box(_("Pages per sheet"), wx.HORIZONTAL)
         self.rb_page1 = wx.ToggleButton(dlg, label=_("1 page"))
         self.rb_page2 = wx.ToggleButton(dlg, label=_("2 pages"))
         self.rb_page1.SetValue(not owner._two_pages_per_sheet)
         self.rb_page2.SetValue(owner._two_pages_per_sheet)
-        box_pages.Add(self.rb_page1, 1, wx.EXPAND | wx.ALL, _GAP)
-        box_pages.Add(self.rb_page2, 1, wx.EXPAND | wx.ALL, _GAP)
-        outer.Add(box_pages, 0, wx.EXPAND | wx.ALL, _GAP)
+        box_pages.Add(self.rb_page1, 1, wx.EXPAND | wx.ALL, PAD)
+        box_pages.Add(self.rb_page2, 1, wx.EXPAND | wx.TOP | wx.RIGHT | wx.BOTTOM, PAD)
 
-        # ── Sezione Colonne ───────────────────────────────────────────
-        box_cols = wx.StaticBoxSizer(
-            wx.StaticBox(dlg, label=_("Columns per page")), wx.HORIZONTAL
-        )
+        box_cols = _box(_("Columns per page"), wx.HORIZONTAL)
         self.rb_col1 = wx.ToggleButton(dlg, label=_("1 column"))
         self.rb_col2 = wx.ToggleButton(dlg, label=_("2 columns"))
         self.rb_col1.SetValue(owner._columns_per_page == 1)
         self.rb_col2.SetValue(owner._columns_per_page == 2)
-        box_cols.Add(self.rb_col1, 1, wx.EXPAND | wx.ALL, _GAP)
-        box_cols.Add(self.rb_col2, 1, wx.EXPAND | wx.ALL, _GAP)
-        outer.Add(box_cols, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
+        box_cols.Add(self.rb_col1, 1, wx.EXPAND | wx.ALL, PAD)
+        box_cols.Add(self.rb_col2, 1, wx.EXPAND | wx.TOP | wx.RIGHT | wx.BOTTOM, PAD)
 
-        # ── Sezione Ridimensionamento ──────────────────────────────────
-        box_resize = wx.StaticBoxSizer(
-            wx.StaticBox(dlg, label=_("Scaling")), wx.VERTICAL
-        )
+        # ══ Colonna sinistra · Ridimensionamento + Opzioni avanzate ═══════
+        left = wx.BoxSizer(wx.VERTICAL)
+
+        box_resize = _box(_("Scaling"))
 
         self.cb_fit = wx.CheckBox(dlg, label=_("Shrink if exceeds page"))
         self.cb_fit.SetValue(owner._fit_to_page)
         self.cb_fit.SetToolTip(_("Reduce the content only if it exceeds the page size (no upscaling)"))
-        box_resize.Add(self.cb_fit, 0, wx.ALL, _GAP)
+        box_resize.Add(self.cb_fit, 0, wx.ALL, PAD)
 
         # cb_shrink + nota secondaria
         shrink_panel = wx.Panel(dlg)
@@ -1628,32 +1659,26 @@ class PrintOptionsDialog:
         shrink_vsz.Add(note, 0, wx.LEFT, 20)
         self._shrink_panel = shrink_panel
         shrink_panel.SetSizer(shrink_vsz)
-        box_resize.Add(shrink_panel, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
+        box_resize.Add(shrink_panel, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, PAD)
 
-        # Spin margine minimo
-        row1 = wx.BoxSizer(wx.HORIZONTAL)
+        # Margine minimo: dipende da cb_shrink → rientrato sotto di essa
         self.lbl_min_margin = wx.StaticText(
             dlg, label=_("Min margin for auto-shrink (mm):")
         )
         self.spin_min_margin = self._make_spin(
             dlg, 0, 50, getattr(owner, '_min_margin_shrink', 5),
         )
-        row1.Add(self.lbl_min_margin, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
-        row1.Add(self.spin_min_margin, 0, wx.ALIGN_CENTER_VERTICAL)
-        box_resize.Add(row1, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
+        box_resize.Add(_spin_row(self.lbl_min_margin, self.spin_min_margin, INDENT),
+                       0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, PAD)
 
         self.lbl_min_margin.Enable(owner._shrink_to_fit)
         self.spin_min_margin.Enable(owner._shrink_to_fit)
 
-        # Etichette coerenti con la modalità «pagine per foglio» corrente
-        self._update_scope_labels(owner._two_pages_per_sheet)
+        left.Add(box_resize, 0, wx.EXPAND)
+        left.AddSpacer(_GAP)
 
-        outer.Add(box_resize, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
-
-        # ── Sezione Opzioni avanzate ───────────────────────────────────
-        box_adv = wx.StaticBoxSizer(
-            wx.StaticBox(dlg, label=_("Advanced options")), wx.VERTICAL
-        )
+        # ── Opzioni avanzate ──────────────────────────────────────────
+        box_adv = _box(_("Advanced options"))
 
         self.cb_no_mirror = wx.CheckBox(
             dlg, label=_("Do not replicate (leave right half blank)")
@@ -1661,47 +1686,43 @@ class PrintOptionsDialog:
         self.cb_no_mirror.SetValue(owner._no_mirror_right)
         self.cb_no_mirror.SetToolTip(_("In 2-pages mode, print only on the left half and leave the right half blank (no mirroring)"))
         self.cb_no_mirror.Enable(owner._two_pages_per_sheet)
-        box_adv.Add(self.cb_no_mirror, 0, wx.ALL, _GAP)
+        box_adv.Add(self.cb_no_mirror, 0, wx.ALL, PAD)
 
         self.cb_remove_blank = wx.CheckBox(dlg, label=_("Remove blank pages"))
         self.cb_remove_blank.SetValue(owner._remove_blank_pages)
         self.cb_remove_blank.SetToolTip(_("Skip pages that are empty or contain only whitespace, based on the threshold below"))
-        box_adv.Add(self.cb_remove_blank, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
+        box_adv.Add(self.cb_remove_blank, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, PAD)
 
-        row2 = wx.BoxSizer(wx.HORIZONTAL)
         self.lbl_blank_threshold = wx.StaticText(dlg, label=_("Blank page threshold (%):"))
         self.spin_blank_threshold = self._make_spin(
             dlg, 1, 95, getattr(owner, '_blank_page_threshold', 5),
         )
-        row2.Add(self.lbl_blank_threshold, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
-        row2.Add(self.spin_blank_threshold, 0, wx.ALIGN_CENTER_VERTICAL)
-        box_adv.Add(row2, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
+        box_adv.Add(_spin_row(self.lbl_blank_threshold, self.spin_blank_threshold, INDENT),
+                    0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, PAD)
 
         self.lbl_blank_threshold.Enable(owner._remove_blank_pages)
         self.spin_blank_threshold.Enable(owner._remove_blank_pages)
 
-        outer.Add(box_adv, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
+        left.Add(box_adv, 1, wx.EXPAND)
 
-        # ── Sezione Scala ──────────────────────────────────────────────
-        box_scale = wx.StaticBoxSizer(
-            wx.StaticBox(dlg, label=_("Scale")), wx.VERTICAL
-        )
-        row_scale = wx.BoxSizer(wx.HORIZONTAL)
+        # ══ Colonna destra · Scala + Impostazioni nel brano ═══════════════
+        right = wx.BoxSizer(wx.VERTICAL)
+
+        # ── Scala (griglia 3 colonne: etichetta | casella | pulsante) ──
+        box_scale = _box(_("Scale"))
+        grid_scale = wx.FlexGridSizer(2, 3, PAD, PAD)
+        grid_scale.AddGrowableCol(0)
+
         lbl_scale = wx.StaticText(dlg, label=_("Scale (%):"))
         self.spin_font_scale = self._make_spin(
             dlg, 50, 200, getattr(owner, '_print_font_scale', 100),
         )
-        row_scale.Add(lbl_scale, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
-        row_scale.Add(self.spin_font_scale, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
         # Pulsante che riporta la scala a 100% (aggiorna anche la casella).
-        self.btn_scale_reset = wx.Button(dlg, wx.ID_ANY, _("100%"), style=wx.BU_EXACTFIT)
+        self.btn_scale_reset = wx.Button(dlg, wx.ID_ANY, _("100%"))
         self.btn_scale_reset.SetToolTip(_("Reset scale to 100%"))
-        row_scale.Add(self.btn_scale_reset, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
-        box_scale.Add(row_scale, 0, wx.EXPAND)
 
         # Dimensione delle tastiere (%): vale solo per la stampa. Parte dal
         # valore delle preferenze; il pulsante «Pref.» ci riporta la casella.
-        row_kbd = wx.BoxSizer(wx.HORIZONTAL)
         self.lbl_kbd = lbl_kbd = wx.StaticText(dlg, label=_("Keyboard size (%):"))
         lbl_kbd.SetToolTip(_(
             "Size of the chord keyboards at the bottom of the page, for printing only "
@@ -1710,21 +1731,28 @@ class PrintOptionsDialog:
             dlg, 50, 200,
             getattr(owner, '_print_kbd_scale', None) or self._pref_kbd_scale(),
         )
-        row_kbd.Add(lbl_kbd, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
-        row_kbd.Add(self.spin_kbd_scale, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
-        self.btn_kbd_reset = wx.Button(dlg, wx.ID_ANY, _("Default"), style=wx.BU_EXACTFIT)
+        self.btn_kbd_reset = wx.Button(dlg, wx.ID_ANY, _("Default"))
         self.btn_kbd_reset.SetToolTip(_("Use the keyboard size set in the preferences"))
-        row_kbd.Add(self.btn_kbd_reset, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, _GAP)
-        box_scale.Add(row_kbd, 0, wx.EXPAND)
-        outer.Add(box_scale, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
 
-        # ── Sezione Impostazioni nel brano ─────────────────────────────
+        # I due pulsanti «reset» hanno la stessa larghezza (la più grande)
+        _bw = max(self.btn_scale_reset.GetBestSize().width,
+                  self.btn_kbd_reset.GetBestSize().width)
+        for _b in (self.btn_scale_reset, self.btn_kbd_reset):
+            _b.SetMinSize(wx.Size(_bw, _b.GetBestSize().height))
+
+        for _w in (lbl_scale, self.spin_font_scale, self.btn_scale_reset,
+                   lbl_kbd,   self.spin_kbd_scale,  self.btn_kbd_reset):
+            grid_scale.Add(_w, 0, wx.ALIGN_CENTER_VERTICAL)
+        box_scale.Add(grid_scale, 0, wx.EXPAND | wx.ALL, PAD)
+
+        right.Add(box_scale, 0, wx.EXPAND)
+        right.AddSpacer(_GAP)
+
+        # ── Impostazioni nel brano ────────────────────────────────────
         # Salva/carica le impostazioni di stampa in una riga di commento
         # «# {print_options: ...}» come PRIMA riga dell'editor. Le righe
         # «# {...}» non compaiono ne' in anteprima ne' in stampa.
-        box_song = wx.StaticBoxSizer(
-            wx.StaticBox(dlg, label=_("Settings in the song")), wx.VERTICAL
-        )
+        box_song = _box(_("Settings in the song"))
         row_song = wx.BoxSizer(wx.HORIZONTAL)
         self.btn_save_to_editor = wx.Button(dlg, wx.ID_ANY, _("Save in editor"))
         self.btn_save_to_editor.SetToolTip(_(
@@ -1754,14 +1782,14 @@ class PrintOptionsDialog:
                     _btn.SetBitmapMargins(4, 0)
             except Exception:
                 pass
-        row_song.Add(self.btn_save_to_editor, 1, wx.RIGHT, 4)
+        row_song.Add(self.btn_save_to_editor, 1, wx.RIGHT, PAD)
         row_song.Add(self.btn_load_from_editor, 1)
-        box_song.Add(row_song, 0, wx.EXPAND | wx.ALL, _GAP)
+        box_song.Add(row_song, 0, wx.EXPAND | wx.ALL, PAD)
         # Chiede se scrivere anche la dimensione delle tastiere (`kbd=`) nella
         # riga salvata. Attiva solo se il brano contiene tastiere.
         self.cb_save_kbd = wx.CheckBox(dlg, wx.ID_ANY, _("Also save the keyboard size in the song"))
         self.cb_save_kbd.SetValue(getattr(owner, '_print_kbd_scale', None) is not None)
-        box_song.Add(self.cb_save_kbd, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
+        box_song.Add(self.cb_save_kbd, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, PAD)
         # Riga di stato con icona «info» all'inizio della frase. Icona SVG
         # (img/vector/info.svg) 16x16; ripiego sul PNG (img/info.png). L'icona
         # compare solo quando c'è un messaggio da mostrare.
@@ -1782,32 +1810,51 @@ class PrintOptionsDialog:
             self.bmp_song_status = wx.StaticBitmap(dlg, wx.ID_ANY, _info_bmp)
             self.bmp_song_status.Hide()
             row_status.Add(self.bmp_song_status, 0,
-                           wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+                           wx.ALIGN_TOP | wx.RIGHT, 4)
         self.lbl_song_status = wx.StaticText(dlg, label=u"")
         self.lbl_song_status.SetForegroundColour(
             wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT))
-        row_status.Add(self.lbl_song_status, 1, wx.ALIGN_CENTER_VERTICAL)
-        box_song.Add(row_status, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
-        outer.Add(box_song, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
+        # Spazio riservato per due righe: il messaggio (a capo automatico, vedi
+        # _set_song_status) non deve far crescere o tagliare il dialogo.
+        self.lbl_song_status.SetMinSize(
+            wx.Size(-1, self.lbl_song_status.GetCharHeight() * 2 + 2))
+        row_status.Add(self.lbl_song_status, 1, wx.ALIGN_TOP)
+        box_song.Add(row_status, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, PAD)
+        right.Add(box_song, 1, wx.EXPAND)
         self._refresh_kbd_controls()
 
-        # ── Sezione Diagnostica ────────────────────────────────────────
-        box_diag = wx.StaticBoxSizer(
-            wx.StaticBox(dlg, label=_("Diagnostics")), wx.VERTICAL
-        )
+        # ══ Griglia 2×2: le due colonne restano allineate su tutte le righe ═
+        grid = wx.FlexGridSizer(2, 2, _GAP, _GAP)
+        grid.AddGrowableCol(0, 1)
+        grid.AddGrowableCol(1, 1)
+        grid.AddGrowableRow(1)
+        grid.Add(box_pages, 0, wx.EXPAND)
+        grid.Add(box_cols,  0, wx.EXPAND)
+        grid.Add(left,      0, wx.EXPAND)
+        grid.Add(right,     0, wx.EXPAND)
+        outer.Add(grid, 0, wx.EXPAND | wx.ALL, _GAP)
+
+        # ══ Diagnostica · a tutta larghezza, su una riga ══════════════════
+        box_diag = _box(_("Diagnostics"), wx.HORIZONTAL)
         self.cb_debug = wx.CheckBox(dlg, label=_("Write page layout log"))
         self.cb_debug.SetValue(getattr(owner, '_print_debug', False))
         self.cb_debug.SetToolTip(
             _("Save how the song is split into pages to this file:") + "\n" + _debug_log_path())
-        row_dbg = wx.BoxSizer(wx.HORIZONTAL)
-        row_dbg.Add(self.cb_debug, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        box_diag.Add(self.cb_debug, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, PAD)
+
+        # Percorso del log: grigio, piccolo, abbreviato al centro se troppo
+        # lungo (il percorso completo è nel tooltip).
+        lbl_path = wx.StaticText(dlg, label=_debug_log_path(),
+                                 style=wx.ST_ELLIPSIZE_MIDDLE)
+        lbl_path.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT))
+        pf_ = lbl_path.GetFont()
+        pf_.SetPointSize(max(7, pf_.GetPointSize() - 1))
+        lbl_path.SetFont(pf_)
+        lbl_path.SetMinSize(wx.Size(60, -1))     # lascia che si accorci
+        lbl_path.SetToolTip(_debug_log_path())
+        box_diag.Add(lbl_path, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, PAD)
+
         self.btn_open_log = wx.Button(dlg, wx.ID_ANY, _("Open folder"))
-        # Stessa altezza dei pulsanti «Salva nell'editor» / «Carica dall'editor»
-        # (senza BU_EXACTFIT, che toglie il margine interno e lo rende piu' basso).
-        self.btn_open_log.SetMinSize(wx.Size(-1, max(
-            self.btn_save_to_editor.GetBestSize().height,
-            self.btn_load_from_editor.GetBestSize().height,
-            self.btn_open_log.GetBestSize().height)))
         self.btn_open_log.SetToolTip(_("Open the folder that contains the log file"))
         # Icona vettoriale (SVG) 16x16 sul pulsante «Apri cartella»; ripiego sul PNG
         try:
@@ -1826,17 +1873,17 @@ class PrintOptionsDialog:
                 self.btn_open_log.SetBitmapMargins(4, 0)
         except Exception:
             pass
-        row_dbg.Add(self.btn_open_log, 0, wx.ALIGN_CENTER_VERTICAL)
-        box_diag.Add(row_dbg, 0, wx.EXPAND | wx.ALL, _GAP)
-        lbl_path = wx.StaticText(dlg, label=_debug_log_path())
-        lbl_path.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT))
-        pf_ = lbl_path.GetFont()
-        pf_.SetPointSize(max(7, pf_.GetPointSize() - 1))
-        lbl_path.SetFont(pf_)
-        box_diag.Add(lbl_path, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
+        # Stessa altezza dei pulsanti «Salva nell'editor» / «Carica dall'editor»
+        self.btn_open_log.SetMinSize(wx.Size(-1, max(
+            self.btn_save_to_editor.GetBestSize().height,
+            self.btn_load_from_editor.GetBestSize().height,
+            self.btn_open_log.GetBestSize().height)))
+        box_diag.Add(self.btn_open_log, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, PAD)
         outer.Add(box_diag, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, _GAP)
 
-        # ── Bottoni ────────────────────────────────────────────────────
+        # ══ Bottoni ═══════════════════════════════════════════════════════
+        outer.Add(wx.StaticLine(dlg), 0, wx.EXPAND | wx.LEFT | wx.RIGHT, _GAP)
+
         self._pinned = [getattr(owner, '_print_options_pinned', False)]
 
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -1852,6 +1899,10 @@ class PrintOptionsDialog:
         btn_sizer.Add(self.btn_ok,     0, wx.RIGHT, 4)
         btn_sizer.Add(self.btn_cancel, 0)
         outer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, _GAP)
+
+        # Etichette coerenti con la modalità «pagine per foglio» corrente
+        # (adegua testi e tooltip di «Riduci …» in «pagina» o «colonna»).
+        self._update_scope_labels(owner._two_pages_per_sheet)
 
     # ── Bind ──────────────────────────────────────────────────────────────────
 
@@ -2072,6 +2123,11 @@ class PrintOptionsDialog:
     def _set_song_status(self, text):
         """Mostra il messaggio di stato (con l'icona info, se disponibile)."""
         self.lbl_song_status.SetLabel(text)
+        # A capo automatico entro la larghezza del riquadro (max 2 righe)
+        try:
+            self.lbl_song_status.Wrap(max(120, self.lbl_song_status.GetSize().width))
+        except Exception:
+            pass
         if getattr(self, 'bmp_song_status', None) is not None:
             self.bmp_song_status.Show(bool(text))
 

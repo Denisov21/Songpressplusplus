@@ -661,7 +661,7 @@ Senza etichetta (usa il default «Part»):
 | `{define: C base-fret 1 frets X 3 2 0 1 0}`  | ✅  | ⌨️   | Definisce un diagramma accordo per chitarra                              |
 | `{taste:Accordo}`                            | 🔧  | ⌨️   | Mostra i tasti evidenziati sulla tastiera (klavier) — es. `{taste:Am}`   |
 | `{fingering: Accordo}`                       | 🔧  | ⌨️   | Mostra la tastiera del **primo accordo** con i numeri delle dita — es. `{fingering: Am 3=Do 1=Mi 2=La}` |
-| `{image: nomefile}`                          | ✅  | ⌨️   | Inserisce un'immagine (PNG, JPG, GIF, BMP, TIFF) nella canzone           |
+| `{image: nomefile}`                          | ✅  | ⌨️   | Inserisce un'immagine raster (PNG, JPG, GIF, BMP, TIFF) o vettoriale (SVG) nella canzone |
 
 La tastiera (klavier) visualizza i tasti corrispondenti all'accordo specificato, evidenziati con il colore impostato nelle preferenze.
 
@@ -999,6 +999,7 @@ Il controllo sintassi integrato (`Strumenti → Controlla sintassi`) segnala gli
 | Accordo ripetuto | `{beats_time: Sol=2 Sol=1}` | accordo duplicato |
 | Battiti mancanti | `{beats_time: Sol=}` | valore mancante |
 | Battiti non interi o ≤ 0 | `{beats_time: Sol=0}`, `Sol=1.5` | deve essere intero positivo |
+| Sequenza diversa dalla riga di accordi | `{beats_time: Mi-=4 …}` sopra una riga con `[Mi]` | l'accordo N non corrisponde alla riga … (correggibile con **Correggi**) |
 
 > **Nota** — «Accordo non riconosciuto» è segnalato come **avvertimento** (⚠️), non come errore bloccante: i battiti non vengono applicati a quell'accordo, ma la composizione del brano prosegue. Vedi la sezione *Controllo sintassi* per la distinzione tra errori e avvertimenti.
 
@@ -1108,7 +1109,7 @@ Con `rel`, la banda dei numeri **non** viene conteggiata nel passo di riga: gli 
 
 ![Songpress++ Inserisci immagine](./img/GUIDE/inserisciImmagine_it.png)
 
-La direttiva `{image:}` inserisce un'immagine raster nel punto in cui appare nella canzone. Songpress++ supporta due modalità: **collegamento esterno** (percorso file) e **immagine incorporata** (embedded base64).
+La direttiva `{image:}` inserisce un'immagine **raster** o **vettoriale (SVG)** nel punto in cui appare nella canzone. Songpress++ supporta due modalità: **collegamento esterno** (percorso file) e **immagine incorporata** (embedded base64).
 
 #### Opzioni della direttiva
 
@@ -1132,6 +1133,24 @@ La direttiva `{image:}` inserisce un'immagine raster nel punto in cui appare nel
 | GIF     | `.gif`          |
 | BMP     | `.bmp`          |
 | TIFF    | `.tiff`, `.tif` |
+| SVG     | `.svg`, `.svgz` |
+
+#### Immagini vettoriali (SVG)
+
+I file SVG si inseriscono come qualsiasi altra immagine, con le stesse opzioni (`width=`, `height=`, `scale=`, `align=`, `border`) e anche incorporati in base64.
+
+- **Dimensione naturale** — se non indichi `width`, `height` o `scale`, la dimensione si legge dagli attributi `width`/`height` del tag `<svg>` (anche in `pt`, `mm`, `cm`, `in`), altrimenti dal `viewBox`; se mancano entrambi si usa 300×150.
+- **Nitidezza** — l'SVG non viene ingrandito come una bitmap: viene ridisegnato alla **risoluzione reale del dispositivo** (zoom dell'anteprima, stampa), quindi resta nitido a ogni scala.
+- **Esportazione PDF** — con reportlab ogni pagina è comunque una bitmap ad alta risoluzione (circa 216 dpi): l'SVG è nitido quanto il resto della pagina, ma nel PDF non resta un tracciato vettoriale.
+- **Limiti** — il motore di disegno integrato potrebbe non disegnare il testo (`<text>`) né gli stili CSS (`<style>`). Se un SVG esportato da un altro programma perde le scritte, convertile in tracciati prima di esportare (in Inkscape: *Tracciato → Da oggetto a tracciato*).
+
+#### Immagine non trovata o non disegnabile
+
+Se il file non esiste o non si può leggere, al posto dell'immagine compare un **riquadro rosso tratteggiato** con il motivo, senza finestre di errore: *Immagine non trovata: nomefile*, *Immagine non leggibile: nomefile*, *Errore SVG: …*, *Impossibile disegnare l'SVG: …*, *Errore nel disegno dell'SVG: …*. Corretto il nome o ripristinato il file, il riquadro sparisce al ridisegno successivo.
+
+#### Selezione dall'anteprima
+
+Con un **doppio clic** su un'immagine nell'anteprima (anche a schermo intero) il cursore passa alla riga `{image: ...}` corrispondente nell'editor, selezionandola.
 
 ---
 
@@ -1143,8 +1162,11 @@ Il file immagine rimane su disco e viene caricato ogni volta che il documento vi
 {image: logo.png}
 {image: logo.png width=200 align=left}
 {image: logo.png scale=50% border}
+{image: intro.svg width=300}
 {image: "C:\Users\Utente\Immagini\foto.jpg" align=center}
 ```
+
+Un nome relativo viene cercato nella cartella del documento salvato: se il documento non è ancora stato salvato serve il percorso assoluto. Il dialogo scrive solo il nome quando l'immagine è nella stessa cartella del documento, altrimenti il percorso completo.
 
 ---
 
@@ -1174,6 +1196,15 @@ L'immagine può essere inserita tramite **Inserisci → Altro → Immagine {imag
 | Bordo      | 1               | 0–50       | pt       | attivo solo se la checkbox **Bordo** è spuntata; passo 0,5  |
 
 La checkbox **Incorpora immagine nel file (base64, senza dipendenza esterna)** si trova nella parte inferiore del dialogo, sotto la sezione Bordo. Quando attiva, l'anteprima mostra `{image: data:<embedded> ...}` con le opzioni reali (allineamento, bordo, ecc.) visibili e modificabili in tempo reale.
+
+**Informazioni sull'immagine scelta**
+
+- **Filtro file** — il pulsante *Sfoglia…* offre quattro voci: *File immagine* (tutte, SVG compresi, predefinita), *Immagini vettoriali (\*.svg)*, *Immagini raster* (PNG, JPG, JPEG, GIF, BMP, TIFF, TIF) e *Tutti i file*.
+- **Tipo di immagine** — sotto il campo del file compare, con l'icona «i», il messaggio *Immagine raster caricata!* oppure *Immagine vettoriale caricata!*. Resta vuoto finché il percorso non indica un file immagine valido. L'icona è `img/vector/info.svg`, con ripiego su `img/info.png`.
+- **Percorso assoluto** — la riga *Percorso assoluto: …* mostra dove si trova il file. Se è lungo viene accorciato al centro; passando il mouse si vede per intero.
+- **Apri cartella** — il pulsante, a destra del messaggio sul tipo di immagine, apre la cartella che contiene il file (su Windows e macOS con il file già selezionato). È disabilitato finché non c'è un'immagine valida. L'icona è `img/vector/folder_photo.svg`, con ripiego su `img/folder_photo.png`.
+
+**Modifica di una direttiva esistente** — con il cursore dentro `{image: ...}` (o con *Modifica direttiva...* dal menu contestuale) il dialogo si apre già compilato con percorso, larghezza, altezza (`pt` o `%`), scala, allineamento e bordo; alla conferma sostituisce solo il contenuto della direttiva, senza annidarne una seconda. Se l'immagine è **incorporata**, il campo del file resta vuoto con la scritta *(immagine incorporata)* e la checkbox *Incorpora* è bloccata: si possono cambiare le opzioni e il dato originale viene conservato; scegliendo un nuovo file l'immagine incorporata viene sostituita.
 
 ---
 
@@ -1496,10 +1527,40 @@ La finestra dei risultati mostra una tabella con le colonne **Tipo**, **Riga**, 
 - **giallo** — solo avvertimenti;
 - **arancione** — almeno un errore.
 
-L'intestazione riporta il conteggio (ad esempio *«Trovato 1 avvertimento:»* oppure *«Trovati 2 errori e 1 avvertimento:»*). Due pulsanti aiutano la consultazione:
+L'intestazione riporta il conteggio (ad esempio *«Trovato 1 avvertimento:»* oppure *«Trovati 2 errori e 1 avvertimento:»*). Questi comandi aiutano la consultazione e la correzione:
 
 - **Vai alla riga** (o doppio clic su una riga) — sposta il cursore dell'editor alla riga e colonna del problema selezionato;
-- **Adatta larghezza** — allarga la finestra in modo che la colonna *Descrizione* mostri per intero il messaggio più lungo.
+- **Adatta larghezza** — allarga la finestra in modo che la colonna *Descrizione* mostri per intero il messaggio più lungo;
+- **Correggi** — corregge in automatico l'errore selezionato, quando esiste una correzione sicura (vedi *Correzione automatica*).
+
+#### Correzione automatica
+
+Il pulsante **Correggi**, accanto a **Chiudi**, corregge **solo l'errore selezionato** nell'elenco, senza intervento manuale. È attivo soltanto se per quell'errore esiste una correzione sicura; passando il mouse sul pulsante, il suggerimento spiega cosa verrà fatto. Per gli altri errori il pulsante resta disattivato.
+
+Dopo il clic:
+
+1. la riga viene riscritta nell'editor, in un'unica azione che si può annullare con <kbd>Ctrl</kbd>+<kbd>Z</kbd>;
+2. il controllo viene rieseguito sul testo aggiornato;
+3. la finestra si riapre nella stessa posizione, con selezionato l'errore successivo. Se non ne restano, compare il messaggio *«Nessun errore sintattico trovato.»*
+
+Se nel frattempo la riga è cambiata, nulla viene modificato e la barra di stato invita a ripetere il controllo.
+
+Errori correggibili:
+
+| Errore | Esempio | Cosa fa la correzione |
+| ------ | ------- | --------------------- |
+| Comando sconosciuto scritto male | `{beats_dtime: …}`, `{Titel: …}` | Lo rinomina nel comando noto più simile (`{beats_time: …}`, `{title: …}`). Agisce solo se il candidato è uno solo e molto simile, e il nome ha almeno 4 lettere; l'eventuale commento a fine riga resta intatto. |
+| `{beats_time:}` non coerente con la riga di accordi | `{beats_time: MI=4 …}` sopra `[MI-]…` | Riscrive la direttiva in base agli accordi del testo, che fanno fede. |
+
+Per `{beats_time:}` il comportamento esatto è questo:
+
+- se gli accordi sono lo stesso numero, vengono rinominati solo quelli diversi; battiti e spaziatura restano invariati;
+- se il numero è diverso, le due sequenze vengono allineate: gli accordi comuni mantengono i battiti, quelli aggiunti ricevono `=1` e quelli non più presenti nel testo vengono tolti (conviene ricontrollare il totale dei battiti);
+- viene segnalato **un solo errore per direttiva**, anche se gli accordi discordanti sono più d'uno: il messaggio indica il primo e mostra le due sequenze complete, e **Correggi** li allinea tutti insieme.
+
+> **Nota** — Poiché la correzione adegua `{beats_time:}` al testo, se l'errore era invece nel testo (per esempio un `[MI]` al posto di `[MI-]`) premi <kbd>Ctrl</kbd>+<kbd>Z</kbd> e correggi l'accordo a mano.
+
+> **Nota** — Due problemi sulla stessa riga possono comparire uno alla volta: un comando scritto male (`{beats_dtime}`) impedisce il controllo di coerenza finché non viene rinominato. Dopo il primo clic su **Correggi** l'altro errore compare da solo, già selezionato.
 
 
 ### Controllo ortografico (<kbd>F6</kbd>)
@@ -2317,9 +2378,9 @@ In tutto il programma le immagini dell'interfaccia e dei simboli seguono la **st
 | Pulsanti *Salva nell'editor* / *Carica dall'editor* (anteprima di stampa) | `img/vector/<nome>.svg` a 16×16 | `img/<nome>.png` ridimensionato a 16×16 | nessuna icona |
 | Righello a schermo (modalità, lista, zoom −/+, chiudi) | `img/vector/<nome>.svg` | `img/<nome>.png` ridimensionato | pulsante di testo (`−`, `+`, `✕`, `☰`) |
 | Pulsanti zoom dell'editor | `img/vector/zoom_*.svg` | `img/zoom_*.png` | icona di sistema |
-| Immagini della canzone `{image:}` | — | solo raster: il file indicato nella direttiva (PNG, JPG, GIF, BMP, TIFF) | — |
+| Immagini della canzone `{image:}` | — | il file indicato nella direttiva: vettoriale (SVG) o raster (PNG, JPG, GIF, BMP, TIFF) | — |
 
-> **Nota.** La direttiva `{image:}` **non segue** questo percorso: inserisce sempre e solo l'immagine raster indicata dall'utente (vedi *Direttiva immagine*); gli SVG di `img/vector/` servono solo per le icone del programma.
+> **Nota.** La direttiva `{image:}` **non segue** questo percorso: inserisce sempre e solo l'immagine indicata dall'utente, raster oppure vettoriale (SVG, rasterizzato alla risoluzione reale del dispositivo; vedi *Direttiva immagine*); gli SVG di `img/vector/` servono solo per le icone del programma.
 
 ---
 
@@ -2614,7 +2675,7 @@ Su Windows il rilevamento del colore usa tre fonti in cascata, ognuna attivata s
 | Canzonatore          | Unisce più file ChordPro in un unico file    |
 | Copia come immagine  | Copia negli appunti come immagine vettoriale |
 | Copia solo testo     | Copia il testo senza accordi                 |
-| Modifica direttiva   | Compare in cima al menu quando si fa clic destro su una direttiva con finestra propria (`{taste:}`, `{fingering:}`, `{define:}`, `{time:}`, `{tempo:}`, `{tempo_label:}`, `{key:}`, `{beats_time:}`, `{linespacing:}`, l'indicatore Transposer `{start_of_tab: TP}` (solo dalla riga di apertura), il simbolo musicale con dimensione `{textsize:12}𝅗{textsize}` (riapre la mappa dei simboli), e le righe di apertura dei blocchi `{start_chorus}` / `{soc}` e `{start_chord}`: non le righe di chiusura né quelle interne; si modifica l'etichetta): riapre la finestra che l'ha creata, già compilata con i valori attuali, e alla conferma sostituisce solo il valore. Si può nascondere dalle Opzioni (scheda *Menu contestuale* → *Azioni speciali*). |
+| Modifica direttiva   | Compare in cima al menu quando si fa clic destro su una direttiva con finestra propria (`{taste:}`, `{fingering:}`, `{define:}`, `{time:}`, `{tempo:}`, `{tempo_label:}`, `{key:}`, `{beats_time:}`, `{linespacing:}`, `{image:}`, l'indicatore Transposer `{start_of_tab: TP}` (solo dalla riga di apertura), il simbolo musicale con dimensione `{textsize:12}𝅗{textsize}` (riapre la mappa dei simboli), e le righe di apertura dei blocchi `{start_chorus}` / `{soc}` e `{start_chord}`: non le righe di chiusura né quelle interne; si modifica l'etichetta): riapre la finestra che l'ha creata, già compilata con i valori attuali, e alla conferma sostituisce solo il valore. Si può nascondere dalle Opzioni (scheda *Menu contestuale* → *Azioni speciali*). |
 
 > **Nota — Esporta PDF:** il flusso di esportazione apre prima il dialogo **Impostazione pagina** (formato carta, orientamento, margini in mm); solo dopo la conferma viene chiesto il nome del file di output. I margini impostati vengono memorizzati e riutilizzati nelle successive esportazioni.
 

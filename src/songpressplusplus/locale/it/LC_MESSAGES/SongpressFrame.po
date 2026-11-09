@@ -1211,13 +1211,15 @@ msgstr ""
 
 #: SongpressFrame.py — image file filter
 msgid ""
-"Image files "
-"(*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif)|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif|All"
-" files (*.*)|*.*"
+"Image files (*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif;*.svg)|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif;*.svg|"
+"Vector images (*.svg)|*.svg|"
+"Raster images (*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif)|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif|"
+"All files (*.*)|*.*"
 msgstr ""
-"File immagine "
-"(*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif)|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif|Tutti"
-" i file (*.*)|*.*"
+"File immagine (*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif;*.svg)|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif;*.svg|"
+"Immagini vettoriali (*.svg)|*.svg|"
+"Immagini raster (*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif)|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tiff;*.tif|"
+"Tutti i file (*.*)|*.*"
 
 #: SongpressFrame.py OnInsertBeatsTime multicursor notice (no period)
 #, python-format
@@ -2391,3 +2393,53 @@ msgstr "Sola lettura: DISATTIVA - clicca per proteggere questo file dalla sovras
 #: SongpressToolbars.py
 msgid "Read only: edit the song but save it only with a different name"
 msgstr "Sola lettura: modifica il brano ma salvalo solo con un nome diverso"
+
+#: SongDecorator.py image placeholder
+#, python-format
+msgid "Image not found: %s"
+msgstr "Immagine non trovata: %s"
+
+#: SongDecorator.py image placeholder
+#, python-format
+msgid "Image not readable: %s"
+msgstr "Immagine non leggibile: %s"
+
+#: SongDecorator.py image placeholder
+#, python-format
+msgid "SVG error: %s"
+msgstr "Errore SVG: %s"
+
+#: SongDecorator.py image placeholder
+#, python-format
+msgid "SVG cannot be drawn: %s"
+msgstr "Impossibile disegnare l'SVG: %s"
+
+#: SongDecorator.py image placeholder
+#, python-format
+msgid "SVG drawing error: %s"
+msgstr "Errore nel disegno dell'SVG: %s"
+
+#: SongpressFrame.py insert image dialog
+msgid "Vector image loaded!"
+msgstr "Immagine vettoriale caricata!"
+
+#: SongpressFrame.py insert image dialog
+msgid "Raster image loaded!"
+msgstr "Immagine raster caricata!"
+
+#: SongpressFrame.py insert image dialog
+msgid "(embedded image)"
+msgstr "(immagine incorporata)"
+
+#: SongpressFrame.py insert image dialog
+#, python-format
+msgid "Absolute path: %s"
+msgstr "Percorso assoluto: %s"
+
+#: SongpressFrame.py insert image dialog
+msgid "Open folder"
+msgstr "Apri cartella"
+
+#: SongpressFrame.py insert image dialog
+msgid "Open the folder containing the image"
+msgstr "Apri la cartella che contiene l'immagine"

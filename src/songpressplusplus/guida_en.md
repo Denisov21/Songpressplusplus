@@ -654,7 +654,7 @@ Without a label (uses the default «Part»):
 | `{define: C base-fret 1 frets X 3 2 0 1 0}`  | ✅  | ⌨️   | Defines a guitar chord diagram                                         |
 | `{taste:Chord}`                              | 🔧  | ⌨️   | Shows highlighted keys on the keyboard (klavier) — e.g. `{taste:Am}`   |
 | `{fingering: Chord}`                         | 🔧  | ⌨️   | Shows the **first chord** keyboard with finger numbers — e.g. `{fingering: Am 3=C 1=E 2=A}` |
-| `{image: filename}`                          | ✅  | ⌨️   | Inserts an image (PNG, JPG, GIF, BMP, TIFF) into the song              |
+| `{image: filename}`                          | ✅  | ⌨️   | Inserts a raster image (PNG, JPG, GIF, BMP, TIFF) or a vector image (SVG) into the song |
 
 The keyboard (klavier) displays the keys corresponding to the specified chord, highlighted with the color set in preferences.
 
@@ -992,6 +992,7 @@ The built-in syntax checker (*Tools → Check syntax*) reports errors in the val
 | Duplicate chord | `{beats_time: G=2 G=1}` | chord appears more than once |
 | Missing beat count | `{beats_time: G=}` | missing beat count |
 | Non-integer or ≤ 0 beats | `{beats_time: G=0}`, `G=1.5` | must be a positive integer |
+| Sequence differs from the chord line | `{beats_time: Em-=4 …}` above a line with `[Em]` | chord N does not match line … (fixable with **Fix**) |
 
 > **Note** — “Unrecognised chord” is reported as a **warning** (⚠️), not a blocking error: the beat count is not applied to that chord, but the song still renders. See the *Syntax Check* section for the distinction between errors and warnings.
 
@@ -1101,7 +1102,7 @@ With `rel`, the number band is **not** counted in the line pitch: the N px are m
 
 ![Songpress++ Insert Image](./img/GUIDE/inserisciImmagine_en.png)
 
-The `{image:}` directive inserts a raster image at the point where it appears in the song. Songpress++ supports two modes: **external link** (file path) and **embedded image** (base64).
+The `{image:}` directive inserts a **raster** or **vector (SVG)** image at the point where it appears in the song. Songpress++ supports two modes: **external link** (file path) and **embedded image** (base64).
 
 #### Directive options
 
@@ -1125,6 +1126,24 @@ The `{image:}` directive inserts a raster image at the point where it appears in
 | GIF    | `.gif`          |
 | BMP    | `.bmp`          |
 | TIFF   | `.tiff`, `.tif` |
+| SVG    | `.svg`, `.svgz` |
+
+#### Vector images (SVG)
+
+SVG files are inserted like any other image, with the same options (`width=`, `height=`, `scale=`, `align=`, `border`) and can also be embedded in base64.
+
+- **Natural size** — if you give no `width`, `height` or `scale`, the size is read from the `width`/`height` attributes of the `<svg>` tag (also in `pt`, `mm`, `cm`, `in`), otherwise from the `viewBox`; if both are missing, 300×150 is used.
+- **Sharpness** — the SVG is not enlarged like a bitmap: it is redrawn at the **real device resolution** (preview zoom, print), so it stays sharp at any scale.
+- **PDF export** — with reportlab every page is a high-resolution bitmap (about 216 dpi) anyway: the SVG is as sharp as the rest of the page, but it does not stay a vector path in the PDF.
+- **Limits** — the built-in drawing engine may not draw text (`<text>`) or CSS styles (`<style>`). If an SVG exported from another program loses its lettering, convert the text to paths before exporting (in Inkscape: *Path → Object to Path*).
+
+#### Image not found or not drawable
+
+If the file does not exist or cannot be read, a **dashed red box** with the reason appears in place of the image, with no error windows: *Image not found: filename*, *Image not readable: filename*, *SVG error: …*, *SVG cannot be drawn: …*, *SVG drawing error: …*. Once the name is corrected or the file restored, the box disappears at the next redraw.
+
+#### Selecting from the preview
+
+**Double-clicking** an image in the preview (also in full screen) moves the caret to the matching `{image: ...}` line in the editor and selects it.
 
 ---
 
@@ -1136,8 +1155,11 @@ The image file stays on disk and is loaded each time the document is opened. If 
 {image: logo.png}
 {image: logo.png width=200 align=left}
 {image: logo.png scale=50% border}
+{image: intro.svg width=300}
 {image: "C:\Users\User\Pictures\photo.jpg" align=center}
 ```
+
+A relative name is looked up in the folder of the saved document: if the document has not been saved yet, the absolute path is needed. The dialog writes only the name when the image is in the same folder as the document, otherwise the full path.
 
 ---
 
@@ -1167,6 +1189,15 @@ The image can be inserted via **Insert → Other → Image {image:}**. The dialo
 | Border | 1             | 0–50   | pt       | active only if the **Border** checkbox is checked; step 0.5   |
 
 The **Embed image in file (base64, no external dependency)** checkbox is located at the bottom of the dialog, below the Border section. When active, the preview shows `{image: data:<embedded> ...}` with the real options (alignment, border, etc.) visible and editable in real time.
+
+**Information about the chosen image**
+
+- **File filter** — the *Browse…* button offers four entries: *Image files* (all, SVG included, default), *Vector images (\*.svg)*, *Raster images* (PNG, JPG, JPEG, GIF, BMP, TIFF, TIF) and *All files*.
+- **Image type** — below the file field, with the “i” icon, the message *Raster image loaded!* or *Vector image loaded!* appears. It stays empty until the path points to a valid image file. The icon is `img/vector/info.svg`, falling back to `img/info.png`.
+- **Absolute path** — the *Absolute path: …* line shows where the file is. If it is long it is shortened in the middle; hover to see it in full.
+- **Open folder** — the button, to the right of the image-type message, opens the folder containing the file (on Windows and macOS with the file already selected). It is disabled until there is a valid image. The icon is `img/vector/folder_photo.svg`, falling back to `img/folder_photo.png`.
+
+**Editing an existing directive** — with the caret inside `{image: ...}` (or via *Edit directive...* in the context menu) the dialog opens pre-filled with path, width, height (`pt` or `%`), scale, alignment and border; on confirmation it replaces only the directive's content, never nesting a second one. If the image is **embedded**, the file field stays empty with the text *(embedded image)* and the *Embed* checkbox is locked: you can change the options and the original data is kept; choosing a new file replaces the embedded image.
 
 ---
 
@@ -1489,10 +1520,40 @@ The results window shows a table with the **Type**, **Line**, **Column** and **D
 - **yellow** — warnings only;
 - **orange** — at least one error.
 
-The header reports the count (for example *“Found 1 warning:”* or *“Found 2 errors and 1 warning:”*). Two buttons help you review the results:
+The header reports the count (for example *“Found 1 warning:”* or *“Found 2 errors and 1 warning:”*). These controls help you review and correct the results:
 
 - **Go to line** (or double-click a row) — moves the editor cursor to the line and column of the selected issue;
-- **Fit width** — widens the window so the *Description* column shows the longest message in full.
+- **Fit width** — widens the window so the *Description* column shows the longest message in full;
+- **Fix** — automatically fixes the selected error, when a safe fix exists (see *Automatic Fix*).
+
+#### Automatic Fix
+
+The **Fix** button, next to **Close**, fixes **only the selected error** in the list, with no manual editing. It is enabled only if a safe fix exists for that error; hover over the button and the tooltip explains what it will do. For other errors the button stays disabled.
+
+After you click it:
+
+1. the line is rewritten in the editor, as a single action you can undo with <kbd>Ctrl</kbd>+<kbd>Z</kbd>;
+2. the check is run again on the updated text;
+3. the window reopens in the same position with the next error selected. If none are left, the message *“No syntax errors found.”* appears.
+
+If the line has changed in the meantime, nothing is modified and the status bar asks you to run the check again.
+
+Fixable errors:
+
+| Error | Example | What the fix does |
+| ----- | ------- | ----------------- |
+| Misspelled unknown command | `{beats_dtime: …}`, `{Titel: …}` | Renames it to the closest known command (`{beats_time: …}`, `{title: …}`). It acts only when there is a single, very close candidate and the name has at least 4 letters; any trailing comment on the line is left untouched. |
+| `{beats_time:}` not matching the chord line | `{beats_time: Em=4 …}` above `[Em-]…` | Rewrites the directive according to the chords of the text, which is taken as authoritative. |
+
+For `{beats_time:}` the exact behaviour is:
+
+- if the chord count is the same, only the differing chords are renamed; beat counts and spacing stay as they were;
+- if the count differs, the two sequences are aligned: shared chords keep their beats, added chords get `=1`, and chords no longer in the text are removed (it is worth re-checking the total number of beats);
+- **one error is reported per directive**, even when several chords differ: the message names the first and shows both full sequences, and **Fix** aligns them all at once.
+
+> **Note** — Because the fix adapts `{beats_time:}` to the text, if the mistake was actually in the text (for example `[Em]` instead of `[Em-]`), press <kbd>Ctrl</kbd>+<kbd>Z</kbd> and correct the chord by hand.
+
+> **Note** — Two problems on the same line may appear one at a time: a misspelled command (`{beats_dtime}`) prevents the coherence check until it is renamed. After the first click on **Fix** the other error appears by itself, already selected.
 
 
 ### Spell Check (<kbd>F6</kbd>)
@@ -2310,9 +2371,9 @@ Throughout the program, interface images and symbols follow the **same rule**: t
 | *Save to editor* / *Load from editor* buttons (print preview) | `img/vector/<name>.svg` at 16×16 | `img/<name>.png` resized to 16×16 | no icon |
 | Screen ruler (modes, list, zoom −/+, close) | `img/vector/<name>.svg` | `img/<name>.png` resized | text button (`−`, `+`, `✕`, `☰`) |
 | Editor zoom buttons | `img/vector/zoom_*.svg` | `img/zoom_*.png` | system icon |
-| Song images `{image:}` | — | raster only: the file named in the directive (PNG, JPG, GIF, BMP, TIFF) | — |
+| Song images `{image:}` | — | the file named in the directive: vector (SVG) or raster (PNG, JPG, GIF, BMP, TIFF) | — |
 
-> **Note.** The `{image:}` directive does **not follow** this path: it always inserts only the raster image indicated by the user (see *Image Directive*); the SVGs in `img/vector/` are used only for the program's icons.
+> **Note.** The `{image:}` directive does **not follow** this path: it always inserts only the image indicated by the user, raster or vector (SVG, rasterised at the real device resolution; see *Image Directive*); the SVGs in `img/vector/` are used only for the program's icons.
 
 ---
 
@@ -2607,7 +2668,7 @@ On Windows, color detection uses three sources in cascade, each activated only i
 | Canzonatore         | Merges multiple ChordPro files into one       |
 | Copy as image       | Copies to clipboard as vector image           |
 | Copy text only      | Copies text without chords                    |
-| Edit directive      | Shown at the top of the menu when you right-click a directive that has its own dialog (`{taste:}`, `{fingering:}`, `{define:}`, `{time:}`, `{tempo:}`, `{tempo_label:}`, `{key:}`, `{beats_time:}`, `{linespacing:}`, the Transposer indicator `{start_of_tab: TP}` (opening line only), a musical symbol with size `{textsize:12}𝅗{textsize}` (reopens the symbol map), and the opening lines of the blocks `{start_chorus}` / `{soc}` and `{start_chord}`: not the closing or inner lines; the label is edited): reopens the dialog that created it, pre-filled with the current values, and on confirmation replaces only the value. It can be hidden in Options (*Context menu* tab → *Special actions*). |
+| Edit directive      | Shown at the top of the menu when you right-click a directive that has its own dialog (`{taste:}`, `{fingering:}`, `{define:}`, `{time:}`, `{tempo:}`, `{tempo_label:}`, `{key:}`, `{beats_time:}`, `{linespacing:}`, `{image:}`, the Transposer indicator `{start_of_tab: TP}` (opening line only), a musical symbol with size `{textsize:12}𝅗{textsize}` (reopens the symbol map), and the opening lines of the blocks `{start_chorus}` / `{soc}` and `{start_chord}`: not the closing or inner lines; the label is edited): reopens the dialog that created it, pre-filled with the current values, and on confirmation replaces only the value. It can be hidden in Options (*Context menu* tab → *Special actions*). |
 
 > **Note — Export PDF:** the export flow opens the **Page setup** dialog first (paper size, orientation, margins in mm); only after confirmation is the output filename requested. The margin settings are stored and reused in subsequent exports.
 
