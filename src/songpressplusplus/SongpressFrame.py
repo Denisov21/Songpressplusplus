@@ -914,6 +914,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.text.Bind(wx.EVT_KEY_DOWN, self.OnTextKeyDown, self.text)
         self.text.Bind(wx.stc.EVT_STC_AUTOCOMP_SELECTION, self._OnIntellisenseSelection, self.text)
         self._RegisterIntellisenseImages()
+        # Guida a comparsa quando il mouse si ferma su una direttiva/opzione.
+        self._SetupHoverHelp()
         # Controllo ortografico (motore + ondina live + preferenze).
         # Legge la lingua di default e l'eventuale ondina all'avvio da wx.Config.
         self.speller = SpellManager(self, lang="it_IT")
@@ -927,7 +929,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.previewCanvas.SetCopyCallback(self.CopyAsImage)
         # Callback per il pulsante "aggiorna anteprima": rilegge il testo
         # corrente dell'editor e forza il ridisegno immediato.
-        self.previewCanvas.SetRefreshCallback(lambda: self._get_display_text())
+        self.previewCanvas.SetRefreshCallback(self._OnPreviewRefreshButton)
         # Filigrana iniziale in anteprima (se abilitata nelle preferenze)
         self.previewCanvas.SetWatermark(self._GetWatermarkConfig())
         # Pannello contenitore: Editor + barra zoom sotto l'editor (solo per l'editor).
@@ -1062,6 +1064,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         # ─────────────────────────────────────────────────────────────
 
         self.BindMyMenu()
+        self._InstallCreateTemplateMenu()
         self._BuildNewFromTemplateMenu()
         # Righello a schermo (Strumenti -> Righello a schermo)
         self._InstallScreenRuler()
@@ -1109,6 +1112,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self._showDurationBeatsMenuId = xrc.XRCID('showDurationBeats')
         self._showArrowsMenuId = xrc.XRCID('showArrows')
         self._SyncArrowMenuChecks()
+        self._showHoverHelpMenuId = xrc.XRCID('showHoverHelp')
+        self._SyncHoverHelpUI()
+        self._ApplyHoverHelpMenuIcon()
         self._restartMenuId = xrc.XRCID('restart')
         self._ApplyRestartMenuVisibility()
         self.findReplaceDialog = None
@@ -1918,6 +1924,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         Bind(self.OnToggleColumnBreakLines, 'showColumnBreakLines')
         Bind(self.OnToggleDurationBeats, 'showDurationBeats')
         Bind(self.OnToggleArrows, 'showArrows')
+        Bind(self.OnToggleHoverHelp, 'showHoverHelp')
         Bind(self.OnTranspose, 'transpose')
         Bind(self.OnSimplifyChords, 'simplifyChords')
         Bind(self.OnChangeChordNotation, 'changeChordNotation')
@@ -2112,6 +2119,130 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.UpdateTitle()
         self.UpdateEverything()
         self.previewCanvas.Refresh(self._get_display_text())
+
+    # ------------------------------------------------------------------
+    # "Crea modello" (come "Salva come modello" di Word)
+    # ------------------------------------------------------------------
+
+    def _InstallCreateTemplateMenu(self):
+        """Inserisce nel menu File la voce 'Crea modello...' subito dopo
+        'Nuovo da template'. La voce non è nell'XRC: viene creata da codice,
+        una sola volta all'avvio."""
+        try:
+            file_menu = self.menuBar.GetMenu(0)
+            # Se la voce 'createTemplate' è già nell'XRC basta collegarla;
+            # altrimenti (XRC vecchio) viene creata da codice.
+            xrc_id = xrc.XRCID('createTemplate')
+            if file_menu.FindItemById(xrc_id) is not None:
+                self._createTemplateMenuId = xrc_id
+                self.frame.Bind(wx.EVT_MENU, self.OnCreateTemplate, id=xrc_id)
+                return
+            self._createTemplateMenuId = wx.NewIdRef().GetId()
+            nft_item = file_menu.FindItemById(xrc.XRCID('newFromTemplate'))
+            pos = None
+            if nft_item is not None:
+                for i in range(file_menu.GetMenuItemCount()):
+                    if file_menu.FindItemByPosition(i).GetId() == nft_item.GetId():
+                        pos = i + 1
+                        break
+            item = wx.MenuItem(
+                file_menu, self._createTemplateMenuId,
+                _("Create template..."),
+                _("Save the current song as a template, available in "
+                  "'New from template'"))
+            if pos is None:
+                file_menu.Append(item)
+            else:
+                file_menu.Insert(pos, item)
+            self.frame.Bind(wx.EVT_MENU, self.OnCreateTemplate,
+                            id=self._createTemplateMenuId)
+        except Exception:
+            pass  # la voce di menu è accessoria: non deve bloccare l'avvio
+
+    def _UserTemplatesDir(self):
+        """Cartella dove vengono salvati i modelli dell'utente:
+        glb.data_path/templates/songs (in modalità portable coincide con
+        quella del pacchetto). Viene creata se manca."""
+        root = getattr(glb, 'data_path', None) or glb.path
+        folder = os.path.join(root, 'templates', 'songs')
+        os.makedirs(folder, exist_ok=True)
+        return folder
+
+    def OnCreateTemplate(self, evt):
+        """Salva il brano corrente come modello (.crd) nella cartella dei
+        template: comparirà subito in File -> Nuovo da template.
+
+        Il brano aperto resta invariato (non viene rinominato né marcato
+        come salvato): si crea solo una copia del testo."""
+        import re
+        text = self.text.GetText()
+        if not text.strip():
+            wx.MessageBox(
+                _("The song is empty: there is nothing to save as a template."),
+                _("Songpress++"), wx.OK | wx.ICON_INFORMATION, self.frame)
+            return
+
+        # Nome proposto: quello del file aperto, altrimenti "Template"
+        default = ''
+        if self.document:
+            default = os.path.splitext(os.path.basename(self.document))[0]
+        if not default:
+            default = _("Template")
+
+        dlg = wx.TextEntryDialog(
+            self.frame,
+            _("Template name:"),
+            _("Create template"),
+            default)
+        try:
+            if dlg.ShowModal() != wx.ID_OK:
+                return
+            name = dlg.GetValue().strip()
+        finally:
+            dlg.Destroy()
+
+        # Toglie i caratteri non ammessi nei nomi di file e il punto finale
+        name = re.sub(r'[\\/:*?"<>|\x00-\x1f]', '', name).strip().strip('.')
+        if not name:
+            wx.MessageBox(
+                _("The template name contains no characters valid for a file name."),
+                _("Songpress++"), wx.OK | wx.ICON_WARNING, self.frame)
+            return
+
+        try:
+            folder = self._UserTemplatesDir()
+            path = os.path.join(folder, name + '.crd')
+            # Il menu 'Nuovo da template' confronta i nomi ignorando le
+            # maiuscole: su Linux 'Canto.crd' e 'canto.crd' sono file diversi
+            # ma comparirebbero come un solo template. Si cerca quindi un
+            # omonimo senza distinguere le maiuscole e, se c'è, lo si
+            # sostituisce (mantenendo il suo nome file) invece di crearne un
+            # secondo.
+            wanted = (name + '.crd').lower()
+            for fname in os.listdir(folder):
+                if fname.lower() == wanted:
+                    path = os.path.join(folder, fname)
+                    name = os.path.splitext(fname)[0]
+                    break
+            if os.path.exists(path):
+                if wx.MessageBox(
+                        _("A template named \"%s\" already exists.\nDo you want to replace it?") % name,
+                        _("Create template"),
+                        wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION,
+                        self.frame) != wx.YES:
+                    return
+            with open(path, 'w', encoding='utf-8', newline='') as f:
+                f.write(text)
+        except Exception as exc:
+            wx.MessageBox(
+                str(exc), _("Error saving template"),
+                wx.OK | wx.ICON_ERROR, self.frame)
+            return
+
+        self._BuildNewFromTemplateMenu()
+        wx.MessageBox(
+            _("Template \"%s\" saved.\nYou can find it in File > New from template.") % name,
+            _("Create template"), wx.OK | wx.ICON_INFORMATION, self.frame)
 
     def OnNormalizeSpaces(self, evt):
         """
@@ -7667,6 +7798,11 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             hideGrid       : {start_of_grid} / {sog} / {grid} ... {end_of_grid}
             hideTempo      : {tempo_m} / {tempo_s} / {tempo_sp} / {tempo_c} / {tempo_cp}
             hideTime       : {time}
+            hideImage      : {image: ...}
+            hideTransposerImage : {start_of_tab: TP} ... {end_of_tab}
+            hideFingering  : {fingering: ...}   (tastiera con diteggiatura)
+            hideTaste      : {taste: ...}       (tastiera accordo)
+            hideDefine     : {define: ...}      (diagramma chitarra)
         """
         import re
 
@@ -7690,6 +7826,23 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             single_tags.update(('tempo_m', 'tempo_s', 'tempo_sp', 'tempo_c', 'tempo_cp'))
         if getattr(self.pref, 'hideTime', False):
             single_tags.add('time')
+        if getattr(self.pref, 'hideImage', False):
+            single_tags.add('image')
+        if getattr(self.pref, 'hideFingering', False):
+            single_tags.add('fingering')
+        if getattr(self.pref, 'hideTaste', False):
+            single_tags.add('taste')
+        if getattr(self.pref, 'hideDefine', False):
+            single_tags.add('define')
+
+        # Immagine Transposer: blocco {start_of_tab: TP} ... {end_of_tab}.
+        # Si nasconde solo se l'apertura ha l'etichetta TP (i normali blocchi
+        # tab non vengono toccati).
+        hide_tp = bool(getattr(self.pref, 'hideTransposerImage', False))
+        _tp_open_re = re.compile(
+            r'^\s*\{\s*(?:start_of_tab|sot)\s*:\s*TP\s*\}\s*$', re.IGNORECASE)
+        _tp_close_re = re.compile(
+            r'^\s*\{\s*(?:end_of_tab|eot)\s*\}\s*$', re.IGNORECASE)
 
         # Simbolo di pausa di semiminima: {textsize:N}𝄽{textsize}
         if getattr(self.pref, 'hideRestSymbol', False):
@@ -7699,7 +7852,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 ' ', text, flags=re.IGNORECASE)
             text = re.sub(r'^[ \t]+$', '', text, flags=re.MULTILINE)
 
-        if not open_tags and not single_tags:
+        if not open_tags and not single_tags and not hide_tp:
             return text
 
         # Regex che riconosce qualsiasi direttiva ChordPro: {tag} o {tag:label}
@@ -7708,6 +7861,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         result = []
         inside = False  # True quando siamo dentro un blocco da rimuovere
         depth  = 0      # conta aperture annidate dello stesso tipo (raro ma sicuro)
+        in_tp  = False  # True se il blocco da rimuovere e' l'immagine Transposer
 
         for line in text.splitlines(keepends=True):
             m = _tag_re.search(line)
@@ -7717,12 +7871,24 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 if tag in open_tags:
                     inside = True
                     depth = 1
+                    in_tp = False
                     # la riga di apertura viene scartata
+                elif hide_tp and _tp_open_re.match(line):
+                    inside = True
+                    depth = 1
+                    in_tp = True
+                    # apertura Transposer: scartata fino a {end_of_tab}
                 elif tag in single_tags:
                     pass  # riga con direttiva singola viene scartata
                 else:
                     result.append(line)
             else:
+                if in_tp:
+                    if _tp_close_re.match(line):
+                        inside = False
+                        in_tp = False
+                    # tutte le righe interne al blocco vengono scartate
+                    continue
                 if tag in open_tags:
                     depth += 1          # apertura annidata (ignorata)
                 elif tag in close_tags:
@@ -8062,6 +8228,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         evt.Skip()
 
     def OnTextKeyDown(self, evt):
+        self._HideHoverHelp()       # scrivendo, la nota a comparsa sparisce
         # 314: left
         # 316: right
         map = {
@@ -8455,6 +8622,243 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         win.Show()
         stc.SetFocus()
 
+    # ── Guida al passaggio del mouse ────────────────────────────────────────
+    # Quando il mouse si ferma su una direttiva, un'opzione o un valore
+    # ({taste: DO start=DO}, "# {print_options: ... scale=100}") compare una
+    # piccola nota sotto il termine, con lo stesso aspetto della guida
+    # dell'intellisense. Si attiva/disattiva dal menu Visualizza (icona "?").
+    # I testi vengono da ChordProDirectiveHelp.find_help_at().
+    # Gli handler "dwell" dell'Editor (anteprima colori) chiamano sempre
+    # evt.Skip(): i due meccanismi convivono, e sopra una sigla colore resta
+    # solo l'anteprima colore.
+    _HOVER_HELP_CFG_PATH = '/Editor'
+    _HOVER_HELP_CFG_KEY = 'hover_help'
+
+    def _ReadHoverHelp(self):
+        try:
+            cfg = wx.Config.Get()
+            old = cfg.GetPath()
+            try:
+                cfg.SetPath(self._HOVER_HELP_CFG_PATH)
+                return cfg.ReadBool(self._HOVER_HELP_CFG_KEY, True)
+            finally:
+                cfg.SetPath(old)
+        except Exception:
+            return True
+
+    def _WriteHoverHelp(self, value):
+        try:
+            cfg = wx.Config.Get()
+            old = cfg.GetPath()
+            try:
+                cfg.SetPath(self._HOVER_HELP_CFG_PATH)
+                cfg.WriteBool(self._HOVER_HELP_CFG_KEY, bool(value))
+                cfg.Flush()
+            finally:
+                cfg.SetPath(old)
+        except Exception:
+            pass
+
+    def _SetupHoverHelp(self):
+        """Collega gli eventi dwell dell'editor (chiamata dopo la creazione)."""
+        self._hoverHelpOn = self._ReadHoverHelp()
+        self._hoverTipWin = None
+        stc = self.text
+        if not hasattr(wx, 'PopupWindow'):
+            return                      # piattaforma senza PopupWindow
+        try:
+            # L'Editor imposta gia' 400 ms per l'anteprima colore; se non l'ha
+            # fatto (SC_TIME_FOREVER = dwell disattivato) lo imposto qui.
+            if stc.GetMouseDwellTime() >= 10000000:
+                stc.SetMouseDwellTime(400)
+        except Exception:
+            return
+        stc.Bind(wx.stc.EVT_STC_DWELLSTART, self._OnHoverDwellStart)
+        stc.Bind(wx.stc.EVT_STC_DWELLEND, self._OnHoverHide)
+        stc.Bind(wx.stc.EVT_STC_UPDATEUI, self._OnHoverHide)   # testo/scroll
+        stc.Bind(wx.EVT_LEAVE_WINDOW, self._OnHoverHide)
+        stc.Bind(wx.EVT_MOUSEWHEEL, self._OnHoverHide)
+        stc.Bind(wx.EVT_MOTION, self._OnHoverMotion)
+
+    def _ApplyHoverHelpMenuIcon(self):
+        """Icona della voce di menu: prima scelta img/vector/question_guide.svg,
+        ripiego il PNG 16x16 gia' impostato dall'XRC."""
+        try:
+            item = self.menuBar.FindItemById(self._showHoverHelpMenuId)
+            if item is None:
+                return
+            svg = glb.AddPath('img/vector/question_guide.svg')
+            if os.path.isfile(svg):
+                bb = wx.BitmapBundle.FromSVGFile(svg, wx.Size(16, 16))
+                if bb.IsOk():
+                    item.SetBitmap(bb)
+        except Exception:
+            pass
+
+    def _SyncHoverHelpUI(self):
+        """Allinea voce di menu e pulsante della view toolbar allo stato."""
+        on = getattr(self, '_hoverHelpOn', True)
+        try:
+            if self.menuBar.FindItemById(self._showHoverHelpMenuId) is not None:
+                self.menuBar.Check(self._showHoverHelpMenuId, on)
+            tid = getattr(self, 'hoverHelpViewToolId', None)
+            if tid is not None and self.viewToolBar.FindTool(tid) is not None:
+                self.viewToolBar.ToggleTool(tid, on)
+                self.viewToolBar.Refresh()
+        except (RuntimeError, AttributeError):
+            pass
+
+    def OnToggleHoverHelp(self, evt):
+        # menu e toolbar condividono lo stesso id: si inverte lo stato
+        # (non ci si fida di evt.IsChecked) e si riallineano entrambi
+        self._hoverHelpOn = not getattr(self, '_hoverHelpOn', True)
+        self._WriteHoverHelp(self._hoverHelpOn)
+        self._SyncHoverHelpUI()
+        if not self._hoverHelpOn:
+            self._HideHoverHelp()
+            self._SetHelpCursor(False)
+
+    def _OnHoverHide(self, evt):
+        self._HideHoverHelp()
+        if evt.GetEventType() == wx.EVT_LEAVE_WINDOW.typeId:
+            self._SetHelpCursor(False)  # uscendo dall'editor: cursore normale
+        evt.Skip()
+
+    def _HideHoverHelp(self):
+        win = getattr(self, '_hoverTipWin', None)
+        if win is None:
+            return
+        try:
+            if win.IsShown():
+                win.Hide()
+        except RuntimeError:
+            # finestra gia' distrutta (chiusura del programma)
+            self._hoverTipWin = None
+
+    def _OnHoverDwellStart(self, evt):
+        evt.Skip()
+        try:
+            self._ShowHoverHelpAt(evt.GetPosition())
+        except Exception:
+            # una guida a comparsa non deve mai disturbare la scrittura
+            self._HideHoverHelp()
+
+    def _HoverHelpFor(self, pos):
+        """Guida per il termine alla posizione STC *pos*:
+        (testo, posizione STC d'inizio del termine, riga) oppure None."""
+        stc = self.text
+        if pos is None or pos < 0:
+            return None
+        # Sopra una sigla colore c'e' gia' l'anteprima colore dell'Editor.
+        colour_at = getattr(stc, '_colour_at_position', None)
+        if colour_at is not None and colour_at(pos) is not None:
+            return None
+        line = stc.LineFromPosition(pos)
+        if pos >= stc.GetLineEndPosition(line):
+            return None                 # oltre l'ultimo carattere della riga
+        line_start = stc.PositionFromLine(line)
+        text = stc.GetLine(line)
+        # Le posizioni STC sono in byte (UTF-8), find_help_at lavora in caratteri.
+        col = len(stc.GetTextRange(line_start, pos))
+        from . import ChordProDirectiveHelp
+        ChordProDirectiveHelp.set_notation(
+            self.pref.notations[0] if self.pref.notations else None)
+        found = ChordProDirectiveHelp.find_help_at(text, col)
+        if not found:
+            return None
+        tip, c0, _c1 = found
+        return tip, line_start + len(text[:c0].encode('utf-8')), line
+
+    def _ShowHoverHelpAt(self, pos):
+        stc = self.text
+        if not getattr(self, '_hoverHelpOn', True) or stc.AutoCompActive():
+            self._HideHoverHelp()
+            return
+        info = self._HoverHelpFor(pos)
+        if info is None:
+            self._HideHoverHelp()
+            return
+        tip, start, line = info
+        pt = stc.PointFromPosition(start)
+        self._ShowHoverTip(tip, stc.ClientToScreen(wx.Point(pt.x, pt.y)),
+                           stc.TextHeight(line))
+
+    # Cursore del mouse: sopra un termine che ha una guida passa da cursore di
+    # testo a freccia (Scintilla non offre altre forme), cosi' si capisce che
+    # fermandosi compare la descrizione.
+    def _SetHelpCursor(self, on):
+        if on == getattr(self, '_helpCursorOn', False):
+            return
+        self._helpCursorOn = on
+        try:
+            self.text.SetSTCCursor(wx.stc.STC_CURSORARROW if on
+                                   else wx.stc.STC_CURSORNORMAL)
+        except RuntimeError:
+            pass                        # editor gia' distrutto
+
+    def _OnHoverMotion(self, evt):
+        evt.Skip()
+        if evt.Dragging() or evt.LeftIsDown():
+            return                      # selezione in corso: non toccare il cursore
+        try:
+            on = False
+            if getattr(self, '_hoverHelpOn', True):
+                pos = self.text.PositionFromPointClose(evt.GetX(), evt.GetY())
+                on = self._HoverHelpFor(pos) is not None
+            self._SetHelpCursor(on)
+        except Exception:
+            self._SetHelpCursor(False)
+
+    def _ShowHoverTip(self, text, anchor, line_h):
+        """Mostra *text* sotto il termine (sopra se sotto non c'e' spazio).
+        *anchor* = angolo in alto a sinistra del termine, in coordinate schermo."""
+        stc = self.text
+        # Stessi colori della guida dell'intellisense (tema chiaro/scuro)
+        bg_ed = stc.StyleGetBackground(wx.stc.STC_STYLE_DEFAULT)
+        dark = (bg_ed.Red() * 299 + bg_ed.Green() * 587 + bg_ed.Blue() * 114) / 1000.0 < 128
+        if dark:
+            bg, fg, border = wx.Colour(37, 42, 52), wx.Colour(140, 185, 235), wx.Colour(80, 90, 110)
+        else:
+            bg, fg, border = wx.Colour(244, 248, 255), wx.Colour(30, 95, 170), wx.Colour(190, 205, 225)
+
+        win = getattr(self, '_hoverTipWin', None)
+        if win is None:
+            win = wx.PopupWindow(self.frame, wx.BORDER_NONE)
+            lbl = wx.StaticText(win, label='', pos=(8, 3))
+            font = lbl.GetFont()
+            font.SetStyle(wx.FONTSTYLE_ITALIC)
+            font.SetPixelSize(wx.Size(0, 14))
+            lbl.SetFont(font)
+            win._lbl = lbl
+            self._hoverTipWin = win
+        lbl = win._lbl
+        win.SetBackgroundColour(border)          # 1 px di cornice
+        lbl.SetBackgroundColour(bg)
+        lbl.SetForegroundColour(fg)
+        lbl.SetLabel(text)                       # puo' avere un esempio dopo '\n'
+        lbl.Wrap(self.frame.FromDIP(300))
+        sz = lbl.GetBestSize()
+        pad_x, pad_y = 8, 3
+        lbl.SetSize((sz.width + 2 * pad_x, sz.height + 2 * pad_y))
+        lbl.SetPosition((1, 1))
+        w, h = sz.width + 2 * pad_x + 2, sz.height + 2 * pad_y + 2
+        win.SetSize((w, h))
+
+        disp_i = wx.Display.GetFromWindow(stc)
+        area = wx.Display(disp_i if disp_i >= 0 else 0).GetClientArea()
+        x, y = anchor.x, anchor.y + line_h + 1
+        if y + h > area.GetBottom():             # niente spazio sotto: sopra
+            y = anchor.y - h - 1
+        x = max(area.x, min(x, area.GetRight() - w))
+        y = max(area.y, y)
+        win.SetPosition((x, y))
+        # Mostrare la finestra puo' togliere il fuoco all'editor: lo si
+        # ripristina solo se lo aveva, per non rubarlo ad altri controlli.
+        had_focus = wx.Window.FindFocus() is stc
+        win.Show()
+        if had_focus:
+            stc.SetFocus()
+
     # Direttive che non accettano valore (si chiudono con '}' direttamente)
     _DIRECTIVES_NO_VALUE = ChordProDirectives.DIRECTIVES_NO_VALUE
 
@@ -8615,6 +9019,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self.DrawOnDC(dc)
             m = dc.Close()
             m.SetClipboard(dc.MaxX(), dc.MaxY())
+            # Conferma breve (3 s) nella status bar, come su Linux/macOS.
+            self._setStatus(
+                _("Copied to the clipboard as a vector image."), 3000)
             return
 
         # --- Linux / macOS --------------------------------------------------
@@ -8654,7 +9061,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             png_bytes = self._bitmap_to_png_bytes(bmp)
             if self._copy_bytes_wayland(png_bytes, 'image/png'):
                 self._setStatus(
-                    _("Copied to the clipboard as an image."), 10000)
+                    _("Copied to the clipboard as an image."), 3000)
             else:
                 wx.MessageBox(
                     _("wl-copy could not set the clipboard."),
@@ -8692,7 +9099,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         if ok:
             self._setStatus(
-                _("Copied to the clipboard as a vector image."), 10000)
+                _("Copied to the clipboard as a vector image."), 3000)
         else:
             wx.MessageBox(
                 _("The clipboard refused the image data."),
@@ -8700,6 +9107,13 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
     def OnCopyAsImage(self, evt):
         self.CopyAsImage()
+
+    def _OnPreviewRefreshButton(self):
+        """Callback del pulsante "Aggiorna Pagina Songpress++": restituisce il
+        testo corrente da ridisegnare e conferma per 3 s nella status bar."""
+        text = self._get_display_text()
+        self._setStatus(_("Songpress++ page updated."), 3000)
+        return text
 
     def _LocalizeClipboardMenuLabel(self):
         """Adatta l'etichetta della voce 'Esporta negli appunti…' al backend.

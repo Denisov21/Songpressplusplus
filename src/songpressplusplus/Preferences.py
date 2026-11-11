@@ -1064,6 +1064,7 @@ class Preferences(object):
         # View toolbar
         self.tbv_preview     = _rb('tbv_preview')
         self.tbv_labelVerses = _rb('tbv_labelVerses')
+        self.tbv_hoverHelp   = _rb('tbv_hoverHelp')
         # Insert toolbar
         self.tb_title               = _rb('tb_title')
         self.tb_subtitle            = _rb('tb_subtitle')
@@ -1111,7 +1112,7 @@ class Preferences(object):
         # Format toolbar
         _w('tbf_fontChooser'); _w('tbf_showChords'); _w('tbf_insertLinespacing')
         # View toolbar
-        _w('tbv_preview'); _w('tbv_labelVerses')
+        _w('tbv_preview'); _w('tbv_labelVerses'); _w('tbv_hoverHelp')
         # Insert toolbar
         _w('tb_title');             _w('tb_subtitle')
         _w('tb_artist');            _w('tb_composer');          _w('tb_album');             _w('tb_copyright')

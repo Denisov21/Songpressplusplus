@@ -17,6 +17,11 @@
         <object class="wxMenu" name="newFromTemplate">
           <label>Nuovo da _modello</label>
         </object>
+        <object class="wxMenuItem" name="createTemplate">
+          <label>Crea mode_llo...</label>
+          <accel></accel>
+          <help>Salva la canzone corrente come modello, disponibile in Nuovo da modello</help>
+        </object>
         <object class="wxMenuItem" name="open">
           <label>_Apri...</label>
           <accel>CTRL+O</accel>
@@ -366,6 +371,15 @@
           <accel></accel>
           <help>Mostra/nascondi le etichette all'inizio delle strofe e del ritornello</help>
           <bitmap>../img/labelVerses.png</bitmap>
+          <checkable>1</checkable>
+          <checked>1</checked>
+        </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="showHoverHelp">
+          <label>_Guida al passaggio del mouse</label>
+          <accel></accel>
+          <help>Mostra una breve descrizione quando il mouse si ferma su una direttiva, un'opzione o un valore nell'editor</help>
+          <bitmap>../img/question_guide.png</bitmap>
           <checkable>1</checkable>
           <checked>1</checked>
         </object>

@@ -17,6 +17,11 @@
         <object class="wxMenu" name="newFromTemplate">
           <label>New from _template</label>
         </object>
+        <object class="wxMenuItem" name="createTemplate">
+          <label>Create te_mplate...</label>
+          <accel></accel>
+          <help>Save the current song as a template, available in New from template</help>
+        </object>
         <object class="wxMenuItem" name="open">
           <label>_Open...</label>
           <accel>CTRL+O</accel>
@@ -366,6 +371,15 @@
           <accel></accel>
           <help>Show/hide labels at the beginning of verses and chorus</help>
           <bitmap>../img/labelVerses.png</bitmap>
+          <checkable>1</checkable>
+          <checked>1</checked>
+        </object>
+        <object class="separator"/>
+        <object class="wxMenuItem" name="showHoverHelp">
+          <label>Directive hover _help</label>
+          <accel></accel>
+          <help>Show a short description when the mouse rests on a directive, option or value in the editor</help>
+          <bitmap>../img/question_guide.png</bitmap>
           <checkable>1</checkable>
           <checked>1</checked>
         </object>

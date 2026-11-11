@@ -106,6 +106,19 @@
             <property name="permission">protected</property>
           </object>
           <object class="wxMenuItem" expanded="false">
+            <property name="bitmap"></property>
+            <property name="checked">0</property>
+            <property name="enabled">1</property>
+            <property name="help">Save the current song as a template, available in New from template</property>
+            <property name="id">ID_CREATE_TEMPLATE</property>
+            <property name="kind">wxITEM_NORMAL</property>
+            <property name="label">Create te&amp;mplate...</property>
+            <property name="name">createTemplate</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
             <property name="bitmap">Load From File; ../img/open.png</property>
             <property name="checked">0</property>
             <property name="enabled">1</property>
@@ -865,6 +878,23 @@
             <property name="kind">wxITEM_CHECK</property>
             <property name="label">&amp;Label verses and chord</property>
             <property name="name">labelVerses</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="separator" expanded="false">
+            <property name="name">m_separator_hoverhelp</property>
+            <property name="permission">none</property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
+            <property name="bitmap">Load From File; ../img/question_guide.png</property>
+            <property name="checked">1</property>
+            <property name="enabled">1</property>
+            <property name="help">Show a short description when the mouse rests on a directive, option or value in the editor</property>
+            <property name="id">ID_HOVER_HELP</property>
+            <property name="kind">wxITEM_CHECK</property>
+            <property name="label">Directive hover &amp;help</property>
+            <property name="name">showHoverHelp</property>
             <property name="permission">none</property>
             <property name="shortcut"></property>
             <property name="unchecked_bitmap"></property>

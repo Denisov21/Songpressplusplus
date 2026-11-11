@@ -856,6 +856,7 @@ class SongpressToolbarsMixin:
     VIEW_TOOLBAR_ITEMS = [
         ('preview',    _(u'Show Songpress++ Page'),    'tbv_preview'),
         ('labelVerses',_(u'Show verse and chorus labels'),'tbv_labelVerses'),
+        ('showHoverHelp',_(u'Directive hover help'),   'tbv_hoverHelp'),
     ]
 
     def _ApplyViewToolBarVisibility(self):
@@ -895,6 +896,10 @@ class SongpressToolbarsMixin:
                                 id=self.togglePreviewViewToolId)
             elif xrc_name == 'labelVerses':
                 self.labelVersesViewToolId = tool.GetId()
+            elif xrc_name == 'showHoverHelp':
+                self.hoverHelpViewToolId = tool.GetId()
+                if xrc_name not in _toggle_states:
+                    _toggle_states[xrc_name] = getattr(self, '_hoverHelpOn', True)
             # Ripristina lo stato toggle se era già impostato
             if xrc_name in _toggle_states:
                 self.viewToolBar.ToggleTool(wx.xrc.XRCID(xrc_name),
@@ -912,10 +917,12 @@ class SongpressToolbarsMixin:
         self._view_toolbar_icons = {
             'preview':    'img/preview.png',
             'labelVerses':'img/labelVerses.png',
+            'showHoverHelp':'img/question_guide.png',
         }
         self._view_toolbar_helps = {
             'preview':    _(u"Show or hide the Songpress++ Page panel"),
             'labelVerses':_(u"Show or hide verse and chorus labels"),
+            'showHoverHelp':_(u"Show or hide the help tooltip over ChordPro directives"),
         }
 
         # Toggle "Mostra Pagina Songpress++"
@@ -942,6 +949,21 @@ class SongpressToolbarsMixin:
             _("Show or hide verse and chorus labels"),
         )
         self.labelVersesViewToolId = labelVersesViewTool.GetId()
+
+        # Toggle "Guida al passaggio del mouse sulle direttive"
+        # (icona: img/vector/question_guide.svg, ripiego img/question_guide.png)
+        hoverHelpViewTool = self.viewToolBar.AddToggleTool(
+            wx.xrc.XRCID('showHoverHelp'),
+            self._scaledToolbarBitmap("img/question_guide.png"),
+            wx.NullBitmap,
+            True,
+            None,
+            _("Directive hover help"),
+            _("Show or hide the help tooltip over ChordPro directives"),
+        )
+        self.hoverHelpViewToolId = hoverHelpViewTool.GetId()
+        self.viewToolBar.ToggleTool(self.hoverHelpViewToolId,
+                                    getattr(self, '_hoverHelpOn', True))
 
         self.viewToolBar.Realize()
         self.viewToolBarPane = self.AddPane(

@@ -1,0 +1,626 @@
+# Italian translation of the directive hover/intellisense help
+# (ChordProDirectiveHelp.py) of Songpress++.
+# Copyright (C) 2026 Denis.
+msgid ""
+msgstr ""
+"Project-Id-Version: Songpress++ ChordProDirectiveHelp\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-09 00:00+0000\n"
+"PO-Revision-Date: 2026-11-09 00:00+0000\n"
+"Last-Translator: Denis\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: ChordProDirectiveHelp.py
+msgid "Right hand"
+msgstr "Mano destra"
+
+#: ChordProDirectiveHelp.py
+msgid "Left hand"
+msgstr "Mano sinistra"
+
+#: ChordProDirectiveHelp.py
+msgid "Album the song belongs to."
+msgstr "Album a cui appartiene il brano."
+
+#: ChordProDirectiveHelp.py
+msgid "Arranger of the song."
+msgstr "Arrangiatore del brano."
+
+#: ChordProDirectiveHelp.py
+msgid "Artist or performer."
+msgstr "Artista o interprete."
+
+#: ChordProDirectiveHelp.py
+msgid "Author of the lyrics."
+msgstr "Autore del testo."
+
+#: ChordProDirectiveHelp.py
+msgid "Begins a bridge."
+msgstr "Inizia un ponte."
+
+#: ChordProDirectiveHelp.py
+msgid "Begins a chord grid."
+msgstr "Inizia una griglia di accordi."
+
+#: ChordProDirectiveHelp.py
+msgid "Begins a chorus."
+msgstr "Inizia un ritornello."
+
+#: ChordProDirectiveHelp.py
+msgid "Begins a generic part (Songpress++)."
+msgstr "Inizia una parte generica (Songpress++)."
+
+#: ChordProDirectiveHelp.py
+msgid "Begins a numbered verse (Songpress++)."
+msgstr "Inizia una strofa numerata (Songpress++)."
+
+#: ChordProDirectiveHelp.py
+msgid "Begins a tablature block (monospaced)."
+msgstr "Inizia un blocco di intavolatura (a spaziatura fissa)."
+
+#: ChordProDirectiveHelp.py
+msgid "Begins a verse."
+msgstr "Inizia una strofa."
+
+#: ChordProDirectiveHelp.py
+msgid "Capo position (fret number)."
+msgstr "Posizione del capotasto (numero del tasto)."
+
+#: ChordProDirectiveHelp.py
+msgid "Chords in bold (Songpress++)."
+msgstr "Accordi in grassetto (Songpress++)."
+
+#: ChordProDirectiveHelp.py
+msgid "Chords in italic (Songpress++)."
+msgstr "Accordi in corsivo (Songpress++)."
+
+#: ChordProDirectiveHelp.py
+msgid "Chords underlined (Songpress++)."
+msgstr "Accordi sottolineati (Songpress++)."
+
+#: ChordProDirectiveHelp.py
+msgid "Collection or songbook the song belongs to."
+msgstr "Raccolta o canzoniere a cui appartiene il brano."
+
+#: ChordProDirectiveHelp.py
+msgid "Colour of the chords from here on."
+msgstr "Colore degli accordi da qui in avanti."
+
+#: ChordProDirectiveHelp.py
+msgid "Colour of the lyrics from here on."
+msgstr "Colore del testo da qui in avanti."
+
+#: ChordProDirectiveHelp.py
+msgid "Comment line in italic."
+msgstr "Riga di commento in corsivo."
+
+#: ChordProDirectiveHelp.py
+msgid "Comment line inside a box."
+msgstr "Riga di commento dentro un riquadro."
+
+#: ChordProDirectiveHelp.py
+msgid "Comment line, shown highlighted."
+msgstr "Riga di commento, mostrata evidenziata."
+
+#: ChordProDirectiveHelp.py
+msgid "Composer of the music."
+msgstr "Compositore della musica."
+
+#: ChordProDirectiveHelp.py
+msgid "Copyright notice."
+msgstr "Nota sul copyright."
+
+#: ChordProDirectiveHelp.py
+msgid "Custom metadata: name followed by its value."
+msgstr "Metadato personalizzato: nome seguito dal valore."
+
+#: ChordProDirectiveHelp.py
+msgid "Defines the fingering of a chord."
+msgstr "Definisce la diteggiatura di un accordo."
+
+#: ChordProDirectiveHelp.py
+msgid ""
+"Draws a keyboard with finger numbers on the keys. Use - instead of the chord"
+" to pick only some notes (0=NOTE = dot only, key not coloured)."
+msgstr ""
+"Disegna una tastiera con i numeri delle dita sui tasti. Usa - al posto "
+"dell'accordo per scegliere solo alcune note (0=NOTA = solo puntino, tasto "
+"non colorato)."
+
+#: ChordProDirectiveHelp.py
+msgid ""
+"Draws a piano keyboard with the chord notes highlighted. A blank line before"
+" the next directive starts a new row."
+msgstr ""
+"Disegna una tastiera di pianoforte con le note dell'accordo evidenziate. Una"
+" riga vuota prima della direttiva successiva inizia una nuova riga."
+
+#: ChordProDirectiveHelp.py
+msgid "Duration of the song."
+msgstr "Durata del brano."
+
+#: ChordProDirectiveHelp.py
+msgid "Ends the bridge."
+msgstr "Termina il ponte."
+
+#: ChordProDirectiveHelp.py
+msgid "Ends the chord grid."
+msgstr "Termina la griglia di accordi."
+
+#: ChordProDirectiveHelp.py
+msgid "Ends the chord-only block."
+msgstr "Termina il blocco di soli accordi."
+
+#: ChordProDirectiveHelp.py
+msgid "Ends the chorus."
+msgstr "Termina il ritornello."
+
+#: ChordProDirectiveHelp.py
+msgid "Ends the numbered verse."
+msgstr "Termina la strofa numerata."
+
+#: ChordProDirectiveHelp.py
+msgid "Ends the part."
+msgstr "Termina la parte."
+
+#: ChordProDirectiveHelp.py
+msgid "Ends the tablature block."
+msgstr "Termina il blocco di intavolatura."
+
+#: ChordProDirectiveHelp.py
+msgid "Ends the verse."
+msgstr "Termina la strofa."
+
+#: ChordProDirectiveHelp.py
+msgid "Font of the chords from here on."
+msgstr "Carattere degli accordi da qui in avanti."
+
+#: ChordProDirectiveHelp.py
+msgid "Font of the lyrics from here on."
+msgstr "Carattere del testo da qui in avanti."
+
+#: ChordProDirectiveHelp.py
+msgid "Forces a column break."
+msgstr "Forza un'interruzione di colonna."
+
+#: ChordProDirectiveHelp.py
+msgid "Forces a page break."
+msgstr "Forza un'interruzione di pagina."
+
+#: ChordProDirectiveHelp.py
+msgid "Inserts an image."
+msgstr "Inserisce un'immagine."
+
+#: ChordProDirectiveHelp.py
+msgid "Keywords for searching."
+msgstr "Parole chiave per la ricerca."
+
+#: ChordProDirectiveHelp.py
+msgid "Language of the lyrics."
+msgstr "Lingua del testo."
+
+#: ChordProDirectiveHelp.py
+msgid "Line spacing (Songpress++)."
+msgstr "Interlinea (Songpress++)."
+
+#: ChordProDirectiveHelp.py
+msgid "Lyrics in bold (Songpress++)."
+msgstr "Testo in grassetto (Songpress++)."
+
+#: ChordProDirectiveHelp.py
+msgid "Lyrics in italic (Songpress++)."
+msgstr "Testo in corsivo (Songpress++)."
+
+#: ChordProDirectiveHelp.py
+msgid "Lyrics underlined (Songpress++)."
+msgstr "Testo sottolineato (Songpress++)."
+
+#: ChordProDirectiveHelp.py
+msgid "Musical key of the song."
+msgstr "Tonalità del brano."
+
+#: ChordProDirectiveHelp.py
+msgid "Size of the chords from here on."
+msgstr "Dimensione degli accordi da qui in avanti."
+
+#: ChordProDirectiveHelp.py
+msgid "Size of the lyrics from here on."
+msgstr "Dimensione del testo da qui in avanti."
+
+#: ChordProDirectiveHelp.py
+msgid "Song title."
+msgstr "Titolo del brano."
+
+#: ChordProDirectiveHelp.py
+msgid "Space above the chords (Songpress++)."
+msgstr "Spazio sopra gli accordi (Songpress++)."
+
+#: ChordProDirectiveHelp.py
+msgid "Starts a new song in the same file."
+msgstr "Inizia un nuovo brano nello stesso file."
+
+#: ChordProDirectiveHelp.py
+msgid "Subtitle, shown under the title."
+msgstr "Sottotitolo, mostrato sotto il titolo."
+
+#: ChordProDirectiveHelp.py
+msgid "Tempo in beats per minute."
+msgstr "Velocità in battiti al minuto."
+
+#: ChordProDirectiveHelp.py
+msgid "Tempo marking in words (e.g. Allegro)."
+msgstr "Indicazione di tempo a parole (es. Allegro)."
+
+#: ChordProDirectiveHelp.py
+msgid "Tempo variant (Songpress++)."
+msgstr "Variante del tempo (Songpress++)."
+
+#: ChordProDirectiveHelp.py
+msgid "Time signature."
+msgstr "Tempo (indicazione di metro)."
+
+#: ChordProDirectiveHelp.py
+msgid "Title used for sorting in indexes."
+msgstr "Titolo usato per l'ordinamento negli indici."
+
+#: ChordProDirectiveHelp.py
+msgid "Topic of the song."
+msgstr "Argomento del brano."
+
+#: ChordProDirectiveHelp.py
+msgid "Year of publication."
+msgstr "Anno di pubblicazione."
+
+#: ChordProDirectiveHelp.py
+msgid "Note the keyboard starts from (e.g. start=SI)."
+msgstr "Nota da cui parte la tastiera (es. start=SI)."
+
+#: ChordProDirectiveHelp.py
+msgid ""
+"On 8-key keyboards: both = highlight the octave key at both ends; one, "
+"single or first = left end only."
+msgstr ""
+"Nelle tastiere a 8 tasti: both = evidenzia il tasto d'ottava a entrambe le "
+"estremità; one, single o first = solo a sinistra."
+
+#: ChordProDirectiveHelp.py
+msgid "R = right hand, L = left hand (label above the keyboard)."
+msgstr "R = mano destra, L = mano sinistra (etichetta sopra la tastiera)."
+
+#: ChordProDirectiveHelp.py
+msgid "Show or hide the middle C label (show, hide, on, off, yes, no, 1, 0)."
+msgstr ""
+"Mostra o nasconde l'etichetta del DO centrale (show, hide, on, off, yes, no,"
+" 1, 0)."
+
+#: ChordProDirectiveHelp.py
+msgid "Grid scale factor (e.g. size=1.5)."
+msgstr "Fattore di scala della griglia (es. size=1.5)."
+
+#: ChordProDirectiveHelp.py
+msgid "Space above the chords, inside this grid only."
+msgstr "Spazio sopra gli accordi, solo in questa griglia."
+
+#: ChordProDirectiveHelp.py
+msgid "Line spacing, inside this grid only."
+msgstr "Interlinea, solo in questa griglia."
+
+#: ChordProDirectiveHelp.py
+msgid "Direction the size applies to: horizontal, vertical or both."
+msgstr ""
+"Direzione a cui si applica la dimensione: horizontal, vertical o both."
+
+#: ChordProDirectiveHelp.py
+msgid "Image width."
+msgstr "Larghezza dell'immagine."
+
+#: ChordProDirectiveHelp.py
+msgid "Image height."
+msgstr "Altezza dell'immagine."
+
+#: ChordProDirectiveHelp.py
+msgid "Image scale (e.g. scale=50% or scale=0.5)."
+msgstr "Scala dell'immagine (es. scale=50% oppure scale=0.5)."
+
+#: ChordProDirectiveHelp.py
+msgid "Image alignment: left, center or right."
+msgstr "Allineamento dell'immagine: left, center o right."
+
+#: ChordProDirectiveHelp.py
+msgid "Draws a border around the image."
+msgstr "Disegna un bordo attorno all'immagine."
+
+#: ChordProDirectiveHelp.py
+msgid "Aligns the image to the left."
+msgstr "Allinea l'immagine a sinistra."
+
+#: ChordProDirectiveHelp.py
+msgid "Centres the image."
+msgstr "Centra l'immagine."
+
+#: ChordProDirectiveHelp.py
+msgid "Aligns the image to the right."
+msgstr "Allinea l'immagine a destra."
+
+#: ChordProDirectiveHelp.py
+msgid ""
+"Relative mode, to be used with {beats_time}: spacing is relative to the "
+"chord-to-text distance."
+msgstr ""
+"Modalità relativa, da usare con {beats_time}: spaziatura relativa alla "
+"distanza accordo-testo."
+
+#: ChordProDirectiveHelp.py
+msgid "Shows the middle C label."
+msgstr "Mostra l'etichetta del DO centrale."
+
+#: ChordProDirectiveHelp.py
+msgid "Hides the middle C label."
+msgstr "Nasconde l'etichetta del DO centrale."
+
+#: ChordProDirectiveHelp.py
+msgid "Highlights the octave key at both ends."
+msgstr "Evidenzia il tasto d'ottava a entrambe le estremità."
+
+#: ChordProDirectiveHelp.py
+msgid "Highlights the octave key at the left end only."
+msgstr "Evidenzia il tasto d'ottava solo all'estremità sinistra."
+
+#: ChordProDirectiveHelp.py
+msgid "Applies the size horizontally only."
+msgstr "Applica la dimensione solo in orizzontale."
+
+#: ChordProDirectiveHelp.py
+msgid "Applies the size vertically only."
+msgstr "Applica la dimensione solo in verticale."
+
+#: ChordProDirectiveHelp.py
+msgid "Applies the size in both directions."
+msgstr "Applica la dimensione in entrambe le direzioni."
+
+#: ChordProDirectiveHelp.py
+msgid "A4 paper."
+msgstr "Carta A4."
+
+#: ChordProDirectiveHelp.py
+msgid "Portrait."
+msgstr "Verticale."
+
+#: ChordProDirectiveHelp.py
+msgid "Landscape."
+msgstr "Orizzontale."
+
+#: ChordProDirectiveHelp.py
+msgid "One page per sheet."
+msgstr "Una pagina per foglio."
+
+#: ChordProDirectiveHelp.py
+msgid "One column per page."
+msgstr "Una colonna per pagina."
+
+#: ChordProDirectiveHelp.py
+msgid "Two pages per sheet."
+msgstr "Due pagine per foglio."
+
+#: ChordProDirectiveHelp.py
+msgid "Blank pages are kept."
+msgstr "Le pagine bianche vengono mantenute."
+
+#: ChordProDirectiveHelp.py
+msgid "Two columns per page."
+msgstr "Due colonne per pagina."
+
+#: ChordProDirectiveHelp.py
+msgid "Blank pages are removed."
+msgstr "Le pagine bianche vengono rimosse."
+
+#: ChordProDirectiveHelp.py
+msgid "Pages per sheet: 1 or 2."
+msgstr "Pagine per foglio: 1 o 2."
+
+#: ChordProDirectiveHelp.py
+msgid "Columns per page: 1 or 2."
+msgstr "Colonne per pagina: 1 o 2."
+
+#: ChordProDirectiveHelp.py
+msgid "Shrink to fit the current page."
+msgstr "Riduci per adattare alla pagina corrente."
+
+#: ChordProDirectiveHelp.py
+msgid "Opens a verse with a custom label."
+msgstr "Apre una strofa con un'etichetta personalizzata."
+
+#: ChordProDirectiveHelp.py
+msgid "Paper size, as a numeric ID (3 = A4)."
+msgstr "Formato carta, come ID numerico (3 = A4)."
+
+#: ChordProDirectiveHelp.py
+msgid "Remove blank pages (0 = off, 1 = on)."
+msgstr "Rimuovi pagine bianche (0 = no, 1 = sì)."
+
+#: ChordProDirectiveHelp.py
+msgid "Do not shrink to fit the current page."
+msgstr "Non ridurre per adattare alla pagina corrente."
+
+#: ChordProDirectiveHelp.py
+msgid "Orientation: 1 = portrait, 2 = landscape."
+msgstr "Orientamento: 1 = verticale, 2 = orizzontale."
+
+#: ChordProDirectiveHelp.py
+msgid "Shrink when the content exceeds the page."
+msgstr "Riduci quando il contenuto eccede la pagina."
+
+#: ChordProDirectiveHelp.py
+msgid "Explicit bar separator inside a grid block."
+msgstr "Separatore di battuta esplicito dentro una griglia."
+
+#: ChordProDirectiveHelp.py
+msgid "Minimum margin, in mm, used by Shrink (0-50)."
+msgstr "Margine minimo, in mm, usato da Riduci (0-50)."
+
+#: ChordProDirectiveHelp.py
+msgid "Do not shrink when the content exceeds the page."
+msgstr "Non ridurre quando il contenuto eccede la pagina."
+
+#: ChordProDirectiveHelp.py
+msgid "Begins an unnumbered verse, with an optional label."
+msgstr "Inizia una strofa non numerata, con etichetta facoltativa."
+
+#: ChordProDirectiveHelp.py
+msgid "No mirroring: in 2-pages mode the right half stays blank."
+msgstr "Nessuna replica: in modalità 2 pagine la metà destra resta bianca."
+
+#: ChordProDirectiveHelp.py
+msgid "Begins a bridge, with an optional label (default: Bridge)."
+msgstr "Inizia un bridge, con etichetta facoltativa (predefinita: Bridge)."
+
+#: ChordProDirectiveHelp.py
+msgid "Duration in beats of this chord (on the chord line below)."
+msgstr "Durata in battiti di questo accordo (nella riga di accordi sotto)."
+
+#: ChordProDirectiveHelp.py
+msgid "Page margins in mm: top, bottom, left, right (0-100 each)."
+msgstr ""
+"Margini della pagina in mm: alto, basso, sinistro, destro (0-100 ciascuno)."
+
+#: ChordProDirectiveHelp.py
+msgid "Begins a chorus, with an optional label (Songpress++ form)."
+msgstr "Inizia un ritornello, con etichetta facoltativa (forma Songpress++)."
+
+#: ChordProDirectiveHelp.py
+msgid "Inserts a blank spacer row (vertical space). Takes no value."
+msgstr ""
+"Inserisce una riga vuota di spaziatura (spazio verticale). Non accetta "
+"valori."
+
+#: ChordProDirectiveHelp.py
+msgid "Scale of the whole printed content, in % (50-200, default 100)."
+msgstr "Scala di tutto il contenuto stampato, in % (50-200, predefinita 100)."
+
+#: ChordProDirectiveHelp.py
+msgid "Page type (ChordPro 6). Accepted for compatibility, not rendered."
+msgstr ""
+"Tipo di pagina (ChordPro 6). Accettato per compatibilità, non viene "
+"applicato."
+
+#: ChordProDirectiveHelp.py
+msgid "Mirroring: in 2-pages mode the page is repeated on the right half."
+msgstr ""
+"Replica: in modalità 2 pagine la pagina viene ripetuta sulla metà destra."
+
+#: ChordProDirectiveHelp.py
+msgid "Begins an intro chord block, with an optional label (default: Intro)."
+msgstr ""
+"Inizia un blocco di accordi d'intro, con etichetta facoltativa (predefinita:"
+" Intro)."
+
+#: ChordProDirectiveHelp.py
+msgid ""
+"Finger number = note. 0=NOTE draws only a dot (the key is not coloured)."
+msgstr ""
+"Numero del dito = nota. 0=NOTA disegna solo un punto (il tasto non viene "
+"colorato)."
+
+#: ChordProDirectiveHelp.py
+msgid ""
+"Size of the chord keyboards, in %, for printing only (50-200). Optional."
+msgstr ""
+"Dimensione delle tastiere degli accordi, in %, solo per la stampa (50-200). "
+"Facoltativa."
+
+#: ChordProDirectiveHelp.py
+msgid ""
+"Number of columns (ChordPro 6). Accepted for compatibility, not rendered."
+msgstr ""
+"Numero di colonne (ChordPro 6). Accettato per compatibilità, non viene "
+"applicato."
+
+#: ChordProDirectiveHelp.py
+msgid ""
+"CCLI licence number of the song. Stored only, not displayed (Songpress++)."
+msgstr ""
+"Numero di licenza CCLI del brano. Solo archiviato, non viene mostrato "
+"(Songpress++)."
+
+#: ChordProDirectiveHelp.py
+msgid ""
+"Transposition in semitones (ChordPro 6). Accepted for compatibility, "
+"ignored."
+msgstr ""
+"Trasposizione in semitoni (ChordPro 6). Accettata per compatibilità, "
+"ignorata."
+
+#: ChordProDirectiveHelp.py
+msgid ""
+"Shrink to fit the current page (0 = off, 1 = on): avoids clipping at the "
+"bottom."
+msgstr ""
+"Riduci per adattare alla pagina corrente (0 = no, 1 = sì): evita che il "
+"fondo venga tagliato."
+
+#: ChordProDirectiveHelp.py
+msgid ""
+"Blank page threshold, in %: a page filled less than this is considered blank"
+" (1-95)."
+msgstr ""
+"Soglia pagina bianca, in %: una pagina riempita meno di questo valore è "
+"considerata bianca (1-95)."
+
+#: ChordProDirectiveHelp.py
+msgid ""
+"Watermark of this song (diagonal text behind the lyrics), written by File > "
+"Watermark."
+msgstr ""
+"Filigrana di questo brano (testo in diagonale dietro al testo), scritta da "
+"File > Filigrana."
+
+#: ChordProDirectiveHelp.py
+msgid ""
+"Duration in beats of each chord on the line below, as Chord=beats. Shown "
+"above the chords in the preview."
+msgstr ""
+"Durata in battiti di ogni accordo della riga sotto, nella forma "
+"Accordo=battiti. Appare sopra gli accordi nell'anteprima."
+
+#: ChordProDirectiveHelp.py
+msgid ""
+"No mirroring (0 = off, 1 = on): in 2-pages mode, print only on the left half"
+" and leave the right half blank."
+msgstr ""
+"Non replicare (0 = no, 1 = sì): in modalità 2 pagine, stampa solo sulla metà"
+" sinistra e lascia bianca quella destra."
+
+#: ChordProDirectiveHelp.py
+msgid ""
+"Shrink if it exceeds the page (0 = off, 1 = on): reduces the content only "
+"when it does not fit, never enlarges it."
+msgstr ""
+"Riduci se eccede la pagina (0 = no, 1 = sì): riduce il contenuto solo quando"
+" non ci sta, non lo ingrandisce mai."
+
+#: ChordProDirectiveHelp.py
+msgid ""
+"Print settings saved in the song. It is a comment on the first line of the "
+"file: create it with Print options > Save in editor."
+msgstr ""
+"Impostazioni di stampa salvate nel brano. È un commento sulla prima riga del"
+" file: si crea con Opzioni di stampa > Salva nell'editor."
+
+#: ChordProDirectiveHelp.py
+msgid ""
+"Comment line: treated as a blank line, it does not appear in the preview or "
+"in print."
+msgstr ""
+"Riga di commento: trattata come riga vuota, non appare nell'anteprima né in "
+"stampa."
+
+msgid "Directive hover help"
+msgstr "Guida al passaggio del mouse"
+
+msgid "Show or hide the help tooltip over ChordPro directives"
+msgstr "Mostra o nasconde la descrizione sulle direttive ChordPro"
