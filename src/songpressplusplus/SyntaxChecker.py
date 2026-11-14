@@ -555,17 +555,18 @@ PRINT_OPTIONS_SPEC = {
     'cols':      (1, 2),
     'fit':       (0, 1),
     'shrink':    (0, 1),
-    'minmargin': (0, 50),
-    'nomirror':  (0, 1),
+    'minmargin': (0, 20),
+    'nomirror':  (0, 1),   # obsoleta: accettata e ignorata (brani vecchi)
     'blank':     (0, 1),
     'blankthr':  (1, 95),
     'scale':     (50, 200),
+    'pos':       (0, 1),      # posizione orizzontale: 0 = sinistra, 1 = centrale; facoltativa
     'paper':     (0, 200),
     'orient':    (1, 2),
     'kbd':       (50, 200),   # dimensione tastiere (%), facoltativa
 }
 # Opzioni facoltative: la loro assenza non genera l'avviso «Missing option(s)».
-PRINT_OPTIONS_OPTIONAL = ('kbd',)
+PRINT_OPTIONS_OPTIONAL = ('kbd', 'pos', 'nomirror')
 PRINT_OPTIONS_MARGINS_RANGE = (0, 100)
 _PRINT_HEAD_RE = re.compile(r'^\s*#\s*\{\s*print_options\b', re.IGNORECASE)
 

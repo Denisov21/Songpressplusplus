@@ -857,7 +857,150 @@ class SongpressToolbarsMixin:
         ('preview',    _(u'Show Songpress++ Page'),    'tbv_preview'),
         ('labelVerses',_(u'Show verse and chorus labels'),'tbv_labelVerses'),
         ('showHoverHelp',_(u'Directive hover help'),   'tbv_hoverHelp'),
+        # Voci replicate dal menu Visualizza: l'etichetta qui sotto è solo un
+        # ripiego, quella mostrata è presa dalla voce di menu (già tradotta).
+        ('showPageBreakLines',   _(u'Page break lines'),   'tbv_pageBreakLines'),
+        ('showColumnBreakLines', _(u'Column break lines'), 'tbv_columnBreakLines'),
+        ('showDurationBeats',    _(u'Chord duration'),     'tbv_durationBeats'),
+        ('showArrows',           _(u'Show: arrows'),       'tbv_arrows'),
     ]
+
+    #: voci della view toolbar che rispecchiano il menu Visualizza: etichetta,
+    #: aiuto e (se manca un'icona dedicata) bitmap vengono dalla voce di menu.
+    _VIEW_MENU_LABELLED = frozenset((
+        'showPageBreakLines', 'showColumnBreakLines',
+        'showDurationBeats', 'showArrows',
+    ))
+    #: voci che hanno senso solo con il pannello anteprima visibile
+    #: (stesso criterio con cui il menu le abilita/disabilita).
+    _VIEW_PREVIEW_DEPENDENT = ('showPageBreakLines', 'showColumnBreakLines',
+                               'showDurationBeats', 'showArrows')
+
+    @staticmethod
+    def _MenuItemLabel(menubar, xrc_name, fallback):
+        """Etichetta (senza mnemonico/acceleratore) della voce di menu."""
+        try:
+            item = menubar.FindItemById(wx.xrc.XRCID(xrc_name))
+            if item is not None:
+                txt = item.GetItemLabel().split('\t')[0]
+                txt = wx.MenuItem.GetLabelText(txt).strip()
+                if txt:
+                    return txt
+        except Exception:
+            pass
+        return fallback
+
+    @staticmethod
+    def _MenuItemHelp(menubar, xrc_name, fallback):
+        """Testo di aiuto della voce di menu."""
+        try:
+            item = menubar.FindItemById(wx.xrc.XRCID(xrc_name))
+            if item is not None and item.GetHelp():
+                return item.GetHelp()
+        except Exception:
+            pass
+        return fallback
+
+    def _ViewToolState(self, xrc_name):
+        """Stato reale di un toggle della view toolbar, oppure None se la
+        toolbar deve semplicemente conservare quello attuale."""
+        if xrc_name == 'showPageBreakLines':
+            return bool(getattr(self, '_showPageBreakLines', True))
+        if xrc_name == 'showColumnBreakLines':
+            return bool(getattr(self, '_showColumnBreakLines', True))
+        if xrc_name == 'showDurationBeats':
+            return bool(getattr(self, '_showDurationBeats', True))
+        if xrc_name == 'showArrows':
+            try:
+                return bool(self._ReadArrowVisible('show_arrows'))
+            except Exception:
+                return True
+        return None
+
+    def _SyncViewToggles(self):
+        """Allinea voci di menu e pulsanti della view toolbar allo stato reale
+        (linee di interruzione, durata accordo, frecce)."""
+        mb = getattr(self, 'menuBar', None)
+        tb = getattr(self, 'viewToolBar', None)
+        for name in self._VIEW_PREVIEW_DEPENDENT:
+            on = self._ViewToolState(name)
+            mid = wx.xrc.XRCID(name)
+            try:
+                if mb is not None and mb.FindItemById(mid) is not None:
+                    mb.Check(mid, on)
+                if tb is not None and tb.FindTool(mid) is not None:
+                    tb.ToggleTool(mid, on)
+            except (RuntimeError, AttributeError):
+                pass
+        if tb is not None:
+            try:
+                tb.Refresh()
+            except RuntimeError:
+                pass
+
+    def _EnableViewPreviewTools(self, enabled):
+        """Abilita/disabilita i pulsanti che dipendono dall'anteprima."""
+        tb = getattr(self, 'viewToolBar', None)
+        if tb is None:
+            return
+        try:
+            for name in self._VIEW_PREVIEW_DEPENDENT:
+                tid = wx.xrc.XRCID(name)
+                if tb.FindTool(tid) is not None:
+                    tb.EnableTool(tid, bool(enabled))
+            tb.Refresh()
+        except (RuntimeError, AttributeError):
+            pass
+
+    def _menuItemToolbarBitmap(self, xrc_name):
+        """Icona della voce di menu, adattata alla dimensione della toolbar."""
+        px = getattr(self.pref, 'toolbarIconPx', 16)
+        try:
+            item = self.menuBar.FindItemById(wx.xrc.XRCID(xrc_name))
+            if item is None:
+                return None
+            bmp = item.GetBitmap()
+            if bmp.IsOk():
+                img = bmp.ConvertToImage()
+                if img.GetWidth() != px or img.GetHeight() != px:
+                    if px == 32:
+                        img = self._scaleImageToSize(img, px)
+                    elif px != 16:
+                        img = self._padImageToSize(img, px)
+                return wx.Bitmap(img)
+            try:
+                bb = item.GetBitmapBundle()
+                if bb.IsOk():
+                    b = bb.GetBitmap(wx.Size(px, px))
+                    if b.IsOk():
+                        return b
+            except Exception:
+                pass
+        except Exception:
+            pass
+        return None
+
+    def _viewToolbarBitmap(self, xrc_name, icon_path):
+        """Bitmap di un pulsante della view toolbar: icona dedicata
+        (SVG in img/vector o PNG) se esiste, altrimenti quella della voce di
+        menu omonima, altrimenti un segnaposto trasparente."""
+        import os
+        try:
+            stem = os.path.splitext(os.path.basename(icon_path))[0]
+            has_svg = os.path.isfile(glb.AddPath(os.path.join('img', 'vector', stem + '.svg')))
+            has_png = os.path.isfile(glb.AddPath(icon_path))
+        except Exception:
+            has_svg = has_png = False
+        if has_svg or has_png:
+            return self._scaledToolbarBitmap(icon_path)
+        bmp = self._menuItemToolbarBitmap(xrc_name)
+        if bmp is not None:
+            return bmp
+        px = getattr(self.pref, 'toolbarIconPx', 16)
+        img = wx.Image(px, px)
+        img.InitAlpha()
+        img.SetAlpha(bytes(px * px))
+        return wx.Bitmap(img)
 
     def _ApplyViewToolBarVisibility(self):
         """Ricostruisce la view toolbar rispettando i flag tbv_* in self.pref.
@@ -876,18 +1019,25 @@ class SongpressToolbarsMixin:
         self.viewToolBar.SetToolBitmapSize(self._toolbarBitmapSize())
         self.viewToolBar.ClearTools()
 
+        menubar = getattr(self, 'menuBar', None)
         for xrc_name, label, pref_key in self.VIEW_TOOLBAR_ITEMS:
             if not getattr(self.pref, pref_key, True):
                 continue
             icon_path = self._view_toolbar_icons[xrc_name]
+            help_str = self._view_toolbar_helps.get(xrc_name)
+            if xrc_name in self._VIEW_MENU_LABELLED:
+                label = self._MenuItemLabel(menubar, xrc_name, label)
+                help_str = self._MenuItemHelp(menubar, xrc_name, label)
+                # stato reale (non quello vecchio della toolbar)
+                _toggle_states[xrc_name] = self._ViewToolState(xrc_name)
             tool = self.viewToolBar.AddToggleTool(
                 wx.xrc.XRCID(xrc_name),
-                self._scaledToolbarBitmap(icon_path),
+                self._viewToolbarBitmap(xrc_name, icon_path),
                 wx.NullBitmap,
                 True,
                 None,
                 label,
-                self._view_toolbar_helps[xrc_name],
+                help_str,
             )
             # Ripristina bind e riferimento per il toggle preview
             if xrc_name == 'preview':
@@ -907,6 +1057,17 @@ class SongpressToolbarsMixin:
 
         self._RealizeToolbar(self.viewToolBar)
 
+        # I pulsanti che dipendono dall'anteprima seguono la sua visibilità
+        # (dopo ClearTools lo stato "disabilitato" andrebbe perso).
+        preview_visible = True
+        try:
+            pane = self._mgr.GetPane('preview')
+            if pane.IsOk():
+                preview_visible = pane.IsShown()
+        except Exception:
+            pass
+        self._EnableViewPreviewTools(preview_visible)
+
     def _BuildViewToolBar(self):
         self.viewToolBar = aui.AuiToolBar(
             self.frame, wx.ID_ANY, wx.DefaultPosition,
@@ -918,6 +1079,12 @@ class SongpressToolbarsMixin:
             'preview':    'img/preview.png',
             'labelVerses':'img/labelVerses.png',
             'showHoverHelp':'img/question_guide.png',
+            # Icone dedicate opzionali: se manca img/vector/<nome>.svg (o il
+            # PNG) si usa l'icona della voce di menu Visualizza omonima.
+            'showPageBreakLines':   'img/showPageBreakLines.png',
+            'showColumnBreakLines': 'img/showColumnBreakLines.png',
+            'showDurationBeats':    'img/showDurationBeats.png',
+            'showArrows':           'img/showArrows.png',
         }
         self._view_toolbar_helps = {
             'preview':    _(u"Show or hide the Songpress++ Page panel"),

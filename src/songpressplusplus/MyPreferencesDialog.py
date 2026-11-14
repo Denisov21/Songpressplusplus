@@ -491,8 +491,21 @@ class MyPreferencesDialog(PreferencesDialog):
         )
 
         # ── Scheda Visualizza ────────────────────────────────────────
+        # Le voci che replicano il menu Visualizza prendono l'etichetta
+        # (già tradotta) direttamente dalla voce di menu corrispondente.
+        try:
+            _menubar = self.GetParent().GetMenuBar()
+        except Exception:
+            _menubar = None
+        _view_items = [
+            (n,
+             SongpressToolbarsMixin._MenuItemLabel(_menubar, n, l)
+             if n in SongpressToolbarsMixin._VIEW_MENU_LABELLED else l,
+             k)
+            for n, l, k in SongpressToolbarsMixin.VIEW_TOOLBAR_ITEMS
+        ]
         _make_sub_tab(
-            SongpressToolbarsMixin.VIEW_TOOLBAR_ITEMS,
+            _view_items,
             set(),   # nessun separatore nella barra View
             _("View"),
         )

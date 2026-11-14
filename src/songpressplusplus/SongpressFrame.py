@@ -13000,19 +13000,24 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         except Exception:
             return False
 
+    # NB: voce di menu e pulsante della view toolbar condividono lo stesso id:
+    # si inverte lo stato memorizzato (non ci si fida di evt.IsChecked) e poi
+    # si riallineano entrambi con _SyncViewToggles().
     def OnTogglePageBreakLines(self, evt):
-
-        self._showPageBreakLines = evt.IsChecked()
+        self._showPageBreakLines = not getattr(self, '_showPageBreakLines', True)
+        self._SyncViewToggles()
         self.previewCanvas.SetShowPageBreakLines(self._showPageBreakLines)
         self.previewCanvas.Refresh(self._get_display_text())
 
     def OnToggleColumnBreakLines(self, evt):
-        self._showColumnBreakLines = evt.IsChecked()
+        self._showColumnBreakLines = not getattr(self, '_showColumnBreakLines', True)
+        self._SyncViewToggles()
         self.previewCanvas.SetShowColumnBreakLines(self._showColumnBreakLines)
         self.previewCanvas.Refresh(self._get_display_text())
 
     def OnToggleDurationBeats(self, evt):
-        self._showDurationBeats = evt.IsChecked()
+        self._showDurationBeats = not getattr(self, '_showDurationBeats', True)
+        self._SyncViewToggles()
         self.previewCanvas.SetShowDurationBeats(self._showDurationBeats)
         self.previewCanvas.SetDurationBeatsPrefs(
             getattr(self.pref, 'durationBeatsColourHex', '#6464C8'),
@@ -13052,10 +13057,12 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
     def _SyncArrowMenuChecks(self):
         """Allinea le spunte del menu Visualizza alle frecce salvate in config."""
-        self.menuBar.Check(self._showArrowsMenuId, self._ReadArrowVisible('show_arrows'))
+        self._SyncViewToggles()
 
     def OnToggleArrows(self, evt):
-        self._WriteArrowVisible('show_arrows', evt.IsChecked())
+        self._WriteArrowVisible('show_arrows',
+                                not self._ReadArrowVisible('show_arrows'))
+        self._SyncViewToggles()
         self.previewCanvas.Refresh(self._get_display_text())
 
     def _UpdateBreakLinesMenuState(self):
@@ -13066,6 +13073,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.menuBar.Enable(self._showColumnBreakLinesMenuId, preview_visible)
         self.menuBar.Enable(self._showDurationBeatsMenuId, preview_visible)
         self.menuBar.Enable(self._showArrowsMenuId, preview_visible)
+        self._EnableViewPreviewTools(preview_visible)
 
     def _ApplyPreviewMinSize(self):
         """Reimposta BestSize e MinSize sul pane 'preview' e sul main_panel.
@@ -13222,6 +13230,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self.menuBar.Enable(self._showColumnBreakLinesMenuId, False)
             self.menuBar.Enable(self._showDurationBeatsMenuId, False)
             self.menuBar.Enable(self._showArrowsMenuId, False)
+            self._EnableViewPreviewTools(False)
             wx.CallAfter(self._SyncPreviewToggleButton)
         else:
             self._UpdateBreakLinesMenuState()

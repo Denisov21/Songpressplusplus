@@ -1006,8 +1006,11 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
             arrow_bitmap=arrow_bitmap,
             show_middle_c=eff_mc,
         )
+        # used_w = bordo destro REALE dell'ultima tastiera disegnata: il
+        # padding che segue non è contenuto, e se contasse allargherebbe la
+        # larghezza del brano (centraggio in stampa, riduzione, virtual size).
+        max_drawn_x = max(max_drawn_x, cur_x + kbd_w)
         cur_x += kbd_w + padding_x
-        max_drawn_x = max(max_drawn_x, cur_x)
 
     total_h = (cur_y + row_h) - start_y + 10
     used_w  = max_drawn_x - start_x
@@ -1114,8 +1117,11 @@ def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
             arrow_bitmap=arrow_bitmap,
             show_middle_c=eff_mc,
         )
+        # used_w = bordo destro REALE dell'ultima tastiera disegnata: il
+        # padding che segue non è contenuto, e se contasse allargherebbe la
+        # larghezza del brano (centraggio in stampa, riduzione, virtual size).
+        max_drawn_x = max(max_drawn_x, cur_x + kbd_w)
         cur_x += kbd_w + padding_x
-        max_drawn_x = max(max_drawn_x, cur_x)
 
     total_h = (cur_y + row_h) - start_y + 10
     used_w  = max_drawn_x - start_x

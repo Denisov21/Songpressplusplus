@@ -8,7 +8,8 @@
 ##############################################################
 """Controlla se su GitHub e' stata pubblicata una versione piu' recente.
 
-Mostra solo un messaggio di avviso: non scarica ne' installa nulla.
+Mostra solo un messaggio di avviso (con il pulsante per aprire la pagina
+della release): non scarica ne' installa nulla.
 
 La parte di logica (parse_version, compare_versions, fetch_latest_version) non
 dipende da wx e si puo' provare da sola; wx serve solo a check_for_updates(),
@@ -21,6 +22,7 @@ import re
 import sys
 import threading
 import urllib.request
+import webbrowser
 
 REPO_URL = u"https://github.com/Denisov21/Songpressplusplus"
 RELEASES_API = u"https://api.github.com/repos/Denisov21/Songpressplusplus/releases/latest"
@@ -152,6 +154,27 @@ def fetch_latest_version():
     return best[1], REPO_URL, []
 
 
+def get_update_url(installed, result):
+    """Indirizzo della pagina da aprire se c'e' una versione piu' recente,
+    altrimenti None. `result` e' lo stesso di build_message()."""
+    ok, info, url, _assets = result
+    if ok and compare_versions(installed, info) == NEWER_AVAILABLE:
+        return url or REPO_URL
+    return None
+
+
+def get_download_url(installed, result):
+    """Indirizzo diretto del file adatto a questo computer (installer .exe
+    o pacchetto .deb) se c'e' una versione piu' recente e la release ha il
+    file giusto, altrimenti None."""
+    ok, info, _url, assets = result
+    if ok and compare_versions(installed, info) == NEWER_AVAILABLE:
+        asset = pick_asset(assets or [])
+        if asset and asset.get('url'):
+            return asset['url']
+    return None
+
+
 # ----------------------------------------------------------------------
 # Interfaccia (wx)
 # ----------------------------------------------------------------------
@@ -184,7 +207,9 @@ def build_message(installed, result):
 
 def check_for_updates(parent, installed_version, status_bar=None):
     """Avvia il controllo in un thread (l'interfaccia non si blocca) e al
-    termine mostra un solo messaggio di avviso."""
+    termine mostra un solo messaggio di avviso. Se c'e' una versione piu'
+    recente il messaggio ha il pulsante «Apri la pagina», che apre la pagina
+    della release nel browser."""
     import wx
 
     def show(result):
@@ -194,7 +219,35 @@ def check_for_updates(parent, installed_version, status_bar=None):
         except Exception:
             pass
         text, warning = build_message(installed_version, result)
-        wx.MessageBox(text, _(u"Check for updates"),
+        title = _(u"Check for updates")
+        page_url = get_update_url(installed_version, result)
+        if page_url:
+            file_url = get_download_url(installed_version, result)
+            if file_url:
+                # Tre pulsanti: Scarica (Si') / Apri la pagina (No) / Chiudi (Annulla)
+                dlg = wx.MessageDialog(parent, text, title,
+                                       wx.YES_NO | wx.CANCEL | wx.YES_DEFAULT | wx.ICON_INFORMATION)
+                try:
+                    dlg.SetYesNoCancelLabels(_(u"Download"), _(u"Open the page"), _(u"Close"))
+                except Exception:
+                    pass
+                targets = {wx.ID_YES: file_url, wx.ID_NO: page_url}
+            else:
+                dlg = wx.MessageDialog(parent, text, title,
+                                       wx.YES_NO | wx.YES_DEFAULT | wx.ICON_INFORMATION)
+                try:
+                    dlg.SetYesNoLabels(_(u"Open the page"), _(u"Close"))
+                except Exception:
+                    pass
+                targets = {wx.ID_YES: page_url}
+            try:
+                target = targets.get(dlg.ShowModal())
+                if target:
+                    webbrowser.open(target)
+            finally:
+                dlg.Destroy()
+            return
+        wx.MessageBox(text, title,
                       wx.OK | (wx.ICON_WARNING if warning else wx.ICON_INFORMATION),
                       parent)
 

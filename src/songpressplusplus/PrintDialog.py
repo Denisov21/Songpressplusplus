@@ -660,8 +660,14 @@ class SongpressPrintout(wx.Printout):
     _SCREEN_PPI = 96
 
     def __init__(self, frame_obj, title="Song", two_pages_per_sheet=False,
-                 font_scale=100, force_full=False, kbd_scale=None):
+                 font_scale=100, force_full=False, kbd_scale=None,
+                 h_center=False):
         wx.Printout.__init__(self, title)
+        # Posizione orizzontale del contenuto: False = a sinistra (margine),
+        # True = centrato nella pagina/colonna. Solo con 1 colonna di testo.
+        # Con «2 pagine per foglio» la posizione non si applica (resta a sinistra).
+        self._h_center          = bool(h_center) and not two_pages_per_sheet
+        self._seg_w_px          = {}     # seg_idx -> larghezza reale (px schermo)
         # Dimensione tastiere (%) solo per questa stampa; None = preferenze
         self._kbd_scale         = kbd_scale
         self.frame_obj          = frame_obj
@@ -766,7 +772,8 @@ class SongpressPrintout(wx.Printout):
         r.gridDisplayMode = getattr(self.frame_obj.pref, 'gridDisplayMode', 'pipe')
         r.gridDefaultLabel = getattr(self.frame_obj.pref, 'gridDefaultLabel', None)
         r.gridSizeDir     = getattr(self.frame_obj.pref, 'gridSizeDir',     'both')
-        r.columns         = getattr(self.frame_obj, '_columns_per_page', 1)
+        r.columns         = (getattr(self, '_columns_override', None)
+                             or getattr(self.frame_obj, '_columns_per_page', 1))
         r.columnHeight    = getattr(self, '_col_h_px', 0)
         # Imposta la directory del documento per risolvere i percorsi relativi
         # delle immagini ({image: intro.png} → cerca nella stessa cartella del .crd)
@@ -774,6 +781,180 @@ class SongpressPrintout(wx.Printout):
         doc_path = getattr(self.frame_obj, 'document', None)
         r._document_dir = _os.path.dirname(doc_path) if doc_path else ''
         return r
+
+    def _prepare_segments(self):
+        """Testo da stampare (selezione o intero brano) diviso in segmenti
+        {new_page}. Imposta self._song_info e self._segments."""
+        start, end  = self.frame_obj.text.GetSelection()
+        # Se force_full è attivo, oppure non c'è selezione → stampa intero documento
+        full_song   = self._force_full or (start == end)
+        full_text   = self.frame_obj._strip_hash_commands(self.frame_obj.text.GetText())
+
+        if full_song:
+            sel_text = full_text
+        else:
+            # Estrae direttamente il testo selezionato (come fa _get_display_text),
+            # così i comandi {start_of_grid}, {start_chorus}, ecc. presenti nella
+            # selezione vengono inclusi senza dipendere dal filtraggio per numero di riga.
+            raw_sel  = self.frame_obj.text.GetTextRange(start, end)
+            sel_text = self.frame_obj._strip_hash_commands(raw_sel)
+
+        self._song_info = (full_song, sel_text)
+
+        if full_song:
+            self._segments = self._split_on_new_page(full_text)
+        else:
+            self._segments = [sel_text]
+
+    def _scaled_mdc(self):
+        """DC di misura con la STESSA scala utente usata per disegnare.
+
+        FIX — impaginazione calcolata su metriche diverse da quelle di
+        stampa. Le altezze di riga si misurano con GetTextExtent: su un DC a
+        scala 1 il font è agganciato alla griglia dei pixel schermo e le righe
+        risultano più alte (~1.7%) di quando il DC è in scala di stampa. Il
+        Renderer ricalcola il layout dentro Draw() col DC reale, quindi i
+        blocchi finivano ~16 px più in alto di quanto previsto dai punti di
+        interruzione (il primo accordo di un blocco a fine pagina cadeva
+        sopra il taglio, con i suoi numeri dei battiti nella pagina
+        sbagliata). Misurando con la scala finale, layout e pagine coincidono."""
+        d = wx.MemoryDC(wx.Bitmap(1, 1))
+        try:
+            d.SetUserScale(self._scale_x or 1.0, self._scale_y or 1.0)
+        except Exception:
+            pass
+        return d
+
+    @_with_kbd_scale
+    def compute_fit_scale(self, columns, paper_mm, margins_mm,
+                          block_aware=False, ppi=600):
+        """Scala (frazione di 1.0) da impostare nella casella Scala perché il
+        brano entri nelle pagine del foglio senza essere tagliato, tenendo
+        conto di «pagine per foglio», «colonne per pagina» e dell'impaginazione
+        a blocchi.
+
+        columns     : 1 o 2 colonne di testo per pagina
+        paper_mm    : (larghezza, altezza) del foglio in mm, orientamento incluso
+        margins_mm  : (alto, basso, sinistro, destro) in mm
+        block_aware : «Riduci per adattare» attivo con 1 colonna: i blocchi non
+                      si spezzano fra due pagine e questo consuma più spazio
+
+        Spazio disponibile: con «2 pagine per foglio» ogni parte del brano
+        ({new_page}) può occupare 2 pagine (sinistra e destra), altrimenti 1.
+        Con 2 colonne ogni pagina ne ha due (altezza di colonna fissa).
+
+        Come ragiona la stampa (vedi _ensure_layout):
+          • scala effettiva  E = min(scala impostata, E_larghezza): se il
+            brano è più largo dello spazio (mezza pagina con «2 pagine», una
+            colonna con «2 colonne») la stampa lo riduce DA SOLA in larghezza;
+          • l'altezza logica non dipende dalla scala: entra se
+            E * altezza <= pagine * altezza_utile (e, a blocchi, se il numero
+            di pagine simulato non supera quello disponibile).
+        Se la riduzione in larghezza basta già, la scala resta 100%.
+
+        Misure con un DC della stessa scala del disegno (_scaled_mdc) e col
+        limite destro delle tastiere della colonna reale.
+
+        Ritorna (scala_da_impostare, scala_effettiva, pagine_disponibili,
+        pagine_usate, E_larghezza, E_altezza, altezza_utile_px, altezza_max_px).
+        pagine_usate è None se non si riesce a rientrare nemmeno al minimo."""
+        w_mm, h_mm = paper_mm
+        mt, mb, ml, mr = margins_mm
+        usable_h_mm = max(1.0, h_mm - mt - mb)
+        usable_w_mm = max(1.0, w_mm - ml - mr)
+        n_pages = 2 if self.two_pages_per_sheet else 1
+        if self.two_pages_per_sheet:
+            usable_w_mm = max(1.0, (usable_w_mm - 5.0) / 2.0)
+        text_w_mm = max(1.0, (usable_w_mm - 8.0) / 2.0) if columns >= 2 \
+            else usable_w_mm
+        px = self._SCREEN_PPI / 25.4          # px logici per mm
+        usable_h_logical = usable_h_mm * px
+        text_w_logical = text_w_mm * px
+        self._col_h_px = usable_h_logical if columns >= 2 else 0
+        self._columns_override = columns
+        self._prepare_segments()
+
+        def measure(E):
+            """(wmax, hmax, pagine_necessarie) alla scala effettiva E."""
+            self._scale_x = self._scale_y = ppi / self._SCREEN_PPI * E
+            mdc = self._scaled_mdc()
+            limit = int(math.ceil(usable_w_mm * px / E))
+            ppp = usable_h_logical / E
+            wmax = hmax = 1.0
+            pages = 1
+            vc = lc = cc = 0
+            try:
+                KlavierRenderer.set_content_right_limit(limit)
+                for idx, seg_text in enumerate(self._segments):
+                    r = self._make_renderer()
+                    self._seg_verse_start[idx] = (vc, lc, cc)
+                    r.initialVerseCount  = vc
+                    r.initialLabelCount  = lc
+                    r.initialChorusCount = cc
+                    w, h = r.Render(seg_text, mdc)
+                    vc, lc, cc = (r.song.verseCount, r.song.labelCount,
+                                  r.song.chorusCount)
+                    h = max(1.0, float(h))
+                    wmax = max(wmax, float(w))
+                    hmax = max(hmax, h)
+                    if columns < 2:
+                        # Sempre con i punti di interruzione (blocchi, battiti,
+                        # tastiere): una tastiera spostata nella pagina dopo
+                        # puo' richiedere una pagina in piu'.
+                        ys = self._block_breaks(idx, seg_text, h, mdc)
+                        n = len(self._paginate_blocks(h, ppp, ys))
+                    else:
+                        n = max(1, int(math.ceil(h / ppp - 1e-6)))
+                    pages = max(pages, n)
+            finally:
+                try:
+                    KlavierRenderer.set_content_right_limit(None)
+                except Exception:
+                    pass
+            return wmax, hmax, pages
+
+        E = 1.0
+        fs = 1.0
+        e_w = e_h = 1.0
+        hmax = 1.0
+        pages = 1
+        for _it in range(5):
+            wmax, hmax, pages = measure(E)
+            e_w = text_w_logical / wmax
+            e_h = n_pages * usable_h_logical / hmax
+            fs  = 1.0 if e_w <= e_h else e_h
+            E_new = min(min(fs, 1.0), e_w)
+            if abs(E_new - E) < 0.005:
+                E = E_new
+                break
+            E = max(0.05, E_new)
+
+        # Verifica con l'impaginazione vera (a blocchi lo spazio perso in
+        # fondo alle pagine può far superare le pagine disponibili): se serve,
+        # si riduce a passi dell'1% fino a rientrare.
+        wmax, hmax, pages = measure(E)
+        fit_ok = pages <= n_pages
+        steps = 0
+        while not fit_ok and E > 0.5 and steps < 60:
+            fs = min(fs, E) * 0.99
+            E = min(fs, e_w)
+            wmax, hmax, pages = measure(E)
+            fit_ok = pages <= n_pages
+            steps += 1
+        return (fs, E, n_pages, (pages if fit_ok else None), e_w, e_h,
+                usable_h_logical, hmax)
+
+    @staticmethod
+    def _ink_bottom(box, margin_top):
+        """Fondo (px schermo) dell'ultima riga di un blocco di testo, senza il
+        margine inferiore né la spaziatura tra blocchi. None se il box non è un
+        blocco di righe (immagine, griglia) o se le misure non sono disponibili."""
+        try:
+            ln = box.boxes[-1]
+            return float(margin_top + box.y + box.marginTop
+                         + ln.y + ln.GetTotalHeight())
+        except Exception:
+            return None
 
     def _block_breaks(self, seg_idx, seg_text, seg_h, mdc):
         """Altezze (px schermo) dove si può interrompere la pagina.
@@ -792,6 +973,17 @@ class SongpressPrintout(wx.Printout):
         # di interruzione va quindi messo piu' in alto di block.y, ma mai sopra
         # il fondo del blocco precedente.
         PROTRUDE = 24
+        # FIX — numeri dei battiti del primo accordo del blocco che finivano
+        # in fondo alla pagina PRECEDENTE.
+        # ────────────────────────────────────────────────────────────────────
+        # Il limite `fondo del blocco precedente + margini` può cadere SOTTO la
+        # banda dei battiti del blocco successivo: la pagina finiva dopo i
+        # numeri, che restavano in fondo alla colonna sinistra e mancavano in
+        # cima a quella destra. Ora la banda reale dei battiti si chiede al
+        # decorator (_BlockBeatsTop, la stessa usata per il segno di
+        # interruzione di pagina) e il punto di interruzione sale sopra di
+        # essa. Come limite inferiore resta il fondo dell'ULTIMA RIGA del
+        # blocco precedente (non la sua scatola con margini e spaziatura).
         try:
             r = self._make_renderer()
             vc, lc, cc = self._seg_verse_start.get(seg_idx, (0, 0, 0))
@@ -802,22 +994,58 @@ class SongpressPrintout(wx.Printout):
             margin_top = getattr(r.song, 'marginTop', 0) or 0
             ys = []
             prev = None
-            for box in r.song.boxes:
-                by = getattr(box, 'y', None)
-                if by is None:
-                    continue
-                top = float(margin_top + by)
-                y = top - PROTRUDE
-                if prev is not None:
+            # _BlockBeatsTop misura i font dei battiti: serve il dc, che
+            # Render() ha già azzerato. Lo si ripristina a None alla fine.
+            r.sd.dc = mdc
+            try:
+                for box in r.song.boxes:
+                    by = getattr(box, 'y', None)
+                    if by is None:
+                        continue
+                    top = float(margin_top + by)
+                    y = top - PROTRUDE
+                    prev_bottom = None
+                    prev_ink = None
+                    if prev is not None:
+                        try:
+                            prev_bottom = (float(margin_top + prev.y)
+                                           + float(prev.GetTotalHeight()) + 2.0)
+                            y = max(y, prev_bottom)
+                        except Exception:
+                            prev_bottom = None
+                        prev_ink = self._ink_bottom(prev, margin_top)
+                    # Banda dei battiti del blocco: il break deve stare sopra.
+                    beats_top = None
                     try:
-                        prev_bottom = (float(margin_top + prev.y)
-                                       + float(prev.GetTotalHeight()) + 2.0)
-                        y = max(y, prev_bottom)
+                        beats_top = r.sd._BlockBeatsTop(box, top)
                     except Exception:
-                        pass
-                prev = box
-                if 0 < y < seg_h - 0.5 and (not ys or y > ys[-1] + 0.5):
-                    ys.append(y)
+                        beats_top = None
+                    if beats_top is not None:
+                        if prev_ink is not None:
+                            floor = prev_ink
+                        elif prev_bottom is not None:
+                            floor = prev_bottom - 2.0
+                        else:
+                            floor = None
+                        bt = float(beats_top)
+                        if floor is not None and floor < bt:
+                            # Metà strada fra l'ultima riga e i numeri: lascia
+                            # margine da entrambi i lati, anche con gli
+                            # arrotondamenti in pixel dell'anteprima.
+                            y = min(floor + 1.0, (floor + bt) / 2.0)
+                        else:
+                            y = bt - 2.0
+                    _dbg('  break blk top=%.1f beats_top=%s prev_bottom=%s '
+                         'prev_ink=%s -> y=%.1f'
+                         % (top, beats_top, prev_bottom, prev_ink, y))
+                    prev = box
+                    if 0 < y < seg_h - 0.5 and (not ys or y > ys[-1] + 0.5):
+                        ys.append(y)
+            finally:
+                r.sd.dc = None
+            for ky in self._kbd_breaks(r, seg_h):
+                if not any(abs(ky - y0) < 1.0 for y0 in ys):
+                    ys.append(ky)
             _dbg('block_breaks seg=%d h=%s marginTop=%s ys=%s'
                  % (seg_idx, seg_h, margin_top, sorted(ys)))
             return sorted(ys)
@@ -825,6 +1053,99 @@ class SongpressPrintout(wx.Printout):
             import traceback
             _dbg('block_breaks seg=%d ERRORE:\n%s' % (seg_idx, traceback.format_exc()))
             return []
+
+    def _kbd_breaks(self, r, seg_h):
+        """Punti di interruzione validi per la sezione «Accordi» (tastiere).
+
+        La sezione e' accodata dopo l'ultimo blocco da PostDrawSong, quindi
+        nessun blocco ne segnala l'inizio: senza questi punti la pagina viene
+        tagliata a meta' di una riga di tastiere. Restituisce le y (px schermo)
+        dell'inizio della sezione e di ogni riga di tastiere, ricavate dal
+        fondo del segmento con la stessa geometria di draw_klavier_section."""
+        try:
+            if not getattr(r.sd, 'showKlavier', False):
+                return []
+            kl = getattr(r.song, 'klavier_list', None)
+            if not kl:
+                return []
+            white_w, kbd_w, kbd_h, pad_x, pad_y = KlavierRenderer._section_metrics()
+            row_h = 34 + kbd_h + pad_y
+            start_x = int(r.song.marginLeft)
+            content_w = r.song.GetTotalWidth() - start_x
+            max_x = start_x + KlavierRenderer._effective_row_w(content_w, start_x, kbd_w)
+            rows, cur_x, force = 1, start_x, False
+            first = True
+            for entry in kl:
+                if KlavierRenderer.has_new_row(entry):
+                    force = True
+                name, fmap, hand = KlavierRenderer.parse_fingering(entry)
+                if name is None:
+                    continue
+                if force and cur_x > start_x:
+                    cur_x = start_x
+                    rows += 1
+                force = False
+                if cur_x + kbd_w > max_x and not first:
+                    cur_x = start_x
+                    rows += 1
+                first = False
+                cur_x += kbd_w + pad_x
+            extra = 46 + rows * row_h + 20
+            sec_top = float(seg_h) - extra
+            ys = [sec_top + 4.0]
+            for i in range(1, rows):
+                ys.append(sec_top + 10 + 36 + i * row_h - 4.0)
+            return [y for y in ys if 0 < y < seg_h - 0.5]
+        except Exception:
+            import traceback
+            _dbg('kbd_breaks ERRORE:\n%s' % traceback.format_exc())
+            return []
+
+    def _beats_guards(self, seg_idx, seg_text, mdc):
+        """Per il taglio a altezza fissa (senza «Riduci per adattare»):
+        lista di (y_sopra_i_battiti, y_fondo_prima_riga) per ogni blocco che
+        ha numeri dei battiti ({beats_time}) sopra la prima riga. Se il taglio
+        di pagina cade in questo intervallo, la banda dei numeri resterebbe
+        in fondo alla pagina precedente mentre la riga va in quella dopo."""
+        guards = []
+        try:
+            r = self._make_renderer()
+            vc, lc, cc = self._seg_verse_start.get(seg_idx, (0, 0, 0))
+            r.initialVerseCount  = vc
+            r.initialLabelCount  = lc
+            r.initialChorusCount = cc
+            _sw, _sh = r.Render(seg_text, mdc)
+            margin_top = getattr(r.song, 'marginTop', 0) or 0
+            r.sd.dc = mdc
+            try:
+                for box in r.song.boxes:
+                    by = getattr(box, 'y', None)
+                    if by is None:
+                        continue
+                    top = float(margin_top + by)
+                    bt = r.sd._BlockBeatsTop(box, top)
+                    if bt is None:
+                        continue
+                    try:
+                        ln = box.boxes[0]
+                        line_bottom = float(top + box.marginTop
+                                            + ln.y + ln.GetTotalHeight())
+                    except Exception:
+                        line_bottom = top + 1.0
+                    guards.append((float(bt) - 2.0, max(line_bottom, top)))
+            finally:
+                r.sd.dc = None
+            # Tastiere: un taglio dentro una riga sale all'inizio della riga.
+            kys = self._kbd_breaks(r, _sh)
+            for i, ky in enumerate(kys):
+                nxt = kys[i + 1] if i + 1 < len(kys) else float(_sh)
+                guards.append((ky, nxt))
+        except Exception:
+            import traceback
+            _dbg('beats_guards seg=%d ERRORE:\n%s' % (seg_idx, traceback.format_exc()))
+            return []
+        _dbg('beats_guards seg=%d %s' % (seg_idx, guards))
+        return guards
 
     @staticmethod
     def _paginate_blocks(h, ppp, ys):
@@ -842,6 +1163,41 @@ class SongpressPrintout(wx.Printout):
             start = end
         pages.append((start, None))
         return pages
+
+    def _measure_seg_widths(self, mdc):
+        """Larghezza reale (px schermo) di ogni segmento, per centrare il testo.
+
+        Va misurata con lo stesso limite destro delle tastiere che
+        _render_logical_page imposta in stampa (larghezza INTERA della
+        colonna, in coordinate logiche): senza, le tastiere non andrebbero a
+        capo e il brano risulterebbe più largo di com'è disegnato, quindi
+        meno centrato. Il limite si calcola sulla colonna piena e non su
+        quella ridotta dallo spostamento, così misura e disegno coincidono
+        (nessun circolo vizioso). Si usa una misura a parte, senza toccare le
+        altezze di impaginazione già calcolate.
+        """
+        col_w = self._col_w_du if self.two_pages_per_sheet else self._usable_w_du
+        limit = int(math.ceil(col_w / self._scale_x)) if self._scale_x else None
+        widths = {}
+        try:
+            if limit:
+                KlavierRenderer.set_content_right_limit(limit)
+            for seg_idx, seg_text in enumerate(self._segments):
+                r = self._make_renderer()
+                vc, lc, cc = self._seg_verse_start.get(seg_idx, (0, 0, 0))
+                r.initialVerseCount  = vc
+                r.initialLabelCount  = lc
+                r.initialChorusCount = cc
+                sw, _sh = r.Render(seg_text, mdc)
+                widths[seg_idx] = max(1, sw)
+        except Exception:
+            return {}            # misura fallita: nessun centraggio
+        finally:
+            try:
+                KlavierRenderer.set_content_right_limit(None)
+            except Exception:
+                pass
+        return widths
 
     @_with_kbd_scale
     def _ensure_layout(self, dc):
@@ -891,26 +1247,7 @@ class SongpressPrintout(wx.Printout):
         self._scale_x     = ppi_x / self._SCREEN_PPI * self._font_scale
         self._scale_y     = ppi_y / self._SCREEN_PPI * self._font_scale
 
-        start, end  = self.frame_obj.text.GetSelection()
-        # Se force_full è attivo, oppure non c'è selezione → stampa intero documento
-        full_song   = self._force_full or (start == end)
-        full_text   = self.frame_obj._strip_hash_commands(self.frame_obj.text.GetText())
-
-        if full_song:
-            sel_text = full_text
-        else:
-            # Estrae direttamente il testo selezionato (come fa _get_display_text),
-            # così i comandi {start_of_grid}, {start_chorus}, ecc. presenti nella
-            # selezione vengono inclusi senza dipendere dal filtraggio per numero di riga.
-            raw_sel  = self.frame_obj.text.GetTextRange(start, end)
-            sel_text = self.frame_obj._strip_hash_commands(raw_sel)
-
-        self._song_info = (full_song, sel_text)
-
-        if full_song:
-            self._segments = self._split_on_new_page(full_text)
-        else:
-            self._segments = [sel_text]
+        self._prepare_segments()
 
         mdc = wx.MemoryDC(wx.Bitmap(1, 1))
         self._page_offsets = []
@@ -950,7 +1287,8 @@ class SongpressPrintout(wx.Printout):
         #                  (sempre nell'ultima pagina di quel segmento)
         # ─────────────────────────────────────────────────────────────────────
 
-        mdc2 = wx.MemoryDC(wx.Bitmap(1, 1))
+        mdc2 = self._scaled_mdc()
+        _scale_at_mdc2 = (self._scale_x, self._scale_y)
 
         # Renderizza una volta sola tutti i segmenti e memorizza le altezze.
         seg_h_px = []
@@ -1080,7 +1418,19 @@ class SongpressPrintout(wx.Printout):
         # ── calcolo definitivo degli offsets di pagina ─────────────────
         px_per_page = usable_h / self._scale_y
 
-        mdc3 = wx.MemoryDC(wx.Bitmap(1, 1))
+        mdc3 = self._scaled_mdc()
+        # Se il riadattamento ha cambiato la scala dopo la prima misura, i
+        # punti di interruzione vanno ricalcolati con la scala finale.
+        if block_aware and (self._scale_x, self._scale_y) != _scale_at_mdc2:
+            for seg_idx, seg_text in enumerate(self._segments):
+                r_tmp = self._make_renderer()
+                vc, lc, cc = self._seg_verse_start.get(seg_idx, (0, 0, 0))
+                r_tmp.initialVerseCount  = vc
+                r_tmp.initialLabelCount  = lc
+                r_tmp.initialChorusCount = cc
+                _, _h = r_tmp.Render(seg_text, mdc3)
+                seg_breaks[seg_idx] = self._block_breaks(
+                    seg_idx, seg_text, max(1, _h), mdc3)
         for seg_idx, seg_text in enumerate(self._segments):
             r = self._make_renderer()
             vc, lc, cc = self._seg_verse_start.get(seg_idx, (0, 0, 0))
@@ -1099,11 +1449,28 @@ class SongpressPrintout(wx.Printout):
                     self._page_offsets.append((seg_idx, start_y))
                     self._page_clip_px.append(page_h)
             else:
+                guards = self._beats_guards(seg_idx, seg_text, mdc3)
                 y = 0.0
                 while y < sh:
                     self._page_offsets.append((seg_idx, y))
-                    self._page_clip_px.append(None)
-                    y += px_per_page
+                    end = y + px_per_page
+                    clip = None
+                    if end < sh:
+                        # Il taglio cade fra la banda dei battiti e la prima
+                        # riga di un blocco: sale sopra i numeri, che vanno
+                        # nella pagina/colonna successiva insieme al blocco.
+                        for g_top, g_bot in guards:
+                            if g_top > y + 1.0 and g_top < end < g_bot + 0.5:
+                                end = g_top
+                                clip = end - y
+                                break
+                    self._page_clip_px.append(clip)
+                    y = end
+
+        # Posizione «Centrale»: larghezza reale dei segmenti, misurata col
+        # STESSO limite tastiere usato in stampa (solo se serve).
+        if self._h_center and columns_per_page < 2:
+            self._seg_w_px = self._measure_seg_widths(mdc3)
 
         if not self._page_offsets:
             self._page_offsets = [(0, 0.0)]
@@ -1221,6 +1588,19 @@ class SongpressPrintout(wx.Printout):
 
         col_w_du = self._col_w_du if self.two_pages_per_sheet else self._usable_w_du
 
+        # Posizione «Centrale»: sposta a destra l'origine di metà dello spazio
+        # avanzato nella pagina/colonna. Con 2 colonne di testo non si applica
+        # (le colonne sono già distribuite dal Renderer). Il clip usa la
+        # larghezza residua, così il suo bordo destro resta quello della
+        # colonna (importante in «2 pagine per foglio»); il limite delle
+        # tastiere resta invece quello della colonna piena, come nella misura
+        # fatta da _measure_seg_widths.
+        dx_du = 0
+        if self._h_center and getattr(self.frame_obj, '_columns_per_page', 1) < 2:
+            _w_px = self._seg_w_px.get(seg_idx)
+            if _w_px and self._scale_x:
+                dx_du = max(0, int((col_w_du - _w_px * self._scale_x) // 2))
+
         # FIX Linux (wxGTK) — «2 pagine per foglio» non divideva a metà
         # ────────────────────────────────────────────────────────────────
         # Impostiamo PRIMA la trasformazione (origine device + scala) e SOLO
@@ -1247,7 +1627,7 @@ class SongpressPrintout(wx.Printout):
         # l'origine e con il separatore.
         kx, ky = self._preview_fit_scale(dc)
         dc.SetDeviceOrigin(
-            int(round(origin_x * kx)),
+            int(round((origin_x + dx_du) * kx)),
             int(round((origin_y - y_offset_px * self._scale_y) * ky)),
         )
         dc.SetUserScale(self._scale_x * kx, self._scale_y * ky)
@@ -1275,7 +1655,7 @@ class SongpressPrintout(wx.Printout):
         BOX_LEFT_PAD = 4  # px logici: padding box (2) + pen (1) + margine
         clip_x = -BOX_LEFT_PAD
         clip_y = int(y_offset_px)
-        clip_w = int(math.ceil(col_w_du / sx)) + BOX_LEFT_PAD
+        clip_w = int(math.ceil((col_w_du - dx_du) / sx)) + BOX_LEFT_PAD
         clip_h = int(math.ceil(usable_h_du / sy))
         # Pagine a blocchi: non disegnare oltre il punto di interruzione, così
         # la prima riga del blocco successivo non resta tagliata in fondo.
@@ -1284,7 +1664,7 @@ class SongpressPrintout(wx.Printout):
         except Exception:
             _ph = None
         if _ph:
-            clip_h = min(clip_h, int(math.ceil(_ph)) + 1)
+            clip_h = min(clip_h, max(1, int(_ph)))
         _dbg('render page=%d seg=%d y_off=%.1f clip=(%s,%s,%s,%s) page_h=%s preview=%s'
              % (logical_page_idx, seg_idx, y_offset_px, clip_x, clip_y, clip_w,
                 clip_h, _ph, self.IsPreview()))
@@ -1306,6 +1686,47 @@ class SongpressPrintout(wx.Printout):
         _is_preview = self.IsPreview()
         _is_gtk     = wx.Platform == '__WXGTK__'
 
+        # FIX — numeri dei battiti ({beats_time}) di un blocco della pagina
+        # successiva disegnati in fondo a questa. Il clip del DC è in pixel
+        # interi e, specie nell'anteprima ridotta, può lasciar passare la
+        # banda dei numeri che sta pochi px sotto il punto di interruzione.
+        # Non ci si affida solo al clip: i battiti la cui banda sta
+        # INTERAMENTE fuori dall'intervallo verticale della pagina non
+        # vengono proprio disegnati. (Il decoratore può essere condiviso con
+        # l'anteprima live: l'override è sull'istanza e viene tolto subito.)
+        _y_lo = float(clip_y)
+        _y_hi = float(clip_y + clip_h)
+        _sd = r.sd
+        _had_beats_ovr = '_DrawBeatsApex' in _sd.__dict__
+        _orig_beats    = _sd.__dict__.get('_DrawBeatsApex')
+        _real_beats    = _sd._DrawBeatsApex
+
+        def _guarded_beats(beats, chord_left, chord_w, chord_top, base_font,
+                           arrow='', _real=_real_beats, _sd=_sd):
+            skip = False
+            try:
+                apex_h = _sd._BeatsApexHeight(base_font) or 0
+                skip = ((chord_top - apex_h) >= _y_hi - 0.5
+                        or chord_top <= _y_lo)
+            except Exception:
+                apex_h = None
+            # Diagnostica: solo i battiti vicini ai bordi della pagina.
+            try:
+                if (abs(chord_top - _y_hi) < 60 or abs(chord_top - _y_lo) < 60):
+                    _dbg('  beats page=%d chord_top=%s apex=%s y_lo=%.1f '
+                         'y_hi=%.1f x=%s skip=%s devorg=%s uscale=%s clipbox=%s'
+                         % (logical_page_idx, chord_top, apex_h, _y_lo, _y_hi,
+                            chord_left, skip, tuple(dc.GetDeviceOrigin()),
+                            dc.GetUserScale(), tuple(dc.GetClippingBox())))
+            except Exception:
+                pass
+            if skip:
+                return
+            return _real(beats, chord_left, chord_w, chord_top, base_font,
+                         arrow=arrow)
+
+        _sd._DrawBeatsApex = _guarded_beats
+
         # FIX — tastiera degli accordi (es. SIb) tagliata sul bordo destro.
         # Il layout delle tastiere va a capo in base a una larghezza utile; se
         # il Renderer non gliela passa si usa un default (560 px) più largo
@@ -1314,7 +1735,7 @@ class SongpressPrintout(wx.Printout):
         # logiche, stessa origine del testo), così le tastiere vanno a capo.
         _kbd_limit_set = False
         try:
-            KlavierRenderer.set_content_right_limit(clip_w - BOX_LEFT_PAD)
+            KlavierRenderer.set_content_right_limit(int(math.ceil(col_w_du / sx)))
             _kbd_limit_set = True
         except Exception:
             pass
@@ -1350,6 +1771,10 @@ class SongpressPrintout(wx.Printout):
             else:
                 raise
         finally:
+            if _had_beats_ovr:
+                _sd._DrawBeatsApex = _orig_beats
+            else:
+                _sd.__dict__.pop('_DrawBeatsApex', None)
             r.sd.smp_via_bitmap = _prev_smp_bmp
             r.sd.smp_device_res = _prev_smp_res
             if _kbd_limit_set:
@@ -1391,9 +1816,11 @@ class SongpressPrintout(wx.Printout):
             left_idx  = (page - 1) * 2
             right_idx = left_idx + 1
             n_logical = len(self._page_offsets)
-            no_mirror = getattr(self.frame_obj, '_no_mirror_right', False)
             if right_idx >= n_logical:
-                right_idx = None if no_mirror else left_idx
+                # Brano che sta in una sola pagina: la metà destra resta
+                # bianca. La copia vale solo per i brani più lunghi, quando
+                # l'ultimo foglio ha la sola metà sinistra piena.
+                right_idx = None if n_logical <= 1 else left_idx
 
             left_x   = ml
             right_x  = ml + self._col_w_du + self._gap_du
@@ -1583,9 +2010,9 @@ class PrintOptionsDialog:
             │  Riduci per adattare …  │  Tastiere (%)    [Pred.]│
             │    └ Margine minimo     ├─ Impostazioni nel brano ┤
             ├─ Opzioni avanzate ──────┤  [Salva] [Carica]       │
-            │  Non replicare …        │  ☐ Salva anche tastiere │
-            │  Rimuovi pagine bianche │  ℹ messaggio di stato   │
-            │    └ Soglia (%)         │                         │
+            │  Rimuovi pagine bianche │  ☐ Salva anche tastiere │
+            │    └ Soglia (%)         │  ℹ messaggio di stato   │
+            │                         │                         │
             ├─ Diagnostica ───────────┴─────────────────────────┤
             │  ☐ Scrivi log   percorso del log…   [Apri cartella]│
             └────────────────────────────────────────────────────┘
@@ -1666,7 +2093,7 @@ class PrintOptionsDialog:
             dlg, label=_("Min margin for auto-shrink (mm):")
         )
         self.spin_min_margin = self._make_spin(
-            dlg, 0, 50, getattr(owner, '_min_margin_shrink', 5),
+            dlg, 0, 20, min(20, max(0, int(getattr(owner, '_min_margin_shrink', 5)))),
         )
         box_resize.Add(_spin_row(self.lbl_min_margin, self.spin_min_margin, INDENT),
                        0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, PAD)
@@ -1680,13 +2107,6 @@ class PrintOptionsDialog:
         # ── Opzioni avanzate ──────────────────────────────────────────
         box_adv = _box(_("Advanced options"))
 
-        self.cb_no_mirror = wx.CheckBox(
-            dlg, label=_("Do not replicate (leave right half blank)")
-        )
-        self.cb_no_mirror.SetValue(owner._no_mirror_right)
-        self.cb_no_mirror.SetToolTip(_("In 2-pages mode, print only on the left half and leave the right half blank (no mirroring)"))
-        self.cb_no_mirror.Enable(owner._two_pages_per_sheet)
-        box_adv.Add(self.cb_no_mirror, 0, wx.ALL, PAD)
 
         self.cb_remove_blank = wx.CheckBox(dlg, label=_("Remove blank pages"))
         self.cb_remove_blank.SetValue(owner._remove_blank_pages)
@@ -1702,6 +2122,19 @@ class PrintOptionsDialog:
 
         self.lbl_blank_threshold.Enable(owner._remove_blank_pages)
         self.spin_blank_threshold.Enable(owner._remove_blank_pages)
+
+        # Posizione orizzontale del contenuto (Sinistra / Centrale)
+        self.lbl_position = wx.StaticText(dlg, label=_("Position:"))
+        self.ch_position = wx.Choice(dlg, choices=[_("Left"), _("Center")])
+        self.ch_position.SetSelection(
+            1 if getattr(owner, '_print_h_center', False) else 0)
+        _pos_tip = _("Horizontal position of the song on the page: against the "
+                     "left margin or centered. Not available with 2 columns or 2 pages per sheet.")
+        self.lbl_position.SetToolTip(_pos_tip)
+        self.ch_position.SetToolTip(_pos_tip)
+        box_adv.Add(_spin_row(self.lbl_position, self.ch_position),
+                    0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, PAD)
+        self._update_position_enabled()
 
         left.Add(box_adv, 1, wx.EXPAND)
 
@@ -1720,6 +2153,31 @@ class PrintOptionsDialog:
         # Pulsante che riporta la scala a 100% (aggiorna anche la casella).
         self.btn_scale_reset = wx.Button(dlg, wx.ID_ANY, _("100%"))
         self.btn_scale_reset.SetToolTip(_("Reset scale to 100%"))
+        # Pulsante «Adatta»: imposta la scala più alta (max 100%) con cui il
+        # brano entra in una pagina senza essere tagliato.
+        self.btn_scale_fit = wx.Button(dlg, wx.ID_ANY, _("Fit"))
+        self.btn_scale_fit.SetToolTip(_(
+            "Set the largest scale (up to 100%) at which the song fits in the "
+            "pages of the sheet (1, or 2 with 2 pages per sheet) without being "
+            "cut. Takes columns and page size into account. Beat numbers stay "
+            "above their chord."))
+        # Icona 16x16 sul pulsante «Adatta»: SVG (img/vector), ripiego sul PNG (img/)
+        try:
+            _svg_bmp = _load_svg_bitmap(
+                glb.AddPath('img/vector/auto_focus_print.svg'), 16)
+            _p = glb.AddPath('img/auto_focus_print.png')
+            if _svg_bmp is not None:
+                self.btn_scale_fit.SetBitmap(_svg_bmp)
+            elif os.path.isfile(_p):
+                _img = wx.Image(_p, wx.BITMAP_TYPE_PNG)
+                if _img.GetWidth() != 16 or _img.GetHeight() != 16:
+                    _img = _img.Scale(16, 16, wx.IMAGE_QUALITY_HIGH)
+                self.btn_scale_fit.SetBitmap(wx.Bitmap(_img))
+            if self.btn_scale_fit.GetBitmap().IsOk():
+                self.btn_scale_fit.SetBitmapPosition(wx.LEFT)
+                self.btn_scale_fit.SetBitmapMargins(4, 0)
+        except Exception:
+            pass
 
         # Dimensione delle tastiere (%): vale solo per la stampa. Parte dal
         # valore delle preferenze; il pulsante «Pref.» ci riporta la casella.
@@ -1736,12 +2194,21 @@ class PrintOptionsDialog:
 
         # I due pulsanti «reset» hanno la stessa larghezza (la più grande)
         _bw = max(self.btn_scale_reset.GetBestSize().width,
+                  self.btn_scale_fit.GetBestSize().width,
                   self.btn_kbd_reset.GetBestSize().width)
-        for _b in (self.btn_scale_reset, self.btn_kbd_reset):
+        for _b in (self.btn_scale_reset, self.btn_scale_fit, self.btn_kbd_reset):
             _b.SetMinSize(wx.Size(_bw, _b.GetBestSize().height))
 
-        for _w in (lbl_scale, self.spin_font_scale, self.btn_scale_reset,
-                   lbl_kbd,   self.spin_kbd_scale,  self.btn_kbd_reset):
+        # Terza colonna della riga «Scala»: [100%] [Adatta] affiancati.
+        _scale_btns = wx.BoxSizer(wx.HORIZONTAL)
+        _scale_btns.Add(self.btn_scale_reset, 0, wx.ALIGN_CENTER_VERTICAL)
+        _scale_btns.AddSpacer(PAD)
+        _scale_btns.Add(self.btn_scale_fit, 0, wx.ALIGN_CENTER_VERTICAL)
+
+        grid_scale.Add(lbl_scale, 0, wx.ALIGN_CENTER_VERTICAL)
+        grid_scale.Add(self.spin_font_scale, 0, wx.ALIGN_CENTER_VERTICAL)
+        grid_scale.Add(_scale_btns, 0, wx.ALIGN_CENTER_VERTICAL)
+        for _w in (lbl_kbd, self.spin_kbd_scale, self.btn_kbd_reset):
             grid_scale.Add(_w, 0, wx.ALIGN_CENTER_VERTICAL)
         box_scale.Add(grid_scale, 0, wx.EXPAND | wx.ALL, PAD)
 
@@ -1915,6 +2382,7 @@ class PrintOptionsDialog:
         self.cb_remove_blank.Bind(wx.EVT_CHECKBOX, self._on_remove_blank_changed)
         self.btn_pin.Bind(wx.EVT_BUTTON, self._on_pin)
         self.btn_scale_reset.Bind(wx.EVT_BUTTON, self._on_scale_reset)
+        self.btn_scale_fit.Bind(wx.EVT_BUTTON, self._on_scale_fit)
         self.btn_kbd_reset.Bind(wx.EVT_BUTTON, self._on_kbd_reset)
         self.spin_kbd_scale.Bind(wx.EVT_SPINCTRL, self._on_kbd_spin)
         self.btn_open_log.Bind(wx.EVT_BUTTON, self._on_open_log_folder)
@@ -1957,22 +2425,40 @@ class PrintOptionsDialog:
     def _on_page1(self, evt):
         self.rb_page1.SetValue(True)
         self.rb_page2.SetValue(False)
-        self.cb_no_mirror.Enable(False)
         self._update_scope_labels(False)
+        self._update_position_enabled()
 
     def _on_page2(self, evt):
         self.rb_page2.SetValue(True)
         self.rb_page1.SetValue(False)
-        self.cb_no_mirror.Enable(True)
         self._update_scope_labels(True)
+        self._update_position_enabled()
+
+    def _update_position_enabled(self):
+        """«Posizione» vale solo con 1 colonna di testo per pagina e
+        1 pagina per foglio."""
+        ok = (not self.rb_col2.GetValue()) and (not self.rb_page2.GetValue())
+        was_ok = self.ch_position.IsEnabled()
+        if was_ok and not ok:
+            # Si ricorda la scelta dell'utente e si mostra «Centrale»
+            # (disattivato): con 2 colonne / 2 pagine il brano riempie la
+            # colonna, quindi la voce non è modificabile.
+            self._pos_saved = self.ch_position.GetSelection()
+            self.ch_position.SetSelection(1)
+        elif ok and not was_ok:
+            self.ch_position.SetSelection(getattr(self, '_pos_saved', 0))
+        self.lbl_position.Enable(ok)
+        self.ch_position.Enable(ok)
 
     def _on_col1(self, evt):
         self.rb_col1.SetValue(True)
         self.rb_col2.SetValue(False)
+        self._update_position_enabled()
 
     def _on_col2(self, evt):
         self.rb_col2.SetValue(True)
         self.rb_col1.SetValue(False)
+        self._update_position_enabled()
 
     def _on_open_log_folder(self, evt):
         if not _open_debug_log_folder():
@@ -1983,6 +2469,60 @@ class PrintOptionsDialog:
     def _on_scale_reset(self, evt):
         # Riporta la scala a 100% aggiornando anche la casella (SpinCtrl).
         self.spin_font_scale.SetValue(100)
+
+    def _on_scale_fit(self, evt):
+        """Imposta la Scala sul valore più alto (max 100%) con cui il brano
+        entra in una pagina. Usa le impostazioni mostrate ORA nel dialogo
+        (pagine per foglio, colonne, dimensione tastiere, formato e margini
+        eventualmente cambiati ma non ancora applicati)."""
+        o = self.owner
+        pend = getattr(self, '_pending_page', None) or {}
+        try:
+            # Foglio: formato/orientamento in sospeso oppure quelli correnti.
+            pid = pend.get('paper', o._print_data.GetPaperId())
+            w_mm, h_mm = o._PAPER_SIZE_MM.get(pid, (210.0, 297.0))
+            orient = pend.get('orient', o._print_data.GetOrientation())
+            if orient == wx.LANDSCAPE:
+                w_mm, h_mm = h_mm, w_mm
+            if 'margins' in pend:
+                mt, mb, ml, mr = pend['margins']
+            else:
+                mt, mb, ml, mr = (o._margin_top, o._margin_bottom,
+                                  o._margin_left, o._margin_right)
+            kbd = self.spin_kbd_scale.GetValue()
+            printout = SongpressPrintout(
+                o, "fit",
+                two_pages_per_sheet=self.rb_page2.GetValue(),
+                font_scale=100,
+                kbd_scale=None if kbd == self._pref_kbd_scale() else kbd)
+            cols = 2 if self.rb_col2.GetValue() else 1
+            block_aware = bool(self.cb_shrink.GetValue()) and cols < 2
+            (fs, eff, n_avail, n_used, e_w, e_h,
+             h_ok, h_max) = printout.compute_fit_scale(
+                cols, (w_mm, h_mm), (mt, mb, ml, mr), block_aware=block_aware)
+        except Exception:
+            import traceback
+            _dbg('fit_scale ERRORE:\n%s' % traceback.format_exc())
+            wx.MessageBox(_("Unable to compute the scale."),
+                          _("Error"), wx.OK | wx.ICON_ERROR, self.dlg)
+            return
+        pct = int(math.floor(fs * 100.0 + 1e-6))
+        _dbg('fit_scale pages=%s cols=%s paper=%.0fx%.0f margins=%s block=%s '
+             'fs=%.4f eff=%.4f avail=%s used=%s e_width=%.4f e_height=%.4f '
+             'usable_h=%.1f content_h=%.1f -> %d%%'
+             % (2 if self.rb_page2.GetValue() else 1, cols, w_mm, h_mm,
+                (mt, mb, ml, mr), block_aware, fs, eff, n_avail, n_used,
+                e_w, e_h, h_ok, h_max, pct))
+        lo = 50
+        if pct < lo or n_used is None:
+            self.spin_font_scale.SetValue(max(lo, min(100, pct)))
+            wx.MessageBox(
+                _("The song does not fit in the pages of the sheet even at "
+                  "50%. The scale was set to 50%; the rest continues on the "
+                  "next page."),
+                _("Print options"), wx.OK | wx.ICON_INFORMATION, self.dlg)
+            return
+        self.spin_font_scale.SetValue(min(100, pct))
 
     @staticmethod
     def _pref_kbd_scale():
@@ -2079,10 +2619,10 @@ class PrintOptionsDialog:
             ('fit',      int(self.cb_fit.GetValue())),
             ('shrink',   int(self.cb_shrink.GetValue())),
             ('minmargin', self.spin_min_margin.GetValue()),
-            ('nomirror', int(self.cb_no_mirror.GetValue())),
             ('blank',    int(self.cb_remove_blank.GetValue())),
             ('blankthr', self.spin_blank_threshold.GetValue()),
             ('scale',    self.spin_font_scale.GetValue()),
+            ('pos',      self.ch_position.GetSelection()),
             ('paper',    pend.get('paper', pd.GetPaperId())),
             ('orient',   pend.get('orient', pd.GetOrientation())),
             ('margins',  ','.join(str(int(m)) for m in margins)),
@@ -2163,12 +2703,13 @@ class PrintOptionsDialog:
         if v is not None:
             self.rb_page1.SetValue(v == 1)
             self.rb_page2.SetValue(v == 2)
-            self.cb_no_mirror.Enable(v == 2)
             self._update_scope_labels(v == 2)
+            self._update_position_enabled()
         v = _int('cols', 1, 2)
         if v is not None:
             self.rb_col1.SetValue(v == 1)
             self.rb_col2.SetValue(v == 2)
+            self._update_position_enabled()
         v = _int('fit', 0, 1)
         if v is not None:
             self.cb_fit.SetValue(bool(v))
@@ -2177,12 +2718,9 @@ class PrintOptionsDialog:
             self.cb_shrink.SetValue(bool(v))
             self.lbl_min_margin.Enable(bool(v))
             self.spin_min_margin.Enable(bool(v))
-        v = _int('minmargin', 0, 50)
+        v = _int('minmargin', 0, 20)
         if v is not None:
             self.spin_min_margin.SetValue(v)
-        v = _int('nomirror', 0, 1)
-        if v is not None:
-            self.cb_no_mirror.SetValue(bool(v))
         v = _int('blank', 0, 1)
         if v is not None:
             self.cb_remove_blank.SetValue(bool(v))
@@ -2194,6 +2732,9 @@ class PrintOptionsDialog:
         v = _int('scale', 50, 200)
         if v is not None:
             self.spin_font_scale.SetValue(v)
+        v = _int('pos', 0, 1)
+        if v is not None:
+            self.ch_position.SetSelection(v)
         # 'kbd' è facoltativa: se manca (o non è valida) si torna al valore
         # delle preferenze, per non portarsi dietro quello di un altro brano.
         v = _int('kbd', 50, 200)
@@ -2254,10 +2795,13 @@ class PrintOptionsDialog:
         o._fit_to_page          = self.cb_fit.GetValue()
         o._shrink_to_fit        = self.cb_shrink.GetValue()
         o._min_margin_shrink    = self.spin_min_margin.GetValue()
-        o._no_mirror_right      = self.cb_no_mirror.GetValue()
         o._remove_blank_pages   = self.cb_remove_blank.GetValue()
         o._blank_page_threshold = self.spin_blank_threshold.GetValue()
         o._print_font_scale     = self.spin_font_scale.GetValue()
+        if self.ch_position.IsEnabled():
+            o._print_h_center   = (self.ch_position.GetSelection() == 1)
+        # (se disattivata resta la scelta salvata: la voce mostra «Centrale»
+        # solo perché con 2 colonne / 2 pagine non è applicabile)
         # Uguale alle preferenze -> None: così, cambiando la preferenza,
         # la stampa la segue; un valore diverso vale solo per la stampa.
         _kbd = self.spin_kbd_scale.GetValue()
@@ -2313,12 +2857,12 @@ class PrintManager:
         self._two_pages_per_sheet  = False
         self._columns_per_page     = 1
         self._fit_to_page          = False
-        self._no_mirror_right      = False
         self._remove_blank_pages   = False
         self._blank_page_threshold = 5
         self._shrink_to_fit        = False
         self._min_margin_shrink    = 5
         self._print_font_scale     = 100
+        self._print_h_center       = False  # Posizione: False = sinistra, True = centrale
         self._print_kbd_scale      = None   # None = dimensione tastiere delle preferenze
         self._print_options_pinned = False
         self._print_debug          = False
@@ -2347,13 +2891,15 @@ class PrintManager:
             self.config.Write('two_pages_per_sheet',  '1' if self._two_pages_per_sheet else '0')
             self.config.Write('columns_per_page',     str(self._columns_per_page))
             self.config.Write('fit_to_page',          '1' if self._fit_to_page else '0')
-            self.config.Write('no_mirror_right',      '1' if self._no_mirror_right else '0')
             self.config.Write('remove_blank_pages',   '1' if self._remove_blank_pages else '0')
             self.config.Write('blank_page_threshold', str(self._blank_page_threshold))
             self.config.Write('print_options_pinned', '1' if self._print_options_pinned else '0')
             self.config.Write('print_debug',          '1' if self._print_debug else '0')
+            self.config.Write('print_h_center',       '1' if self._print_h_center else '0')
             # Scala volutamente NON salvata (reset a 100 ad ogni riapertura).
             self.config.DeleteEntry('print_font_scale', False)
+            # Opzione «Non replicare» rimossa: si elimina il valore rimasto.
+            self.config.DeleteEntry('no_mirror_right', False)
             self.config.Flush()
         except Exception:
             pass
@@ -2381,7 +2927,7 @@ class PrintManager:
                 self._shrink_to_fit = (shrink == '1')
             min_m       = self.config.Read('min_margin_shrink')
             if min_m:
-                self._min_margin_shrink = int(min_m)
+                self._min_margin_shrink = min(20, max(0, int(min_m)))
 
             # ── Opzioni del dialog «Opzioni di stampa» ────────────────────
             def _rb(key, current):
@@ -2405,14 +2951,17 @@ class PrintManager:
             self._two_pages_per_sheet  = _rb('two_pages_per_sheet',  self._two_pages_per_sheet)
             self._columns_per_page     = _ri('columns_per_page',     self._columns_per_page, 1, 2)
             self._fit_to_page          = _rb('fit_to_page',          self._fit_to_page)
-            self._no_mirror_right      = _rb('no_mirror_right',      self._no_mirror_right)
             self._remove_blank_pages   = _rb('remove_blank_pages',   self._remove_blank_pages)
             self._blank_page_threshold = _ri('blank_page_threshold', self._blank_page_threshold, 1, 95)
             self._print_options_pinned = _rb('print_options_pinned', self._print_options_pinned)
+            self._print_h_center       = _rb('print_h_center',       self._print_h_center)
             global PRINT_DEBUG
             self._print_debug = _rb('print_debug', self._print_debug)
             PRINT_DEBUG = self._print_debug
 
+            # Opzione «Non replicare» rimossa: si elimina il valore rimasto.
+            self.config.DeleteEntry('no_mirror_right', False)
+            self.config.Flush()
             # La scala non è persistente: sempre 100% all'avvio.
             self._print_font_scale = 100
             # Nemmeno la dimensione tastiere di stampa: vale quella delle preferenze.
@@ -2443,6 +2992,7 @@ class PrintManager:
             two_pages_per_sheet=self._two_pages_per_sheet,
             font_scale=getattr(self, '_print_font_scale', 100),
             kbd_scale=getattr(self, '_print_kbd_scale', None),
+            h_center=getattr(self, '_print_h_center', False),
         )
 
     # ── Azioni ────────────────────────────────────────────────────────────────
@@ -2741,8 +3291,8 @@ class PrintManager:
                     self._print_data = _open_driver_settings(self._print_data, parent_hwnd=hwnd)
                 except Exception as exc:
                     wx.MessageBox(
-                        _("Impossibile aprire le impostazioni del driver:\n{err}").format(err=exc),
-                        _("Errore"), wx.OK | wx.ICON_ERROR, pf
+                        _("Unable to open the driver settings:\n{err}").format(err=exc),
+                        _("Error"), wx.OK | wx.ICON_ERROR, pf
                     )
                     return
                 orient_after  = self._print_data.GetOrientation()

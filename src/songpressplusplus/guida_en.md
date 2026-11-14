@@ -2461,6 +2461,7 @@ The following controls are found in the **Formatting** tab of preferences and af
 | Remove blank pages                             | Removes nearly-empty logical pages from the print output            |
 | Blank page threshold (%)                       | Maximum page fill percentage below which a page is considered blank |
 | Scale (%)                                      | Enlarges or reduces the whole printed content (50–200%, default 100%) |
+| Position (Left / Center)                       | Horizontal position of the song on the page: against the left margin (default) or centered. Available only with **1 column** and **1 page per sheet**: otherwise the box is disabled |
 | Keyboard size (%)                              | Size of the chord keyboards **for printing only** (50–200%); starts from the Preferences value. The *Default* button resets the box to it |
 | Write page layout log (Diagnostics)            | Writes a log file with the layout parameters (see *Print diagnostics*); default off |
 | Open folder (Diagnostics)                      | Opens the folder containing the log file; the full path is shown next to it |
@@ -2483,7 +2484,7 @@ The `{new_page}` directive in the text forces a new logical page during printing
 The dialog settings can be saved **inside the song**, as a comment line at the **first line** of the editor:
 
 ```
-# {print_options: pages=2; cols=1; fit=0; shrink=0; minmargin=0; nomirror=0; blank=1; blankthr=5; scale=100; kbd=70; paper=3; orient=1; margins=5,5,5,5}
+# {print_options: pages=1; cols=1; fit=0; shrink=0; minmargin=0; nomirror=0; blank=1; blankthr=5; scale=100; pos=1; kbd=70; paper=3; orient=1; margins=5,5,5,5}
 ```
 
 The line starts with `#`, so it does not appear in the preview or in print. In the **Settings in the song** section of the dialog, **Save in editor** writes (or updates) the line and **Load from editor** reads the values back into the dialog; they are applied by pressing **OK**. The line is read **only if it is the first line** of the song.
@@ -2494,21 +2495,24 @@ The line starts with `#`, so it does not appear in the preview or in print. In t
 | `cols`      | 1–2     | Columns per page                                           |
 | `fit`       | 0–1     | Shrink if exceeds page                                     |
 | `shrink`    | 0–1     | Shrink to fit current page                                 |
-| `minmargin` | 0–50    | Minimum margin (mm) used by *Shrink*                       |
+| `minmargin` | 0–20    | Minimum margin (mm) used by *Shrink*                       |
 | `nomirror`  | 0–1     | Don't replicate (leave right half blank)                   |
 | `blank`     | 0–1     | Remove blank pages                                         |
 | `blankthr`  | 1–95    | Blank page threshold (%)                                   |
 | `scale`     | 50–200  | Scale (%)                                                  |
+| `pos`       | 0–1     | Song position: 0 = left, 1 = centered — **optional**       |
 | `kbd`       | 50–200  | Keyboard size (%) — **optional**                           |
 | `paper`     | 0–200   | Paper size                                                 |
 | `orient`    | 1–2     | Orientation (1 = portrait, 2 = landscape)                  |
 | `margins`   | 4 numbers 0–100 | Margins in mm: top, bottom, left, right            |
 
+**Position (`pos`).** With `pos=1` the song is centered on the page; with `pos=0` (or without the key) it stays against the left margin. Centering uses the song's **real width**, including the chord keyboards at the bottom of the page (at the keyboard size chosen for printing), and applies to each part of the song separated by `{new_page}`. It applies only with `cols=1` and `pages=1`: with 2 columns or 2 pages per sheet the key is ignored. The key is optional and is not reported when missing; the syntax check reports a value outside 0–1.
+
 **Keyboard size (`kbd`).** Fits more keyboards on each row of the *Chords* section at the bottom of the page (low value) or enlarges them. It applies **only to print and print preview**: the preview in the editor always uses the size set in the Preferences. The key is optional: if it is missing, print uses the Preferences value, and existing songs stay as they were. If the box in the dialog matches the Preferences, print keeps following them even if you change them later.
 
 **Saving it in the song or not.** In the **Settings in the song** section, the **Also save the keyboard size in the song** checkbox decides whether *Save in editor* also writes `kbd=`. It is enabled **only if the song contains keyboards** (`{taste:}` or `{fingering:}`; comment lines do not count): without keyboards the size is irrelevant, and the checkbox and the field stay disabled. It ticks itself when you set the size to a value different from the Preferences; the *Default* button clears it. With the checkbox empty, the saved line has no `kbd` (and an existing `kbd` is removed).
 
-The syntax check reports unknown keys, out-of-range values (e.g. `kbd=20`) and missing keys, except for `kbd`.
+The syntax check reports unknown keys, out-of-range values (e.g. `kbd=20`) and missing keys, except for `kbd` and `pos`.
 
 ### Persistence of Print Options
 
@@ -2533,11 +2537,12 @@ Values are stored in the `/PageSetup` section of the user configuration (`~/.Son
 | Columns per page           | `columns_per_page`     | 1 column   |
 | Shrink if exceeds page     | `fit_to_page`          | off        |
 | Shrink to fit current page | `shrink_to_fit`        | off        |
-| Min margin for auto-shrink (mm) | `min_margin_shrink` | 5       |
+| Min margin for auto-shrink (mm) | `min_margin_shrink` | 5 (0–20) |
 | Don't replicate (right half blank) | `no_mirror_right` | off     |
 | Remove blank pages         | `remove_blank_pages`   | off        |
 | Blank page threshold (%)   | `blank_page_threshold` | 5          |
 | 📌 Pin button state         | `print_options_pinned` | off        |
+| Song position              | `print_h_center`       | Left       |
 | Write page layout log      | `print_debug`          | off        |
 
 > **Exception — Scale (%)** — The **Scale** value is **never** saved. It stays active for the whole working session (handy when adjusting it with the dialog pinned while watching the preview), but it always returns to **100%** each time Songpress++ restarts. This prevents unnoticed enlarged or reduced printouts after the scale was used for a single song. Any leftover value stored by earlier versions is removed from the configuration as well.
@@ -2557,7 +2562,7 @@ This is a control parameter for the Shrink to fit function, which activates when
 
 How the logic works: Songpress++ measures, for each segment of the song (separated by `{new_page}`), how much content overflows beyond the bottom of its last page, and attempts to recover exactly that space in two steps:
 
-**First step** — reduces the top and bottom margins, distributing the reduction proportionally to the available headroom of each (not necessarily 50/50: if one margin is already close to the minimum, it is reduced less than the other). The reduction stops as soon as the overflow is recovered, or when both margins have reached the minimum value configured by this SpinCtrl. If the user-set margin is, for example, 20 mm, it can be automatically compressed down to 5 mm (default). This prevents the auto-reduction from completely zeroing out the margins.
+**First step** — reduces the top and bottom margins, distributing the reduction proportionally to the available headroom of each (not necessarily 50/50: if one margin is already close to the minimum, it is reduced less than the other). The reduction stops as soon as the overflow is recovered, or when both margins have reached the minimum value configured by this SpinCtrl. The minimum can be set from 0 to 20 mm. If the user-set margin is, for example, 20 mm, it can be automatically compressed down to 5 mm (default). This prevents the auto-reduction from completely zeroing out the margins.
 
 **Second step** — scales the content (shrinks text/chords), only if margin reduction alone was not sufficient. The scale factor is calculated separately for each segment and the most restrictive one is applied, ensuring no segment is clipped.
 

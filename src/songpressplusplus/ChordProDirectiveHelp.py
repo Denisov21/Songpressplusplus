@@ -197,13 +197,13 @@ _DIRECTIVE_OPTION_HELP = {
                      "reduces the content only when it does not fit, never enlarges it.",
         'shrink':    "Shrink to fit the current page (0 = off, 1 = on): "
                      "avoids clipping at the bottom.",
-        'minmargin': "Minimum margin, in mm, used by Shrink (0-50).",
-        'nomirror':  "No mirroring (0 = off, 1 = on): in 2-pages mode, print only "
-                     "on the left half and leave the right half blank.",
+        'minmargin': "Minimum margin, in mm, used by Shrink (0-20).",
         'blank':     "Remove blank pages (0 = off, 1 = on).",
         'blankthr':  "Blank page threshold, in %: a page filled less than this "
                      "is considered blank (1-95).",
         'scale':     "Scale of the whole printed content, in % (50-200, default 100).",
+        'pos':       "Horizontal position of the song on the page: 0 = left, "
+                     "1 = centered (only with 1 column and 1 page per sheet). Optional.",
         'kbd':       "Size of the chord keyboards, in %, for printing only (50-200). "
                      "Optional.",
         'paper':     "Paper size, as a numeric ID (3 = A4).",
@@ -227,9 +227,8 @@ _DIRECTIVE_VALUE_HELP = {
                      '1': "Shrink when the content exceeds the page."},
         'shrink':   {'0': "Do not shrink to fit the current page.",
                      '1': "Shrink to fit the current page."},
-        'nomirror': {'0': "Mirroring: in 2-pages mode the page is repeated on the right half.",
-                     '1': "No mirroring: in 2-pages mode the right half stays blank."},
         'blank':    {'0': "Blank pages are kept.", '1': "Blank pages are removed."},
+        'pos':      {'0': "Left, against the margin.", '1': "Centered on the page."},
         'orient':   {'1': "Portrait.", '2': "Landscape."},
         'paper':    {'3': "A4 paper."},
     },

@@ -320,6 +320,7 @@ def _export_cups(frame_obj, filepath, title):
     printout = SongpressPrintout(
         frame_obj, title,
         two_pages_per_sheet=frame_obj._two_pages_per_sheet,
+        h_center=getattr(frame_obj, '_print_h_center', False),
     )
 
     ok = printer.Print(frame_obj.frame, printout, False)

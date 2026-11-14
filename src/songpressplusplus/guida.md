@@ -2468,6 +2468,7 @@ I seguenti controlli si trovano nella scheda **Formattazione** delle preferenze 
 | Rimuovi pagine vuote                                 | Rimuove le pagine logiche quasi vuote dall'output di stampa              |
 | Soglia pagina vuota (%)                              | Percentuale massima di pagina occupata sotto cui la pagina viene rimossa |
 | Scala (%)                                            | Ingrandisce o riduce l'intero contenuto stampato (50–200%, predefinito 100%) |
+| Posizione (Sinistra / Centrale)                      | Posizione orizzontale del brano nella pagina: contro il margine sinistro (predefinito) oppure centrato. Disponibile solo con **1 colonna** e **1 pagina per foglio**: negli altri casi la casella è disattivata |
 | Dimensione tastiere (%)                              | Dimensione delle tastiere degli accordi **solo in stampa** (50–200%); parte dal valore delle Preferenze. Il pulsante *Predefinito* ci riporta la casella |
 | Scrivi log del layout di pagina (Diagnostica)        | Scrive un file di log con i parametri di impaginazione (vedi *Diagnostica di stampa*); predefinito disattivo |
 | Apri cartella (Diagnostica)                          | Apre la cartella che contiene il file di log; accanto è mostrato il percorso completo |
@@ -2490,7 +2491,7 @@ La direttiva `{new_page}` nel testo forza una nuova pagina logica durante la sta
 Le impostazioni del dialogo possono essere salvate **dentro il brano**, in una riga di commento come **prima riga** dell'editor:
 
 ```
-# {print_options: pages=2; cols=1; fit=0; shrink=0; minmargin=0; nomirror=0; blank=1; blankthr=5; scale=100; kbd=70; paper=3; orient=1; margins=5,5,5,5}
+# {print_options: pages=1; cols=1; fit=0; shrink=0; minmargin=0; nomirror=0; blank=1; blankthr=5; scale=100; pos=1; kbd=70; paper=3; orient=1; margins=5,5,5,5}
 ```
 
 La riga comincia con `#`, quindi non compare né in anteprima né in stampa. Nella sezione **Impostazioni nel brano** del dialogo, **Salva nell'editor** scrive (o aggiorna) la riga e **Carica dall'editor** rilegge i valori nel dialogo; si applicano premendo **OK**. La riga viene letta **solo se è la prima** del brano.
@@ -2501,21 +2502,24 @@ La riga comincia con `#`, quindi non compare né in anteprima né in stampa. Nel
 | `cols`      | 1–2     | Colonne per pagina                                         |
 | `fit`       | 0–1     | Riduci se eccede la pagina                                 |
 | `shrink`    | 0–1     | Comprimi per adattare alla pagina corrente                 |
-| `minmargin` | 0–50    | Margine minimo (mm) usato da *Comprimi*                    |
+| `minmargin` | 0–20    | Margine minimo (mm) usato da *Comprimi*                    |
 | `nomirror`  | 0–1     | Non replicare (lascia vuota la metà destra)                |
 | `blank`     | 0–1     | Rimuovi pagine vuote                                       |
 | `blankthr`  | 1–95    | Soglia pagina vuota (%)                                    |
 | `scale`     | 50–200  | Scala (%)                                                  |
+| `pos`       | 0–1     | Posizione del brano: 0 = sinistra, 1 = centrale — **facoltativa** |
 | `kbd`       | 50–200  | Dimensione tastiere (%) — **facoltativa**                  |
 | `paper`     | 0–200   | Formato carta                                              |
 | `orient`    | 1–2     | Orientamento (1 = verticale, 2 = orizzontale)              |
 | `margins`   | 4 numeri 0–100 | Margini in mm: alto, basso, sinistra, destra        |
 
+**Posizione (`pos`).** Con `pos=1` il brano viene centrato nella pagina, con `pos=0` (o senza la chiave) resta contro il margine sinistro. La centratura usa la **larghezza reale** del brano, comprese le tastiere degli accordi in fondo alla pagina (con la dimensione tastiere scelta per la stampa), e vale per ogni parte del brano separata da `{new_page}`. Si applica solo con `cols=1` e `pages=1`: con 2 colonne o 2 pagine per foglio la chiave viene ignorata. La chiave è facoltativa e non genera segnalazioni se manca; fuori da 0–1 il controllo della sintassi la segnala.
+
 **Dimensione tastiere (`kbd`).** Fa entrare più tastiere su ogni riga della sezione *Accordi* in fondo alla pagina (con un valore basso) oppure le ingrandisce. Vale **solo per la stampa e per l'anteprima di stampa**: l'anteprima nell'editor usa sempre la dimensione impostata nelle Preferenze. La chiave è facoltativa: se manca, la stampa usa il valore delle Preferenze, e i brani già esistenti restano come prima. Se nel dialogo la casella coincide con le Preferenze, la stampa continua a seguirle anche se in seguito le cambi.
 
 **Salvarla nel brano o no.** Nella sezione **Impostazioni nel brano** la casella **Salva anche la dimensione delle tastiere nel brano** decide se *Salva nell'editor* scrive anche `kbd=`. È attiva **solo se il brano contiene tastiere** (`{taste:}` o `{fingering:}`; le righe di commento non contano): senza tastiere la dimensione non serve, e la casella e il campo restano disattivati. Si spunta da sola quando porti la dimensione a un valore diverso dalle Preferenze; il pulsante *Predefinito* la toglie. Con la casella vuota la riga salvata non contiene `kbd` (e un `kbd` già presente viene eliminato).
 
-Il controllo della sintassi segnala le chiavi sconosciute, i valori fuori intervallo (es. `kbd=20`) e le chiavi mancanti, ad eccezione di `kbd`.
+Il controllo della sintassi segnala le chiavi sconosciute, i valori fuori intervallo (es. `kbd=20`) e le chiavi mancanti, ad eccezione di `kbd` e `pos`.
 
 ### Persistenza delle opzioni di stampa
 
@@ -2540,11 +2544,12 @@ I valori sono memorizzati nella sezione `/PageSetup` della configurazione utente
 | Colonne per pagina       | `columns_per_page`       | 1 colonna          |
 | Riduci se eccede la pagina | `fit_to_page`          | disattivo          |
 | Comprimi per adattare alla pagina corrente | `shrink_to_fit` | disattivo   |
-| Margine minimo per compressione automatica (mm) | `min_margin_shrink` | 5   |
+| Margine minimo per compressione automatica (mm) | `min_margin_shrink` | 5 (0–20) |
 | Non replicare (metà destra vuota) | `no_mirror_right` | disattivo         |
 | Rimuovi pagine vuote     | `remove_blank_pages`     | disattivo          |
 | Soglia pagina vuota (%)  | `blank_page_threshold`   | 5                  |
 | Stato del pulsante 📌 Pin | `print_options_pinned`   | disattivo          |
+| Posizione del brano      | `print_h_center`         | Sinistra           |
 | Scrivi log del layout    | `print_debug`            | disattivo          |
 
 > **Eccezione — Scala (%)** — Il valore del campo **Scala** non viene **mai** salvato. Resta attivo per tutta la sessione di lavoro (utile per regolarlo con il dialogo «pinnato» osservando l'anteprima in tempo reale), ma a ogni riavvio di Songpress++ torna sempre a **100%**. Questo evita di ritrovarsi con stampe ingrandite o ridotte senza accorgersene, dopo aver usato la scala per un singolo brano. Anche eventuali valori residui salvati da versioni precedenti vengono rimossi dalla configurazione.
@@ -2564,7 +2569,7 @@ I valori sono memorizzati nella sezione `/PageSetup` della configurazione utente
 
 Come funziona la logica: Songpress++ misura per ciascun segmento del brano (separati da `{new_page}`) quanto contenuto sfora oltre il bordo inferiore dell'ultima pagina che occupa, e tenta di recuperare esattamente quello spazio in due passi:
 
-**Primo passo** — riduce i margini superiore e inferiore, distribuendo la riduzione in proporzione alla riducibilità di ciascuno (non necessariamente 50/50: se un margine è già vicino al minimo, viene ridotto meno dell'altro). La riduzione si ferma non appena lo sforamento è recuperato, oppure quando entrambi i margini hanno raggiunto il valore minimo configurato da questo SpinCtrl. Se il margine impostato dall'utente è, ad esempio, 20 mm, può essere compresso automaticamente fino a 5 mm (predefinito). Questo impedisce alla riduzione automatica di azzerare completamente i margini.
+**Primo passo** — riduce i margini superiore e inferiore, distribuendo la riduzione in proporzione alla riducibilità di ciascuno (non necessariamente 50/50: se un margine è già vicino al minimo, viene ridotto meno dell'altro). La riduzione si ferma non appena lo sforamento è recuperato, oppure quando entrambi i margini hanno raggiunto il valore minimo configurato da questo SpinCtrl. Il valore minimo si imposta da 0 a 20 mm. Se il margine impostato dall'utente è, ad esempio, 20 mm, può essere compresso automaticamente fino a 5 mm (predefinito). Questo impedisce alla riduzione automatica di azzerare completamente i margini.
 
 **Secondo passo** — scala il contenuto (rimpicciolisce testo/accordi), solo se la riduzione dei margini da sola non è stata sufficiente. Il fattore di scala viene calcolato separatamente per ogni segmento e viene applicato il più restrittivo, garantendo che nessun segmento venga tagliato.
 
