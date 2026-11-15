@@ -58,7 +58,7 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 | `{tempo_c:BPM}`     |              | 🔧  | 🖊    | Tempo con icona **croma** fissa                                                           |
 | `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo con icona **croma puntata** fissa                                                   |
 | `{tempo_label:Testo}` |            | 🔧  | ⌨️   | Indicazione agogica testuale (es. `{tempo_label:Andante}`, `{tempo_label:Allegro moderato}`); visualizzata come testo accanto alle altre direttive di tempo |
-| `{time:N/M}`        |              | ✅  | ⌨️   | Indicazione di tempo (es. `{time:4/4}`, `{time:3/4}`); visualizzata con simbolo grafico. Dentro una strofa o un ritornello vale solo per quel blocco (mostrata di lato al blocco, sotto l'etichetta) e non spezza il blocco |
+| `{time:N/M}`        |              | ✅  | ⌨️   | Indicazione di tempo (es. `{time:4/4}`, `{time:3/4}`); visualizzata con simbolo grafico. Dentro una strofa, un ritornello o una griglia vale solo per quel blocco (mostrata di lato al blocco, sotto l'etichetta) e non spezza il blocco |
 | `{beats_time: Acc=N …}` |            | 🔧  | ⌨️   | Durata in battiti degli accordi (es. `{beats_time: Do=2 Sol=1}`); visualizza numero, punti o entrambi sopra gli accordi (configurabile nelle preferenze) |
 | `{duration:mm:ss}`  |              | ✅  | 🖊    | Durata totale della canzone (es. `{duration:12:45}`); non visualizzata nell'anteprima né in stampa, ma riportata nelle **Statistiche brano** come «Durata» effettiva al posto della stima automatica. Commentando la riga con `#` la durata torna ad essere calcolata automaticamente. |
 | `{sorttitle:Testo}` |              | ✅  | 🖊    | Titolo alternativo usato per l'ordinamento alfabetico (metadato, non visualizzato)        |
@@ -112,7 +112,7 @@ Un file ChordPro è un file di testo in cui gli **accordi** vengono inseriti dir
 | `{soc}`/`{eoc}`                           | ✅  | ⌨️   | Abbreviazione di `start_of_chorus`/`end_of_chorus`                                                                                   |
 | `{soc:Etichetta}`                         | ✅  | ⌨️   | Ritornello con etichetta personalizzata                                                                                              |
 | `{start_chorus:Etichetta}`/`{end_chorus}` | 🔧  | ⌨️   | Forma alternativa per il ritornello (con etichetta opzionale)                                                                        |
-| `{start_bridge:Etichetta}`/`{end_bridge}` | 🔧  | ⌨️   | Bridge con etichetta opzionale; se omessa, il valore predefinito è «Bridge»                                                          |
+| `{start_bridge:Etichetta}`/`{end_bridge}` | 🔧  | ⌨️   | Bridge con etichetta opzionale; se omessa, il blocco non ha né etichetta né numero (non è numerato)                                |
 | `{start_of_bridge}`/`{end_of_bridge}`     | ✅  | 🖊    | Forma ChordPro standard per il bridge; equivalente a `{start_bridge}`/`{end_bridge}`                                                 |
 | `{sob}`/`{eob}`                           | ✅  | 🖊    | Abbreviazione di `start_of_bridge`/`end_of_bridge`                                                                                   |
 | `{start_chord:Etichetta}`/`{end_chord}`   | 🔧  | ⌨️   | Blocco intro/accordi; se l'etichetta è omessa, il valore predefinito è «Intro»                                                       |
@@ -455,6 +455,7 @@ Tutte le opzioni si specificano come coppie `chiave=valore` nell'argomento della
 | Opzione             | Tipo    | Default         | Descrizione                                                                                                                                                       |
 | ------------------- | ------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | *(etichetta)*       | testo   | «Grid»          | Etichetta di sezione personalizzata (testo libero, prima di qualsiasi `chiave=valore`)                                                                            |
+| `nolabel`           | parola  | —               | Griglia **senza etichetta**: non viene disegnato il riquadro grigio sopra la griglia (nessuna scritta «Grid»/«Griglia»). Ha la precedenza su qualsiasi testo di etichetta                                  |
 | `size=N`            | numero  | `1`             | Moltiplicatore dimensione celle: moltiplica il padding orizzontale e/o verticale per N. Accetta interi o decimali fino a 2 cifre, con `.` o `,` (es. `1.5`, `2,50`) |
 | `size=N agisce su`  | scelta  | Larghezza e altezza | Controlla quale dimensione viene moltiplicata da `size=N`: **Larghezza e altezza** (entrambi i padding), **Solo larghezza** (solo `_pad_x`), **Solo altezza** (solo `_pad_y`). Si imposta nelle preferenze.  |
 | `chordtopspacing=N` | intero  | `0`             | Spazio extra in pixel **sopra** ogni riga di celle                                                                                                                |
@@ -464,6 +465,15 @@ Tutte le opzioni si specificano come coppie `chiave=valore` nell'argomento della
 > **Nota:** `chordtopspacing` e `linespacing` dentro `{start_of_grid}` agiscono localmente solo su quel blocco griglia, indipendentemente dalle direttive globali `{chordtopspacing}` e `{linespacing}` che influenzano i blocchi strofa/ritornello normali. Anche `sizedir` è locale al blocco e sovrascrive la preferenza globale solo per quella griglia.
 
 ### Esempi — start_of_grid
+
+Griglia senza etichetta:
+
+```chordpro
+{start_of_grid: nolabel}
+{time:4/4}
+|[SOL] |[DO] |[FA] [SOL] |[DO] |
+{end_of_grid}
+```
 
 Solo etichetta personalizzata:
 
@@ -580,6 +590,23 @@ Il comando *Inserisci → Durata accordi `{beats_time:}`…* riconosce anche le 
 
 > Il comportamento della barra spaziatrice come pipe può essere disabilitato in **Formattazione → Griglia accordi → Barra spaziatrice inserisce il separatore \|**.
 > La dimensione scalata da `size=N` si configura in **Formattazione → Griglia accordi → size=N agisce su**: scegli tra *Larghezza e altezza* (default), *Solo larghezza* o *Solo altezza*.
+
+### Indicazione di tempo nella griglia — `{time:}`
+
+La direttiva `{time:N/M}` funziona anche **dentro** un blocco griglia: mettila su una riga tutta sua. Il valore **non diventa una cella**: viene mostrato **di lato alla griglia**, nella colonna dell'etichetta, esattamente come avviene per strofe e ritornelli.
+
+```chordpro
+{start_of_grid:accordi}
+{time:4/4}
+{beats_time: SOL=4 DO=4 FA=2 SOL=2 DO=4 FA=2 DO=2 FA=2 DO=2}
+|[SOL] |[DO] |[FA] [SOL] |[DO] |[FA] |[DO] |[FA] |[DO] |
+{end_of_grid}
+```
+
+- Il **primo** `{time:}` della griglia vale per tutto il blocco.
+- Un `{time:}` successivo, a metà griglia, indica un **cambio di tempo** a partire dalla riga che lo segue.
+- Se la visualizzazione del tempo è disattivata nelle preferenze, la direttiva viene comunque consumata ma non disegnata.
+- Può stare in qualsiasi punto della griglia, anche prima o dopo `{beats_time:}`: non ne altera l'effetto sulla riga successiva.
 
 ### Note d'uso — start_of_grid
 

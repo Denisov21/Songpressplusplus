@@ -1072,6 +1072,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         # File, così template aggiunti/rinominati/eliminati compaiono subito,
         # senza dover riavviare l'applicazione.
         self.frame.Bind(wx.EVT_MENU_OPEN, self._OnMenuOpen)
+        # Rilettura degli appunti per «Incolla accordi» solo quando serve
+        self._pasteChordsDirty = True
+        self.frame.Bind(wx.EVT_ACTIVATE, self._MarkPasteChordsDirty)
+        self.frame.Bind(wx.EVT_MENU, self._MarkPasteChordsDirty)
         self.frame.Bind(EVT_TEXT_CHANGED, self.OnTextChanged)
         self.frame.Bind(wx.EVT_CHAR_HOOK, self._OnGlobalCharHook)
         self.exportMenuId = xrc.XRCID('export')
@@ -1106,11 +1110,13 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self._showPageBreakLines = True
         self._showColumnBreakLines = True
         self._showDurationBeats = True
+        self._showComments = self._ReadArrowVisible('show_comments')
         self._watermarkMenuId = xrc.XRCID('watermark')
         self._showPageBreakLinesMenuId = xrc.XRCID('showPageBreakLines')
         self._showColumnBreakLinesMenuId = xrc.XRCID('showColumnBreakLines')
         self._showDurationBeatsMenuId = xrc.XRCID('showDurationBeats')
         self._showArrowsMenuId = xrc.XRCID('showArrows')
+        self._showCommentsMenuId = xrc.XRCID('showComments')
         self._SyncArrowMenuChecks()
         self._showHoverHelpMenuId = xrc.XRCID('showHoverHelp')
         self._SyncHoverHelpUI()
@@ -1924,6 +1930,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         Bind(self.OnToggleColumnBreakLines, 'showColumnBreakLines')
         Bind(self.OnToggleDurationBeats, 'showDurationBeats')
         Bind(self.OnToggleArrows, 'showArrows')
+        Bind(self.OnToggleComments, 'showComments')
         Bind(self.OnToggleHoverHelp, 'showHoverHelp')
         Bind(self.OnTranspose, 'transpose')
         Bind(self.OnSimplifyChords, 'simplifyChords')
@@ -1996,6 +2003,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         nell'elenco senza dover riavviare l'applicazione. Il rebuild è limitato
         all'apertura del menu File per non pesare sulle altre aperture di menu.
         """
+        self._MarkPasteChordsDirty()
         try:
             menu = evt.GetMenu()
             if menu is not None and menu is self.menuBar.GetMenu(0):
@@ -7648,20 +7656,60 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             return True
         return False
 
+    def _MarkPasteChordsDirty(self, evt=None):
+        """Segnala che gli appunti potrebbero essere cambiati: la prossima
+        OnIdle li rilegge. Si chiama quando la finestra torna attiva, si apre
+        un menu, si esegue un comando di menu o si preme Ctrl+tasto."""
+        import time
+        self._pasteChordsDirty = True
+        self._pasteChordsDirtyAt = time.monotonic()
+        if evt is not None:
+            evt.Skip()
+
     def _PasteChordsWanted(self):
         """"Incolla accordi" e' attivo solo se negli appunti ci sono accordi.
         Con l'opzione "solo quando serve" disattivata resta sempre attivo.
-        OnIdle gira di continuo: la lettura degli appunti e' limitata a un
-        controllo ogni 0,4 s e il risultato e' in cache per testo."""
+
+        Su Linux gli appunti NON si leggono piu' a ogni OnIdle: wxGTK, mentre aspetta i
+        dati, fa girare un ciclo eventi annidato e i timer interni del
+        controllo di testo riaprivano gli appunti gia' aperti
+        (wxAssertionError «clipboard already open», crash). Si rilegge solo
+        quando _MarkPasteChordsDirty() segnala un possibile cambiamento, mai
+        in modo rientrante e solo con la finestra attiva."""
         try:
             if not getattr(self.pref, 'pasteChordsOnlyWhenNeeded', True):
                 return True
-            import time
-            now = time.monotonic()
-            if now - getattr(self, '_pasteChordsLastCheck', 0.0) < 0.4:
+            if getattr(self, '_pasteChordsBusy', False):
                 return getattr(self, '_pasteChordsLastResult', True)
-            self._pasteChordsLastCheck = now
-            t = self._GetClipboardText()
+            if sys.platform.startswith('linux'):
+                # Solo su Linux (wxGTK): rilettura solo su segnale (vedi sopra).
+                if not getattr(self, '_pasteChordsDirty', True):
+                    return getattr(self, '_pasteChordsLastResult', True)
+                # Attende che il comando (es. Ctrl+C, che parte DOPO il tasto)
+                # abbia finito di scrivere gli appunti, prima di rileggerli:
+                # leggere mentre il controllo di testo li sta aprendo causava
+                # il crash.
+                import time
+                if time.monotonic() - getattr(self, '_pasteChordsDirtyAt', 0.0) < 0.7:
+                    return getattr(self, '_pasteChordsLastResult', True)
+                try:
+                    if not self.frame.IsActive():
+                        return getattr(self, '_pasteChordsLastResult', True)
+                except Exception:
+                    pass
+            else:
+                # Windows / macOS: controllo ogni 0,4 s come in origine.
+                import time
+                now = time.monotonic()
+                if now - getattr(self, '_pasteChordsLastCheck', 0.0) < 0.4:
+                    return getattr(self, '_pasteChordsLastResult', True)
+                self._pasteChordsLastCheck = now
+            self._pasteChordsDirty = False
+            self._pasteChordsBusy = True
+            try:
+                t = self._GetClipboardText()
+            finally:
+                self._pasteChordsBusy = False
             if t is None:
                 res = True      # appunti non leggibili: meglio lasciarlo attivo
             else:
@@ -7783,9 +7831,32 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.previewCanvas.SetDocumentDir(self.document)
         raw = self.text.GetText()
         text = self._strip_hash_commands(raw)
+        if not getattr(self, '_showComments', True):
+            text = self._strip_comment_directives(text)
         if getattr(self.pref.format, 'showChords', 2) == 0:
             text = self._strip_nochords_blocks(text)
         return text
+
+    @staticmethod
+    def _strip_comment_directives(text):
+        """Rimuove i commenti {comment}, {comment_italic}, {comment_box} (e gli
+        alias c, ci, cb) dal testo mostrato nell'anteprima. Una riga formata
+        solo dal commento viene eliminata; se la direttiva e' in mezzo ad altro
+        testo viene tolta solo la direttiva. Le righe '# ...' non servono: non
+        compaiono mai nell'anteprima."""
+        import re
+        pat = re.compile(
+            r'\{\s*(?:comment_italic|comment_box|comment|ci|cb|c)\s*'
+            r'(?:[:\s][^}]*)?\}', re.IGNORECASE)
+        out = []
+        for line in text.split('\n'):
+            new = pat.sub('', line)
+            if new != line:
+                if not new.strip():
+                    continue            # riga di solo commento: eliminata
+                line = new
+            out.append(line)
+        return '\n'.join(out)
 
     def _strip_nochords_blocks(self, text):
         """Rimuove dal testo i blocchi paired la cui checkbox e' attiva
@@ -8827,7 +8898,13 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             lbl = wx.StaticText(win, label='', pos=(8, 3))
             font = lbl.GetFont()
             font.SetStyle(wx.FONTSTYLE_ITALIC)
-            font.SetPixelSize(wx.Size(0, 14))
+            if sys.platform.startswith('linux'):
+                # wxGTK: 14 px assoluti risultano minuscoli (schermi con
+                # scala/DPI alti): si usa il corpo del font di sistema,
+                # che segue le impostazioni del desktop, con minimo 10 pt.
+                font.SetPointSize(max(font.GetPointSize(), 10))
+            else:
+                font.SetPixelSize(wx.Size(0, 14))
             lbl.SetFont(font)
             win._lbl = lbl
             self._hoverTipWin = win
@@ -9546,6 +9623,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
     def _OnGlobalCharHook(self, evt):
         """F3 = trova successivo, Shift+F3 = trova precedente, anche a dialogo chiuso."""
         kc = evt.GetKeyCode()
+        if evt.ControlDown():
+            self._MarkPasteChordsDirty()    # Ctrl+C / Ctrl+X cambiano gli appunti
         if kc == wx.WXK_F3:
             if evt.ShiftDown():
                 self.OnFindPrevious(evt)
@@ -13028,6 +13107,13 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         )
         self.previewCanvas.Refresh(self._get_display_text())
 
+    def OnToggleComments(self, evt):
+        """Mostra/nasconde i commenti nella Pagina Songpress++ (solo anteprima)."""
+        self._showComments = not getattr(self, '_showComments', True)
+        self._WriteArrowVisible('show_comments', self._showComments)
+        self._SyncViewToggles()
+        self.previewCanvas.Refresh(self._get_display_text())
+
     _ARROW_CFG_PATH = '/Rendering'
 
     def _ReadArrowVisible(self, key):
@@ -13073,6 +13159,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self.menuBar.Enable(self._showColumnBreakLinesMenuId, preview_visible)
         self.menuBar.Enable(self._showDurationBeatsMenuId, preview_visible)
         self.menuBar.Enable(self._showArrowsMenuId, preview_visible)
+        self.menuBar.Enable(self._showCommentsMenuId, preview_visible)
         self._EnableViewPreviewTools(preview_visible)
 
     def _ApplyPreviewMinSize(self):
@@ -13230,6 +13317,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self.menuBar.Enable(self._showColumnBreakLinesMenuId, False)
             self.menuBar.Enable(self._showDurationBeatsMenuId, False)
             self.menuBar.Enable(self._showArrowsMenuId, False)
+            self.menuBar.Enable(self._showCommentsMenuId, False)
             self._EnableViewPreviewTools(False)
             wx.CallAfter(self._SyncPreviewToggleButton)
         else:

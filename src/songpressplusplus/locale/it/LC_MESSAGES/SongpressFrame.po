@@ -345,11 +345,15 @@ msgstr ""
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Copied to the clipboard as a vector image."
-msgstr "Copiato negli appunti come immagine vettoriale."
+msgstr "Copiata immagine vettoriale."
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Copied to the clipboard as an image."
-msgstr "Copiato negli appunti come immagine."
+msgstr "Copiata immagine."
+
+#: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
+msgid "Songpress++ page updated."
+msgstr "Pagina Songpress++ aggiornata."
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "Export to &clipboard as an image"

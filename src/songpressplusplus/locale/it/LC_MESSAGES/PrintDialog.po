@@ -65,9 +65,6 @@ msgstr "(evita il taglio in fondo)"
 msgid "Min margin for auto-shrink (mm):"
 msgstr "Margine minimo per riduzione automatica (mm):"
 
-msgid "Do not replicate (leave right half blank)"
-msgstr "Non replicare (lascia bianca la metà destra)"
-
 msgid "Remove blank pages"
 msgstr "Rimuovi pagine bianche"
 
@@ -188,9 +185,6 @@ msgstr "Riduce il contenuto solo se eccede le dimensioni della pagina (senza ing
 msgid "Reduce the content only if it exceeds the page size, to avoid bottom clipping"
 msgstr "Riduce il contenuto solo se supera le dimensioni della pagina, per evitare il taglio in fondo"
 
-msgid "In 2-pages mode, print only on the left half and leave the right half blank (no mirroring)"
-msgstr "In modalità 2 pagine, stampa solo sulla metà sinistra e lascia vuota la metà destra (senza replica)"
-
 msgid "Skip pages that are empty or contain only whitespace, based on the threshold below"
 msgstr "Salta le pagine vuote o che contengono solo spazi, in base alla soglia impostata"
 
@@ -289,3 +283,48 @@ msgstr "Scrive la dimensione delle tastiere ('kbd=') nella riga salvata. Senza, 
 
 msgid "No keyboards found in the song."
 msgstr "Nel brano non ci sono tastiere."
+
+# ── Posizione orizzontale del brano («Opzioni avanzate») ─────────────────────
+
+msgid "Position:"
+msgstr "Posizione:"
+
+msgid "Left"
+msgstr "Sinistra"
+
+msgid "Center"
+msgstr "Centrale"
+
+msgid "Horizontal position of the song on the page: against the left margin or centered. Not available with 2 columns or 2 pages per sheet."
+msgstr "Posizione orizzontale del brano nella pagina: contro il margine sinistro oppure centrato. Non disponibile con 2 colonne o 2 pagine per foglio."
+
+# ── Pulsante «Adatta» (riquadro «Scala») ──────────────────────────────────────
+
+msgid "Fit"
+msgstr "Adatta"
+
+msgid "Set the largest scale (up to 100%) at which the song fits in the pages of the sheet (1, or 2 with 2 pages per sheet) without being cut. Takes columns and page size into account. Beat numbers stay above their chord."
+msgstr "Imposta la scala più alta (fino al 100%) con cui il brano entra nelle pagine del foglio (1, oppure 2 con 2 pagine per foglio) senza essere tagliato. Tiene conto di colonne e formato della pagina. I numeri dei battiti restano sopra il proprio accordo."
+
+msgid "Unable to compute the scale."
+msgstr "Impossibile calcolare la scala."
+
+msgid "The song does not fit in the pages of the sheet even at 50%. The scale was set to 50%; the rest continues on the next page."
+msgstr "Il brano non entra nelle pagine del foglio nemmeno al 50%. La scala è stata impostata al 50%; il resto continua nella pagina successiva."
+
+# ── Controllo della riga «# {print_options: ...}» ─────────────────────────────
+
+msgid "Settings loaded with warnings. Press OK to apply."
+msgstr "Impostazioni caricate con avvisi. Premi OK per applicarle."
+
+msgid "Warning"
+msgstr "Avviso"
+
+msgid "column"
+msgstr "colonna"
+
+msgid "Problems found in the print settings line:"
+msgstr "Problemi trovati nella riga delle impostazioni di stampa:"
+
+msgid "Unable to open the driver settings:\n{err}"
+msgstr "Impossibile aprire le impostazioni del driver:\n{err}"

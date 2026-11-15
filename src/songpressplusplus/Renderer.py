@@ -246,16 +246,33 @@ class Renderer(object):
         else:
             # Fallback alla preferenza globale
             self._grid_sizeDir = getattr(self, 'gridSizeDir', 'both')
+        # 'nolabel' (parola a se') = griglia senza etichetta: nessun riquadro
+        # grigio sopra la griglia (cosi' non si scrive «Grid»/«Griglia»).
+        nolabel = bool(_re.search(r'(?<![\w=])nolabel(?![\w=])', raw, _re.IGNORECASE))
         # Rimuovi tutti i parametri key=value riconosciuti, il resto è l'etichetta
         clean_label = _re.sub(
             r'\b(?:size|chordtopspacing|linespacing)\s*=\s*\d+(?:[.,]\d{1,2})?'
-            r'|\bsizedir\s*=\s*\w+',
+            r'|\bsizedir\s*=\s*\w+'
+            r'|(?<![\w=])nolabel(?![\w=])',
             '', raw, flags=_re.IGNORECASE).strip()
-        self._grid_label = clean_label if clean_label else default_label
+        if nolabel:
+            self._grid_label = ''
+        else:
+            self._grid_label = clean_label if clean_label else default_label
         self._grid_rows = []   # list[list[str]] — celle per ogni riga
         # {beats_time: ...} dentro la griglia: struttura parallela a _grid_rows
         self._grid_beats_rows = []       # list[list[int|None]]
         self._grid_pending_duration = [] # battiti in attesa della prossima riga di celle
+        # {time: N/M} dentro la griglia: il primo valore e' l'indicazione laterale
+        # del blocco (come per strofe/ritornelli); i successivi sono cambi di tempo
+        # a meta' griglia, memorizzati come (indice_riga, valore).
+        self._grid_time_sig = None       # str | None
+        # Righe sorgente (0-based) per il clic dell'anteprima
+        self._grid_src_line = self.lineCount
+        self._grid_src_text = getattr(self, '_src_text', '').strip()
+        self._grid_time_src = None       # (riga, testo) del {time:} laterale
+        self._grid_row_src = []          # parallela a _grid_rows: (riga, testo)
+        self._grid_time_changes = []     # list[(int, str)]
 
     def EndGrid(self):
         """Chiude il blocco grid e aggiunge un SongGridBox alla canzone."""
@@ -282,6 +299,24 @@ class Renderer(object):
                           sizeDir=getattr(self, '_grid_sizeDir', 'both'),
                           chord_font=chord_font,
                           chord_color=chord_color)
+        # Indicazione di tempo locale della griglia (disegnata di lato, nella
+        # colonna dell'etichetta, come per i blocchi strofa/ritornello).
+        box.time_sig = getattr(self, '_grid_time_sig', None)
+        box.time_changes = list(getattr(self, '_grid_time_changes', None) or [])
+        # Riga sorgente per il clic/doppio-clic dell'anteprima: se la griglia ha
+        # un {time:} laterale vale quella riga (e' li' che si clicca su 4/4),
+        # altrimenti la prima riga di celle, altrimenti {start_of_grid}.
+        _tsrc = getattr(self, '_grid_time_src', None)
+        _rsrc = getattr(self, '_grid_row_src', None) or []
+        box.row_src = list(_rsrc)
+        box.time_src = _tsrc
+        if _tsrc:
+            box.src_line, box.src_text = _tsrc
+        elif _rsrc:
+            box.src_line, box.src_text = _rsrc[0]
+        else:
+            box.src_line = getattr(self, '_grid_src_line', self.lineCount)
+            box.src_text = getattr(self, '_grid_src_text', '')
         box.pageBreakBefore = getattr(self, '_next_page_break', False)
         if box.pageBreakBefore:
             self._next_page_break = False
@@ -293,6 +328,10 @@ class Renderer(object):
         self._grid_label = None
         self._grid_beats_rows = None
         self._grid_pending_duration = []
+        self._grid_time_sig = None
+        self._grid_time_changes = []
+        self._grid_time_src = None
+        self._grid_row_src = []
 
     def _ParseGridLine(self, l):
         """Estrae le celle da una riga del blocco grid.
@@ -581,6 +620,8 @@ class Renderer(object):
         _EOG_RE = _re_grid.compile(r'\{(?:end_of_grid|eog)\s*\}', _re_grid.IGNORECASE)
         # Riga composta SOLO da {beats_time: ...} (usata dentro i blocchi grid)
         _BT_RE = _re_grid.compile(r'^\{\s*beats_time\s*:?([^}]*)\}$', _re_grid.IGNORECASE)
+        # Riga composta SOLO da {time: N/M} (usata dentro i blocchi grid)
+        _TIME_RE = _re_grid.compile(r'^\{\s*time\s*(?::([^}]*))?\}$', _re_grid.IGNORECASE)
 
         for l in self.text.splitlines():
             self.lineCount += 1
@@ -600,9 +641,28 @@ class Renderer(object):
                 if _bt:
                     self._grid_pending_duration = self._ParseBeatsTime(_bt.group(1))
                     continue
+                # {time: N/M} da solo sulla riga → indicazione di tempo della griglia.
+                # Come {beats_time}, dentro la grid non passa dal tokenizer: va
+                # intercettata qui, altrimenti finirebbe in una cella. Viene sempre
+                # consumata; e' mostrata solo se timeDisplay e' attivo.
+                _tm = _TIME_RE.match(stripped_l)
+                if _tm:
+                    _tval = (_tm.group(1) or '').strip()
+                    if _tval and self.timeDisplay:
+                        if self._grid_time_sig is None or not self._grid_rows:
+                            # Primo {time:} (o nuovo {time:} prima di qualsiasi riga):
+                            # indicazione laterale della griglia
+                            self._grid_time_sig = _tval
+                            self._grid_time_src = (self.lineCount, stripped_l)
+                        else:
+                            # Cambio di tempo a meta' griglia: prima della riga N
+                            self._grid_time_changes.append(
+                                (len(self._grid_rows), _tval))
+                    continue
                 # {row} / {r} da solo sulla riga → riga vuota separatrice
                 if stripped_l in ('{row}', '{r}'):
                     self._grid_rows.append([])   # lista vuota = riga vuota
+                    self._grid_row_src.append((self.lineCount, stripped_l))
                     self._grid_beats_rows.append([])
                     continue
                 # Se la riga contiene {end_of_grid} o {eog} la passiamo alla
@@ -616,6 +676,7 @@ class Renderer(object):
                     cells = self._ParseGridLine(l)
                     if cells:
                         self._grid_rows.append(cells)
+                        self._grid_row_src.append((self.lineCount, l.strip()))
                         pending = list(self._grid_pending_duration)
                         if pending:
                             self._grid_beats_rows.append(
@@ -705,9 +766,11 @@ class Renderer(object):
                         if state == SongBlock.verse:
                             self.EndBlock()
                     elif cmd == 'start_bridge':
-                        # Inciso: etichetta fissa, non numerata
+                        # Inciso: non numerato. Senza etichetta esplicita passa
+                        # label="" (non-None) cosi' BeginBlock non incrementa
+                        # labelCount e il decorator non disegna alcun numero.
                         a = self.GetAttribute()
-                        label = a.strip() if (a and a.strip()) else None
+                        label = a.strip() if (a and a.strip()) else ""
                         self.BeginBlock(SongBlock.verse, label)
                     elif cmd == 'end_bridge':
                         if state == SongBlock.verse:

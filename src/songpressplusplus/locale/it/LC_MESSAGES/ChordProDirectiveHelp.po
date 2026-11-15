@@ -5,8 +5,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Songpress++ ChordProDirectiveHelp\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-09 00:00+0000\n"
-"PO-Revision-Date: 2026-11-09 00:00+0000\n"
+"POT-Creation-Date: 2026-11-14 00:00+0000\n"
+"PO-Revision-Date: 2026-11-14 00:00+0000\n"
 "Last-Translator: Denis\n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -372,6 +372,12 @@ msgid "Highlights the octave key at the left end only."
 msgstr "Evidenzia il tasto d'ottava solo all'estremità sinistra."
 
 #: ChordProDirectiveHelp.py
+msgid "Grid without a label: the grey box above the grid is not drawn."
+msgstr ""
+"Griglia senza etichetta: il riquadro grigio sopra la griglia non viene "
+"disegnato."
+
+#: ChordProDirectiveHelp.py
 msgid "Applies the size horizontally only."
 msgstr "Applica la dimensione solo in orizzontale."
 
@@ -460,8 +466,8 @@ msgid "Explicit bar separator inside a grid block."
 msgstr "Separatore di battuta esplicito dentro una griglia."
 
 #: ChordProDirectiveHelp.py
-msgid "Minimum margin, in mm, used by Shrink (0-50)."
-msgstr "Margine minimo, in mm, usato da Riduci (0-50)."
+msgid "Minimum margin, in mm, used by Shrink (0-20)."
+msgstr "Margine minimo, in mm, usato da Riduci (0-20)."
 
 #: ChordProDirectiveHelp.py
 msgid "Do not shrink when the content exceeds the page."
@@ -472,12 +478,12 @@ msgid "Begins an unnumbered verse, with an optional label."
 msgstr "Inizia una strofa non numerata, con etichetta facoltativa."
 
 #: ChordProDirectiveHelp.py
-msgid "No mirroring: in 2-pages mode the right half stays blank."
-msgstr "Nessuna replica: in modalità 2 pagine la metà destra resta bianca."
-
-#: ChordProDirectiveHelp.py
-msgid "Begins a bridge, with an optional label (default: Bridge)."
-msgstr "Inizia un bridge, con etichetta facoltativa (predefinita: Bridge)."
+msgid ""
+"Begins a bridge, with an optional label (without a label it has no label and"
+" no number)."
+msgstr ""
+"Inizia un bridge, con etichetta facoltativa (senza etichetta non ha né "
+"etichetta né numero)."
 
 #: ChordProDirectiveHelp.py
 msgid "Duration in beats of this chord (on the chord line below)."
@@ -507,11 +513,6 @@ msgid "Page type (ChordPro 6). Accepted for compatibility, not rendered."
 msgstr ""
 "Tipo di pagina (ChordPro 6). Accettato per compatibilità, non viene "
 "applicato."
-
-#: ChordProDirectiveHelp.py
-msgid "Mirroring: in 2-pages mode the page is repeated on the right half."
-msgstr ""
-"Replica: in modalità 2 pagine la pagina viene ripetuta sulla metà destra."
 
 #: ChordProDirectiveHelp.py
 msgid "Begins an intro chord block, with an optional label (default: Intro)."
@@ -589,14 +590,6 @@ msgstr ""
 
 #: ChordProDirectiveHelp.py
 msgid ""
-"No mirroring (0 = off, 1 = on): in 2-pages mode, print only on the left half"
-" and leave the right half blank."
-msgstr ""
-"Non replicare (0 = no, 1 = sì): in modalità 2 pagine, stampa solo sulla metà"
-" sinistra e lascia bianca quella destra."
-
-#: ChordProDirectiveHelp.py
-msgid ""
 "Shrink if it exceeds the page (0 = off, 1 = on): reduces the content only "
 "when it does not fit, never enlarges it."
 msgstr ""
@@ -618,6 +611,22 @@ msgid ""
 msgstr ""
 "Riga di commento: trattata come riga vuota, non appare nell'anteprima né in "
 "stampa."
+
+#: ChordProDirectiveHelp.py
+msgid ""
+"Horizontal position of the song on the page: 0 = left, 1 = centered (only "
+"with 1 column and 1 page per sheet). Optional."
+msgstr ""
+"Posizione orizzontale del brano nella pagina: 0 = a sinistra, 1 = centrata "
+"(solo con 1 colonna e 1 pagina per foglio). Facoltativa."
+
+#: ChordProDirectiveHelp.py
+msgid "Left, against the margin."
+msgstr "A sinistra, contro il margine."
+
+#: ChordProDirectiveHelp.py
+msgid "Centered on the page."
+msgstr "Centrata nella pagina."
 
 msgid "Directive hover help"
 msgstr "Guida al passaggio del mouse"

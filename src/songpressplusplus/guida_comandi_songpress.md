@@ -317,7 +317,7 @@ G|---0---2---0---|
 
 **Sintassi:**
 ```chordpro
-{start_of_grid: Etichetta [size=N] [chordtopspacing=N] [linespacing=N]}
+{start_of_grid: Etichetta [size=N] [chordtopspacing=N] [linespacing=N] [nolabel]}
 ...righe di accordi...
 {end_of_grid}
 ```
@@ -333,6 +333,13 @@ Delimita un blocco **griglia accordi** (schema armonico per battute). Le abbrevi
 | `chordtopspacing=N` | Spazio extra in pixel sopra ogni riga della griglia | `chordtopspacing=10` |
 | `linespacing=N` | Spazio extra in pixel sotto ogni riga della griglia | `linespacing=8` |
 | Etichetta libera | Testo dell'etichetta del blocco (dopo i parametri key=value) | `size=2 Ritornello` |
+| `nolabel` | Griglia **senza etichetta**: non viene disegnato il riquadro grigio sopra la griglia (nessuna scritta «Grid»/«Griglia»). Parola da sola, senza `=`; ha la precedenza su qualsiasi testo di etichetta | `nolabel` |
+
+```chordpro
+{sog: nolabel}
+| C | G | Am | F |
+{eog}
+```
 
 **Formato delle righe all'interno del blocco:**
 
@@ -1336,7 +1343,7 @@ Accessibile da **Formato → Indicazione di tempo** (o clic sull'indicazione nel
 | `{row}` | `{r}` | Struttura | Riga separatrice vuota |
 | `{new_song}` | — | Struttura | Reset completo del renderer |
 | `{start_of_tab}` / `{end_of_tab}` | `{sot}` / `{eot}` | Tab/Griglia | Blocco tablatura ASCII con font monospace |
-| `{start_of_grid}` / `{end_of_grid}` | `{sog}` / `{eog}` | Tab/Griglia | Blocco griglia accordi per battute |
+| `{start_of_grid}` / `{end_of_grid}` | `{sog}` / `{eog}` | Tab/Griglia | Blocco griglia accordi per battute (`nolabel` = senza etichetta) |
 | `{grid}` | — | Tab/Griglia | Apre un blocco griglia (sinonimo di `{sog}`) |
 | `{comment: ...}` | `{c:}` | Annotazioni | Commento visibile in stile normale |
 | `{comment_italic: ...}` | `{ci:}` | Annotazioni | Commento in corsivo |

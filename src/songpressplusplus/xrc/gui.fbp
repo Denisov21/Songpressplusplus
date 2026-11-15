@@ -870,6 +870,19 @@
             <property name="unchecked_bitmap"></property>
           </object>
           <object class="wxMenuItem" expanded="false">
+            <property name="bitmap">Load From File; ../img/comment.png</property>
+            <property name="checked">1</property>
+            <property name="enabled">1</property>
+            <property name="help">Show or hide comments ({comment:}, {comment_italic:}, {comment_box:}) in the preview</property>
+            <property name="id">ID_SHOW_COMMENTS</property>
+            <property name="kind">wxITEM_CHECK</property>
+            <property name="label">Show: &quot;comments {comment}&quot;</property>
+            <property name="name">showComments</property>
+            <property name="permission">none</property>
+            <property name="shortcut"></property>
+            <property name="unchecked_bitmap"></property>
+          </object>
+          <object class="wxMenuItem" expanded="false">
             <property name="bitmap">Load From File; ../img/labelVerses.png</property>
             <property name="checked">1</property>
             <property name="enabled">1</property>

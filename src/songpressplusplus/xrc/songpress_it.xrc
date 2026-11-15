@@ -366,6 +366,14 @@
           <checked>1</checked>
 		  <bitmap>../img/arrows_updown.png</bitmap>
         </object>
+        <object class="wxMenuItem" name="showComments">
+          <label>Commenti {comment}</label>
+          <accel></accel>
+          <help>Mostra o nascondi i commenti ({comment:}, {comment_italic:}, {comment_box:}) nell'anteprima</help>
+          <checkable>1</checkable>
+          <checked>1</checked>
+          <bitmap>../img/comment.png</bitmap>
+        </object>
         <object class="wxMenuItem" name="labelVerses">
           <label>_Etichetta strofe e ritornelli</label>
           <accel></accel>

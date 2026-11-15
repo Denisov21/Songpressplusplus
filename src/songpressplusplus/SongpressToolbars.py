@@ -462,6 +462,10 @@ class SongpressToolbarsMixin:
             prev_was_sep = False
             last_added = xrc_name
 
+        # Separatore finale: chiude la barra (solo se contiene almeno un tool)
+        if last_added is not None:
+            self.mainToolBar.AddSeparator()
+
         self._RealizeToolbar(self.mainToolBar)
 
     # ------------------------------------------------------------------
@@ -558,6 +562,9 @@ class SongpressToolbarsMixin:
         if show_ls:
             self.AddTool(self.formatToolBar, 'insertLinespacing', 'img/line_spacing.png',
                          _(u"Linespacing"), _(u"Insert a {linespacing} command"))
+            # Separatore finale (se Interlinea e' nascosto, quello sopra
+            # e' gia' l'ultimo elemento della barra)
+            self.formatToolBar.AddSeparator()
 
         self._RealizeToolbar(self.formatToolBar)
 
@@ -764,6 +771,10 @@ class SongpressToolbarsMixin:
             prev_was_separator = False
             last_added_xrc = xrc_name
 
+        # Separatore finale: chiude la barra (solo se contiene almeno un tool)
+        if last_added_xrc is not None:
+            self.insertToolBar.AddSeparator()
+
         self._RealizeToolbar(self.insertToolBar)
 
     # ------------------------------------------------------------------
@@ -863,18 +874,25 @@ class SongpressToolbarsMixin:
         ('showColumnBreakLines', _(u'Column break lines'), 'tbv_columnBreakLines'),
         ('showDurationBeats',    _(u'Chord duration'),     'tbv_durationBeats'),
         ('showArrows',           _(u'Show: arrows'),       'tbv_arrows'),
+        ('showComments',         _(u'Comments'),           'tbv_comments'),
     ]
+
+    #: Separatori interni alla view toolbar: dopo quale xrc_name inserirne uno
+    #: (vuoto = nessuno). Il separatore e' aggiunto solo se segue almeno un
+    #: pulsante visibile (niente separatori finali o doppi).
+    _VIEW_TOOLBAR_SEPARATORS_AFTER = set()
 
     #: voci della view toolbar che rispecchiano il menu Visualizza: etichetta,
     #: aiuto e (se manca un'icona dedicata) bitmap vengono dalla voce di menu.
     _VIEW_MENU_LABELLED = frozenset((
         'showPageBreakLines', 'showColumnBreakLines',
-        'showDurationBeats', 'showArrows',
+        'showDurationBeats', 'showArrows', 'showComments',
     ))
     #: voci che hanno senso solo con il pannello anteprima visibile
     #: (stesso criterio con cui il menu le abilita/disabilita).
     _VIEW_PREVIEW_DEPENDENT = ('showPageBreakLines', 'showColumnBreakLines',
-                               'showDurationBeats', 'showArrows')
+                               'showDurationBeats', 'showArrows',
+                               'showComments')
 
     @staticmethod
     def _MenuItemLabel(menubar, xrc_name, fallback):
@@ -910,6 +928,8 @@ class SongpressToolbarsMixin:
             return bool(getattr(self, '_showColumnBreakLines', True))
         if xrc_name == 'showDurationBeats':
             return bool(getattr(self, '_showDurationBeats', True))
+        if xrc_name == 'showComments':
+            return bool(getattr(self, '_showComments', True))
         if xrc_name == 'showArrows':
             try:
                 return bool(self._ReadArrowVisible('show_arrows'))
@@ -1020,9 +1040,18 @@ class SongpressToolbarsMixin:
         self.viewToolBar.ClearTools()
 
         menubar = getattr(self, 'menuBar', None)
+        prev_was_separator = True   # evita separatore iniziale
+        last_added_xrc = None
         for xrc_name, label, pref_key in self.VIEW_TOOLBAR_ITEMS:
             if not getattr(self.pref, pref_key, True):
                 continue
+            # Separatore aggiunto *prima* del primo pulsante del gruppo
+            # successivo: se tutti i pulsanti dopo il separatore sono nascosti
+            # non resta nessun separatore orfano in fondo alla barra.
+            if (last_added_xrc in self._VIEW_TOOLBAR_SEPARATORS_AFTER
+                    and not prev_was_separator):
+                self.viewToolBar.AddSeparator()
+                prev_was_separator = True
             icon_path = self._view_toolbar_icons[xrc_name]
             help_str = self._view_toolbar_helps.get(xrc_name)
             if xrc_name in self._VIEW_MENU_LABELLED:
@@ -1054,6 +1083,12 @@ class SongpressToolbarsMixin:
             if xrc_name in _toggle_states:
                 self.viewToolBar.ToggleTool(wx.xrc.XRCID(xrc_name),
                                             _toggle_states[xrc_name])
+            prev_was_separator = False
+            last_added_xrc = xrc_name
+
+        # Separatore finale: chiude la barra (solo se contiene almeno un tool)
+        if last_added_xrc is not None:
+            self.viewToolBar.AddSeparator()
 
         self._RealizeToolbar(self.viewToolBar)
 
@@ -1085,6 +1120,7 @@ class SongpressToolbarsMixin:
             'showColumnBreakLines': 'img/showColumnBreakLines.png',
             'showDurationBeats':    'img/showDurationBeats.png',
             'showArrows':           'img/showArrows.png',
+            'showComments':         'img/showComments.png',
         }
         self._view_toolbar_helps = {
             'preview':    _(u"Show or hide the Songpress++ Page panel"),

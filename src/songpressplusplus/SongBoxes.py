@@ -226,6 +226,11 @@ class SongGridBox(SongBox):
           # None / lista vuota = nessun battito (comportamento identico al passato).
           self.beats_rows = beats_rows or []
           self.beats_h = 0            # altezza riservata sopra le celle (calcolata dal decorator)
+          # Indicazione di tempo da {time: N/M} dentro il blocco grid: time_sig e'
+          # il valore laterale della griglia (None = nessuno); time_changes sono
+          # i cambi di tempo a meta' griglia, come [(indice_riga, valore), ...].
+          self.time_sig = None
+          self.time_changes = []
           self.display_mode = display_mode
           self.font = font
           self.chord_font = chord_font    # wx.Font per il testo degli accordi nelle celle

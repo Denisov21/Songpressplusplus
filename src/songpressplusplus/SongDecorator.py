@@ -586,12 +586,31 @@ class SongDecorator(object):
         self.SetMarginLine(line)
         
     def LayoutComposeBlock(self, block):
+        # ── Tempo laterale in un blocco SENZA etichetta ({time:} in un bridge,
+        # una strofa non numerata, ...): non c'e' la colonna dell'etichetta in
+        # cui disegnare la frazione, che finirebbe sopra il testo. Si riserva
+        # una colonna a sinistra spostando le righe, e il blocco viene alzato
+        # quanto la frazione (piu' alta di una riga). Con un'etichetta visibile
+        # (testo o numero) non cambia nulla: la frazione sta sotto l'etichetta.
+        ts_shift = 0
+        ts_min_h = 0
+        ts = getattr(block, 'time_sig', None)
+        if ts and self.dc is not None:
+            no_label = (block.label == '' or
+                        (block.label is None and not self.drawLabels))
+            if no_label:
+                ts_shift, ts_min_h = self._TimeSigSize(ts, block.format.wxFont)
+                ts_min_h -= 3   # _DrawBlockTimeSig parte 3px sopra il blocco
         y = 0
         for l in block.boxes:
             l.y = y
+            if ts_shift:
+                l.x = ts_shift
             y += l.GetTotalHeight()
             block.RelocateBox(l)
         self.SetMarginBlock(block)
+        if ts_min_h > block.h:
+            block.h = ts_min_h
         # ── Blocco grid in modalità table: ridimensiona all'altezza reale ──
         if getattr(block, 'is_grid', False):
             grid_rows = getattr(block, 'grid_rows', [])
@@ -787,12 +806,44 @@ class SongDecorator(object):
         gridbox._pad_x   = int(pad_x)
         gridbox._pad_y   = int(pad_y)
         gridbox._label_h = label_h
-        gridbox.w = cell_w * col_count
+        # ── Indicazione di tempo laterale ({time: N/M} dentro la griglia) ──
+        # Come per strofe e ritornelli, la frazione sta nella colonna a sinistra
+        # (stessa x dell'etichetta). Il primo {time:} sta in cima alla griglia;
+        # gli eventuali cambi di tempo stanno all'altezza della riga da cui
+        # valgono. Se la frazione e' piu' larga della colonna a sinistra delle
+        # celle, le celle vengono spostate a destra del necessario.
+        gridbox._time_marks = []      # list[(offset y dalla prima riga, testo)]
+        _ts_vals = []
+        _ts_main = getattr(gridbox, 'time_sig', None)
+        if _ts_main:
+            _ts_vals.append((0, _ts_main))
+        for _ri, _tv in (getattr(gridbox, 'time_changes', None) or []):
+            if 0 < _ri < len(gridbox.rows):
+                _ts_vals.append((_ri, _tv))
+        extra_w = 0
+        ts_bottom = 0
+        if _ts_vals:
+            ts_w = 0
+            for _ri, _tv in _ts_vals:
+                _tw, _th = self._TimeSigSize(_tv, gridbox.font)
+                ts_w = max(ts_w, _tw)
+                _y_off = 0
+                for _row in gridbox.rows[:_ri]:
+                    _y_off += spacer_h if not _row else row_h
+                gridbox._time_marks.append((_y_off, _tv))
+                ts_bottom = max(ts_bottom, _y_off + _th)
+            _need = int(baseW * leftMargin) + ts_w + 2
+            if _need > text_x_offset:
+                extra_w = _need - text_x_offset
+                gridbox._text_x_offset = _need
+            self.dc.SetFont(old_font)
+        gridbox.w = cell_w * col_count + extra_w
         # Altezza totale: etichetta + righe normali + spacer per righe vuote
         total_h = label_h
         for row in gridbox.rows:
             total_h += spacer_h if not row else row_h
-        gridbox.h = total_h
+        # La frazione (piu' alta di una riga) non deve invadere il blocco seguente
+        gridbox.h = max(total_h, label_h + ts_bottom)
     def LayoutCompose(self):
         # Postorder layout composing
         for block in self.s.boxes:
@@ -974,6 +1025,19 @@ class SongDecorator(object):
                 'nw': nw, 'nh': nh, 'dw': dw, 'dh': dh,
                 'gap': gap, 'bar_th': bar_th, 'bar_w': bar_w,
                 'w': bar_w + right, 'h': nh + gap + bar_th + gap + dh}
+
+    def _TimeSigSize(self, txt, font):
+        """(larghezza, altezza) dell'indicazione di tempo `txt` disegnata da
+        _DrawStackedTimeSig con `font` come font base: frazione impilata se il
+        testo e' 'N/M', testo semplice altrimenti."""
+        m = self._TimeSigMetrics(txt, font)
+        if m:
+            return m['w'], m['h']
+        old = self.dc.GetFont()
+        self.dc.SetFont(font)
+        w, h = self.dc.GetTextExtent(txt)
+        self.dc.SetFont(old)
+        return w, h
 
     def _DrawStackedTimeSig(self, txt, bx, by, color):
         """Disegna 'N/M' come frazione (numeratore, barra, denominatore) con
@@ -2218,6 +2282,26 @@ class SongDecorator(object):
         if font is None:
             return
 
+        # Geometria disegnata (coordinate renderer), usata dall'hit-test del
+        # doppio-click dell'anteprima (PreviewCanvas._HitTestGrid): rettangolo
+        # complessivo (colonna laterale inclusa), x di inizio celle e fascia
+        # verticale di ogni riga. Le righe vuote ({row}) hanno altezza spacer.
+        _gx0 = int(self.s.marginLeft + gridbox.x)
+        _gy0 = int(self.s.marginTop + gridbox.y)
+        _g_row_h = getattr(gridbox, 'row_h', getattr(gridbox, 'cell_h', 0))
+        _g_spacer_h = getattr(gridbox, 'spacer_h',
+                              max(4, getattr(gridbox, 'cell_h', 0) // 2))
+        _g_rows = []
+        _gy = by
+        for _row in gridbox.rows:
+            _hh = _g_spacer_h if not _row else _g_row_h
+            _g_rows.append((_gy, _gy + _hh))
+            _gy += _hh
+        gridbox._draw_rect = (_gx0, _gy0, (bx - _gx0) + gridbox.w, gridbox.h)
+        gridbox._draw_cells_x = bx
+        gridbox._draw_rows = _g_rows
+        gridbox._draw_time_rect = None
+
         old_font = self.dc.GetFont()
 
         # ── Etichetta stile identico a StandardVerseNumbers (verse) ──
@@ -2260,6 +2344,27 @@ class SongDecorator(object):
             self.dc.SetBackgroundMode(wx.TRANSPARENT)
             self.dc.DrawText(gridbox.label, int(tx), int(ty))
             self.dc.SetTextForeground(wx.BLACK)
+
+        # ── Indicazione di tempo laterale ({time:} dentro la griglia) ──
+        # Frazione impilata nella colonna a sinistra, stessa x dell'etichetta,
+        # a partire dalla prima riga (o dalla riga del cambio di tempo).
+        _marks = getattr(gridbox, '_time_marks', None)
+        if _marks:
+            self.dc.SetFont(font)
+            _tbw, _tbh = self.dc.GetTextExtent("0")
+            _tsx = int(self.s.marginLeft + 0.5 * _tbw)
+            self.dc.SetTextForeground(wx.BLACK)
+            self.dc.SetBackgroundMode(wx.TRANSPARENT)
+            for _off, _txt in _marks:
+                self.dc.SetFont(font)   # _DrawStackedTimeSig usa il font corrente come base
+                self._DrawStackedTimeSig(_txt, _tsx, by + _off, wx.BLACK)
+                if _off == 0 and gridbox._draw_time_rect is None:
+                    # Area cliccabile della frazione principale ({time:} laterale)
+                    _tw2, _th2 = self._TimeSigSize(_txt, font)
+                    # (tutta la colonna laterale, per l'altezza della frazione)
+                    _lx = int(self.s.marginLeft + gridbox.x)
+                    gridbox._draw_time_rect = (_lx, by + _off - 2,
+                                               max(bx - _lx, _tw2 + 4), _th2 + 4)
 
         self.dc.SetFont(font)
 

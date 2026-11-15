@@ -136,6 +136,7 @@ DIRECTIVE_OPTIONS = {
         ('chordtopspacing', []),
         ('linespacing',     []),
         ('sizedir',         ['horizontal', 'vertical', 'both']),
+        ('nolabel',         None),
     ],
     'image': [
         ('width',  []),

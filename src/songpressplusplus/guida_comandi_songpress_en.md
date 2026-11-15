@@ -317,7 +317,7 @@ G|---0---2---0---|
 
 **Syntax:**
 ```chordpro
-{start_of_grid: Label [size=N] [chordtopspacing=N] [linespacing=N]}
+{start_of_grid: Label [size=N] [chordtopspacing=N] [linespacing=N] [nolabel]}
 ...chord rows...
 {end_of_grid}
 ```
@@ -333,6 +333,13 @@ Delimits a **chord grid** block (harmonic scheme per bar). Abbreviations are `{s
 | `chordtopspacing=N` | Extra space in pixels above each grid row | `chordtopspacing=10` |
 | `linespacing=N` | Extra space in pixels below each grid row | `linespacing=8` |
 | Free label | Block label text (after any key=value parameters) | `size=2 Chorus` |
+| `nolabel` | Grid **without a label**: the grey box above the grid is not drawn (no «Grid» text). A bare word, no `=`; takes precedence over any label text | `nolabel` |
+
+```chordpro
+{sog: nolabel}
+| C | G | Am | F |
+{eog}
+```
 
 **Row format inside the block:**
 
@@ -1337,7 +1344,7 @@ Accessible from **Format → Tempo indication** (or by clicking the indication i
 | `{row}` | `{r}` | Structure | Blank separator row |
 | `{new_song}` | — | Structure | Complete renderer reset |
 | `{start_of_tab}` / `{end_of_tab}` | `{sot}` / `{eot}` | Tab/Grid | ASCII tablature block with monospace font |
-| `{start_of_grid}` / `{end_of_grid}` | `{sog}` / `{eog}` | Tab/Grid | Chord grid block per bar |
+| `{start_of_grid}` / `{end_of_grid}` | `{sog}` / `{eog}` | Tab/Grid | Chord grid block per bar (`nolabel` = no label) |
 | `{grid}` | — | Tab/Grid | Opens a grid block (synonym for `{sog}`) |
 | `{comment: ...}` | `{c:}` | Annotations | Visible comment in normal style |
 | `{comment_italic: ...}` | `{ci:}` | Annotations | Comment in italics |

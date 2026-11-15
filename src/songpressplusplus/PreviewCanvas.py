@@ -430,6 +430,11 @@ class PreviewCanvas(object):
         # è immediato senza riavvio. Innocuo su Windows.
         self.main_panel.Bind(wx.EVT_SYS_COLOUR_CHANGED, self._OnSysColourChanged)
 
+        # Alla distruzione del pannello ferma il timer di debounce: evita il
+        # RuntimeError "wrapped C/C++ object of type ScrolledWindow has been
+        # deleted" quando wx.CallLater scatta dopo la chiusura della finestra.
+        self.main_panel.Bind(wx.EVT_WINDOW_DESTROY, self._OnMainPanelDestroy)
+
     # -----------------------------------------------------------------------
     # Icona "copia" disegnata a mano (per controllarne il colore)
     # -----------------------------------------------------------------------
@@ -776,7 +781,7 @@ class PreviewCanvas(object):
         _wm_active = bool(_cfg and _cfg.get('enabled')
                           and _cfg.get('showInPreview', True))
         if _wm_active and not _had_size and h > 0:
-            wx.CallAfter(self.panel.Refresh)
+            wx.CallAfter(self._SafePanelRefresh)
 
     # -----------------------------------------------------------------------
     # Zoom
@@ -1024,9 +1029,52 @@ class PreviewCanvas(object):
                 pass
         self._debounce_timer = wx.CallLater(_DEBOUNCE_MS, self._DoRefresh)
 
+    def _PanelAlive(self):
+        """True se il ScrolledWindow esiste ancora (non e' stato distrutto).
+
+        Un wx.CallLater/wx.CallAfter puo' scattare dopo la chiusura della
+        finestra: in quel caso l'oggetto C++ e' gia' cancellato e qualunque
+        chiamata solleva RuntimeError. Gli oggetti wx cancellati valutano a
+        False, quindi basta testarne la veridicita'.
+        """
+        try:
+            return bool(self.panel)
+        except RuntimeError:
+            return False
+
+    def _StopDebounce(self):
+        """Ferma e azzera l'eventuale timer di debounce pendente."""
+        t = self._debounce_timer
+        self._debounce_timer = None
+        if t is not None:
+            try:
+                t.Stop()
+            except Exception:
+                pass
+
+    def _SafePanelRefresh(self):
+        """panel.Refresh() sicuro per chiamate differite (CallAfter)."""
+        if self._PanelAlive():
+            self.panel.Refresh()
+
+    def _OnMainPanelDestroy(self, evt):
+        """Il pannello anteprima sta per essere distrutto: ferma il timer di
+        debounce, cosi' _DoRefresh non scatta su widget gia' cancellati."""
+        # EVT_WINDOW_DESTROY risale dai figli: agiamo solo per main_panel.
+        if evt.GetEventObject() is self.main_panel:
+            self._StopDebounce()
+            self._on_click_callback = None
+            self._on_keyboard_callback = None
+            self._on_copy_callback = None
+            self._on_refresh_callback = None
+        evt.Skip()
+
     def _DoRefresh(self):
         """Ridisegno effettivo chiamato al termine del debounce."""
         self._debounce_timer = None
+        # Finestra gia' chiusa/distrutta mentre il timer era in attesa: niente da fare.
+        if not self._PanelAlive():
+            return
         self.text = self._pending_text
         # Riapplica flag anche qui (nel caso il decorator sia cambiato nel frattempo)
         self.renderer.sd.showPageBreakLines  = self._showPageBreakLines
@@ -1161,6 +1209,44 @@ class PreviewCanvas(object):
                 return src_line, getattr(box, 'src_text', None)
         return None
 
+    def _HitTestGrid(self, click_x, click_y):
+        """(riga 0-based, testo) della riga sorgente di un blocco {start_of_grid}
+        sotto il punto (click_x, click_y) in coordinate renderer, oppure None.
+
+        Usa la geometria salvata da SongDecorator._DrawGridBox durante l'ultimo
+        disegno. Un clic sulla frazione laterale ({time:N/M}) seleziona la riga
+        {time:}; un clic su una riga di celle seleziona quella riga; altrove
+        nella griglia (etichetta, spazi) la riga indicata dal box.
+        """
+        song = getattr(self.renderer, 'song', None)
+        if song is None:
+            return None
+        for box in song.boxes:
+            if not isinstance(box, SongGridBox):
+                continue
+            rect = getattr(box, '_draw_rect', None)
+            if rect is None:
+                continue
+            gx, gy, gw, gh = rect
+            if not (gx <= click_x <= gx + gw and gy <= click_y <= gy + gh):
+                continue
+            # Frazione laterale
+            trect = getattr(box, '_draw_time_rect', None)
+            tsrc = getattr(box, 'time_src', None)
+            if trect is not None and tsrc:
+                tx, ty, tw, th = trect
+                if tx <= click_x <= tx + tw and ty <= click_y <= ty + th:
+                    return tsrc
+            # Riga di celle
+            row_src = getattr(box, 'row_src', None) or []
+            for ri, (y0, y1) in enumerate(getattr(box, '_draw_rows', [])):
+                if y0 <= click_y < y1 and ri < len(row_src):
+                    return row_src[ri]
+            src_line = getattr(box, 'src_line', None)
+            if src_line is not None:
+                return src_line, getattr(box, 'src_text', None)
+        return None
+
     def _FindSourceLine(self, token_text, block_index):
         """Trova la riga sorgente (0-based) corrispondente a un token renderizzato.
 
@@ -1255,6 +1341,15 @@ class PreviewCanvas(object):
         img_hit = self._HitTestImage(rx, ry)
         if img_hit is not None:
             self._on_click_callback(img_hit[0], img_hit[1])
+            evt.Skip()
+            return
+
+        # 1d. Doppio-click su una griglia: seleziona la riga sorgente giusta
+        #     (frazione {time:}, riga di celle) invece della riga di testo piu'
+        #     vicina, che sarebbe quella sotto la griglia.
+        grid_hit = self._HitTestGrid(rx, ry)
+        if grid_hit is not None:
+            self._on_click_callback(grid_hit[0], grid_hit[1])
             evt.Skip()
             return
 
@@ -1920,6 +2015,13 @@ class _FullscreenPreviewFrame(wx.Frame):
         img_hit = self.owner._HitTestImage(rx, ry)
         if img_hit is not None:
             self.owner._on_click_callback(img_hit[0], img_hit[1])
+            evt.Skip()
+            return
+
+        # Griglia: stessa logica del canvas principale
+        grid_hit = self.owner._HitTestGrid(rx, ry)
+        if grid_hit is not None:
+            self.owner._on_click_callback(grid_hit[0], grid_hit[1])
             evt.Skip()
             return
 

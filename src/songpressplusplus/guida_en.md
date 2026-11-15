@@ -58,7 +58,7 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | `{tempo_c:BPM}`     |              | 🔧  | 🖊    | Tempo with fixed **eighth note** icon                                                    |
 | `{tempo_cp:BPM}`    |              | 🔧  | 🖊    | Tempo with fixed **dotted eighth note** icon                                             |
 | `{tempo_label:Text}` |             | 🔧  | ⌨️   | Textual tempo marking (e.g. `{tempo_label:Andante}`, `{tempo_label:Allegro moderato}`); displayed as text alongside other tempo directives |
-| `{time:N/M}`        |              | ✅  | ⌨️   | Time signature (e.g. `{time:4/4}`, `{time:3/4}`); rendered with a graphical time symbol. Inside a verse or chorus it applies only to that block (shown beside the block, under its label) and does not split the block |
+| `{time:N/M}`        |              | ✅  | ⌨️   | Time signature (e.g. `{time:4/4}`, `{time:3/4}`); rendered with a graphical time symbol. Inside a verse, chorus or grid it applies only to that block (shown beside the block, under its label) and does not split the block |
 | `{beats_time: Ch=N …}` |           | 🔧  | ⌨️   | Beat duration of chords (e.g. `{beats_time: C=2 G=1}`); displays a number, dots, or both above chords (configurable in preferences) |
 | `{duration:mm:ss}`  |              | ✅  | 🖊    | Total song duration (e.g. `{duration:12:45}`); not shown in preview or print, but displayed in **Song Statistics** as the actual «Duration» instead of the automatic estimate. Commenting out the line with `#` restores automatic duration calculation. |
 | `{sorttitle:Text}`  |              | ✅  | 🖊    | Alternative title used for alphabetical sorting (metadata only, not displayed)           |
@@ -112,7 +112,7 @@ A ChordPro file is a text file where **chords** are inserted directly in the son
 | `{soc}`/`{eoc}`                           | ✅  | ⌨️   | Abbreviation for `start_of_chorus`/`end_of_chorus`                                                                     |
 | `{soc:Label}`                             | ✅  | ⌨️   | Chorus with custom label                                                                                               |
 | `{start_chorus:Label}`/`{end_chorus}`     | 🔧  | ⌨️   | Alternative chorus form (with optional label)                                                                          |
-| `{start_bridge:Label}`/`{end_bridge}`     | 🔧  | ⌨️   | Bridge with optional label; defaults to «Bridge» if omitted                                                            |
+| `{start_bridge:Label}`/`{end_bridge}`     | 🔧  | ⌨️   | Bridge with optional label; if omitted, the block has neither label nor number (it is not numbered)                    |
 | `{start_of_bridge}`/`{end_of_bridge}`     | ✅  | 🖊    | Standard ChordPro form for bridge; equivalent to `{start_bridge}`/`{end_bridge}`                                       |
 | `{sob}`/`{eob}`                           | ✅  | 🖊    | Abbreviation for `start_of_bridge`/`end_of_bridge`                                                                     |
 | `{start_chord:Label}`/`{end_chord}`       | 🔧  | ⌨️   | Intro/chord block; defaults to «Intro» if label is omitted                                                             |
@@ -448,6 +448,7 @@ All options are specified as `key=value` pairs inside the directive argument, af
 | Option              | Type    | Default         | Description                                                                                                                                              |
 | ------------------- | ------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | *(label)*           | text    | «Grid»          | Custom section label (free text, before any `key=value` parameters)                                                                                      |
+| `nolabel`           | word    | —               | Grid **without a label**: the grey box above the grid is not drawn (no «Grid» text). Takes precedence over any label text                                 |
 | `size=N`            | number  | `1`             | Cell size multiplier: multiplies horizontal and/or vertical padding by N. Accepts integers or decimals up to 2 places, with `.` or `,` (e.g. `1.5`, `2,50`) |
 | `size=N affects`    | choice  | Width and height | Controls which dimension is scaled by `size=N`: **Width and height** (both paddings), **Width only** (only `_pad_x`), **Height only** (only `_pad_y`). Set in Preferences. |
 | `chordtopspacing=N` | integer | `0`             | Extra space in pixels **above** each row of cells                                                                                                        |
@@ -457,6 +458,15 @@ All options are specified as `key=value` pairs inside the directive argument, af
 > **Note:** `chordtopspacing` and `linespacing` inside `{start_of_grid}` act locally on that grid block only, independently of the global `{chordtopspacing}` and `{linespacing}` directives which affect normal verse/chorus blocks. `sizedir` is also local to the block and overrides the global preference only for that grid.
 
 ### Examples — start_of_grid
+
+Grid without a label:
+
+```chordpro
+{start_of_grid: nolabel}
+{time:4/4}
+|[G] |[C] |[F] [G] |[C] |
+{end_of_grid}
+```
 
 Custom label only:
 
@@ -573,6 +583,23 @@ Beats are drawn **above each individual chord**, even when a bar contains more t
 The directive applies **only to the row of cells immediately below it**: to assign beats to several rows, repeat it before each one.
 
 The command *Insert → Chord duration `{beats_time:}`…* also recognises grid rows written **without square brackets** (`| Am | F | G |`), so the dialog works exactly as it does in the body of the song.
+
+### Time Signature Inside a Grid — `{time:}`
+
+The `{time:N/M}` directive also works **inside** a grid block: put it on a line of its own. The value **does not become a cell**: it is shown **beside the grid**, in the label column, exactly as it is for verses and choruses.
+
+```chordpro
+{start_of_grid:chords}
+{time:4/4}
+{beats_time: G=4 C=4 F=2 G=2 C=4 F=2 C=2 F=2 C=2}
+|[G] |[C] |[F] [G] |[C] |[F] |[C] |[F] |[C] |
+{end_of_grid}
+```
+
+- The **first** `{time:}` in the grid applies to the whole block.
+- A later `{time:}` in the middle of the grid marks a **time change** starting from the row that follows it.
+- If time display is turned off in the preferences, the directive is still consumed but not drawn.
+- It can be placed anywhere in the grid, even before or after `{beats_time:}`: it does not affect the effect of `{beats_time:}` on the next row.
 
 ### Usage Notes — start_of_grid
 

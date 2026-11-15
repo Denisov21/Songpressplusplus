@@ -366,6 +366,14 @@
           <checked>1</checked>
           <bitmap>../img/arrows_updown.png</bitmap>
         </object>
+        <object class="wxMenuItem" name="showComments">
+          <label>Show: "comments {comment}"</label>
+          <accel></accel>
+          <help>Show or hide comments ({comment:}, {comment_italic:}, {comment_box:}) in the preview</help>
+          <checkable>1</checkable>
+          <checked>1</checked>
+          <bitmap>../img/comment.png</bitmap>
+        </object>
         <object class="wxMenuItem" name="labelVerses">
           <label>_Label verses and chord</label>
           <accel></accel>
