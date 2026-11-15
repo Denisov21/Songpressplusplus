@@ -156,17 +156,17 @@ The script automatically performs the following steps:
 When done, you will see (the version number shown is only an **example** — it depends on the one in `pyproject.toml`):
 
 ```
-✅  Pacchetto creato: build_deb/songpressplusplus_8.1.0_all.deb
+✅  Pacchetto creato: build_deb/songpressplusplus_8.2.0_all.deb
 ```
 
 ---
 
 ### Installing the .deb package
 
-> **⚠️ Note:** the version number (`8.1.0`) is only an **example** and **must be verified**: use the one actually produced by the script, shown on screen at the end of the build.
+> **⚠️ Note:** the version number (`8.2.0`) is only an **example** and **must be verified**: use the one actually produced by the script, shown on screen at the end of the build.
 
 ```bash
-sudo dpkg -i "build_deb/songpressplusplus_8.1.0_all.deb"
+sudo dpkg -i "build_deb/songpressplusplus_8.2.0_all.deb"
 ```
 
 If any dependencies are missing:
@@ -180,7 +180,7 @@ sudo apt-get install -f
 > (so the separate `apt-get install -f` step is not needed):
 >
 > ```bash
-> sudo apt install "build_deb/songpressplusplus_8.1.0_all.deb"
+> sudo apt install "build_deb/songpressplusplus_8.2.0_all.deb"
 > ```
 
 > **🌐 An Internet connection is required.** Two Python dependencies
@@ -271,10 +271,10 @@ Then, in Dolphin: right-click the `.deb` → _Open With…_ → choose "GDebi Pa
 > **✅ Alternatively (more robust): `apt` from the terminal.** Use `apt` instead of `dpkg`, so it resolves dependencies automatically from the repositories:
 >
 > ```bash
-> sudo apt install ./songpressplusplus_8.1.0_all.deb
+> sudo apt install ./songpressplusplus_8.2.0_all.deb
 > ```
 >
-> The `./` prefix (or a full path) is **mandatory**: without at least one `/` in the name, `apt` treats the argument as the name of a package to look up in the repositories and returns "unable to locate package". If you are not in the `.deb`'s folder, pass the full path, e.g. `sudo apt install ~/…/build_deb/songpressplusplus_8.1.0_all.deb`.
+> The `./` prefix (or a full path) is **mandatory**: without at least one `/` in the name, `apt` treats the argument as the name of a package to look up in the repositories and returns "unable to locate package". If you are not in the `.deb`'s folder, pass the full path, e.g. `sudo apt install ~/…/build_deb/songpressplusplus_8.2.0_all.deb`.
 
 > **ℹ️ "Unknown author" and "License: Unknown" in Discover.** Discover takes the "Author" and "License" fields from **AppStream** metadata (`metainfo.xml`), not from `DEBIAN/control` (which has no license field and only a `Maintainer`). Two consequences follow:
 >
@@ -310,7 +310,7 @@ Then, in Dolphin: right-click the `.deb` → _Open With…_ → choose "GDebi Pa
 
 ```toml
 [project]
-version = "8.1.0"   # ← change this number
+version = "8.2.0"   # ← change this number
 ```
 
 #### 2. Remove the installed version, rebuild and reinstall
@@ -324,7 +324,7 @@ When the script finishes, `build_deb/` will contain the new `.deb` with the
 updated version number. Install it using the command printed by the script, for example:
 
 ```bash
-sudo dpkg -i "build_deb/songpressplusplus_8.1.0_all.deb"
+sudo dpkg -i "build_deb/songpressplusplus_8.2.0_all.deb"
 ```
 
 > **Tip:** you don't need to remember the exact version number —
@@ -371,7 +371,7 @@ songpressplusplus
 
 ### Linux technical notes
 
-- Tested on **Debian 13 / Ubuntu 24.04** with Python 3.13 and wxPython 4.2.3 GTK3
+- Tested on **Debian 13 / Ubuntu 24.04** with Python 3.13 and wxPython 8.2.0 GTK3
 - GTK console messages (`gtk_image_menu_item_set_image`, `invalid cast from 'GtkMenuItem'`, `ScreenToClient cannot work...`) are harmless and do not indicate errors. The root cause is fixed by **Patch 11** (see `patch_debian.md`), which calls `SetBitmap()` before `Append()` as required by the wxWidgets documentation; the wrapper filters them anyway as a safety net for cases the patch does not reach. No other message is hidden
 - The `gtk_combo_box_text_insert ... GTK_IS_COMBO_BOX_TEXT` critical appears **only on exit**: wxGTK repopulates/destroys a `ComboBox` while the underlying GTK widget is already being torn down, so it is no longer a valid combo. It is harmless (the app is quitting) and is filtered by the wrapper as well. With `SONGPRESS_VERBOSE=1` you can still see it, useful for debugging
 - The `for_size smaller than min-size (29 < 30) ... owner GtkSpinButton` warning is a **layout-measurement** message: the `entry` node of the `GtkSpinButton` (the `wxSpinCtrl` widgets) has a `min-height` of 30px in the Breeze-GTK theme but is allocated 29px. The 1px discrepancy is purely cosmetic — the widget is drawn correctly — and depends on the theme/display scaling, not on the code. Filtered by the wrapper; visible again with `SONGPRESS_VERBOSE=1`
