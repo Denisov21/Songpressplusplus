@@ -1,6 +1,10 @@
 @echo off
-rem Rinormalizza i fine riga a LF in un repository Git (Windows).
-rem Uso: copia questo file e .gitattributes nella radice del repo e fai doppio clic.
+rem ============================================================
+rem  Rinormalizza i fine riga a LF in un repository Git.
+rem  Serve perche' i file funzionino sia su Windows sia su Linux.
+rem  Uso: copia questo file e .gitattributes nella radice del
+rem  repo e fai doppio clic. Non fa il push.
+rem ============================================================
 
 git rev-parse --is-inside-work-tree >nul 2>&1
 if errorlevel 1 (
