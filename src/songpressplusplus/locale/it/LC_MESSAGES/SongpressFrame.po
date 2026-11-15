@@ -1610,16 +1610,35 @@ msgstr "Mostra il %s centrale"
 
 #: SongpressFrame.py — Chord keys / First chord fingering dialogs, middle C
 #: checkbox tooltip
-msgid ""
-"Marks the middle %s key with a dot. Available when the start note is not %s."
+msgid "Marks the middle %s key. Available when the start note is not %s."
 msgstr ""
-"Segna il tasto %s centrale con un pallino. Disponibile quando la nota di "
-"partenza non è %s."
+"Segna il tasto %s centrale. Disponibile quando la nota di partenza non è %s."
 
 #: SongpressFrame.py — Chord keys / First chord fingering dialogs, middle C
 #: colour swatch tooltip
-msgid "Colour of the middle %s dot."
-msgstr "Colore del pallino del %s centrale."
+msgid "Colour of the middle %s mark."
+msgstr "Colore del segno del %s centrale."
+
+#: SongpressFrame.py — Chord keys / First chord fingering dialogs, middle C
+#: mark style
+msgid "Mark style:"
+msgstr "Stile del segno:"
+
+#: SongpressFrame.py — middle C mark style choice
+msgid "Dot"
+msgstr "Pallino"
+
+#: SongpressFrame.py — middle C mark style choice
+msgid "Label"
+msgstr "Scritta"
+
+#: SongpressFrame.py — middle C mark style choice
+msgid "Dot and label"
+msgstr "Pallino e scritta"
+
+#: SongpressFrame.py — middle C mark style choice tooltip
+msgid "How the middle C key is marked."
+msgstr "Come viene segnato il tasto DO centrale."
 
 #: /home/luca/Documenti/dev/Applicazioni/songpress/master/src/songpress/SongpressFrame.py
 msgid "File \"%s\" already exists. Do you want to overwrite it?"
@@ -2112,3 +2131,31 @@ msgid ""
 msgstr ""
 "Modello \"%s\" salvato.\n"
 "Lo trovi in File > Nuovo da modello."
+
+#: SongpressFrame.py _AskOpenExportedHtml
+msgid ""
+"The HTML file has been saved.\n"
+"\n"
+"Open it in the browser?"
+msgstr ""
+"Il file HTML è stato salvato.\n"
+"\n"
+"Vuoi aprirlo nel browser?"
+
+#: SongpressFrame.py _AskOpenExportedHtml
+msgid "Export as HTML"
+msgstr "Esporta come HTML"
+
+#: SongpressFrame.py _AskOpenExportedFile
+msgid ""
+"The file has been saved.\n"
+"\n"
+"Open it now?"
+msgstr ""
+"Il file è stato salvato.\n"
+"\n"
+"Vuoi aprirlo ora?"
+
+#: SongpressFrame.py _AskOpenExportedFile
+msgid "Export"
+msgstr "Esporta"

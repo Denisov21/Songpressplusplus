@@ -1011,7 +1011,10 @@ class PreviewCanvas(object):
         self.renderer.sd.showPageBreakLines  = self._showPageBreakLines
         self.renderer.sd.showColumnBreakLines = self._showColumnBreakLines
 
-        if not self._debounceEnabled:
+        # Ridisegno immediato anche quando l'anteprima e' ancora vuota (avvio o
+        # primo brano): niente debounce, cosi' non resta per 300 ms il pannello
+        # vuoto che poi "scatta" sul contenuto (lampeggio all'apertura).
+        if not self._debounceEnabled or not self.text.strip():
             # Ridisegno immediato: cancella eventuale timer pendente e ridisegna subito
             if self._debounce_timer is not None:
                 try:
@@ -1057,16 +1060,33 @@ class PreviewCanvas(object):
         if self._PanelAlive():
             self.panel.Refresh()
 
+    def Shutdown(self):
+        """Pulizia esplicita prima che l'anteprima venga chiusa/distrutta.
+
+        Ferma il timer di debounce, chiude l'eventuale finestra a tutto
+        schermo e scollega le callback verso SongpressFrame. E' idempotente:
+        si puo' chiamare piu' volte (la rete di sicurezza e' comunque
+        _OnMainPanelDestroy, che la richiama alla distruzione del pannello).
+        """
+        self._StopDebounce()
+        fs = self._fullscreen_frame
+        self._fullscreen_frame = None
+        if fs is not None:
+            try:
+                fs.Close()
+            except Exception:
+                pass
+        self._on_click_callback = None
+        self._on_keyboard_callback = None
+        self._on_copy_callback = None
+        self._on_refresh_callback = None
+
     def _OnMainPanelDestroy(self, evt):
-        """Il pannello anteprima sta per essere distrutto: ferma il timer di
-        debounce, cosi' _DoRefresh non scatta su widget gia' cancellati."""
+        """Il pannello anteprima sta per essere distrutto: esegue Shutdown(),
+        cosi' _DoRefresh non scatta su widget gia' cancellati."""
         # EVT_WINDOW_DESTROY risale dai figli: agiamo solo per main_panel.
         if evt.GetEventObject() is self.main_panel:
-            self._StopDebounce()
-            self._on_click_callback = None
-            self._on_keyboard_callback = None
-            self._on_copy_callback = None
-            self._on_refresh_callback = None
+            self.Shutdown()
         evt.Skip()
 
     def _DoRefresh(self):

@@ -125,7 +125,8 @@ _KEYBOARD_OPTIONS = [
     ('start',   []),
     ('octave',  ['both', 'one', 'single', 'first']),
     ('hand',    ['R', 'L']),
-    ('middlec', ['show', 'hide', 'on', 'off', 'yes', 'no', '1', '0']),
+    # show = puntino, label = scritta (es. DO), both = puntino + scritta
+    ('middlec', ['show', 'label', 'both', 'hide', 'on', 'off', 'yes', 'no', '1', '0']),
 ]
 
 DIRECTIVE_OPTIONS = {

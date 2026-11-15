@@ -293,10 +293,13 @@ msgid "R = right hand, L = left hand (label above the keyboard)."
 msgstr "R = mano destra, L = mano sinistra (etichetta sopra la tastiera)."
 
 #: ChordProDirectiveHelp.py
-msgid "Show or hide the middle C label (show, hide, on, off, yes, no, 1, 0)."
+msgid ""
+"Marks the middle C key: show = dot, label = note name, both = dot and note "
+"name, hide = no mark (on, off, yes, no, 1, 0 also work)."
 msgstr ""
-"Mostra o nasconde l'etichetta del DO centrale (show, hide, on, off, yes, no,"
-" 1, 0)."
+"Segna il tasto DO centrale: show = pallino, label = nome della nota, both = "
+"pallino e nome della nota, hide = nessun segno (valgono anche on, off, yes, "
+"no, 1, 0)."
 
 #: ChordProDirectiveHelp.py
 msgid "Grid scale factor (e.g. size=1.5)."
@@ -356,12 +359,20 @@ msgstr ""
 "distanza accordo-testo."
 
 #: ChordProDirectiveHelp.py
-msgid "Shows the middle C label."
-msgstr "Mostra l'etichetta del DO centrale."
+msgid "Marks the middle C key with a dot."
+msgstr "Segna il tasto DO centrale con un pallino."
 
 #: ChordProDirectiveHelp.py
-msgid "Hides the middle C label."
-msgstr "Nasconde l'etichetta del DO centrale."
+msgid "Writes the note name (e.g. DO) on the middle C key."
+msgstr "Scrive il nome della nota (es. DO) sul tasto DO centrale."
+
+#: ChordProDirectiveHelp.py
+msgid "Marks the middle C key with a dot and the note name."
+msgstr "Segna il tasto DO centrale con un pallino e il nome della nota."
+
+#: ChordProDirectiveHelp.py
+msgid "Hides the mark on the middle C key."
+msgstr "Nasconde il segno sul tasto DO centrale."
 
 #: ChordProDirectiveHelp.py
 msgid "Highlights the octave key at both ends."

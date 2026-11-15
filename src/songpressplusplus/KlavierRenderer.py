@@ -155,8 +155,8 @@ def _draw_arrow(dc, arrow, col, x0, top, aw, ah, use_bitmap=True):
     dc.SetPen(wx.Pen(col, 1))
     dc.SetBrush(wx.Brush(col, wx.BRUSHSTYLE_SOLID))
     dc.DrawPolygon([wx.Point(int(round(px)), int(round(py))) for px, py in pts])
-    dc.SetBrush(wx.NullBrush)
-    dc.SetPen(wx.NullPen)
+    dc.SetBrush(wx.TRANSPARENT_BRUSH)
+    dc.SetPen(wx.TRANSPARENT_PEN)
 
 
 def set_octave_highlight_color(colour):
@@ -190,6 +190,39 @@ def set_middle_c_color(colour):
 def get_middle_c_color():
     """Restituisce il colore di default del puntino del DO centrale (o None)."""
     return _middle_c_color
+
+
+# Testo della scritta sul DO centrale (modalità 'label' / 'both'). Lo imposta
+# l'applicazione con il nome del DO nella notazione scelta nelle opzioni
+# (DO, Do, C, ...). None = "DO".
+_middle_c_label = None
+_MIDDLE_C_LABEL_DEFAULT = u"DO"
+
+
+def set_middle_c_label(text):
+    """Imposta il testo della scritta sul DO centrale (None/'' = 'DO')."""
+    global _middle_c_label
+    _middle_c_label = text or None
+
+
+def get_middle_c_label():
+    """Restituisce il testo di default della scritta sul DO centrale (o None)."""
+    return _middle_c_label
+
+
+def _fit_bold_font(dc, text, max_w, start_size, max_h=None, min_size=4):
+    """Font grassetto, della dimensione massima <= start_size per cui `text`
+    sta in `max_w` x `max_h` (il tasto e' stretto: 8-16 px; max_h None = senza
+    limite d'altezza). Lascia il font sul dc.
+    Restituisce (larghezza, altezza) del testo misurati col font scelto."""
+    size = max(min_size, int(start_size))
+    while True:
+        dc.SetFont(wx.Font(size, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL,
+                           wx.FONTWEIGHT_BOLD))
+        tw, th = dc.GetTextExtent(text)
+        if (tw <= max_w and (max_h is None or th <= max_h)) or size <= min_size:
+            return tw, th
+        size -= 1
 
 
 
@@ -557,25 +590,60 @@ def parse_octave_both(fingering_str):
     return None
 
 
-def parse_middle_c(fingering_str):
+# Valori di 'middlec=' -> modalità di visualizzazione del DO centrale:
+#   'dot'   puntino        'label' scritta (es. DO)     'both' puntino + scritta
+#   ''      nascosto
+_MIDDLE_C_MODES = {
+    'show': 'dot', 'dot': 'dot', 'on': 'dot', 'yes': 'dot', '1': 'dot',
+    'label': 'label', 'name': 'label', 'text': 'label',
+    'both': 'both', 'dotlabel': 'both',
+    'hide': '', 'off': '', 'no': '', '0': '',
+}
+
+
+def parse_middle_c_mode(fingering_str):
     """
-    Estrae dall'eventuale token 'middlec=...' se vada mostrato il DO centrale
-    (un puntino sul tasto DO) nella tastiera disegnata.
+    Estrae dall'eventuale token 'middlec=...' COME vada mostrato il DO centrale
+    nella tastiera disegnata.
 
     Valori riconosciuti (insensibili alle maiuscole):
-        middlec=show | on | yes | 1   -> True  (mostra)
-        middlec=hide | off | no | 0   -> False (nascondi)
+        middlec=show | dot | on | yes | 1   -> 'dot'   (puntino)
+        middlec=label | name | text         -> 'label' (scritta, es. "DO")
+        middlec=both | dotlabel             -> 'both'  (puntino + scritta)
+        middlec=hide | off | no | 0         -> ''      (nascosto)
 
-    Restituisce True/False, oppure None se il token è assente (il chiamante
+    Restituisce la modalità, oppure None se il token è assente (il chiamante
     usa il proprio default). Ha effetto solo se la tastiera NON parte da DO
     (vedi keyboard_has_middle_c_option).
     """
     for token in fingering_str.strip().split():
-        m = re.match(r'^middlec=(show|hide|on|off|yes|no|1|0)$', token,
-                     re.IGNORECASE)
+        m = re.match(r'^middlec=([A-Za-z0-9]+)$', token)
         if m:
-            return m.group(1).lower() in ('show', 'on', 'yes', '1')
+            mode = _MIDDLE_C_MODES.get(m.group(1).lower())
+            if mode is not None:
+                return mode
     return None
+
+
+def parse_middle_c(fingering_str):
+    """
+    Come parse_middle_c_mode ma solo come "mostra / non mostra": True per
+    qualunque modalità visibile (puntino, scritta, entrambi), False per
+    'hide', None se il token è assente (il chiamante usa il proprio default).
+    Mantenuta per compatibilità con i chiamanti che non distinguono la modalità.
+    """
+    mode = parse_middle_c_mode(fingering_str)
+    return None if mode is None else bool(mode)
+
+
+def _normalize_middle_c_mode(value):
+    """Porta il parametro show_middle_c di draw_keyboard a 'dot'/'label'/'both'
+    oppure '' (nascosto). True = puntino (comportamento storico)."""
+    if value is True:
+        return 'dot'
+    if not value:
+        return ''
+    return _MIDDLE_C_MODES.get(str(value).lower(), 'dot')
 
 
 def keyboard_has_middle_c_option(start_note):
@@ -639,7 +707,7 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
                   highlight_octave_both=True, octave_color=_USE_GLOBAL,
                   arrow='', arrow_colours=None, arrow_pct=90,
                   arrow_bitmap=True, show_middle_c=False,
-                  middle_c_color=_USE_GLOBAL):
+                  middle_c_color=_USE_GLOBAL, middle_c_label=_USE_GLOBAL):
     """
     Disegna una tastiera di un'ottava su dc.
 
@@ -650,9 +718,14 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
     arrow_pct        : altezza della freccia in % dell'altezza del testo.
     arrow_bitmap     : True = bitmap anti-aliased (schermo); False = sagoma
                        vettoriale (stampa / PDF).
-    show_middle_c    : se True disegna un puntino sul tasto DO (il DO centrale)
-                       quando la tastiera parte da una nota diversa da DO, per
-                       orientarsi sulla tastiera. Con partenza DO è ininfluente.
+    show_middle_c    : segna il tasto DO (il DO centrale) quando la tastiera
+                       parte da una nota diversa da DO, per orientarsi.
+                       False/'' = niente; True o 'dot' = puntino; 'label' =
+                       scritta (es. "DO"); 'both' = puntino + scritta.
+                       Con partenza DO è ininfluente.
+    middle_c_label   : testo della scritta ('label'/'both'). Se omesso usa il
+                       default globale impostato con set_middle_c_label()
+                       (o "DO").
     middle_c_color   : colore del puntino del DO centrale. Se omesso usa il
                        default globale impostato con set_middle_c_color(); se
                        None (o default globale None) usa il grigio scuro.
@@ -730,18 +803,70 @@ def draw_keyboard(dc, x, y, w, h, chord_name, highlighted_keys,
     # ── DO centrale: puntino in basso sul tasto DO ────────────────
     # Solo se la tastiera non parte da DO (altrimenti il DO è il primo tasto).
     mc_idx = None
-    mc_h = 0   # altezza del puntino (serve a spostare il numero del dito)
-    if show_middle_c and white_order[0] != 0 and 0 in white_order:
+    mc_h = 0   # altezza occupata in basso sul DO (sposta il numero del dito)
+    mc_mode = _normalize_middle_c_mode(show_middle_c)
+    if mc_mode and white_order[0] != 0 and 0 in white_order:
         mc_idx = white_order.index(0)
         mc_col = _middle_c_color if middle_c_color is _USE_GLOBAL else middle_c_color
         if mc_col is None:
             mc_col = wx.Colour(*_MIDDLE_C_DEFAULT)
-        # Pallino pieno nel colore scelto, in basso al centro del tasto.
-        mc_r = max(3, white_w // 5)
-        mc_h = 2 * mc_r
-        dc.SetBrush(wx.Brush(mc_col))
-        dc.SetPen(wx.Pen(mc_col, 1))
-        dc.DrawCircle(x + mc_idx * white_w + white_w // 2, y + h - mc_r - 4, mc_r)
+        mc_cx = x + mc_idx * white_w + white_w // 2    # centro del tasto DO
+        mc_base = y + h - 4        # base da cui si impila il segno (dal basso)
+        mc_top = mc_base           # bordo alto di quanto disegnato finora
+        # Spazio libero SOTTO i tasti neri (con un po' di margine): scritta e
+        # pallino devono stare tutti li', altrimenti toccano/coprono il DO#.
+        avail = max(8, mc_base - (y + black_h + 3))
+        gap = 2                    # filo di spazio tra scritta e puntino
+        if mc_mode == 'both':
+            # il pallino non occupa piu' del 40% dello spazio: il resto e'
+            # della scritta
+            mc_r = max(2, min(white_w // 5, int(avail * 0.4) // 2))
+            label_budget = avail - 2 * mc_r - gap
+        else:
+            mc_r = max(2, min(max(3, white_w // 5), avail // 2))
+            label_budget = avail
+        if mc_mode in ('label', 'both'):
+            # Scritta (es. DO) in fondo al tasto, nello stesso colore del
+            # pallino. Il tasto nero del DO# scende sul lato destro del DO per
+            # black_h px: la scritta deve restare SOTTO di esso (se la copre,
+            # il testo scuro sparisce sul nero e sembra tagliato).
+            # L'altezza di un testo (GetTextExtent) comprende spazio vuoto
+            # sopra le maiuscole e sotto la linea di base: l'ingombro reale
+            # dell'inchiostro e' circa 0.76 * (altezza - discendente). Il font
+            # si riduce finche' il testo sta nella larghezza del tasto e
+            # l'inchiostro nello spazio libero; poi lo si appoggia sul fondo
+            # con la linea di base a mc_base.
+            mc_text = (_middle_c_label if middle_c_label is _USE_GLOBAL
+                       else middle_c_label) or _MIDDLE_C_LABEL_DEFAULT
+            budget = max(4, label_budget)
+            box_max = max(4, int(budget / 0.6))
+            prev_font = dc.GetFont()
+            for _ in range(12):
+                tw, th = _fit_bold_font(dc, mc_text, white_w - 2,
+                                        max(4, white_w - 6), box_max)
+                try:
+                    desc = dc.GetFullTextExtent(mc_text)[2]
+                except Exception:
+                    desc = int(th * 0.2)
+                cap = max(1, int(round((th - desc) * 0.76)))
+                if cap <= budget or box_max <= 4:
+                    break
+                box_max = max(4, box_max - 2)
+            dc.SetTextForeground(mc_col)
+            dc.DrawText(mc_text, mc_cx - tw // 2, mc_base - (th - desc))
+            mc_top -= cap
+            if prev_font.IsOk():
+                dc.SetFont(prev_font)
+            if mc_mode == 'both':
+                mc_top -= gap
+        if mc_mode in ('dot', 'both'):
+            # Pallino pieno nel colore scelto, centrato sul tasto (con 'both'
+            # sopra la scritta; il DO# non lo tocca: sta sotto black_h + 3).
+            dc.SetBrush(wx.Brush(mc_col))
+            dc.SetPen(wx.Pen(mc_col, 1))
+            dc.DrawCircle(mc_cx, mc_top - mc_r, mc_r)
+            mc_top -= 2 * mc_r
+        mc_h = mc_base - mc_top
 
     # ── Numeri delle dita sui tasti ───────────────────────────────
     if finger_map:
@@ -937,7 +1062,7 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
         base_font.GetFaceName()
     )
     dc.SetFont(title_font)
-    dc.SetPen(wx.NullPen)
+    dc.SetPen(wx.TRANSPARENT_PEN)
     dc.SetTextForeground(wx.Colour(110, 110, 110))
     dc.DrawText("Accordi", start_x, sep_y + 4)
     dc.SetTextForeground(wx.BLACK)
@@ -974,7 +1099,7 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
         eff_oct = entry_oct if entry_oct is not None else highlight_octave_both
 
         # DO centrale: token 'middlec=' se presente, altrimenti default
-        entry_mc = parse_middle_c(entry)
+        entry_mc = parse_middle_c_mode(entry)
         eff_mc = entry_mc if entry_mc is not None else show_middle_c
 
         keys = _entry_keys(chord_name, finger_map, notations)
@@ -1087,7 +1212,7 @@ def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
         eff_oct = entry_oct if entry_oct is not None else highlight_octave_both
 
         # DO centrale: token 'middlec=' se presente, altrimenti default
-        entry_mc = parse_middle_c(entry)
+        entry_mc = parse_middle_c_mode(entry)
         eff_mc = entry_mc if entry_mc is not None else show_middle_c
 
         keys = _entry_keys(chord_name, finger_map, notations)

@@ -605,6 +605,9 @@ class Renderer(object):
         # vuota {chordbold}/{textbold}. Applicato al wx.Font in AddText().
         self._chord_bold = self._chord_italic = self._chord_underline = False
         self._text_bold  = self._text_italic  = self._text_underline  = False
+        # Quante direttive {key:} sono state incontrate nel brano corrente:
+        # la prima e' la tonalita' iniziale, le successive sono cambi di tonalita'.
+        self._key_count = 0
 
         self.song.columns = self.columns
         self.song.columnHeight = self.columnHeight
@@ -828,6 +831,7 @@ class Renderer(object):
                         self.song.verseCount = 0
                         self.song.labelCount = 0
                         self.song.chorusCount = 0
+                        self._key_count = 0   # il nuovo brano riparte dalla sua tonalita' iniziale
                         self.sf.verse = []
                         self.chordPatterns = []
                     # --- Fine nuovi comandi ---
@@ -967,8 +971,33 @@ class Renderer(object):
                                     self.currentLine.boxes[-1].is_time_sig = True
                     elif cmd == 'key':
                         a = self.GetAttribute()
-                        if a is not None and a.strip() != '' and self.keyDisplay:
-                            self.AddSubTitle(_(u'Key: %s') % a.strip())
+                        if a is not None and a.strip() != '':
+                            # Il primo {key:} del brano e' la tonalita' di
+                            # partenza (intestazione). Gli eventuali {key:}
+                            # successivi segnalano un cambio di tonalita' e
+                            # vengono mostrati nel punto in cui compaiono.
+                            self._key_count += 1
+                            if self.keyDisplay:
+                                _key_label = _(u'Key: %s') % a.strip()
+                                _in_block = (
+                                    state in (SongBlock.verse, SongBlock.chorus)
+                                    and not getattr(self.currentBlock, 'is_tab', False))
+                                if self._key_count > 1 and _in_block:
+                                    # Cambio di tonalita' a meta' strofa o
+                                    # ritornello: in linea, senza spezzare il
+                                    # blocco (come per il cambio di {time:}).
+                                    self.AddText(_key_label, SongText.comment)
+                                else:
+                                    # Fuori dai blocchi (tipicamente subito
+                                    # prima della strofa dove si cambia
+                                    # tonalita'): riga sopra la strofa.
+                                    self.AddSubTitle(_key_label)
+                                # Il cambio di tonalita' e' disegnato in un
+                                # riquadro (come {comment_box:}) per distinguerlo
+                                # dalla tonalita' iniziale in intestazione.
+                                if (self._key_count > 1 and self.currentLine is not None
+                                        and self.currentLine.boxes):
+                                    self.currentLine.boxes[-1].is_box = True
                     elif cmd == 'capo':
                         a = self.GetAttribute()
                         if a is not None and a.strip() != '':

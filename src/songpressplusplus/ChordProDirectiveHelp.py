@@ -150,7 +150,7 @@ _OPTION_HELP = {
     'start':   "Note the keyboard starts from (e.g. start=SI).",
     'octave':  "On 8-key keyboards: both = highlight the octave key at both ends; one, single or first = left end only.",
     'hand':    "R = right hand, L = left hand (label above the keyboard).",
-    'middlec': "Show or hide the middle C label (show, hide, on, off, yes, no, 1, 0).",
+    'middlec': "Marks the middle C key: show = dot, label = note name, both = dot and note name, hide = no mark (on, off, yes, no, 1, 0 also work).",
     'size':    "Grid scale factor (e.g. size=1.5).",
     'chordtopspacing': "Space above the chords, inside this grid only.",
     'linespacing':     "Line spacing, inside this grid only.",
@@ -168,14 +168,18 @@ _OPTION_HELP = {
 }
 
 # option -> value -> description (values offered after "option=")
-_SHOW = "Shows the middle C label."
-_HIDE = "Hides the middle C label."
+_SHOW = "Marks the middle C key with a dot."
+_LABEL = "Writes the note name (e.g. DO) on the middle C key."
+_BOTH = "Marks the middle C key with a dot and the note name."
+_HIDE = "Hides the mark on the middle C key."
 _OCT_BOTH = "Highlights the octave key at both ends."
 _OCT_ONE = "Highlights the octave key at the left end only."
 _VALUE_HELP = {
     'hand': {'R': "Right hand", 'L': "Left hand"},
     'octave': {'both': _OCT_BOTH, 'one': _OCT_ONE, 'single': _OCT_ONE, 'first': _OCT_ONE},
-    'middlec': {'show': _SHOW, 'on': _SHOW, 'yes': _SHOW, '1': _SHOW,
+    'middlec': {'show': _SHOW, 'dot': _SHOW, 'on': _SHOW, 'yes': _SHOW, '1': _SHOW,
+                'label': _LABEL, 'name': _LABEL, 'text': _LABEL,
+                'both': _BOTH, 'dotlabel': _BOTH,
                 'hide': _HIDE, 'off': _HIDE, 'no': _HIDE, '0': _HIDE},
     'align': {'left': "Aligns the image to the left.",
               'center': "Centres the image.",

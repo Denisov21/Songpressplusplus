@@ -216,6 +216,9 @@ class SongDecorator(object):
         self.find_flags  = 0   # stessi flag usati da wx.stc FindText
         self.find_colour = wx.Colour(255, 220, 0)  # colore evidenziazione (modificabile)
         
+    # Distanza (px logici) del bordo dei riquadri dal testo
+    _BOX_PAD = 2
+
     def SetMarginText(self, text):
         # Modify text margins
         pass
@@ -318,8 +321,8 @@ class SongDecorator(object):
             self.dc.SetPen(wx.Pen(col, 1))
             self.dc.SetBrush(wx.Brush(col, wx.BRUSHSTYLE_SOLID))
             self.dc.DrawPolygon([wx.Point(int(round(x)), int(round(y))) for x, y in pts])
-            self.dc.SetBrush(wx.NullBrush)
-            self.dc.SetPen(wx.NullPen)
+            self.dc.SetBrush(wx.TRANSPARENT_BRUSH)
+            self.dc.SetPen(wx.TRANSPARENT_PEN)
 
     def _DrawBeatsApex(self, beats, chord_left, chord_w, chord_top, base_font, arrow=''):
         """Disegna numero e/o puntini dei battiti sopra un accordo.
@@ -398,8 +401,8 @@ class SongDecorator(object):
                 frac  = (i + 0.5) / beats
                 dot_x = int(chord_left) + int(box_w * frac)
                 self.dc.DrawCircle(dot_x, dot_y, dot_r)
-            self.dc.SetBrush(wx.NullBrush)
-            self.dc.SetPen(wx.NullPen)
+            self.dc.SetBrush(wx.TRANSPARENT_BRUSH)
+            self.dc.SetPen(wx.TRANSPARENT_PEN)
 
     def _DrawCellBeats(self, cell, beats, cell_text_left, cell_text_top, chord_font):
         """Disegna i battiti sopra OGNI accordo contenuto in una cella di griglia.
@@ -565,6 +568,14 @@ class SongDecorator(object):
 
         line.h += tsDrop
 
+        # ── Riquadri ({comment_box:}, cambio di tonalita') ────────────────────
+        # Il bordo e' disegnato _BOX_PAD px fuori dal testo (PostDrawText): si
+        # riserva quello spazio sopra e sotto la riga, cosi' due riquadri su
+        # righe consecutive non si toccano/sovrappongono.
+        boxPad = self._BOX_PAD if any(getattr(t, 'is_box', False)
+                                      for t in line.boxes) else 0
+        line.h += 2 * boxPad
+
         # Pass 2: set layout
         x = 0
         chordX = 0
@@ -574,12 +585,12 @@ class SongDecorator(object):
                 t.x = max(x, chordX)
                 x = t.x
                 chordX = x + t.GetTotalWidth()
-                t.y = line.chordBaseline - t.GetTotalHeight()
+                t.y = line.chordBaseline - t.GetTotalHeight() + boxPad
             else:
                 t.x = x
                 x_chord = max(x, chordX)
                 x = t.x + t.GetTotalWidth()
-                t.y = line.textBaseline - t.GetTotalHeight()
+                t.y = line.textBaseline - t.GetTotalHeight() + boxPad
                 if t.text.strip() == '':
                     chordX = x_chord + t.GetTotalWidth()
             line.RelocateBox(t)
@@ -1918,7 +1929,7 @@ class SongDecorator(object):
             y = int(ty + text.marginTop + text.h)
             self.dc.DrawLine(x1, y, x2, y)
         if getattr(text, 'is_box', False):
-            padding = 2
+            padding = self._BOX_PAD
             x = int(tx + text.marginLeft) - padding
             y = int(ty + text.marginTop) - padding
             w = int(text.w) + padding * 2

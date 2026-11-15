@@ -1152,7 +1152,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         if not self.config.ReadBool('EditorCaptionPane', False):
             self.config.DeleteEntry('Perspective', False)
             self.config.WriteBool('EditorCaptionPane', True)
-        self.FinalizePaneInitialization()
+        # show=False: la finestra viene mostrata solo dopo RestoreWindowGeometry
+        # (vedi Thaw + Show piu' sotto), cosi' non compare in posizione di
+        # default per poi saltare (lampeggio all'avvio).
+        self.FinalizePaneInitialization(show=False)
         # Reassign caption value to override caption saved in preferences (it could be another language)
         self._mgr.GetPane('_main').caption = _('Editor')
         self._mgr.GetPane('preview').caption = _('Songpress++ Page')
@@ -1177,6 +1180,16 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             self.frame.Thaw()
         except Exception:
             pass
+        # Geometria definitiva, ma dopo l'avvio restano assestamenti differiti
+        # (riassetto icone/anteprima in _realign, allargamento dock in
+        # _EnsurePreviewWidth dopo 300 ms): se la finestra fosse gia' visibile
+        # si vedrebbero come lampeggio. La mostriamo quando sono finiti.
+        # Col dialogo di primo avvio (ShowModal subito sotto) serve invece
+        # mostrarla subito.
+        if 'firstTimeEasyKey' in self.pref.notices:
+            self.frame.Show()
+        else:
+            self._revealTimer = wx.CallLater(450, self._RevealFrame)
         if 'firstTimeEasyKey' in self.pref.notices:
             msg = _(
                 "You are not a skilled guitarist? Songpress++ can help you: when you open a song, it can detect if chords are difficult. If this is the case, Songpress++ will alert you, and offer to transpose your song to the easiest key, automatically.\n\nDo you want to turn this option on?")
@@ -1193,6 +1206,20 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 if f.ShowModal() == wx.ID_OK:
                     self.text.SetFont(self.pref.editorFace, int(self.pref.editorSize))
                     self.SetDefaultExtension(self.pref.defaultExtension)
+
+    def _RevealFrame(self):
+        """Mostra la finestra a fine assestamento iniziale (vedi __init__)."""
+        try:
+            if getattr(self, '_closing', False):
+                return
+            if self.frame and not self.frame.IsShown():
+                self.frame.Show()
+        except Exception:
+            # Meglio mostrare comunque la finestra che lasciarla nascosta.
+            try:
+                self.frame.Show()
+            except Exception:
+                pass
 
     # ── Barra zoom dell'editor (sotto l'editor, agisce solo su di esso) ──
     _EDITOR_ZOOM_ICON_SIZE = 16   # px: stessa dimensione delle icone +/- della pagina Songpress++
@@ -1257,9 +1284,15 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 pass
             try:
                 if not getattr(self, '_closing', False):
-                    # La larghezza minima del pannello dipende dalle icone
-                    self._ApplyPreviewMinSize()
-                    self._mgr.Update()
+                    # La larghezza minima del pannello dipende dalle icone.
+                    # Freeze/Thaw: il riassetto AUI avviene dopo che la finestra
+                    # e' gia' visibile, e senza congelamento si vede "lampeggiare".
+                    self.frame.Freeze()
+                    try:
+                        self._ApplyPreviewMinSize()
+                        self._mgr.Update()
+                    finally:
+                        self.frame.Thaw()
                     wx.CallAfter(self._AfterIconSizeLayout, px)
                     # Ripasso a layout/geometria finestra ormai definitivi
                     # (avvio e riavvio: la perspective salvata puo' essere stretta)
@@ -1373,6 +1406,13 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         if hasattr(self, '_lockKeysTimer') and self._lockKeysTimer.IsRunning():
             self._lockKeysTimer.Stop()
         self._StopThemeWatch()
+        # Ferma timer/finestra fullscreen dell'anteprima prima della chiusura
+        pc = getattr(self, 'previewCanvas', None)
+        if pc is not None:
+            try:
+                pc.Shutdown()
+            except Exception:
+                pass
         self.SaveWindowGeometry()
         self._SavePageMargins()
         self._SaveTempoDisplay()
@@ -2510,7 +2550,12 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 return m.group(1).strip() if m else ''
 
             title   = _meta('title') or _meta('t')
-            key     = _meta('key')
+            # Tutte le tonalita' del brano, nell'ordine in cui compaiono: con
+            # un cambio di tonalita' ({key:} ripetuto) la scheda mostra "DO → RE".
+            key     = u' → '.join(
+                v.strip() for v in re.findall(
+                    r'\{\s*key\s*:\s*([^}]+)\}', text, re.IGNORECASE)
+                if v.strip())
             tempo   = _meta('tempo') or _meta('tempo_s') or _meta('tempo_m')
             time_   = _meta('time')
             capo    = _meta('capo')
@@ -4125,6 +4170,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             'start': KlavierRenderer.parse_start_note(value),
             'oct_both': KlavierRenderer.parse_octave_both(value),
             'midc': KlavierRenderer.parse_middle_c(value),
+            # come mostrarlo: 'dot' | 'label' | 'both' ('' / None = non indicato)
+            'midc_mode': KlavierRenderer.parse_middle_c_mode(value),
         }
 
     def _InsertDirectiveValue(self, name, val):
@@ -5361,6 +5408,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
 
         def _semi_to_note(semi):
             it_name = _IT_12[semi % 12]
+            _n = self._NoteNameInCurrentNotation(semi)
+            if _n:
+                return _n
             if _cur_notation is None or _it_notation is None:
                 return it_name
             try:
@@ -5417,17 +5467,26 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         _c_name = _semi_to_note(0)
         cb_midc = wx.CheckBox(dlg, -1, _(u"Show middle %s") % _c_name)
         cb_midc.SetValue(False)
-        cb_midc.SetToolTip(_(u"Marks the middle %s key with a dot. "
+        cb_midc.SetToolTip(_(u"Marks the middle %s key. "
                              u"Available when the start note is not %s.")
                            % (_c_name, _c_name))
         # Selettore del colore del puntino (preferenza globale)
         pk_midc = self._MakeColourSwatch(
             dlg, self._getKlavierMiddleCColour(), self._SetKlavierMiddleCColour,
-            _(u"Colour of the middle %s dot.") % _c_name)
+            _(u"Colour of the middle %s mark.") % _c_name)
         hbox_midc = wx.BoxSizer(wx.HORIZONTAL)
         hbox_midc.Add(cb_midc, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
         hbox_midc.Add(pk_midc, 0, wx.ALIGN_CENTER_VERTICAL)
         vbox.Add(hbox_midc, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        # Come segnare il DO centrale: puntino, scritta o entrambi. Attiva solo
+        # se la casella sopra e' spuntata (e la partenza non e' DO).
+        lbl_midc_mode = wx.StaticText(dlg, -1, _(u"Mark style:"))
+        ch_midc_mode = self._MakeMiddleCModeChoice(dlg)
+        hbox_midc_mode = wx.BoxSizer(wx.HORIZONTAL)
+        hbox_midc_mode.Add(lbl_midc_mode, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        hbox_midc_mode.Add(ch_midc_mode, 0, wx.ALIGN_CENTER_VERTICAL)
+        vbox.Add(hbox_midc_mode, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
         def _sync_octave_cb(e=None):
             _start = _WHITE_SEMIS[ch_start.GetSelection()]
@@ -5436,6 +5495,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             _midc_ok = KlavierRenderer.keyboard_has_middle_c_option(_start)
             cb_midc.Enable(_midc_ok)
             pk_midc.SetSwatchEnabled(_midc_ok)
+            _mode_ok = _midc_ok and cb_midc.GetValue()
+            lbl_midc_mode.Enable(_mode_ok)
+            ch_midc_mode.Enable(_mode_ok)
         _sync_octave_cb()
         ch_start.Bind(wx.EVT_CHOICE, _sync_octave_cb)
 
@@ -5455,6 +5517,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             # 'middlec=' il DO centrale è nascosto.
             cb_octave.SetValue(_ex['oct_both'] is not False)
             cb_midc.SetValue(bool(_ex['midc']))
+            ch_midc_mode.SetSelection(self._MidcModeToIndex(_ex.get('midc_mode')))
             # Maiuscolo spuntato solo se l'accordo è già tutto maiuscolo,
             # così premendo OK non si altera ciò che è scritto.
             cb_upper.SetValue(_ex['chord'] == _ex['chord'].upper())
@@ -5481,18 +5544,24 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             if (KlavierRenderer.keyboard_has_octave_key(start_semi)
                     and not cb_octave.GetValue()):
                 chord = u"%s octave=one" % chord
-            # middlec=show solo se la casella è attiva e la partenza non è DO
+            # middlec=<show|label|both> solo se la casella è attiva e la
+            # partenza non è DO (show = puntino, label = scritta, both = entrambi)
             if (KlavierRenderer.keyboard_has_middle_c_option(start_semi)
                     and cb_midc.GetValue()):
-                chord = u"%s middlec=show" % chord
+                chord = u"%s middlec=%s" % (
+                    chord, self._MidcIndexToToken(ch_midc_mode.GetSelection()))
             return u"{taste:%s}" % chord
 
         def _update_taste_preview(e=None):
             txt_preview.SetValue(_build_taste())
             if e is not None:
                 e.Skip()
-        for _c in (cb_octave, cb_midc, cb_upper):
+        for _c in (cb_octave, cb_upper):
             _c.Bind(wx.EVT_CHECKBOX, _update_taste_preview)
+        # La casella DO centrale abilita/disabilita anche la scelta del segno
+        cb_midc.Bind(wx.EVT_CHECKBOX,
+                     lambda e: (_sync_octave_cb(), _update_taste_preview()))
+        ch_midc_mode.Bind(wx.EVT_CHOICE, _update_taste_preview)
         ch_start.Bind(wx.EVT_CHOICE,
                       lambda e: (_sync_octave_cb(), _update_taste_preview()))
         txt_chord.Bind(wx.EVT_TEXT, _update_taste_preview)
@@ -5635,6 +5704,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         def _semi_to_note(semi):
             """Restituisce il nome della nota (semitono 0-11) nella notazione corrente."""
             it_name = _IT_12[semi % 12]
+            _n = self._NoteNameInCurrentNotation(semi)
+            if _n:
+                return _n
             if _cur_notation is None or _it_notation is None:
                 return it_name
             try:
@@ -5765,7 +5837,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         _c_name = _semi_to_note(0)
         cb_midc = wx.CheckBox(dlg, -1, _(u"Show middle %s") % _c_name)
         cb_midc.SetValue(False)
-        cb_midc.SetToolTip(_(u"Marks the middle %s key with a dot. "
+        cb_midc.SetToolTip(_(u"Marks the middle %s key. "
                              u"Available when the start note is not %s.")
                            % (_c_name, _c_name))
         # Selettore del colore del puntino (preferenza globale); l'anteprima
@@ -5775,11 +5847,20 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             _refresh_kbd()
         pk_midc = self._MakeColourSwatch(
             dlg, self._getKlavierMiddleCColour(), _on_midc_colour,
-            _(u"Colour of the middle %s dot.") % _c_name)
+            _(u"Colour of the middle %s mark.") % _c_name)
         hbox_midc = wx.BoxSizer(wx.HORIZONTAL)
         hbox_midc.Add(cb_midc, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
         hbox_midc.Add(pk_midc, 0, wx.ALIGN_CENTER_VERTICAL)
         vbox.Add(hbox_midc, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
+        # Come segnare il DO centrale: puntino, scritta o entrambi (attiva solo
+        # se la casella sopra e' spuntata e la partenza non e' DO).
+        lbl_midc_mode = wx.StaticText(dlg, -1, _(u"Mark style:"))
+        ch_midc_mode = self._MakeMiddleCModeChoice(dlg)
+        hbox_midc_mode = wx.BoxSizer(wx.HORIZONTAL)
+        hbox_midc_mode.Add(lbl_midc_mode, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        hbox_midc_mode.Add(ch_midc_mode, 0, wx.ALIGN_CENTER_VERTICAL)
+        vbox.Add(hbox_midc_mode, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
         # Istruzione
         lbl_info = wx.StaticText(
@@ -5857,8 +5938,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             if oct_both is None:
                 oct_both = True
 
-            # DO centrale dalla direttiva (None -> nascosto)
-            show_midc = bool(KlavierRenderer.parse_middle_c(inner))
+            # DO centrale dalla direttiva: 'dot' | 'label' | 'both'
+            # (token assente o 'hide' -> False, nascosto)
+            show_midc = KlavierRenderer.parse_middle_c_mode(inner) or False
 
             if chord_name == KlavierRenderer.NOTES_ONLY_TOKEN:
                 chord_name = u""
@@ -5991,10 +6073,12 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             if (KlavierRenderer.keyboard_has_octave_key(start_semi)
                     and not cb_octave.GetValue()):
                 parts.append(u"octave=one")
-            # middlec=show solo se casella attiva e partenza diversa da DO
+            # middlec=<show|label|both> solo se casella attiva e partenza
+            # diversa da DO (show = puntino, label = scritta, both = entrambi)
             if (KlavierRenderer.keyboard_has_middle_c_option(start_semi)
                     and cb_midc.GetValue()):
-                parts.append(u"middlec=show")
+                parts.append(u"middlec=%s" % self._MidcIndexToToken(
+                    ch_midc_mode.GetSelection()))
             for i, (lbl, ch) in enumerate(note_rows):
                 f = _sel_to_finger(ch.GetSelection())
                 if f is not None:
@@ -6111,6 +6195,9 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 _WHITE_SEMIS[ch_start.GetSelection()])
             cb_midc.Enable(_midc_ok)
             pk_midc.SetSwatchEnabled(_midc_ok)
+            _mode_ok = _midc_ok and cb_midc.GetValue()
+            lbl_midc_mode.Enable(_mode_ok)
+            ch_midc_mode.Enable(_mode_ok)
             # Cambiando la partenza cambia anche l'ordine "come sulla tastiera":
             # ricostruisce la griglia (conserva le dita già scelte) e l'anteprima.
             _on_chord_change()
@@ -6118,7 +6205,16 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         _on_start_change()   # stato iniziale della casella
         ch_start.Bind(wx.EVT_CHOICE, _on_start_change)
         cb_octave.Bind(wx.EVT_CHECKBOX, lambda e: (_update_preview(), _refresh_kbd()))
-        cb_midc.Bind(wx.EVT_CHECKBOX, lambda e: (_update_preview(), _refresh_kbd()))
+        # La casella DO centrale abilita/disabilita anche la scelta del segno
+        def _on_midc_toggle(e=None):
+            _ok = cb_midc.IsEnabled() and cb_midc.GetValue()
+            lbl_midc_mode.Enable(_ok)
+            ch_midc_mode.Enable(_ok)
+            _update_preview()
+            _refresh_kbd()
+        cb_midc.Bind(wx.EVT_CHECKBOX, _on_midc_toggle)
+        ch_midc_mode.Bind(wx.EVT_CHOICE,
+                          lambda e: (_update_preview(), _refresh_kbd()))
         cb_upper.Bind(wx.EVT_CHECKBOX, lambda e: (_update_preview(), _refresh_kbd()))
         # Cambiare l'ordinamento ricostruisce la griglia mantenendo le dita già scelte
         cb_order.Bind(wx.EVT_CHECKBOX, _on_chord_change)
@@ -6146,6 +6242,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             ch_start.SetSelection(_WHITE_SEMIS.index(_start_semi))
             cb_octave.SetValue(_ex['oct_both'] is not False)
             cb_midc.SetValue(bool(_ex['midc']))
+            ch_midc_mode.SetSelection(self._MidcModeToIndex(_ex.get('midc_mode')))
             # Maiuscolo spuntato solo se l'accordo è già tutto maiuscolo
             cb_upper.SetValue(_chord == _chord.upper())
             # "Ordina come sulla tastiera" spuntato solo se le dita nel testo
@@ -8139,12 +8236,35 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             b = self.RenderAsPng()
             i = b.ConvertToImage()
             i.SaveFile(n, wx.BITMAP_TYPE_PNG)
+            self._AskOpenExportedFile(n)
 
     def OnExportAsHtml(self, evt):
         n = self.AskExportFileName(_("HTML file"), "html")
         if n is not None:
             h = HtmlExporter(self.pref.format)
+            # Tastiere e diagrammi vettoriali: stessi colori dell'anteprima
+            h.klavierHighlightColor = self._getKlavierHighlightColour()
+            h.fingerNumColor = self._getFingerNumColour()
+            # Battiti sopra gli accordi: stesse preferenze dell'anteprima
+            h.showDurationBeats      = getattr(self, '_showDurationBeats', True)
+            h.durationBeatsColourHex = getattr(self.pref, 'durationBeatsColourHex', '#6464C8')
+            h.durationBeatsSizePct   = getattr(self.pref, 'durationBeatsSizePct', 60)
+            h.durationBeatsBold      = getattr(self.pref, 'durationBeatsBold', False)
+            h.durationBeatsAlign     = getattr(self.pref, 'durationBeatsAlign', 'right')
+            h.durationBeatsMode      = getattr(self.pref, 'durationBeatsMode', 'number')
+            # Etichette di strofe e ritornelli, se attive in anteprima
+            h.showLabels = bool(self.pref.labelVerses)
+            try:
+                h.chorusLabel = self.pref.decoratorFormat.GetChorusLabel()
+            except Exception:
+                h.chorusLabel = ''
             r = Renderer(self.pref.format, h, self.pref.notations)
+            # Visualizzazione di tempo, tempo musicale e tonalita' come in anteprima
+            r.tempoDisplay = getattr(self.pref, 'tempoDisplay', 0)
+            r.timeDisplay = getattr(self.pref, 'timeDisplay', True)
+            r.keyDisplay = getattr(self.pref, 'keyDisplay', True)
+            r.tempoIconSize = getattr(self.pref, 'tempoIconSize', 24)
+            r.tempoIconColour = self._getTempoIconColour()
             start, end = self.text.GetSelection()
             display_text = self._strip_hash_commands(self.text.GetText())
             if start == end:
@@ -8153,6 +8273,56 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 r.Render(display_text, None, self.text.LineFromPosition(start), self.text.LineFromPosition(end))
             with open(n, "w", encoding='utf-8') as f:
                 f.write(h.getHtml())
+            self._AskOpenExportedHtml(n)
+
+    def _AskOpenExportedHtml(self, path):
+        """Chiede se aprire nel browser il file HTML appena esportato."""
+        d = wx.MessageDialog(
+            self.frame,
+            _("The HTML file has been saved.\n\nOpen it in the browser?"),
+            _("Export as HTML"),
+            wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+        try:
+            answer = d.ShowModal()
+        finally:
+            d.Destroy()
+        if answer != wx.ID_YES:
+            return
+        try:
+            import pathlib
+            url = pathlib.Path(os.path.abspath(path)).as_uri()
+            if not wx.LaunchDefaultBrowser(url):
+                raise RuntimeError(url)
+        except Exception as ex:
+            wx.MessageBox(str(ex), _("Export as HTML"), wx.OK | wx.ICON_ERROR, self.frame)
+
+    def _AskOpenExportedFile(self, path):
+        """Chiede se aprire con l'applicazione predefinita il file appena
+        esportato (PNG, SVG, EMF, EPS, TAB, PPTX). Per l'HTML c'e' il
+        corrispondente _AskOpenExportedHtml, che usa il browser."""
+        if not path or not os.path.isfile(path):
+            return
+        d = wx.MessageDialog(
+            self.frame,
+            _("The file has been saved.\n\nOpen it now?"),
+            _("Export"),
+            wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+        try:
+            answer = d.ShowModal()
+        finally:
+            d.Destroy()
+        if answer != wx.ID_YES:
+            return
+        try:
+            p = os.path.abspath(path)
+            if sys.platform == 'win32':
+                os.startfile(p)
+            elif sys.platform == 'darwin':
+                subprocess.Popen(['open', p])
+            else:
+                subprocess.Popen(['xdg-open', p])
+        except Exception as ex:
+            wx.MessageBox(str(ex), _("Export"), wx.OK | wx.ICON_ERROR, self.frame)
 
     def OnExportAsTab(self, evt):
         n = self.AskExportFileName(_("TAB file"), "tab")
@@ -8167,6 +8337,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                 r.Render(display_text, None, self.text.LineFromPosition(start), self.text.LineFromPosition(end))
             with open(n, "w", encoding='utf-8') as f:
                 f.write(t.getTab())
+            self._AskOpenExportedFile(n)
 
     def SaveSvg(self, filename, size=None):
         if size is None:
@@ -8179,6 +8350,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         n = self.AskExportFileName(_("SVG image"), "svg")
         if n is not None:
             self.SaveSvg(n)
+            self._AskOpenExportedFile(n)
 
     def OnExportAsEmf(self, evt):
         n = self.AskExportFileName(_("Enhanced Metafile"), "emf")
@@ -8186,6 +8358,7 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             dc = wx.msw.MetafileDC(n)
             self.DrawOnDC(dc)
             dc.Close()
+            self._AskOpenExportedFile(n)
 
     def OnExportAsEps(self, evt):
         n = self.AskExportFileName(_("EPS image"), "eps")
@@ -8198,6 +8371,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             dc.StartDoc(_("Exporting image as EPS..."))
             self.DrawOnDC(dc)
             dc.EndDoc()
+            del dc
+            self._AskOpenExportedFile(n)
 
     def OnExportAsPdf(self, evt):
         """Esporta la canzone come PDF. Delega a PdfExporter."""
@@ -8276,6 +8451,8 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
                     d = wx.MessageDialog(self.frame, str(e), "Songpress++",
                                          wx.OK | wx.ICON_WARNING)
                     d.ShowModal()
+                else:
+                    self._AskOpenExportedFile(output_file)
 
     def OnUpdateUI(self, evt):
         self.UpdateEverything()
@@ -12197,10 +12374,82 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         except Exception:
             pass
         try:
+            KlavierRenderer.set_middle_c_label(self._getKlavierMiddleCLabel())
+        except Exception:
+            pass
+        try:
             KlavierRenderer.set_keyboard_scale_pct(
                 getattr(self.pref, 'klavierScalePct', 100))
         except Exception:
             pass
+
+    # Segno sul DO centrale: voci della scelta nelle finestre "Tasti accordo" e
+    # "Diteggiatura" e valore scritto nella direttiva (middlec=<token>).
+    _MIDC_MODE_TOKENS = ('show', 'label', 'both')   # puntino, scritta, entrambi
+
+    def _MakeMiddleCModeChoice(self, parent):
+        """Scelta del segno sul DO centrale: puntino / scritta / puntino + scritta."""
+        ch = wx.Choice(parent, wx.ID_ANY, choices=[
+            _(u"Dot"), _(u"Label"), _(u"Dot and label")])
+        ch.SetSelection(0)
+        ch.SetToolTip(_(u"How the middle C key is marked."))
+        return ch
+
+    def _MidcModeToIndex(self, mode):
+        """Modalità letta dalla direttiva ('dot'/'label'/'both') -> indice scelta."""
+        return {'dot': 0, 'label': 1, 'both': 2}.get(mode, 0)
+
+    def _MidcIndexToToken(self, idx):
+        """Indice della scelta -> valore di middlec= ('show'/'label'/'both')."""
+        toks = self._MIDC_MODE_TOKENS
+        return toks[idx] if 0 <= idx < len(toks) else toks[0]
+
+    _EN_12 = ['C', 'C#', 'D', 'D#', 'E', 'F',
+              'F#', 'G', 'G#', 'A', 'A#', 'B']
+
+    def _NoteNameInCurrentNotation(self, semi, fallback=None):
+        """Nome della nota (semitono 0-11) nella notazione predefinita scelta
+        in Opzioni > Generale (Do, DO, C, 1, ...).
+
+        Si traduce dalla notazione inglese a quella corrente, come fa
+        _ChordExampleForNotation: cosi' non dipende dagli id delle notazioni.
+        Restituisce `fallback` (o None) se la traduzione non riesce."""
+        try:
+            cur = self.pref.notations[0] if self.pref.notations else None
+            if cur is None:
+                return fallback
+            en = globals().get('enNotation')
+            if en is None:
+                for n in self.pref.notations:
+                    if str(getattr(n, 'id', '')).lower() in ('en', 'english'):
+                        en = n
+                        break
+            if en is None:
+                return fallback
+            res = translateChord(self._EN_12[semi % 12], en, cur)
+            return res or fallback
+        except Exception:
+            return fallback
+
+    def _getKlavierMiddleCLabel(self):
+        """Nome del DO nella notazione scelta nelle opzioni (DO, Do, C, ...):
+        e' la scritta che il renderer mette sul DO centrale."""
+        name = self._NoteNameInCurrentNotation(0)
+        if name:
+            return name
+        it_name = u"Do"
+        try:
+            cur = self.pref.notations[0] if self.pref.notations else None
+            it = None
+            for n in self.pref.notations:
+                if hasattr(n, 'id') and ('it' in n.id.lower() or 'italian' in n.id.lower()):
+                    it = n
+                    break
+            if cur is not None and it is not None:
+                return translateChord(it_name, it, cur)
+        except Exception:
+            pass
+        return it_name
 
     def _MakeColourSwatch(self, parent, colour, on_change, tooltip=u""):
         """Quadratino colorato cliccabile (stile del colore di evidenziazione
@@ -13244,10 +13493,16 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             if getattr(self, '_previewEnsureLast', None) == key:
                 return
             self._previewEnsureLast = key
-            for dock in self._mgr._docks:
-                if any(p.name == 'preview' for p in dock.panes):
-                    dock.size += (need - cur)
-            self._mgr.DoUpdate()
+            # Freeze/Thaw: questo allargamento scatta dopo l'avvio (CallLater)
+            # a finestra visibile; congelando si evita il lampeggio.
+            self.frame.Freeze()
+            try:
+                for dock in self._mgr._docks:
+                    if any(p.name == 'preview' for p in dock.panes):
+                        dock.size += (need - cur)
+                self._mgr.DoUpdate()
+            finally:
+                self.frame.Thaw()
             if self.previewCanvas.main_panel.GetSize().GetWidth() >= need:
                 self._previewEnsureLast = None
         except Exception:

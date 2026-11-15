@@ -25,6 +25,12 @@ import tempfile
 
 import wx
 
+# Testo del brano come vero testo vettoriale (selezionabile, nitido a ogni
+# zoom). Se un brano usa qualcosa che non si sa disegnare cosi' (font non
+# trovato, filigrana, caratteri mancanti nel font...) l'esportazione ripiega
+# da sola sul bitmap. Mettere False per tornare sempre al bitmap.
+PDF_VECTOR_TEXT = True
+
 
 # ------------------------------------------------------------------ #
 #  Mappa wx.PAPER_* → dimensioni in mm (larghezza, altezza)           #
@@ -162,38 +168,790 @@ def _split_on_new_page(text):
     return result
 
 
-def _render_segment_to_png(frame_obj, seg_text, scale, avail_w_px, avail_h_px):
+# ------------------------------------------------------------------ #
+#  Disegno VETTORIALE di tastiere e diagrammi chitarra                #
+# ------------------------------------------------------------------ #
+#
+# Tastiere ({taste:}/{fingering:}) e diagrammi chitarra ({define:}) vengono
+# disegnati direttamente nel PDF come linee, rettangoli e testo: restano nitidi
+# a qualunque zoom e in stampa. (Il testo del brano e' vettoriale a sua volta,
+# vedi _SongDC piu' sotto, salvo ripiego sul bitmap di _render_segment_to_png.) Per riusare KlavierRenderer e
+# GuitarDiagramRenderer (che disegnano su un wx.DC) senza duplicarne la
+# geometria, _VectorDC e' un piccolo "DC" che traduce le chiamate di disegno
+# in operazioni di un canvas reportlab.
+
+_PX_TO_PT = 0.75   # 1 pixel logico (96 dpi) = 0.75 pt: scala "naturale" del brano
+
+
+def _rl_font_name(font):
+    """Nome del font base PDF piu' vicino al wx.Font (Helvetica/Times/Courier)."""
+    face = (font.GetFaceName() or '').lower()
+    if 'courier' in face or 'mono' in face or 'consolas' in face:
+        fam = 'Courier'
+    elif 'times' in face or 'serif' in face and 'sans' not in face:
+        fam = 'Times'
+    else:
+        fam = 'Helvetica'
+    try:
+        bold = font.GetNumericWeight() >= 600
+    except Exception:
+        bold = font.GetWeight() == wx.FONTWEIGHT_BOLD
+    italic = font.GetStyle() in (wx.FONTSTYLE_ITALIC, wx.FONTSTYLE_SLANT)
+    if fam == 'Times':
+        return {(0, 0): 'Times-Roman', (1, 0): 'Times-Bold',
+                (0, 1): 'Times-Italic', (1, 1): 'Times-BoldItalic'}[(bold, italic)]
+    suffix = {(0, 0): '', (1, 0): '-Bold', (0, 1): '-Oblique',
+              (1, 1): '-BoldOblique'}[(bold, italic)]
+    return fam + suffix
+
+
+class _VectorDC(object):
+    """Mini wx.DC che disegna su un canvas reportlab in vettoriale.
+
+    Implementa solo i metodi usati da KlavierRenderer e GuitarDiagramRenderer.
+    Le coordinate sono pixel logici con y verso il basso e origine in alto a
+    sinistra della sezione; (ox, oy) e' quel punto sulla pagina PDF (in pt, y
+    verso l'alto) e k i punti per pixel logico. Con canvas=None non disegna
+    nulla ma risponde alle misure: serve a calcolare l'ingombro della sezione.
     """
-    Renderizza un segmento di testo in un wx.Bitmap temporaneo.
-    Ritorna il Bitmap (dimensioni naturali * scale, ma limitato all'area disponibile).
+
+    def __init__(self, canvas, ox=0.0, oy=0.0, k=_PX_TO_PT):
+        self.c = canvas
+        self.ox, self.oy, self.k = ox, oy, k
+        self._mdc = wx.MemoryDC(wx.Bitmap(1, 1))   # solo per le metriche del font
+        try:
+            self._ppi = float(self._mdc.GetPPI()[1]) or 96.0
+        except Exception:
+            self._ppi = 96.0
+        self._font = wx.NORMAL_FONT
+        self._pen = None
+        self._brush = None
+        self._tcol = wx.BLACK
+
+    # -- stato -----------------------------------------------------------
+    def SetFont(self, font):
+        if font is not None and font.IsOk():
+            self._font = font
+            self._mdc.SetFont(font)
+
+    def GetFont(self):
+        return self._font
+
+    def SetPen(self, pen):
+        self._pen = pen
+
+    def SetBrush(self, brush):
+        self._brush = brush
+
+    def SetTextForeground(self, colour):
+        self._tcol = colour
+
+    def SetBackgroundMode(self, mode):
+        pass
+
+    def GetUserScale(self):
+        return 1.0, 1.0
+
+    def SetUserScale(self, sx, sy):
+        pass
+
+    def DrawBitmap(self, *args, **kwargs):
+        pass   # le sezioni vettoriali non usano bitmap (arrow_bitmap=False)
+
+    # -- misure ----------------------------------------------------------
+    def _size_px(self):
+        """Corpo del font in pixel logici."""
+        return max(1.0, self._font.GetPointSize() * self._ppi / 72.0)
+
+    def _text_width(self, text):
+        from reportlab.pdfbase.pdfmetrics import stringWidth
+        return stringWidth(self._clean(text), _rl_font_name(self._font),
+                           self._size_px())
+
+    @staticmethod
+    def _clean(text):
+        # I font base PDF coprono solo Latin-1/WinAnsi
+        return text.encode('cp1252', 'replace').decode('cp1252')
+
+    def GetTextExtent(self, text):
+        _w, h = self._mdc.GetTextExtent(text)
+        return int(round(self._text_width(text))), h
+
+    def GetFullTextExtent(self, text):
+        _w, h, desc, lead = self._mdc.GetFullTextExtent(text)
+        return int(round(self._text_width(text))), h, desc, lead
+
+    # -- disegno ---------------------------------------------------------
+    @staticmethod
+    def _rgb(col):
+        if not hasattr(col, 'Red'):          # stringa "#RRGGBB", nome, tupla
+            col = wx.Colour(col)
+        return col.Red() / 255.0, col.Green() / 255.0, col.Blue() / 255.0
+
+    def _style(self):
+        """(stroke, fill) in base a penna e pennello correnti; imposta i
+        colori e lo spessore/tratteggio sul canvas."""
+        pen, br = self._pen, self._brush
+        stroke = bool(pen is not None and pen.IsOk()
+                      and pen.GetStyle() != wx.PENSTYLE_TRANSPARENT)
+        fill = bool(br is not None and br.IsOk()
+                    and br.GetStyle() != wx.BRUSHSTYLE_TRANSPARENT)
+        c, k = self.c, self.k
+        if stroke:
+            c.setStrokeColorRGB(*self._rgb(pen.GetColour()))
+            w = max(0.25, pen.GetWidth() * k)
+            c.setLineWidth(w)
+            if pen.GetStyle() in (wx.PENSTYLE_DOT, wx.PENSTYLE_SHORT_DASH):
+                c.setDash([w, 2 * w])
+            else:
+                c.setDash([])
+        if fill:
+            c.setFillColorRGB(*self._rgb(br.GetColour()))
+        return stroke, fill
+
+    def _x(self, x):
+        return self.ox + x * self.k
+
+    def _y(self, y):
+        return self.oy - y * self.k
+
+    def DrawLine(self, x1, y1, x2, y2):
+        if self.c is None:
+            return
+        stroke, _fill = self._style()
+        if stroke:
+            self.c.line(self._x(x1), self._y(y1), self._x(x2), self._y(y2))
+
+    def DrawRectangle(self, x, y, w, h):
+        if self.c is None:
+            return
+        stroke, fill = self._style()
+        if stroke or fill:
+            self.c.rect(self._x(x), self._y(y + h), w * self.k, h * self.k,
+                        stroke=int(stroke), fill=int(fill))
+
+    def DrawCircle(self, x, y, r):
+        if self.c is None:
+            return
+        stroke, fill = self._style()
+        if stroke or fill:
+            self.c.circle(self._x(x), self._y(y), r * self.k,
+                          stroke=int(stroke), fill=int(fill))
+
+    def DrawPolygon(self, points, *args, **kwargs):
+        if self.c is None or not points:
+            return
+        stroke, fill = self._style()
+        if not (stroke or fill):
+            return
+        path = self.c.beginPath()
+        for i, pt in enumerate(points):
+            px, py = self._x(pt[0]), self._y(pt[1])
+            if i == 0:
+                path.moveTo(px, py)
+            else:
+                path.lineTo(px, py)
+        path.close()
+        self.c.drawPath(path, stroke=int(stroke), fill=int(fill))
+
+    def DrawText(self, text, x, y):
+        if self.c is None or not text:
+            return
+        _w, h, desc, _lead = self._mdc.GetFullTextExtent(text)
+        baseline = y + (h - desc)      # (x, y) = angolo alto-sinistro del testo
+        self.c.setFillColorRGB(*self._rgb(self._tcol))
+        self.c.setFont(_rl_font_name(self._font), self._size_px() * self.k)
+        self.c.drawString(self._x(x), self._y(baseline), self._clean(text))
+
+
+def _call_or_none(obj, name):
+    f = getattr(obj, name, None)
+    try:
+        return f() if callable(f) else None
+    except Exception:
+        return None
+
+
+def _prepare_vector_sections(frame_obj, info, content_w_logical):
+    """Prepara le sezioni vettoriali (tastiere, diagrammi chitarra) di una
+    pagina. Restituisce una lista di (disegna, altezza_pixel_logici), dove
+    disegna(dc, x, y) disegna la sezione su un _VectorDC (o sul DC di misura)."""
+    from .KlavierRenderer import draw_klavier_section
+    from .GuitarDiagramRenderer import draw_guitar_diagram_section
+
+    font = info.get('font')
+    klavier = info.get('klavier') or []
+    define = info.get('define') or []
+    if font is None or not (klavier or define):
+        return []
+    notations = getattr(frame_obj.pref, 'notations', None)
+    hl = _call_or_none(frame_obj, '_getKlavierHighlightColour')
+    fingers = _call_or_none(frame_obj, '_getFingerNumColour')
+
+    sections = []
+    measure = _VectorDC(None)
+    if klavier:
+        def draw_klavier(dc, x, y):
+            return draw_klavier_section(
+                dc, klavier, x, y, font, 1.0, notations, hl,
+                finger_num_color=fingers, content_w=content_w_logical,
+                arrow_bitmap=False)          # frecce vettoriali
+        sections.append((draw_klavier, draw_klavier(measure, 0, 0)[0]))
+    if define:
+        def draw_guitar(dc, x, y):
+            return draw_guitar_diagram_section(dc, define, x, y, font, 1.0, hl)
+        sections.append((draw_guitar, draw_guitar(measure, 0, 0)))
+    return sections
+
+
+# ------------------------------------------------------------------ #
+#  Testo del brano VETTORIALE                                         #
+# ------------------------------------------------------------------ #
+#
+# SongDecorator disegna il brano su un wx.DC. Per averlo come testo vero nel
+# PDF si fa girare lo STESSO decorator, con la stessa scala e le stesse misure
+# di prima, su _SongDC: un DC "registratore" che le misure (GetTextExtent...)
+# le fa chiedere a un vero wx.MemoryDC (cosi' le posizioni di accordi e sillabe
+# restano identiche al bitmap) e invece di colorare pixel traduce le chiamate
+# di disegno in operazioni reportlab. I font vengono cercati sul sistema e
+# incorporati nel PDF (TrueType); se qualcosa non si puo' rendere in vettoriale
+# si solleva _VectorUnsupported e l'esportazione usa il bitmap.
+
+class _VectorUnsupported(Exception):
+    """Il brano usa qualcosa che il disegno vettoriale non sa rendere."""
+
+
+_FONT_CACHE = {}      # (faccia, grassetto, corsivo) -> (nome reportlab, TTFont)
+
+
+def _font_bold_italic(font):
+    try:
+        bold = font.GetNumericWeight() >= 600
+    except Exception:
+        bold = font.GetWeight() == wx.FONTWEIGHT_BOLD
+    italic = font.GetStyle() in (wx.FONTSTYLE_ITALIC, wx.FONTSTYLE_SLANT)
+    return bool(bold), bool(italic)
+
+
+def _find_font_windows(face, bold, italic):
+    """(percorso, indice) del file del font cercando nel registro di Windows."""
+    try:
+        import winreg
+    except ImportError:
+        return None
+    want = face.strip().lower()
+    if bold and italic:
+        sfx = (' bold italic', ' bold oblique')
+    elif bold:
+        sfx = (' bold',)
+    elif italic:
+        sfx = (' italic', ' oblique')
+    else:
+        sfx = ('', ' regular')
+    wanted = set(want + s for s in sfx)
+    sub = r'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts'
+    sysdir = os.path.join(os.environ.get('WINDIR', r'C:\Windows'), 'Fonts')
+    userdir = os.path.join(os.environ.get('LOCALAPPDATA', ''),
+                           'Microsoft', 'Windows', 'Fonts')
+    for hive, base in ((winreg.HKEY_LOCAL_MACHINE, sysdir),
+                       (winreg.HKEY_CURRENT_USER, userdir)):
+        try:
+            key = winreg.OpenKey(hive, sub)
+        except OSError:
+            continue
+        with key:
+            i = 0
+            while True:
+                try:
+                    name, value, _t = winreg.EnumValue(key, i)
+                except OSError:
+                    break
+                i += 1
+                # "Arial Bold (TrueType)"; i .ttc: "Cambria & Cambria Math (TrueType)"
+                label = name.rsplit(' (', 1)[0].strip().lower()
+                for idx, part in enumerate(label.split(' & ')):
+                    if part.strip() not in wanted:
+                        continue
+                    path = value if os.path.isabs(value) else os.path.join(base, value)
+                    if path.lower().endswith(('.ttf', '.ttc')) and os.path.isfile(path):
+                        return path, idx
+    return None
+
+
+def _find_font_fontconfig(face, bold, italic):
+    """(percorso, indice) tramite fontconfig (Linux e, se c'e', macOS)."""
+    import shutil
+    if not shutil.which('fc-match'):
+        return None
+    pat = face + (':bold' if bold else '') + (':italic' if italic else '')
+    try:
+        out = subprocess.run(
+            ['fc-match', '-f', '%{file}\t%{family}\t%{index}', pat],
+            capture_output=True, text=True, timeout=5).stdout
+    except Exception:
+        return None
+    parts = out.split('\t')
+    if len(parts) < 3:
+        return None
+    path, fam, idx = parts[0], parts[1], parts[2]
+    # fc-match risponde sempre: si accetta solo la famiglia richiesta
+    if face.strip().lower() not in [f.strip().lower() for f in fam.split(',')]:
+        return None
+    if not path.lower().endswith(('.ttf', '.ttc')):
+        return None
+    try:
+        return path, int(idx) & 0xFFFF
+    except ValueError:
+        return path, 0
+
+
+def _find_font_dirs(face, bold, italic):
+    """(percorso, 0) cercando "<Faccia> [Bold] [Italic].ttf" nelle cartelle
+    dei font di macOS (ripiego quando manca fontconfig)."""
+    style = (' Bold' if bold else '') + (' Italic' if italic else '')
+    wanted = (face.strip() + style + '.ttf').lower()
+    for d in ('/Library/Fonts', '/System/Library/Fonts/Supplemental',
+              '/System/Library/Fonts', os.path.expanduser('~/Library/Fonts')):
+        try:
+            for fn in os.listdir(d):
+                if fn.lower() == wanted:
+                    return os.path.join(d, fn), 0
+        except OSError:
+            continue
+    return None
+
+
+def _get_rl_font(font):
+    """(nome_reportlab, TTFont) del wx.Font, registrandolo in reportlab.
+    Solleva _VectorUnsupported se il file del font non si trova."""
+    face = (font.GetFaceName() or '').strip()
+    bold, italic = _font_bold_italic(font)
+    key = (face.lower(), bold, italic)
+    if key not in _FONT_CACHE:
+        result = None
+        try:
+            from reportlab.pdfbase import pdfmetrics
+            from reportlab.pdfbase.ttfonts import TTFont
+            found = None
+            if face:
+                for finder in (_find_font_windows, _find_font_fontconfig,
+                               _find_font_dirs):
+                    found = finder(face, bold, italic)
+                    if found:
+                        break
+            if found:
+                name = 'SPP%d' % len(_FONT_CACHE)
+                tt = TTFont(name, found[0], subfontIndex=found[1])
+                pdfmetrics.registerFont(tt)
+                result = (name, tt)
+        except Exception:
+            result = None
+        _FONT_CACHE[key] = result
+    if _FONT_CACHE[key] is None:
+        raise _VectorUnsupported('font "%s" non trovato' % face)
+    return _FONT_CACHE[key]
+
+
+def _font_em_px(font, ppi):
+    """Corpo del font in pixel DEVICE a scala 1 (come lo disegna il DC)."""
+    try:
+        h = font.GetPixelSize().GetHeight()
+        if h and h > 0:
+            return float(h)
+    except Exception:
+        pass
+    return max(1.0, font.GetPointSize() * ppi / 72.0)
+
+
+def _bitmap_reader(bmp, use_mask=True, crop=None):
+    """wx.Bitmap -> ImageReader di reportlab (con trasparenza, se c'e')."""
+    from PIL import Image
+    from reportlab.lib.utils import ImageReader
+    img = bmp.ConvertToImage()
+    w, h = img.GetWidth(), img.GetHeight()
+    im = Image.frombytes('RGB', (w, h), bytes(img.GetData()))
+    if img.HasAlpha():
+        im.putalpha(Image.frombytes('L', (w, h), bytes(img.GetAlpha())))
+    elif use_mask and img.HasMask():
+        key = (img.GetMaskRed(), img.GetMaskGreen(), img.GetMaskBlue())
+        alpha = Image.new('L', (w, h), 255)
+        alpha.putdata([0 if p == key else 255 for p in im.getdata()])
+        im.putalpha(alpha)
+    if crop:
+        im = im.crop(crop)
+    return ImageReader(im)
+
+
+class _SongDC(object):
+    """DC "registratore": misura come un wx.MemoryDC, disegna su reportlab.
+
+    Le coordinate che riceve sono quelle logiche del decorator; qui si
+    convertono in pixel DEVICE (x * UserScale) e si emettono sul canvas, che
+    l'esportatore ha gia' predisposto con origine in alto a sinistra del brano
+    e scala "punti per pixel device". L'asse y del canvas va verso l'alto,
+    quindi le y si emettono cambiate di segno. Con canvas=None non emette nulla
+    ma controlla comunque font e chiamate: serve per una prova a secco.
+    """
+
+    # Metodi di disegno che il decorator non usa e che non si sanno tradurre
+    _NO = frozenset(['Blit', 'GradientFillLinear', 'GradientFillConcentric',
+                     'FloodFill', 'CrossHair', 'SetClippingRegion',
+                     'SetDeviceClippingRegion', 'SetLogicalFunction'])
+
+    def __init__(self, canvas, pt_per_dev):
+        self.c = canvas
+        self._k = pt_per_dev or 1.0
+        self._m = wx.MemoryDC(wx.Bitmap(1, 1))      # solo per misure e font
+        try:
+            self._ppi = float(self._m.GetPPI()[1]) or 96.0
+        except Exception:
+            self._ppi = 96.0
+        self._sx = self._sy = 1.0
+        self._font = None
+        self._pen = None
+        self._brush = None
+        self._tcol = wx.BLACK
+        self._tbg = wx.WHITE
+        self._bgmode = None
+        self.unsupported = None
+
+    # -- stato e misure (inoltrati al DC vero) ----------------------------
+    def _fail(self, what):
+        self.unsupported = self.unsupported or what
+        raise _VectorUnsupported(what)
+
+    def __getattr__(self, name):
+        # Solo per cio' che non e' definito qui: GetTextExtent, GetPPI...
+        if name.startswith('_'):
+            raise AttributeError(name)     # evita ricorsioni prima dell'__init__
+        if name.startswith('Draw') or name in self._NO:
+            def _no(*_a, **_k):
+                self._fail('DC.%s' % name)
+            return _no
+        return getattr(self._m, name)
+
+    def SetUserScale(self, sx, sy):
+        self._sx, self._sy = float(sx), float(sy)
+        self._m.SetUserScale(sx, sy)
+
+    def GetUserScale(self):
+        return self._sx, self._sy
+
+    def SetFont(self, font):
+        if font is not None and font.IsOk():
+            self._font = font
+            self._m.SetFont(font)
+
+    def GetFont(self):
+        return self._font if self._font is not None else self._m.GetFont()
+
+    def SetPen(self, pen):
+        self._pen = pen
+
+    def SetBrush(self, brush):
+        self._brush = brush
+
+    @staticmethod
+    def _colour(c):
+        """wx.Colour da un colore qualsiasi: il decorator passa anche stringhe
+        ("#RRGGBB", nomi) o tuple, che il DC vero accetta."""
+        if c is None or hasattr(c, 'Red'):
+            return c
+        return wx.Colour(c)
+
+    def SetTextForeground(self, colour):
+        self._tcol = self._colour(colour)
+        self._m.SetTextForeground(self._tcol)
+
+    def GetTextForeground(self):
+        return self._tcol
+
+    def SetTextBackground(self, colour):
+        self._tbg = self._colour(colour)
+
+    def SetBackgroundMode(self, mode):
+        self._bgmode = mode
+
+    def SetBackground(self, brush):
+        pass
+
+    def Clear(self):
+        pass        # la pagina PDF e' gia' bianca
+
+    # -- primitive --------------------------------------------------------
+    @staticmethod
+    def _rgb(col):
+        if not hasattr(col, 'Red'):          # stringa "#RRGGBB", nome, tupla
+            col = wx.Colour(col)
+        return col.Red() / 255.0, col.Green() / 255.0, col.Blue() / 255.0
+
+    def _style(self):
+        """(stroke, fill) secondo penna e pennello correnti; imposta colori,
+        spessore, tratteggio e terminali sul canvas."""
+        pen, br = self._pen, self._brush
+        stroke = bool(pen is not None and pen.IsOk()
+                      and pen.GetStyle() != wx.PENSTYLE_TRANSPARENT)
+        fill = bool(br is not None and br.IsOk()
+                    and br.GetStyle() != wx.BRUSHSTYLE_TRANSPARENT)
+        c = self.c
+        if stroke:
+            c.setStrokeColorRGB(*self._rgb(pen.GetColour()))
+            w = max(0.25 / self._k, pen.GetWidth() * self._sx)
+            c.setLineWidth(w)
+            st = pen.GetStyle()
+            if st in (wx.PENSTYLE_DOT, wx.PENSTYLE_SHORT_DASH):
+                c.setDash([w, 2 * w])
+            elif st in (getattr(wx, 'PENSTYLE_LONG_DASH', None),
+                        getattr(wx, 'PENSTYLE_DOT_DASH', None)):
+                c.setDash([4 * w, 2 * w])
+            else:
+                c.setDash([])
+            try:
+                c.setLineCap({wx.CAP_BUTT: 0, wx.CAP_ROUND: 1,
+                              wx.CAP_PROJECTING: 2}.get(pen.GetCap(), 1))
+                c.setLineJoin({wx.JOIN_MITER: 0, wx.JOIN_ROUND: 1,
+                               wx.JOIN_BEVEL: 2}.get(pen.GetJoin(), 1))
+            except Exception:
+                pass
+        if fill:
+            c.setFillColorRGB(*self._rgb(br.GetColour()))
+        return stroke, fill
+
+    def _pt(self, x, y):
+        return x * self._sx, -(y * self._sy)
+
+    @staticmethod
+    def _xy(args):
+        """(x, y) da DrawX(x, y, ...) o DrawX(wx.Point, ...)"""
+        if hasattr(args[0], 'x'):
+            return args[0].x, args[0].y, args[1:]
+        return args[0], args[1], args[2:]
+
+    def DrawLine(self, x1, y1, x2, y2):
+        if self.c is None:
+            return
+        stroke, _fill = self._style()
+        if stroke:
+            ax, ay = self._pt(x1, y1)
+            bx, by = self._pt(x2, y2)
+            self.c.line(ax, ay, bx, by)
+
+    def DrawRectangle(self, *args):
+        if self.c is None:
+            return
+        if len(args) == 1:                      # wx.Rect
+            r = args[0]
+            x, y, w, h = r.x, r.y, r.width, r.height
+        else:
+            x, y, w, h = args[:4]
+        stroke, fill = self._style()
+        if stroke or fill:
+            px, py = self._pt(x, y + h)
+            self.c.rect(px, py, w * self._sx, h * self._sy,
+                        stroke=int(stroke), fill=int(fill))
+
+    def DrawCircle(self, *args):
+        if self.c is None:
+            return
+        x, y, rest = self._xy(args)
+        stroke, fill = self._style()
+        if stroke or fill:
+            px, py = self._pt(x, y)
+            self.c.circle(px, py, rest[0] * self._sx,
+                          stroke=int(stroke), fill=int(fill))
+
+    def DrawPolygon(self, points, xoffset=0, yoffset=0, *args, **kwargs):
+        if self.c is None or not points:
+            return
+        stroke, fill = self._style()
+        if not (stroke or fill):
+            return
+        path = self.c.beginPath()
+        for i, pt in enumerate(points):
+            px, py = self._pt(pt[0] + xoffset, pt[1] + yoffset)
+            if i == 0:
+                path.moveTo(px, py)
+            else:
+                path.lineTo(px, py)
+        path.close()
+        self.c.drawPath(path, stroke=int(stroke), fill=int(fill))
+
+    def _place_image(self, reader, x, y, w, h):
+        """Immagine con angolo alto-sinistro in (x, y) logici, grande w x h
+        logici."""
+        px, py = self._pt(x, y + h)
+        self.c.drawImage(reader, px, py, width=w * self._sx, height=h * self._sy,
+                         mask='auto')
+
+    def DrawBitmap(self, bmp, *args):
+        x, y, rest = self._xy(args)
+        use_mask = bool(rest[0]) if rest else False
+        # La conversione si fa anche nella prova a secco (canvas None), cosi'
+        # un problema con le bitmap emerge prima di scrivere sulla pagina.
+        try:
+            reader = _bitmap_reader(bmp, use_mask)
+        except Exception as e:
+            self._fail('bitmap: %s' % e)
+        if self.c is None:
+            return
+        # la bitmap occupa i suoi pixel in unita' logiche (il DC la scala)
+        self._place_image(reader, x, y, bmp.GetWidth(), bmp.GetHeight())
+
+    def StretchBlit(self, xdest, ydest, dstWidth, dstHeight, source,
+                    xsrc, ysrc, srcWidth, srcHeight, *args, **kwargs):
+        """Usato dal decorator per i simboli Unicode oltre il piano base:
+        `source` e' un wx.MemoryDC con la bitmap del glifo."""
+        try:
+            sel = source.GetSelectedBitmap()
+            if sel is None or not sel.IsOk():
+                raise ValueError('nessuna bitmap selezionata')
+            # GetSelectedBitmap() restituisce il membro del DC, che SelectObject
+            # (NullBitmap) svuota: se ne tiene una copia (condivide i pixel).
+            # Una bitmap selezionata in un DC non si puo' convertire, quindi la
+            # si libera il tempo della conversione e poi la si rimette (il
+            # decorator la deseleziona comunque subito dopo).
+            keep = wx.Bitmap(sel)
+            source.SelectObject(wx.NullBitmap)
+            try:
+                reader = _bitmap_reader(
+                    keep, False,
+                    (xsrc, ysrc, xsrc + srcWidth, ysrc + srcHeight))
+            finally:
+                source.SelectObject(keep)
+        except Exception as e:
+            self._fail('StretchBlit: %s' % e)
+        if self.c is None:
+            return
+        self._place_image(reader, xdest, ydest, dstWidth, dstHeight)
+
+    def DrawText(self, text, x, y):
+        """(x, y) e' l'angolo alto-sinistro del testo; la riga di base si
+        ricava dalle metriche misurate dal DC vero."""
+        if not text:
+            return
+        font = self.GetFont()
+        name, tt = _get_rl_font(font)
+        cmap = tt.face.charToGlyph
+        # Spazi e caratteri invisibili assenti nel font (tabulazioni, spazi
+        # tipografici, zero-width...): GDI non disegna nulla, mentre reportlab
+        # disegnerebbe il quadratino .notdef. Gli spazi diventano spazi
+        # normali (la larghezza totale e' poi riallineata a quella misurata),
+        # gli invisibili spariscono; qualunque altro carattere mancante
+        # obbliga al ripiego sul bitmap.
+        import unicodedata
+        drawn = []
+        for ch in text:
+            if ord(ch) in cmap:
+                drawn.append(ch)
+            elif ch.isspace():
+                drawn.append(' ')
+            elif unicodedata.category(ch) in ('Cf', 'Cc'):
+                continue
+            else:
+                self._fail('carattere U+%04X assente nel font' % ord(ch))
+        if self.c is None:
+            return
+        shown = ''.join(drawn)
+        from reportlab.pdfbase.pdfmetrics import stringWidth
+        w_log, h_log, desc_log, _lead = self._m.GetFullTextExtent(text)
+        sx, sy = self._sx, self._sy
+        em = _font_em_px(font, self._ppi) * sy
+        x_dev = x * sx
+        base = -((y + h_log - desc_log) * sy)           # riga di base (y su)
+        target = w_log * sx                            # larghezza misurata
+        rgb = self._rgb(self._tcol)
+
+        # sfondo del testo (solo se non e' il bianco della pagina)
+        if (self._bgmode == wx.SOLID and self._tbg is not None
+                and self._tbg.IsOk()
+                and (self._tbg.Red(), self._tbg.Green(), self._tbg.Blue())
+                != (255, 255, 255)):
+            self.c.setFillColorRGB(*self._rgb(self._tbg))
+            self.c.rect(x_dev, -((y + h_log) * sy), target, h_log * sy,
+                        stroke=0, fill=1)
+
+        t = self.c.beginText()
+        t.setFont(name, em)
+        t.setFillColorRGB(*rgb)
+        n = len(shown)
+        if n > 1 and target > 0:
+            # GDI e reportlab possono arrotondare diversamente le larghezze dei
+            # singoli glifi: si distribuisce la differenza cosi' che ogni run
+            # finisca esattamente dove l'ha misurato il layout (gli accordi
+            # restano sopra la sillaba giusta).
+            cs = (target - stringWidth(shown, name, em)) / (n - 1)
+            lim = 0.3 * em
+            t.setCharSpace(max(-lim, min(lim, cs)))
+        t.setTextOrigin(x_dev, base)
+        t.textOut(shown)
+        self.c.drawText(t)
+
+        try:
+            underlined = font.GetUnderlined()
+        except Exception:
+            underlined = False
+        if underlined:
+            self.c.setStrokeColorRGB(*rgb)
+            self.c.setLineWidth(max(0.25 / self._k, em * 0.06))
+            self.c.setDash([])
+            uy = base - em * 0.12
+            self.c.line(x_dev, uy, x_dev + target, uy)
+
+
+def _make_decorator(frame_obj):
+    """Crea un decorator fresco per ogni pass di rendering."""
+    from .SongDecorator import SongDecorator
+    if frame_obj.pref.labelVerses:
+        # Crea una copia indipendente del decorator per non alterare lo stato globale
+        import copy
+        return copy.copy(frame_obj.pref.decorator)
+    return SongDecorator()
+
+
+def _measure_segment(frame_obj, seg_text, scale, avail_w_px, info=None):
+    """
+    Misura un segmento di testo: ritorna (sw, sh, fit_scale), cioe' le
+    dimensioni naturali in pixel logici e la scala (pixel device per pixel
+    logico) che lo fa stare nella larghezza disponibile.
+
+    Se `info` e' un dict, lo riempie con i dati per il disegno vettoriale di
+    tastiere e diagrammi (non inclusi nel brano): 'sw' (larghezza naturale in
+    pixel logici), 'klavier' e 'define' (direttive del segmento), 'font'.
     """
     from .Renderer import Renderer
-    from .SongDecorator import SongDecorator
 
-    def _make_decorator():
-        """Crea un decorator fresco per ogni pass di rendering."""
-        if frame_obj.pref.labelVerses:
-            # Crea una copia indipendente del decorator per non alterare lo stato globale
-            import copy
-            return copy.copy(frame_obj.pref.decorator)
-        return SongDecorator()
-
-    # Misura
-    dec_measure = _make_decorator()
+    dec_measure = _make_decorator(frame_obj)
     dec_measure.showKlavier = False
     r = Renderer(frame_obj.pref.format, dec_measure, frame_obj.pref.notations)
 
-    # Misura
     mdc = wx.MemoryDC(wx.Bitmap(1, 1))
     sw, sh = r.Render(seg_text, mdc)
     sw, sh = max(1, sw), max(1, sh)
+    if info is not None:
+        info['sw'] = sw
+        info['klavier'] = list(getattr(r.song, 'klavier_list', None) or [])
+        info['define'] = list(getattr(r.song, 'define_list', None) or [])
+        info['font'] = r.song.format.wxFont
 
     # Scala per adattare alla larghezza disponibile (in pixel a 96 dpi)
     fit_scale = scale
     natural_w = sw * scale
     if natural_w > avail_w_px:
         fit_scale = scale * (avail_w_px / natural_w)
+    return sw, sh, fit_scale
 
+
+def _render_segment_to_png(frame_obj, seg_text, scale, avail_w_px, avail_h_px,
+                           info=None):
+    """
+    Renderizza un segmento di testo in un wx.Bitmap temporaneo.
+    Ritorna il Bitmap (dimensioni naturali * scale, ma limitato all'area disponibile).
+    Vedi _measure_segment per `info`.
+    """
+    from .Renderer import Renderer
+
+    sw, sh, fit_scale = _measure_segment(frame_obj, seg_text, scale,
+                                         avail_w_px, info)
     bmp_w = int(sw * fit_scale)
     bmp_h = int(sh * fit_scale)
     bmp = wx.Bitmap(max(1, bmp_w), max(1, bmp_h))
@@ -215,12 +973,42 @@ def _render_segment_to_png(frame_obj, seg_text, scale, avail_w_px, avail_h_px):
         except Exception:
             pass
         dc.SetUserScale(fit_scale, fit_scale)
-    dec_draw = _make_decorator()
+    dec_draw = _make_decorator(frame_obj)
     dec_draw.showKlavier = False
     r2 = Renderer(frame_obj.pref.format, dec_draw, frame_obj.pref.notations)
     r2.Render(seg_text, dc)
     del dc
     return bmp
+
+
+def _draw_segment_vector(frame_obj, seg_text, fit_scale, canvas, pt_per_dev):
+    """
+    Disegna un segmento come testo vettoriale su `canvas` (gia' trasformato:
+    origine in alto a sinistra del brano, scala `pt_per_dev` punti per pixel
+    device). Con canvas=None fa solo una prova a secco, senza disegnare.
+    Solleva _VectorUnsupported se il brano non si puo' rendere cosi'.
+    """
+    from .Renderer import Renderer
+
+    dec = _make_decorator(frame_obj)
+    dec.showKlavier = False
+    dec.smp_via_bitmap = True    # simboli oltre il piano base: via bitmap
+    r = Renderer(frame_obj.pref.format, dec, frame_obj.pref.notations)
+    dc = _SongDC(canvas, pt_per_dev)
+    dc.SetUserScale(fit_scale, fit_scale)
+    r.Render(seg_text, dc)
+    # il decorator inghiotte alcune eccezioni: se una chiamata non supportata
+    # e' stata intercettata, lo si sa da qui
+    if dc.unsupported:
+        raise _VectorUnsupported(dc.unsupported)
+
+
+def _vector_text_possible(frame_obj):
+    """False se il testo del brano va comunque rasterizzato."""
+    if not PDF_VECTOR_TEXT:
+        return False
+    # la filigrana si disegna solo sul bitmap
+    return not getattr(frame_obj.pref, 'watermarkEnabled', False)
 
 
 def _export_reportlab(frame_obj, filepath):
@@ -262,23 +1050,29 @@ def _export_reportlab(frame_obj, filepath):
         c = rl_canvas.Canvas(filepath, pagesize=(page_w, page_h))
 
         for seg_idx, seg_text in enumerate(segments):
-            bmp = _render_segment_to_png(
-                frame_obj, seg_text, SCALE, avail_w_px, avail_h_px
+            info = {}
+            sw, sh, fit_scale = _measure_segment(
+                frame_obj, seg_text, SCALE, avail_w_px, info
             )
-            img = bmp.ConvertToImage()
+            # Dimensioni del brano in "pixel device" (come l'ex bitmap)
+            bmp_w = max(1, int(sw * fit_scale))
+            bmp_h = max(1, int(sh * fit_scale))
 
-            tmp = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
-            tmp.close()
-            img.SaveFile(tmp.name, wx.BITMAP_TYPE_PNG)
-            tmp_files.append(tmp.name)
-
-            # Dimensioni immagine in punti (SCALE * 96 dpi → 72 pt)
+            # Dimensioni in punti (SCALE * 96 dpi → 72 pt)
             px_to_pt = 72.0 / (SCALE * 96.0)
-            draw_w = bmp.GetWidth()  * px_to_pt
-            draw_h = bmp.GetHeight() * px_to_pt
+            draw_w = bmp_w * px_to_pt
+            draw_h = bmp_h * px_to_pt
+
+            # Tastiere e diagrammi chitarra: vettoriali, in fondo alla pagina.
+            # Si riserva sotto al brano lo spazio che occupano a scala naturale.
+            sections = _prepare_vector_sections(
+                frame_obj, info, avail_w_pt / _PX_TO_PT)
+            gap_l = 10   # pixel logici tra una sezione e la successiva
+            reserve_pt = sum((h_l + gap_l) * _PX_TO_PT for _d, h_l in sections)
 
             # Adatta all'area disponibile mantenendo le proporzioni
-            scale_fit = min(avail_w_pt / draw_w, avail_h_pt / draw_h, 1.0)
+            song_h_pt = max(1.0, avail_h_pt - reserve_pt)
+            scale_fit = min(avail_w_pt / draw_w, song_h_pt / draw_h, 1.0)
             final_w = draw_w * scale_fit
             final_h = draw_h * scale_fit
 
@@ -286,10 +1080,52 @@ def _export_reportlab(frame_obj, filepath):
             x = ml + (avail_w_pt - final_w) / 2.0
             y = mb + avail_h_pt - final_h  # reportlab: y=0 è in basso
 
+            # Testo vettoriale se possibile, con una prova a secco prima di
+            # toccare la pagina (non si puo' annullare cio' che e' disegnato)
+            pt_per_dev = final_w / float(bmp_w)
+            vector = _vector_text_possible(frame_obj)
+            if vector:
+                try:
+                    _draw_segment_vector(frame_obj, seg_text, fit_scale,
+                                         None, pt_per_dev)
+                except Exception as e:
+                    vector = False
+                    sys.stderr.write(
+                        'Songpress PDF: testo come bitmap (%s)\n' % e)
+
             if seg_idx > 0:
                 c.showPage()
 
-            c.drawImage(tmp.name, x, y, width=final_w, height=final_h)
+            if vector:
+                c.saveState()
+                c.translate(x, y + final_h)      # angolo alto-sinistro del brano
+                c.scale(pt_per_dev, pt_per_dev)  # pixel device -> punti
+                try:
+                    _draw_segment_vector(frame_obj, seg_text, fit_scale,
+                                         c, pt_per_dev)
+                finally:
+                    c.restoreState()
+            else:
+                bmp = _render_segment_to_png(
+                    frame_obj, seg_text, SCALE, avail_w_px, avail_h_px
+                )
+                img = bmp.ConvertToImage()
+
+                tmp = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
+                tmp.close()
+                img.SaveFile(tmp.name, wx.BITMAP_TYPE_PNG)
+                tmp_files.append(tmp.name)
+                c.drawImage(tmp.name, x, y, width=final_w, height=final_h)
+
+            # Sezioni vettoriali, con la stessa scala del brano (punti per
+            # pixel logico), allineate a sinistra del brano e ancorate al
+            # margine inferiore.
+            if sections:
+                k = final_w / float(info.get('sw') or 1)
+                top = mb + sum((h_l + gap_l) * k for _d, h_l in sections)
+                for draw, h_l in sections:
+                    draw(_VectorDC(c, x, top, k), 0, 0)
+                    top -= (h_l + gap_l) * k
 
         c.save()
         return True

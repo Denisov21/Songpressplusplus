@@ -511,7 +511,14 @@ class SDIMainFrame(object):
             self.modified = False
             self.UpdateTitle()
 
-    def FinalizePaneInitialization(self):
+    def FinalizePaneInitialization(self, show=True):
+        """Completa l'inizializzazione dei pannelli AUI.
+
+        show=True (default): mostra subito il frame (comportamento storico).
+        show=False: il frame resta nascosto (ma congelato) e il chiamante deve
+        fare Thaw() e poi Show() quando posizione e dimensione sono definitive;
+        evita che la finestra compaia nella posizione di default e poi salti.
+        """
         import os as _os
         from .Globals import startup_log as _log
         _log(f"FinalizePaneInitialization  argv={sys.argv}")
@@ -542,7 +549,8 @@ class SDIMainFrame(object):
         # RestoreWindowGeometry(). In questo modo la finestra appare già
         # nella posizione e dimensione corrette, senza sfarfallio.
         self.frame.Freeze()
-        self.frame.Show()
+        if show:
+            self.frame.Show()
         # Avvia il server single-instance PRIMA di aprire il file da argv,
         # così il socket è in ascolto il prima possibile ed evita la race
         # condition in cui una seconda istanza trova la porta libera perché
