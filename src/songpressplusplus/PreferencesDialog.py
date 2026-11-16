@@ -399,6 +399,10 @@ class PreferencesDialog(wx.Dialog):
         self.suggestTitleAsFilenameCB.SetToolTip(_(u"When enabled, the 'Save as' dialog proposes the value of the {title:} directive as the default file name. Invalid characters are removed. This option works together with 'Replace spaces with _': if both are enabled, the suggested name will use underscores instead of spaces."))
         grpGeneral.Add(self.suggestTitleAsFilenameCB, 0, wx.ALL, 5)
 
+        self.htmlIncludeFaviconCB = wx.CheckBox(_boxGeneral, wx.ID_ANY, _(u"Include the favicon in exported HTML files"), wx.DefaultPosition, wx.DefaultSize, 0)
+        self.htmlIncludeFaviconCB.SetToolTip(_(u"When enabled, the HTML file created by 'Export as HTML' contains the Songpress++ icon (embedded in the page) shown in the browser tab. Disable it to get a smaller file without an icon."))
+        grpGeneral.Add(self.htmlIncludeFaviconCB, 0, wx.ALL, 5)
+
         # ── Dimensione icone toolbar ─────────────────────────────────
         bSizerTbIconSize = wx.BoxSizer(wx.HORIZONTAL)
         self.labelTbIconSize = wx.StaticText(_boxGeneral, wx.ID_ANY, _(u"Toolbar icon size"), wx.DefaultPosition, wx.DefaultSize, 0)

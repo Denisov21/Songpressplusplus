@@ -260,6 +260,9 @@ class MyPreferencesDialog(PreferencesDialog):
         # Suggerisci {title:} come nome file in "Salva con nome"
         self.suggestTitleAsFilenameCB.SetValue(getattr(self.pref, 'suggestTitleAsFilename', False))
 
+        # Esporta come HTML: includi la favicon
+        self.htmlIncludeFaviconCB.SetValue(getattr(self.pref, 'htmlIncludeFavicon', True))
+
         # Dimensione icone toolbar
         _tbSz = getattr(self.pref, 'toolbarIconSize', 'small')
         if _tbSz == 'xlarge':
@@ -2165,6 +2168,8 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.replaceSpacesInFilenames = self.replaceSpacesInFilenamesCB.GetValue()
         # Suggerisci {title:} come nome file in "Salva con nome"
         self.pref.suggestTitleAsFilename = self.suggestTitleAsFilenameCB.GetValue()
+        # Esporta come HTML: includi la favicon
+        self.pref.htmlIncludeFavicon = self.htmlIncludeFaviconCB.GetValue()
         # Dimensione icone toolbar
         if self.tbIconSizeXLarge.GetValue():
             self.pref.toolbarIconSize = 'xlarge'

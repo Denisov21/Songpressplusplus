@@ -999,3 +999,9 @@ msgstr "Nasconde le direttive {taste:...} quando gli accordi sono disabilitati."
 
 msgid "Hide {define:...} directives when no chords are shown."
 msgstr "Nasconde le direttive {define:...} quando gli accordi sono disabilitati."
+
+msgid "Include the favicon in exported HTML files"
+msgstr "Includi la favicon nei file HTML esportati"
+
+msgid "When enabled, the HTML file created by 'Export as HTML' contains the Songpress++ icon (embedded in the page) shown in the browser tab. Disable it to get a smaller file without an icon."
+msgstr "Se attivo, il file HTML creato da 'Esporta come HTML' contiene l'icona di Songpress++ (incorporata nella pagina) mostrata nella scheda del browser. Disattivala per ottenere un file più leggero e senza icona."

@@ -782,9 +782,10 @@ class SongDecorator(object):
         rightMargin   = 0.5
         topPadding    = 0.1
         bottomPadding = 0.1
-        # Offset x del testo della griglia = stessa posizione del testo nei blocchi normali
-        # (equivalente a block.marginLeft in SetMarginBlock per i verse)
-        text_x_offset = int(baseW * (leftMargin + leftPadding + rightMargin + rightPadding))
+        # Offset x delle celle della griglia = stesso x del bordo sinistro del
+        # riquadro dell'etichetta (marginLeft + leftMargin*baseW, vedi
+        # _DrawGridBox): etichetta e prima battuta/accordo risultano allineati.
+        text_x_offset = baseW * leftMargin
         gridbox._text_x_offset = text_x_offset
         label_h = 0
         if gridbox.label:
@@ -845,7 +846,7 @@ class SongDecorator(object):
                 ts_bottom = max(ts_bottom, _y_off + _th)
             _need = int(baseW * leftMargin) + ts_w + 2
             if _need > text_x_offset:
-                extra_w = _need - text_x_offset
+                extra_w = int(round(_need - text_x_offset))
                 gridbox._text_x_offset = _need
             self.dc.SetFont(old_font)
         gridbox.w = cell_w * col_count + extra_w

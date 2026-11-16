@@ -212,6 +212,7 @@ class Preferences(object):
         self._LoadPasteChordsOnlyWhenNeeded()
         self._LoadReplaceSpacesInFilenames()
         self._LoadSuggestTitleAsFilename()
+        self._LoadHtmlIncludeFavicon()
         self._LoadToolbarVis()
         self._LoadToolbarIconSize()
         self._LoadChordUppercase()
@@ -474,6 +475,7 @@ class Preferences(object):
         self._SavePasteChordsOnlyWhenNeeded()
         self._SaveReplaceSpacesInFilenames()
         self._SaveSuggestTitleAsFilename()
+        self._SaveHtmlIncludeFavicon()
         self._SaveToolbarVis()
         self._SaveToolbarIconSize()
         self._SaveChordUppercase()
@@ -1025,6 +1027,18 @@ class Preferences(object):
     def _SaveSuggestTitleAsFilename(self):
         self.config.SetPath('/App')
         self.config.Write('suggestTitleAsFilename', '1' if getattr(self, 'suggestTitleAsFilename', False) else '0')
+        self.config.SetPath('/')
+
+    def _LoadHtmlIncludeFavicon(self):
+        """Esporta come HTML: include la favicon nella pagina (default: si')."""
+        self.config.SetPath('/App')
+        v = self.config.Read('htmlIncludeFavicon')
+        self.htmlIncludeFavicon = bool(int(v)) if v != '' else True
+        self.config.SetPath('/')
+
+    def _SaveHtmlIncludeFavicon(self):
+        self.config.SetPath('/App')
+        self.config.Write('htmlIncludeFavicon', '1' if getattr(self, 'htmlIncludeFavicon', True) else '0')
         self.config.SetPath('/')
 
     def _LoadToolbarVis(self):

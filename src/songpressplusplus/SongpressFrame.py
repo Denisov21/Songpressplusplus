@@ -8166,10 +8166,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         while not leave:
             dlg = wx.FileDialog(
                 self.frame,
-                "Choose a name for the output file",
+                _("Choose a name for the output file"),
                 "",
                 os.path.splitext(self.document)[0],
-                "%s files (*.%s)|*.%s|All files (*.*)|*.*" % (type, ext, ext),
+                _("%s files (*.%s)|*.%s|All files (*.*)|*.*") % (type, ext, ext),
                 wx.FD_SAVE
             )
 
@@ -8254,11 +8254,24 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
             h.durationBeatsMode      = getattr(self.pref, 'durationBeatsMode', 'number')
             # Etichette di strofe e ritornelli, se attive in anteprima
             h.showLabels = bool(self.pref.labelVerses)
+            # Favicon incorporata nella pagina, se attiva nelle preferenze
+            h.includeFavicon = getattr(self.pref, 'htmlIncludeFavicon', True)
+            h.lang = getattr(self.pref, 'locale', None) or ''
+            # Frecce di direzione degli accordi: stesse preferenze dell'anteprima
+            h.showArrows = self._ReadArrowVisible('show_arrows')
+            h.chordArrowSizePct = getattr(self.pref, 'chordArrowSizePct', 90)
+            h.chordArrowPos = getattr(self.pref, 'chordArrowPos', 'chord')
+            h.chordArrowUpColourHex = getattr(self.pref, 'chordArrowUpColourHex', '')
+            h.chordArrowDownColourHex = getattr(self.pref, 'chordArrowDownColourHex', '')
             try:
                 h.chorusLabel = self.pref.decoratorFormat.GetChorusLabel()
             except Exception:
                 h.chorusLabel = ''
             r = Renderer(self.pref.format, h, self.pref.notations)
+            # Griglie {start_of_grid}: stesse preferenze dell'anteprima
+            r.gridDisplayMode = getattr(self.pref, 'gridDisplayMode', 'pipe')
+            r.gridDefaultLabel = getattr(self.pref, 'gridDefaultLabel', None)
+            r.gridSizeDir = getattr(self.pref, 'gridSizeDir', 'both')
             # Visualizzazione di tempo, tempo musicale e tonalita' come in anteprima
             r.tempoDisplay = getattr(self.pref, 'tempoDisplay', 0)
             r.timeDisplay = getattr(self.pref, 'timeDisplay', True)
@@ -8393,6 +8406,10 @@ class SongpressFrame(SDIMainFrame, PrintManager, CopyAIBeatsPromptMixin, Songpre
         self._margin_right  = br.x
         self._margin_bottom = br.y
         dlg.Destroy()
+
+        # Posizione orizzontale (a sinistra / al centro), come in Opzioni di stampa
+        if not PdfExporter.ask_h_alignment(self):
+            return
 
         n = self.AskExportFileName(_("PDF"), "pdf")
         if n is None:

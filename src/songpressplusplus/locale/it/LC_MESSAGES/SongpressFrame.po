@@ -1375,6 +1375,11 @@ msgstr "Guida ai comandi di Songpress++"
 msgid "Choose a name for the output file"
 msgstr "Scegli un nome per il file di output"
 
+#: SongpressFrame.py — AskExportFileName file filter
+#, python-format
+msgid "%s files (*.%s)|*.%s|All files (*.*)|*.*"
+msgstr "File %s (*.%s)|*.%s|Tutti i file (*.*)|*.*"
+
 #: SongpressFrame.py — OnInsertTransposerImage dialog title
 msgid "Insert Transposer indicator"
 msgstr "Inserisci indicatore Transposer"

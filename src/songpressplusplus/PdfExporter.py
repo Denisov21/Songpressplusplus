@@ -126,6 +126,49 @@ def _notify_success_and_maybe_open(frame_obj, filepath, offer_open):
         wx.MessageBox(msg, title, wx.OK | wx.ICON_INFORMATION, parent)
 
 
+def ask_h_alignment(frame_obj):
+    """Chiede la posizione orizzontale del brano (A sinistra / Al centro).
+
+    Mostra due radio button, preselezionati sul valore corrente di
+    `_print_h_center` (lo stesso della voce "Posizione" in Opzioni di stampa) e,
+    se l'utente conferma, lo aggiorna e lo salva. Ritorna False se annullato.
+    Va chiamata prima di export_as_pdf().
+    """
+    _ = wx.GetTranslation
+    parent = getattr(frame_obj, 'frame', None)
+    dlg = wx.Dialog(parent, title=_("Position:").rstrip(':'),
+                    style=wx.DEFAULT_DIALOG_STYLE)
+    center = bool(getattr(frame_obj, '_print_h_center', False))
+
+    box = wx.StaticBoxSizer(wx.VERTICAL, dlg, _("Position:").rstrip(':'))
+    rb_left = wx.RadioButton(dlg, label=_("Left"), style=wx.RB_GROUP)
+    rb_center = wx.RadioButton(dlg, label=_("Center"))
+    rb_left.SetValue(not center)
+    rb_center.SetValue(center)
+    box.Add(rb_left, 0, wx.ALL, 6)
+    box.Add(rb_center, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
+
+    top = wx.BoxSizer(wx.VERTICAL)
+    top.Add(box, 0, wx.EXPAND | wx.ALL, 10)
+    top.Add(dlg.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL),
+            0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+    dlg.SetSizerAndFit(top)
+    dlg.CentreOnParent()
+    rb_left.SetFocus()
+
+    ok = dlg.ShowModal() == wx.ID_OK
+    new_center = rb_center.GetValue()
+    dlg.Destroy()
+    if not ok:
+        return False
+    frame_obj._print_h_center = bool(new_center)
+    try:
+        frame_obj._SavePageMargins()     # stessa chiave di Opzioni di stampa
+    except Exception:
+        pass
+    return True
+
+
 def export_as_pdf(frame_obj, filepath, title, offer_open=True):
     """Esporta il brano in PDF.
 
@@ -374,8 +417,9 @@ def _call_or_none(obj, name):
 
 def _prepare_vector_sections(frame_obj, info, content_w_logical):
     """Prepara le sezioni vettoriali (tastiere, diagrammi chitarra) di una
-    pagina. Restituisce una lista di (disegna, altezza_pixel_logici), dove
-    disegna(dc, x, y) disegna la sezione su un _VectorDC (o sul DC di misura)."""
+    pagina. Restituisce una lista di (disegna, altezza, larghezza) in pixel
+    logici, dove disegna(dc, x, y) disegna la sezione su un _VectorDC (o sul DC
+    di misura). La larghezza e' quella realmente occupata (0 se non nota)."""
     from .KlavierRenderer import draw_klavier_section
     from .GuitarDiagramRenderer import draw_guitar_diagram_section
 
@@ -396,11 +440,12 @@ def _prepare_vector_sections(frame_obj, info, content_w_logical):
                 dc, klavier, x, y, font, 1.0, notations, hl,
                 finger_num_color=fingers, content_w=content_w_logical,
                 arrow_bitmap=False)          # frecce vettoriali
-        sections.append((draw_klavier, draw_klavier(measure, 0, 0)[0]))
+        _kh, _kw = draw_klavier(measure, 0, 0)
+        sections.append((draw_klavier, _kh, _kw))
     if define:
         def draw_guitar(dc, x, y):
             return draw_guitar_diagram_section(dc, define, x, y, font, 1.0, hl)
-        sections.append((draw_guitar, draw_guitar(measure, 0, 0)))
+        sections.append((draw_guitar, draw_guitar(measure, 0, 0), 0))
     return sections
 
 
@@ -478,6 +523,25 @@ def _find_font_windows(face, bold, italic):
     return None
 
 
+# Font "liberi" con le STESSE metriche di quelli proprietari: su Linux fontconfig
+# risponde con questi quando si chiede Arial, Times New Roman, ecc. Anche lo
+# schermo (pango) e la misura del layout usano lo stesso sostituto, quindi nel
+# PDF sono interscambiabili. Chiave: nome richiesto; valore: famiglie accettate.
+_METRIC_ALIASES = {
+    'arial':           ('liberation sans', 'arimo', 'nimbus sans', 'helvetica'),
+    'helvetica':       ('liberation sans', 'arimo', 'nimbus sans'),
+    'times new roman': ('liberation serif', 'tinos', 'nimbus roman'),
+    'times':           ('liberation serif', 'tinos', 'nimbus roman'),
+    'courier new':     ('liberation mono', 'cousine', 'nimbus mono ps',
+                        'nimbus mono'),
+    'courier':         ('liberation mono', 'cousine', 'nimbus mono ps',
+                        'nimbus mono'),
+    'calibri':         ('carlito',),
+    'cambria':         ('caladea',),
+    'georgia':         ('gelasio',),
+}
+
+
 def _find_font_fontconfig(face, bold, italic):
     """(percorso, indice) tramite fontconfig (Linux e, se c'e', macOS)."""
     import shutil
@@ -494,8 +558,12 @@ def _find_font_fontconfig(face, bold, italic):
     if len(parts) < 3:
         return None
     path, fam, idx = parts[0], parts[1], parts[2]
-    # fc-match risponde sempre: si accetta solo la famiglia richiesta
-    if face.strip().lower() not in [f.strip().lower() for f in fam.split(',')]:
+    # fc-match risponde sempre: si accetta solo la famiglia richiesta oppure un
+    # suo sostituto con le stesse metriche (Arial -> Liberation Sans, ...)
+    want = face.strip().lower()
+    fams = [f.strip().lower() for f in fam.split(',')]
+    if want not in fams and not any(
+            f in _METRIC_ALIASES.get(want, ()) for f in fams):
         return None
     if not path.lower().endswith(('.ttf', '.ttc')):
         return None
@@ -1068,7 +1136,7 @@ def _export_reportlab(frame_obj, filepath):
             sections = _prepare_vector_sections(
                 frame_obj, info, avail_w_pt / _PX_TO_PT)
             gap_l = 10   # pixel logici tra una sezione e la successiva
-            reserve_pt = sum((h_l + gap_l) * _PX_TO_PT for _d, h_l in sections)
+            reserve_pt = sum((h_l + gap_l) * _PX_TO_PT for _d, h_l, _w in sections)
 
             # Adatta all'area disponibile mantenendo le proporzioni
             song_h_pt = max(1.0, avail_h_pt - reserve_pt)
@@ -1076,8 +1144,20 @@ def _export_reportlab(frame_obj, filepath):
             final_w = draw_w * scale_fit
             final_h = draw_h * scale_fit
 
-            # Centrato orizzontalmente, allineato in alto entro i margini
-            x = ml + (avail_w_pt - final_w) / 2.0
+            # Allineamento orizzontale. Brano, tastiere e diagrammi formano un
+            # unico blocco con lo stesso bordo sinistro. Le sezioni vettoriali
+            # vanno a capo sull'intera larghezza utile, quindi il blocco e'
+            # largo quanto il piu' largo tra brano e sezioni (mai oltre l'area
+            # utile): sia a sinistra sia centrato, nulla esce dal bordo destro.
+            #   - a sinistra (default): il blocco parte dal margine sinistro;
+            #   - al centro (_print_h_center): il blocco intero e' centrato.
+            k_sec = final_w / float(info.get('sw') or 1)
+            sec_w = max([w_l for _d, _h, w_l in sections] or [0]) * k_sec
+            block_w = min(avail_w_pt, max(final_w, sec_w))
+            if getattr(frame_obj, '_print_h_center', False):
+                x = ml + (avail_w_pt - block_w) / 2.0
+            else:
+                x = ml
             y = mb + avail_h_pt - final_h  # reportlab: y=0 è in basso
 
             # Testo vettoriale se possibile, con una prova a secco prima di
@@ -1118,12 +1198,12 @@ def _export_reportlab(frame_obj, filepath):
                 c.drawImage(tmp.name, x, y, width=final_w, height=final_h)
 
             # Sezioni vettoriali, con la stessa scala del brano (punti per
-            # pixel logico), allineate a sinistra del brano e ancorate al
-            # margine inferiore.
+            # pixel logico), con lo stesso bordo sinistro del brano (x) e
+            # ancorate al margine inferiore.
             if sections:
                 k = final_w / float(info.get('sw') or 1)
-                top = mb + sum((h_l + gap_l) * k for _d, h_l in sections)
-                for draw, h_l in sections:
+                top = mb + sum((h_l + gap_l) * k for _d, h_l, _w in sections)
+                for draw, h_l, _w in sections:
                     draw(_VectorDC(c, x, top, k), 0, 0)
                     top -= (h_l + gap_l) * k
 
