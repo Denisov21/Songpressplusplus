@@ -105,6 +105,16 @@ sudo apt install python3 python3-pip python3-venv fakeroot dpkg imagemagick
 > loginctl show-session "$(loginctl --no-legend list-sessions | awk -v u="$USER" '$3==u {print $1; exit}')" -p Type --value
 > ```
 
+> **🔤 Fonts for PDF export.** The `.deb` depends on `fonts-liberation`
+> (Liberation Sans, metric-compatible with Arial), so `apt` installs it
+> automatically. It is needed because on Linux Arial is normally missing: with
+> Liberation Sans available the song text is embedded in the PDF as true vector
+> text; without it the export falls back to a bitmap, with squeezed letters. If
+> you run from source, install it manually:
+> ```bash
+> sudo apt install fonts-liberation
+> ```
+
 ---
 
 ### Building the .deb package

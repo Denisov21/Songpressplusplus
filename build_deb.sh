@@ -212,9 +212,15 @@ HOMEPAGE="https://github.com/Denisov21/Songpressplusplus"
 # python3-pil è Pillow: serve al rendering dei glifi musicali SMP in stampa
 # (rasterizzazione del font FreeSerif via FreeType). È nei repo Debian/Ubuntu,
 # quindi va qui e NON tra le dipendenze solo-PyPI.
+# fonts-liberation fornisce Liberation Sans, il sostituto con le STESSE metriche
+# di Arial su Linux. Serve all'esportazione PDF: il testo del brano viene
+# incorporato come testo vettoriale solo se il file .ttf del font si trova;
+# senza Liberation Sans (e con Arial assente) si ripiega sul bitmap, con lettere
+# schiacciate. fonts-liberation2 e' la serie piu' recente, accettata in alternativa.
 DEPENDS="python3 (>= 3.12), python3-pip, python3-wxgtk4.0 | python3-wxpython4, \
 python3-requests, python3-reportlab, python3-markdown, python3-mistune, \
-python3-pypdf, python3-pil, python3-enchant, python3-docx, xdg-utils"
+python3-pypdf, python3-pil, python3-enchant, python3-docx, xdg-utils, \
+fonts-liberation | fonts-liberation2"
 
 # Dipendenze consigliate (installate da apt di default, ma non obbligatorie):
 #   - wl-clipboard  → fornisce wl-copy, usato per copiare l'immagine dello

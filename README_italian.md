@@ -106,6 +106,16 @@ sudo apt install python3 python3-pip python3-venv fakeroot dpkg imagemagick
 > loginctl show-session "$(loginctl --no-legend list-sessions | awk -v u="$USER" '$3==u {print $1; exit}')" -p Type --value
 > ```
 
+> **🔤 Font per l'esportazione PDF.** Il `.deb` dipende da `fonts-liberation`
+> (Liberation Sans, con le stesse metriche di Arial), quindi `apt` lo installa
+> automaticamente. Serve perché su Linux Arial di solito manca: con Liberation
+> Sans il testo del brano viene incorporato nel PDF come vero testo vettoriale;
+> senza, l'esportazione ripiega sul bitmap, con le lettere schiacciate. Se
+> esegui da sorgente, installalo a mano:
+> ```bash
+> sudo apt install fonts-liberation
+> ```
+
 ---
 
 ### Creazione del pacchetto .deb

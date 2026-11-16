@@ -282,6 +282,7 @@ Requires:       python3-Pillow
 Requires:       python3-docx
 Requires:       xdg-utils
 Requires:       bash
+Requires:       liberation-fonts
 REQ
 )
     RECOMMENDS=$(cat <<'REC'
@@ -313,6 +314,7 @@ Requires:       python3-pillow
 Requires:       python3-docx
 Requires:       xdg-utils
 Requires:       bash
+Requires:       (liberation-sans-fonts or liberation-fonts)
 REQ
 )
     RECOMMENDS=$(cat <<'REC'
