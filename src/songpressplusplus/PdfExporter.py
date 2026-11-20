@@ -542,35 +542,111 @@ _METRIC_ALIASES = {
 }
 
 
-def _find_font_fontconfig(face, bold, italic):
-    """(percorso, indice) tramite fontconfig (Linux e, se c'e', macOS)."""
+def _fc_match(pattern):
+    """(percorso, [famiglie minuscole], indice) di `fc-match pattern`, o None."""
     import shutil
     if not shutil.which('fc-match'):
         return None
-    pat = face + (':bold' if bold else '') + (':italic' if italic else '')
     try:
         out = subprocess.run(
-            ['fc-match', '-f', '%{file}\t%{family}\t%{index}', pat],
+            ['fc-match', '-f', '%{file}\t%{family}\t%{index}', pattern],
             capture_output=True, text=True, timeout=5).stdout
     except Exception:
         return None
     parts = out.split('\t')
     if len(parts) < 3:
         return None
-    path, fam, idx = parts[0], parts[1], parts[2]
-    # fc-match risponde sempre: si accetta solo la famiglia richiesta oppure un
-    # suo sostituto con le stesse metriche (Arial -> Liberation Sans, ...)
-    want = face.strip().lower()
-    fams = [f.strip().lower() for f in fam.split(',')]
-    if want not in fams and not any(
-            f in _METRIC_ALIASES.get(want, ()) for f in fams):
+    return (parts[0], [f.strip().lower() for f in parts[1].split(',')],
+            parts[2].strip())
+
+
+def _ttf_result(path, idx):
+    """(percorso, indice) se `path` e' un TrueType leggibile da reportlab."""
+    if not path or not path.lower().endswith(('.ttf', '.ttc')):
         return None
-    if not path.lower().endswith(('.ttf', '.ttc')):
+    if not os.path.isfile(path):
         return None
     try:
         return path, int(idx) & 0xFFFF
     except ValueError:
         return path, 0
+
+
+def _find_font_fontconfig(face, bold, italic):
+    """(percorso, indice) tramite fontconfig (Linux e, se c'e', macOS)."""
+    style = (':bold' if bold else '') + (':italic' if italic else '')
+    want = face.strip().lower()
+
+    # 1) Il font che fontconfig sceglie per `face`. Su Linux e' lo STESSO che
+    #    usa pango per misurare il brano, quindi (se e' un TrueType) si accetta
+    #    anche un sostituto (Arial -> Liberation Sans, ecc.): le metriche
+    #    coincidono con quelle del layout.
+    m = _fc_match(face + style)
+    if m is not None:
+        path, fams, idx = m
+        same = want in fams or any(
+            f in _METRIC_ALIASES.get(want, ()) for f in fams)
+        if same or sys.platform.startswith('linux'):
+            r = _ttf_result(path, idx)
+            if r:
+                return r
+
+    # 2) Il primo risultato non e' utilizzabile (tipicamente Nimbus Sans in
+    #    formato .otf/.pfb, che reportlab non legge): si prova ogni sostituto
+    #    con le stesse metriche (Liberation Sans, Arimo...), accettandolo solo
+    #    se fontconfig risponde proprio con quella famiglia.
+    for alias in _METRIC_ALIASES.get(want, ()):
+        m = _fc_match(alias + style)
+        if m is not None and alias in m[1]:
+            r = _ttf_result(m[0], m[2])
+            if r:
+                return r
+    return None
+
+
+# File dei font "liberi" metrici: stem in ordine Regular, Bold, Italic, BoldItalic
+_LINUX_FONT_FILES = {
+    'liberation sans': ('LiberationSans-Regular', 'LiberationSans-Bold',
+                        'LiberationSans-Italic', 'LiberationSans-BoldItalic'),
+    'arimo':           ('Arimo-Regular', 'Arimo-Bold',
+                        'Arimo-Italic', 'Arimo-BoldItalic'),
+    'liberation serif': ('LiberationSerif-Regular', 'LiberationSerif-Bold',
+                         'LiberationSerif-Italic', 'LiberationSerif-BoldItalic'),
+    'tinos':           ('Tinos-Regular', 'Tinos-Bold',
+                        'Tinos-Italic', 'Tinos-BoldItalic'),
+    'liberation mono': ('LiberationMono-Regular', 'LiberationMono-Bold',
+                        'LiberationMono-Italic', 'LiberationMono-BoldItalic'),
+    'cousine':         ('Cousine-Regular', 'Cousine-Bold',
+                        'Cousine-Italic', 'Cousine-BoldItalic'),
+}
+
+
+def _find_font_linux_files(face, bold, italic):
+    """(percorso, 0) cercando a mano i file dei sostituti metrici (Liberation,
+    Arimo...) nelle cartelle dei font di Linux. Ripiego quando fontconfig non
+    e' disponibile o risponde con un formato che reportlab non legge."""
+    if not sys.platform.startswith('linux'):
+        return None
+    want = face.strip().lower()
+    families = [want] + list(_METRIC_ALIASES.get(want, ()))
+    stems = {}
+    for fam in families:
+        names = _LINUX_FONT_FILES.get(fam)
+        if names:
+            stems[names[(1 if bold else 0) + (2 if italic else 0)].lower()
+                  + '.ttf'] = fam
+    if not stems:
+        return None
+    roots = ('/usr/share/fonts', '/usr/local/share/fonts',
+             '/usr/share/X11/fonts',
+             os.path.expanduser('~/.fonts'),
+             os.path.expanduser('~/.local/share/fonts'))
+    for root in roots:
+        for dirpath, _dirs, files in os.walk(root):
+            for fn in files:
+                if fn.lower() in stems:
+                    return os.path.join(dirpath, fn), 0
+    return None
 
 
 def _find_font_dirs(face, bold, italic):
@@ -603,7 +679,7 @@ def _get_rl_font(font):
             found = None
             if face:
                 for finder in (_find_font_windows, _find_font_fontconfig,
-                               _find_font_dirs):
+                               _find_font_linux_files, _find_font_dirs):
                     found = finder(face, bold, italic)
                     if found:
                         break
@@ -616,7 +692,13 @@ def _get_rl_font(font):
             result = None
         _FONT_CACHE[key] = result
     if _FONT_CACHE[key] is None:
-        raise _VectorUnsupported('font "%s" non trovato' % face)
+        why = ''
+        if sys.platform.startswith('linux'):
+            m = _fc_match(face + (':bold' if bold else '') +
+                          (':italic' if italic else ''))
+            why = ' [fc-match: %s]' % (m[0] if m else 'non disponibile')
+        raise _VectorUnsupported('font "%s"%s%s non trovato%s' % (
+            face, ' bold' if bold else '', ' italic' if italic else '', why))
     return _FONT_CACHE[key]
 
 

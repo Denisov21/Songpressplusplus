@@ -198,17 +198,18 @@ _DIRECTIVE_OPTION_HELP = {
     'print_options': {
         'pages':     "Pages per sheet: 1 or 2.",
         'cols':      "Columns per page: 1 or 2.",
-        'fit':       "Shrink if it exceeds the page (0 = off, 1 = on): "
-                     "reduces the content only when it does not fit, never enlarges it.",
-        'shrink':    "Shrink to fit the current page (0 = off, 1 = on): "
+        'shrink':    "Do not split verses and choruses across pages (0 = off, 1 = on): "
                      "avoids clipping at the bottom.",
-        'minmargin': "Minimum margin, in mm, used by Shrink (0-20).",
+        'minmargin': "Minimum margin, in mm, to recover space when "
+                     "\"Do not split\" is on (0-20).",
         'blank':     "Remove blank pages (0 = off, 1 = on).",
         'blankthr':  "Blank page threshold, in %: a page filled less than this "
                      "is considered blank (1-95).",
         'scale':     "Scale of the whole printed content, in % (50-200, default 100).",
         'pos':       "Horizontal position of the song on the page: 0 = left, "
                      "1 = centered (only with 1 column and 1 page per sheet). Optional.",
+        'colbreak':  "Shows (1) or hides (0) the \"column break\" marker between "
+                     "the two columns (only with 2 columns). Optional.",
         'kbd':       "Size of the chord keyboards, in %, for printing only (50-200). "
                      "Optional.",
         'paper':     "Paper size, as a numeric ID (3 = A4).",
@@ -228,10 +229,10 @@ _DIRECTIVE_VALUE_HELP = {
     'print_options': {
         'pages':    {'1': "One page per sheet.", '2': "Two pages per sheet."},
         'cols':     {'1': "One column per page.", '2': "Two columns per page."},
-        'fit':      {'0': "Do not shrink when the content exceeds the page.",
-                     '1': "Shrink when the content exceeds the page."},
-        'shrink':   {'0': "Do not shrink to fit the current page.",
-                     '1': "Shrink to fit the current page."},
+        'shrink':   {'0': "Verses and choruses may be split across pages.",
+                     '1': "Verses and choruses are not split across pages."},
+        'colbreak': {'0': "Column break marker hidden.",
+                     '1': "Column break marker shown."},
         'blank':    {'0': "Blank pages are kept.", '1': "Blank pages are removed."},
         'pos':      {'0': "Left, against the margin.", '1': "Centered on the page."},
         'orient':   {'1': "Portrait.", '2': "Landscape."},

@@ -2460,11 +2460,13 @@ The following controls are found in the **Formatting** tab of preferences and af
 
 ## Printing and Preview
 
-- **Print preview** — shows the preview with "Print options", "Page setup" and "Driver settings" buttons
+- **Print preview** — shows the page as it will be printed. In the top bar, besides the native buttons (**Print…**, first / previous / next / last page, zoom − and +), there are **Page setup…**, **Driver settings…**, **Print options…** and **Close**; at the bottom is the status bar (see *Automatic printer detection in the preview*). The window opens at 90% of the screen's work area.
 - **Print** — if the preference **Show print preview before printing** (the *General* tab in options) is enabled, the print preview is shown first; if disabled, the system print dialog opens (printer selection, number of copies, etc.) and printing starts after confirmation
-- **Page setup** — paper, orientation and margins (in mm)
+- **Page setup** — paper, orientation and margins (in mm). From the preview, confirming with OK recreates the preview with the new values
 
 > **Automatic selection handling** — the print preview automatically detects whether a text selection is active in the editor (`_print_scope = 'auto'`): if a selection exists, only that portion is printed; otherwise the entire document is printed. No manual configuration is needed.
+
+> **How the preview refreshes** — Confirming with **OK** in the *Print options* dialog (or in *Page setup*, or changing the orientation from *Driver settings*) closes the preview window and reopens it with the new values. With the 📌 **Pin** button on, the *Print options* dialog reopens by itself over the new preview: you can adjust one value after another and see the result right away.
 
 ### Print preferences (*Songpress++ Page* tab)
 
@@ -2478,21 +2480,28 @@ The following controls are found in the **Formatting** tab of preferences and af
 
 ### Print Options
 
-| Option                                         | Description                                                         |
-| ---------------------------------------------- | ------------------------------------------------------------------- |
-| Pages per sheet (1 / 2)                        | Selects how many logical pages to print on one physical sheet       |
-| Columns per page (1 / 2)                       | Distributes text across one or two columns                          |
-| Shrink if exceeds page                         | Reduces content only if it exceeds the page size (no upscaling)     |
-| Shrink to fit current page                     | Further reduces to avoid content being cut at the bottom            |
-| Don't replicate (leave right half blank)       | With 2 pages/sheet: leaves the second half blank instead of copying |
-| Remove blank pages                             | Removes nearly-empty logical pages from the print output            |
-| Blank page threshold (%)                       | Maximum page fill percentage below which a page is considered blank |
-| Scale (%)                                      | Enlarges or reduces the whole printed content (50–200%, default 100%) |
-| Position (Left / Center)                       | Horizontal position of the song on the page: against the left margin (default) or centered. Available only with **1 column** and **1 page per sheet**: otherwise the box is disabled |
-| Keyboard size (%)                              | Size of the chord keyboards **for printing only** (50–200%); starts from the Preferences value. The *Default* button resets the box to it |
-| Write page layout log (Diagnostics)            | Writes a log file with the layout parameters (see *Print diagnostics*); default off |
-| Open folder (Diagnostics)                      | Opens the folder containing the log file; the full path is shown next to it |
-| 📌 Pin                                          | Keeps the dialog open after OK, applying changes to the preview immediately |
+The **Print options** dialog (button in the preview bar) is organised in boxes on **two columns**, so it also fits 1366×768 screens. Settings that depend on another one (minimum margin, blank page threshold) are indented under the checkbox that enables them.
+
+| Box | Option | Description |
+| --- | ------ | ----------- |
+| **Pages per sheet** | 1 page / 2 pages | How many logical pages to print on one physical sheet. With **2 pages** the sheet is split in half (5 mm central gap, with a dotted separator line) and each half receives one page. A one-page song fills the left half and leaves the right one blank; in a longer song, if the last sheet has a single page, that page is repeated on the right too |
+| **Columns per page** | 1 column / 2 columns | Distributes text across one or two columns (8 mm between columns). With 2 columns `{column_break}` forces a jump to the next column |
+| **Page breaks** | Do not split verses and choruses across pages *(prevent bottom clipping)* | A block that does not fit at the bottom of the page moves whole to the next page instead of being cut; if the song exceeds the page by only a little, the margins are reduced first. See *What does "Do not split verses and choruses across pages" do?*. Default: off |
+| | Minimum margin to recover space (mm) | Floor below which margins never drop (0–20, default 5). Enabled only when the checkbox above is ticked |
+| **Advanced options** | Remove blank pages | Removes nearly-empty logical pages from the print output |
+| | Blank page threshold (%) | Maximum page fill percentage below which a page is removed (1–95, default 5). Enabled only with *Remove blank pages* |
+| | Position (Left / Center) | Horizontal position of the song on the page: against the left margin (default) or centered. Available only with **1 column** and **1 page per sheet**: otherwise the box is disabled and shows "Center" greyed out; your earlier choice is remembered and comes back when the box is enabled again |
+| **Scale** | Scale (%) | Enlarges or reduces the whole printed content (50–200%, default 100%) |
+| | **100%** button | Resets the scale to 100% |
+| | **Fit** button | Sets the largest scale (up to 100%) at which the song fits in the pages of the sheet without being cut. See *What does "Fit" do?* |
+| | Keyboard size (%) | Size of the chord keyboards **for printing only** (50–200%); starts from the Preferences value. The *Default* button resets the box to it. Enabled only if the song contains keyboards (`{taste:}` or `{fingering:}`) |
+| **Settings in the song** | Save in editor / Load from editor | Writes or reads back the `# {print_options: …}` line in the first line of the editor (see *Print settings stored in the song*) |
+| | Also save the keyboard size in the song | Decides whether the saved line also contains `kbd=`. Below, a status line with the ℹ icon confirms the result of *Save* and *Load* |
+| **Diagnostics** | Write page layout log | Writes a log file with the layout parameters (see *Print diagnostics*); default off |
+| | Open folder | Opens the folder containing the log file; the full path is shown next to it |
+| *(bottom)* | 📌 Pin | Keeps the dialog open after OK, applying changes to the preview immediately |
+
+> **Removed options** — *Shrink if exceeds page* (`fit`) and *Don't replicate* (`nomirror`) no longer exist. If the song is wider than the available space (the column, or half a sheet with 2 pages per sheet), printing always shrinks it by itself in width; the right half with 2 pages per sheet follows the rule described in the *Pages per sheet* row. Songs that still contain these keys in the `print_options` line keep being read (see below).
 
 #### Print diagnostics
 
@@ -2500,7 +2509,7 @@ At the bottom of the **Print Options** dialog is the **Diagnostics** section, us
 
 - **Write page layout log** — when on, the file `songpress_print_debug.log` is written on every preview/print. It records the layout parameters (shrink on, block-aware layout, columns, two pages per sheet, pages per sheet, vertical scale, offsets, clip area), the **block breaks** and the **clip regions** of each page. Default: off.
 - **Open folder** — opens the log folder. The full path of the file is shown in grey next to the button.
-- The file is in the system temporary folder: `%TEMP%` on Windows, `/tmp` (or `$TMPDIR`) on Linux and macOS.
+- The file is in the system temporary folder: `/tmp` (or `$TMPDIR`) on Linux and macOS, `%TEMP%` on Windows when running from source. On Windows with Songpress++ installed through the installer, the log is instead in the `logs` folder inside the installation folder, so on the **same drive** as the installation.
 
 The log is for diagnostics only: leaving it off does not affect printing.
 
@@ -2511,19 +2520,17 @@ The `{new_page}` directive in the text forces a new logical page during printing
 The dialog settings can be saved **inside the song**, as a comment line at the **first line** of the editor:
 
 ```
-# {print_options: pages=1; cols=1; fit=0; shrink=0; minmargin=0; nomirror=0; blank=1; blankthr=5; scale=100; pos=1; kbd=70; paper=3; orient=1; margins=5,5,5,5}
+# {print_options: pages=1; cols=1; shrink=0; minmargin=0; blank=1; blankthr=5; scale=100; pos=1; kbd=70; paper=3; orient=1; margins=5,5,5,5}
 ```
 
-The line starts with `#`, so it does not appear in the preview or in print. In the **Settings in the song** section of the dialog, **Save in editor** writes (or updates) the line and **Load from editor** reads the values back into the dialog; they are applied by pressing **OK**. The line is read **only if it is the first line** of the song.
+The line starts with `#`, so it does not appear in the preview or in print. In the **Settings in the song** section of the dialog, **Save in editor** writes (or updates) the line — as a single action, undoable with *Undo* — and **Load from editor** reads the values back into the dialog; they are applied by pressing **OK**. The line is read **only if it is the first line** of the song. Paper size, orientation and margins have no controls in the dialog: the line carries them, and they are applied with **OK** together with the rest (the *Fit* button already uses the loaded ones).
 
 | Key         | Values  | Meaning                                                    |
 | ----------- | ------- | ---------------------------------------------------------- |
 | `pages`     | 1–2     | Pages per sheet                                            |
 | `cols`      | 1–2     | Columns per page                                           |
-| `fit`       | 0–1     | Shrink if exceeds page                                     |
-| `shrink`    | 0–1     | Shrink to fit current page                                 |
-| `minmargin` | 0–20    | Minimum margin (mm) used by *Shrink*                       |
-| `nomirror`  | 0–1     | Don't replicate (leave right half blank)                   |
+| `shrink`    | 0–1     | Do not split verses and choruses across pages              |
+| `minmargin` | 0–20    | Minimum margin (mm) to recover space                       |
 | `blank`     | 0–1     | Remove blank pages                                         |
 | `blankthr`  | 1–95    | Blank page threshold (%)                                   |
 | `scale`     | 50–200  | Scale (%)                                                  |
@@ -2532,6 +2539,9 @@ The line starts with `#`, so it does not appear in the preview or in print. In t
 | `paper`     | 0–200   | Paper size                                                 |
 | `orient`    | 1–2     | Orientation (1 = portrait, 2 = landscape)                  |
 | `margins`   | 4 numbers 0–100 | Margins in mm: top, bottom, left, right            |
+| `nomirror`  | 0–1     | **Obsolete** — accepted and ignored (old songs); *Save in editor* no longer writes it |
+
+> **`fit` key (removed)** — It used to be *Shrink if exceeds page*. If an old song contains it, it is ignored and the syntax check reports it as an unknown key (warning); *Save in editor* drops it when rewriting the line.
 
 **Position (`pos`).** With `pos=1` the song is centered on the page; with `pos=0` (or without the key) it stays against the left margin. Centering uses the song's **real width**, including the chord keyboards at the bottom of the page (at the keyboard size chosen for printing), and applies to each part of the song separated by `{new_page}`. It applies only with `cols=1` and `pages=1`: with 2 columns or 2 pages per sheet the key is ignored. The key is optional and is not reported when missing; the syntax check reports a value outside 0–1.
 
@@ -2539,7 +2549,20 @@ The line starts with `#`, so it does not appear in the preview or in print. In t
 
 **Saving it in the song or not.** In the **Settings in the song** section, the **Also save the keyboard size in the song** checkbox decides whether *Save in editor* also writes `kbd=`. It is enabled **only if the song contains keyboards** (`{taste:}` or `{fingering:}`; comment lines do not count): without keyboards the size is irrelevant, and the checkbox and the field stay disabled. It ticks itself when you set the size to a value different from the Preferences; the *Default* button clears it. With the checkbox empty, the saved line has no `kbd` (and an existing `kbd` is removed).
 
-The syntax check reports unknown keys, out-of-range values (e.g. `kbd=20`) and missing keys, except for `kbd` and `pos`.
+**Load from editor.** An out-of-range value is ignored and that field stays as it is; if `kbd` is missing, the keyboard size goes back to the Preferences one (and the *Also save…* checkbox is cleared). If the line does not follow the format (missing `:` or `}`, or text after the `}`) nothing is loaded and the list of problems is shown; if the problems are only warnings, the valid values are loaded and the list is shown anyway. Pressing **OK** applies and saves the loaded settings.
+
+**Syntax check.** The check (*Tools → Check Syntax*) examines the `print_options` line and reports:
+
+| Problem | Severity |
+| ------- | -------- |
+| Missing `:` after `print_options`, or missing closing `}` | Error |
+| Field not in `key=value` form | Error |
+| Non-numeric or out-of-range value (e.g. `kbd=20`, `scale=300`); `margins` that are not 4 numbers 0–100 | Error |
+| Unknown key (e.g. the old `fit`) | Warning |
+| Repeated key | Warning |
+| Text after the `}` | Warning |
+| Missing keys — all except the optional `kbd`, `pos` and `nomirror` | Warning |
+| `print_options` line that is not the first line of the song ("this line is ignored") | Warning |
 
 ### Persistence of Print Options
 
@@ -2562,10 +2585,8 @@ Values are stored in the `/PageSetup` section of the user configuration (`~/.Son
 | Orientation                | `orientation`          | Portrait   |
 | Pages per sheet            | `two_pages_per_sheet`  | 1 page     |
 | Columns per page           | `columns_per_page`     | 1 column   |
-| Shrink if exceeds page     | `fit_to_page`          | off        |
-| Shrink to fit current page | `shrink_to_fit`        | off        |
-| Min margin for auto-shrink (mm) | `min_margin_shrink` | 5 (0–20) |
-| Don't replicate (right half blank) | `no_mirror_right` | off     |
+| Do not split verses and choruses across pages | `shrink_to_fit` | off |
+| Min margin to recover space (mm) | `min_margin_shrink` | 5 (0–20) |
 | Remove blank pages         | `remove_blank_pages`   | off        |
 | Blank page threshold (%)   | `blank_page_threshold` | 5          |
 | 📌 Pin button state         | `print_options_pinned` | off        |
@@ -2576,6 +2597,8 @@ Values are stored in the `/PageSetup` section of the user configuration (`~/.Son
 
 > **Keyboard size (print)** — Like Scale, the **Keyboard size** value in the dialog is not saved in the configuration: at every start, print uses the Preferences size. To keep it for a song, use **Save in editor** (key `kbd`).
 
+> **Removed options** — *Shrink if exceeds page* and *Don't replicate* no longer exist: any `fit_to_page` and `no_mirror_right` values left in the configuration by earlier versions are deleted.
+
 > **Note** — Values read from the configuration are validated: if a key is missing, unreadable, or out of range (for example a column count other than 1 or 2, or a blank page threshold outside the 1–95 range), the default value is used silently.
 
 ### Print Settings and Explanations
@@ -2583,17 +2606,29 @@ Values are stored in the `/PageSetup` section of the user configuration (`~/.Son
 ![Songpress++ Page Setup](./img/GUIDE/ImpostaPagina_en.png)
 ![Songpress++ Print Options](./img/GUIDE/OpzioniDiStampa_en.png)
 
-**What is "Minimum margin for auto-shrink (mm)"?**
+**What does "Do not split verses and choruses across pages" do?**
 
-This is a control parameter for the Shrink to fit function, which activates when the option **"Shrink to fit current page (avoid bottom cut)"** is checked.
+Without this option the page is cut at the usable height of the sheet, even in the middle of a verse. With the option on (and **1 column**), a block — verse, chorus, grid, image, the keyboards section at the bottom — that does not fit whole at the bottom of the page moves **whole** to the next page; the font is **not** shrunk to force everything into a single page. For each segment of the song (separated by `{new_page}`) Songpress++ measures how much content overflows beyond the bottom of its last page and reasons as follows:
 
-How the logic works: Songpress++ measures, for each segment of the song (separated by `{new_page}`), how much content overflows beyond the bottom of its last page, and attempts to recover exactly that space in two steps:
+**First step** — if the overflow is small, it reduces the top and bottom margins just enough to recover it, distributing the reduction proportionally to the available headroom of each (not necessarily 50/50: if one margin is already close to the minimum, it is reduced less than the other). Margins never drop below the **Minimum margin to recover space** (0–20 mm, default 5): if the user-set margin is, for example, 20 mm, it can be compressed down to 5 mm, but not zeroed.
 
-**First step** — reduces the top and bottom margins, distributing the reduction proportionally to the available headroom of each (not necessarily 50/50: if one margin is already close to the minimum, it is reduced less than the other). The reduction stops as soon as the overflow is recovered, or when both margins have reached the minimum value configured by this SpinCtrl. The minimum can be set from 0 to 20 mm. If the user-set margin is, for example, 20 mm, it can be automatically compressed down to 5 mm (default). This prevents the auto-reduction from completely zeroing out the margins.
+**Second step** — if the margins are not enough:
 
-**Second step** — scales the content (shrinks text/chords), only if margin reduction alone was not sufficient. The scale factor is calculated separately for each segment and the most restrictive one is applied, ensuring no segment is clipped.
+- with **1 column** nothing else is touched: the block that does not fit goes to the next page. Only if a **single block is taller than a page** are the margins brought to the minimum and, if that is still not enough, the text is shrunk (down to half its size);
+- with **2 columns** (where splitting is handled by the Renderer) the margins are brought to the minimum and then the content is scaled just enough to avoid any clipping; the factor is calculated for each segment and the most restrictive one is applied.
 
-In practice: the value (default 5 mm) represents the floor below which margins never drop during auto-reduction. The higher the value, the less aggressive the margin compression (and the sooner text scaling begins). The control is disabled when the Shrink if exceeds page checkbox is off, and re-enables automatically when it is turned on.
+The higher the minimum margin, the less aggressive the margin compression (and the sooner text shrinking begins). The margin control is disabled when the checkbox is off, and re-enables automatically when it is ticked.
+
+Even with the option off, the page cut never falls between the `{beats_time:}` numbers and their chord line, nor in the middle of a row of keyboards: it moves above them, so the numbers stay on the same page as their chord.
+
+**What does "Fit" do?**
+
+The **Fit** button (next to *100%*) sets the **Scale** to the largest value, **up to 100%**, at which the song fits in the pages of the sheet without being cut: 1 page, or 2 with *2 pages per sheet* (each part of the song separated by `{new_page}` may take 2 pages); with 2 columns each page has two. The calculation uses the settings **currently shown in the dialog** — pages per sheet, columns, keyboard size, *Do not split verses and choruses*, and also the paper size, orientation and margins loaded with *Load from editor* but not yet applied — and measures the song with the real pagination, so it accounts for the space lost with block-based page breaks. The `{beats_time:}` numbers stay above their chords.
+
+- If the song is wider than the available space (half a sheet with 2 pages per sheet, one column with 2 columns), printing already shrinks it by itself in width: if that is enough, the scale stays at **100%**.
+- The value is rounded down to a whole number.
+- If the song does not fit even at **50%**, the scale is set to 50% and a message warns that the rest continues on the next page.
+- Like every *Scale* value, it is not saved (see *Persistence of Print Options*).
 
 **What is "Blank page threshold (%)"?**
 
@@ -2644,7 +2679,7 @@ When the user confirms with OK, Songpress++ automatically propagates the readabl
 
 ### Automatic printer detection in the preview
 
-The print preview status bar displays four indicators that read the **actual** settings of the selected printer, not just the values set by wx:
+Besides the page number, the print preview status bar displays four indicators that read the **actual** settings of the selected printer, not just the values set by wx:
 
 | Indicator | Possible values |
 | --------- | --------------- |
@@ -2655,19 +2690,20 @@ The print preview status bar displays four indicators that read the **actual** s
 
 **How detection works (Windows)**
 
-On Windows, color detection uses three sources in cascade, each activated only if the previous one produced no result; duplex detection uses only source 1. On macOS and Linux, the value returned by `wx.PrintData` is used instead.
+On Windows, duplex, color and orientation are read from the native driver using two sources in cascade: the second is used only if the first produced no result. On macOS and Linux, the value returned by `wx.PrintData` is used directly.
 
 | Source | API | When used |
 | ------ | --- | --------- |
 | **1 — DEVMODE** | `win32print.GetPrinter` level 2 | Always first: reflects the user's choice in the driver panel |
-| **2 — Hardware capability** | `win32print.GetPrinterCaps(DC_COLORDEVICE)` | Only if `dmColor` is absent: indicates whether the printer is physically capable of color |
-| **3 — wx fallback** | `wx.PrintData.GetColour()` | Only if both previous sources fail |
+| **2 — wx fallback** | `wx.PrintData` (`GetDuplex()`, `GetColour()`, `GetOrientation()`) | If `win32print` is unavailable, the read fails, or the DEVMODE does not report the field |
 
 | Field | Values |
 | ----- | ------ |
 | `DEVMODE.dmDuplex` | `1` = simplex · `2` = duplex long-edge · `3` = duplex short-edge |
 | `DEVMODE.dmColor` | `1` = monochrome (`DMCOLOR_MONOCHROME`) · `2` = color (`DMCOLOR_COLOR`) |
-| `DC_COLORDEVICE` | `0` = hardware B/W only (absolute certainty) · `1` = hardware capable of color |
+| `DEVMODE.dmOrientation` | `1` = portrait · `2` = landscape |
+
+With **Live update** on (see *Print preferences*) the indicators are re-read every 1.5 seconds; otherwise they are read once when the preview opens and after the *Driver settings* are closed.
 
 **Reliability by printer type**
 
@@ -2677,10 +2713,10 @@ On Windows, color detection uses three sources in cascade, each activated only i
 | Network printer with native driver installed | ✅ yes | ✅ yes |
 | PDF printer (Microsoft Print to PDF, PDFCreator) | ⚠️ depends | ⚠️ depends |
 | Network printer via IPP without native driver (generic TCP/IP port only) | ❌ often no | ❌ often no |
-| B/W-only printer that does not expose `dmColor` in DEVMODE | ✅ yes | ✅ yes (via `DC_COLORDEVICE`) |
+| B/W-only printer that does not expose `dmColor` in DEVMODE | ✅ yes | ⚠️ wx value only |
 | macOS / Linux | ⚠️ wx value only | ⚠️ wx value only |
 
-> **Note** — If `win32print` is unavailable or a global error occurs, both indicators automatically fall back to the value provided by `wx.PrintData`. The `DC_COLORDEVICE` source is wrapped in its own `try/except`: if `GetPrinterCaps` is not supported by the driver, the fallback chain continues to wx without interrupting detection.
+> **Note** — If `win32print` is unavailable or an error occurs, the indicators automatically fall back to the value provided by `wx.PrintData`, without interrupting detection.
 
 ---
 

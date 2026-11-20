@@ -2076,9 +2076,32 @@ class SongDecorator(object):
             col_gap = getattr(self.s, '_col_gap', 20)
             n_cols  = getattr(self.s, '_num_cols_used', 1)
             song_h  = self.s.GetTotalHeight()
+            # L'etichetta sta sopra la prima riga delle colonne, come quella di
+            # «interruzione di pagina»: se il primo accordo di una colonna ha i
+            # numeri dei battiti ({beats_time}) che sporgono sopra il blocco,
+            # sale sopra di essi, cosi' non li copre e non viene tagliata.
+            lbl_y = int(self.s.marginTop) - 6
+            for _b in self.s.boxes:
+                if (isinstance(_b, SongBlock) and getattr(_b, 'drawBlock', False)
+                        and _b.y == 0):
+                    _by = self.s.marginTop + _b.y - self.firstBlockOffsetY
+                    _bt = self._BlockBeatsTop(_b, _by)
+                    if _bt is not None:
+                        lbl_y = min(lbl_y, int(_bt) - 3)
+            lbl_y = max(0, lbl_y)
+            self.dc.SetFont(wx.Font(7, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_ITALIC,
+                                    wx.FONTWEIGHT_NORMAL, False, "Arial"))
+            lbl = "———  interruzione di colonna  ———"
+            lw, lh = self.dc.GetTextExtent(lbl)
+            # Se non c'e' spazio sopra la banda dei battiti (l'etichetta toccherebbe
+            # il bordo alto e starebbe sulla stessa riga dei numeri), la si sposta
+            # tutta a SINISTRA della linea di separazione: cosi' non attraversa i
+            # numeri dei battiti del primo accordo della colonna di destra.
+            lbl_no_room = (lbl_y - lh) < 0
+            lbl_ty = max(0, lbl_y - lh)
             for ci in range(1, n_cols):
                 sep_x = int(self.s.marginLeft + ci * (col_w + col_gap) - col_gap // 2)
-                sep_y1 = int(self.s.marginTop)
+                sep_y1 = lbl_ty + lh
                 sep_y2 = int(self.s.marginTop + song_h)
                 pen = wx.Pen(wx.Colour(100, 100, 220), 1, wx.PENSTYLE_SHORT_DASH)
                 self.dc.SetPen(pen)
@@ -2087,9 +2110,9 @@ class SongDecorator(object):
                 self.dc.SetFont(wx.Font(7, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_ITALIC,
                                         wx.FONTWEIGHT_NORMAL, False, "Arial"))
                 self.dc.SetTextForeground(wx.Colour(100, 100, 220))
-                lbl = "———  interruzione di colonna  ———"
-                lw, lh = self.dc.GetTextExtent(lbl)
-                self.dc.DrawText(lbl, sep_x - lw // 2, sep_y1)
+                self.dc.SetBackgroundMode(wx.TRANSPARENT)
+                lbl_x = (sep_x - lw - 4) if lbl_no_room else (sep_x - lw // 2)
+                self.dc.DrawText(lbl, lbl_x, lbl_ty)
                 self.dc.SetTextForeground(wx.BLACK)
 
         for block in self.s.boxes:

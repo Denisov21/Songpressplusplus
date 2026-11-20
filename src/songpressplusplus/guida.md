@@ -2467,11 +2467,13 @@ I seguenti controlli si trovano nella scheda **Formattazione** delle preferenze 
 
 ## Stampa e anteprima
 
-- **Anteprima di stampa** — mostra l'anteprima con i pulsanti «Opzioni di stampa», «Impostazione pagina» e «Impostazioni driver»
+- **Anteprima di stampa** — mostra la pagina come verrà stampata. Nella barra in alto, oltre ai pulsanti nativi (**Stampa…**, prima / precedente / successiva / ultima pagina, zoom − e +), ci sono **Impostazione pagina…**, **Impostazioni driver…**, **Opzioni di stampa…** e **Chiudi**; in basso la barra di stato (vedi *Rilevamento automatico della stampante nell'anteprima*). La finestra si apre al 90% dell'area di lavoro dello schermo.
 - **Stampa** — se la preferenza **Mostra anteprima di stampa prima di stampare** (scheda *Generale* delle opzioni) è attiva, viene mostrata prima l'anteprima di stampa; se è disattivata, viene aperto il dialogo di stampa del sistema (selezione stampante, numero di copie, ecc.) e la stampa parte dopo la conferma
-- **Impostazione pagina** — carta, orientamento e margini (in mm)
+- **Impostazione pagina** — carta, orientamento e margini (in mm). Dall'anteprima, confermando con OK, l'anteprima viene ricreata con i nuovi valori
 
 > **Gestione automatica della selezione** — l'anteprima di stampa rileva automaticamente se è attiva una selezione di testo nell'editor (`_print_scope = 'auto'`): se c'è una selezione, viene stampata solo quella; altrimenti viene stampato l'intero documento. Non è necessaria alcuna impostazione manuale.
+
+> **Come si aggiorna l'anteprima** — Confermando con **OK** il dialogo *Opzioni di stampa* (o l'*Impostazione pagina*, o un cambio di orientamento dalle *Impostazioni driver*), la finestra di anteprima viene chiusa e riaperta con i nuovi valori. Con il pulsante 📌 **Pin** attivo il dialogo *Opzioni di stampa* si riapre da solo sopra la nuova anteprima: si può così regolare un valore dopo l'altro, osservando subito il risultato.
 
 ### Preferenze di stampa (scheda *Pagina Songpress++*)
 
@@ -2485,21 +2487,28 @@ I seguenti controlli si trovano nella scheda **Formattazione** delle preferenze 
 
 ### Opzioni di stampa
 
-| Opzione                                              | Descrizione                                                              |
-| ---------------------------------------------------- | ------------------------------------------------------------------------ |
-| Pagine per foglio (1 / 2)                            | Seleziona quante pagine logiche stampare su un foglio fisico             |
-| Colonne per pagina (1 / 2)                           | Distribuisce il testo su una o due colonne                               |
-| Riduci se eccede la pagina                           | Riduce il contenuto solo se eccede la pagina (senza ingrandimento)       |
-| Comprimi per adattare alla pagina corrente           | Riduce ulteriormente per evitare che il contenuto venga tagliato in basso|
-| Non replicare (lascia metà destra vuota)             | Con 2 pagine/foglio: lascia la seconda metà vuota invece di copiare     |
-| Rimuovi pagine vuote                                 | Rimuove le pagine logiche quasi vuote dall'output di stampa              |
-| Soglia pagina vuota (%)                              | Percentuale massima di pagina occupata sotto cui la pagina viene rimossa |
-| Scala (%)                                            | Ingrandisce o riduce l'intero contenuto stampato (50–200%, predefinito 100%) |
-| Posizione (Sinistra / Centrale)                      | Posizione orizzontale del brano nella pagina: contro il margine sinistro (predefinito) oppure centrato. Disponibile solo con **1 colonna** e **1 pagina per foglio**: negli altri casi la casella è disattivata |
-| Dimensione tastiere (%)                              | Dimensione delle tastiere degli accordi **solo in stampa** (50–200%); parte dal valore delle Preferenze. Il pulsante *Predefinito* ci riporta la casella |
-| Scrivi log del layout di pagina (Diagnostica)        | Scrive un file di log con i parametri di impaginazione (vedi *Diagnostica di stampa*); predefinito disattivo |
-| Apri cartella (Diagnostica)                          | Apre la cartella che contiene il file di log; accanto è mostrato il percorso completo |
-| 📌 Pin                                                | Mantiene aperto il dialogo dopo OK, applicando subito le modifiche all'anteprima |
+Il dialogo **Opzioni di stampa** (pulsante nella barra dell'anteprima) è organizzato in riquadri su **due colonne**, così da entrare anche negli schermi 1366×768. Le impostazioni che dipendono da un'altra (margine minimo, soglia pagina vuota) sono rientrate sotto la casella che le abilita.
+
+| Riquadro | Opzione | Descrizione |
+| -------- | ------- | ----------- |
+| **Pagine per foglio** | 1 pagina / 2 pagine | Quante pagine logiche stampare su un foglio fisico. Con **2 pagine** il foglio è diviso a metà (5 mm di spazio centrale, con una linea tratteggiata di separazione) e ogni metà riceve una pagina. Un brano di una sola pagina occupa la metà sinistra e lascia vuota la destra; in un brano più lungo, se l'ultimo foglio ha una sola pagina, questa viene ripetuta anche a destra |
+| **Colonne per pagina** | 1 colonna / 2 colonne | Distribuisce il testo su una o due colonne (8 mm tra le colonne). Con 2 colonne `{column_break}` forza il passaggio alla colonna successiva |
+| **Interruzioni di pagina** | Non spezzare strofe e ritornelli tra le pagine *(evita il taglio in basso)* | Un blocco che non entra in fondo alla pagina passa per intero alla successiva invece di essere tagliato; se il brano sfora di poco si riducono prima i margini. Vedi *Cosa fa «Non spezzare strofe e ritornelli tra le pagine»?*. Predefinito: disattivo |
+| | Margine minimo per recuperare spazio (mm) | Limite sotto il quale i margini non scendono mai (0–20, predefinito 5). Attivo solo se la casella precedente è spuntata |
+| **Opzioni avanzate** | Rimuovi pagine vuote | Rimuove le pagine logiche quasi vuote dall'output di stampa |
+| | Soglia pagina vuota (%) | Percentuale massima di pagina occupata sotto cui la pagina viene rimossa (1–95, predefinito 5). Attivo solo con *Rimuovi pagine vuote* |
+| | Posizione (Sinistra / Centrale) | Posizione orizzontale del brano nella pagina: contro il margine sinistro (predefinito) oppure centrato. Disponibile solo con **1 colonna** e **1 pagina per foglio**: negli altri casi la casella è disattivata e mostra «Centrale» in grigio; la scelta fatta in precedenza viene ricordata e riappare quando la casella torna attiva |
+| **Scala** | Scala (%) | Ingrandisce o riduce l'intero contenuto stampato (50–200%, predefinito 100%) |
+| | Pulsante **100%** | Riporta la scala a 100% |
+| | Pulsante **Adatta** | Imposta la scala più alta (al massimo 100%) con cui il brano entra nelle pagine del foglio senza essere tagliato. Vedi *Cosa fa «Adatta»?* |
+| | Dimensione tastiere (%) | Dimensione delle tastiere degli accordi **solo in stampa** (50–200%); parte dal valore delle Preferenze. Il pulsante *Predefinito* ci riporta la casella. Attiva solo se il brano contiene tastiere (`{taste:}` o `{fingering:}`) |
+| **Impostazioni nel brano** | Salva nell'editor / Carica dall'editor | Scrive o rilegge la riga `# {print_options: …}` nella prima riga dell'editor (vedi *Impostazioni di stampa nel brano*) |
+| | Salva anche la dimensione delle tastiere nel brano | Decide se la riga salvata contiene anche `kbd=`. Sotto, una riga di stato con l'icona ℹ conferma l'esito di *Salva* e *Carica* |
+| **Diagnostica** | Scrivi log del layout di pagina | Scrive un file di log con i parametri di impaginazione (vedi *Diagnostica di stampa*); predefinito disattivo |
+| | Apri cartella | Apre la cartella che contiene il file di log; accanto è mostrato il percorso completo |
+| *(in basso)* | 📌 Pin | Mantiene aperto il dialogo dopo OK, applicando subito le modifiche all'anteprima |
+
+> **Opzioni rimosse** — *Riduci se eccede la pagina* (`fit`) e *Non replicare* (`nomirror`) non esistono più. Se il brano è più largo dello spazio disponibile (la colonna, o metà foglio con 2 pagine per foglio) la stampa lo riduce sempre da sola in larghezza; la metà destra con 2 pagine per foglio segue la regola descritta nella riga *Pagine per foglio*. I brani che contengono ancora queste chiavi nella riga `print_options` continuano a essere letti (vedi sotto).
 
 #### Diagnostica di stampa
 
@@ -2507,7 +2516,7 @@ In fondo al dialogo **Opzioni di stampa** c'è la sezione **Diagnostica**, utile
 
 - **Scrivi log del layout di pagina** — se attiva, a ogni anteprima/stampa viene scritto il file `songpress_print_debug.log`. Registra i parametri di impaginazione (riduzione attiva, impaginazione per blocchi, colonne, due pagine per foglio, pagine per foglio, scala verticale, offset, area di ritaglio), i **salti di blocco** e le **regioni di ritaglio** di ogni pagina. Predefinito: disattivo.
 - **Apri cartella** — apre la cartella del log. Il percorso completo del file è mostrato in grigio accanto al pulsante.
-- Il file si trova nella cartella temporanea del sistema: `%TEMP%` su Windows, `/tmp` (o `$TMPDIR`) su Linux e macOS.
+- Il file si trova nella cartella temporanea del sistema: `/tmp` (o `$TMPDIR`) su Linux e macOS, `%TEMP%` su Windows quando si avvia da sorgente. Su Windows con Songpress++ installato tramite l'installer il log è invece nella cartella `logs` della cartella di installazione, quindi sulla **stessa unità** dell'installazione.
 
 Il log serve solo per la diagnostica: lasciarlo disattivato non influisce sulla stampa.
 
@@ -2518,19 +2527,17 @@ La direttiva `{new_page}` nel testo forza una nuova pagina logica durante la sta
 Le impostazioni del dialogo possono essere salvate **dentro il brano**, in una riga di commento come **prima riga** dell'editor:
 
 ```
-# {print_options: pages=1; cols=1; fit=0; shrink=0; minmargin=0; nomirror=0; blank=1; blankthr=5; scale=100; pos=1; kbd=70; paper=3; orient=1; margins=5,5,5,5}
+# {print_options: pages=1; cols=1; shrink=0; minmargin=0; blank=1; blankthr=5; scale=100; pos=1; kbd=70; paper=3; orient=1; margins=5,5,5,5}
 ```
 
-La riga comincia con `#`, quindi non compare né in anteprima né in stampa. Nella sezione **Impostazioni nel brano** del dialogo, **Salva nell'editor** scrive (o aggiorna) la riga e **Carica dall'editor** rilegge i valori nel dialogo; si applicano premendo **OK**. La riga viene letta **solo se è la prima** del brano.
+La riga comincia con `#`, quindi non compare né in anteprima né in stampa. Nella sezione **Impostazioni nel brano** del dialogo, **Salva nell'editor** scrive (o aggiorna) la riga — in un'unica azione, annullabile con *Annulla* — e **Carica dall'editor** rilegge i valori nel dialogo; si applicano premendo **OK**. La riga viene letta **solo se è la prima** del brano. Formato carta, orientamento e margini non hanno controlli nel dialogo: la riga li porta con sé e vengono applicati con **OK** insieme al resto (il pulsante *Adatta* usa già quelli caricati).
 
 | Chiave      | Valori  | Significato                                                |
 | ----------- | ------- | ---------------------------------------------------------- |
 | `pages`     | 1–2     | Pagine per foglio                                          |
 | `cols`      | 1–2     | Colonne per pagina                                         |
-| `fit`       | 0–1     | Riduci se eccede la pagina                                 |
-| `shrink`    | 0–1     | Comprimi per adattare alla pagina corrente                 |
-| `minmargin` | 0–20    | Margine minimo (mm) usato da *Comprimi*                    |
-| `nomirror`  | 0–1     | Non replicare (lascia vuota la metà destra)                |
+| `shrink`    | 0–1     | Non spezzare strofe e ritornelli tra le pagine             |
+| `minmargin` | 0–20    | Margine minimo (mm) per recuperare spazio                  |
 | `blank`     | 0–1     | Rimuovi pagine vuote                                       |
 | `blankthr`  | 1–95    | Soglia pagina vuota (%)                                    |
 | `scale`     | 50–200  | Scala (%)                                                  |
@@ -2539,6 +2546,9 @@ La riga comincia con `#`, quindi non compare né in anteprima né in stampa. Nel
 | `paper`     | 0–200   | Formato carta                                              |
 | `orient`    | 1–2     | Orientamento (1 = verticale, 2 = orizzontale)              |
 | `margins`   | 4 numeri 0–100 | Margini in mm: alto, basso, sinistra, destra        |
+| `nomirror`  | 0–1     | **Obsoleta** — accettata e ignorata (brani vecchi); *Salva nell'editor* non la scrive più |
+
+> **Chiave `fit` (rimossa)** — Era *Riduci se eccede la pagina*. Se un vecchio brano la contiene, viene ignorata e il controllo sintassi la segnala come chiave sconosciuta (avviso); *Salva nell'editor* la elimina riscrivendo la riga.
 
 **Posizione (`pos`).** Con `pos=1` il brano viene centrato nella pagina, con `pos=0` (o senza la chiave) resta contro il margine sinistro. La centratura usa la **larghezza reale** del brano, comprese le tastiere degli accordi in fondo alla pagina (con la dimensione tastiere scelta per la stampa), e vale per ogni parte del brano separata da `{new_page}`. Si applica solo con `cols=1` e `pages=1`: con 2 colonne o 2 pagine per foglio la chiave viene ignorata. La chiave è facoltativa e non genera segnalazioni se manca; fuori da 0–1 il controllo della sintassi la segnala.
 
@@ -2546,7 +2556,20 @@ La riga comincia con `#`, quindi non compare né in anteprima né in stampa. Nel
 
 **Salvarla nel brano o no.** Nella sezione **Impostazioni nel brano** la casella **Salva anche la dimensione delle tastiere nel brano** decide se *Salva nell'editor* scrive anche `kbd=`. È attiva **solo se il brano contiene tastiere** (`{taste:}` o `{fingering:}`; le righe di commento non contano): senza tastiere la dimensione non serve, e la casella e il campo restano disattivati. Si spunta da sola quando porti la dimensione a un valore diverso dalle Preferenze; il pulsante *Predefinito* la toglie. Con la casella vuota la riga salvata non contiene `kbd` (e un `kbd` già presente viene eliminato).
 
-Il controllo della sintassi segnala le chiavi sconosciute, i valori fuori intervallo (es. `kbd=20`) e le chiavi mancanti, ad eccezione di `kbd` e `pos`.
+**Carica dall'editor.** Un valore fuori intervallo viene ignorato e quel campo resta com'è; se manca `kbd`, la dimensione tastiere torna a quella delle Preferenze (e la casella *Salva anche…* si toglie). Se la riga non rispetta il formato (manca `:` o `}`, oppure c'è testo dopo la `}`) non viene caricato nulla e compare l'elenco dei problemi; se i problemi sono solo avvisi i valori validi vengono caricati e l'elenco compare comunque. Premendo **OK** le impostazioni caricate vengono applicate e salvate.
+
+**Controllo della sintassi.** Il controllo (*Strumenti → Controlla sintassi*) esamina la riga `print_options` e segnala:
+
+| Problema | Gravità |
+| -------- | ------- |
+| Manca il `:` dopo `print_options`, oppure manca la `}` finale | Errore |
+| Campo senza forma `chiave=valore` | Errore |
+| Valore non numerico o fuori intervallo (es. `kbd=20`, `scale=300`); `margins` che non siano 4 numeri 0–100 | Errore |
+| Chiave sconosciuta (es. la vecchia `fit`) | Avviso |
+| Chiave ripetuta | Avviso |
+| Testo dopo la `}` | Avviso |
+| Chiavi mancanti — tutte tranne le facoltative `kbd`, `pos` e `nomirror` | Avviso |
+| Riga `print_options` che non è la prima del brano («viene ignorata») | Avviso |
 
 ### Persistenza delle opzioni di stampa
 
@@ -2569,10 +2592,8 @@ I valori sono memorizzati nella sezione `/PageSetup` della configurazione utente
 | Orientamento             | `orientation`            | Verticale          |
 | Pagine per foglio        | `two_pages_per_sheet`    | 1 pagina           |
 | Colonne per pagina       | `columns_per_page`       | 1 colonna          |
-| Riduci se eccede la pagina | `fit_to_page`          | disattivo          |
-| Comprimi per adattare alla pagina corrente | `shrink_to_fit` | disattivo   |
-| Margine minimo per compressione automatica (mm) | `min_margin_shrink` | 5 (0–20) |
-| Non replicare (metà destra vuota) | `no_mirror_right` | disattivo         |
+| Non spezzare strofe e ritornelli tra le pagine | `shrink_to_fit` | disattivo   |
+| Margine minimo per recuperare spazio (mm) | `min_margin_shrink` | 5 (0–20) |
 | Rimuovi pagine vuote     | `remove_blank_pages`     | disattivo          |
 | Soglia pagina vuota (%)  | `blank_page_threshold`   | 5                  |
 | Stato del pulsante 📌 Pin | `print_options_pinned`   | disattivo          |
@@ -2583,6 +2604,8 @@ I valori sono memorizzati nella sezione `/PageSetup` della configurazione utente
 
 > **Dimensione tastiere (stampa)** — Come la Scala, anche il valore **Dimensione tastiere** del dialogo non viene salvato nella configurazione: a ogni avvio la stampa usa la dimensione delle Preferenze. Per ricordarla per un brano, usa **Salva nell'editor** (chiave `kbd`).
 
+> **Opzioni rimosse** — *Riduci se eccede la pagina* e *Non replicare* non esistono più: gli eventuali valori `fit_to_page` e `no_mirror_right` rimasti nella configurazione di versioni precedenti vengono eliminati.
+
 > **Nota** — I valori letti dalla configurazione vengono validati: se una chiave è assente, illeggibile o fuori intervallo (ad esempio colonne diverse da 1 o 2, o soglia pagina vuota fuori dall'intervallo 1–95), viene usato il valore predefinito senza segnalazioni di errore.
 
 ### Impostazioni di stampa e spiegazioni
@@ -2590,17 +2613,29 @@ I valori sono memorizzati nella sezione `/PageSetup` della configurazione utente
 ![Songpress++ Impostazioni di pagina](./img/GUIDE/ImpostaPagina_it.png)
 ![Songpress++ Opzioni di stampa](./img/GUIDE/OpzioniDiStampa_it.png)
 
-**Cosa significa «Margine minimo per compressione automatica (mm)»?**
+**Cosa fa «Non spezzare strofe e ritornelli tra le pagine»?**
 
-È un parametro di controllo per la funzione Comprimi per adattare, che si attiva quando l'opzione **«Comprimi per adattare alla pagina corrente (evita taglio in basso)»** è spuntata.
+Senza questa opzione la pagina viene tagliata all'altezza utile del foglio, anche nel mezzo di una strofa. Con l'opzione attiva (e **1 colonna**) un blocco — strofa, ritornello, griglia, immagine, sezione delle tastiere in fondo — che non entra per intero in fondo alla pagina passa **per intero** alla pagina successiva; il carattere **non** viene rimpicciolito per far stare tutto in una sola pagina. Songpress++ misura per ciascun segmento del brano (separati da `{new_page}`) quanto contenuto sfora oltre il bordo inferiore dell'ultima pagina e ragiona così:
 
-Come funziona la logica: Songpress++ misura per ciascun segmento del brano (separati da `{new_page}`) quanto contenuto sfora oltre il bordo inferiore dell'ultima pagina che occupa, e tenta di recuperare esattamente quello spazio in due passi:
+**Primo passo** — se lo sforamento è piccolo, riduce i margini superiore e inferiore quanto basta a recuperarlo, distribuendo la riduzione in proporzione alla riducibilità di ciascuno (non necessariamente 50/50: se un margine è già vicino al minimo, viene ridotto meno dell'altro). I margini non scendono mai sotto il **Margine minimo per recuperare spazio** (0–20 mm, predefinito 5): se il margine impostato è, ad esempio, 20 mm, può essere compresso fino a 5 mm, ma non azzerato.
 
-**Primo passo** — riduce i margini superiore e inferiore, distribuendo la riduzione in proporzione alla riducibilità di ciascuno (non necessariamente 50/50: se un margine è già vicino al minimo, viene ridotto meno dell'altro). La riduzione si ferma non appena lo sforamento è recuperato, oppure quando entrambi i margini hanno raggiunto il valore minimo configurato da questo SpinCtrl. Il valore minimo si imposta da 0 a 20 mm. Se il margine impostato dall'utente è, ad esempio, 20 mm, può essere compresso automaticamente fino a 5 mm (predefinito). Questo impedisce alla riduzione automatica di azzerare completamente i margini.
+**Secondo passo** — se i margini non bastano:
 
-**Secondo passo** — scala il contenuto (rimpicciolisce testo/accordi), solo se la riduzione dei margini da sola non è stata sufficiente. Il fattore di scala viene calcolato separatamente per ogni segmento e viene applicato il più restrittivo, garantendo che nessun segmento venga tagliato.
+- con **1 colonna** non si tocca altro: il blocco che non entra va alla pagina dopo. Solo se un **singolo blocco è più alto di una pagina** i margini vanno al minimo e, se ancora non basta, il testo viene rimpicciolito (fino a metà della dimensione);
+- con **2 colonne** (dove la spezzatura è gestita dal Renderer) si portano i margini al minimo e poi si scala il contenuto quanto basta a non tagliare nulla; il fattore è calcolato per ogni segmento e si applica il più restrittivo.
 
-In pratica: il valore (predefinito 5 mm) rappresenta il limite inferiore al di sotto del quale i margini non scendono mai durante la riduzione automatica. Maggiore è il valore, meno aggressiva è la compressione dei margini (e prima inizia la scalatura del testo). Il controllo è disabilitato quando la checkbox Riduci se eccede la pagina è disattivata, e si riabilita automaticamente quando viene attivata.
+Più alto è il margine minimo, meno aggressiva è la compressione dei margini (e prima si arriva alla riduzione del testo). Il controllo del margine è disabilitato quando la casella è disattivata e si riabilita automaticamente quando la si spunta.
+
+Anche con l'opzione disattivata il taglio di pagina non cade fra i numeri di `{beats_time:}` e la loro riga di accordi, né a metà di una riga di tastiere: sale sopra di essi, così i numeri restano nella stessa pagina del loro accordo.
+
+**Cosa fa «Adatta»?**
+
+Il pulsante **Adatta** (accanto a *100%*) imposta la **Scala** sul valore più alto, **al massimo 100%**, con cui il brano entra nelle pagine del foglio senza essere tagliato: 1 pagina, oppure 2 con *2 pagine per foglio* (ogni parte del brano separata da `{new_page}` può occupare 2 pagine); con 2 colonne ogni pagina ne ha due. Il calcolo usa le impostazioni **mostrate in quel momento nel dialogo** — pagine per foglio, colonne, dimensione tastiere, *Non spezzare strofe e ritornelli*, e anche formato carta, orientamento e margini caricati con *Carica dall'editor* ma non ancora applicati — e misura il brano con l'impaginazione vera, quindi tiene conto dello spazio perso con le interruzioni a blocchi. I numeri di `{beats_time:}` restano sopra i loro accordi.
+
+- Se il brano è più largo dello spazio disponibile (metà foglio con 2 pagine per foglio, una colonna con 2 colonne), la stampa lo riduce già da sola in larghezza: se questo basta, la scala resta al **100%**.
+- Il valore è arrotondato per difetto a un intero.
+- Se il brano non entra nemmeno al **50%** la scala viene portata a 50% e un messaggio avverte che il resto continua nella pagina successiva.
+- Come ogni valore di *Scala*, non viene salvato (vedi *Persistenza delle opzioni di stampa*).
 
 **Cosa significa «Soglia pagina vuota (%)»?**
 
@@ -2651,7 +2686,7 @@ Quando l'utente conferma con OK, Songpress++ propaga automaticamente in `wx.Prin
 
 ### Rilevamento automatico della stampante nell'anteprima
 
-La barra di stato dell'anteprima di stampa mostra quattro indicatori che leggono le impostazioni **reali** della stampante selezionata, non solo quelle impostate da wx:
+La barra di stato dell'anteprima di stampa mostra, oltre al numero di pagina, quattro indicatori che leggono le impostazioni **reali** della stampante selezionata, non solo quelle impostate da wx:
 
 | Indicatore | Valori possibili |
 | ---------- | ---------------- |
@@ -2662,19 +2697,20 @@ La barra di stato dell'anteprima di stampa mostra quattro indicatori che leggono
 
 **Come funziona il rilevamento (Windows)**
 
-Su Windows il rilevamento del colore usa tre fonti in cascata, ognuna attivata solo se la precedente non ha prodotto un risultato; il duplex usa solo la fonte 1. Su macOS e Linux viene usato il valore restituito da `wx.PrintData`.
+Su Windows fronte/retro, colore e orientamento si leggono dal driver nativo, con due fonti in cascata: la seconda è usata solo se la prima non ha prodotto un risultato. Su macOS e Linux viene usato direttamente il valore restituito da `wx.PrintData`.
 
 | Fonte | API | Quando viene usata |
 | ----- | --- | ------------------ |
 | **1 — DEVMODE** | `win32print.GetPrinter` livello 2 | Sempre per prima: riflette la scelta dell'utente nel pannello del driver |
-| **2 — Capability hardware** | `win32print.GetPrinterCaps(DC_COLORDEVICE)` | Solo se `dmColor` è assente: indica se la stampante è fisicamente capace di colore |
-| **3 — Fallback wx** | `wx.PrintData.GetColour()` | Solo se entrambe le fonti precedenti falliscono |
+| **2 — Fallback wx** | `wx.PrintData` (`GetDuplex()`, `GetColour()`, `GetOrientation()`) | Se `win32print` non è disponibile, la lettura fallisce o il DEVMODE non riporta il campo |
 
 | Campo | Valori |
 | ----- | ------ |
 | `DEVMODE.dmDuplex` | `1` = solo fronte · `2` = fronte/retro lato lungo · `3` = fronte/retro lato corto |
 | `DEVMODE.dmColor` | `1` = bianco e nero (`DMCOLOR_MONOCHROME`) · `2` = colore (`DMCOLOR_COLOR`) |
-| `DC_COLORDEVICE` | `0` = hardware solo B/N (certezza assoluta) · `1` = hardware capace di colore |
+| `DEVMODE.dmOrientation` | `1` = verticale · `2` = orizzontale |
+
+Con **Aggiornamento in tempo reale** attivo (vedi *Preferenze di stampa*) gli indicatori vengono riletti ogni 1,5 secondi; altrimenti la lettura avviene una sola volta all'apertura e dopo la chiusura delle *Impostazioni driver*.
 
 **Affidabilità per tipo di stampante**
 
@@ -2684,10 +2720,10 @@ Su Windows il rilevamento del colore usa tre fonti in cascata, ognuna attivata s
 | Stampante di rete con driver nativo installato | ✅ sì | ✅ sì |
 | Stampante PDF (Microsoft Print to PDF, PDFCreator) | ⚠️ dipende | ⚠️ dipende |
 | Stampante di rete via IPP senza driver nativo (solo porta TCP/IP generica) | ❌ spesso no | ❌ spesso no |
-| Stampante B/N che non espone `dmColor` nel DEVMODE | ✅ sì | ✅ sì (via `DC_COLORDEVICE`) |
+| Stampante B/N che non espone `dmColor` nel DEVMODE | ✅ sì | ⚠️ solo valore wx |
 | macOS / Linux | ⚠️ solo valore wx | ⚠️ solo valore wx |
 
-> **Nota** — Se `win32print` non è disponibile o si verifica un errore globale, entrambi gli indicatori cadono automaticamente sul valore fornito da `wx.PrintData`. La fonte `DC_COLORDEVICE` è isolata da un proprio `try/except`: se `GetPrinterCaps` non è supportato dal driver, si passa comunque al fallback wx senza interrompere il rilevamento.
+> **Nota** — Se `win32print` non è disponibile o si verifica un errore, gli indicatori cadono automaticamente sul valore fornito da `wx.PrintData`, senza interrompere il rilevamento.
 
 ---
 

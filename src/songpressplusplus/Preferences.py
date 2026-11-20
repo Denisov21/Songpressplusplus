@@ -353,6 +353,8 @@ class Preferences(object):
         self.guideViewer = v if v in ('auto', 'builtin', 'markdown', 'mistune') else 'auto'
         v = self.config.Read('liveDriverPoll')
         self.liveDriverPoll = bool(int(v)) if v != '' else True
+        v = self.config.Read('askDriverPrinter')
+        self.askDriverPrinter = bool(int(v)) if v != '' else True
         self.config.SetPath('/')
 
     def _LoadWatermarkPrefs(self):
@@ -771,6 +773,7 @@ class Preferences(object):
         self.config.Write('previewMinSize',    '1' if getattr(self, 'previewMinSize',    True) else '0')
         self.config.Write('guideViewer',           getattr(self, 'guideViewer', 'auto'))
         self.config.Write('liveDriverPoll',        '1' if getattr(self, 'liveDriverPoll', True) else '0')
+        self.config.Write('askDriverPrinter',      '1' if getattr(self, 'askDriverPrinter', True) else '0')
         self.config.SetPath('/')
 
     def _SaveWatermarkPrefs(self):

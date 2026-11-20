@@ -1097,6 +1097,18 @@ class PreferencesDialog(wx.Dialog):
         )
         grpPrint.Add(self.liveDriverPollCB, 0, wx.ALL, 5)
 
+        self.askDriverPrinterCB = wx.CheckBox(
+            _boxPrint, wx.ID_ANY,
+            _(u"Ask which printer to use when opening the driver settings")
+        )
+        self.askDriverPrinterCB.SetToolTip(
+            _(u"When enabled, the \"Driver settings\" button in the print preview "
+              u"first asks which installed printer's driver to open. "
+              u"When disabled, it opens the driver of the Windows default printer "
+              u"(for example \"Microsoft Print to PDF\"), without asking.")
+        )
+        grpPrint.Add(self.askDriverPrinterCB, 0, wx.ALL, 5)
+
         self.printPreviewAlwaysOnTopCB = wx.CheckBox(
             _boxPrint, wx.ID_ANY,
             _(u"Keep print preview window always on top")

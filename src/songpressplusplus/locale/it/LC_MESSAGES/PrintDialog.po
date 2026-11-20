@@ -30,8 +30,18 @@ msgstr "Pagine per foglio"
 msgid "Columns per page"
 msgstr "Colonne per pagina"
 
-msgid "Scaling"
-msgstr "Ridimensionamento"
+msgid "Show column break marker"
+msgstr "Mostra interruzione di colonna"
+
+msgid ""
+"Shows or hides the dashed line and the \"column break\" label between the two "
+"columns. Available with 2 columns only."
+msgstr ""
+"Mostra o nasconde la linea tratteggiata e l'etichetta «interruzione di "
+"colonna» tra le due colonne. Disponibile solo con 2 colonne."
+
+msgid "Page breaks"
+msgstr "Interruzioni di pagina"
 
 msgid "Advanced options"
 msgstr "Opzioni avanzate"
@@ -53,17 +63,14 @@ msgstr "1 colonna"
 msgid "2 columns"
 msgstr "2 colonne"
 
-msgid "Shrink if exceeds page"
-msgstr "Riduci se eccede la pagina"
-
-msgid "Shrink to fit current page"
-msgstr "Riduci per adattare alla pagina corrente"
+msgid "Do not split verses and choruses across pages"
+msgstr "Non spezzare strofe e ritornelli tra le pagine"
 
 msgid "(prevent bottom clipping)"
 msgstr "(evita il taglio in fondo)"
 
-msgid "Min margin for auto-shrink (mm):"
-msgstr "Margine minimo per riduzione automatica (mm):"
+msgid "Minimum margin to recover space (mm):"
+msgstr "Margine minimo per recuperare spazio (mm):"
 
 msgid "Remove blank pages"
 msgstr "Rimuovi pagine bianche"
@@ -179,11 +186,8 @@ msgstr "Colore: sconosciuto"
 
 # ── Tooltip checkbox — Opzioni di stampa ─────────────────────────────────────
 
-msgid "Reduce the content only if it exceeds the page size (no upscaling)"
-msgstr "Riduce il contenuto solo se eccede le dimensioni della pagina (senza ingrandimento)"
-
-msgid "Reduce the content only if it exceeds the page size, to avoid bottom clipping"
-msgstr "Riduce il contenuto solo se supera le dimensioni della pagina, per evitare il taglio in fondo"
+msgid "A verse or chorus that does not fit at the bottom of the page moves whole to the next page instead of being cut. If the song exceeds the page by only a little, the margins are reduced first, down to the minimum below. With 2 columns only the margin reduction applies; use Fit to shrink the text."
+msgstr "Una strofa o un ritornello che non entra in fondo alla pagina passa intero alla pagina successiva, invece di essere tagliato. Se il brano eccede la pagina di poco, si riducono prima i margini, fino al minimo indicato qui sotto. Con 2 colonne vale solo la riduzione dei margini: per rimpicciolire il testo usa «Adatta»."
 
 msgid "Skip pages that are empty or contain only whitespace, based on the threshold below"
 msgstr "Salta le pagine vuote o che contengono solo spazi, in base alla soglia impostata"
@@ -195,21 +199,6 @@ msgstr "Il pannello delle impostazioni del driver di stampa non è disponibile s
 
 msgid "Driver settings unavailable"
 msgstr "Impostazioni driver non disponibili"
-
-# ── Etichette dinamiche con «2 pagine» per foglio (riduzione per colonna) ─────
-
-#. Con 2 pagine per foglio ogni pagina logica è una metà (colonna) del foglio
-msgid "Shrink if exceeds column"
-msgstr "Riduci se eccede la colonna"
-
-msgid "Shrink to fit current column"
-msgstr "Riduci per adattare alla colonna corrente"
-
-msgid "Reduce the content only if it exceeds the size of its column (each half of the sheet), no upscaling"
-msgstr "Riduce il contenuto solo se eccede le dimensioni della sua colonna (ciascuna metà del foglio), senza ingrandimento"
-
-msgid "Reduce the content only if it exceeds the size of its column (each half of the sheet), to avoid bottom clipping"
-msgstr "Riduce il contenuto solo se supera le dimensioni della sua colonna (ciascuna metà del foglio), per evitare il taglio in fondo"
 
 # ── Sezione Diagnostica ───────────────────────────────────────────────────────
 
@@ -328,3 +317,9 @@ msgstr "Problemi trovati nella riga delle impostazioni di stampa:"
 
 msgid "Unable to open the driver settings:\n{err}"
 msgstr "Impossibile aprire le impostazioni del driver:\n{err}"
+
+msgid "Choose the printer whose driver settings to open:"
+msgstr "Scegli la stampante di cui aprire le impostazioni del driver:"
+
+msgid "Driver settings"
+msgstr "Impostazioni driver"

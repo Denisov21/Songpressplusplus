@@ -40,7 +40,10 @@ import functools
 import math
 import os
 import re
+import subprocess
 import sys
+import tempfile
+import traceback
 
 import wx
 
@@ -89,7 +92,6 @@ def _debug_log_path():
 
     Windows (installazione da installer): <cartella di installazione>\\logs.
     Altrimenti: cartella temporanea del sistema."""
-    import tempfile
     name = 'songpress_print_debug.log'
     if wx.Platform == '__WXMSW__':
         base = _install_dir()
@@ -98,7 +100,20 @@ def _debug_log_path():
     return os.path.join(tempfile.gettempdir(), name)
 
 
+# True = la prossima scrittura riparte da un file vuoto (nuova sessione).
+_DBG_RESET = True
+
+
+def _dbg_new_session():
+    """Segna l'inizio di una nuova anteprima/stampa: la prima riga scritta da
+    qui in poi azzera il log, così il file non cresce all'infinito e contiene
+    solo l'ultima sessione."""
+    global _DBG_RESET
+    _DBG_RESET = True
+
+
 def _dbg(msg):
+    global _DBG_RESET
     if not PRINT_DEBUG:
         return
     try:
@@ -107,10 +122,17 @@ def _dbg(msg):
             os.makedirs(os.path.dirname(path), exist_ok=True)
         except Exception:
             pass
-        with open(path, 'a', encoding='utf-8') as f:
+        with open(path, 'w' if _DBG_RESET else 'a', encoding='utf-8') as f:
             f.write(msg + '\n')
+        _DBG_RESET = False
     except Exception:
         pass
+
+
+def _dbg_exc(where):
+    """Scrive nel log (se attivo) il traceback dell'eccezione in corso."""
+    if PRINT_DEBUG:
+        _dbg('%s ERRORE:\n%s' % (where, traceback.format_exc()))
 
 
 def _open_debug_log_folder():
@@ -118,7 +140,6 @@ def _open_debug_log_folder():
 
     Se il file esiste su Windows/macOS viene anche evidenziato; altrimenti si
     apre solo la cartella. Restituisce True se l'apertura è stata avviata."""
-    import subprocess
     path   = _debug_log_path()
     folder = os.path.dirname(path)
     try:
@@ -142,26 +163,41 @@ def _open_debug_log_folder():
         return False
 
 
-# ── Rilevamento duplex dal driver di sistema ───────────────────────────────────
+# ── Lettura delle impostazioni del driver di sistema ──────────────────────────
 
-def _get_duplex_mode(print_data):
+def _installed_printers():
+    """Nomi delle stampanti installate (solo Windows con pywin32), oppure None."""
+    if wx.Platform != '__WXMSW__':
+        return None
+    try:
+        import win32print
+        flags = win32print.PRINTER_ENUM_LOCAL | win32print.PRINTER_ENUM_CONNECTIONS
+        names = [p[2] for p in win32print.EnumPrinters(flags, None, 1)]
+        return names or None
+    except Exception:
+        return None
+
+
+def _read_devmode_info(print_data):
     """
-    Restituisce la modalità duplex reale della stampante selezionata.
+    Legge UNA sola volta le impostazioni reali della stampante selezionata e
+    restituisce la tripla (duplex, colore, orientamento).
 
     Strategia (Windows):
-      1. Prova win32print per leggere il DEVMODE del driver nativo → fonte più
-         affidabile, riflette le impostazioni del pannello del driver (es. Brother).
-      2. Fallback: wx.PrintData.GetDuplex() → utile se wx ha impostato il duplex
-         esplicitamente (es. dall'utente tramite PrintDialog di wx).
+      1. win32print: legge il DEVMODE del driver nativo → fonte più affidabile,
+         riflette le impostazioni del pannello del driver (es. Brother). Una
+         sola apertura della stampante per tutti e tre i valori (la status bar
+         dell'anteprima li rilegge ogni ~1,5 s).
+      2. Fallback: wx.PrintData (duplex, colore, orientamento).
+    Su macOS / Linux restituisce direttamente i valori wx.
 
-    Su macOS / Linux restituisce direttamente il valore wx.
-
-    Valori restituiti (costanti wx):
-      wx.DUPLEX_SIMPLEX     – stampa su un solo lato
-      wx.DUPLEX_HORIZONTAL  – fronte/retro, rilegatura lato corto
-      wx.DUPLEX_VERTICAL    – fronte/retro, rilegatura lato lungo
+    duplex       : wx.DUPLEX_SIMPLEX | wx.DUPLEX_HORIZONTAL (lato corto) |
+                   wx.DUPLEX_VERTICAL (lato lungo)
+    colore       : "color" | "mono" | "unknown"
+    orientamento : wx.PORTRAIT | wx.LANDSCAPE
     """
-    # ── Tentativo win32print (solo Windows) ───────────────────────────────
+    duplex = color = orient = None
+
     if wx.Platform == '__WXMSW__':
         try:
             import win32print
@@ -171,7 +207,6 @@ def _get_duplex_mode(print_data):
             if not printer_name:
                 printer_name = win32print.GetDefaultPrinter()
 
-            # Apre la stampante in sola lettura
             hprinter = win32print.OpenPrinter(printer_name)
             try:
                 # Livello 2 → struttura PRINTER_INFO_2 con DEVMODE
@@ -184,108 +219,59 @@ def _get_duplex_mode(print_data):
                 # dmDuplex: 1 = simplex, 2 = vertical (long-edge), 3 = horizontal (short-edge)
                 dm_duplex = getattr(devmode, 'Duplex', 1)
                 if dm_duplex == 2:
-                    return wx.DUPLEX_VERTICAL       # rilegatura lato lungo  (caso più comune)
+                    duplex = wx.DUPLEX_VERTICAL       # rilegatura lato lungo (caso più comune)
                 elif dm_duplex == 3:
-                    return wx.DUPLEX_HORIZONTAL     # rilegatura lato corto
+                    duplex = wx.DUPLEX_HORIZONTAL     # rilegatura lato corto
                 else:
-                    return wx.DUPLEX_SIMPLEX
-        except Exception:
-            pass  # win32print non disponibile o errore → fallback sotto
-
-    # ── Fallback: valore wx.PrintData ─────────────────────────────────────
-    return print_data.GetDuplex()
-
-
-def _get_color_mode(print_data):
-    """
-    Restituisce la modalità colore reale della stampante selezionata.
-
-    Strategia (Windows):
-      1. Prova win32print per leggere il DEVMODE del driver nativo → fonte più
-         affidabile, riflette le impostazioni del pannello del driver (es. Brother).
-      2. Fallback: wx.PrintData.GetColour() → True se colore, False se B/N.
-
-    Su macOS / Linux restituisce direttamente il valore wx.
-
-    Valori restituiti:
-      "color"   – stampa a colori
-      "mono"    – stampa in bianco e nero / scala di grigi
-      "unknown" – impossibile determinare la modalità
-    """
-    # ── Tentativo win32print (solo Windows) ───────────────────────────────
-    if wx.Platform == '__WXMSW__':
-        try:
-            import win32print
-
-            printer_name = print_data.GetPrinterName().strip()
-            if not printer_name:
-                printer_name = win32print.GetDefaultPrinter()
-
-            hprinter = win32print.OpenPrinter(printer_name)
-            try:
-                info = win32print.GetPrinter(hprinter, 2)
-            finally:
-                win32print.ClosePrinter(hprinter)
-
-            devmode = info.get('pDevMode')
-            if devmode is not None:
+                    duplex = wx.DUPLEX_SIMPLEX
                 # dmColor: 1 = DMCOLOR_MONOCHROME, 2 = DMCOLOR_COLOR
                 dm_color = getattr(devmode, 'Color', None)
                 if dm_color == 2:
-                    return "color"
+                    color = "color"
                 elif dm_color == 1:
-                    return "mono"
-                # dm_color None o valore imprevisto → fallback wx sotto
+                    color = "mono"
+                # dmOrientation: 1 = PORTRAIT, 2 = LANDSCAPE
+                dm_orient = getattr(devmode, 'Orientation', None)
+                if dm_orient == 2:
+                    orient = wx.LANDSCAPE
+                elif dm_orient == 1:
+                    orient = wx.PORTRAIT
         except Exception:
-            pass
+            pass  # win32print non disponibile o errore → fallback wx sotto
+                  # (nessun log: la funzione è interrogata di continuo)
 
-    # ── Fallback: wx.PrintData.GetColour() ────────────────────────────────
-    try:
-        return "color" if print_data.GetColour() else "mono"
-    except Exception:
-        return "unknown"
+    # ── Fallback: wx.PrintData ────────────────────────────────────────────
+    if duplex is None:
+        try:
+            duplex = print_data.GetDuplex()
+        except Exception:
+            duplex = wx.DUPLEX_SIMPLEX
+    if color is None:
+        try:
+            color = "color" if print_data.GetColour() else "mono"
+        except Exception:
+            color = "unknown"
+    if orient is None:
+        try:
+            orient = print_data.GetOrientation()
+        except Exception:
+            orient = wx.PORTRAIT
+    return duplex, color, orient
+
+
+def _get_duplex_mode(print_data):
+    """Modalità duplex reale della stampante (vedi _read_devmode_info)."""
+    return _read_devmode_info(print_data)[0]
+
+
+def _get_color_mode(print_data):
+    """Modalità colore reale: "color", "mono" o "unknown"."""
+    return _read_devmode_info(print_data)[1]
 
 
 def _get_orientation(print_data):
-    """
-    Restituisce l'orientamento reale della stampante selezionata.
-
-    Strategia (Windows):
-      1. Prova win32print per leggere dmOrientation dal DEVMODE del driver.
-      2. Fallback: wx.PrintData.GetOrientation().
-
-    Su macOS / Linux restituisce direttamente il valore wx.
-
-    Valori restituiti (costanti wx):
-      wx.PORTRAIT   – orientamento verticale
-      wx.LANDSCAPE  – orientamento orizzontale
-    """
-    if wx.Platform == '__WXMSW__':
-        try:
-            import win32print
-
-            printer_name = print_data.GetPrinterName().strip()
-            if not printer_name:
-                printer_name = win32print.GetDefaultPrinter()
-
-            hprinter = win32print.OpenPrinter(printer_name)
-            try:
-                info = win32print.GetPrinter(hprinter, 2)
-            finally:
-                win32print.ClosePrinter(hprinter)
-
-            devmode = info.get('pDevMode')
-            if devmode is not None:
-                # dmOrientation: 1 = PORTRAIT, 2 = LANDSCAPE
-                orient = getattr(devmode, 'Orientation', None)
-                if orient == 2:
-                    return wx.LANDSCAPE
-                elif orient == 1:
-                    return wx.PORTRAIT
-        except Exception:
-            pass
-
-    return print_data.GetOrientation()
+    """Orientamento reale: wx.PORTRAIT o wx.LANDSCAPE."""
+    return _read_devmode_info(print_data)[2]
 
 
 def _make_orientation_bitmap(landscape: bool, field_h: int) -> wx.Bitmap:
@@ -396,7 +382,73 @@ def _load_svg_bitmap(svg_path, size=24):
         bmp = bundle.GetBitmap(wx.Size(size, size))
         return bmp if bmp.IsOk() else None
     except Exception:
+        _dbg_exc('load_svg %s' % svg_path)
         return None
+
+
+def _icon_svg_png(name, size):
+    """Cerca l'icona `name`: prima l'SVG (img/vector/NOME.svg, rasterizzato a
+    size x size), altrimenti il PNG (img/NOME.png). Restituisce
+    (bitmap_svg | None, percorso_png | None)."""
+    bmp = _load_svg_bitmap(glb.AddPath('img/vector/%s.svg' % name), size)
+    if bmp is not None:
+        return bmp, None
+    png = glb.AddPath('img/%s.png' % name)
+    return None, (png if os.path.isfile(png) else None)
+
+
+def _icon_bitmap(name, size=16):
+    """Bitmap size x size dell'icona `name` (SVG, ripiego PNG) o None."""
+    bmp, png = _icon_svg_png(name, size)
+    if bmp is not None:
+        return bmp
+    if png:
+        try:
+            img = wx.Image(png, wx.BITMAP_TYPE_PNG)
+            if img.GetWidth() != size or img.GetHeight() != size:
+                img = img.Scale(size, size, wx.IMAGE_QUALITY_HIGH)
+            return wx.Bitmap(img)
+        except Exception:
+            _dbg_exc('icon_bitmap %s' % png)
+    return None
+
+
+def _orientation_icon(landscape, field_h):
+    """Icona 16x16 dell'orientamento del foglio per la barra di stato: SVG
+    (img/vector/orient_portrait.svg, orient_landscape.svg), ripiego sul foglio
+    disegnato a codice se l'SVG manca o non si carica."""
+    bmp = _icon_bitmap('orient_landscape' if landscape else 'orient_portrait', 16)
+    if bmp is not None and bmp.IsOk():
+        return bmp
+    return _make_orientation_bitmap(landscape, field_h)
+
+
+def _set_button_icon(btn, name, size=16, margins=(4, 0)):
+    """Icona `name` sul pulsante `btn` (a sinistra del testo). True se applicata."""
+    bmp = _icon_bitmap(name, size)
+    if bmp is None or not bmp.IsOk():
+        return False
+    btn.SetBitmap(bmp)
+    btn.SetBitmapPosition(wx.LEFT)
+    btn.SetBitmapMargins(*margins)
+    return True
+
+
+def _set_toolbar_icon(btn, name, size, custom_png_paths):
+    """Icona `name` su un pulsante della barra dell'anteprima.
+
+    L'SVG viene rasterizzato a `size` fissi; se manca si usa il PNG, che va
+    registrato in `custom_png_paths` per essere ridimensionato più tardi
+    insieme agli altri pulsanti. True se un'icona è stata applicata."""
+    bmp, png = _icon_svg_png(name, size)
+    if bmp is not None:
+        safe_set_bitmap(btn, bmp, wx.LEFT)
+        return True
+    if png:
+        custom_png_paths[btn] = png
+        safe_set_bitmap(btn, wx.Bitmap(wx.Image(png, wx.BITMAP_TYPE_PNG)), wx.LEFT)
+        return True
+    return False
 
 
 def _open_driver_settings(print_data, parent_hwnd=None):
@@ -478,6 +530,21 @@ def _open_driver_settings(print_data, parent_hwnd=None):
                     dm, dm, win32con.DM_OUT_BUFFER
                 )
 
+                # Il pannello deve partire dall'orientamento e dal formato carta
+                # che il programma sta usando (wx.PrintData), non da quelli di
+                # default del driver: altrimenti mostra sempre «Verticale» e
+                # confermando si perderebbe l'orientamento scelto in
+                # «Imposta pagina».
+                try:
+                    dm.Orientation = 2 if print_data.GetOrientation() == wx.LANDSCAPE else 1
+                    dm.Fields |= win32con.DM_ORIENTATION
+                    _pid = print_data.GetPaperId()
+                    if _pid and _pid > 0:
+                        dm.PaperSize = _pid
+                        dm.Fields |= win32con.DM_PAPERSIZE
+                except Exception:
+                    _dbg_exc('driver_settings: semina DEVMODE (pywin32)')
+
                 # Mostra il pannello del driver con DM_IN_PROMPT
                 result = win32print.DocumentProperties(
                     parent_hwnd or 0, hprinter, printer_name,
@@ -495,7 +562,8 @@ def _open_driver_settings(print_data, parent_hwnd=None):
             return print_data
 
         except Exception:
-            pass  # win32print non disponibile o errore → tentativo 2
+            _dbg_exc('driver_settings (pywin32)')
+            # win32print non disponibile o errore → tentativo 2
 
         # ── Tentativo 2: ctypes puro su winspool.drv ───────────────────────
         try:
@@ -506,12 +574,16 @@ def _open_driver_settings(print_data, parent_hwnd=None):
             DM_OUT_BUFFER = 2
             DM_IN_PROMPT  = 4
 
-            # Offset nella struttura DEVMODEW (Unicode, Windows ≥ 2000)
-            _OFF_ORIENTATION = 44
-            _OFF_PAPERSIZE   = 46
-            _OFF_COPIES      = 78
-            _OFF_COLOR       = 96
-            _OFF_DUPLEX      = 100
+            # Offset nella struttura DEVMODEW (Unicode: dmDeviceName è di 32
+            # WCHAR = 64 byte). I valori di prima erano quelli di DEVMODEA.
+            _OFF_FIELDS      = 72     # dmFields (DWORD)
+            _OFF_ORIENTATION = 76
+            _OFF_PAPERSIZE   = 78
+            _OFF_COPIES      = 86
+            _OFF_COLOR       = 92
+            _OFF_DUPLEX      = 94
+            DM_ORIENTATION   = 0x1
+            DM_PAPERSIZE     = 0x2
 
             def _short(buf, off):
                 return ctypes.c_short.from_buffer_copy(buf[off:off + 2]).value
@@ -549,6 +621,20 @@ def _open_driver_settings(print_data, parent_hwnd=None):
                 )
                 if ret != 1:
                     raise RuntimeError(f"DocumentProperties DM_OUT_BUFFER: {ret}")
+
+                # Semina orientamento e formato carta del programma (vedi il
+                # ramo pywin32): senza, il pannello parte dal default del driver.
+                try:
+                    _flds = ctypes.c_uint32.from_buffer(dm_buf, _OFF_FIELDS)
+                    ctypes.c_short.from_buffer(dm_buf, _OFF_ORIENTATION).value = (
+                        2 if print_data.GetOrientation() == wx.LANDSCAPE else 1)
+                    _flds.value |= DM_ORIENTATION
+                    _pid = print_data.GetPaperId()
+                    if _pid and _pid > 0:
+                        ctypes.c_short.from_buffer(dm_buf, _OFF_PAPERSIZE).value = _pid
+                        _flds.value |= DM_PAPERSIZE
+                except Exception:
+                    _dbg_exc('driver_settings: semina DEVMODE (ctypes)')
 
                 # Mostra dialogo driver
                 dm_out = ctypes.create_string_buffer(dm_size)
@@ -593,7 +679,8 @@ def _open_driver_settings(print_data, parent_hwnd=None):
             return print_data
 
         except Exception:
-            pass  # ctypes fallito → fallback wx
+            _dbg_exc('driver_settings (ctypes)')
+            # ctypes fallito → fallback wx
 
     # ── Fallback: wx.PageSetupDialog (non-Windows o entrambi i tentativi falliti)
     # SetSetupDialog() è stato rimosso in wxPython 4.x (Phoenix).
@@ -610,6 +697,7 @@ def _open_driver_settings(print_data, parent_hwnd=None):
 # ── Costanti ──────────────────────────────────────────────────────────────────
 
 _GAP = 8          # margine interno dialogo (px)
+_ZOOM_ICON_SIZE = 24   # lato (px) delle icone della barra dell'anteprima
 
 _PAPER_SIZE_MM = {
     wx.PAPER_A3:        (297.0, 420.0),
@@ -622,6 +710,34 @@ _PAPER_SIZE_MM = {
     wx.PAPER_TABLOID:   (279.4, 431.8),
     wx.PAPER_EXECUTIVE: (184.1, 266.7),
 }
+
+_PAPER_SIZE_CACHE = {}    # paper_id -> (w, h) già risolti fuori tabella
+
+
+def _paper_size_mm(paper_id):
+    """(larghezza, altezza) in mm, in verticale, del formato carta `paper_id`.
+
+    Prima la tabella _PAPER_SIZE_MM; per gli altri formati (A6, buste, ...)
+    la misura si chiede al database carta di wx; se manca anche lì si ripiega
+    su A4 (e lo si scrive nel log di impaginazione)."""
+    size = _PAPER_SIZE_MM.get(paper_id) or _PAPER_SIZE_CACHE.get(paper_id)
+    if size:
+        return size
+    try:
+        pdd = wx.PageSetupDialogData()
+        pdd.SetPaperId(paper_id)
+        pdd.CalculatePaperSizeFromId()
+        sz = pdd.GetPaperSize()                       # millimetri
+        w, h = float(sz.GetWidth()), float(sz.GetHeight())
+        if w > 0 and h > 0:
+            size = (min(w, h), max(w, h))
+    except Exception:
+        _dbg_exc('paper_size id=%s' % paper_id)
+    if not size:
+        _dbg('paper_size id=%s sconosciuto: ripiego su A4' % paper_id)
+        size = (210.0, 297.0)
+    _PAPER_SIZE_CACHE[paper_id] = size
+    return size
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -692,6 +808,8 @@ class SongpressPrintout(wx.Printout):
         # OnPrintPage, così tutti i calcoli restano nello stesso frame.
         self._page_w_du         = None
         self._page_h_du         = None
+        # Cache dei render per (segmento, scala, limite tastiere): vedi _seg_info.
+        self._render_cache      = {}
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -728,7 +846,6 @@ class SongpressPrintout(wx.Printout):
         Le righe commentate con '#' vengono ignorate.
         Restituisce una lista di segmenti (almeno uno).
         """
-        import re
         cmd_pat     = re.compile(r'\{\s*(?:new_page|np)\s*\}', re.IGNORECASE)
         comment_pat = re.compile(r'^\s*#')
 
@@ -777,9 +894,8 @@ class SongpressPrintout(wx.Printout):
         r.columnHeight    = getattr(self, '_col_h_px', 0)
         # Imposta la directory del documento per risolvere i percorsi relativi
         # delle immagini ({image: intro.png} → cerca nella stessa cartella del .crd)
-        import os as _os
         doc_path = getattr(self.frame_obj, 'document', None)
-        r._document_dir = _os.path.dirname(doc_path) if doc_path else ''
+        r._document_dir = os.path.dirname(doc_path) if doc_path else ''
         return r
 
     def _prepare_segments(self):
@@ -827,17 +943,23 @@ class SongpressPrintout(wx.Printout):
 
     @_with_kbd_scale
     def compute_fit_scale(self, columns, paper_mm, margins_mm,
-                          block_aware=False, ppi=600):
+                          block_aware=False, ppi=600, shrink=None,
+                          min_margin_mm=5.0):
         """Scala (frazione di 1.0) da impostare nella casella Scala perché il
         brano entri nelle pagine del foglio senza essere tagliato, tenendo
-        conto di «pagine per foglio», «colonne per pagina» e dell'impaginazione
-        a blocchi.
+        conto di «pagine per foglio», «colonne per pagina» e di «Non spezzare
+        strofe e ritornelli».
 
-        columns     : 1 o 2 colonne di testo per pagina
-        paper_mm    : (larghezza, altezza) del foglio in mm, orientamento incluso
-        margins_mm  : (alto, basso, sinistro, destro) in mm
-        block_aware : «Riduci per adattare» attivo con 1 colonna: i blocchi non
-                      si spezzano fra due pagine e questo consuma più spazio
+        columns       : 1 o 2 colonne di testo per pagina
+        paper_mm      : (larghezza, altezza) del foglio in mm, orientamento incluso
+        margins_mm    : (alto, basso, sinistro, destro) in mm
+        shrink        : casella «Non spezzare strofe e ritornelli» attiva. Con 1
+                        colonna i blocchi non si spezzano fra due pagine (e
+                        questo consuma più spazio); con la casella attiva la
+                        stampa può anche stringere i margini fino a
+                        `min_margin_mm` per recuperare un piccolo sbordo, e il
+                        calcolo ne tiene conto.
+        block_aware   : vecchio nome di `shrink`, usato solo se `shrink` è None
 
         Spazio disponibile: con «2 pagine per foglio» ogni parte del brano
         ({new_page}) può occupare 2 pagine (sinistra e destra), altrimenti 1.
@@ -847,17 +969,22 @@ class SongpressPrintout(wx.Printout):
           • scala effettiva  E = min(scala impostata, E_larghezza): se il
             brano è più largo dello spazio (mezza pagina con «2 pagine», una
             colonna con «2 colonne») la stampa lo riduce DA SOLA in larghezza;
-          • l'altezza logica non dipende dalla scala: entra se
-            E * altezza <= pagine * altezza_utile (e, a blocchi, se il numero
-            di pagine simulato non supera quello disponibile).
-        Se la riduzione in larghezza basta già, la scala resta 100%.
-
-        Misure con un DC della stessa scala del disegno (_scaled_mdc) e col
-        limite destro delle tastiere della colonna reale.
+          • il numero di pagine si ricava impaginando COME la stampa: a blocchi
+            con «Non spezzare…» e 1 colonna, altrimenti a altezza fissa con le
+            guardie dei battiti (_paginate_fixed). Una tastiera spostata nella
+            pagina dopo può richiedere una pagina in più.
+        Si cerca la scala INTERA più alta (50-100%) che entra: stima analitica
+        come limite superiore, poi ricerca binaria sulle misure reali.
+        Ogni segmento viene renderizzato una sola volta per scala (_seg_info).
 
         Ritorna (scala_da_impostare, scala_effettiva, pagine_disponibili,
         pagine_usate, E_larghezza, E_altezza, altezza_utile_px, altezza_max_px).
         pagine_usate è None se non si riesce a rientrare nemmeno al minimo."""
+        if shrink is None:
+            shrink = bool(block_aware)
+        shrink = bool(shrink)
+        block_aware = shrink and columns < 2
+
         w_mm, h_mm = paper_mm
         mt, mb, ml, mr = margins_mm
         usable_h_mm = max(1.0, h_mm - mt - mb)
@@ -870,79 +997,119 @@ class SongpressPrintout(wx.Printout):
         px = self._SCREEN_PPI / 25.4          # px logici per mm
         usable_h_logical = usable_h_mm * px
         text_w_logical = text_w_mm * px
+        # Margini che la stampa può recuperare (solo con «Non spezzare…» attiva):
+        # alto e basso, ciascuno fino a min_margin_mm.
+        red_mm = (max(0.0, mt - min_margin_mm) + max(0.0, mb - min_margin_mm)) \
+            if shrink else 0.0
+        red_logical = red_mm * px
         self._col_h_px = usable_h_logical if columns >= 2 else 0
         self._columns_override = columns
         self._prepare_segments()
+        self._render_cache = {}
 
         def measure(E):
             """(wmax, hmax, pagine_necessarie) alla scala effettiva E."""
             self._scale_x = self._scale_y = ppi / self._SCREEN_PPI * E
             mdc = self._scaled_mdc()
             limit = int(math.ceil(usable_w_mm * px / E))
-            ppp = usable_h_logical / E
             wmax = hmax = 1.0
-            pages = 1
+            segs = []
             vc = lc = cc = 0
-            try:
-                KlavierRenderer.set_content_right_limit(limit)
-                for idx, seg_text in enumerate(self._segments):
-                    r = self._make_renderer()
-                    self._seg_verse_start[idx] = (vc, lc, cc)
-                    r.initialVerseCount  = vc
-                    r.initialLabelCount  = lc
-                    r.initialChorusCount = cc
-                    w, h = r.Render(seg_text, mdc)
-                    vc, lc, cc = (r.song.verseCount, r.song.labelCount,
-                                  r.song.chorusCount)
-                    h = max(1.0, float(h))
-                    wmax = max(wmax, float(w))
-                    hmax = max(hmax, h)
-                    if columns < 2:
-                        # Sempre con i punti di interruzione (blocchi, battiti,
-                        # tastiere): una tastiera spostata nella pagina dopo
-                        # puo' richiedere una pagina in piu'.
-                        ys = self._block_breaks(idx, seg_text, h, mdc)
-                        n = len(self._paginate_blocks(h, ppp, ys))
-                    else:
-                        n = max(1, int(math.ceil(h / ppp - 1e-6)))
-                    pages = max(pages, n)
-            finally:
-                try:
-                    KlavierRenderer.set_content_right_limit(None)
-                except Exception:
-                    pass
+            for idx, seg_text in enumerate(self._segments):
+                self._seg_verse_start[idx] = (vc, lc, cc)
+                info = self._seg_info(idx, seg_text, mdc, limit=limit,
+                                      breaks=block_aware, guards=not block_aware)
+                vc, lc, cc = info['end_counts']
+                wmax = max(wmax, float(info['w']))
+                hmax = max(hmax, float(info['h']))
+                segs.append(info)
+
+            # Altezza di pagina in px del brano (a margini pieni); con
+            # «Non spezzare…» la stampa può alzarla stringendo i margini
+            # (_ensure_layout, fasi 1 e 2).
+            base_ppp = usable_h_logical / E
+            ppp = base_ppp
+            if red_logical > 0:
+                red_px = red_logical / E
+                ovf = max((math.fmod(i['h'], base_ppp) if i['h'] > base_ppp
+                           else 0.0) for i in segs)
+                if ovf > 0:
+                    if ovf <= red_px:
+                        ppp = base_ppp + ovf        # fase 1: basta poco
+                    elif block_aware:
+                        # fase 2: solo se un blocco è più alto di una pagina
+                        tallest = 0.0
+                        for i in segs:
+                            edges = [0.0] + list(i['ys']) + [float(i['h'])]
+                            tallest = max([tallest] + [e1 - e0 for e0, e1
+                                                       in zip(edges, edges[1:])])
+                        if tallest > base_ppp:
+                            ppp = base_ppp + red_px
+                    # 2 colonne: oltre la fase 1 la stampa non cambia nulla
+
+            pages = 1
+            for info in segs:
+                if block_aware:
+                    n = len(self._paginate_blocks(info['h'], ppp, info['ys']))
+                else:
+                    n = len(self._paginate_fixed(info['h'], ppp, info['guards']))
+                pages = max(pages, n)
             return wmax, hmax, pages
 
-        E = 1.0
-        fs = 1.0
-        e_w = e_h = 1.0
-        hmax = 1.0
-        pages = 1
-        for _it in range(5):
-            wmax, hmax, pages = measure(E)
-            e_w = text_w_logical / wmax
-            e_h = n_pages * usable_h_logical / hmax
-            fs  = 1.0 if e_w <= e_h else e_h
-            E_new = min(min(fs, 1.0), e_w)
-            if abs(E_new - E) < 0.005:
-                E = E_new
-                break
-            E = max(0.05, E_new)
+        try:
+            # 1) Stima analitica (limite superiore): larghezza e altezza
+            #    dipendono poco dalla scala, quindi bastano poche iterazioni.
+            E = 1.0
+            fs = 1.0
+            e_w = e_h = 1.0
+            hmax = 1.0
+            for _it in range(5):
+                wmax, hmax, pages = measure(E)
+                e_w = text_w_logical / wmax
+                e_h = n_pages * (usable_h_logical + red_logical) / hmax
+                fs  = 1.0 if e_w <= e_h else e_h
+                E_new = min(min(fs, 1.0), e_w)
+                if abs(E_new - E) < 0.005:
+                    E = E_new
+                    break
+                E = max(0.05, E_new)
 
-        # Verifica con l'impaginazione vera (a blocchi lo spazio perso in
-        # fondo alle pagine può far superare le pagine disponibili): se serve,
-        # si riduce a passi dell'1% fino a rientrare.
-        wmax, hmax, pages = measure(E)
-        fit_ok = pages <= n_pages
-        steps = 0
-        while not fit_ok and E > 0.5 and steps < 60:
-            fs = min(fs, E) * 0.99
-            E = min(fs, e_w)
-            wmax, hmax, pages = measure(E)
-            fit_ok = pages <= n_pages
-            steps += 1
-        return (fs, E, n_pages, (pages if fit_ok else None), e_w, e_h,
-                usable_h_logical, hmax)
+            def fits(pct):
+                """(entra?, scala effettiva, pagine) con scala impostata pct%."""
+                E_p = min(pct / 100.0, e_w)
+                _w, _h, n = measure(E_p)
+                return n <= n_pages, E_p, n
+
+            fs_hi = min(fs, 1.0)
+            hi_pct = int(math.floor(fs_hi * 100.0 + 1e-6))
+            if hi_pct < 50:
+                # Nemmeno la stima ottimistica arriva al minimo: non entra.
+                return (fs_hi, E, n_pages, None, e_w, e_h,
+                        usable_h_logical, hmax)
+
+            # 2) Verifica con l'impaginazione vera. Se la stima non entra
+            #    (blocchi, tastiere), ricerca binaria sulle percentuali intere
+            #    fra il minimo (50) e la stima.
+            ok, E_best, used = fits(hi_pct)
+            best = hi_pct
+            if not ok:
+                ok50, E50, used50 = fits(50)
+                if not ok50:
+                    return (0.5, E50, n_pages, None, e_w, e_h,
+                            usable_h_logical, hmax)
+                lo, hi = 50, hi_pct - 1
+                best, E_best, used = 50, E50, used50
+                while lo < hi:
+                    mid = (lo + hi + 1) // 2
+                    ok_m, E_m, used_m = fits(mid)
+                    if ok_m:
+                        lo, best, E_best, used = mid, mid, E_m, used_m
+                    else:
+                        hi = mid - 1
+            return (best / 100.0, E_best, n_pages, used, e_w, e_h,
+                    usable_h_logical, hmax)
+        finally:
+            self._render_cache = {}
 
     @staticmethod
     def _ink_bottom(box, margin_top):
@@ -956,8 +1123,12 @@ class SongpressPrintout(wx.Printout):
         except Exception:
             return None
 
-    def _block_breaks(self, seg_idx, seg_text, seg_h, mdc):
+    def _breaks_from_renderer(self, r, seg_idx, seg_h, mdc):
         """Altezze (px schermo) dove si può interrompere la pagina.
+
+        `r` è il Renderer che ha appena eseguito Render() del segmento
+        `seg_idx` con il DC `mdc` (lo fa _seg_info, che mette il risultato
+        in cache).
 
         Dopo Renderer.Render() ogni blocco del brano (titolo, strofa,
         ritornello, griglia, immagine…) conosce la propria posizione verticale
@@ -985,12 +1156,6 @@ class SongpressPrintout(wx.Printout):
         # essa. Come limite inferiore resta il fondo dell'ULTIMA RIGA del
         # blocco precedente (non la sua scatola con margini e spaziatura).
         try:
-            r = self._make_renderer()
-            vc, lc, cc = self._seg_verse_start.get(seg_idx, (0, 0, 0))
-            r.initialVerseCount  = vc
-            r.initialLabelCount  = lc
-            r.initialChorusCount = cc
-            r.Render(seg_text, mdc)
             margin_top = getattr(r.song, 'marginTop', 0) or 0
             ys = []
             prev = None
@@ -1050,7 +1215,6 @@ class SongpressPrintout(wx.Printout):
                  % (seg_idx, seg_h, margin_top, sorted(ys)))
             return sorted(ys)
         except Exception:
-            import traceback
             _dbg('block_breaks seg=%d ERRORE:\n%s' % (seg_idx, traceback.format_exc()))
             return []
 
@@ -1097,24 +1261,17 @@ class SongpressPrintout(wx.Printout):
                 ys.append(sec_top + 10 + 36 + i * row_h - 4.0)
             return [y for y in ys if 0 < y < seg_h - 0.5]
         except Exception:
-            import traceback
             _dbg('kbd_breaks ERRORE:\n%s' % traceback.format_exc())
             return []
 
-    def _beats_guards(self, seg_idx, seg_text, mdc):
-        """Per il taglio a altezza fissa (senza «Riduci per adattare»):
+    def _guards_from_renderer(self, r, seg_idx, mdc, _sh):
+        """Per il taglio a altezza fissa (senza «Non spezzare strofe e ritornelli»):
         lista di (y_sopra_i_battiti, y_fondo_prima_riga) per ogni blocco che
         ha numeri dei battiti ({beats_time}) sopra la prima riga. Se il taglio
         di pagina cade in questo intervallo, la banda dei numeri resterebbe
         in fondo alla pagina precedente mentre la riga va in quella dopo."""
         guards = []
         try:
-            r = self._make_renderer()
-            vc, lc, cc = self._seg_verse_start.get(seg_idx, (0, 0, 0))
-            r.initialVerseCount  = vc
-            r.initialLabelCount  = lc
-            r.initialChorusCount = cc
-            _sw, _sh = r.Render(seg_text, mdc)
             margin_top = getattr(r.song, 'marginTop', 0) or 0
             r.sd.dc = mdc
             try:
@@ -1141,11 +1298,73 @@ class SongpressPrintout(wx.Printout):
                 nxt = kys[i + 1] if i + 1 < len(kys) else float(_sh)
                 guards.append((ky, nxt))
         except Exception:
-            import traceback
             _dbg('beats_guards seg=%d ERRORE:\n%s' % (seg_idx, traceback.format_exc()))
             return []
         _dbg('beats_guards seg=%d %s' % (seg_idx, guards))
         return guards
+
+    def _seg_info(self, seg_idx, seg_text, mdc, limit=None,
+                  breaks=False, guards=False):
+        """Renderizza il segmento (UNA volta per scala del DC e limite tastiere)
+        e restituisce un dict con tutto ciò che serve all'impaginazione:
+
+            w, h        larghezza e altezza reali (px schermo, almeno 1)
+            end_counts  (strofe, etichette, ritornelli) a fine segmento
+            ys          punti di interruzione a blocchi  (solo se breaks=True)
+            guards      guardie dei battiti per il taglio a altezza fissa
+                        (solo se guards=True)
+
+        Prima il layout rifaceva Render() per ogni informazione (altezza,
+        interruzioni, guardie, larghezze, pagina vuota): ora il risultato è
+        messo in self._render_cache, che va azzerata quando cambiano i
+        segmenti (lo fanno _ensure_layout e compute_fit_scale). Si salvano
+        solo numeri, mai il Renderer: il decorator è condiviso e un Renderer
+        tenuto da parte avrebbe lo stato di un altro render.
+
+        `limit` è il bordo destro (px logici) delle tastiere: vale per tutta
+        la durata del calcolo, comprese le interruzioni delle tastiere.
+        Il numero di strofe/etichette di partenza si legge da
+        self._seg_verse_start[seg_idx] (da impostare prima)."""
+        try:
+            ux, uy = mdc.GetUserScale()
+        except Exception:
+            ux, uy = (self._scale_x or 1.0), (self._scale_y or 1.0)
+        key = (seg_idx, round(ux, 9), round(uy, 9), limit or None)
+        info = self._render_cache.get(key)
+        if (info is not None
+                and (not breaks or info['ys'] is not None)
+                and (not guards or info['guards'] is not None)):
+            return info
+        prev = info or {'ys': None, 'guards': None}
+
+        r = self._make_renderer()
+        vc, lc, cc = self._seg_verse_start.get(seg_idx, (0, 0, 0))
+        r.initialVerseCount  = vc
+        r.initialLabelCount  = lc
+        r.initialChorusCount = cc
+        if limit:
+            KlavierRenderer.set_content_right_limit(limit)
+        try:
+            w, h = r.Render(seg_text, mdc)
+            w, h = max(1, w), max(1, h)
+            info = {
+                'w': w, 'h': h,
+                'end_counts': (r.song.verseCount, r.song.labelCount,
+                               r.song.chorusCount),
+                'ys': prev['ys'], 'guards': prev['guards'],
+            }
+            if breaks and info['ys'] is None:
+                info['ys'] = self._breaks_from_renderer(r, seg_idx, h, mdc)
+            if guards and info['guards'] is None:
+                info['guards'] = self._guards_from_renderer(r, seg_idx, mdc, h)
+        finally:
+            if limit:
+                try:
+                    KlavierRenderer.set_content_right_limit(None)
+                except Exception:
+                    pass
+        self._render_cache[key] = info
+        return info
 
     @staticmethod
     def _paginate_blocks(h, ppp, ys):
@@ -1164,6 +1383,31 @@ class SongpressPrintout(wx.Printout):
         pages.append((start, None))
         return pages
 
+    @staticmethod
+    def _paginate_fixed(h, ppp, guards):
+        """Divide un segmento alto `h` in pagine alte `ppp` (taglio a altezza
+        fissa, senza «Non spezzare strofe e ritornelli»). Se il taglio cadrebbe
+        fra la banda dei battiti e la prima riga di un blocco, sale sopra i
+        numeri, che vanno nella pagina/colonna successiva insieme al blocco
+        (`guards` = [(y_sopra_i_battiti, y_fondo_prima_riga)], vedi
+        _guards_from_renderer). Restituisce [(offset_y, altezza_pagina | None)];
+        None = la pagina arriva fino al fondo del clip.
+        È la stessa logica usata sia dalla stampa sia da compute_fit_scale."""
+        ppp = max(1.0, float(ppp))
+        pages, y = [], 0.0
+        while y < h:
+            end = y + ppp
+            clip = None
+            if end < h:
+                for g_top, g_bot in (guards or ()):
+                    if g_top > y + 1.0 and g_top < end < g_bot + 0.5:
+                        end = g_top
+                        clip = end - y
+                        break
+            pages.append((y, clip))
+            y = end
+        return pages
+
     def _measure_seg_widths(self, mdc):
         """Larghezza reale (px schermo) di ogni segmento, per centrare il testo.
 
@@ -1180,23 +1424,12 @@ class SongpressPrintout(wx.Printout):
         limit = int(math.ceil(col_w / self._scale_x)) if self._scale_x else None
         widths = {}
         try:
-            if limit:
-                KlavierRenderer.set_content_right_limit(limit)
             for seg_idx, seg_text in enumerate(self._segments):
-                r = self._make_renderer()
-                vc, lc, cc = self._seg_verse_start.get(seg_idx, (0, 0, 0))
-                r.initialVerseCount  = vc
-                r.initialLabelCount  = lc
-                r.initialChorusCount = cc
-                sw, _sh = r.Render(seg_text, mdc)
-                widths[seg_idx] = max(1, sw)
+                widths[seg_idx] = self._seg_info(
+                    seg_idx, seg_text, mdc, limit=limit)['w']
         except Exception:
+            _dbg_exc('measure_seg_widths')
             return {}            # misura fallita: nessun centraggio
-        finally:
-            try:
-                KlavierRenderer.set_content_right_limit(None)
-            except Exception:
-                pass
         return widths
 
     @_with_kbd_scale
@@ -1272,7 +1505,7 @@ class SongpressPrintout(wx.Printout):
                 self._scale_x = min(self._scale_x, self._scale_x * fit)
                 self._scale_y = min(self._scale_y, self._scale_y * fit)
 
-        # ── fit_to_page / shrink_to_fit ───────────────────────────────
+        # ── shrink_to_fit (impaginazione a blocchi) ───────────────────
         #
         # Approccio diretto: rendiamo tutti i segmenti su un DC temporaneo
         # con la scala corrente, misuriamo l'altezza reale di ciascuno, e
@@ -1287,35 +1520,9 @@ class SongpressPrintout(wx.Printout):
         #                  (sempre nell'ultima pagina di quel segmento)
         # ─────────────────────────────────────────────────────────────────────
 
-        mdc2 = self._scaled_mdc()
-        _scale_at_mdc2 = (self._scale_x, self._scale_y)
-
-        # Renderizza una volta sola tutti i segmenti e memorizza le altezze.
-        seg_h_px = []
-        for seg_idx, seg_text in enumerate(self._segments):
-            r = self._make_renderer()
-            vc, lc, cc = self._seg_verse_start.get(seg_idx, (0, 0, 0))
-            r.initialVerseCount  = vc
-            r.initialLabelCount  = lc
-            r.initialChorusCount = cc
-            _, sh = r.Render(seg_text, mdc2)
-            seg_h_px.append(max(1, sh))
-
-        total_h_px = sum(seg_h_px)
-
-        if getattr(self.frame_obj, '_fit_to_page', False):
-            # Scala font in riduzione se il contenuto eccede la pagina (no ingrandimento).
-            if total_h_px * self._scale_y > usable_h:
-                f = usable_h / (total_h_px * self._scale_y)
-                self._scale_x *= f
-                self._scale_y *= f
-                # Aggiorna le altezze scalate (non i px, che sono invarianti
-                # rispetto al renderer, ma serviranno corretti sotto).
-                # Non serve: seg_h_px rimane in px-schermo; scale è cambiata.
-
-        # ── Interruzioni di pagina per BLOCCHI (opzione «adatta alla pagina») ──
+        # ── Interruzioni di pagina per BLOCCHI (opzione «Non spezzare strofe e ritornelli») ──
         #
-        # Con «Riduci per adattare alla pagina/colonna corrente» una pagina
+        # Con «Non spezzare strofe e ritornelli tra le pagine» una pagina
         # non viene più tagliata a un'altezza fissa: se un blocco (strofa,
         # ritornello…) non entra per intero, passa per intero alla pagina
         # successiva. Il font NON viene rimpicciolito per forzare tutto in una
@@ -1323,11 +1530,22 @@ class SongpressPrintout(wx.Printout):
         # colonne la spezzatura è gestita dal Renderer).
         shrink_on   = bool(getattr(self.frame_obj, '_shrink_to_fit', False))
         block_aware = shrink_on and columns_per_page < 2
-        seg_breaks  = [[] for _ in self._segments]
-        if block_aware:
-            for seg_idx, seg_text in enumerate(self._segments):
-                seg_breaks[seg_idx] = self._block_breaks(
-                    seg_idx, seg_text, seg_h_px[seg_idx], mdc2)
+
+        # Ogni segmento viene renderizzato UNA volta con la scala di stampa:
+        # _seg_info ne conserva altezza e punti di interruzione (a blocchi) o
+        # guardie dei battiti (taglio fisso). Il calcolo definitivo più sotto
+        # li riusa se la scala non cambia; se cambia rifà un solo render.
+        self._render_cache = {}
+        mdc2 = self._scaled_mdc()
+
+        seg_h_px   = []
+        seg_breaks = [[] for _ in self._segments]
+        for seg_idx, seg_text in enumerate(self._segments):
+            info = self._seg_info(seg_idx, seg_text, mdc2,
+                                  breaks=block_aware, guards=not block_aware)
+            seg_h_px.append(info['h'])
+            if block_aware:
+                seg_breaks[seg_idx] = info['ys']
 
         if shrink_on:
             # ── Parametri di margine riducibile ───────────────────────────
@@ -1385,87 +1603,33 @@ class SongpressPrintout(wx.Printout):
                             self._scale_x *= f
                             self._scale_y *= f
 
-                else:
-                    # Fase 2 (comportamento originale, modalità 2 colonne):
-                    # sfrutta tutto il margine, poi riduce anche il font.
-                    mt       -= red_top_max
-                    mb       -= red_bot_max
-                    usable_h += reducible_du
-                    self._margin_du = (ml, mt, mr, mb)
-
-                    f_min = 1.0
-                    for h_px in seg_h_px:
-                        h_du = h_px * self._scale_y
-                        n_pages = max(1, math.ceil(h_du / usable_h))
-                        target_du = n_pages * usable_h
-                        if h_du > target_du:
-                            f_candidate = target_du / h_du
-                        elif h_du > 0:
-                            overflow_du = math.fmod(h_du, usable_h)
-                            if overflow_du > 0:
-                                f_candidate = ((n_pages - 1) * usable_h) / h_du
-                                f_candidate = max(0.5, f_candidate)
-                            else:
-                                f_candidate = 1.0
-                        else:
-                            f_candidate = 1.0
-                        f_min = min(f_min, f_candidate)
-
-                    if f_min < 1.0:
-                        self._scale_x *= f_min
-                        self._scale_y *= f_min
+                # Con 2 colonne, se i margini non bastano a recuperare lo sbordo non si
+                # tocca nulla: niente riduzione automatica del font (per rimpicciolire
+                # c'è il pulsante «Adatta» / la casella Scala).
 
         # ── calcolo definitivo degli offsets di pagina ─────────────────
         px_per_page = usable_h / self._scale_y
 
+        # Se il riadattamento ha cambiato la scala dopo la prima misura, la
+        # cache non ha quella scala e _seg_info fa UN render con la scala
+        # finale (altezze e punti di interruzione vanno comunque ricalcolati);
+        # se la scala è la stessa, riusa quanto già misurato.
         mdc3 = self._scaled_mdc()
-        # Se il riadattamento ha cambiato la scala dopo la prima misura, i
-        # punti di interruzione vanno ricalcolati con la scala finale.
-        if block_aware and (self._scale_x, self._scale_y) != _scale_at_mdc2:
-            for seg_idx, seg_text in enumerate(self._segments):
-                r_tmp = self._make_renderer()
-                vc, lc, cc = self._seg_verse_start.get(seg_idx, (0, 0, 0))
-                r_tmp.initialVerseCount  = vc
-                r_tmp.initialLabelCount  = lc
-                r_tmp.initialChorusCount = cc
-                _, _h = r_tmp.Render(seg_text, mdc3)
-                seg_breaks[seg_idx] = self._block_breaks(
-                    seg_idx, seg_text, max(1, _h), mdc3)
         for seg_idx, seg_text in enumerate(self._segments):
-            r = self._make_renderer()
-            vc, lc, cc = self._seg_verse_start.get(seg_idx, (0, 0, 0))
-            r.initialVerseCount  = vc
-            r.initialLabelCount  = lc
-            r.initialChorusCount = cc
-            sw, sh = r.Render(seg_text, mdc3)
-            sw, sh = max(1, sw), max(1, sh)
+            info = self._seg_info(seg_idx, seg_text, mdc3,
+                                  breaks=block_aware, guards=not block_aware)
+            sh = info['h']
 
             if getattr(self.frame_obj, '_remove_blank_pages', False) and sh <= 2:
                 continue
 
             if block_aware:
-                for start_y, page_h in self._paginate_blocks(
-                        sh, px_per_page, seg_breaks[seg_idx]):
-                    self._page_offsets.append((seg_idx, start_y))
-                    self._page_clip_px.append(page_h)
+                pages = self._paginate_blocks(sh, px_per_page, info['ys'])
             else:
-                guards = self._beats_guards(seg_idx, seg_text, mdc3)
-                y = 0.0
-                while y < sh:
-                    self._page_offsets.append((seg_idx, y))
-                    end = y + px_per_page
-                    clip = None
-                    if end < sh:
-                        # Il taglio cade fra la banda dei battiti e la prima
-                        # riga di un blocco: sale sopra i numeri, che vanno
-                        # nella pagina/colonna successiva insieme al blocco.
-                        for g_top, g_bot in guards:
-                            if g_top > y + 1.0 and g_top < end < g_bot + 0.5:
-                                end = g_top
-                                clip = end - y
-                                break
-                    self._page_clip_px.append(clip)
-                    y = end
+                pages = self._paginate_fixed(sh, px_per_page, info['guards'])
+            for start_y, page_h in pages:
+                self._page_offsets.append((seg_idx, start_y))
+                self._page_clip_px.append(page_h)
 
         # Posizione «Centrale»: larghezza reale dei segmenti, misurata col
         # STESSO limite tastiere usato in stampa (solo se serve).
@@ -1484,17 +1648,16 @@ class SongpressPrintout(wx.Printout):
         # Rimuovi ultima pagina quasi vuota
         if getattr(self.frame_obj, '_remove_blank_pages', False) and len(self._page_offsets) > 1:
             last_seg_idx, last_y = self._page_offsets[-1]
-            r_check = self._make_renderer()
-            vc, lc, cc = self._seg_verse_start.get(last_seg_idx, (0, 0, 0))
-            r_check.initialVerseCount  = vc
-            r_check.initialLabelCount  = lc
-            r_check.initialChorusCount = cc
-            _, sh_last = r_check.Render(self._segments[last_seg_idx], mdc3)
+            sh_last = self._seg_info(
+                last_seg_idx, self._segments[last_seg_idx], mdc3,
+                breaks=block_aware, guards=not block_aware)['h']
             remaining  = sh_last - last_y
             threshold  = getattr(self.frame_obj, '_blank_page_threshold', 5) / 100.0
             if remaining < px_per_page * threshold:
                 self._page_offsets.pop()
                 self._page_clip_px.pop()
+
+        self._render_cache = {}      # solo numeri, ma non serve più
 
     # ── wx.Printout interface ─────────────────────────────────────────────────
 
@@ -1740,6 +1903,12 @@ class SongpressPrintout(wx.Printout):
         except Exception:
             pass
 
+        # «Mostra interruzione di colonna»: override confinato a questo render
+        # (il decorator è condiviso con l'anteprima live) e ripristinato nel
+        # finally qui sotto.
+        _prev_colbrk = getattr(r.sd, 'showColumnBreakLines', True)
+        r.sd.showColumnBreakLines = bool(getattr(self.frame_obj, '_show_column_break', True))
+
         r.sd.smp_via_bitmap = True
         # Su carta/PDF (IsPreview False) usa la bitmap a risoluzione device →
         # nitida. In anteprima di stampa (IsPreview True) usa il blit a coordinate
@@ -1767,7 +1936,8 @@ class SongpressPrintout(wx.Printout):
                     r.sd.smp_device_res = True
                     r.Render(seg_text, dc)
                 except Exception:
-                    pass  # ultimo tentativo fallito: si prosegue comunque
+                    _dbg_exc('render page %d (ripiego senza bitmap SMP)' % logical_page_idx)
+                    # ultimo tentativo fallito: si prosegue comunque
             else:
                 raise
         finally:
@@ -1777,6 +1947,7 @@ class SongpressPrintout(wx.Printout):
                 _sd.__dict__.pop('_DrawBeatsApex', None)
             r.sd.smp_via_bitmap = _prev_smp_bmp
             r.sd.smp_device_res = _prev_smp_res
+            r.sd.showColumnBreakLines = _prev_colbrk
             if _kbd_limit_set:
                 KlavierRenderer.set_content_right_limit(None)
 
@@ -1817,10 +1988,10 @@ class SongpressPrintout(wx.Printout):
             right_idx = left_idx + 1
             n_logical = len(self._page_offsets)
             if right_idx >= n_logical:
-                # Brano che sta in una sola pagina: la metà destra resta
-                # bianca. La copia vale solo per i brani più lunghi, quando
-                # l'ultimo foglio ha la sola metà sinistra piena.
-                right_idx = None if n_logical <= 1 else left_idx
+                # Numero dispari di pagine (o brano di una sola pagina): nel
+                # foglio finale la metà destra resta bianca. Il testo non viene
+                # più ripetuto a destra.
+                right_idx = None
 
             left_x   = ml
             right_x  = ml + self._col_w_du + self._gap_du
@@ -1912,6 +2083,7 @@ class SongpressPrintout(wx.Printout):
             from . import Watermark
             cfg = self.frame_obj._GetWatermarkConfig()
         except Exception:
+            _dbg_exc('watermark config')
             return
 
         # ── Stato ambiente del DC (impostato da wx per questa pagina) ──────────
@@ -1931,7 +2103,7 @@ class SongpressPrintout(wx.Printout):
             # GTK): e' lo stesso frame in cui sono validi pw/ph e i margini.
             Watermark.draw_watermark(dc, pw, ph, cfg)
         except Exception:
-            pass
+            _dbg_exc('watermark draw')
         finally:
             # Ripristino difensivo dello stato ambiente.
             try:
@@ -2005,10 +2177,11 @@ class PrintOptionsDialog:
         Schema (le due colonne hanno la stessa larghezza in tutte le righe):
 
             ┌─ Pagine per foglio ─────┬─ Colonne per pagina ────┐
-            ├─ Ridimensionamento ─────┼─ Scala ─────────────────┤
-            │  Riduci se eccede …     │  Scala (%)       [100%] │
-            │  Riduci per adattare …  │  Tastiere (%)    [Pred.]│
-            │    └ Margine minimo     ├─ Impostazioni nel brano ┤
+            │  Posizione: [Centro]    │  ☐ Mostra interruzione  │
+            ├─ Interruzioni pagina ───┼─ Scala ─────────────────┤
+            │  Non spezzare strofe …  │  Scala (%)       [100%] │
+            │    └ Margine minimo     │  Tastiere (%)    [Pred.]│
+            │                         ├─ Impostazioni nel brano ┤
             ├─ Opzioni avanzate ──────┤  [Salva] [Carica]       │
             │  Rimuovi pagine bianche │  ☐ Salva anche tastiere │
             │    └ Soglia (%)         │  ℹ messaggio di stato   │
@@ -2043,40 +2216,65 @@ class PrintOptionsDialog:
             return row
 
         # ══ Riga 1 · Pagine per foglio | Colonne per pagina ═══════════════
-        box_pages = _box(_("Pages per sheet"), wx.HORIZONTAL)
+        box_pages = _box(_("Pages per sheet"), wx.VERTICAL)
+        row_pages = wx.BoxSizer(wx.HORIZONTAL)
         self.rb_page1 = wx.ToggleButton(dlg, label=_("1 page"))
         self.rb_page2 = wx.ToggleButton(dlg, label=_("2 pages"))
         self.rb_page1.SetValue(not owner._two_pages_per_sheet)
         self.rb_page2.SetValue(owner._two_pages_per_sheet)
-        box_pages.Add(self.rb_page1, 1, wx.EXPAND | wx.ALL, PAD)
-        box_pages.Add(self.rb_page2, 1, wx.EXPAND | wx.TOP | wx.RIGHT | wx.BOTTOM, PAD)
+        row_pages.Add(self.rb_page1, 1, wx.EXPAND | wx.ALL, PAD)
+        row_pages.Add(self.rb_page2, 1, wx.EXPAND | wx.TOP | wx.RIGHT | wx.BOTTOM, PAD)
+        box_pages.Add(row_pages, 0, wx.EXPAND)
 
-        box_cols = _box(_("Columns per page"), wx.HORIZONTAL)
+        box_cols = _box(_("Columns per page"), wx.VERTICAL)
+        row_cols = wx.BoxSizer(wx.HORIZONTAL)
         self.rb_col1 = wx.ToggleButton(dlg, label=_("1 column"))
         self.rb_col2 = wx.ToggleButton(dlg, label=_("2 columns"))
         self.rb_col1.SetValue(owner._columns_per_page == 1)
         self.rb_col2.SetValue(owner._columns_per_page == 2)
-        box_cols.Add(self.rb_col1, 1, wx.EXPAND | wx.ALL, PAD)
-        box_cols.Add(self.rb_col2, 1, wx.EXPAND | wx.TOP | wx.RIGHT | wx.BOTTOM, PAD)
+        row_cols.Add(self.rb_col1, 1, wx.EXPAND | wx.ALL, PAD)
+        row_cols.Add(self.rb_col2, 1, wx.EXPAND | wx.TOP | wx.RIGHT | wx.BOTTOM, PAD)
+        box_cols.Add(row_cols, 0, wx.EXPAND)
+        # Mostra/nasconde l'etichetta «interruzione di colonna» (con la linea
+        # tratteggiata tra le colonne): ha senso solo con 2 colonne.
+        self.cb_colbreak = wx.CheckBox(dlg, label=_("Show column break marker"))
+        self.cb_colbreak.SetValue(bool(getattr(owner, '_show_column_break', True)))
+        self.cb_colbreak.SetToolTip(_(
+            "Shows or hides the dashed line and the \"column break\" label "
+            "between the two columns. Available with 2 columns only."))
+        box_cols.Add(self.cb_colbreak, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, PAD)
+
+        # Posizione orizzontale del contenuto (Sinistra / Centrale)
+        self.lbl_position = wx.StaticText(dlg, label=_("Position:"))
+        self.ch_position = wx.Choice(dlg, choices=[_("Left"), _("Center")])
+        self.ch_position.SetSelection(
+            1 if getattr(owner, '_print_h_center', False) else 0)
+        _pos_tip = _("Horizontal position of the song on the page: against the "
+                     "left margin or centered. Not available with 2 columns or 2 pages per sheet.")
+        self.lbl_position.SetToolTip(_pos_tip)
+        self.ch_position.SetToolTip(_pos_tip)
+        box_pages.Add(_spin_row(self.lbl_position, self.ch_position),
+                      0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, PAD)
+        self._update_position_enabled()
 
         # ══ Colonna sinistra · Ridimensionamento + Opzioni avanzate ═══════
         left = wx.BoxSizer(wx.VERTICAL)
 
-        box_resize = _box(_("Scaling"))
-
-        self.cb_fit = wx.CheckBox(dlg, label=_("Shrink if exceeds page"))
-        self.cb_fit.SetValue(owner._fit_to_page)
-        self.cb_fit.SetToolTip(_("Reduce the content only if it exceeds the page size (no upscaling)"))
-        box_resize.Add(self.cb_fit, 0, wx.ALL, PAD)
+        box_resize = _box(_("Page breaks"))
 
         # cb_shrink + nota secondaria
         shrink_panel = wx.Panel(dlg)
         shrink_vsz   = wx.BoxSizer(wx.VERTICAL)
         self.cb_shrink = wx.CheckBox(
-            shrink_panel, label=_("Shrink to fit current page")
+            shrink_panel, label=_("Do not split verses and choruses across pages")
         )
         self.cb_shrink.SetValue(owner._shrink_to_fit)
-        self.cb_shrink.SetToolTip(_("Reduce the content only if it exceeds the page size, to avoid bottom clipping"))
+        self.cb_shrink.SetToolTip(_(
+            "A verse or chorus that does not fit at the bottom of the page moves "
+            "whole to the next page instead of being cut. If the song exceeds the "
+            "page by only a little, the margins are reduced first, down to the "
+            "minimum below. With 2 columns only the margin reduction applies; use "
+            "Fit to shrink the text."))
         note = wx.StaticText(shrink_panel, label=_("(prevent bottom clipping)"))
         note.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT))
         nf = note.GetFont()
@@ -2086,11 +2284,11 @@ class PrintOptionsDialog:
         shrink_vsz.Add(note, 0, wx.LEFT, 20)
         self._shrink_panel = shrink_panel
         shrink_panel.SetSizer(shrink_vsz)
-        box_resize.Add(shrink_panel, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, PAD)
+        box_resize.Add(shrink_panel, 0, wx.ALL, PAD)
 
         # Margine minimo: dipende da cb_shrink → rientrato sotto di essa
         self.lbl_min_margin = wx.StaticText(
-            dlg, label=_("Min margin for auto-shrink (mm):")
+            dlg, label=_("Minimum margin to recover space (mm):")
         )
         self.spin_min_margin = self._make_spin(
             dlg, 0, 20, min(20, max(0, int(getattr(owner, '_min_margin_shrink', 5)))),
@@ -2123,19 +2321,6 @@ class PrintOptionsDialog:
         self.lbl_blank_threshold.Enable(owner._remove_blank_pages)
         self.spin_blank_threshold.Enable(owner._remove_blank_pages)
 
-        # Posizione orizzontale del contenuto (Sinistra / Centrale)
-        self.lbl_position = wx.StaticText(dlg, label=_("Position:"))
-        self.ch_position = wx.Choice(dlg, choices=[_("Left"), _("Center")])
-        self.ch_position.SetSelection(
-            1 if getattr(owner, '_print_h_center', False) else 0)
-        _pos_tip = _("Horizontal position of the song on the page: against the "
-                     "left margin or centered. Not available with 2 columns or 2 pages per sheet.")
-        self.lbl_position.SetToolTip(_pos_tip)
-        self.ch_position.SetToolTip(_pos_tip)
-        box_adv.Add(_spin_row(self.lbl_position, self.ch_position),
-                    0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, PAD)
-        self._update_position_enabled()
-
         left.Add(box_adv, 1, wx.EXPAND)
 
         # ══ Colonna destra · Scala + Impostazioni nel brano ═══════════════
@@ -2162,22 +2347,7 @@ class PrintOptionsDialog:
             "cut. Takes columns and page size into account. Beat numbers stay "
             "above their chord."))
         # Icona 16x16 sul pulsante «Adatta»: SVG (img/vector), ripiego sul PNG (img/)
-        try:
-            _svg_bmp = _load_svg_bitmap(
-                glb.AddPath('img/vector/auto_focus_print.svg'), 16)
-            _p = glb.AddPath('img/auto_focus_print.png')
-            if _svg_bmp is not None:
-                self.btn_scale_fit.SetBitmap(_svg_bmp)
-            elif os.path.isfile(_p):
-                _img = wx.Image(_p, wx.BITMAP_TYPE_PNG)
-                if _img.GetWidth() != 16 or _img.GetHeight() != 16:
-                    _img = _img.Scale(16, 16, wx.IMAGE_QUALITY_HIGH)
-                self.btn_scale_fit.SetBitmap(wx.Bitmap(_img))
-            if self.btn_scale_fit.GetBitmap().IsOk():
-                self.btn_scale_fit.SetBitmapPosition(wx.LEFT)
-                self.btn_scale_fit.SetBitmapMargins(4, 0)
-        except Exception:
-            pass
+        _set_button_icon(self.btn_scale_fit, 'auto_focus_print')
 
         # Dimensione delle tastiere (%): vale solo per la stampa. Parte dal
         # valore delle preferenze; il pulsante «Pref.» ci riporta la casella.
@@ -2232,23 +2402,7 @@ class PrintOptionsDialog:
         # Icone vettoriali (SVG) rasterizzate a 16x16; ripiego sul PNG
         for _btn, _name in ((self.btn_save_to_editor,   'save_to_editor'),
                             (self.btn_load_from_editor, 'load_from_editor')):
-            try:
-                _svg_bmp = _load_svg_bitmap(glb.AddPath('img/vector/' + _name + '.svg'), 16)
-                if _svg_bmp is not None:
-                    _btn.SetBitmap(_svg_bmp)
-                    _btn.SetBitmapPosition(wx.LEFT)
-                    _btn.SetBitmapMargins(4, 0)
-                    continue
-                _p = glb.AddPath('img/' + _name + '.png')
-                if os.path.isfile(_p):
-                    _img = wx.Image(_p, wx.BITMAP_TYPE_PNG)
-                    if _img.GetWidth() != 16 or _img.GetHeight() != 16:
-                        _img = _img.Scale(16, 16, wx.IMAGE_QUALITY_HIGH)
-                    _btn.SetBitmap(wx.Bitmap(_img))
-                    _btn.SetBitmapPosition(wx.LEFT)
-                    _btn.SetBitmapMargins(4, 0)
-            except Exception:
-                pass
+            _set_button_icon(_btn, _name)
         row_song.Add(self.btn_save_to_editor, 1, wx.RIGHT, PAD)
         row_song.Add(self.btn_load_from_editor, 1)
         box_song.Add(row_song, 0, wx.EXPAND | wx.ALL, PAD)
@@ -2262,17 +2416,7 @@ class PrintOptionsDialog:
         # compare solo quando c'è un messaggio da mostrare.
         row_status = wx.BoxSizer(wx.HORIZONTAL)
         self.bmp_song_status = None
-        _info_bmp = _load_svg_bitmap(glb.AddPath('img/vector/info.svg'), 16)
-        if _info_bmp is None:
-            try:
-                _p = glb.AddPath('img/info.png')
-                if os.path.isfile(_p):
-                    _img = wx.Image(_p, wx.BITMAP_TYPE_PNG)
-                    if _img.GetWidth() != 16 or _img.GetHeight() != 16:
-                        _img = _img.Scale(16, 16, wx.IMAGE_QUALITY_HIGH)
-                    _info_bmp = wx.Bitmap(_img)
-            except Exception:
-                _info_bmp = None
+        _info_bmp = _icon_bitmap('info', 16)
         if _info_bmp is not None and _info_bmp.IsOk():
             self.bmp_song_status = wx.StaticBitmap(dlg, wx.ID_ANY, _info_bmp)
             self.bmp_song_status.Hide()
@@ -2324,22 +2468,7 @@ class PrintOptionsDialog:
         self.btn_open_log = wx.Button(dlg, wx.ID_ANY, _("Open folder"))
         self.btn_open_log.SetToolTip(_("Open the folder that contains the log file"))
         # Icona vettoriale (SVG) 16x16 sul pulsante «Apri cartella»; ripiego sul PNG
-        try:
-            _svg_bmp = _load_svg_bitmap(glb.AddPath('img/vector/open_log_folder.svg'), 16)
-            _p = glb.AddPath('img/open_log_folder.png')
-            if _svg_bmp is not None:
-                self.btn_open_log.SetBitmap(_svg_bmp)
-                self.btn_open_log.SetBitmapPosition(wx.LEFT)
-                self.btn_open_log.SetBitmapMargins(4, 0)
-            elif os.path.isfile(_p):
-                _img = wx.Image(_p, wx.BITMAP_TYPE_PNG)
-                if _img.GetWidth() != 16 or _img.GetHeight() != 16:
-                    _img = _img.Scale(16, 16, wx.IMAGE_QUALITY_HIGH)
-                self.btn_open_log.SetBitmap(wx.Bitmap(_img))
-                self.btn_open_log.SetBitmapPosition(wx.LEFT)
-                self.btn_open_log.SetBitmapMargins(4, 0)
-        except Exception:
-            pass
+        _set_button_icon(self.btn_open_log, 'open_log_folder')
         # Stessa altezza dei pulsanti «Salva nell'editor» / «Carica dall'editor»
         self.btn_open_log.SetMinSize(wx.Size(-1, max(
             self.btn_save_to_editor.GetBestSize().height,
@@ -2367,10 +2496,6 @@ class PrintOptionsDialog:
         btn_sizer.Add(self.btn_cancel, 0)
         outer.Add(btn_sizer, 0, wx.EXPAND | wx.ALL, _GAP)
 
-        # Etichette coerenti con la modalità «pagine per foglio» corrente
-        # (adegua testi e tooltip di «Riduci …» in «pagina» o «colonna»).
-        self._update_scope_labels(owner._two_pages_per_sheet)
-
     # ── Bind ──────────────────────────────────────────────────────────────────
 
     def _bind_events(self):
@@ -2392,46 +2517,14 @@ class PrintOptionsDialog:
 
     # ── Handler eventi ────────────────────────────────────────────────────────
 
-    def _update_scope_labels(self, two_pages):
-        """Adegua testi e tooltip delle due opzioni di riduzione.
-
-        Con «2 pagine per foglio» le due pagine logiche sono affiancate sullo
-        stesso foglio: la riduzione si applica a ciascuna metà (colonna) e non
-        al foglio intero, quindi le etichette parlano di «colonna».
-        """
-        if two_pages:
-            self.cb_fit.SetLabel(_("Shrink if exceeds column"))
-            self.cb_fit.SetToolTip(_(
-                "Reduce the content only if it exceeds the size of its column "
-                "(each half of the sheet), no upscaling"))
-            self.cb_shrink.SetLabel(_("Shrink to fit current column"))
-            self.cb_shrink.SetToolTip(_(
-                "Reduce the content only if it exceeds the size of its column "
-                "(each half of the sheet), to avoid bottom clipping"))
-        else:
-            self.cb_fit.SetLabel(_("Shrink if exceeds page"))
-            self.cb_fit.SetToolTip(_(
-                "Reduce the content only if it exceeds the page size (no upscaling)"))
-            self.cb_shrink.SetLabel(_("Shrink to fit current page"))
-            self.cb_shrink.SetToolTip(_(
-                "Reduce the content only if it exceeds the page size, to avoid bottom clipping"))
-        try:
-            self._shrink_panel.Layout()
-            self.dlg.Layout()
-            self.dlg.Fit()
-        except Exception:
-            pass
-
     def _on_page1(self, evt):
         self.rb_page1.SetValue(True)
         self.rb_page2.SetValue(False)
-        self._update_scope_labels(False)
         self._update_position_enabled()
 
     def _on_page2(self, evt):
         self.rb_page2.SetValue(True)
         self.rb_page1.SetValue(False)
-        self._update_scope_labels(True)
         self._update_position_enabled()
 
     def _update_position_enabled(self):
@@ -2449,6 +2542,8 @@ class PrintOptionsDialog:
             self.ch_position.SetSelection(getattr(self, '_pos_saved', 0))
         self.lbl_position.Enable(ok)
         self.ch_position.Enable(ok)
+        # «Mostra interruzione di colonna» vale solo con 2 colonne.
+        self.cb_colbreak.Enable(self.rb_col2.GetValue())
 
     def _on_col1(self, evt):
         self.rb_col1.SetValue(True)
@@ -2480,7 +2575,7 @@ class PrintOptionsDialog:
         try:
             # Foglio: formato/orientamento in sospeso oppure quelli correnti.
             pid = pend.get('paper', o._print_data.GetPaperId())
-            w_mm, h_mm = o._PAPER_SIZE_MM.get(pid, (210.0, 297.0))
+            w_mm, h_mm = _paper_size_mm(pid)
             orient = pend.get('orient', o._print_data.GetOrientation())
             if orient == wx.LANDSCAPE:
                 w_mm, h_mm = h_mm, w_mm
@@ -2496,13 +2591,14 @@ class PrintOptionsDialog:
                 font_scale=100,
                 kbd_scale=None if kbd == self._pref_kbd_scale() else kbd)
             cols = 2 if self.rb_col2.GetValue() else 1
-            block_aware = bool(self.cb_shrink.GetValue()) and cols < 2
+            shrink = bool(self.cb_shrink.GetValue())
+            block_aware = shrink and cols < 2
             (fs, eff, n_avail, n_used, e_w, e_h,
              h_ok, h_max) = printout.compute_fit_scale(
-                cols, (w_mm, h_mm), (mt, mb, ml, mr), block_aware=block_aware)
+                cols, (w_mm, h_mm), (mt, mb, ml, mr), shrink=shrink,
+                min_margin_mm=self.spin_min_margin.GetValue())
         except Exception:
-            import traceback
-            _dbg('fit_scale ERRORE:\n%s' % traceback.format_exc())
+            _dbg_exc('fit_scale')
             wx.MessageBox(_("Unable to compute the scale."),
                           _("Error"), wx.OK | wx.ICON_ERROR, self.dlg)
             return
@@ -2616,13 +2712,13 @@ class PrintOptionsDialog:
         settings = [
             ('pages',    2 if self.rb_page2.GetValue() else 1),
             ('cols',     2 if self.rb_col2.GetValue() else 1),
-            ('fit',      int(self.cb_fit.GetValue())),
             ('shrink',   int(self.cb_shrink.GetValue())),
             ('minmargin', self.spin_min_margin.GetValue()),
             ('blank',    int(self.cb_remove_blank.GetValue())),
             ('blankthr', self.spin_blank_threshold.GetValue()),
             ('scale',    self.spin_font_scale.GetValue()),
             ('pos',      self.ch_position.GetSelection()),
+            ('colbreak', int(self.cb_colbreak.GetValue())),
             ('paper',    pend.get('paper', pd.GetPaperId())),
             ('orient',   pend.get('orient', pd.GetOrientation())),
             ('margins',  ','.join(str(int(m)) for m in margins)),
@@ -2703,16 +2799,12 @@ class PrintOptionsDialog:
         if v is not None:
             self.rb_page1.SetValue(v == 1)
             self.rb_page2.SetValue(v == 2)
-            self._update_scope_labels(v == 2)
             self._update_position_enabled()
         v = _int('cols', 1, 2)
         if v is not None:
             self.rb_col1.SetValue(v == 1)
             self.rb_col2.SetValue(v == 2)
             self._update_position_enabled()
-        v = _int('fit', 0, 1)
-        if v is not None:
-            self.cb_fit.SetValue(bool(v))
         v = _int('shrink', 0, 1)
         if v is not None:
             self.cb_shrink.SetValue(bool(v))
@@ -2735,6 +2827,9 @@ class PrintOptionsDialog:
         v = _int('pos', 0, 1)
         if v is not None:
             self.ch_position.SetSelection(v)
+        v = _int('colbreak', 0, 1)
+        if v is not None:
+            self.cb_colbreak.SetValue(bool(v))
         # 'kbd' è facoltativa: se manca (o non è valida) si torna al valore
         # delle preferenze, per non portarsi dietro quello di un altro brano.
         v = _int('kbd', 50, 200)
@@ -2792,7 +2887,8 @@ class PrintOptionsDialog:
             self._pending_page = None
         o._two_pages_per_sheet  = self.rb_page2.GetValue()
         o._columns_per_page     = 2 if self.rb_col2.GetValue() else 1
-        o._fit_to_page          = self.cb_fit.GetValue()
+        # (se la casella è disattivata resta la scelta salvata, come «Posizione»)
+        o._show_column_break    = self.cb_colbreak.GetValue()
         o._shrink_to_fit        = self.cb_shrink.GetValue()
         o._min_margin_shrink    = self.spin_min_margin.GetValue()
         o._remove_blank_pages   = self.cb_remove_blank.GetValue()
@@ -2813,7 +2909,7 @@ class PrintOptionsDialog:
         try:
             o._SavePageMargins()
         except Exception:
-            pass
+            _dbg_exc('apply_options: SavePageMargins')
         if self.on_apply is not None:
             self.on_apply()
 
@@ -2856,7 +2952,7 @@ class PrintManager:
         # Opzioni di stampa
         self._two_pages_per_sheet  = False
         self._columns_per_page     = 1
-        self._fit_to_page          = False
+        self._show_column_break    = True   # mostra «interruzione di colonna» (solo 2 colonne)
         self._remove_blank_pages   = False
         self._blank_page_threshold = 5
         self._shrink_to_fit        = False
@@ -2885,12 +2981,13 @@ class PrintManager:
             self.config.Write('margin_right',         str(self._margin_right))
             self.config.Write('paper_id',             str(self._print_data.GetPaperId()))
             self.config.Write('orientation',          str(self._print_data.GetOrientation()))
+            self.config.Write('printer_name',         self._print_data.GetPrinterName() or '')
             self.config.Write('shrink_to_fit',        '1' if self._shrink_to_fit else '0')
             self.config.Write('min_margin_shrink',    str(self._min_margin_shrink))
             # ── Opzioni del dialog «Opzioni di stampa» ────────────────────
             self.config.Write('two_pages_per_sheet',  '1' if self._two_pages_per_sheet else '0')
             self.config.Write('columns_per_page',     str(self._columns_per_page))
-            self.config.Write('fit_to_page',          '1' if self._fit_to_page else '0')
+            self.config.Write('show_column_break',    '1' if self._show_column_break else '0')
             self.config.Write('remove_blank_pages',   '1' if self._remove_blank_pages else '0')
             self.config.Write('blank_page_threshold', str(self._blank_page_threshold))
             self.config.Write('print_options_pinned', '1' if self._print_options_pinned else '0')
@@ -2898,11 +2995,13 @@ class PrintManager:
             self.config.Write('print_h_center',       '1' if self._print_h_center else '0')
             # Scala volutamente NON salvata (reset a 100 ad ogni riapertura).
             self.config.DeleteEntry('print_font_scale', False)
+            # Opzione «Riduci se eccede» rimossa: si elimina il valore rimasto.
+            self.config.DeleteEntry('fit_to_page', False)
             # Opzione «Non replicare» rimossa: si elimina il valore rimasto.
             self.config.DeleteEntry('no_mirror_right', False)
             self.config.Flush()
         except Exception:
-            pass
+            _dbg_exc('SavePageMargins')
 
     def _LoadPageMargins(self):
         """Ripristina margini, formato carta, orientamento e opzioni di riduzione."""
@@ -2922,6 +3021,13 @@ class PrintManager:
             orientation = self.config.Read('orientation')
             if orientation:
                 self._print_data.SetOrientation(int(orientation))
+            # Stampante scelta in «Impostazioni driver»: si riusa solo se è
+            # ancora installata (altrimenti resta quella di default).
+            printer = self.config.Read('printer_name')
+            if printer:
+                _inst = _installed_printers()
+                if _inst is None or printer in _inst:
+                    self._print_data.SetPrinterName(printer)
             shrink      = self.config.Read('shrink_to_fit')
             if shrink:
                 self._shrink_to_fit = (shrink == '1')
@@ -2950,7 +3056,7 @@ class PrintManager:
 
             self._two_pages_per_sheet  = _rb('two_pages_per_sheet',  self._two_pages_per_sheet)
             self._columns_per_page     = _ri('columns_per_page',     self._columns_per_page, 1, 2)
-            self._fit_to_page          = _rb('fit_to_page',          self._fit_to_page)
+            self._show_column_break    = _rb('show_column_break',    self._show_column_break)
             self._remove_blank_pages   = _rb('remove_blank_pages',   self._remove_blank_pages)
             self._blank_page_threshold = _ri('blank_page_threshold', self._blank_page_threshold, 1, 95)
             self._print_options_pinned = _rb('print_options_pinned', self._print_options_pinned)
@@ -2967,14 +3073,13 @@ class PrintManager:
             # Nemmeno la dimensione tastiere di stampa: vale quella delle preferenze.
             self._print_kbd_scale = None
         except Exception:
-            pass
+            _dbg_exc('LoadPageMargins')
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
     def _GetPaperSizeMm(self):
         """Restituisce (w_mm, h_mm) del foglio tenendo conto dell'orientamento."""
-        pid  = self._print_data.GetPaperId()
-        w, h = self._PAPER_SIZE_MM.get(pid, (210.0, 297.0))
+        w, h = _paper_size_mm(self._print_data.GetPaperId())
         if self._print_data.GetOrientation() == wx.LANDSCAPE:
             w, h = h, w
         return w, h
@@ -2997,13 +3102,17 @@ class PrintManager:
 
     # ── Azioni ────────────────────────────────────────────────────────────────
 
-    def OnPageSetup(self, evt):
-        """Apre il dialog di impostazione pagina (formato, orientamento, margini)."""
+    def _run_page_setup(self, parent):
+        """Mostra «Impostazione pagina» (formato, orientamento, margini) e, se
+        confermato, aggiorna self._print_data e i margini. True se confermato.
+        Usato sia dal menu sia dal pulsante dell'anteprima."""
         data = wx.PageSetupDialogData(self._print_data)
         data.SetMarginTopLeft(wx.Point(self._margin_left, self._margin_top))
         data.SetMarginBottomRight(wx.Point(self._margin_right, self._margin_bottom))
-        dlg = wx.PageSetupDialog(self.frame, data)
-        if dlg.ShowModal() == wx.ID_OK:
+        dlg = wx.PageSetupDialog(parent, data)
+        try:
+            if dlg.ShowModal() != wx.ID_OK:
+                return False
             result = dlg.GetPageSetupData()
             self._print_data    = wx.PrintData(result.GetPrintData())
             tl                  = result.GetMarginTopLeft()
@@ -3012,28 +3121,37 @@ class PrintManager:
             self._margin_top    = tl.y
             self._margin_right  = br.x
             self._margin_bottom = br.y
+            # Formato carta, orientamento e margini scelti qui devono
+            # ritrovarsi alla prossima apertura del programma.
+            try:
+                self._SavePageMargins()
+            except Exception:
+                _dbg_exc('run_page_setup: SavePageMargins')
+            return True
+        finally:
+            dlg.Destroy()
+
+    def OnPageSetup(self, evt):
+        """Apre il dialog di impostazione pagina (formato, orientamento, margini)."""
+        if self._run_page_setup(self.frame):
             w_mm, h_mm = self._GetPaperSizeMm()
             self.previewCanvas.SetPageSizeMm(w_mm, h_mm)
             self.previewCanvas.SetPageMarginsMm(self._margin_top, self._margin_bottom)
-        dlg.Destroy()
 
-    def _reopen_print_options_if_pinned(self):
-        """Riapre il dialog opzioni di stampa se il pin era attivo.
-        Chiamato da wx.CallLater dopo che OnPrintPreview ha creato il nuovo pf."""
-        if not getattr(self, '_print_options_pinned', False):
-            return
-        pf = getattr(self, '_preview_frame', None)
-        if pf is None or not pf.IsShown():
-            return
+    def _show_print_options(self, pf):
+        """Mostra «Opzioni di stampa» sopra l'anteprima `pf`.
 
+        Dopo «OK» l'anteprima viene ricreata con le nuove opzioni; se il pin è
+        attivo anche il dialogo viene riaperto (vedi
+        _reopen_print_options_if_pinned). Usato dal pulsante «Opzioni di
+        stampa...» e dalla riapertura automatica."""
         _dlg_ref = [None]
 
         def _do_apply():
             self.previewCanvas.SetColumns(self._columns_per_page)
             self.previewCanvas.Refresh(self._get_display_text())
             if self._print_options_pinned and _dlg_ref[0] is not None:
-                dlg = _dlg_ref[0]
-                dlg.EndModal(wx.ID_OK)
+                _dlg_ref[0].EndModal(wx.ID_OK)
 
                 def _deferred_reopen():
                     pf.Close()
@@ -3048,6 +3166,16 @@ class PrintManager:
                 wx.CallAfter(self.OnPrintPreview, None)
 
         self._ask_two_pages_per_sheet(parent=pf, on_apply=_do_apply, _dlg_ref=_dlg_ref)
+
+    def _reopen_print_options_if_pinned(self):
+        """Riapre il dialog opzioni di stampa se il pin era attivo.
+        Chiamato da wx.CallLater dopo che OnPrintPreview ha creato il nuovo pf."""
+        if not getattr(self, '_print_options_pinned', False):
+            return
+        pf = getattr(self, '_preview_frame', None)
+        if pf is None or not pf.IsShown():
+            return
+        self._show_print_options(pf)
 
     def _ask_two_pages_per_sheet(self, parent=None, on_apply=None, _dlg_ref=None):
         """
@@ -3071,6 +3199,8 @@ class PrintManager:
         if getattr(self.pref, 'showPrintPreview', True):
             self.OnPrintPreview(evt)
             return
+
+        _dbg_new_session()
 
         pdd = wx.PrintDialogData(self._print_data)
         dlg = wx.PrintDialog(self.frame, pdd)
@@ -3100,6 +3230,7 @@ class PrintManager:
 
     def OnPrintPreview(self, evt):
         """Mostra l'anteprima di stampa del brano."""
+        _dbg_new_session()          # il log di impaginazione riparte da zero
         self.previewCanvas.Refresh(self._get_display_text())
         base_title = os.path.splitext(os.path.basename(self.document))[0] \
                      if self.document else _("Print")
@@ -3187,18 +3318,9 @@ class PrintManager:
             # Grafica VETTORIALE (img/print_icon.svg) rasterizzata a 24x24 fissi,
             # esclusa dal ridimensionamento uniforme. Ripiega sul PNG se l'SVG
             # manca o wxPython è troppo vecchio.
-            _print_svg_bmp = None
             if btn_print is not None:
-                _print_svg_bmp = _load_svg_bitmap(
-                    glb.AddPath('img/vector/print_icon.svg'), 24)
-            if btn_print is not None and _print_svg_bmp is not None:
-                safe_set_bitmap(btn_print, _print_svg_bmp, wx.LEFT)
-            elif btn_print is not None:
-                _print_icon_path = glb.AddPath('img/print_icon.png')
-                if os.path.isfile(_print_icon_path):
-                    _custom_icon_paths[btn_print] = _print_icon_path
-                    img = wx.Image(_print_icon_path, wx.BITMAP_TYPE_PNG)
-                    safe_set_bitmap(btn_print, wx.Bitmap(img), wx.LEFT)
+                _set_toolbar_icon(btn_print, 'print_icon', _ZOOM_ICON_SIZE,
+                                  _custom_icon_paths)
 
             # Icone per i bottoni nativi di zoom (- e +) della preview bar,
             # e per le frecce verdi native Precedente/Successiva/
@@ -3207,16 +3329,6 @@ class PrintManager:
             # assegnati da wxWidgets alla control bar, non per label.
             # Zoom − / +: grafica VETTORIALE (SVG) rasterizzata a 24x24.
             # Se l'SVG manca o wxPython è troppo vecchio, ripiega sui PNG.
-            _ZOOM_ICON_SIZE       = 24
-            _minus_icon_path      = glb.AddPath('img/minus_printer.png')
-            _plus_icon_path       = glb.AddPath('img/plus_printer.png')
-            _minus_svg_path       = glb.AddPath('img/vector/minus_printer.svg')
-            _plus_svg_path        = glb.AddPath('img/vector/plus_printer.svg')
-            _prev_icon_path       = glb.AddPath('img/left.png')
-            _next_icon_path       = glb.AddPath('img/right.png')
-            _first_icon_path      = glb.AddPath('img/first_page.png')
-            _last_icon_path       = glb.AddPath('img/last_page.png')
-
             _zoom_in_id  = getattr(wx, 'ID_PREVIEW_ZOOM_IN', 9)
             _zoom_out_id = getattr(wx, 'ID_PREVIEW_ZOOM_OUT', 10)
             _prev_id     = getattr(wx, 'ID_PREVIEW_PREVIOUS', 3)
@@ -3224,13 +3336,14 @@ class PrintManager:
             _first_id    = getattr(wx, 'ID_PREVIEW_FIRST', 6)
             _last_id     = getattr(wx, 'ID_PREVIEW_LAST', 7)
 
+            # Nome dell'icona (img/vector/NOME.svg, ripiego img/NOME.png)
             _nav_icon_by_id = {
-                _zoom_out_id: _minus_icon_path,
-                _zoom_in_id:  _plus_icon_path,
-                _prev_id:     _prev_icon_path,
-                _next_id:     _next_icon_path,
-                _first_id:    _first_icon_path,
-                _last_id:     _last_icon_path,
+                _zoom_out_id: 'minus_printer',
+                _zoom_in_id:  'plus_printer',
+                _prev_id:     'left',
+                _next_id:     'right',
+                _first_id:    'first_page',
+                _last_id:     'last_page',
             }
 
             def _iter_descendants(win):
@@ -3241,39 +3354,17 @@ class PrintManager:
             for child in _iter_descendants(ctrl_bar):
                 if not isinstance(child, wx.AnyButton):
                     continue
-                # Zoom − / +, frecce di navigazione pagine: SVG a 24x24 fissi, esclusi dal ridimensionamento
-                # uniforme (_custom_icon_paths) così restano sempre 24x24.
-                _svg_for = {_zoom_out_id: _minus_svg_path,
-                            _zoom_in_id:  _plus_svg_path,
-                            _next_id:     glb.AddPath('img/vector/right.svg'),
-                            _last_id:     glb.AddPath('img/vector/last_page.svg'),
-                            _prev_id:     glb.AddPath('img/vector/left.svg'),
-                            _first_id:    glb.AddPath('img/vector/first_page.svg')
-                            }.get(child.GetId())
-                if _svg_for:
-                    _svg_bmp = _load_svg_bitmap(_svg_for, _ZOOM_ICON_SIZE)
-                    if _svg_bmp is not None:
-                        safe_set_bitmap(child, _svg_bmp, wx.LEFT)
-                        continue
-                _icon_path = _nav_icon_by_id.get(child.GetId())
-                if _icon_path and os.path.isfile(_icon_path):
-                    _custom_icon_paths[child] = _icon_path
-                    img = wx.Image(_icon_path, wx.BITMAP_TYPE_PNG)
-                    safe_set_bitmap(child, wx.Bitmap(img), wx.LEFT)
+                # Zoom − / +, frecce di navigazione pagine: SVG a 24x24 fissi,
+                # esclusi dal ridimensionamento uniforme (_custom_icon_paths).
+                _icon_name = _nav_icon_by_id.get(child.GetId())
+                if _icon_name:
+                    _set_toolbar_icon(child, _icon_name, _ZOOM_ICON_SIZE,
+                                      _custom_icon_paths)
 
             # Bottone «Impostazioni driver»
             btn_driver = wx.Button(ctrl_bar, wx.ID_ANY, _("Driver settings..."))
-            _driver_icon_path = glb.AddPath('img/option_printer.png')
-            _driver_svg_bmp = _load_svg_bitmap(
-                glb.AddPath('img/vector/option_printer.svg'), _ZOOM_ICON_SIZE)
-            if _driver_svg_bmp is not None:
-                # Vettoriale 24x24 fisso, escluso dal ridimensionamento uniforme
-                safe_set_bitmap(btn_driver, _driver_svg_bmp, wx.LEFT)
-            elif os.path.isfile(_driver_icon_path):
-                _custom_icon_paths[btn_driver] = _driver_icon_path
-                img = wx.Image(_driver_icon_path, wx.BITMAP_TYPE_PNG)
-                safe_set_bitmap(btn_driver, wx.Bitmap(img), wx.LEFT)
-            else:
+            if not _set_toolbar_icon(btn_driver, 'option_printer',
+                                     _ZOOM_ICON_SIZE, _custom_icon_paths):
                 # Icona di fallback: stampante dal catalogo wxArtProvider
                 bmp = wx.ArtProvider.GetBitmap(wx.ART_PRINT, wx.ART_BUTTON, wx.Size(16, 16))
                 if bmp.IsOk():
@@ -3286,6 +3377,35 @@ class PrintManager:
                         hwnd = pf.GetHandle()
                     except Exception:
                         hwnd = None
+                # «Impostazioni driver» apre il driver della stampante di
+                # default di Windows (spesso «Microsoft Print to PDF»), non
+                # quella fisica: si lascia scegliere quale aprire.
+                # Con l'opzione «Chiedi quale stampante…» disattivata nelle
+                # preferenze si apre, senza chiedere, il driver della stampante
+                # di default di Windows (comportamento originale).
+                _ask = getattr(getattr(self, 'pref', None), 'askDriverPrinter', True)
+                if not _ask:
+                    self._print_data.SetPrinterName('')
+                _names = _installed_printers() if _ask else None
+                if _names and len(_names) > 1:
+                    _cur = self._print_data.GetPrinterName().strip()
+                    if not _cur:
+                        try:
+                            import win32print
+                            _cur = win32print.GetDefaultPrinter()
+                        except Exception:
+                            _cur = ''
+                    _dlg = wx.SingleChoiceDialog(
+                        pf, _("Choose the printer whose driver settings to open:"),
+                        _("Driver settings"), _names)
+                    if _cur in _names:
+                        _dlg.SetSelection(_names.index(_cur))
+                    try:
+                        if _dlg.ShowModal() != wx.ID_OK:
+                            return
+                        self._print_data.SetPrinterName(_dlg.GetStringSelection())
+                    finally:
+                        _dlg.Destroy()
                 orient_before = self._print_data.GetOrientation()
                 try:
                     self._print_data = _open_driver_settings(self._print_data, parent_hwnd=hwnd)
@@ -3296,6 +3416,12 @@ class PrintManager:
                     )
                     return
                 orient_after  = self._print_data.GetOrientation()
+                # Salva subito orientamento e formato carta eventualmente
+                # cambiati dal pannello del driver.
+                try:
+                    self._SavePageMargins()
+                except Exception:
+                    _dbg_exc('driver_settings: SavePageMargins')
                 # Aggiorna la status bar (duplex/colore/orientamento possono essere cambiati)
                 try:
                     _sb._refresh_labels()
@@ -3311,88 +3437,27 @@ class PrintManager:
 
             # Bottone «Opzioni di stampa»
             btn_options = wx.Button(ctrl_bar, wx.ID_ANY, _("Print options..."))
-            _icon_path  = glb.AddPath('img/print_icon2.png')
-            _options_svg_bmp = _load_svg_bitmap(
-                glb.AddPath('img/vector/print_icon2.svg'), _ZOOM_ICON_SIZE)
-            if _options_svg_bmp is not None:
-                safe_set_bitmap(btn_options, _options_svg_bmp, wx.LEFT)
-            elif os.path.isfile(_icon_path):
-                _custom_icon_paths[btn_options] = _icon_path
-                img = wx.Image(_icon_path, wx.BITMAP_TYPE_PNG)
-                safe_set_bitmap(btn_options, wx.Bitmap(img), wx.LEFT)
-
-            def on_print_options(e):
-                _dlg_ref = [None]
-
-                def _do_apply():
-                    self.previewCanvas.SetColumns(self._columns_per_page)
-                    self.previewCanvas.Refresh(self._get_display_text())
-                    if self._print_options_pinned and _dlg_ref[0] is not None:
-                        _dlg_ref[0].EndModal(wx.ID_OK)
-
-                        def _deferred_reopen():
-                            pf.Close()
-                            self.OnPrintPreview(None)
-                            wx.CallAfter(
-                                wx.CallLater, 50,
-                                lambda: self._reopen_print_options_if_pinned()
-                            )
-                        wx.CallAfter(_deferred_reopen)
-                    else:
-                        pf.Close()
-                        wx.CallAfter(self.OnPrintPreview, None)
-
-                self._ask_two_pages_per_sheet(
-                    parent=pf, on_apply=_do_apply, _dlg_ref=_dlg_ref
-                )
-
-            btn_options.Bind(wx.EVT_BUTTON, on_print_options)
+            _set_toolbar_icon(btn_options, 'print_icon2', _ZOOM_ICON_SIZE,
+                              _custom_icon_paths)
+            btn_options.Bind(wx.EVT_BUTTON, lambda e: self._show_print_options(pf))
 
             # Bottone «Impostazione pagina»
             btn_page_setup  = wx.Button(ctrl_bar, wx.ID_ANY, _("Page setup..."))
-            _page_icon_path = glb.AddPath('img/file-black-icon.png')
-            _page_svg_bmp = _load_svg_bitmap(
-                glb.AddPath('img/vector/file-black-icon.svg'), _ZOOM_ICON_SIZE)
-            if _page_svg_bmp is not None:
-                safe_set_bitmap(btn_page_setup, _page_svg_bmp, wx.LEFT)
-            elif os.path.isfile(_page_icon_path):
-                _custom_icon_paths[btn_page_setup] = _page_icon_path
-                img = wx.Image(_page_icon_path, wx.BITMAP_TYPE_PNG)
-                safe_set_bitmap(btn_page_setup, wx.Bitmap(img), wx.LEFT)
+            _set_toolbar_icon(btn_page_setup, 'file-black-icon', _ZOOM_ICON_SIZE,
+                              _custom_icon_paths)
 
             def on_page_setup_preview(e):
-                data = wx.PageSetupDialogData(self._print_data)
-                data.SetMarginTopLeft(wx.Point(self._margin_left, self._margin_top))
-                data.SetMarginBottomRight(wx.Point(self._margin_right, self._margin_bottom))
-                dlg = wx.PageSetupDialog(pf, data)
-                if dlg.ShowModal() == wx.ID_OK:
-                    result = dlg.GetPageSetupData()
-                    self._print_data    = wx.PrintData(result.GetPrintData())
-                    tl                  = result.GetMarginTopLeft()
-                    br                  = result.GetMarginBottomRight()
-                    self._margin_left   = tl.x
-                    self._margin_top    = tl.y
-                    self._margin_right  = br.x
-                    self._margin_bottom = br.y
-                    dlg.Destroy()
+                # Se confermato, l'anteprima va ricreata con i nuovi dati.
+                if self._run_page_setup(pf):
                     pf.Close()
                     wx.CallAfter(self.OnPrintPreview, None)
-                else:
-                    dlg.Destroy()
 
             btn_page_setup.Bind(wx.EVT_BUTTON, on_page_setup_preview)
 
             # Bottone «Chiudi»
             btn_close = wx.Button(ctrl_bar, wx.ID_ANY, _("Close"))
-            _close_icon_path = glb.AddPath('img/close_print_dialog.png')
-            _close_svg_bmp = _load_svg_bitmap(
-                glb.AddPath('img/vector/close_print_dialog.svg'), _ZOOM_ICON_SIZE)
-            if _close_svg_bmp is not None:
-                safe_set_bitmap(btn_close, _close_svg_bmp, wx.LEFT)
-            elif os.path.isfile(_close_icon_path):
-                _custom_icon_paths[btn_close] = _close_icon_path
-                img = wx.Image(_close_icon_path, wx.BITMAP_TYPE_PNG)
-                safe_set_bitmap(btn_close, wx.Bitmap(img), wx.LEFT)
+            _set_toolbar_icon(btn_close, 'close_print_dialog', _ZOOM_ICON_SIZE,
+                              _custom_icon_paths)
             btn_close.Bind(wx.EVT_BUTTON, lambda e: pf.Close())
 
             # Rimuove il bottone «Chiudi» nativo della preview control bar
@@ -3574,7 +3639,7 @@ class PrintManager:
                     self._lbl_scope.SetForegroundColour(scope_colour)
 
                 # Campo 4: icona orientamento — placeholder, bitmap creata al primo reposition
-                self._bmp_orient = _make_orientation_bitmap(False, 20)
+                self._bmp_orient = _orientation_icon(False, 20)
                 self._lbl_orient = wx.StaticBitmap(self, wx.ID_ANY, self._bmp_orient)
                 self._last_orient = None   # None → forza primo aggiornamento
 
@@ -3596,57 +3661,61 @@ class PrintManager:
 
             # ── aggiornamento etichette ────────────────────────────────────
 
-            def _resolve_duplex(self):
-                """Restituisce (text, colour) per lo stato duplex corrente."""
-                try:
-                    mode = _get_duplex_mode(self._get_pd())
-                except Exception:
-                    mode = wx.DUPLEX_SIMPLEX
+            def _label_duplex(self, mode):
+                """Restituisce (text, colour) per la modalità duplex `mode`."""
                 entry = self._DUPLEX_LABELS.get(mode)
                 if entry:
                     text_fn, colour = entry
                     return text_fn(), colour
                 return _("Duplex: unknown (mode {})".format(mode)), wx.Colour(180, 80, 0)
 
-            def _resolve_color(self):
-                """Restituisce (text, colour) per la modalità colore corrente."""
-                try:
-                    mode = _get_color_mode(self._get_pd())
-                except Exception:
-                    mode = "unknown"
+            def _label_color(self, mode):
+                """Restituisce (text, colour) per la modalità colore `mode`."""
                 entry = self._COLOR_LABELS.get(mode)
                 if entry:
                     text_fn, colour = entry
                     return text_fn(), colour
                 return _("Color: unknown"), wx.Colour(180, 80, 0)
 
-            def _resolve_orient(self):
-                """Restituisce il bool landscape per l'orientamento corrente."""
-                try:
-                    orient = _get_orientation(self._get_pd())
-                except Exception:
-                    orient = wx.PORTRAIT
-                return orient == wx.LANDSCAPE
-
             def _refresh_labels(self):
-                """Interroga il driver e aggiorna le etichette se cambiate."""
+                """Interroga il driver (UNA lettura per duplex, colore e
+                orientamento) e aggiorna le etichette se cambiate."""
                 changed = False
 
-                d_text, d_colour = self._resolve_duplex()
+                try:
+                    duplex, color, orient = _read_devmode_info(self._get_pd())
+                    # L'orientamento mostrato deve essere quello con cui si
+                    # stampa davvero, cioe' quello di wx.PrintData (usato dal
+                    # layout e cambiato da «Imposta pagina»). Il DEVMODE della
+                    # stampante resta quello di default del driver e non lo
+                    # segue: l'icona non cambiava.
+                    _dm_orient = orient
+                    try:
+                        orient = self._get_pd().GetOrientation()
+                    except Exception:
+                        pass
+                    if getattr(self, '_dbg_orient', None) != (_dm_orient, orient):
+                        self._dbg_orient = (_dm_orient, orient)
+                        _dbg('status bar orient: driver=%s printdata=%s '
+                             '(1=verticale, 2=orizzontale)' % (_dm_orient, orient))
+                except Exception:
+                    duplex, color, orient = wx.DUPLEX_SIMPLEX, "unknown", wx.PORTRAIT
+
+                d_text, d_colour = self._label_duplex(duplex)
                 if d_text != self._last_duplex:
                     self._last_duplex = d_text
                     self._lbl_duplex.SetLabel(d_text)
                     self._lbl_duplex.SetForegroundColour(d_colour)
                     changed = True
 
-                c_text, c_colour = self._resolve_color()
+                c_text, c_colour = self._label_color(color)
                 if c_text != self._last_color:
                     self._last_color = c_text
                     self._lbl_color.SetLabel(c_text)
                     self._lbl_color.SetForegroundColour(c_colour)
                     changed = True
 
-                landscape = self._resolve_orient()
+                landscape = (orient == wx.LANDSCAPE)
                 if landscape != self._last_orient:
                     self._last_orient = landscape
                     # Ricostruisce il bitmap con l'altezza attuale del campo
@@ -3654,7 +3723,7 @@ class PrintManager:
                         field_h = self.GetFieldRect(4).height
                     except Exception:
                         field_h = 20
-                    self._bmp_orient = _make_orientation_bitmap(landscape, field_h)
+                    self._bmp_orient = _orientation_icon(landscape, field_h)
                     self._lbl_orient.SetBitmap(self._bmp_orient)
                     changed = True
 

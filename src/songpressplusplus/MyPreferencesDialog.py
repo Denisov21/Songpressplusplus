@@ -315,6 +315,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.dblClickFocusCB.SetValue(getattr(self.pref, 'dblClickFocus', True))
         self.previewMinSizeCB.SetValue(getattr(self.pref, 'previewMinSize', True))
         self.liveDriverPollCB.SetValue(getattr(self.pref, 'liveDriverPoll', True))
+        self.askDriverPrinterCB.SetValue(getattr(self.pref, 'askDriverPrinter', True))
         self.printPreviewAlwaysOnTopCB.SetValue(getattr(self.pref, 'printPreviewAlwaysOnTop', False))
 
         # Nessun accordo: blocchi da nascondere
@@ -2204,6 +2205,7 @@ class MyPreferencesDialog(PreferencesDialog):
         self.pref.dblClickFocus     = self.dblClickFocusCB.GetValue()
         self.pref.previewMinSize    = self.previewMinSizeCB.GetValue()
         self.pref.liveDriverPoll    = self.liveDriverPollCB.GetValue()
+        self.pref.askDriverPrinter  = self.askDriverPrinterCB.GetValue()
         self.pref.printPreviewAlwaysOnTop = self.printPreviewAlwaysOnTopCB.GetValue()
         # Viewer guida rapida
         _viewer_keys = ['auto', 'markdown', 'mistune', 'builtin']

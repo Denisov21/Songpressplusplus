@@ -1005,3 +1005,17 @@ msgstr "Includi la favicon nei file HTML esportati"
 
 msgid "When enabled, the HTML file created by 'Export as HTML' contains the Songpress++ icon (embedded in the page) shown in the browser tab. Disable it to get a smaller file without an icon."
 msgstr "Se attivo, il file HTML creato da 'Esporta come HTML' contiene l'icona di Songpress++ (incorporata nella pagina) mostrata nella scheda del browser. Disattivala per ottenere un file più leggero e senza icona."
+
+msgid "Ask which printer to use when opening the driver settings"
+msgstr "Chiedi quale stampante usare quando apri le impostazioni del driver"
+
+msgid ""
+"When enabled, the \"Driver settings\" button in the print preview first asks "
+"which installed printer's driver to open. When disabled, it opens the driver "
+"of the Windows default printer (for example \"Microsoft Print to PDF\"), "
+"without asking."
+msgstr ""
+"Se attivo, il pulsante \"Impostazioni driver\" dell'anteprima di stampa "
+"chiede prima il driver di quale stampante installata aprire. Se disattivo, "
+"apre il driver della stampante predefinita di Windows (ad esempio "
+"\"Microsoft Print to PDF\"), senza chiedere."

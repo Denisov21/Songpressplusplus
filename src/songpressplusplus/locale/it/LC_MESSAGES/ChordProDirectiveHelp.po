@@ -5,8 +5,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Songpress++ ChordProDirectiveHelp\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-14 00:00+0000\n"
-"PO-Revision-Date: 2026-11-14 00:00+0000\n"
+"POT-Creation-Date: 2026-11-17 00:00+0000\n"
+"PO-Revision-Date: 2026-11-17 00:00+0000\n"
 "Last-Translator: Denis\n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -445,10 +445,6 @@ msgid "Columns per page: 1 or 2."
 msgstr "Colonne per pagina: 1 o 2."
 
 #: ChordProDirectiveHelp.py
-msgid "Shrink to fit the current page."
-msgstr "Riduci per adattare alla pagina corrente."
-
-#: ChordProDirectiveHelp.py
 msgid "Opens a verse with a custom label."
 msgstr "Apre una strofa con un'etichetta personalizzata."
 
@@ -461,28 +457,12 @@ msgid "Remove blank pages (0 = off, 1 = on)."
 msgstr "Rimuovi pagine bianche (0 = no, 1 = sì)."
 
 #: ChordProDirectiveHelp.py
-msgid "Do not shrink to fit the current page."
-msgstr "Non ridurre per adattare alla pagina corrente."
-
-#: ChordProDirectiveHelp.py
 msgid "Orientation: 1 = portrait, 2 = landscape."
 msgstr "Orientamento: 1 = verticale, 2 = orizzontale."
 
 #: ChordProDirectiveHelp.py
-msgid "Shrink when the content exceeds the page."
-msgstr "Riduci quando il contenuto eccede la pagina."
-
-#: ChordProDirectiveHelp.py
 msgid "Explicit bar separator inside a grid block."
 msgstr "Separatore di battuta esplicito dentro una griglia."
-
-#: ChordProDirectiveHelp.py
-msgid "Minimum margin, in mm, used by Shrink (0-20)."
-msgstr "Margine minimo, in mm, usato da Riduci (0-20)."
-
-#: ChordProDirectiveHelp.py
-msgid "Do not shrink when the content exceeds the page."
-msgstr "Non ridurre quando il contenuto eccede la pagina."
 
 #: ChordProDirectiveHelp.py
 msgid "Begins an unnumbered verse, with an optional label."
@@ -569,14 +549,6 @@ msgstr ""
 
 #: ChordProDirectiveHelp.py
 msgid ""
-"Shrink to fit the current page (0 = off, 1 = on): avoids clipping at the "
-"bottom."
-msgstr ""
-"Riduci per adattare alla pagina corrente (0 = no, 1 = sì): evita che il "
-"fondo venga tagliato."
-
-#: ChordProDirectiveHelp.py
-msgid ""
 "Blank page threshold, in %: a page filled less than this is considered blank"
 " (1-95)."
 msgstr ""
@@ -598,14 +570,6 @@ msgid ""
 msgstr ""
 "Durata in battiti di ogni accordo della riga sotto, nella forma "
 "Accordo=battiti. Appare sopra gli accordi nell'anteprima."
-
-#: ChordProDirectiveHelp.py
-msgid ""
-"Shrink if it exceeds the page (0 = off, 1 = on): reduces the content only "
-"when it does not fit, never enlarges it."
-msgstr ""
-"Riduci se eccede la pagina (0 = no, 1 = sì): riduce il contenuto solo quando"
-" non ci sta, non lo ingrandisce mai."
 
 #: ChordProDirectiveHelp.py
 msgid ""
@@ -638,6 +602,34 @@ msgstr "A sinistra, contro il margine."
 #: ChordProDirectiveHelp.py
 msgid "Centered on the page."
 msgstr "Centrata nella pagina."
+
+#: ChordProDirectiveHelp.py
+msgid "Do not split verses and choruses across pages (0 = off, 1 = on): avoids clipping at the bottom."
+msgstr "Non spezzare strofe e ritornelli tra le pagine (0 = no, 1 = sì): evita che il fondo venga tagliato."
+
+#: ChordProDirectiveHelp.py
+msgid "Minimum margin, in mm, to recover space when \"Do not split\" is on (0-20)."
+msgstr "Margine minimo, in mm, per recuperare spazio quando \"Non spezzare\" è attivo (0-20)."
+
+#: ChordProDirectiveHelp.py
+msgid "Shows (1) or hides (0) the \"column break\" marker between the two columns (only with 2 columns). Optional."
+msgstr "Mostra (1) o nasconde (0) il segno di \"interruzione di colonna\" tra le due colonne (solo con 2 colonne). Facoltativa."
+
+#: ChordProDirectiveHelp.py
+msgid "Verses and choruses may be split across pages."
+msgstr "Strofe e ritornelli possono essere spezzati tra le pagine."
+
+#: ChordProDirectiveHelp.py
+msgid "Verses and choruses are not split across pages."
+msgstr "Strofe e ritornelli non vengono spezzati tra le pagine."
+
+#: ChordProDirectiveHelp.py
+msgid "Column break marker hidden."
+msgstr "Segno di interruzione di colonna nascosto."
+
+#: ChordProDirectiveHelp.py
+msgid "Column break marker shown."
+msgstr "Segno di interruzione di colonna mostrato."
 
 msgid "Directive hover help"
 msgstr "Guida al passaggio del mouse"

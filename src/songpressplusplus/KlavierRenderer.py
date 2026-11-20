@@ -1008,6 +1008,26 @@ def _entry_keys(chord_name, finger_map, notations):
     return keys
 
 
+def _section_label_h(dc, label_font, entries):
+    """Altezza dello spazio sopra ogni tastiera (nome accordo + eventuale
+    etichetta mano). Minimo 34 (misura storica); su Linux i caratteri sono
+    piu' alti e 34 non basta: l'etichetta della mano finiva sopra il titolo
+    della sezione. Si misura quindi col font reale."""
+    label_h = 34
+    try:
+        has_hand = False
+        for e in entries:
+            if parse_fingering(e)[2] in ('R', 'L'):
+                has_hand = True
+                break
+        if has_hand:
+            label_h = max(label_h,
+                          keyboard_header_height(dc, label_font, u"A", 'R') + 2)
+    except Exception:
+        pass
+    return label_h
+
+
 def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
                          pen_scale=1.0, notations=None, highlight_color=None,
                          finger_num_color=None, content_w=None, start_note=0,
@@ -1045,6 +1065,8 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
         False,
         base_font.GetFaceName()
     )
+    label_h = _section_label_h(dc, label_font, klavier_list)
+    row_h   = label_h + kbd_h + padding_y
 
     # ── Linea separatrice (lunga quanto il contenuto effettivo) ───
     sep_y = start_y + 10
@@ -1066,9 +1088,14 @@ def draw_klavier_section(dc, klavier_list, start_x, start_y, base_font,
     dc.SetTextForeground(wx.Colour(110, 110, 110))
     dc.DrawText("Accordi", start_x, sep_y + 4)
     dc.SetTextForeground(wx.BLACK)
+    try:
+        _title_lh = dc.GetTextExtent("Accordi")[1]
+    except Exception:
+        _title_lh = 0
 
     cur_x = start_x
-    cur_y = sep_y + 26
+    # le tastiere partono sotto il titolo (su Linux il titolo e' piu' alto)
+    cur_y = max(sep_y + 26, sep_y + 4 + _title_lh + 2)
     max_drawn_x = start_x  # tiene traccia della x destra massima usata
     force_new_row = False  # riga vuota nell'editor -> prossima tastiera a capo
 
@@ -1176,6 +1203,8 @@ def draw_fingering_section(dc, fingering_list, start_x, start_y, base_font,
         False,
         base_font.GetFaceName()
     )
+    label_h = _section_label_h(dc, label_font, fingering_list)
+    row_h   = label_h + kbd_h + padding_y
 
     # ── Linea separatrice ─────────────────────────────────────────
     sep_y = start_y + 10
