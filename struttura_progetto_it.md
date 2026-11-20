@@ -58,7 +58,13 @@ Strumenti di utilità e script di supporto standalone, **non** parte del codice 
 
 | File | Descrizione |
 | ---- | ----------- |
-| `sync_deps.py` | Sincronizza automaticamente versione app e dipendenze da `pyproject.toml` a `src/install_check.vbs`. Eseguire dopo ogni modifica al toml: `python sync_deps.py`. |
+| `sync_deps_gui.py` | Programma con GUI (wxPython) che sincronizza versione app e dipendenze da `pyproject.toml` verso `src/install_check.vbs` (`APP_VERSION`, array `DEPS`, cicli) e `installer/Build-Portable.ps1` (array `$Deps`, preservando le voci extra come `cx_Freeze`). Valuta i marker di piattaforma, ha "Solo anteprima" e "Mostra differenze" (confronto versioni toml ↔ PS1), preferenze di carattere in `sync_deps_gui.prefs.json`. Va tenuto nella radice del progetto, accanto a `pyproject.toml`: `python sync_deps_gui.py`. |
+| `aggiorna_versione_gui.py` | Programma con GUI (tkinter) **Aggiorna versione**: aggiorna il numero di versione di Songpress++ in `pyproject.toml` (solo la riga `version`, non le dipendenze), `README.md`, `README_italian.md` e, se presenti, nelle guide di build/installazione (`README_PORTABLE_BUILD_en/it.md`, `DEB_INSTALLATION.md`, `INSTALLAZIONE_DEB.md`, anche in `build/` e `build_deb/`). Non fa sostituzioni cieche: mostra ogni modifica con una casella da confermare o escludere, salta i riferimenti storici ("Fino alla 7.0.1") e può creare un backup `.bak`. Solo libreria standard. |
+| `aggiorna_versione_gui.prefs.json` | Preferenze di `aggiorna_versione_gui.py`: stato del backup e delle singole caselle per file, lingua (`it`), carattere e dimensione, cursore sulle voci disattivate, icone. Generato dal programma e ricaricato all'avvio. |
+| `FileTransferSongpress.py` | Programma con GUI (tkinter) per trasferire file nella cartella di Songpress++ installato: pulsante di ricerca automatica della cartella (controlla `/usr/lib/python3/dist-packages/songpressplusplus`), backup automatico, supporto `sudo` e pulizia di `__pycache__` e dei file `.pyc` nella destinazione dopo il trasferimento. |
+| `cerca_png_nei_py.py` | Programma con GUI (tkinter) **Cerca PNG nei file Python**: scelto un PNG (o scritto il nome) e una cartella, cerca il nome in tutti i `.py` e risponde SÌ/NO con file e riga; opzioni per cercare anche senza `.png` e ignorare le maiuscole. Utile per sapere se un'icona di `img/` è ancora usata. Temi chiaro/scuro/sistema, italiano/inglese, Info sistema; configurazione in `~/.config/cerca_png_nei_py.json`. |
+| `misura_installazione.py` | Programma con GUI (tkinter, Windows) che misura la dimensione dell'installazione di Songpress++ su un'unità (totale e dettaglio per sottocartella) e calcola il valore `AddSize` (KB, +5% di margine) per gli script NSIS: copia il numero o la riga completa e può aggiornare direttamente la riga `AddSize` nei file `.nsi` scelti, mantenendo BOM UTF-8 e fine riga. |
+| `tooltip_test.py` | Programma di diagnostica (wxPython) che mostra dove compaiono i tooltip su wxGTK e wxMSW, confrontando tecniche diverse per CheckBox e RadioButton nudi o dentro una StaticBox. Conclusione: dentro una StaticBox i controlli vanno creati con parent `sbsizer.GetStaticBox()`. Include temi chiaro/scuro e "Info sistema" con copia negli appunti. |
 | `menu_sorter.py` | Strumento standalone wxPython per l'ordinamento alfabetico delle voci di menu nei file **XRC** (wxWidgets) e **FBP** (wxFormBuilder). Carica il file, mostra i menu trovati in un pannello a sinistra e, per il menu selezionato, elenca i gruppi di voci (separati da separatori) con checkbox individuali per scegliere quali ordinare. Supporta "Ordina selezionati", "Ordina tutti" e salvataggio con backup automatico (`.bak`). I colori dell'interfaccia sono personalizzabili tramite `menu_sorter_colors.json` e un dialogo opzioni integrato. Eseguibile direttamente: `python menu_sorter.py`. |
 | `menu_sorter_colors.json` | File di configurazione JSON dei colori dell'interfaccia di `menu_sorter.py`. Sovrascrive i valori predefiniti per le chiavi: `DARK_BG`, `PANEL_BG`, `ACCENT`, `ACCENT_LIGHT`, `TEXT_MAIN`, `TEXT_DIM`, `SUCCESS`, `WARNING`. Generato automaticamente dal dialogo Opzioni di `menu_sorter.py`; modificabile anche manualmente. |
 | `songpress_cleanup.py` | Tool standalone con GUI (tkinter) per la pulizia completa di installazioni Songpress++ attuali o precedenti. Scansiona cartelle, sottocartelle, collegamenti e chiavi di registro su tutte le unità disponibili, mostra i risultati in una tabella interattiva e permette di eliminarli selettivamente (cartelle → cestino, chiavi registro → eliminazione definitiva). Include il pulsante **Ripristina associazioni** per reimpostare le associazioni file `.crd .pro .chopro .chordpro .cho .tab` senza reinstallare. Nessuna dipendenza esterna — solo librerie standard Windows. |
@@ -71,6 +77,13 @@ Strumenti di utilità e script di supporto standalone, **non** parte del codice 
 | `songpress_cleanup.md` | Documentazione di `songpress_cleanup.py`: avvio, funzionalità, strategia di ricerca cartelle, scansione in due fasi, chiavi di registro controllate. |
 | `find_unused_guida.md` | Guida a `find_unused.py`: modalità d'uso, opzioni e interpretazione dei risultati. |
 | `guida_associazioni_file.md` | Guida alla verifica e sistemazione delle associazioni file su Windows. Copre: verifica del registro, correzione manuale tramite PowerShell, separazione tra cartella programma (`%LOCALAPPDATA%`) e dati utente (`%APPDATA%`), test di avvio con log diagnostico, reinstallazione pulita e uso della scheda "Associazioni file" in Songpress++. |
+
+### Script di shell (Linux)
+
+| File | Descrizione |
+| ---- | ----------- |
+| `aggiorna_songpress.sh` | Script Bash che chiede il nome di un file (es. `MyPreferencesDialog.py`), lo prende da `~/Scaricati` e lo copia in `/usr/lib/python3/dist-packages/songpressplusplus` con `sudo`, creando prima un backup `.bak`; alla fine verifica con `cmp` che il file installato sia identico. Output con emoji. |
+| `aggiorna_songpress_sh.md` | Documentazione dello script: creazione del collegamento simbolico (`ln -s`) nella cartella principale, `chmod +x` sull'originale, flusso di funzionamento e nota su `$0`/`readlink -f`. |
 
 ### Script del Registro di Windows
 
@@ -88,8 +101,8 @@ Strumenti di utilità e script di supporto standalone, **non** parte del codice 
 
 | File | Descrizione |
 | ---- | ----------- |
-| `fix_icona_songpress.bat` | Script batch di Windows per correggere/ripristinare l'**icona** dei file e/o dei collegamenti di Songpress++ (es. rigenerazione della cache delle icone e/o sistemazione della chiave `DefaultIcon` nel registro), utile quando Windows mostra l'icona sbagliata o generica. |
-| `fix_icona_songpress.md` | Documentazione di `fix_icona_songpress.bat`: causa del problema, uso dello script e verifica del risultato. |
+| `fix_icona_songpress.bat` | Script batch di Windows (one-shot, utente corrente) che corregge l'icona generica dei file `.crd .pro .chopro .chordpro .cho .tab .sng`: cancella la chiave `FileExts\.ext` (con `UserChoice`) per le 7 estensioni, notifica la shell (`SHChangeNotify`), aggiorna la cache icone e riavvia Explorer. Non tocca file e non richiede reinstallazione. |
+| `fix_icona_songpress.md` | Documentazione del fix: la causa è `FileExts\.ext\UserChoice`, scritta da Explorer e rimasta puntata a un ProgID legacy cancellato. Descrive la macro NSI `APP_CLEAR_USERCHOICE` (in installazione e disinstallazione, x64 e x86, 7 estensioni), il fix per installazioni esistenti e cosa fare se l'icona resta generica. |
 
 ---
 
@@ -99,7 +112,7 @@ Strumenti di utilità e script di supporto standalone, **non** parte del codice 
 
 | File | Descrizione |
 | ---- | ----------- |
-| `install_check.vbs` | Verifica che Python >= 3.12 sia installato, installa o aggiorna le dipendenze e ne controlla le versioni. Dipendenze e versione app sincronizzate da `pyproject.toml` tramite `sync_deps.py`. |
+| `install_check.vbs` | Verifica che Python >= 3.12 sia installato, installa o aggiorna le dipendenze e ne controlla le versioni. Dipendenze e versione app sincronizzate da `pyproject.toml` tramite `sync_deps_gui.py`. |
 | `diagnostica.vbs` | Script di diagnostica dell'ambiente (Python, pacchetti, percorsi). |
 | `Avvio SONGPRESS.vbs` | Avvia Songpress++ in modalità normale. |
 | `Avvio SONGPRESS TEST.vbs` | Avvia Songpress++ in modalità test/debug. |
@@ -115,8 +128,8 @@ Strumenti di utilità e script di supporto standalone, **non** parte del codice 
 
 | File | Descrizione |
 | ---- | ----------- |
-| `SongpressFrame.py` | Finestra principale dell'applicazione. Gestisce il layout generale, la barra dei menu, la toolbar e il coordinamento tra editor e anteprima. Include il comando **Controlla aggiornamenti…** (delega a `UpdateChecker.py`) e il comando **Filigrana…** (aggiungi/rimuovi/configura la filigrana su anteprima, stampa ed export); `DrawOnDC` la disegna dietro al contenuto negli export basati su DC. |
-| `SongpressToolbars.py` | Mixin `SongpressToolbarsMixin` che raccoglie la costruzione delle tre `AuiToolBar` di Songpress++: *Standard* (nuovo/apri/salva, stampa, modifica, copia come immagine, verifica sintassi, opzioni), *Format* (scelta font, etichette strofe, slider accordi, toggle anteprima) e *Insert* (tutti i comandi di inserimento: titolo, sottotitolo, accordo, ritornello, strofa, commento, interruzioni, blocchi, tempo, tonalità, durata, tastiere, immagini, simboli musicali, interlinea). Ereditato da `SongpressFrame` ed attivato tramite `self._BuildToolbars()`. |
+| `SongpressFrame.py` | Finestra principale dell'applicazione. Gestisce il layout generale, la barra dei menu, la toolbar e il coordinamento tra editor e anteprima. Include il comando **Controlla aggiornamenti…** (delega a `UpdateChecker.py`) e il comando **Filigrana…** (aggiungi/rimuovi/configura la filigrana su anteprima, stampa ed export); `DrawOnDC` la disegna dietro al contenuto negli export basati su DC. Gestisce anche **Visualizza → Note accordo {voicing}** (`OnToggleVoicing`): mostra/nasconde le note `{voicing:}` nell'anteprima togliendo le direttive dal testo mostrato (`_strip_voicing_directives`, come per i commenti); lo stato è salvato in config (`show_voicing`) e la voce si disabilita con la pagina chiusa. |
+| `SongpressToolbars.py` | Mixin `SongpressToolbarsMixin` che raccoglie la costruzione delle `AuiToolBar` di Songpress++ (*Standard*, *Format*, *Insert* e *View*): *Standard* (nuovo/apri/salva, stampa, modifica, copia come immagine, verifica sintassi, opzioni), *Format* (scelta font, etichette strofe, slider accordi, toggle anteprima) e *Insert* (tutti i comandi di inserimento: titolo, sottotitolo, accordo, ritornello, strofa, commento, interruzioni, blocchi, tempo, tonalità, durata, note e rivolto `{voicing:}`, tastiere, immagini, simboli musicali, interlinea) e *View* (anteprima, etichette, guida al passaggio del mouse e i pulsanti che replicano le voci del menu Visualizza: linee di interruzione, durata accordo, note accordo `{voicing}`, frecce, commenti). Le icone vengono cercate prima in `img/vector/<nome>.svg`, poi in `img/<nome>.png`. Ereditato da `SongpressFrame` ed attivato tramite `self._BuildToolbars()`. |
 | `ChordProDirectives.py` | Unico punto di definizione delle direttive ChordPro e Songpress++ per l'intellisense dell'editor. Espone tre costanti: `DIRECTIVES` (lista ordinata completa mostrata nel popup di completamento), `SPPLUSPLUS_DIRECTIVES` (set delle direttive esclusive Songpress++, icona 🔧), `DIRECTIVES_NO_VALUE` (set delle direttive senza valore, chiuse con `}` direttamente). Importato da `SongpressFrame` tramite `from . import ChordProDirectives`. Per aggiungere o rimuovere una direttiva è sufficiente modificare questo file. |
 | `ChordProDirectiveHelp.py` | Descrizioni brevi delle direttive ChordPro e Songpress++ mostrate come **tooltip** accanto alla voce evidenziata nel popup intellisense (`Ctrl+Spazio`). Contiene il dizionario `_HELP` (direttiva → descrizione in inglese + esempio opzionale), gli alias (`t`, `st`, `soc`, `eoc`, … → direttiva canonica) e la funzione `get_directive_help(nome)`, che restituisce il testo già tradotto tramite `wx.GetTranslation` (stringa vuota = nessun tooltip). Le traduzioni stanno in `SongpressFrame.po`. Il tooltip è disegnato da `SongpressFrame` con una `wx.PopupWindow` e un timer (non con il calltip di Scintilla, che chiuderebbe l'elenco di completamento). Per aggiungere o modificare una descrizione basta editare `_HELP`; l'elenco delle direttive resta in `ChordProDirectives.py`. |
 | `SDIMainFrame.py` | Frame base SDI (Single Document Interface) da cui `SongpressFrame` eredita. Fornisce la struttura base della finestra con supporto per apertura/salvataggio file. SetMinSize(wx.Size(370, 520)) |
@@ -142,6 +155,7 @@ Strumenti di utilità e script di supporto standalone, **non** parte del codice 
 | ---- | ----------- |
 | `KlavierRenderer.py` | Renderer per le tastiere di pianoforte (`{taste:}` e `{fingering:}`). Disegna i tasti con le note dell'accordo evidenziate, i numeri delle dita, la freccia di direzione (`^` / `v` dopo l'accordo), il puntino colorato sul Do centrale (`middlec=show`) e dispone più tastiere affiancate, andando a capo quando nell'editor c'è una riga vuota tra due direttive. |
 | `GuitarDiagramRenderer.py` | Renderer per i diagrammi di chitarra (`{define:}`). Disegna la tastiera con le dita posizionate. |
+| `Voicing.py` | Logica della direttiva **`{voicing: ...}`**: le note dell'accordo (rivolto / disposizione) scritte sopra gli accordi della riga successiva, come `{beats_time:}` ma con testo. Non dipende da `wx`, tranne le funzioni di disegno che usano solo l'API di un DC. Contiene: lettura e scrittura del valore (`parse_voicing`, `format_voicing`, `validate_voicing`) con le opzioni `colour=` e `size=` (`small` / `medium` / `large`) e le voci tra parentesi tonde mostrate tra quadre; la scomposizione degli accordi in note (`parse_chord`, `chord_notes`, `build_entry`, `build_directive`: fondamentale, 1°, 2° e 3° rivolto, anche con basso `DO/MI`); `chords_in_line` (accordi `[..]` di una riga); `voicing_html` per l'esportazione HTML; `voicing_text`, `voicing_extent` e `draw_voicing` per `SongDecorator`. |
 | `ChordArrow.py` | Funzioni di supporto per la **freccia di direzione dell'accordo**. Nei file `.crd` la freccia è un suffisso ASCII dentro le parentesi: `[DO^]` = su, `[DOv]` = giù (sono accettati anche i caratteri `↑` / `↓`). Espone `split_arrow(accordo)` (separa nome e direzione), `arrow_glyph(direzione)`, la costante `SUFFIX` e la sagoma vettoriale della freccia (`arrow_points`, ricavata da un'icona SVG e specchiata per la direzione opposta). `render_icon()` la rasterizza con **Pillow** a risoluzione reale del dispositivo (super-campionamento 8× e riduzione LANCZOS, con cache), così i bordi restano nitidi a qualsiasi zoom; restituisce `None` se Pillow manca. Importato da `SongpressFrame` (`split_arrow`, `SUFFIX`) e dai renderer. |
 
 ### Esportatori
@@ -179,6 +193,7 @@ Strumenti di utilità e script di supporto standalone, **non** parte del codice 
 | `FontComboBox.py` | Widget ComboBox per la selezione del font, usato nei dialoghi di formattazione. |
 | `errdlg.py` | Dialogo per la visualizzazione degli errori dell'applicazione. |
 | `MusicalSymbolDialog.py` | Dialogo modale per scegliere e inserire simboli musicali Unicode (U+1D100–U+1D1FF e altri) nell'editor. Organizza i simboli in schede tematiche (note, pause, alterazioni, dinamiche, ecc.) con griglia di selezione, anteprima del glifo e descrizione. Carica automaticamente font SMP dalla cartella `fonts/` (FreeSerif, Bravura, Noto Music) tramite `wx.Font.AddPrivateFont`; espone `get_smp_faces()` usata da `SongDecorator` per il rendering GDI+. |
+| `VoicingDialog.py` | Mixin `VoicingDialogMixin` con il comando **Inserisci → Note e rivolto accordo {voicing:}…** (`OnInsertVoicing`): finestra che parte dagli accordi della riga e propone per ciascuno posizione fondamentale e rivolti, e inserisce o modifica la direttiva `{voicing:}` (usa `Voicing.py`). Ereditato da `SongpressFrame`; richiamato anche da *Modifica direttiva* nel menu contestuale. |
 | `SyntaxCheckerDialog.py` | Dialogo che mostra l'elenco degli errori rilevati da `SyntaxChecker`. Permette di navigare direttamente alla riga errata nell'editor con un doppio clic. |
 
 ### Controllo ortografico
@@ -229,7 +244,7 @@ Strumenti di utilità e script di supporto standalone, **non** parte del codice 
 | ---- | ----------- |
 | `guida.md` | Guida utente completa di Songpress++ in italiano. Documenta comandi ChordPro supportati, sintassi delle direttive, funzionalità dell'editor e dell'anteprima. |
 | `guida_en.md` | Versione inglese della guida utente completa (`guida.md`). |
-| `guida_comandi_songpress.md` | Riferimento rapido ai comandi e alle scorciatoie di Songpress++ in italiano. |
+| `guida_comandi_songpress.md` | Riferimento rapido ai comandi e alle scorciatoie di Songpress++ in italiano (comprende `{voicing:}`). |
 | `guida_comandi_songpress_en.md` | Versione inglese del riferimento rapido ai comandi (`guida_comandi_songpress.md`). |
 | `CreaIndice.py` | Script standalone che genera automaticamente l'**indice** (sommario / table of contents con ancore e link interni) delle guide utente in markdown `guida.md` e `guida_en.md`, collocate nella stessa cartella. Da eseguire dopo ogni modifica alle guide per rigenerarne il sommario: `python CreaIndice.py`. |
 
@@ -274,7 +289,7 @@ I file `.mo` sono le versioni **compilate** dei `.po`, lette a runtime da wxPyth
 | `SimplePropertyPanel.po` / `.mo` | `SimplePropertyPanel.py` |
 | `SongbookExporter.po` / `.mo` | `SongbookExporter.py`, `CanzonatorDialog.py` |
 | `ScreenRuler.po` / `.mo` | `ScreenRuler.py` — righello a schermo: voce di menu, modalità di misura, opzioni della barra (adatta al contenuto, croce, tolleranza, unità, zoom), tooltip e messaggio di errore di cattura. |
-| `SongpressToolbars.po` / `.mo` | `SongpressToolbars.py` — etichette e tooltip delle tre toolbar (Standard, Format, Insert). |
+| `SongpressToolbars.po` / `.mo` | `SongpressToolbars.py` — etichette e tooltip delle toolbar (Standard, Format, Insert, View). |
 | `SongpressFrame.po` / `.mo` | `SongpressFrame.py` e `ChordProDirectiveHelp.py` (descrizioni dei tooltip delle direttive). |
 | `songimpress.po` / `.mo` | `songimpress.py` — importazione/integrazione con il formato SongImpress (LibreOffice Impress): messaggi ed etichette localizzati. |
 | `spellcheck.po` / `.mo` | `SpellChecker.py` — controllo ortografico: dialogo stile Word, opzioni ortografia, installer dizionari e messaggi correlati (il nome del catalogo è `spellcheck`, diverso dal nome del modulo). |
